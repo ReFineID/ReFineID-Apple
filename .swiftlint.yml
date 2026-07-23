@@ -1,0 +1,274 @@
+# SwiftLint -- the defect/quality lint layer for every Swift source in this
+# repository. The gate is `swiftlint lint` with `strict: true` below: every
+# finding is an error and findings are driven to zero.
+#
+# Ported from the reference implementation's proven configuration. Why not
+# `--enable-all-rules`? It ignores `disabled_rules` and config, so it cannot
+# honour the carve register below. Instead every opt-in rule is enumerated;
+# combined with the default rule set this is "all rules on, minus what is
+# truly impossible" (verified complete against SwiftLint 0.65.0).
+#
+# Carve register -- opt-in rules deliberately OMITTED, each justified:
+#
+#   Owned by swift-format (formatting is swift-format's job; a file cannot
+#   satisfy both):
+#     contrasted_opening_brace       swift-format emits K&R same-line braces
+#     vertical_whitespace_between_cases  swift-format owns vertical whitespace
+#     conditional_returns_on_newline swift-format keeps `guard ... else
+#                          { return }`, the official early-exit idiom
+#     multiline_arguments_brackets   swift-format owns multiline call bracket
+#                          placement (close paren trails the last argument)
+#   (Two more swift-format-owned layout rules are DEFAULT rules and so live
+#   in `disabled_rules` below: opening_brace, closure_parameter_position.)
+#
+#   Framework / idiom mismatch:
+#     prefer_nimble        tests use Swift Testing, not Nimble
+#     nimble_operator      Nimble-only operator rule
+#     prefixed_toplevel_constant   the k-prefix Apple abandoned in Swift 3;
+#                          contradicts AlwaysUseLowerCamelCase
+#
+#   Mutually exclusive with a kept rule:
+#     explicit_type_interface  directly contradicts redundant_type_annotation;
+#                          we keep the idiomatic rule (let inference work)
+#
+#   Counterproductive:
+#     required_deinit      a leak-debugging rule; forcing an empty deinit on
+#                          every class conflicts with no_empty_block and adds
+#                          no safety. Off by necessity, not preference.
+#
+# Analyzer rules (capture_variable, explicit_self, typesafe_array_init,
+# unused_declaration, unused_import) need `swiftlint analyze` with a compile
+# database, not `lint`; they are tracked as future gate work, not enabled
+# here.
+
+strict: true
+
+# "Master File" (MF) is normative ISO 7816-4 protocol vocabulary - the
+# root of every smart card's file system. Allow it as a domain term;
+# the rule's other flagged terms stay in force.
+inclusive_language:
+  override_allowed_terms:
+    - master
+
+indentation_width:
+  indentation_width: 2
+
+trailing_comma:
+  mandatory_comma: true
+
+# Typing discipline (Documentation/typing-discipline.md), mechanically enforced:
+custom_rules:
+  # A domain value must not be smuggled across an API boundary as a raw byte
+  # bag. `Data` / `String` are too broadly legitimate (wire I/O, text, URLs)
+  # to ban; only the raw [UInt8] byte bag is. The ONE sanctioned raw boundary
+  # is a domain type's own validating initializer / byte accessor; those
+  # files form the exception register below (kept minimal, justified,
+  # reviewed).
+  raw_byte_array_in_api:
+    name: "Raw [UInt8] across an API boundary"
+    regex: '(?:func|init)\b[^{}\n]*\[UInt8\]'
+    excluded:
+      # ZeroizingDigitStore is the module's sanctioned bytes<->credential
+      # boundary: its validating initializer is where entered digits become
+      # owned, zeroized storage.
+      - ".*/ZeroizingDigitStore\\.swift"
+      # ApplicationIdentifier owns its bytes<->AID boundary: the validating
+      # hex parser and the private validated-bytes initializer.
+      - ".*/ApplicationIdentifier\\.swift"
+      # EcdsaSignature owns the raw-r||s <-> X9.62-DER boundary: it
+      # re-encodes card signature bytes and does no cryptography.
+      - ".*/EcdsaSignature\\.swift"
+      # Test fixtures build raw bytes; the boundary rule is about shipped API.
+      - ".*/Tests/.*"
+    message: >
+      A function takes or returns a raw [UInt8] across an API boundary.
+      Wrap it in a domain type so strong typing is not discarded at the
+      boundary -- the only sanctioned raw boundary is a domain type's own
+      validating initializer. See Documentation/typing-discipline.md.
+    severity: error
+
+  # Release plan section 4.4: every protocol value has a meaningful named
+  # definition. No unexplained hex literal in production source, test
+  # source, or documentation examples. Wire fixtures belong in dedicated,
+  # provenance-marked test-vector files, which are the only sanctioned home
+  # for hex and are added to the exception register when they exist.
+  unexplained_hex:
+    name: "Unexplained hex literal"
+    regex: '\b0x[0-9A-Fa-f_]+\b'
+    excluded:
+      # The dedicated named-protocol-value home: every hex literal there
+      # is a named, documented constant (release plan section 4.4).
+      - ".*/CardCore/Sources/CardCore/Values/.*"
+      # EcdsaSignature's DER tags/masks are named, documented constants
+      # at the card-signature-format boundary.
+      - ".*/EcdsaSignature\\.swift"
+      # Test sources use hex literals for wire vectors and expected
+      # status words; the rule is about shipped protocol source.
+      - ".*/Tests/.*"
+      # Provenance-marked wire fixtures (none yet). Example:
+      # - ".*/TestVectors/.*"
+      - ".*/TestVectors/.*"
+    message: >
+      Hex literals are allowed only inside named protocol-value definitions
+      in dedicated files or provenance-marked test-vector files. Give the
+      value a named, documented home. See Documentation/release-plan.md section 4.4.
+    severity: error
+
+# Default rules carved because swift-format owns the layout they police:
+# swift-format puts the opening brace on its own line when a signature
+# wraps, and it wraps a long closure signature onto the line after `{`.
+disabled_rules:
+  - opening_brace
+  - closure_parameter_position
+
+opt_in_rules:
+  - accessibility_label_for_image
+  - accessibility_trait_for_button
+  - anonymous_argument_in_multiline_closure
+  - array_init
+  - async_without_await
+  - attributes
+  - balanced_xctest_lifecycle
+  - closure_body_length
+  - closure_end_indentation
+  - closure_spacing
+  - collection_alignment
+  - comma_inheritance
+  - contains_over_filter_count
+  - contains_over_filter_is_empty
+  - contains_over_first_not_nil
+  - contains_over_range_nil_comparison
+  - convenience_type
+  - direct_return
+  - discarded_notification_center_observer
+  - discouraged_assert
+  - discouraged_default_parameter
+  - discouraged_none_name
+  - discouraged_object_literal
+  - discouraged_optional_boolean
+  - discouraged_optional_collection
+  - empty_collection_literal
+  - empty_count
+  - empty_string
+  - empty_xctest_method
+  - enum_case_associated_values_count
+  - expiring_todo
+  - explicit_acl
+  - explicit_enum_raw_value
+  - explicit_init
+  - explicit_top_level_acl
+  - extension_access_modifier
+  - fallthrough
+  - fatal_error_message
+  - file_header
+  - file_name
+  - file_name_no_space
+  - file_types_order
+  - final_test_case
+  - first_where
+  - flatmap_over_map_reduce
+  - force_unwrapping
+  - function_default_parameter_at_end
+  - ibinspectable_in_extension
+  - identical_operands
+  - implicit_return
+  - implicitly_unwrapped_optional
+  - incompatible_concurrency_annotation
+  - indentation_width
+  - joined_default_parameter
+  - last_where
+  - legacy_multiple
+  - legacy_objc_type
+  - legacy_uigraphics_function
+  - let_var_whitespace
+  - literal_expression_end_indentation
+  - local_doc_comment
+  - lower_acl_than_parent
+  - missing_docs
+  - modifier_order
+  - multiline_arguments
+  - multiline_call_arguments
+  - multiline_function_chains
+  - multiline_literal_brackets
+  - multiline_parameters
+  - multiline_parameters_brackets
+  - no_empty_block
+  - no_extension_access_modifier
+  - no_grouping_extension
+  - no_magic_numbers
+  - non_overridable_class_declaration
+  - nslocalizedstring_key
+  - nslocalizedstring_require_bundle
+  - number_separator
+  - object_literal
+  - one_declaration_per_file
+  - operator_usage_whitespace
+  - optional_enum_case_matching
+  - overridden_super_call
+  - override_in_extension
+  - pattern_matching_keywords
+  - period_spacing
+  - prefer_asset_symbols
+  - prefer_condition_list
+  - prefer_key_path
+  - prefer_self_in_static_references
+  - prefer_self_type_over_type_of_self
+  - prefer_zero_over_explicit_init
+  - private_action
+  - private_outlet
+  - private_subject
+  - private_swiftui_state
+  - prohibited_interface_builder
+  - prohibited_super_call
+  - quick_discouraged_call
+  - quick_discouraged_focused_test
+  - quick_discouraged_pending_test
+  - raw_value_for_camel_cased_codable_enum
+  - reduce_into
+  - redundant_final
+  - redundant_nil_coalescing
+  - redundant_self
+  - redundant_type_annotation
+  - required_enum_case
+  - return_value_from_void_function
+  - self_binding
+  - shorthand_argument
+  - shorthand_optional_binding
+  - single_test_class
+  - sorted_enum_cases
+  - sorted_first_last
+  - sorted_imports
+  - static_operator
+  - strict_fileprivate
+  - strong_iboutlet
+  - superfluous_else
+  - switch_case_on_newline
+  - test_case_accessibility
+  - toggle_bool
+  - trailing_closure
+  - type_contents_order
+  - unavailable_function
+  - unhandled_throwing_task
+  - unneeded_escaping
+  - unneeded_parentheses_in_closure_argument
+  - unneeded_throws_rethrows
+  - unowned_variable_capture
+  - untyped_error_in_catch
+  - unused_parameter
+  - variable_shadowing
+  - vertical_parameter_alignment_on_call
+  - vertical_whitespace_closing_braces
+  - vertical_whitespace_opening_braces
+  - weak_delegate
+  - xct_specific_matcher
+  - yoda_condition
+
+# Build artefacts and authoring-time generator scripts are excluded;
+# everything that ships is in scope. Scripts/ holds tooling that runs on
+# the developer machine only (icon generation, gates) and is reviewed as
+# tooling, not as product code.
+excluded:
+  - "**/.build"
+  - "**/.swiftpm"
+  - "DerivedData"
+  - "Scripts"

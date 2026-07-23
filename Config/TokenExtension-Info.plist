@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!-- CryptoTokenKit smart-card token extension declaration.
+     com.apple.ctk.driver-class is <module>.<class>: the TokenDriver class in
+     the ReFineIDTokenExtension module. macOS instantiates it for inserted
+     smart cards; the delegate decides whether a card is supported. -->
+<dict>
+	<key>NSExtension</key>
+	<dict>
+		<key>NSExtensionAttributes</key>
+		<dict>
+			<key>com.apple.ctk.class-id</key>
+			<string>fi.refineid.ReFineID.ctk</string>
+			<key>com.apple.ctk.driver-class</key>
+			<string>ReFineIDTokenExtension.TokenDriver</string>
+			<key>com.apple.ctk.token-type</key>
+			<string>smartcard</string>
+		</dict>
+		<key>NSExtensionPointIdentifier</key>
+		<string>com.apple.ctk-tokens</string>
+	</dict>
+</dict>
+</plist>

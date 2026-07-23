@@ -1,0 +1,451 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "%lld attempts remaining": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "1 attempt remaining"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld attempts remaining"
+                }
+              }
+            }
+          }
+        },
+        "fi": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "1 yritys jäljellä"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld yritystä jäljellä"
+                }
+              }
+            }
+          }
+        },
+        "sv": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "1 försök kvar"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld försök kvar"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Application": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sovellus"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App"
+          }
+        }
+      }
+    },
+    "Card": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortti"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kort"
+          }
+        }
+      }
+    },
+    "Checking...": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarkistetaan..."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontrollerar..."
+          }
+        }
+      }
+    },
+    "Connect a card reader": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liitä kortinlukija"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anslut en kortläsare"
+          }
+        }
+      }
+    },
+    "Could not read the card - remove it and insert it again": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortin lukeminen ei onnistunut - irrota kortti ja aseta se uudelleen"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortet kunde inte läsas - ta ut kortet och sätt i det igen"
+          }
+        }
+      }
+    },
+    "Driver included": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mukana oleva ajuri"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medföljande drivrutin"
+          }
+        }
+      }
+    },
+    "Identity card recognized": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henkilökortti tunnistettu"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identitetskortet har identifierats"
+          }
+        }
+      }
+    },
+    "Insert your identity card": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aseta henkilökortti lukijaan"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sätt i ditt identitetskort"
+          }
+        }
+      }
+    },
+    "Invalidated - see recovery instructions": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mitätöity - katso palautusohjeet"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ogiltigförklarad - se återställningsanvisningarna"
+          }
+        }
+      }
+    },
+    "Locked - see recovery instructions": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lukittu - katso palautusohjeet"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Låst - se återställningsanvisningarna"
+          }
+        }
+      }
+    },
+    "Not a supported identity card": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortti ei ole tuettu henkilökortti"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortet är inte ett identitetskort som stöds"
+          }
+        }
+      }
+    },
+    "Not available - this version does not yet publish the card": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ei käytettävissä - tämä versio ei vielä julkaise korttia"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inte tillgängligt - den här versionen publicerar ännu inte kortet"
+          }
+        }
+      }
+    },
+    "Not included": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ei mukana"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingår inte"
+          }
+        }
+      }
+    },
+    "PIN1": {},
+    "PIN2": {},
+    "PUK": {},
+    "Reader": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortinlukija"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortläsare"
+          }
+        }
+      }
+    },
+    "Ready - the card is available to Safari": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valmis - kortti on Safarin käytettävissä"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klart - kortet är tillgängligt för Safari"
+          }
+        }
+      }
+    },
+    "Refresh": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Päivitä"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uppdatera"
+          }
+        }
+      }
+    },
+    "Safari login": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Safari-kirjautuminen"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Safari-inloggning"
+          }
+        }
+      }
+    },
+    "Smart-card support is unavailable on this device": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toimikorttituki ei ole käytettävissä tällä laitteella"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smartkortsstöd är inte tillgängligt på den här enheten"
+          }
+        }
+      }
+    },
+    "Status unavailable": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tila ei ole saatavilla"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statusen är inte tillgänglig"
+          }
+        }
+      }
+    },
+    "The card is in use by another app - try again": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortti on toisen sovelluksen käytössä - yritä uudelleen"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortet används av en annan app - försök igen"
+          }
+        }
+      }
+    },
+    "Unexpected answer from the card (%@)": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odottamaton vastaus kortilta (%@)"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oväntat svar från kortet (%@)"
+          }
+        }
+      }
+    },
+    "Unknown": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tuntematon"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Okänd"
+          }
+        }
+      }
+    },
+    "Use your Finnish identity card in Safari with a USB-C card reader.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Käytä suomalaista henkilökorttiasi Safarissa USB-C-kortinlukijalla."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Använd ditt finländska identitetskort i Safari med en USB-C-kortläsare."
+          }
+        }
+      }
+    },
+    "Verified in this session": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vahvistettu tässä istunnossa"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verifierad under den här sessionen"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

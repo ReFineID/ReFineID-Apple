@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!-- Merged into the generated Info.plist (GENERATE_INFOPLIST_FILE = YES).
+     Keys that Xcode derives from build settings stay in build settings;
+     only keys that need a durable, reviewable home live here. -->
+<dict>
+	<!-- Declares the shipped localizations so iOS offers the per-app
+	     language selection in Settings. -->
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>fi</string>
+		<string>sv</string>
+	</array>
+</dict>
+</plist>
