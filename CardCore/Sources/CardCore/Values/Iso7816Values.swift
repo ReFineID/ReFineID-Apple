@@ -8,6 +8,13 @@ internal enum Iso7816Values {
   /// Plain interindustry class byte, no secure messaging, channel 0.
   internal static let classInterindustry: UInt8 = 0x00
 
+  /// Class byte bit 5, command chaining: more command APDUs follow
+  /// before the card may act (7816-4 §5.1.1 Table 1).
+  ///
+  /// The first three PACE GENERAL AUTHENTICATE rounds set it; the last
+  /// one clears it, which is how the card knows the exchange is over.
+  internal static let classCommandChaining: UInt8 = 0x10
+
   /// SELECT instruction (7816-4 §11.1.1).
   internal static let insSelect: UInt8 = 0xA4
 

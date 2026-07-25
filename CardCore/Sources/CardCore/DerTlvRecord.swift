@@ -7,23 +7,30 @@ import Foundation
 /// long-form lengths, no recursion beyond the caller's own descent.
 /// Malformed input yields nil, never a partial record
 /// (Documentation/release-plan.md section 4.4).
-internal struct DerTlvRecord: Equatable, Sendable {
+///
+/// The same subset is what the PACE `7C` template, its context data
+/// objects and the secure-messaging data objects need, so descending
+/// into a constructed record is `sequence(in: record.value)` and needs
+/// no separate parser. Only a record's own bytes are handed out; a
+/// record is obtained by parsing, never by assembling one from
+/// unvalidated parts outside this module.
+public struct DerTlvRecord: Equatable, Sendable {
   /// Thrown when the byte stream is not well-formed DER.
-  internal struct Malformed: Error, Equatable {}
+  public struct Malformed: Error, Equatable {}
 
   /// Longest long-form length encoding accepted: two length bytes,
   /// enough for the 16 KiB aggregate bound with margin.
   private static let maximumLengthByteCount = 2
 
   /// The single-byte tag.
-  internal let tag: UInt8
+  public let tag: UInt8
 
   /// The value bytes.
-  internal let value: Data
+  public let value: Data
 
   /// Parses consecutive records covering `data` exactly; throws when
   /// any record is malformed or lengths disagree with the data.
-  internal static func sequence(in data: Data) throws -> [Self] {
+  public static func sequence(in data: Data) throws -> [Self] {
     let bytes = Array(data)
     var records: [Self] = []
     var index = 0

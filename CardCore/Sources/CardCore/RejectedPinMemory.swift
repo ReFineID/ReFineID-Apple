@@ -20,7 +20,9 @@ public final class RejectedPinMemory: Sendable {
   /// Records that the card bound into the fingerprint rejected this PIN.
   public func recordRejection(_ fingerprint: PinFingerprint) {
     rejected.withLock { set in
-      set.insert(fingerprint)
+      // The insertion report is deliberately dropped: recording a
+      // rejection twice is the same fact, not new information.
+      _ = set.insert(fingerprint)
     }
   }
 
