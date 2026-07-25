@@ -3,6 +3,25 @@
 Decisions with dates and rationale. `Documentation/release-plan.md` controls scope and
 security behavior; this file records the concrete values chosen under it.
 
+## 2026-07-25 Support both card transports, with a user preference
+
+ReFineID reaches the card over a contact/PC-SC reader and, on iOS 26+,
+over the phone's own NFC antenna. Native CryptoTokenKit mTLS over NFC was
+proven end to end on device on 2026-07-25 (the card signs the TLS
+CertificateVerify; the site returns HTTP 200), which removes the reason
+to defer the contactless path.
+
+Both transports are user-disablable. They differ in cost rather than
+capability: a reader is faster and needs no CAN, while NFC needs no
+hardware but asks the holder to keep the card still for several seconds.
+Disabling NFC also means never asking for a CAN. The preference is inert
+on macOS, which has no NFC smart-card slot
+(`API_UNAVAILABLE(macos)`), and it must be readable by the token
+extension, which is a separate process.
+
+Architecture and the four implementation rules that the NFC path must not
+violate: `Documentation/card-transports.md`.
+
 ## 2026-07-22 iOS core: minimal pure-Swift Safari driver
 
 The Rust core remains the reference oracle for differential testing and
