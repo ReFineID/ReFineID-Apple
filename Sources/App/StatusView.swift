@@ -15,6 +15,8 @@ internal struct StatusView: View {
 
   @State private var model = CardStatusModel()
 
+  @State private var transports = TransportPreferences()
+
   private let versions = BundledVersions.read(from: .main)
 
   internal var body: some View {
@@ -40,6 +42,7 @@ internal struct StatusView: View {
       )
       cardRows
       LabeledContent("Safari login", value: Self.safariLabel(for: model.snapshot))
+      transportRows
       Button("Refresh") {
         Task { await model.refresh() }
       }
@@ -48,6 +51,37 @@ internal struct StatusView: View {
     .padding(Self.contentPadding)
     .frame(minWidth: Self.minimumWidth)
     .task { await model.refresh() }
+  }
+
+  /// Transport switches.
+  ///
+  /// The near-field control is absent, not disabled, where the platform
+  /// has no antenna: a Mac cannot be talked into growing one. Each
+  /// toggle refuses to turn off the last enabled transport, so the app
+  /// always retains some way of reaching a card.
+  @ViewBuilder private var transportRows: some View {
+    if SupportedCardTransports.offersNearField {
+      Divider()
+      Toggle(
+        "Use a card reader",
+        isOn: Binding(
+          get: { transports.permits(.reader) },
+          set: { transports.setPermitted($0, for: .reader) }
+        )
+      )
+      Toggle(
+        "Hold the card to the phone",
+        isOn: Binding(
+          get: { transports.permits(.nearField) },
+          set: { transports.setPermitted($0, for: .nearField) }
+        )
+      )
+      if transports.lastWriteFailed {
+        Text("Keep at least one way to read the card switched on.")
+          .font(.footnote)
+          .foregroundStyle(.secondary)
+      }
+    }
   }
 
   @ViewBuilder private var cardRows: some View {
