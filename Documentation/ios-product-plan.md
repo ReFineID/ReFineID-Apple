@@ -47,11 +47,18 @@ The Rust core remains the reference oracle.
 
 ## 6. Future
 
-- **NFC-for-Safari remains blocked on Apple.** iOS 26 designed the
-   full path (`createNFCSlot`, `TKSmartCardTokenRegistrationManager`,
-   system-summoned NFC on demand) but a circular wall closes it in
-   practice: ctkd mints third-party tokens only for persistent reader
-   slots, never for the app-created transient NFC slot, while
-   `registerSmartCard` rejects a live attached-reader token with
-   `BadParameter` - apparently expecting exactly the NFC-discovered
-   token ctkd will not mint. (All that is speculation.)
+- **NFC-for-Safari: an open frontier, not a wall.** iOS 26 ships the full
+   path (`createNFCSlot`, `TKSmartCardTokenRegistrationManager`,
+   system-summoned NFC on demand). As of 2026-07-25 (iPhone 15 Pro Max, iOS
+   26.5.2) the earlier "circular wall" reading is disproven in practice:
+   `createNFCSlot` succeeds with the app's existing NFC entitlements, and a
+   registered NFC-minted token (`...nfc1`) exists on the device -- so ctkd
+   DOES mint a third-party token from the app-created NFC slot, and the card
+   is readable over the system NFC slot (PACE handled by the OS). The earlier
+   `registerSmartCard` `BadParameter` most likely came from registering a
+   contact-reader token instead of the NFC-slot-discovered one. What is not
+   solved *yet* is native mTLS *completing* through WKWebView/Safari for
+   these servers (an optional-client-auth server does not make WKWebView
+   present a client cert yet, and the challenge is not delivered to the
+   app) -- a research frontier to chase (simplest target, card.refineid.fi,
+   first), not a platform impossibility.
