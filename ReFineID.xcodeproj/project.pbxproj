@@ -516,7 +516,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Config/ReFineID.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 124;
+				CURRENT_PROJECT_VERSION = 114;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -536,7 +536,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 26.7.22;
+				MARKETING_VERSION = 26.7.25;
 				PRODUCT_BUNDLE_IDENTIFIER = fi.refineid.ReFineID;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -554,7 +554,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Config/ReFineID.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 124;
+				CURRENT_PROJECT_VERSION = 114;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -574,7 +574,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 26.7.22;
+				MARKETING_VERSION = 26.7.25;
 				PRODUCT_BUNDLE_IDENTIFIER = fi.refineid.ReFineID;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -592,7 +592,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Config/ReFineID.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 124;
+				CURRENT_PROJECT_VERSION = 114;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -612,7 +612,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 26.7.22;
+				MARKETING_VERSION = 26.7.25;
 				PRODUCT_BUNDLE_IDENTIFIER = fi.refineid.ReFineID;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -629,7 +629,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Config/TokenExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 124;
+				CURRENT_PROJECT_VERSION = 114;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -647,7 +647,7 @@
 					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
 				);
-				MARKETING_VERSION = 26.7.22;
+				MARKETING_VERSION = 26.7.25;
 				PRODUCT_BUNDLE_IDENTIFIER = fi.refineid.ReFineID.ctk;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -665,7 +665,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Config/TokenExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 124;
+				CURRENT_PROJECT_VERSION = 114;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -683,7 +683,7 @@
 					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
 				);
-				MARKETING_VERSION = 26.7.22;
+				MARKETING_VERSION = 26.7.25;
 				PRODUCT_BUNDLE_IDENTIFIER = fi.refineid.ReFineID.ctk;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -701,7 +701,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Config/TokenExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 124;
+				CURRENT_PROJECT_VERSION = 114;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -719,7 +719,7 @@
 					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
 				);
-				MARKETING_VERSION = 26.7.22;
+				MARKETING_VERSION = 26.7.25;
 				PRODUCT_BUNDLE_IDENTIFIER = fi.refineid.ReFineID.ctk;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -734,10 +734,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 124;
+				CURRENT_PROJECT_VERSION = 114;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 26.7.22;
+				MARKETING_VERSION = 26.7.25;
 				PRODUCT_BUNDLE_IDENTIFIER = fi.refineid.ReFineID.CardCoreTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = macosx;
@@ -748,10 +748,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 124;
+				CURRENT_PROJECT_VERSION = 114;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 26.7.22;
+				MARKETING_VERSION = 26.7.25;
 				PRODUCT_BUNDLE_IDENTIFIER = fi.refineid.ReFineID.CardCoreTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = macosx;
@@ -762,10 +762,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 124;
+				CURRENT_PROJECT_VERSION = 114;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 26.7.22;
+				MARKETING_VERSION = 26.7.25;
 				PRODUCT_BUNDLE_IDENTIFIER = fi.refineid.ReFineID.CardCoreTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = macosx;
