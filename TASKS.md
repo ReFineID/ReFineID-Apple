@@ -1,6 +1,6 @@
 # Apple release task list
 
-Last reviewed: 2026-07-23
+Last reviewed: 2026-07-25
 
 
 
@@ -318,8 +318,24 @@ Legend:
 - [ ] Decide the supported reader list and USB-C-only boundary (P0 gate 4).
 - [ ] Record the export-compliance answers for a pure-Swift artifact that
   ships no own cryptography before the first TestFlight build (P0 gate 5).
-- [ ] Submit the NFC CTK-registration Feedback to Apple and track the
-  dependency without blocking v1 (P0 gate 6).
+- [x] NFC CTK registration Feedback: withdrawn 2026-07-25, do not file.
+  Registration was falsified 2026-07-24 and NFC sign completion on
+  2026-07-25 (card signs the TLS CertificateVerify; HTTP 200). Nothing
+  in that draft is Apple-side. See `Documentation/card-transports.md`.
+- [ ] Port the pure-Swift PACE + secure messaging into CardCore so the
+  contactless interface can be opened at all (the card seals PKCS#15
+  until PACE runs). Donor: `ReFineID-iOS-Browser`
+  `Sources/ReFineIDBrowserKit/Card`, Foundation/CryptoKit/CommonCrypto
+  only. Gate: the synthetic-card round-trip test passes offline before
+  any hardware is involved.
+- [ ] Fix `BinaryReadAssembler`'s short-chunk end-of-file rule before the
+  contactless path uses it: under secure messaging every chunk is short,
+  so certificates would truncate silently rather than fail.
+- [ ] Add the near-field slot, priming, and prime store on iOS, and the
+  extension's contactless sign branch (PACE, then the existing PIN1 and
+  signature chain). Keep the contact path byte-for-byte unchanged.
+- [ ] Honour the transport preference in `TokenDriver` before creating a
+  token, and in the reader-enumeration probes.
 - [ ] Create the iOS target, App Store record, hardware matrix, and review
   package once the P0 gates have recorded evidence.
 - [ ] Add `ios-v*-dev.*`, `ios-v*-beta.*`, and `ios-v*-rc.*` workflows without
