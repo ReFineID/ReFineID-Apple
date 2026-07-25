@@ -10,3 +10,6 @@
 - Less is more. Terse is better.
 - Do not leak personal or private information in commits.
 - When stuck, research with fellow AI available.
+- If something is not working, it is by default a bug in OUR code (or
+  test harness), not a feature of the platform. "Impossible/blocked"
+  claims require exchange-level evidence from a clean-slate repro.
