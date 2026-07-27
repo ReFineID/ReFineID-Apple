@@ -23,6 +23,12 @@ internal struct SmartCardChannel: CardChannel {
     }
   }
 
+  /// A reader hands back exactly the bytes the card produced, so a
+  /// chunked read may ask for the plain chunk.
+  internal var readChunkLength: ReadChunkLength {
+    .plain
+  }
+
   private let smartCard: TKSmartCard
 
   internal init(_ smartCard: TKSmartCard) {
@@ -43,15 +49,20 @@ internal struct SmartCardChannel: CardChannel {
     return response
   }
 
-  /// Opens an exclusive session, runs `body`, and ends the session - all
-  /// synchronously.
+  /// Opens an exclusive session and LEAVES IT OPEN, for the caller to end.
   ///
-  /// Required on both the createToken and the sign paths: `getSmartCard()`
-  /// does not guarantee an open session and `transmit` is legal only
-  /// inside one (the reference opens a session on every sign, proven by
-  /// its success trace). `beginSession`'s callback fires on `TKSmartCard`'s
-  /// queue, so the semaphore never deadlocks.
-  internal func withSession<T>(_ body: (Self) throws -> T) throws -> T {
+  /// A session is not optional anywhere: `getSmartCard()` does not
+  /// guarantee an open one, `transmit` is legal only inside one, and a
+  /// sessionless transmit on the built-in contactless slot is parked by
+  /// `ctkd` forever - no error, no timeout. `beginSession`'s callback
+  /// fires on `TKSmartCard`'s own queue, so the semaphore never
+  /// deadlocks.
+  ///
+  /// The caller owns the session from here and must end it. Most callers
+  /// want ``withSession(_:)``; the exception is the contactless mint,
+  /// which keeps its session alive for the signature that follows (see
+  /// ``HeldCardSession``).
+  internal func beginSession() throws {
     let began = Box(false)
     let failure = Box<Error?>(nil)
     let semaphore = DispatchSemaphore(value: 0)
@@ -64,7 +75,22 @@ internal struct SmartCardChannel: CardChannel {
     guard began.value else {
       throw failure.value ?? CardOperationError.sessionUnavailable
     }
-    defer { smartCard.endSession() }
+  }
+
+  /// Ends a session opened with ``beginSession()``.
+  internal func endSession() {
+    smartCard.endSession()
+  }
+
+  /// Opens an exclusive session, runs `body`, and ends the session - all
+  /// synchronously.
+  ///
+  /// Required on both the createToken and the contact sign paths (the
+  /// reference opens a session on every sign, proven by its success
+  /// trace).
+  internal func withSession<T>(_ body: (Self) throws -> T) throws -> T {
+    try beginSession()
+    defer { endSession() }
     return try body(self)
   }
 }

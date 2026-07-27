@@ -53,6 +53,17 @@ internal final class SecureMessagingMirrorCard: CardChannel {
   /// The mask that flips every bit of the byte it is applied to.
   private static let flipEveryBit: UInt8 = 0xFF
 
+  /// All the room the card has for one protected response: a short-form
+  /// response, status word included.
+  ///
+  /// A card cannot answer more than this however much the terminal asks
+  /// for, and DO'87' spends part of it on padding, a tag and length
+  /// octets before DO'99' and DO'8E' take their share. Modelling that
+  /// here is what makes a chunked read against this card a real test:
+  /// ask for more plaintext than the envelope carries and the answer
+  /// comes back short, exactly as it would on hardware.
+  private static let outerBudget: Int = ExpectedResponseLength.maximum
+
   /// Kenc.
   private let encryptionKey: Data
 
@@ -68,11 +79,26 @@ internal final class SecureMessagingMirrorCard: CardChannel {
   /// The card's own send-sequence counter.
   private var sendSequenceCounter: Data
 
+  /// This card is the wire under `SecureMessagingChannel`, not a read
+  /// transport of its own: it hands back the outer bytes unchanged, so
+  /// the plain chunk is what it would carry.
+  internal var readChunkLength: ReadChunkLength {
+    .plain
+  }
+
   /// The plain command data field recovered from each command, in order.
   internal private(set) var recoveredCommandData: [Data] = []
 
   /// The protected header received with each command, in order.
   internal private(set) var receivedHeaders: [Data] = []
+
+  /// The enclosed command's Le from DO'97', one entry per command in
+  /// order, nil when the command asked for no response data.
+  ///
+  /// Recorded so a test can state the exact sequence of lengths the
+  /// terminal asked this card for, which is the wire fact a chunked read
+  /// over secure messaging turns on.
+  internal private(set) var receivedExpectedLengths: [UInt8?] = []
 
   /// The counter value the card used to verify each command, in order.
   ///
@@ -148,12 +174,14 @@ internal final class SecureMessagingMirrorCard: CardChannel {
     var cryptogram: Data?
     var macInput = sendSequenceCounter + Self.padded(header)
     var received: Data?
+    var enclosedExpectedLength: UInt8?
     for record in try DerTlvRecord.sequence(in: body) {
       switch record.tag {
       case Self.cryptogramTag:
         cryptogram = record.value
         macInput += try Self.object(tag: record.tag, value: record.value)
       case Self.expectedLengthTag:
+        enclosedExpectedLength = record.value.first
         macInput += try Self.object(tag: record.tag, value: record.value)
       case Self.macTag:
         received = record.value
@@ -161,6 +189,7 @@ internal final class SecureMessagingMirrorCard: CardChannel {
         throw Rejected()
       }
     }
+    receivedExpectedLengths.append(enclosedExpectedLength)
     let computed = try AesCmac.secureMessagingTag(key: macKey, message: Self.padded(macInput))
     guard computed == received else { throw Rejected() }
     guard let cryptogram else { return Data() }
@@ -174,24 +203,45 @@ internal final class SecureMessagingMirrorCard: CardChannel {
     )
   }
 
-  /// Protects one scripted response.
+  /// Protects one scripted response, trimmed to what the card can
+  /// actually send back.
   ///
   /// The status word is placed both inside DO'99' and at the outer level,
   /// which is what a real card does: an error such as end of file shows up
   /// outside while the response body stays protected.
+  ///
+  /// The trimming loop drops one plaintext byte at a time and protects
+  /// the shorter body again rather than predicting the envelope's size
+  /// from a formula: the card is specified against the same rules the
+  /// terminal is, so the only honest measure of what fits is a protected
+  /// body that was actually built.
   private func answer(_ response: (payload: Data, statusWord: Data)) throws -> Data {
     increment()
+    var payload = response.payload
+    var body = try protectedBody(payload: payload, statusWord: response.statusWord)
+    while !payload.isEmpty,
+      body.count + ResponseApdu.statusWordLength > Self.outerBudget
+    {
+      payload = Data(payload.dropLast())
+      body = try protectedBody(payload: payload, statusWord: response.statusWord)
+    }
+    return body + response.statusWord
+  }
+
+  /// One protected response body: DO'87' when there is plaintext, then
+  /// DO'99' and DO'8E'.
+  private func protectedBody(payload: Data, statusWord: Data) throws -> Data {
     var body = Data()
-    if !response.payload.isEmpty {
+    if !payload.isEmpty {
       var value = Data([Self.paddingContentIndicator])
       value += try AesCbc.encrypt(
         key: encryptionKey,
         initializationVector: try initializationVector(),
-        plaintext: Self.padded(response.payload)
+        plaintext: Self.padded(payload)
       )
       body += try Self.object(tag: Self.cryptogramTag, value: value)
     }
-    body += try Self.object(tag: Self.statusTag, value: response.statusWord)
+    body += try Self.object(tag: Self.statusTag, value: statusWord)
     var tag = try AesCmac.secureMessagingTag(
       key: macKey,
       message: Self.padded(sendSequenceCounter + body)
@@ -200,7 +250,7 @@ internal final class SecureMessagingMirrorCard: CardChannel {
       tag[tag.startIndex] ^= Self.flipEveryBit
     }
     body += try Self.object(tag: Self.macTag, value: tag)
-    return body + response.statusWord
+    return body
   }
 
   /// The CBC initialization vector for the current counter.

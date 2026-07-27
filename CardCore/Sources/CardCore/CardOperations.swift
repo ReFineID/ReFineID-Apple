@@ -59,7 +59,8 @@ public struct CardOperations {
     }
     var assembler = BinaryReadAssembler(
       mode: .toEndOfFile,
-      expectedLength: expectedLength
+      expectedLength: expectedLength,
+      chunkLength: channel.readChunkLength
     )
     return try drive(&assembler)
   }
@@ -84,7 +85,13 @@ public struct CardOperations {
   /// Selects the master file, trying the proven wire variants in order
   /// (select-by-file-id, then select-by-name) since card generations
   /// differ.
-  private func selectMasterFile() throws {
+  ///
+  /// Public because PACE runs from the master file and nothing else can
+  /// put the card there. A contactless card is discovered by selecting
+  /// the eMRTD application, and MSE:Set AT from an applet context is
+  /// answered `6985`, so the contactless caller makes the master file
+  /// current before the first PACE command.
+  public func selectMasterFile() throws {
     try selectFirstThatSucceeds([
       .selectFile(.masterFile, selectionP1: Iso7816Values.selectByFileIdP1),
       .selectFile(.masterFile, selectionP1: Iso7816Values.selectByAidP1),
@@ -102,7 +109,10 @@ public struct CardOperations {
       .selectElementaryFile(file),
       .selectFile(file, selectionP1: Iso7816Values.selectByFileIdP1),
     ])
-    var assembler = BinaryReadAssembler(mode: .singleDerObject)
+    var assembler = BinaryReadAssembler(
+      mode: .singleDerObject,
+      chunkLength: channel.readChunkLength
+    )
     return try drive(&assembler)
   }
 
@@ -275,7 +285,10 @@ public struct CardOperations {
     guard selected.statusWord == .success else {
       throw CardOperationError.selectRejected(selected.statusWord)
     }
-    var assembler = BinaryReadAssembler(mode: .singleDerObject)
+    var assembler = BinaryReadAssembler(
+      mode: .singleDerObject,
+      chunkLength: channel.readChunkLength
+    )
     let content = try drive(&assembler)
     guard let serial = TokenInfoFile.serial(fromContent: content) else {
       throw CardOperationError.tokenInfoMalformed

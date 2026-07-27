@@ -4,7 +4,11 @@ import Foundation
 /// chunks, mirroring the reference implementation's loop.
 ///
 /// Two modes. `.toEndOfFile` reads until a short chunk, an empty chunk,
-/// an end-of-file status, or the aggregate cap. `.singleDerObject` reads
+/// an end-of-file status, or the aggregate cap. Reading a short chunk as
+/// the end of the file is only honest while the transport can carry a
+/// full chunk home, so the chunk length is not a constant here but a
+/// `ReadChunkLength` the transport chooses; the default is the plain
+/// chunk every contact read has always used. `.singleDerObject` reads
 /// exactly the one DER object at the file's start: once the object's
 /// header is in hand its declared length becomes the cap, so the final
 /// chunk asks for exactly the remaining bytes. That matters because the
@@ -27,14 +31,12 @@ public struct BinaryReadAssembler: Equatable, Sendable {
     case singleDerObject
   }
 
-  /// Chunk size per READ BINARY, the FINEID published guideline value.
-  public static let chunkLength: Int = 128
-
   /// Aggregate cap: no supported file is larger than 16 KiB; a read
   /// that would exceed this fails rather than trusting the card.
   public static let maximumTotalLength: Int = 16_384
 
   private let mode: Mode
+  private let chunkLength: ReadChunkLength
   private var collected: Data
   private var offset: Int
   private var cap: Int
@@ -45,7 +47,7 @@ public struct BinaryReadAssembler: Equatable, Sendable {
     if let terminal {
       return terminal
     }
-    let want = min(cap - offset, Self.chunkLength)
+    let want = min(cap - offset, chunkLength.count)
     guard
       let readOffset = ReadOffset(value: UInt16(offset)),
       let expected = ExpectedResponseLength(count: want)
@@ -62,13 +64,23 @@ public struct BinaryReadAssembler: Equatable, Sendable {
   /// `.toEndOfFile` with an expected length tightens the cap to it (pass
   /// nil to read up to the aggregate cap). `.singleDerObject` derives
   /// the cap from the object header as it arrives.
-  public init(mode: Mode = .toEndOfFile, expectedLength: Int? = nil) {
+  ///
+  /// `chunkLength` belongs to the transport the responses will come back
+  /// over; its default is the plain chunk, so a caller that does not
+  /// pass one gets exactly the command sequence contact reads have
+  /// always sent.
+  public init(
+    mode: Mode = .toEndOfFile,
+    expectedLength: Int? = nil,
+    chunkLength: ReadChunkLength = .plain
+  ) {
     if let expectedLength, expectedLength >= 1 {
       self.cap = min(expectedLength, Self.maximumTotalLength)
     } else {
       self.cap = Self.maximumTotalLength
     }
     self.mode = mode
+    self.chunkLength = chunkLength
     self.collected = Data()
     self.offset = 0
   }
@@ -83,7 +95,7 @@ public struct BinaryReadAssembler: Equatable, Sendable {
       terminal = .failed(.unexpectedStatus(response.statusWord))
       return
     }
-    let want = min(cap - offset, Self.chunkLength)
+    let want = min(cap - offset, chunkLength.count)
     guard response.payload.count <= want else {
       terminal = .failed(.oversizedChunk)
       return

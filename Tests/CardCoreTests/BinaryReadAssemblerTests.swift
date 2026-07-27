@@ -30,6 +30,33 @@ internal struct BinaryReadAssemblerTests {
   }
 
   @Test
+  internal func theDefaultChunkLengthIsThePlainOne() {
+    // The contact path must not move a byte, so a caller that passes no
+    // chunk length gets exactly the state a plain one produces.
+    #expect(
+      BinaryReadAssembler(mode: .toEndOfFile, expectedLength: nil)
+        == BinaryReadAssembler(
+          mode: .toEndOfFile,
+          expectedLength: nil,
+          chunkLength: .plain
+        )
+    )
+  }
+
+  @Test
+  internal func theSecureMessagedChunkAsksForALengthTheEnvelopeCarries() {
+    // Le 0x80: the secure-messaged chunk is the plain chunk capped to
+    // what one protected response carries whole, and the plain chunk is
+    // already inside that cap.
+    var assembler = BinaryReadAssembler(chunkLength: .secureMessaged)
+    #expect(assembler.nextStep == .transmit(expectedRead("000080")))
+
+    assembler.accept(response(payloadHex: String(repeating: "AA", count: 128)))
+
+    #expect(assembler.nextStep == .transmit(expectedRead("008080")))
+  }
+
+  @Test
   internal func expectedLengthTightensTheLastChunk() {
     // A 130-byte expectation: one full chunk, then exactly two bytes.
     var assembler = BinaryReadAssembler(expectedLength: 130)

@@ -21,6 +21,12 @@ internal struct SmartCardChannel: CardChannel {
     }
   }
 
+  /// A reader hands back exactly the bytes the card produced, so a
+  /// chunked read may ask for the plain chunk.
+  internal var readChunkLength: ReadChunkLength {
+    .plain
+  }
+
   private let smartCard: TKSmartCard
 
   internal init(_ smartCard: TKSmartCard) {

@@ -114,6 +114,12 @@ internal final class SyntheticPaceCard: CardChannel {
   /// The session keys the card derived, available after a completed run.
   internal private(set) var sessionKeys: PaceSessionKeys?
 
+  /// PACE runs before any secure messaging exists, so this card is a
+  /// plain transport; nothing reads a file over it.
+  internal var readChunkLength: ReadChunkLength {
+    .plain
+  }
+
   internal init(
     accessNumberDigits: String,
     nonce: Data,

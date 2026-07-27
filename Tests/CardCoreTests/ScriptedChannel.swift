@@ -13,6 +13,12 @@ internal final class ScriptedChannel: CardChannel {
 
   private var script: [(request: Data, response: Data)]
 
+  /// A scripted transport stands in for a reader: plain responses, plain
+  /// chunk.
+  internal var readChunkLength: ReadChunkLength {
+    .plain
+  }
+
   /// True when every scripted exchange was consumed.
   internal var isExhausted: Bool {
     script.isEmpty

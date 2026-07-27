@@ -79,6 +79,19 @@ public final class SecureMessagingChannel: CardChannel {
   /// The largest body a short-form command APDU can carry.
   private static let maximumBodyLength: Int = 255
 
+  /// Chunked reads over this channel ask for the secure-messaged chunk,
+  /// never the plain one.
+  ///
+  /// Everything above this decorator is unchanged by the transport
+  /// choice except for this one number, and it cannot be left out: a
+  /// chunk whose DO'87' cryptogram, DO'99' and DO'8E' overran one
+  /// short-form response would come back short on every read, and a read
+  /// to end of file would take the first short chunk for the end of the
+  /// file and return a truncated certificate with no error at all.
+  public var readChunkLength: ReadChunkLength {
+    .secureMessaged
+  }
+
   /// The transport underneath, which sees only protected APDUs.
   private let plainChannel: any CardChannel
 
