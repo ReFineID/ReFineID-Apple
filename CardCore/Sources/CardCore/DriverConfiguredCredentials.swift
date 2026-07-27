@@ -77,6 +77,28 @@ public enum DriverConfiguredCredentials {
     return true
   }
 
+  /// Drops every token configuration except this app's own credential
+  /// entry, and answers how many went.
+  ///
+  /// The system keeps a configuration per token it has seen, and a card
+  /// that has come and gone leaves one behind. A stale entry is not
+  /// harmless: `ctkd` was measured refusing to start a freshly installed
+  /// driver because the previous copy was still registered, and then
+  /// reporting "no token driver found" for a card sitting in the reader.
+  /// Clearing what this app is allowed to clear is the one nudge it can
+  /// give from inside its sandbox -- it cannot restart the daemon, and a
+  /// shipped app should not try.
+  public static func dropStaleTokenConfigurations() -> Int {
+    guard let configuration else { return 0 }
+    let stale = configuration.tokenConfigurations.keys.filter { instance in
+      instance != Self.configurationInstanceID
+    }
+    for instance in stale {
+      configuration.removeTokenConfiguration(for: instance)
+    }
+    return stale.count
+  }
+
   /// Withdraws it, so forgetting the card forgets it here too.
   internal static func withdraw() {
     configuration?.removeTokenConfiguration(for: Self.configurationInstanceID)

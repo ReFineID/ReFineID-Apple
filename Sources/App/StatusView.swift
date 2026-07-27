@@ -53,7 +53,7 @@ internal struct StatusView: View {
         if case .sealed = model.snapshot?.card {
           cardAccessNumberRow
         }
-        LabeledContent("Safari login", value: Self.safariLabel(for: model.snapshot))
+        LabeledContent("Safari login (CTK)", value: Self.safariLabel(for: model.snapshot))
         transportRows
       }
       .formStyle(.grouped)

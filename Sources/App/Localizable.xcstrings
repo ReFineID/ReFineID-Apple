@@ -399,18 +399,19 @@
         }
       }
     },
-    "Safari login": {
+    "Safari login (CTK)": {
+      "extractionState": "manual",
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Safari-kirjautuminen"
+            "value": "Safari-kirjautuminen (CTK)"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Safari-inloggning"
+            "value": "Safari-inloggning (CTK)"
           }
         }
       }
