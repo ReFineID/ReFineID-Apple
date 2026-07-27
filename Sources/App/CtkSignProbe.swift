@@ -102,7 +102,58 @@
       return lines
     }
 
+    /// The key as a TLS client would reach it: find the identity, take
+    /// its private key.
+    ///
+    /// This is what Safari does, and it is what this probe exists to
+    /// imitate. On macOS it does not work here, and the reason is worth
+    /// knowing before the next person spends an evening on it: reading
+    /// the *attributes* of a token item needs nothing, while getting a
+    /// *reference* asks `ctkd` to vend the key, and that is refused to
+    /// an app without the `com.apple.token` keychain access group. This
+    /// build has no such entitlement -- the signing profile will not
+    /// carry it -- so the probe can list an identity it cannot use.
+    /// Safari holds the entitlement, so what the probe cannot do says
+    /// nothing about whether the login works.
+    private static func identityKey(tokenID: String) -> SecKey? {
+      // Attributes and references together, unfiltered, then matched
+      // here. Filtering the query by `kSecAttrTokenID` returned nothing
+      // for an identity the same query returns when asked for
+      // everything, so the filter is applied to the results instead.
+      let query: [CFString: Any] = [
+        kSecClass: kSecClassIdentity,
+        kSecAttrAccessGroup: kSecAttrAccessGroupToken,
+        kSecReturnRef: true,
+        kSecReturnAttributes: true,
+        kSecMatchLimit: kSecMatchLimitAll,
+      ]
+      var found: CFTypeRef?
+      guard
+        SecItemCopyMatching(query as CFDictionary, &found) == errSecSuccess,
+        let matches = found as? [[CFString: Any]]
+      else {
+        return nil
+      }
+      for match in matches {
+        guard
+          match[kSecAttrTokenID] as? String == tokenID,
+          let untyped = match[kSecValueRef],
+          CFGetTypeID(untyped as CFTypeRef) == SecIdentityGetTypeID()
+        else {
+          continue
+        }
+        let identity = unsafeDowncast(untyped as AnyObject, to: SecIdentity.self)
+        var key: SecKey?
+        guard SecIdentityCopyPrivateKey(identity, &key) == errSecSuccess else { continue }
+        return key
+      }
+      return nil
+    }
+
     private static func copyTokenKey(tokenID: String) -> SecKey? {
+      if let key = Self.identityKey(tokenID: tokenID) {
+        return key
+      }
       // The token's key lives in the token access group; the query must
       // name it (and the app holds the com.apple.token keychain group
       // entitlement) or SecItemCopyMatching never returns it. Several
