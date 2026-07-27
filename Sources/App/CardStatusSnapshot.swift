@@ -1,6 +1,7 @@
 import CardCore
 import CryptoTokenKit
 import Foundation
+import Security
 
 /// One captured reading of reader, card, and credential state.
 ///
@@ -73,18 +74,16 @@ internal struct CardStatusSnapshot: Equatable, Sendable {
   /// run, and it is the same on both interfaces of one card.
   internal let cardType: CardTypeIdentification?
 
-  /// True when a ReFineID token is currently published to the system -
-  /// the public-API answer to "can Safari use the card right now?"
-  /// (TKTokenWatcher; release plan section 5 forbids claiming more).
+  /// True when an identity of ours is in the keychain for Safari to
+  /// find, which is the only honest answer to "can Safari use the card
+  /// right now?" -- see `publishesAnIdentity`.
   internal let safariIdentityPresent: Bool
 
   /// Captures a fresh snapshot: discovers the first slot, then runs one
   /// exclusive card session on a background queue (the card I/O is
   /// synchronous and blocking, so it must not stall Swift concurrency).
   internal static func capture() async -> Self {
-    let tokenPresent = TKTokenWatcher().tokenIDs.contains { tokenID in
-      tokenID.hasPrefix(Self.tokenPrefix) && !Self.namesCredentialConfiguration(tokenID)
-    }
+    let tokenPresent = Self.publishesAnIdentity()
     guard let manager = TKSmartCardSlotManager.default else {
       return Self(
         readerName: nil,
@@ -118,14 +117,33 @@ internal struct CardStatusSnapshot: Equatable, Sendable {
     )
   }
 
-  /// Whether this identifier names the driver's own credential
-  /// configuration rather than a card.
+  /// Whether an identity of ours is in the keychain for Safari to find.
   ///
-  /// It is listed as a token because every token configuration is, but
-  /// it holds no identity, so its presence says nothing about whether a
-  /// card is available.
-  private static func namesCredentialConfiguration(_ tokenID: String) -> Bool {
-    tokenID.hasSuffix(":" + DriverConfiguredCredentials.configurationInstanceID)
+  /// The question is "can Safari use the card right now?", and the
+  /// honest answer is whatever Safari itself would enumerate: an
+  /// identity -- a certificate with its key -- in the token access
+  /// group. A registered token is not that. The screen said "Ready"
+  /// beside a card Safari could not use, because a token can be
+  /// registered while publishing nothing, and because the driver's own
+  /// credential configuration is listed as a token as well.
+  private static func publishesAnIdentity() -> Bool {
+    let query: [String: Any] = [
+      kSecClass as String: kSecClassIdentity,
+      kSecAttrAccessGroup as String: kSecAttrAccessGroupToken,
+      kSecReturnAttributes as String: true,
+      kSecMatchLimit as String: kSecMatchLimitAll,
+    ]
+    var found: CFTypeRef?
+    guard
+      SecItemCopyMatching(query as CFDictionary, &found) == errSecSuccess,
+      let items = found as? [[String: Any]]
+    else {
+      return false
+    }
+    return items.contains { attributes in
+      let tokenID = attributes[kSecAttrTokenID as String] as? String
+      return tokenID?.hasPrefix(Self.tokenPrefix) == true
+    }
   }
 
   /// Runs the synchronous, blocking card session on a background GCD

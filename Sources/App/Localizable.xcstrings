@@ -416,6 +416,23 @@
         }
       }
     },
+    "Remove the card and put it back, so the system reads it again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poista kortti ja aseta se takaisin, jotta järjestelmä lukee sen uudelleen."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta ut kortet och sätt tillbaka det så att systemet läser det igen."
+          }
+        }
+      }
+    },
     "Replace": {
       "extractionState": "manual",
       "localizations": {

@@ -13,8 +13,8 @@ internal struct StatusView: View {
   private static let contentPadding: CGFloat = 24
   private static let minimumWidth: CGFloat = 560
 
-  /// Wide enough for six digits and no wider.
-  private static let entryWidth: CGFloat = 90
+  /// Wide enough for six digits with room to see them.
+  private static let entryWidth: CGFloat = 120
 
   @State private var model = CardStatusModel()
 
@@ -28,6 +28,27 @@ internal struct StatusView: View {
 
   /// What the holder is typing, while they are typing it.
   @State private var cardAccessNumberEntry = ""
+
+  /// Whether the entry is the six digits a card access number is.
+  private var isEnteredNumberComplete: Bool {
+    cardAccessNumberEntry.count == CardAccessNumber.digitCount
+  }
+
+  /// Whether the card is present and readable but the system is not
+  /// offering it, which is the one fault a holder can clear themselves.
+  private var needsReseating: Bool {
+    guard let snapshot = model.snapshot, !snapshot.safariIdentityPresent else {
+      return false
+    }
+    switch snapshot.card {
+    case .sealed:
+      return credentials.contents.hasCardAccessNumber
+    case .supported:
+      return true
+    case .failed, .noCard, .unsupported:
+      return false
+    }
+  }
 
   internal var body: some View {
     VStack(alignment: .leading, spacing: Self.rowSpacing) {
@@ -59,11 +80,20 @@ internal struct StatusView: View {
       }
       .formStyle(.grouped)
       .fixedSize(horizontal: false, vertical: true)
-      // Labels in the secondary colour, values in the primary one, so a
-      // row reads as one thing described by another rather than as two
-      // words side by side.
-      .labeledContentStyle(.automatic)
-      .foregroundStyle(.primary)
+      // The one instruction that always works, and the only one this app
+      // can give. The system asks a driver about a card when the card
+      // arrives, so a card already sitting in the reader when its access
+      // number was entered is never asked about again -- and nothing
+      // inside a sandbox can make the system look a second time. So the
+      // holder is told plainly, rather than left with a row saying the
+      // login is unavailable and no way to change it.
+      if needsReseating {
+        Label(
+          "Remove the card and put it back, so the system reads it again.",
+          systemImage: "arrow.counterclockwise"
+        )
+        .foregroundStyle(.orange)
+      }
       actionRows
     }
     // Each row keeps its natural width instead of compressing, so the
@@ -186,19 +216,19 @@ internal struct StatusView: View {
     } else {
       LabeledContent("Card access number") {
         HStack(spacing: Self.rowSpacing) {
-          TextField("Six digits", text: $cardAccessNumberEntry)
+          // Hidden, not absent: inside a form a text field draws its
+          // own label to the left of itself, so the placeholder ends up
+          // as a second label beside the row's own -- wrapped onto two
+          // lines and crowding the field it belongs to. The label still
+          // exists for anyone reading the screen aloud.
+          TextField("Six digits", text: $cardAccessNumberEntry, prompt: Text(verbatim: "123456"))
+            .labelsHidden()
             .accessibilityIdentifier("cardAccessNumberField")
             .frame(width: Self.entryWidth)
-          Button("Save") {
-            let entry = cardAccessNumberEntry
-            cardAccessNumberEntry = ""
-            Task {
-              await credentials.saveCardAccessNumber(entry)
-              await model.refresh()
-            }
-          }
-          .accessibilityIdentifier("saveCardAccessNumber")
-          .disabled(cardAccessNumberEntry.count != CardAccessNumber.digitCount)
+            .onSubmit { save() }
+          Button("Save") { save() }
+            .accessibilityIdentifier("saveCardAccessNumber")
+            .disabled(!isEnteredNumberComplete)
         }
       }
     }
@@ -315,6 +345,20 @@ internal struct StatusView: View {
       String(localized: "\(Int(count.attemptsRemaining))/\(Int(RetryCount.pristineAllowance))")
     case .verified:
       String(localized: "Verified in this session")
+    }
+  }
+
+  /// Stores what was typed, then re-reads the card.
+  ///
+  /// Also what the return key does, because a six-digit field is a thing
+  /// people type and press return on.
+  private func save() {
+    guard isEnteredNumberComplete else { return }
+    let entry = cardAccessNumberEntry
+    cardAccessNumberEntry = ""
+    Task {
+      await credentials.saveCardAccessNumber(entry)
+      await model.refresh()
     }
   }
 }
