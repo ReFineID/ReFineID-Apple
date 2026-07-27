@@ -51,8 +51,11 @@ internal struct CardCredentialsView: View {
     } footer: {
       Text(
         """
-        Printed on the card. It lets this device open a secure channel \
-        to the card over NFC. It cannot authorize a signature on its own.
+        Printed on the front of the card. It lets this device open a \
+        secure channel to the card over NFC, and it cannot authorize a \
+        signature on its own. Stored on this iPhone only and never shown \
+        again, but not behind Face ID: it is already printed on the card \
+        you are holding.
         """)
     }
   }
@@ -83,10 +86,12 @@ internal struct CardCredentialsView: View {
       Text(
         """
         Optional. Storing PIN1 lets a website sign you in without typing \
-        it every time. It is held under the same Face ID protection as \
-        the card access number, and it is still a trade: a signature can \
-        then be made with your card without you typing anything. Leave it \
-        off unless you want that.
+        it every time. It is kept under Face ID: reading it needs your \
+        face at that moment, the device passcode alone will not do it, \
+        and adding or changing a face or fingerprint clears it. It is \
+        still a trade -- a signature can then be made with your card \
+        without you typing anything -- so leave it off unless you want \
+        that.
         """)
     }
   }
@@ -102,10 +107,7 @@ internal struct CardCredentialsView: View {
         """
         Card details are entered once and never shown again. They stay on \
         this iPhone: never in a backup, never restored onto another \
-        device, never sent to iCloud. Reading them requires Face ID at \
-        that moment, so knowing the passcode is not enough. Adding or \
-        changing a face or fingerprint clears them, and they must be \
-        entered again.
+        device, never sent to iCloud.
         """)
     }
   }

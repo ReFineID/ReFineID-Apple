@@ -3,34 +3,37 @@ import Security
 
 /// Where this device keeps the card access number, and optionally PIN1.
 ///
-/// These values are written once and never handed back for display. The
-/// store is deliberately shaped so that no combination of backup,
-/// sync, or code running as this app can produce them again:
+/// Neither value is ever handed back for display: they are written once,
+/// and afterwards the store will only say whether something is present.
+/// Both are `WhenUnlockedThisDeviceOnly` and non-synchronizable, so
+/// neither is written into a backup, restored onto another device, or
+/// sent to iCloud. Neither attribute implies the other; both are set.
 ///
-/// - **Biometry is enforced by the item, not by this app.** Each item
-///   carries a `SecAccessControl` requiring the current biometric set,
-///   so a read fails in the Security framework itself unless the holder
-///   authenticates at that moment. Policy checked in app code would be
-///   bypassable by anything that can call this type; an access control
-///   is not.
-/// - **`.biometryCurrentSet` rather than `.userPresence`,** so knowing
-///   the device passcode is not enough, and enrolling a new face or
-///   finger invalidates the items rather than silently extending access
-///   to whoever enrolled it. The cost is honest: change your biometrics
-///   and these values must be entered again.
-/// - **`WhenUnlockedThisDeviceOnly`,** so they are never written into a
-///   backup and never restore onto another device.
-/// - **`synchronizable` false,** so they never reach iCloud. Neither
-///   attribute implies the other; both are required.
+/// The two differ in how they are read back, because they are not
+/// equally secret.
+///
+/// **PIN1 is protected as strongly as the platform allows.** Its item
+/// carries a `SecAccessControl`, so a read fails inside the Security
+/// framework unless the holder authenticates at that moment -- policy
+/// checked in app code would be bypassable by anything that can call
+/// this type, an access control is not. The policy is
+/// `.biometryCurrentSet` rather than `.userPresence`, so knowing the
+/// device passcode is not enough, and enrolling a new face or finger
+/// invalidates it instead of silently extending access to whoever
+/// enrolled it. The cost is stated in the interface: change your
+/// biometrics and PIN1 must be entered again.
+///
+/// **The card access number is protected, but not gated.** It is printed
+/// on the front of the card, so a biometric prompt in front of it would
+/// buy very little and would cost a prompt every time a card is set up.
+/// It is still never displayed, never backed up, never synced -- it is
+/// simply readable by this app and its token extension without asking.
+/// That is a deliberate trade for a semi-public value, recorded here so
+/// it reads as a decision rather than an oversight.
 ///
 /// Secrets cannot live *inside* the Secure Enclave, which holds only
-/// keys. What the enclave provides here is the key material these items
-/// are encrypted under and the biometric evaluation that gates them,
-/// which is what "enclave-backed storage" means for a stored value.
-///
-/// The token extension does not read this store. It signs from the
-/// primed identity written during card setup, so nothing here has to be
-/// readable while the holder is absent.
+/// keys. What the enclave provides is the key material these items are
+/// encrypted under, and the biometric evaluation gating PIN1.
 public enum CardCredentialStore {
   /// What the store currently holds.
   public struct Contents: Equatable, Sendable {
@@ -67,7 +70,7 @@ public enum CardCredentialStore {
   @discardableResult
   public static func save(cardAccessNumber digits: String) -> Bool {
     guard CardAccessNumber(digits: digits) != nil else { return false }
-    return write(digits, account: cardAccessNumberAccount)
+    return write(digits, account: cardAccessNumberAccount, gated: false)
   }
 
   /// Stores PIN1 for unattended signing, replacing any previous one.
@@ -79,15 +82,16 @@ public enum CardCredentialStore {
   @discardableResult
   public static func save(pin1 digits: String) -> Bool {
     guard Pin1(digits: digits) != nil else { return false }
-    return write(digits, account: pin1Account)
+    return write(digits, account: pin1Account, gated: true)
   }
 
-  /// The stored card access number, after the holder authenticates.
+  /// The stored card access number.
   ///
-  /// `reason` is shown in the system's biometric prompt, so it should
-  /// say what the value is about to be used for.
-  public static func cardAccessNumber(reason: String) -> CardAccessNumber? {
-    read(account: cardAccessNumberAccount, reason: reason)
+  /// Reads without prompting: the number is printed on the card, and a
+  /// prompt in front of it would cost the holder an interruption on
+  /// every card setup for very little.
+  public static func cardAccessNumber() -> CardAccessNumber? {
+    read(account: cardAccessNumberAccount, reason: nil)
       .flatMap(CardAccessNumber.init(digits:))
   }
 
@@ -123,13 +127,13 @@ public enum CardCredentialStore {
     ]
   }
 
-  /// The access control every stored value carries.
+  /// The access control PIN1 carries.
   ///
   /// Returns nil only when the platform refuses to build it, in which
-  /// case nothing is stored: a value written without its access control
-  /// would be readable without authentication, which is exactly what
-  /// this store exists to prevent.
-  private static func accessControl() -> SecAccessControl? {
+  /// case PIN1 is not stored at all: writing it without its access
+  /// control would leave it readable without authentication, which is
+  /// the one thing this must never do.
+  private static func pin1AccessControl() -> SecAccessControl? {
     SecAccessControlCreateWithFlags(
       nil,
       kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
@@ -151,15 +155,19 @@ public enum CardCredentialStore {
     return status == errSecSuccess || status == errSecInteractionNotAllowed
   }
 
-  /// Reads a value, which prompts the holder for biometrics.
+  /// Reads a value.
   ///
-  /// Nothing in the app calls this to show a value; it exists so the
-  /// card setup flow can use what was entered earlier.
-  private static func read(account: String, reason: String) -> String? {
+  /// A `reason` is shown in the biometric prompt for items that carry an
+  /// access control; passing nil reads an ungated item without asking.
+  /// Nothing in the app calls this to display a value -- it exists so
+  /// card setup can use what was entered earlier.
+  private static func read(account: String, reason: String?) -> String? {
     var query = self.query(account: account)
     query[kSecReturnData as String] = true
     query[kSecMatchLimit as String] = kSecMatchLimitOne
-    query[kSecUseOperationPrompt as String] = reason
+    if let reason {
+      query[kSecUseOperationPrompt as String] = reason
+    }
     var item: CFTypeRef?
     guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
       let data = item as? Data
@@ -169,14 +177,19 @@ public enum CardCredentialStore {
     return String(data: data, encoding: .utf8)
   }
 
-  private static func write(_ digits: String, account: String) -> Bool {
-    guard let data = digits.data(using: .utf8), let control = accessControl() else {
-      return false
-    }
-    delete(account: account)
+  /// Writes a value, biometrically gated only when `gated` is set.
+  private static func write(_ digits: String, account: String, gated: Bool) -> Bool {
+    guard let data = digits.data(using: .utf8) else { return false }
     var attributes = query(account: account)
     attributes[kSecValueData as String] = data
-    attributes[kSecAttrAccessControl as String] = control
+    if gated {
+      guard let control = pin1AccessControl() else { return false }
+      attributes[kSecAttrAccessControl as String] = control
+    } else {
+      attributes[kSecAttrAccessible as String] =
+        kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+    }
+    delete(account: account)
     return SecItemAdd(attributes as CFDictionary, nil) == errSecSuccess
   }
 
