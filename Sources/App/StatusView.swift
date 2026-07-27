@@ -42,7 +42,13 @@ internal struct StatusView: View {
           ?? String(localized: "Connect a card reader")
       )
       cardRows
-      cardAccessNumberRow
+      // Only where it is needed. A card in a contact slot answers
+      // without one, so a row saying the number is stored is a setting
+      // about nothing -- it belongs on screen when a card is sitting on
+      // an antenna, sealed, waiting for exactly this.
+      if case .sealed = model.snapshot?.card {
+        cardAccessNumberRow
+      }
       LabeledContent("Safari login", value: Self.safariLabel(for: model.snapshot))
       transportRows
       actionRows
