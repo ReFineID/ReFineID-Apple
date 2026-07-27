@@ -21,6 +21,54 @@ internal struct SmartCardChannel: CardChannel {
     }
   }
 
+  /// Decides which side is responsible for a session that arrives after
+  /// the waiter has given up, and hands it back when that is nobody.
+  ///
+  /// Both sides need the same answer and they run on different threads:
+  /// the waiter times out, the callback fires a moment later, and if
+  /// neither claims the session it stays open forever -- the card held
+  /// by a process no longer interested in it, which is precisely the jam
+  /// this timeout exists to end.
+  ///
+  /// `@unchecked Sendable` is the audit, not a shrug: the flag is only
+  /// read and written under the lock, and the card is touched on exactly
+  /// one path, to end a session the waiter has already walked away from.
+  private final class SessionWait: @unchecked Sendable {
+    private let lock = NSLock()
+    private let card: TKSmartCard
+    private var waiterGaveUp = false
+
+    init(card: TKSmartCard) {
+      self.card = card
+    }
+
+    /// Called by the waiter when its budget runs out.
+    func giveUp() {
+      lock.lock()
+      waiterGaveUp = true
+      lock.unlock()
+    }
+
+    /// Called by the callback: ends a session nobody is waiting for.
+    func releaseIfAbandoned(opened: Bool) {
+      lock.lock()
+      let abandoned = waiterGaveUp
+      lock.unlock()
+      guard opened, abandoned else { return }
+      card.endSession()
+    }
+  }
+
+  /// How long to wait for whoever else has the card.
+  ///
+  /// Shorter than the driver's budget on purpose. This is the status
+  /// screen: a card that is busy signing for Safari should make a row
+  /// say so, not make the app stop answering.
+  private static let sessionWaitSeconds: Int = 4
+
+  /// The same budget, in the units `DispatchSemaphore` wants.
+  private static let sessionWaitBudget: DispatchTimeInterval = .seconds(sessionWaitSeconds)
+
   /// A reader hands back exactly the bytes the card produced, so a
   /// chunked read may ask for the plain chunk.
   internal var readChunkLength: ReadChunkLength {
@@ -63,13 +111,18 @@ internal struct SmartCardChannel: CardChannel {
   internal func withSession<T>(_ body: (Self) throws -> T) throws -> T {
     let began = Box(false)
     let failure = Box<Error?>(nil)
+    let wait = SessionWait(card: smartCard)
     let semaphore = DispatchSemaphore(value: 0)
     smartCard.beginSession { opened, error in
       began.value = opened
       failure.value = error
+      wait.releaseIfAbandoned(opened: opened)
       semaphore.signal()
     }
-    semaphore.wait()
+    guard semaphore.wait(timeout: .now() + Self.sessionWaitBudget) == .success else {
+      wait.giveUp()
+      throw CardOperationError.sessionUnavailable
+    }
     guard began.value else {
       throw failure.value ?? CardOperationError.sessionUnavailable
     }
