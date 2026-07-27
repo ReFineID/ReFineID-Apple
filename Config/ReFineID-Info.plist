@@ -8,7 +8,18 @@
 		<string>fi</string>
 		<string>sv</string>
 	</array>
+	<key>NFCReaderUsageDescription</key>
+	<string>ReFineID reads your identity card over NFC to sign you in.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>ReFineID reads the access number printed on your card so you do not have to type it.</string>
+	<key>com.apple.developer.nfc.readersession.iso7816.select-identifiers</key>
+	<array>
+		<string>A000000063504B43532D3135</string>
+		<string>A0000000181002030000000000000000</string>
+		<string>A000000018434D00</string>
+		<string>A000000151000000</string>
+		<string>A0000002471001</string>
+		<string>A000000308000010000100</string>
+	</array>
 </dict>
 </plist>
