@@ -1,6 +1,23 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%@, variant not in DVV's table": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, muunnos ei ole DVV:n taulukossa"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, varianten finns inte i DVV:s tabell"
+          }
+        }
+      }
+    },
     "%lld/%lld": {
       "extractionState": "manual",
       "localizations": {
@@ -97,6 +114,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kort i läsaren"
+          }
+        }
+      }
+    },
+    "Card type": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Korttityyppi"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Korttyp"
           }
         }
       }

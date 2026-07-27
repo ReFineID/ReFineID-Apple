@@ -46,6 +46,7 @@ internal struct StatusView: View {
             ?? String(localized: "Connect a card reader")
         )
         cardRows
+        cardTypeRow
         // Only where it is needed. A card in a contact slot answers
         // without one, so a row saying the number is stored is a setting
         // about nothing -- it belongs on screen when a card is sitting on
@@ -205,6 +206,25 @@ internal struct StatusView: View {
       Text(failure)
         .font(.footnote)
         .foregroundStyle(.red)
+    }
+  }
+
+  /// What the card is, when its answer to reset says so.
+  ///
+  /// A generation without an exact match is shown as the generation and
+  /// says so, rather than being rounded to the nearest documented model:
+  /// the table has a date on it and cards are issued after that date.
+  @ViewBuilder private var cardTypeRow: some View {
+    if let identified = model.snapshot?.cardType {
+      switch identified.confidence {
+      case .documented:
+        LabeledContent("Card type", value: identified.name)
+      case .generationOnly:
+        LabeledContent(
+          "Card type",
+          value: String(localized: "\(identified.name), variant not in DVV's table")
+        )
+      }
     }
   }
 

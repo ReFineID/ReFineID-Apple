@@ -66,6 +66,13 @@ internal struct CardStatusSnapshot: Equatable, Sendable {
   /// The card state behind that reader.
   internal let card: CardState
 
+  /// What the card's answer to reset says it is, when the table knows.
+  ///
+  /// Read from the slot rather than from the card: it costs no command,
+  /// it works on an interface that answers nothing else until PACE has
+  /// run, and it is the same on both interfaces of one card.
+  internal let cardType: CardTypeIdentification?
+
   /// True when a ReFineID token is currently published to the system -
   /// the public-API answer to "can Safari use the card right now?"
   /// (TKTokenWatcher; release plan section 5 forbids claiming more).
@@ -82,11 +89,13 @@ internal struct CardStatusSnapshot: Equatable, Sendable {
       return Self(
         readerName: nil,
         card: .failed(.serviceUnavailable),
+        cardType: nil,
         safariIdentityPresent: tokenPresent
       )
     }
     guard let slotName = await CardSlotSearch.nameToReportOn(in: manager) else {
-      return Self(readerName: nil, card: .noCard, safariIdentityPresent: tokenPresent)
+      return Self(
+        readerName: nil, card: .noCard, cardType: nil, safariIdentityPresent: tokenPresent)
     }
     guard
       let slot = await manager.getSlot(withName: slotName),
@@ -95,13 +104,16 @@ internal struct CardStatusSnapshot: Equatable, Sendable {
       return Self(
         readerName: slotName,
         card: .noCard,
+        cardType: nil,
         safariIdentityPresent: tokenPresent
       )
     }
+    let answerToReset = slot.atr?.bytes
     let cardState = await readCardOffMainThread(smartCard)
     return Self(
       readerName: slotName,
       card: cardState,
+      cardType: answerToReset.flatMap(CardTypeIdentification.identify(answerToReset:)),
       safariIdentityPresent: tokenPresent
     )
   }
