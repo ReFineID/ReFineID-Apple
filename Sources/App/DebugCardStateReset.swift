@@ -38,6 +38,16 @@
     internal static func perform() -> [String] {
       var lines = ["=== reset card state ==="]
       lines += Self.unregisterOurTokens()
+      #if os(macOS)
+        // Including the driver's own configuration entries. A clean
+        // slate that leaves the system holding configurations for this
+        // driver is not one: the system lists every configuration as a
+        // token and launches the driver to service it, whether or not a
+        // card stands behind it.
+        let dropped = DriverConfiguredCredentials.dropEveryTokenConfiguration()
+        CardCredentialStore.forgetCardAccessNumber()
+        lines.append("driver configurations: dropped \(dropped), withdrew the credential")
+      #endif
       PrimeStore.forgetAll()
       lines.append("prime store: cleared")
       Pin1SigningWindow.close()
