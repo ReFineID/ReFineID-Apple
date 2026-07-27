@@ -11,10 +11,10 @@ import SwiftUI
 internal struct StatusView: View {
   private static let rowSpacing: CGFloat = 12
   private static let contentPadding: CGFloat = 24
-  private static let minimumWidth: CGFloat = 320
+  private static let minimumWidth: CGFloat = 560
 
-  /// Enough height for the setup form not to open as a letterbox.
-  private static let credentialsHeight: CGFloat = 420
+  /// Wide enough for six digits and no wider.
+  private static let entryWidth: CGFloat = 90
 
   @State private var model = CardStatusModel()
 
@@ -23,10 +23,11 @@ internal struct StatusView: View {
   /// Whether the diagnostics capture is on screen.
   @State private var showsDiagnostics = false
 
-  /// Whether the card setup screen is on screen.
-  @State private var showsCredentials = false
+  /// The stored card access number, and what may be done about it.
+  @State private var credentials = CardCredentialsModel()
 
-  private let versions = BundledVersions.read(from: .main)
+  /// What the holder is typing, while they are typing it.
+  @State private var cardAccessNumberEntry = ""
 
   internal var body: some View {
     VStack(alignment: .leading, spacing: Self.rowSpacing) {
@@ -36,33 +37,26 @@ internal struct StatusView: View {
         .foregroundStyle(.secondary)
       Divider()
       LabeledContent(
-        "Application",
-        value: versions.application ?? String(localized: "Unknown")
-      )
-      LabeledContent(
-        "Driver included",
-        value: versions.driver ?? String(localized: "Not included")
-      )
-      Divider()
-      LabeledContent(
         "Reader",
         value: model.snapshot?.readerName
           ?? String(localized: "Connect a card reader")
       )
       cardRows
+      cardAccessNumberRow
       LabeledContent("Safari login", value: Self.safariLabel(for: model.snapshot))
       transportRows
       actionRows
     }
+    // Each row keeps its natural width instead of compressing, so the
+    // window's own minimum grows to whatever the longest line needs --
+    // which is what stops the text being truncated to fit a window the
+    // holder never chose. `windowResizability(.contentSize)` then makes
+    // that minimum the smallest the window can be dragged to.
+    .fixedSize(horizontal: true, vertical: false)
     .padding(Self.contentPadding)
-    .frame(minWidth: Self.minimumWidth)
+    .frame(minWidth: Self.minimumWidth, alignment: .leading)
     .task { await model.refresh() }
     .sheet(isPresented: $showsDiagnostics) { diagnosticsSheet }
-    .sheet(
-      isPresented: $showsCredentials,
-      onDismiss: { Task { await model.refresh() } },
-      content: { credentialsSheet }
-    )
   }
 
   /// What the holder can do from here.
@@ -78,10 +72,6 @@ internal struct StatusView: View {
   /// plugged into anything, the only instrument left is the one the
   /// holder can open.
   @ViewBuilder private var actionRows: some View {
-    Button("Set up your card") {
-      showsCredentials = true
-    }
-    .accessibilityIdentifier("credentialsButton")
     Button("Refresh") {
       Task { await model.refresh() }
     }
@@ -90,20 +80,6 @@ internal struct StatusView: View {
       showsDiagnostics = true
     }
     .accessibilityIdentifier("diagnosticsButton")
-  }
-
-  /// The setup screen, in its own stack so it has a title bar to
-  /// dismiss from.
-  @ViewBuilder private var credentialsSheet: some View {
-    NavigationStack {
-      CardCredentialsView()
-        .toolbar {
-          ToolbarItem(placement: .confirmationAction) {
-            Button("Done") { showsCredentials = false }
-          }
-        }
-    }
-    .frame(minWidth: Self.minimumWidth, minHeight: Self.credentialsHeight)
   }
 
   /// The capture, in its own stack so it has a title bar to dismiss from
@@ -152,6 +128,51 @@ internal struct StatusView: View {
     }
   }
 
+  /// The six printed digits: an entry row until they are stored, one
+  /// line afterwards.
+  ///
+  /// On the one screen this app has, rather than behind a button. It is
+  /// the only thing a holder must type, it is needed the moment a card
+  /// is on an antenna, and a screen that says "enter the card access
+  /// number" and then does not offer anywhere to enter it is worse than
+  /// not saying it.
+  @ViewBuilder private var cardAccessNumberRow: some View {
+    if credentials.contents.hasCardAccessNumber {
+      LabeledContent("Card access number") {
+        HStack(spacing: Self.rowSpacing) {
+          Text("Stored")
+          Button("Replace") {
+            Task { await credentials.forgetCardAccessNumber() }
+          }
+          .accessibilityIdentifier("replaceCardAccessNumber")
+        }
+      }
+    } else {
+      LabeledContent("Card access number") {
+        HStack(spacing: Self.rowSpacing) {
+          TextField("Six digits", text: $cardAccessNumberEntry)
+            .accessibilityIdentifier("cardAccessNumberField")
+            .frame(width: Self.entryWidth)
+          Button("Save") {
+            let entry = cardAccessNumberEntry
+            cardAccessNumberEntry = ""
+            Task {
+              await credentials.saveCardAccessNumber(entry)
+              await model.refresh()
+            }
+          }
+          .accessibilityIdentifier("saveCardAccessNumber")
+          .disabled(cardAccessNumberEntry.count != CardAccessNumber.digitCount)
+        }
+      }
+    }
+    if let failure = credentials.failure {
+      Text(failure)
+        .font(.footnote)
+        .foregroundStyle(.red)
+    }
+  }
+
   @ViewBuilder private var cardRows: some View {
     switch model.snapshot?.card {
     case .none:
@@ -166,9 +187,6 @@ internal struct StatusView: View {
         "Card",
         value: String(localized: "Identity card on the contactless interface")
       )
-      Text("Enter the card access number below to use it.")
-        .font(.footnote)
-        .foregroundStyle(.secondary)
     case .unsupported:
       LabeledContent(
         "Card",

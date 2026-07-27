@@ -49,6 +49,9 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
   /// and read on the spot, and no prime is needed at all.
   internal let sealedAccessNumber: CardAccessNumber?
 
+  /// How this card is reached, which decides what a signature may spend.
+  internal let interface: CardInterface
+
   /// The card's token serial as the prime read it, contactless tokens
   /// only.
   ///
@@ -99,6 +102,10 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
     self.keyProfile = profile
     self.leafPublicKey = publicKey
     self.sealedAccessNumber = accessNumber
+    // A card read here was read through a reader, whichever of its
+    // interfaces answered: this initializer does card I/O, which the
+    // phone's path cannot afford at all.
+    self.interface = accessNumber == nil ? .contact : .steadyField
     self.primedSerial = nil
     // Same derivation and same contents version as the contactless mint
     // below; only the material differs, because only here has the card
@@ -170,6 +177,7 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
     self.keyProfile = profile
     self.leafPublicKey = publicKey
     self.sealedAccessNumber = accessNumber
+    self.interface = .fieldWithDeadline
     self.primedSerial = primed.tokenSerial.flatMap(TokenSerial.init(value:))
     super.init(
       smartCard: smartCard,
@@ -281,10 +289,7 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
     // Which interface this card is on is the useful half: it says which
     // sign path is about to run. `TKToken` publishes no instance
     // identifier to name it with.
-    TokenLog.info(
-      "createSession: session requested, interface="
-        + (sealedAccessNumber == nil ? "contact" : "contactless")
-    )
+    TokenLog.info("createSession: session requested, interface=\(interface)")
     return TokenSession(token: self)
   }
 

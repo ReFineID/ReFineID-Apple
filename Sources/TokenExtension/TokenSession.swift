@@ -102,31 +102,47 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
     guard let cardToken = token as? Token else {
       throw TKError(.badParameter)
     }
-    // The card access number IS the transport. With one, this card was
-    // reached through a field -- the phone's antenna or a reader's -- and
-    // every verb below has to travel inside a PACE channel; without one,
-    // the card is in a contact slot and nothing about it changes.
-    guard let accessNumber = cardToken.sealedAccessNumber else {
-      TokenLog.trace("sign: transport=reader")
+    // Which interface, not which secrecy: a card on a reader's antenna
+    // needs the same PACE channel as one held against a phone, but it can
+    // afford everything the contact path does inside that channel --
+    // reading the serial, reading the counters, and so reusing a
+    // card-bound PIN instead of asking for one per signature.
+    TokenLog.trace(
+      "sign: interface=\(cardToken.interface) "
+        + "held session=\(cardToken.heldSession.current != nil)")
+    switch cardToken.interface {
+    case .contact, .steadyField:
       return try signThroughReader(
         token: cardToken,
+        unsealingWith: cardToken.sealedAccessNumber,
+        dataToSign: dataToSign,
+        algorithm: algorithm
+      )
+    case .fieldWithDeadline:
+      guard let accessNumber = cardToken.sealedAccessNumber else {
+        // Unreachable: this token is only ever minted from a prime, and a
+        // prime without a usable number is refused there.
+        throw TKError(.authenticationNeeded)
+      }
+      return try signInField(
+        token: cardToken,
+        accessNumber: accessNumber,
         dataToSign: dataToSign,
         algorithm: algorithm
       )
     }
-    TokenLog.trace(
-      "sign: transport=near-field, held session=\(cardToken.heldSession.current != nil)")
-    return try signInField(
-      token: cardToken,
-      accessNumber: accessNumber,
-      dataToSign: dataToSign,
-      algorithm: algorithm
-    )
   }
 
-  /// The contact signature, in one exclusive session opened here.
+  /// The signature taken through a reader, in one exclusive session
+  /// opened here.
+  ///
+  /// With a card access number the card is on the reader's antenna and
+  /// the session is unsealed with PACE first; everything after that is
+  /// the same flow the contact path runs, because a reader's field lasts
+  /// as long as the work does.
   private func signThroughReader(
     token: Token,
+    unsealingWith accessNumber: CardAccessNumber?,
     dataToSign: Data,
     algorithm: TKTokenKeyAlgorithm
   ) throws -> Data {
@@ -152,8 +168,9 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
     let smartCard = try getSmartCard()
     do {
       let signature = try SmartCardChannel(smartCard).withSession { channel in
-        try self.performSign(
-          channel: channel,
+        try ReaderSignature.perform(
+          in: channel,
+          unsealingWith: accessNumber,
           enteredPin: entered,
           request: request,
           publicKey: token.leafPublicKey
@@ -239,106 +256,6 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
       // escape unmapped, and must not look like a wrong PIN: a genuine
       // card failure ends the handshake instead of re-looping the prompt.
       throw TKError(.communicationError)
-    }
-  }
-
-  /// The full contact sign flow, inside the caller's exclusive session.
-  ///
-  /// Fully synchronous: CTK calls `sign` on ctkd's own thread and the card
-  /// is a blocking device, so the whole chain runs straight through with no
-  /// `Task`/`await` (the async bridge hung here). Mirrors the reference.
-  private func performSign(
-    channel: SmartCardChannel,
-    enteredPin: String?,
-    request: SignRequest,
-    publicKey: SecKey
-  ) throws -> Data {
-    let operations = CardOperations(channel: channel)
-    try operations.selectFineidApplication()
-    let (serial, pristine) = try probeAndGate(operations)
-
-    // The PIN: freshly entered, or reused from the card-bound cache (only
-    // on a pristine card, same serial, within the idle window), or ask the
-    // system to prompt.
-    let pin1: Pin1
-    let fromCache: Bool
-    if let entered = enteredPin {
-      guard let built = Pin1(digits: entered) else {
-        throw TokenError.pinFormatInvalid
-      }
-      pin1 = built
-      fromCache = false
-    } else if let cached = CredentialMemory.pin1Cache.checkout(serial: serial, pristine: pristine) {
-      TokenLog.info("sign: reusing cached PIN1 - no prompt")
-      pin1 = cached
-      fromCache = true
-    } else {
-      throw TokenError.authenticationRequired
-    }
-
-    let fingerprint = pin1.fingerprint(boundTo: serial)
-    guard !CredentialMemory.rejectedPins.isKnownRejected(fingerprint) else {
-      TokenLog.error("sign: PIN already rejected this session - refusing to resend")
-      throw TokenError.pinAlreadyRejected
-    }
-
-    TokenLog.info("sign: verifying PIN1")
-    do {
-      try operations.verifyPin1(pin1.consumeForSingleTransmission())
-    } catch CardOperationError.pinRejected {
-      CredentialMemory.rejectedPins.recordRejection(fingerprint)
-      CredentialMemory.pin1Cache.clear()
-      throw TokenError.pinRejected
-    }
-
-    TokenLog.info("sign: PIN1 verified; MSE:SET + PSO:HASH + PSO:CDS")
-    let raw = try operations.computeAuthenticationSignature(
-      overDigest: request.digest,
-      algorithm: request.algorithm,
-      expectedSignatureLength: request.expectedSignatureLength
-    )
-    guard let der = EcdsaSignature.derFromRawConcatenation(raw) else {
-      TokenLog.error("sign: raw signature \(raw.count) bytes not re-encodable")
-      throw TokenError.signatureMalformed
-    }
-    guard request.isSatisfied(by: der, from: publicKey) else {
-      TokenLog.error("sign: local verify FAILED - card returned a bad signature")
-      throw TokenError.signatureMalformed
-    }
-    TokenLog.info("sign: local verify OK, \(der.count) DER bytes")
-    cacheOnSuccess(pristine: pristine, fromCache: fromCache, enteredPin: enteredPin, serial: serial)
-    return der
-  }
-
-  /// A fresh probe of all three counters and the card-health gate.
-  ///
-  /// PIN1, PIN2, and PUK must all be above 2 (else fail closed); returns
-  /// the serial and whether the card is pristine (5/5/5).
-  private func probeAndGate(
-    _ operations: CardOperations
-  ) throws -> (serial: TokenSerial, pristine: Bool) {
-    TokenLog.info("sign: card-health probe")
-    let report = try operations.probeCredentials()
-    guard RetryFloor.evaluateAll(report) == .proceed else {
-      TokenLog.error("sign: card-health floor refuses - failing closed")
-      throw TokenError.signRefused
-    }
-    return (try operations.readTokenSerial(), report.retryState?.isPristine ?? false)
-  }
-
-  /// Caches the just-used PIN for the rest of a login flow, pristine cards
-  /// only: refresh the timestamp on a reuse, store on a fresh entry.
-  private func cacheOnSuccess(
-    pristine: Bool,
-    fromCache: Bool,
-    enteredPin: String?,
-    serial: TokenSerial
-  ) {
-    guard pristine else { return }
-    if fromCache {
-      CredentialMemory.pin1Cache.restamp(serial: serial)
-    } else if let entered = enteredPin, let cachePin = Pin1(digits: entered) {
-      CredentialMemory.pin1Cache.store(cachePin, serial: serial)
     }
   }
 }

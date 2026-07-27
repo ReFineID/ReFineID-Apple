@@ -173,11 +173,18 @@ public struct CardOperations {
 
   /// Probes all three credentials for the status display and the
   /// cache-admission reading.
-  public func probeCredentials() throws -> CredentialProbeReport {
+  ///
+  /// `includingPuk` exists for the contactless interface, which refuses
+  /// that one credential: the card answers the PUK counter query with SW
+  /// 6988 and, worse, treats the refusal as an end of the secure
+  /// channel, so the next command in it is rejected with 6999 and the
+  /// signature is lost. Not asking is the whole fix -- the answer was
+  /// never going to arrive, and asking costs the channel.
+  public func probeCredentials(includingPuk: Bool = true) throws -> CredentialProbeReport {
     CredentialProbeReport(
       pin1: try probeRetryCounter(role: .pin1),
       pin2: try probeRetryCounter(role: .pin2),
-      puk: try probeRetryCounter(role: .puk)
+      puk: includingPuk ? try probeRetryCounter(role: .puk) : .noInformation
     )
   }
 

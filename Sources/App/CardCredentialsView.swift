@@ -25,11 +25,6 @@ internal struct CardCredentialsView: View {
   @State private var pin1Entry = ""
   @State private var isScanning = false
 
-  #if os(macOS)
-    @State private var siteEntry = ""
-    @State private var siteNote: String?
-  #endif
-
   internal var body: some View {
     Form {
       cardAccessNumberSection
@@ -37,15 +32,6 @@ internal struct CardCredentialsView: View {
       if model.contents.hasCardAccessNumber {
         primingSection
       }
-      #if os(macOS)
-        preferredSiteSection
-        if let siteNote {
-          Section {
-            Text(siteNote)
-              .foregroundStyle(.secondary)
-          }
-        }
-      #endif
       if let failure = model.failure {
         Section {
           Text(failure)
@@ -143,20 +129,6 @@ internal struct CardCredentialsView: View {
     #endif
   }
 
-  #if os(macOS)
-    /// Lets the holder consent once per site instead of once per login.
-    @ViewBuilder private var preferredSiteSection: some View {
-      Section("Safari") {
-        TextField("https://example.fi", text: $siteEntry)
-        Button("Offer this card to that site automatically") {
-          rememberSite()
-        }
-        .disabled(siteEntry.isEmpty)
-      }
-    }
-
-  #endif
-
   /// The hold that registers this card for Safari.
   @ViewBuilder private var primingSection: some View {
     #if os(iOS)
@@ -198,22 +170,6 @@ internal struct CardCredentialsView: View {
             Button("Cancel") { isScanning = false }
           }
         }
-      }
-    }
-  #endif
-
-  #if os(macOS)
-    /// Records the preference, reporting what the keychain said.
-    private func rememberSite() {
-      let site = siteEntry
-      siteEntry = ""
-      do {
-        try PreferredCardIdentity.remember(forSite: site)
-        siteNote = String(localized: "Safari will use your card for \(site).")
-      } catch PreferredCardIdentity.Failure.noIdentity {
-        siteNote = String(localized: "Insert the card first.")
-      } catch {
-        siteNote = String(localized: "The site could not be remembered.")
       }
     }
   #endif

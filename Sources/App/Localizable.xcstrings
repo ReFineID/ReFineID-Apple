@@ -91,6 +91,23 @@
         }
       }
     },
+    "Card access number": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortin käyttönumero"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortets åtkomstnummer"
+          }
+        }
+      }
+    },
     "Checking...": {
       "localizations": {
         "fi": {
@@ -168,23 +185,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Medföljande drivrutin"
-          }
-        }
-      }
-    },
-    "Enter the card access number below to use it.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ota se käyttöön syöttämällä kortin käyttönumero alla."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ange kortets åtkomstnummer nedan för att använda det."
           }
         }
       }
@@ -386,6 +386,23 @@
         }
       }
     },
+    "Replace": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vaihda"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ersätt"
+          }
+        }
+      }
+    },
     "Safari login": {
       "localizations": {
         "fi": {
@@ -398,6 +415,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Safari-inloggning"
+          }
+        }
+      }
+    },
+    "Save": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tallenna"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spara"
           }
         }
       }
@@ -415,6 +449,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Konfigurera ditt kort"
+          }
+        }
+      }
+    },
+    "Six digits": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kuusi numeroa"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sex siffror"
           }
         }
       }
@@ -447,6 +498,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Statusen är inte tillgänglig"
+          }
+        }
+      }
+    },
+    "Stored": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tallennettu"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sparat"
           }
         }
       }
