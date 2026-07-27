@@ -15,6 +15,12 @@
 /// Provenance: lifted from the ReFineID iOS browser donor
 /// `Sources/ReFineIDBrowserKit/Crypto/FieldP384.swift`.
 internal struct FieldP384: Equatable, Sendable {
+  /// A full 384-by-384-bit product plus one carry limb for reduction.
+  ///
+  /// The width is invariant, so heap-backed `Array` storage only adds
+  /// allocation and copy-on-write checks to the innermost arithmetic loop.
+  private typealias WideLimbs = InlineArray<13, UInt64>  // swiftlint:disable:this no_magic_numbers
+
   /// The field modulus `p`.
   internal static let prime = BrainpoolP384r1Values.prime
 
@@ -60,6 +66,12 @@ internal struct FieldP384: Equatable, Sendable {
 
   /// The number of limbs in a full 384-by-384-bit schoolbook product.
   private static let productLimbCount = U384.limbCount * productWidthMultiple
+
+  /// Offsets into the high half of a wide product.
+  private static let highLimbTwoOffset = 2
+  private static let highLimbThreeOffset = 3
+  private static let highLimbFourOffset = 4
+  private static let highLimbFiveOffset = 5
 
   /// `R mod p`, obtained by doubling one 384 times: no division needed.
   private static let montgomeryOne: U384 = {
@@ -117,8 +129,8 @@ internal struct FieldP384: Equatable, Sendable {
 
   /// The full 384-by-384-bit schoolbook product as `productLimbCount`
   /// little-endian limbs.
-  private static func fullMultiply(_ lhs: U384, _ rhs: U384) -> [UInt64] {
-    var product = [UInt64](repeating: 0, count: productLimbCount)
+  private static func fullMultiply(_ lhs: U384, _ rhs: U384) -> WideLimbs {
+    var product = WideLimbs(repeating: 0)
     for outer in 0..<U384.limbCount {
       var carry: UInt64 = 0
       for inner in 0..<U384.limbCount {
@@ -135,13 +147,8 @@ internal struct FieldP384: Equatable, Sendable {
 
   /// Montgomery reduction, separated-operand form: maps a wide product `T`
   /// below `p * R` to `T * R^-1 mod p`.
-  private static func montgomeryReduce(_ product: [UInt64]) -> U384 {
+  private static func montgomeryReduce(_ product: WideLimbs) -> U384 {
     var working = product
-    if working.count < productLimbCount + 1 {
-      working.append(
-        contentsOf: [UInt64](repeating: 0, count: productLimbCount + 1 - working.count)
-      )
-    }
     for outer in 0..<U384.limbCount {
       let multiplier = working[outer] &* montgomeryInverseLowLimb
       var carry: UInt64 = 0
@@ -161,7 +168,12 @@ internal struct FieldP384: Equatable, Sendable {
       }
     }
     let high = U384(
-      truncatingLimbs: Array(working[U384.limbCount..<productLimbCount])
+      limb0: working[U384.limbCount],
+      limb1: working[U384.limbCount + 1],
+      limb2: working[U384.limbCount + highLimbTwoOffset],
+      limb3: working[U384.limbCount + highLimbThreeOffset],
+      limb4: working[U384.limbCount + highLimbFourOffset],
+      limb5: working[U384.limbCount + highLimbFiveOffset]
     )
     return reducedOnce(high)
   }

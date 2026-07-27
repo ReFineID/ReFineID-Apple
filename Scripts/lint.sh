@@ -13,7 +13,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 echo "swift format lint..."
-swift format lint --strict --recursive Sources Tests CardCore/Sources CardCore/Package.swift
+swift format lint --strict --recursive \
+  Sources Tests CardCore/Sources CardCore/Package.swift \
+  Scripts/BrainpoolBenchmark.swift
 
 echo "swiftlint..."
 swiftlint lint --quiet

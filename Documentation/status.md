@@ -1,7 +1,7 @@
-# Status, 26.7.27
+# Status, 26.7.28
 
 What works, what does not, and what each was measured with. Written from
-device and Mac runs on 2026-07-27, not from intent.
+device and Mac runs through 2026-07-28, not from intent.
 
 ## macOS: card login works, on both interfaces
 
@@ -99,6 +99,49 @@ certificate read against a real card. What has NOT yet been demonstrated
 on this app is a completed Safari signature over NFC. The reference
 implementation does it, and the same three rules are carried here, but
 carrying a rule is not the same as having watched it hold.
+
+## Swift PACE arithmetic is no longer a field-budget problem
+
+The original curve implementation stored fixed-width limbs in heap-backed
+arrays and kept every intermediate point in affine coordinates. The first
+caused allocation and copy-on-write traffic in every field operation; the
+second calculated a field inverse for almost every scalar bit.
+
+The limbs now use `InlineArray`, and scalar multiplication uses Jacobian
+coordinates with mixed affine addition. It performs one field inverse when
+the finished point is converted back to the public affine representation.
+An independent full-width scalar vector agrees byte-for-byte with OpenSSL
+3.6.3, in addition to the curve-order and synthetic PACE tests.
+
+Measured on the M1 development Mac with Apple Swift 6.3.3:
+
+| Build and implementation | One 383-bit `k * G` |
+| --- | ---: |
+| Debug, heap limbs, affine points | about 1,065 ms |
+| Release, heap limbs, affine points | about 80 ms |
+| Release, inline limbs, affine points | 18-20 ms |
+| Release, inline limbs, Jacobian points | 3.5-5.0 ms |
+
+These are host CPU measurements, not card or radio timings. A terminal PACE
+run performs four full-width scalar multiplications and one shorter nonce
+multiplication, so the change removes hundreds of milliseconds of avoidable
+host work. The card's two long GENERAL AUTHENTICATE calculations still
+dominate the phone trace.
+
+The benchmark is reproducible from the repository:
+
+    swiftc -O -whole-module-optimization \
+      CardCore/Sources/CardCore/**/*.swift \
+      Scripts/BrainpoolBenchmark.swift \
+      -o /tmp/refineid-brainpool-benchmark
+    /tmp/refineid-brainpool-benchmark
+
+The shared Xcode scheme now launches with the `Profile` configuration:
+`-O`, whole-module compilation, debug symbols and the DEBUG diagnostics.
+Tests remain Debug. This matters on the phone -- installing the ordinary
+Run action must not silently put `-Onone` arithmetic inside the NFC window.
+`-Ounchecked` was also measured and was no faster than `-O`, so the safety
+checks remain.
 
 ## The rules the NFC path must not break
 

@@ -26,6 +26,21 @@ internal struct BrainpoolP384r1Tests {
     CF3AB6AF6B7FC3103B883202E9046565
     """
 
+  /// A fixed full-width scalar and its independently calculated public
+  /// point from OpenSSL 3.6.3 on brainpoolP384r1.
+  private static let opensslScalarHex = """
+    4E457D06B0DE02D5B82379AD66269C1A6B5054051B55C61AD9BC8739A536214B\
+    39342F18371577A7CC6C93E8E78D5FB8
+    """
+
+  private static let opensslPublicPointHex = """
+    04\
+    46E3D825C57916E104D899FC4C44ED2A4D0B8E2EBDF579632FC29FB5AAE89A\
+    6CD2C023ED28ACB9D8814A9968305C05\
+    702C48D4EC6B5AECBB079A34416A7DCE70E1FA062B3B66811FA7FE984E154DB2\
+    2FD7556F25104F90C39232F64025A76131
+    """
+
   /// Two arbitrary small scalars whose sum does not overflow 64 bits.
   private static let firstScalar: UInt64 = 1_234_567_890_123_456_789
 
@@ -67,6 +82,13 @@ internal struct BrainpoolP384r1Tests {
   @Test
   internal func oneTimesGeneratorIsTheGenerator() {
     #expect(BrainpoolP384r1.multiplyGenerator(by: U384.one) == BrainpoolP384r1.generator)
+  }
+
+  @Test
+  internal func fullWidthScalarMatchesOpenSSL() throws {
+    let scalar = try #require(U384(bigEndianBytes: WireHex.data(Self.opensslScalarHex)))
+    let point = BrainpoolP384r1.multiplyGenerator(by: scalar)
+    #expect(point.encodeUncompressed() == WireHex.data(Self.opensslPublicPointHex))
   }
 
   @Test

@@ -14,6 +14,14 @@ import Foundation
 /// six-limb initializer (curve constants live in `BrainpoolP384r1Values`)
 /// and a failable big-endian byte initializer.
 public struct U384: Equatable, Comparable, Sendable {
+  /// The fixed-width limb storage.
+  ///
+  /// `Array` is copy-on-write heap storage even when its count never changes.
+  /// Every field operation creates several `U384` values, so using an inline
+  /// array keeps those six limbs inside the value and removes allocator and
+  /// reference-count traffic from the scalar-multiplication loop.
+  internal typealias Limbs = InlineArray<6, UInt64>  // swiftlint:disable:this no_magic_numbers
+
   /// The number of 64-bit limbs in the representation.
   public static let limbCount = 6
 
@@ -39,11 +47,14 @@ public struct U384: Equatable, Comparable, Sendable {
   public static let one = Self(1)
 
   /// The six limbs, least significant first.
-  internal let limbs: [UInt64]
+  internal let limbs: Limbs
 
   /// True when every limb is zero.
   public var isZero: Bool {
-    limbs.allSatisfy { $0 == 0 }
+    for index in 0..<Self.limbCount where limbs[index] != 0 {
+      return false
+    }
+    return true
   }
 
   /// The index of the most significant set bit, or nil when the value is
@@ -61,7 +72,7 @@ public struct U384: Equatable, Comparable, Sendable {
 
   /// Zero.
   public init() {
-    limbs = [UInt64](repeating: 0, count: Self.limbCount)
+    limbs = Limbs(repeating: 0)
   }
 
   /// A small value that fits in the least significant limb.
@@ -85,6 +96,11 @@ public struct U384: Equatable, Comparable, Sendable {
     limbs = [limb0, limb1, limb2, limb3, limb4, limb5]
   }
 
+  /// The value whose storage is already exactly six limbs.
+  private init(limbs: Limbs) {
+    self.limbs = limbs
+  }
+
   /// The value encoded by up to `byteCount` big-endian bytes, or nil when
   /// the input is wider than 384 bits.
   ///
@@ -97,7 +113,7 @@ public struct U384: Equatable, Comparable, Sendable {
       (Self.byteCount - bigEndianBytes.count)..<Self.byteCount,
       with: bigEndianBytes
     )
-    var built = [UInt64](repeating: 0, count: Self.limbCount)
+    var built = Limbs(repeating: 0)
     for limb in 0..<Self.limbCount {
       let base = (Self.limbCount - 1 - limb) * Self.bytesPerLimb
       var value: UInt64 = 0
@@ -109,24 +125,12 @@ public struct U384: Equatable, Comparable, Sendable {
     limbs = built
   }
 
-  /// The value formed from the least significant `limbCount` entries of a
-  /// little-endian limb array.
-  ///
-  /// A defined numeric conversion in the spirit of
-  /// `UInt8(truncatingIfNeeded:)`: a short array is zero-extended and
-  /// anything above the 384-bit window is discarded. It exists so the field
-  /// arithmetic can name the low or high half of a wide schoolbook product
-  /// without a failable initializer in the hot path.
-  internal init(truncatingLimbs values: [UInt64]) {
-    guard values.count != Self.limbCount else {
-      limbs = values
-      return
+  /// Two values are equal when all six limbs match.
+  public static func == (lhs: Self, rhs: Self) -> Bool {
+    for index in 0..<Self.limbCount where lhs.limbs[index] != rhs.limbs[index] {
+      return false
     }
-    var built = [UInt64](repeating: 0, count: Self.limbCount)
-    for index in 0..<Swift.min(Self.limbCount, values.count) {
-      built[index] = values[index]
-    }
-    limbs = built
+    return true
   }
 
   /// Orders two values by magnitude, most significant limb first.
@@ -145,7 +149,7 @@ public struct U384: Equatable, Comparable, Sendable {
     _ lhs: Self,
     _ rhs: Self
   ) -> (sum: Self, carry: UInt64) {
-    var out = [UInt64](repeating: 0, count: Self.limbCount)
+    var out = Limbs(repeating: 0)
     var carry: UInt64 = 0
     for index in 0..<Self.limbCount {
       let (partial, firstOverflow) = lhs.limbs[index].addingReportingOverflow(rhs.limbs[index])
@@ -153,7 +157,7 @@ public struct U384: Equatable, Comparable, Sendable {
       out[index] = total
       carry = (firstOverflow ? 1 : 0) + (secondOverflow ? 1 : 0)
     }
-    return (Self(truncatingLimbs: out), carry)
+    return (Self(limbs: out), carry)
   }
 
   /// The difference modulo 2^384 together with the borrow that left the
@@ -162,7 +166,7 @@ public struct U384: Equatable, Comparable, Sendable {
     _ lhs: Self,
     _ rhs: Self
   ) -> (difference: Self, borrow: UInt64) {
-    var out = [UInt64](repeating: 0, count: Self.limbCount)
+    var out = Limbs(repeating: 0)
     var borrow: UInt64 = 0
     for index in 0..<Self.limbCount {
       let (partial, firstBorrow) = lhs.limbs[index]
@@ -171,7 +175,7 @@ public struct U384: Equatable, Comparable, Sendable {
       out[index] = total
       borrow = (firstBorrow ? 1 : 0) + (secondBorrow ? 1 : 0)
     }
-    return (Self(truncatingLimbs: out), borrow)
+    return (Self(limbs: out), borrow)
   }
 
   /// The fixed-width 48-byte big-endian encoding.
@@ -197,13 +201,13 @@ public struct U384: Equatable, Comparable, Sendable {
 
   /// The value doubled modulo 2^384, with the bit that left the window.
   internal func shiftedLeftOne() -> (value: Self, carry: UInt64) {
-    var out = [UInt64](repeating: 0, count: Self.limbCount)
+    var out = Limbs(repeating: 0)
     var carry: UInt64 = 0
     for index in 0..<Self.limbCount {
       out[index] = (limbs[index] << 1) | carry
       carry = limbs[index] >> (Self.limbBits - 1)
     }
-    return (Self(truncatingLimbs: out), carry)
+    return (Self(limbs: out), carry)
   }
 
   /// The value halved, with `carryIn` shifted into the most significant
@@ -213,13 +217,13 @@ public struct U384: Equatable, Comparable, Sendable {
   /// the window, so a 385-bit intermediate can be halved without widening
   /// the type.
   internal func shiftedRightOne(carryIn: UInt64) -> Self {
-    var out = [UInt64](repeating: 0, count: Self.limbCount)
+    var out = Limbs(repeating: 0)
     var carry = carryIn & 1
     for index in stride(from: Self.limbCount - 1, through: 0, by: -1) {
       let next = limbs[index] & 1
       out[index] = (limbs[index] >> 1) | (carry << (Self.limbBits - 1))
       carry = next
     }
-    return Self(truncatingLimbs: out)
+    return Self(limbs: out)
   }
 }
