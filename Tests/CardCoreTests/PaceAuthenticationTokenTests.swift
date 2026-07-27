@@ -1,6 +1,7 @@
-@testable import CardCore
 import Foundation
 import Testing
+
+@testable import CardCore
 
 /// Holds the authentication token encoding to the shape the reference
 /// implementation produces.
