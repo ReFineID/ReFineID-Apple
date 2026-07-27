@@ -26,7 +26,12 @@ public enum CardTransportStore {
   /// Single well-known account: there is one preference per device.
   private static let account = "selection"
 
-  /// The stored preference, or `readerOnly` when absent or unreadable.
+  /// The stored preference, or every transport this build knows when
+  /// absent or unreadable.
+  ///
+  /// A holder who has chosen nothing should get the phone's own antenna,
+  /// which needs no hardware; callers clamp this to what the platform
+  /// actually has, so a Mac still ends up reader-only.
   public static func load() -> CardTransportSelection {
     var query = baseQuery()
     query[kSecReturnData as String] = true
@@ -36,10 +41,10 @@ public enum CardTransportStore {
       let data = item as? Data,
       let stored = try? JSONDecoder().decode(StoredSelection.self, from: data)
     else {
-      return .readerOnly
+      return .all
     }
     let transports = Set(stored.enabled.compactMap(CardTransport.init(rawValue:)))
-    return CardTransportSelection(enabled: transports) ?? .readerOnly
+    return CardTransportSelection(enabled: transports) ?? .all
   }
 
   /// Replaces the stored preference.

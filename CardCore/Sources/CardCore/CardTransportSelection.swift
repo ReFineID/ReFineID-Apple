@@ -10,7 +10,8 @@ public struct CardTransportSelection: Equatable, Sendable {
   /// Every transport the build knows about.
   public static let all = Self(unchecked: Set(CardTransport.allCases))
 
-  /// Contact readers only: the default, and the whole of macOS.
+  /// Contact readers only: the whole of macOS, and the fallback
+  /// anywhere the phone has no antenna.
   public static let readerOnly = Self(unchecked: [.reader])
 
   /// The permitted transports.

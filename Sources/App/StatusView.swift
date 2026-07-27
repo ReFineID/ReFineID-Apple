@@ -75,18 +75,20 @@ internal struct StatusView: View {
   @ViewBuilder private var transportRows: some View {
     if SupportedCardTransports.offersNearField {
       Divider()
+      // The phone's own antenna comes first: it needs no hardware, so
+      // it is what most holders will use.
       Toggle(
-        "Use a card reader",
-        isOn: Binding(
-          get: { transports.permits(.reader) },
-          set: { transports.setPermitted($0, for: .reader) }
-        )
-      )
-      Toggle(
-        "Hold the card to the phone",
+        "Use phone as reader",
         isOn: Binding(
           get: { transports.permits(.nearField) },
           set: { transports.setPermitted($0, for: .nearField) }
+        )
+      )
+      Toggle(
+        "Use connected USB-C reader",
+        isOn: Binding(
+          get: { transports.permits(.reader) },
+          set: { transports.setPermitted($0, for: .reader) }
         )
       )
       if transports.lastWriteFailed {
