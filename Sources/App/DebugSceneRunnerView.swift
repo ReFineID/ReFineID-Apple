@@ -107,9 +107,13 @@
         let contents = CardCredentialStore.contents()
         DebugConsole.emit("card access number stored: \(contents.hasCardAccessNumber)")
         DebugConsole.emit("near field permitted: \(CardTransportStore.load().permits(.nearField))")
-        let outcome = await CardPriming.prime { line in
-          DebugConsole.emit("progress: " + line)
-        }
+        let outcome = await CardPriming.prime(
+          progress: { line in
+            DebugConsole.emit("progress: " + line)
+          },
+          step: { step, state in
+            DebugConsole.emit("step: \(step) \(state)")
+          })
         DebugConsole.emit("stored: \(outcome.stored)")
         DebugConsole.emit("registered: \(outcome.registered)")
         DebugConsole.emit("summary: " + outcome.summary)

@@ -35,6 +35,12 @@
     /// What the run has done so far, oldest first.
     internal private(set) var notes: [String] = []
 
+    /// How far the current hold got, one entry per step.
+    ///
+    /// Kept separate from the notes because a holder pressing a card
+    /// against a phone needs to see progress at a glance, not read.
+    internal private(set) var steps: [CardPrimingStep: CardPrimingStep.State] = [:]
+
     /// The finished run, or nil before the first one.
     internal private(set) var outcome: CardPriming.Outcome?
 
@@ -72,12 +78,19 @@
       notes = []
       outcome = nil
       failure = nil
+      steps = [:]
       await openSigningWindow()
-      outcome = await CardPriming.prime { line in
-        Task { @MainActor in
-          self.note(line)
-        }
-      }
+      outcome = await CardPriming.prime(
+        progress: { line in
+          Task { @MainActor in
+            self.note(line)
+          }
+        },
+        step: { step, state in
+          Task { @MainActor in
+            self.steps[step] = state
+          }
+        })
       refresh()
       isRunning = false
     }

@@ -26,6 +26,7 @@
       Form {
         startSection
         if !model.notes.isEmpty {
+          CardPrimingStepsView(states: model.steps)
           progressSection
         }
         if let outcome = model.outcome {

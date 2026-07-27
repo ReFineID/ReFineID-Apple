@@ -49,6 +49,13 @@
     /// must be safe to invoke from anywhere.
     internal typealias Progress = @Sendable (String) -> Void
 
+    /// Reports which setup step a hold has reached, and how it went.
+    ///
+    /// Separate from the text progress because the two answer different
+    /// questions: the text says what is happening, the steps say how far
+    /// the hold got and where it broke.
+    internal typealias StepReport = @Sendable (CardPrimingStep, CardPrimingStep.State) -> Void
+
     /// What one priming run achieved.
     internal struct Outcome: Sendable {
       /// Whether the primed identity reached the prime store.
@@ -147,42 +154,79 @@
     /// Never throws: a prime is a thing a person is doing, and every way
     /// it can fail is something they need to read rather than something a
     /// caller needs to catch.
-    internal static func prime(progress: @escaping Progress) async -> Outcome {
+    internal static func prime(
+      progress: @escaping Progress,
+      step: StepReport
+    ) async -> Outcome {
       let session: NearFieldCardSession
+      step(.found, .running)
       do {
         session = try await NearFieldCardSession.open(message: Self.holdMessage)
       } catch {
+        step(.found, .failed)
         return Outcome(stored: false, registered: false, summary: Self.summary(for: error))
       }
       defer { session.end() }
+      step(.found, .done)
       progress(String(localized: "Card found. Keep holding."))
 
       let payload: Payload
+      step(.secureChannel, .running)
       do {
         payload = try await Self.onCardQueue {
           try Self.read(from: session, progress: progress)
         }
+        step(.secureChannel, .done)
+        step(.certificate, .done)
       } catch {
-        session.update(message: String(localized: "Could not read the card."))
+        // Which of the two broke is not knowable from here, so the
+        // secure channel is marked failed and the read left waiting:
+        // claiming a channel opened when the read failed would be a
+        // guess, and this row exists to stop guessing.
+        step(.secureChannel, .failed)
+        // The sheet is the only thing a holder can see while holding, so
+        // it carries the detail rather than a shrug. Nothing here names
+        // a PIN, CAN or the holder.
+        session.update(message: Self.sheetMessage(for: error))
         return Outcome(stored: false, registered: false, summary: Self.summary(for: error))
       }
 
+      step(.stored, .running)
       guard Self.store(payload) else {
-        session.update(message: String(localized: "Could not store the card details."))
+        step(.stored, .failed)
+        session.update(message: String(localized: "Could not save the card details."))
         return Outcome(
           stored: false,
           registered: false,
           summary: Self.summary(for: Failure.primeNotStored))
       }
+      step(.stored, .done)
       progress(String(localized: "Card details stored on this iPhone."))
 
       // Registration has to happen HERE, with the card still live in the
       // slot. A registration attempted after the hold ends finds no card
       // to register and fails, and the holder would have to present the
       // card all over again.
+      return await Self.finish(
+        payload: payload, session: session, progress: progress, step: step)
+    }
+
+    /// Registers the live card and reports how the hold ended.
+    ///
+    /// Split from `prime` only so each stays readable; it must still run
+    /// with the card in the slot, which is why it takes the live session
+    /// rather than being called after the hold.
+    private static func finish(
+      payload: Payload,
+      session: NearFieldCardSession,
+      progress: @escaping Progress,
+      step: StepReport
+    ) async -> Outcome {
       session.update(message: String(localized: "Setting up Safari. Keep holding."))
+      step(.registered, .running)
       let registered = await Self.register(
         instance: payload.instance, session: session, progress: progress)
+      step(.registered, registered ? .done : .failed)
       session.update(
         message: registered
           ? String(localized: "Your card is ready to use.")
@@ -325,32 +369,6 @@
         Self.cardQueue.async {
           continuation.resume(with: Result { try body() })
         }
-      }
-    }
-
-    /// What to tell the holder about a failed run.
-    ///
-    /// Every sentence names something they can do differently, because a
-    /// failed prime is a thing they are standing there holding a card
-    /// for.
-    private static func summary(for error: any Error) -> String {
-      switch error {
-      case Failure.cardAccessNumberMissing:
-        String(localized: "Store the card access number first, then try again.")
-      case Failure.certificateUnreadable:
-        String(localized: "The card did not return a usable certificate.")
-      case Failure.primeNotStored:
-        String(localized: "The card details could not be stored on this iPhone.")
-      case Failure.unidentifiedCard:
-        String(localized: "The card was not recognized. Try holding it again.")
-      case NearFieldCardSession.Failure.antennaBusy:
-        String(localized: "The phone's card reader is busy. Try again in a moment.")
-      case NearFieldCardSession.Failure.cardNeverArrived:
-        String(localized: "No card was found. Hold the card against the top of the phone.")
-      case NearFieldCardSession.Failure.slotRefused:
-        String(localized: "This iPhone would not open a card reading session.")
-      default:
-        String(localized: "The card could not be read. Hold it still and try again.")
       }
     }
   }
