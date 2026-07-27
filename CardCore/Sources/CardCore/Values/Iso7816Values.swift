@@ -84,6 +84,9 @@ internal enum Iso7816Values {
   /// DER universal tag: OCTET STRING.
   internal static let derOctetStringTag: UInt8 = 0x04
 
+  /// Tag of PKCS#15's context-specific `label [0]` field in TokenInfo.
+  internal static let derContextLabelTag: UInt8 = 0x80
+
   /// DER tag for a UTF8String, which PKCS#15 uses for its labels.
   internal static let derUtf8StringTag: UInt8 = 0x0C
 

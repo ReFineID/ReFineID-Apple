@@ -57,6 +57,7 @@ internal struct StatusView: View {
         transportRows
       }
       .formStyle(.grouped)
+      .fixedSize(horizontal: false, vertical: true)
       // Labels in the secondary colour, values in the primary one, so a
       // row reads as one thing described by another rather than as two
       // words side by side.
@@ -70,6 +71,12 @@ internal struct StatusView: View {
     // holder never chose. `windowResizability(.contentSize)` then makes
     // that minimum the smallest the window can be dragged to.
     .padding(Self.contentPadding)
+    // The window cannot be made smaller than what it has to say. The
+    // content keeps its natural height as well as its natural width, so
+    // with `windowResizability(.contentSize)` the smallest the window
+    // can be dragged to is the size that still shows every row -- there
+    // is no useful window here that hides the card's status.
+    .fixedSize(horizontal: false, vertical: true)
     .frame(minWidth: Self.minimumWidth, alignment: .leading)
     .task { await model.refresh() }
     .sheet(isPresented: $showsDiagnostics) { diagnosticsSheet }
@@ -88,14 +95,19 @@ internal struct StatusView: View {
   /// plugged into anything, the only instrument left is the one the
   /// holder can open.
   @ViewBuilder private var actionRows: some View {
-    Button("Refresh") {
-      Task { await model.refresh() }
+    // One row: the thing a holder might press sits at the left, and the
+    // instrument sits out of the way at the right.
+    HStack {
+      Button("Refresh") {
+        Task { await model.refresh() }
+      }
+      .disabled(model.isRefreshing)
+      Spacer()
+      Button("Diagnostics") {
+        showsDiagnostics = true
+      }
+      .accessibilityIdentifier("diagnosticsButton")
     }
-    .disabled(model.isRefreshing)
-    Button("Diagnostics") {
-      showsDiagnostics = true
-    }
-    .accessibilityIdentifier("diagnosticsButton")
   }
 
   /// The capture, in its own stack so it has a title bar to dismiss from

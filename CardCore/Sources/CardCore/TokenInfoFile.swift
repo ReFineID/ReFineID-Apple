@@ -22,9 +22,6 @@ public enum TokenInfoFile {
 
   private static let minimumFieldCount = 2
 
-  /// Tag of the context-specific `label [0]` field.
-  private static let labelTag: UInt8 = 0x80
-
   /// Parses the serial, or nil when the outer SEQUENCE, the leading
   /// INTEGER, or the serial octet string is missing or malformed.
   public static func serial(fromContent content: Data) -> TokenSerial? {
@@ -58,7 +55,10 @@ public enum TokenInfoFile {
       return nil
     }
     let named = fields.dropFirst(Self.minimumFieldCount).compactMap { field -> String? in
-      guard field.tag == Iso7816Values.derUtf8StringTag || field.tag == Self.labelTag else {
+      guard
+        field.tag == Iso7816Values.derUtf8StringTag
+          || field.tag == Iso7816Values.derContextLabelTag
+      else {
         return nil
       }
       // Failable rather than lossy: a label that is not valid UTF-8 is
