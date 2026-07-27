@@ -6,10 +6,23 @@ import Security
 /// One session against a published token.
 ///
 /// Advertises the ECDSA client-authentication shapes the card can sign,
-/// prompts for PIN1 through the system UI, and performs a signature in
-/// one exclusive card session: retry-floor check, VERIFY PIN1 (consumed
-/// once, rejection remembered), MSE:SET + PSO:CDS, then the raw card
-/// signature re-encoded as X9.62 DER.
+/// prompts for PIN1 through the system UI, and performs a signature.
+///
+/// The two transports part company at the first line of `sign`, and
+/// deliberately so. The contact path is unchanged: a fresh exclusive
+/// session, a retry-floor check, VERIFY PIN1 (consumed once, rejection
+/// remembered), MSE:SET + PSO:CDS, and the raw card signature re-encoded
+/// as X9.62 DER. The contactless path has none of that room. It runs
+/// inside a field that lasts about two seconds after the mint, so it
+/// takes the PIN before it touches the card at all, works in the session
+/// the mint held open, reads nothing the prime already knows, and logs
+/// nothing - a single diagnostic APDU there was measured costing the
+/// whole handshake.
+///
+/// Provenance: the contactless order is the donor
+/// `platform/apple/RefineIDTokenExtension/TokenSession.swift`, whose
+/// transport was a Rust FFI relay; here it is CardCore's own PACE,
+/// secure messaging and card operations.
 internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelegate {
   /// PIN1 collected by the most recent `beginAuth`, consumed by the next
   /// `sign` and cleared immediately after (one prompt = one signature =
@@ -55,11 +68,38 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
     keyObjectID _: TKToken.ObjectID,
     algorithm: TKTokenKeyAlgorithm
   ) throws -> Data {
+    guard let cardToken = token as? Token else {
+      throw TKError(.badParameter)
+    }
+    // The primed card access number IS the transport. With one, this card
+    // was reached through a field and every verb below has to travel
+    // inside a PACE channel; without one, this is the contact path and
+    // nothing about it changes.
+    guard let accessNumber = cardToken.primedAccessNumber else {
+      return try signThroughReader(
+        token: cardToken,
+        dataToSign: dataToSign,
+        algorithm: algorithm
+      )
+    }
+    return try signInField(
+      token: cardToken,
+      accessNumber: accessNumber,
+      dataToSign: dataToSign,
+      algorithm: algorithm
+    )
+  }
+
+  /// The contact signature, in one exclusive session opened here.
+  private func signThroughReader(
+    token: Token,
+    dataToSign: Data,
+    algorithm: TKTokenKeyAlgorithm
+  ) throws -> Data {
     TokenLog.notice(
       "sign: called algo=\(SigningAlgorithmResolver.describe(algorithm)) input=\(dataToSign.count)B"
     )
     guard
-      let token = token as? Token,
       let request = SigningAlgorithmResolver.resolve(
         algorithm,
         input: dataToSign,
@@ -81,7 +121,12 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
     let smartCard = try getSmartCard()
     do {
       let signature = try SmartCardChannel(smartCard).withSession { channel in
-        try self.performSign(channel: channel, enteredPin: entered, request: request)
+        try self.performSign(
+          channel: channel,
+          enteredPin: entered,
+          request: request,
+          publicKey: token.leafPublicKey
+        )
       }
       TokenLog.notice("sign: success, \(signature.count) DER bytes")
       return signature
@@ -98,7 +143,66 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
     }
   }
 
-  /// The full card sign flow, inside the caller's exclusive session.
+  /// The contactless signature, in the order the field allows.
+  ///
+  /// That order is the whole of it, and no other order works. Nothing on
+  /// this path logs.
+  private func signInField(
+    token: Token,
+    accessNumber: CardAccessNumber,
+    dataToSign: Data,
+    algorithm: TKTokenKeyAlgorithm
+  ) throws -> Data {
+    guard
+      let request = SigningAlgorithmResolver.resolve(
+        algorithm,
+        input: dataToSign,
+        profile: token.keyProfile
+      )
+    else {
+      throw TKError(.badParameter)
+    }
+    // The PIN the system collected through beginAuth, or the one the
+    // holder authorized earlier through the signing window. The window
+    // exists because the system-driven path reaches supports(signData)
+    // and then asks for a signature with no interface to ask for a PIN
+    // with; without it that signature could never be attempted.
+    let entered = collectedPin.flatMap { $0.isEmpty ? nil : $0 }
+    collectedPin = nil
+    let authorized: Pin1?
+    if let entered {
+      authorized = Pin1(digits: entered)
+    } else {
+      authorized = Pin1SigningWindow.pin1()
+    }
+    // Ask for the PIN BEFORE touching the card. A contactless token never
+    // reuses the card-bound PIN1 cache, so a signature with no PIN can
+    // only end in this throw - and reaching it after PACE leaves the card
+    // mid-secure-channel, where the next PACE attempt dies on SELECT with
+    // SW 6999.
+    guard let pin1 = authorized else {
+      throw TKError(.authenticationNeeded)
+    }
+    do {
+      let signature = FieldSignature(
+        smartCard: try getSmartCard(),
+        token: token,
+        accessNumber: accessNumber
+      )
+      return try signature.perform(pin1: pin1, request: request)
+    } catch let error as TokenError {
+      throw error.asTKError
+    } catch let error as TKError {
+      throw error
+    } catch {
+      // A PACE refusal, a secure-messaging fault or a signing SW must not
+      // escape unmapped, and must not look like a wrong PIN: a genuine
+      // card failure ends the handshake instead of re-looping the prompt.
+      throw TKError(.communicationError)
+    }
+  }
+
+  /// The full contact sign flow, inside the caller's exclusive session.
   ///
   /// Fully synchronous: CTK calls `sign` on ctkd's own thread and the card
   /// is a blocking device, so the whole chain runs straight through with no
@@ -106,7 +210,8 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
   private func performSign(
     channel: SmartCardChannel,
     enteredPin: String?,
-    request: SignRequest
+    request: SignRequest,
+    publicKey: SecKey
   ) throws -> Data {
     let operations = CardOperations(channel: channel)
     try operations.selectFineidApplication()
@@ -156,7 +261,10 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
       TokenLog.error("sign: raw signature \(raw.count) bytes not re-encodable")
       throw TokenError.signatureMalformed
     }
-    try verifyLocally(der: der, request: request)
+    guard request.isSatisfied(by: der, from: publicKey) else {
+      TokenLog.error("sign: local verify FAILED - card returned a bad signature")
+      throw TokenError.signatureMalformed
+    }
     TokenLog.info("sign: local verify OK, \(der.count) DER bytes")
     cacheOnSuccess(pristine: pristine, fromCache: fromCache, enteredPin: enteredPin, serial: serial)
     return der
@@ -191,32 +299,6 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
       CredentialMemory.pin1Cache.restamp(serial: serial)
     } else if let entered = enteredPin, let cachePin = Pin1(digits: entered) {
       CredentialMemory.pin1Cache.store(cachePin, serial: serial)
-    }
-  }
-
-  /// Verifies the re-encoded signature against the leaf's public key
-  /// before the token hands it to the TLS stack.
-  ///
-  /// The G4E card can sign silently-wrong bytes if the loaded hash was
-  /// lost (S1 v4.2 §3.8.1.1). The exact-`Le` PSO:CDS prevents the known
-  /// trigger, but verifying here fails closed on any residual card fault
-  /// rather than returning garbage that breaks the handshake opaquely -
-  /// and matches the reference implementation's verify-before-return.
-  private func verifyLocally(der: Data, request: SignRequest) throws {
-    guard let token = token as? Token else {
-      throw TokenError.signatureMalformed
-    }
-    var error: Unmanaged<CFError>?
-    let valid = SecKeyVerifySignature(
-      token.leafPublicKey,
-      request.verifyAlgorithm,
-      request.digest as CFData,
-      der as CFData,
-      &error
-    )
-    guard valid else {
-      TokenLog.error("sign: local verify FAILED - card returned a bad signature")
-      throw TokenError.signatureMalformed
     }
   }
 }

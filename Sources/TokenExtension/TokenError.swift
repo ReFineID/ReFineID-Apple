@@ -23,12 +23,20 @@ internal enum TokenError: Error {
   /// The card rejected the PIN during VERIFY.
   case pinRejected
 
+  /// This card has no primed identity, so a contactless token cannot be
+  /// minted: the contactless interface seals the card until PACE has run,
+  /// and the app has not yet stored what PACE needs.
+  case primeMissing
+
   /// The card's raw signature could not be re-encoded.
   case signatureMalformed
 
   /// Signing was refused (retry floor, unreadable state, or a rejected
   /// signing command).
   case signRefused
+
+  /// The holder has disabled the transport this card arrived on.
+  case transportDisabled
 
   /// The leaf's key is not one of the supported profiles.
   case unsupportedKeyProfile
@@ -44,7 +52,9 @@ internal enum TokenError: Error {
       TKError(.corruptedData)
     case .pinAlreadyRejected, .pinFormatInvalid, .pinRejected, .signRefused:
       TKError(.authenticationFailed)
-    case .unsupportedKeyProfile:
+    case .primeMissing, .transportDisabled, .unsupportedKeyProfile:
+      // Not this driver's card. Refusal is safe: the system treats the
+      // card as unhandled rather than as broken.
       TKError(.tokenNotFound)
     }
   }

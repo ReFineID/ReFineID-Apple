@@ -1,5 +1,4 @@
 import CardCore
-import CryptoKit
 import CryptoTokenKit
 import Foundation
 import Security
@@ -19,18 +18,6 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
   /// The published issuing-CA certificate's object ID (cert-only).
   private static let issuerObjectID = "issuer-ca"
 
-  /// Schema version of what this token publishes.
-  ///
-  /// ctkd caches keychain contents by instanceID; folding this in means
-  /// a change to the published set yields a new instanceID and a
-  /// rebuild. Bump on any change to the published contents.
-  /// v2 = the signing key carries the PIN1 signData constraint.
-  private static let contentsVersion = "2"
-
-  /// Hex characters of the leaf fingerprint kept in the instance ID -
-  /// enough to identify the card without an oversized identifier.
-  private static let instanceFingerprintLength = 16
-
   /// The authentication key's profile, resolved from the leaf and used
   /// by the session to advertise and select signing algorithms.
   internal let keyProfile: CardKeyProfile
@@ -39,7 +26,36 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
   /// signature before returning it - a card that lost its loaded hash
   /// signs silently-wrong bytes with no error SW (S1 v4.2 §3.8.1.1), and
   /// the token must fail closed rather than feed the TLS stack garbage.
+  ///
+  /// On the contactless path this is also the cached form of the
+  /// certificate the prime read: the leaf is public and unchanging, so
+  /// the signature never spends its field re-reading EF.4331 to get it.
   internal let leafPublicKey: SecKey
+
+  /// The card access number the app primed for this card, contactless
+  /// tokens only; nil for a contact token.
+  ///
+  /// Never logged. Its presence is what tells the session which card it
+  /// is holding: a primed token signs behind PACE and a secure-messaging
+  /// channel, a contact token signs in the clear.
+  internal let primedAccessNumber: CardAccessNumber?
+
+  /// The card's token serial as the prime read it, contactless tokens
+  /// only.
+  ///
+  /// Cached for the same reason as the certificate: it is public, it
+  /// cannot change, and re-reading it costs more than the field has left
+  /// - that read was measured dying part way through, which is a login
+  /// lost for nothing.
+  internal let primedSerial: TokenSerial?
+
+  /// The card session taken at the mint and kept open for the signature.
+  ///
+  /// Empty on the contact path, which opens a session per operation.
+  internal let heldSession = HeldCardSession()
+
+  /// Releases the held session when the card leaves the slot.
+  private var slotStateObservation: NSKeyValueObservation?
 
   internal init(
     smartCard: TKSmartCard,
@@ -73,14 +89,21 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
     }
     self.keyProfile = profile
     self.leafPublicKey = publicKey
-    let fingerprint = SHA256.hash(data: identity.leafDER)
-      .map { String(format: "%02x", $0) }
-      .joined()
-    let instanceID = "\(fingerprint.prefix(Self.instanceFingerprintLength)).\(Self.contentsVersion)"
+    self.primedAccessNumber = nil
+    self.primedSerial = nil
+    // Same derivation and same contents version as the contactless mint
+    // below; only the material differs, because only here has the card
+    // already been read. Unreachable in practice: these are the bytes
+    // SecCertificateCreateWithData just accepted, so they are not empty.
+    guard let instanceID = CardInstanceIdentifier(authenticationCertificate: identity.leafDER)
+    else {
+      TokenLog.error("Token.init: leaf certificate has no bytes to name the card with")
+      throw TokenError.certificateUnreadable
+    }
     super.init(
       smartCard: smartCard,
       aid: aid,
-      instanceID: instanceID,
+      instanceID: instanceID.value,
       tokenDriver: tokenDriver
     )
     TokenLog.info("Token.init: super.init done, publishing profile=\(String(describing: profile))")
@@ -89,6 +112,58 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
     // lift the disable latch a prior degradation may have set.
     CredentialMemory.pin1Cache.reset()
     TokenLog.info("Token.init: publish done")
+  }
+
+  /// Creates the token from a primed identity instead of from the card.
+  ///
+  /// The contactless interface seals the PKCS#15 application until PACE
+  /// has run, so this cannot read the certificate the way the contact
+  /// path does - and on the system-driven path it must not try at all:
+  /// `ctkd` owns the slot, ends it about two seconds from here, and a
+  /// read issued now was measured taking the slot away before the
+  /// identity ever reached Safari. Everything needed is already in the
+  /// prime the app stored - certificate, chain, serial and card access
+  /// number, all read from this same card and none of them able to have
+  /// changed since - so this mint does NO card I/O whatsoever and
+  /// publishes exactly the items the contact path would.
+  internal init(
+    primedSmartCard smartCard: TKSmartCard,
+    aid: Data?,
+    tokenDriver: TKSmartCardTokenDriver,
+    instanceID: CardInstanceIdentifier,
+    primed: PrimedIdentity
+  ) throws {
+    guard let accessNumber = CardAccessNumber(digits: primed.can) else {
+      throw TokenError.primeMissing
+    }
+    guard let leaf = SecCertificateCreateWithData(nil, primed.certDER as CFData) else {
+      throw TokenError.certificateUnreadable
+    }
+    guard
+      let profile = CardKeyProfile.resolve(fromCertificate: leaf),
+      SigningAlgorithmResolver.supportsSigning(profile)
+    else {
+      throw TokenError.unsupportedKeyProfile
+    }
+    guard let publicKey = SecCertificateCopyKey(leaf) else {
+      throw TokenError.certificateUnreadable
+    }
+    self.keyProfile = profile
+    self.leafPublicKey = publicKey
+    self.primedAccessNumber = accessNumber
+    self.primedSerial = primed.tokenSerial.flatMap(TokenSerial.init(value:))
+    super.init(
+      smartCard: smartCard,
+      aid: aid,
+      instanceID: instanceID.value,
+      tokenDriver: tokenDriver
+    )
+    try publish(
+      PublishedIdentity(leafDER: primed.certDER, issuerDER: primed.issuerDER),
+      leaf: leaf,
+      profile: profile
+    )
+    observeSlotState(of: smartCard)
   }
 
   /// Reads the leaf and (best-effort) issuer certificates and resolves
@@ -112,6 +187,45 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
   // swiftlint:disable:next unneeded_throws_rethrows
   internal func createSession(_: TKToken) throws -> TKTokenSession {
     TokenSession(token: self)
+  }
+
+  /// Takes a card session now and keeps it, so the signature that
+  /// follows still has a live field.
+  ///
+  /// The contactless mint calls this and nothing else does. On the
+  /// system-driven path the slot that minted this token has ended by the
+  /// time the signature is asked for, and a fresh `beginSession` then
+  /// fails with `TKError -7`; this one session carries the mint, the
+  /// PACE run and the signature.
+  ///
+  /// Best effort by design: a token that could not hold a session is
+  /// still perfectly usable wherever the card stays present, so a
+  /// failure here is swallowed rather than failing the mint.
+  internal func holdSession(on smartCard: TKSmartCard) {
+    guard heldSession.current == nil else { return }
+    let channel = SmartCardChannel(smartCard)
+    do {
+      try channel.beginSession()
+    } catch {
+      TokenLog.info("Token.holdSession: no session retained")
+      return
+    }
+    heldSession.retain(channel)
+  }
+
+  /// Releases the held session when the card is genuinely gone.
+  ///
+  /// Only `.missing` counts. Releasing on any other non-valid state was
+  /// measured tearing a signature down part way through a read: a card
+  /// momentarily out of the field is still the same card, and the slot
+  /// says so a moment later.
+  private func observeSlotState(of smartCard: TKSmartCard) {
+    slotStateObservation = smartCard.slot.observe(\.state, options: [.new]) {
+      [held = heldSession] observed, change in
+      let state = change.newValue ?? observed.state
+      guard state == .missing else { return }
+      held.release()
+    }
   }
 
   /// Builds and fills the keychain contents from the read identity.
@@ -163,5 +277,16 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
       "publish: filling \(items.count) items, keychainContents=\(keychainContents != nil)"
     )
     keychainContents?.fill(with: items)
+  }
+
+  /// Gives back the held session when the token itself goes away.
+  ///
+  /// The slot observation covers the card leaving; this covers `ctkd`
+  /// dropping the token for any other reason. A session left open on the
+  /// phone's own antenna keeps the radio, and the next hold then meets
+  /// the busy answer ``NearFieldCardSession`` has to retry through -
+  /// about 2.5 seconds of the holder's time for nothing.
+  deinit {
+    heldSession.release()
   }
 }

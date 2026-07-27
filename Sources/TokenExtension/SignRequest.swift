@@ -25,4 +25,23 @@ internal struct SignRequest {
   /// `digest` - the card signs the bytes we loaded, and the token checks
   /// them against the leaf's public key before trusting the result.
   internal let verifyAlgorithm: SecKeyAlgorithm
+
+  /// Whether `der` really is this request's signature under `publicKey`.
+  ///
+  /// The G4E card can sign silently-wrong bytes if the loaded hash was
+  /// lost (S1 v4.2 §3.8.1.1). The exact-`Le` PSO:CDS prevents the known
+  /// trigger, but checking here fails closed on any residual card fault
+  /// rather than returning garbage that breaks the handshake opaquely -
+  /// and matches the reference implementation's verify-before-return.
+  /// Both transports check; the check is local, so it costs no field.
+  internal func isSatisfied(by der: Data, from publicKey: SecKey) -> Bool {
+    var error: Unmanaged<CFError>?
+    return SecKeyVerifySignature(
+      publicKey,
+      verifyAlgorithm,
+      digest as CFData,
+      der as CFData,
+      &error
+    )
+  }
 }
