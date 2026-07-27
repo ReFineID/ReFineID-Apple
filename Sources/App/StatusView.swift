@@ -78,7 +78,14 @@ internal struct StatusView: View {
     // is no useful window here that hides the card's status.
     .fixedSize(horizontal: false, vertical: true)
     .frame(minWidth: Self.minimumWidth, alignment: .leading)
-    .task { await model.refresh() }
+    .task {
+      // Off the main actor and off the launch path: this is a
+      // synchronous call into `ctkd`, and `ctkd` is not always ready.
+      Task.detached(priority: .utility) {
+        CardCredentialStore.publishCardAccessNumberToDriver()
+      }
+      await model.refresh()
+    }
     .sheet(isPresented: $showsDiagnostics) { diagnosticsSheet }
   }
 

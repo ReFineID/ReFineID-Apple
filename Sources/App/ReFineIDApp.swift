@@ -1,4 +1,3 @@
-import CardCore
 import SwiftUI
 
 /// Application entry point: one small status surface on every platform.
@@ -53,11 +52,13 @@ internal struct ReFineIDApp: App {
   }
 
   internal init() {
-    // The driver cannot read the keychain item holding the card access
-    // number on macOS, so the app hands it over on every launch. Doing it
-    // here rather than only where the number is entered is what reaches a
-    // number that was stored before this channel existed.
-    CardCredentialStore.publishCardAccessNumberToDriver()
+    // Nothing that talks to another process belongs here. Handing the
+    // card access number to the driver was done from this initializer
+    // and it hung the app: reading the driver configuration is a
+    // synchronous call into `ctkd`, so whenever `ctkd` was slow or
+    // restarting the app blocked before it had a window to say so in.
+    // It happens off the launch path now, from the status screen.
+    //
     // One entry point for every launch mode, and it lives behind DEBUG.
     // A shipped binary has no business offering to drive a signature,
     // least of all one that takes a PIN on the command line.
