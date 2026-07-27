@@ -14,8 +14,11 @@ internal struct ReFineIDApp: App {
         // Only iOS reaches a card over NFC, and only the contactless
         // interface needs a card access number, so the credential screen
         // exists on iOS alone.
+        // Setting the card up is what a holder comes here to do, so it
+        // is what opens. What the card reports about itself is
+        // diagnostic and sits one tap away.
         NavigationStack {
-          StatusView()
+          CardCredentialsView()
         }
       }
     #endif

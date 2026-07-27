@@ -55,11 +55,6 @@ internal struct StatusView: View {
   /// The card-details screen is iOS only: a card access number matters
   /// only on the contactless interface, which macOS has no way to reach.
   @ViewBuilder private var actionRows: some View {
-    #if os(iOS)
-      NavigationLink("Card details") {
-        CardCredentialsView()
-      }
-    #endif
     Button("Refresh") {
       Task { await model.refresh() }
     }

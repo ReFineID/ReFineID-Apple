@@ -47,6 +47,14 @@ internal final class CardCredentialsModel {
     }
   }
 
+  /// Forgets the card access number, so it can be entered again.
+  internal func forgetCardAccessNumber() async {
+    await gated(reason: String(localized: "Replace the card access number")) {
+      CardCredentialStore.forgetCardAccessNumber()
+      return nil
+    }
+  }
+
   /// Forgets PIN1, so every signature asks again.
   internal func forgetPin1() async {
     await gated(reason: String(localized: "Forget the stored PIN1")) {

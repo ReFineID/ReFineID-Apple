@@ -1,140 +1,157 @@
 import CardCore
 import SwiftUI
 
-/// Where the holder stores the card access number, and chooses whether
-/// this device may keep PIN1.
+/// Setting the card up: the access number, PIN1, and the hold that
+/// registers the card for Safari.
 ///
-/// The screen never displays a stored secret. It reports only whether one
-/// is present, and offers to replace or forget it: a holder who has
-/// forgotten a value can set it again, and a screen that can show a PIN
-/// is a screen that can leak one.
+/// This is the screen that matters, so it is the one the app opens on.
+/// What the card reports about itself is diagnostic and lives behind the
+/// status screen.
+///
+/// Nothing stored is ever shown again. A value is either set or not, and
+/// a set value can be replaced or forgotten. There is no explanatory
+/// text: a setup screen that needs paragraphs to be understood is the
+/// wrong screen.
 internal struct CardCredentialsView: View {
-  private static let rowSpacing: CGFloat = 12
-
   @State private var model = CardCredentialsModel()
   @State private var cardAccessNumberEntry = ""
   @State private var pin1Entry = ""
+  @State private var isScanning = false
 
   internal var body: some View {
     Form {
       cardAccessNumberSection
       pin1Section
-      primingSection
-      forgetSection
+      if model.contents.hasCardAccessNumber {
+        primingSection
+      }
       if let failure = model.failure {
         Section {
           Text(failure)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(.red)
         }
       }
+      forgetSection
     }
-    .navigationTitle("Card details")
+    .navigationTitle("Set up your card")
     .onAppear { model.refresh() }
+    #if os(iOS)
+      .sheet(isPresented: $isScanning) {
+        scannerSheet
+      }
+    #endif
   }
 
-  /// Where the printed six digits are entered.
+  /// The six printed digits: an entry row while unset, one line once set.
   @ViewBuilder private var cardAccessNumberSection: some View {
-    Section {
-      LabeledContent(
-        "Card access number",
-        value: model.contents.hasCardAccessNumber
-          ? String(localized: "Stored")
-          : String(localized: "Not stored"))
-      SecureField("Six digits from the card", text: $cardAccessNumberEntry)
-      Button("Save card access number") {
-        let entry = cardAccessNumberEntry
-        cardAccessNumberEntry = ""
-        Task { await model.saveCardAccessNumber(entry) }
+    Section("Card access number") {
+      if model.contents.hasCardAccessNumber {
+        LabeledContent("Card access number", value: String(localized: "Set"))
+        Button("Replace") {
+          Task { await model.forgetCardAccessNumber() }
+        }
+      } else {
+        entryRow
+        Button("Save") {
+          let entry = cardAccessNumberEntry
+          cardAccessNumberEntry = ""
+          Task { await model.saveCardAccessNumber(entry) }
+        }
+        .disabled(cardAccessNumberEntry.count != CardAccessNumber.digitCount)
       }
-      .disabled(cardAccessNumberEntry.count != CardAccessNumber.digitCount)
-    } header: {
-      Text("Card access number")
-    } footer: {
-      Text(
-        """
-        Printed on the front of the card. It lets this device open a \
-        secure channel to the card over NFC, and it cannot authorize a \
-        signature on its own. Stored on this iPhone only and never shown \
-        again, but not behind Face ID: it is already printed on the card \
-        you are holding.
-        """)
     }
   }
 
-  /// The opt-in that trades a prompt for convenience.
-  @ViewBuilder private var pin1Section: some View {
-    Section {
-      LabeledContent(
-        "PIN1",
-        value: model.contents.hasPin1
-          ? String(localized: "Stored on this device")
-          : String(localized: "Asked for each time"))
-      SecureField("PIN1", text: $pin1Entry)
-      Button("Store PIN1 on this device") {
-        let entry = pin1Entry
-        pin1Entry = ""
-        Task { await model.savePin1(entry) }
+  /// The digits field, with the camera beside it where there is one.
+  @ViewBuilder private var entryRow: some View {
+    #if os(iOS)
+      HStack {
+        TextField("Six digits", text: $cardAccessNumberEntry)
+          .keyboardType(.numberPad)
+        if CardAccessNumberScanner.isAvailable {
+          Button {
+            isScanning = true
+          } label: {
+            Label("Scan", systemImage: "camera")
+              .labelStyle(.iconOnly)
+          }
+          .buttonStyle(.borderless)
+        }
       }
-      .disabled(pin1Entry.count < Pin1.minimumDigitCount)
+    #else
+      TextField("Six digits", text: $cardAccessNumberEntry)
+    #endif
+  }
+
+  /// PIN1: optional, and the same set-or-not treatment.
+  @ViewBuilder private var pin1Section: some View {
+    Section("PIN1") {
       if model.contents.hasPin1 {
-        Button("Forget PIN1", role: .destructive) {
+        LabeledContent("PIN1", value: String(localized: "Set"))
+        Button("Replace") {
           Task { await model.forgetPin1() }
         }
+      } else {
+        pin1Field
+        Button("Save") {
+          let entry = pin1Entry
+          pin1Entry = ""
+          Task { await model.savePin1(entry) }
+        }
+        .disabled(pin1Entry.count < Pin1.minimumDigitCount)
       }
-    } header: {
-      Text("PIN1")
-    } footer: {
-      Text(
-        """
-        Optional. Storing PIN1 lets a website sign you in without typing \
-        it every time. It is kept under Face ID: reading it needs your \
-        face at that moment, the device passcode alone will not do it, \
-        and adding or changing a face or fingerprint clears it. It is \
-        still a trade -- a signature can then be made with your card \
-        without you typing anything -- so leave it off unless you want \
-        that.
-        """)
     }
   }
 
-  /// The one hold that sets the card up for Safari.
-  ///
-  /// Only reachable where the phone has an antenna and a system that
-  /// offers an NFC smart-card slot; on anything else the card is reached
-  /// through a reader, which needs no priming and no card access number.
+  @ViewBuilder private var pin1Field: some View {
+    #if os(iOS)
+      SecureField("PIN1", text: $pin1Entry)
+        .keyboardType(.numberPad)
+    #else
+      SecureField("PIN1", text: $pin1Entry)
+    #endif
+  }
+
+  /// The hold that registers this card for Safari.
   @ViewBuilder private var primingSection: some View {
-    #if canImport(CoreNFC) && os(iOS)
-      if #available(iOS 26.0, *), SupportedCardTransports.offersNearField {
-        Section {
-          NavigationLink("Set up Safari login") {
-            CardPrimingView()
-          }
-          .disabled(!model.contents.hasCardAccessNumber)
-        } footer: {
-          Text(
-            """
-            Read the card once with the phone itself, so websites can ask \
-            for it later without reading it again. Needs the card access \
-            number above.
-            """)
+    #if os(iOS)
+      Section("Safari") {
+        NavigationLink("Register this card") {
+          CardPrimingView()
         }
       }
     #endif
   }
 
-  /// The way back to a device that knows nothing.
   @ViewBuilder private var forgetSection: some View {
     Section {
-      Button("Forget card details on this device", role: .destructive) {
+      NavigationLink("Card status") {
+        StatusView()
+      }
+      Button("Forget this card", role: .destructive) {
         Task { await model.forgetEverything() }
       }
-    } footer: {
-      Text(
-        """
-        Card details are entered once and never shown again. They stay on \
-        this iPhone: never in a backup, never restored onto another \
-        device, never sent to iCloud.
-        """)
+      .disabled(!model.contents.hasCardAccessNumber && !model.contents.hasPin1)
     }
   }
+
+  #if os(iOS)
+    /// The camera, framed so it can be dismissed.
+    @ViewBuilder private var scannerSheet: some View {
+      NavigationStack {
+        CardAccessNumberScanner { digits in
+          cardAccessNumberEntry = digits
+          isScanning = false
+        }
+        .ignoresSafeArea()
+        .navigationTitle("Point at the card")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+          ToolbarItem(placement: .cancellationAction) {
+            Button("Cancel") { isScanning = false }
+          }
+        }
+      }
+    }
+  #endif
 }

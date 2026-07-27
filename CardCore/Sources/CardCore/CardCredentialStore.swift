@@ -142,6 +142,11 @@ public enum CardCredentialStore {
     return Pin1SigningWindow.open(pin1: digits)
   }
 
+  /// Removes the card access number.
+  public static func forgetCardAccessNumber() {
+    delete(account: cardAccessNumberAccount)
+  }
+
   /// Removes PIN1, returning to a prompt for every signature.
   public static func forgetPin1() {
     delete(account: pin1Account)
