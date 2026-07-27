@@ -119,9 +119,12 @@ public enum ExtensionTrace {
   ///
   /// Every measurement starts from a known zero, or an old line reads as
   /// if the new run had made it.
-  public static func clear() {
+  /// Answers with the keychain's own status, so a clear that did not
+  /// clear says why instead of looking like a button that does nothing.
+  @discardableResult
+  public static func clear() -> OSStatus {
     _ = Self.pending.drain()
-    SecItemDelete(Self.query() as CFDictionary)
+    return SecItemDelete(Self.query() as CFDictionary)
   }
 
   /// Writes everything recorded so far into the shared item.

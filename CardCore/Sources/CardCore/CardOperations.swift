@@ -287,6 +287,26 @@ public struct CardOperations {
   /// the padded file end: a whole-file read pulls trailing padding that
   /// the card either refuses (overrun) or that defeats the DER parse -
   /// exactly the failure the certificate reads already avoid.
+  /// What EF.TokenInfo says the card is, for the status screen.
+  ///
+  /// Best effort by nature: the fields are optional in PKCS#15, so a
+  /// card that says nothing about itself is normal and answers nil.
+  public func readTokenDescription() throws -> String? {
+    let selected = try transmit(.selectElementaryFile(.tokenInfo))
+    guard selected.statusWord == .success else {
+      throw CardOperationError.selectRejected(selected.statusWord)
+    }
+    var assembler = BinaryReadAssembler(
+      mode: .singleDerObject,
+      chunkLength: channel.readChunkLength
+    )
+    return TokenInfoFile.description(fromContent: try drive(&assembler))
+  }
+
+  /// Reads the card's full hardware serial from EF.TokenInfo.
+  ///
+  /// The serial is what a cached PIN is bound to, so it is read fresh in
+  /// the same session that will spend the PIN.
   public func readTokenSerial() throws -> TokenSerial {
     let selected = try transmit(.selectElementaryFile(.tokenInfo))
     guard selected.statusWord == .success else {

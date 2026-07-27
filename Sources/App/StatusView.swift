@@ -35,22 +35,33 @@ internal struct StatusView: View {
         .font(.largeTitle.bold())
       Text("Finnish identity card middleware")
         .foregroundStyle(.secondary)
-      Divider()
-      LabeledContent(
-        "Reader",
-        value: model.snapshot?.readerName
-          ?? String(localized: "Connect a card reader")
-      )
-      cardRows
-      // Only where it is needed. A card in a contact slot answers
-      // without one, so a row saying the number is stored is a setting
-      // about nothing -- it belongs on screen when a card is sitting on
-      // an antenna, sealed, waiting for exactly this.
-      if case .sealed = model.snapshot?.card {
-        cardAccessNumberRow
+      // A grouped form, which is what the platform uses for exactly this
+      // kind of list: labels aligned in their own column against their
+      // values, no hand-drawn dividers, and no colons -- the alignment
+      // is what separates a label from its value on this platform.
+      Form {
+        LabeledContent(
+          "Reader",
+          value: model.snapshot?.readerName
+            ?? String(localized: "Connect a card reader")
+        )
+        cardRows
+        // Only where it is needed. A card in a contact slot answers
+        // without one, so a row saying the number is stored is a setting
+        // about nothing -- it belongs on screen when a card is sitting on
+        // an antenna, sealed, waiting for exactly this.
+        if case .sealed = model.snapshot?.card {
+          cardAccessNumberRow
+        }
+        LabeledContent("Safari login", value: Self.safariLabel(for: model.snapshot))
+        transportRows
       }
-      LabeledContent("Safari login", value: Self.safariLabel(for: model.snapshot))
-      transportRows
+      .formStyle(.grouped)
+      // Labels in the secondary colour, values in the primary one, so a
+      // row reads as one thing described by another rather than as two
+      // words side by side.
+      .labeledContentStyle(.automatic)
+      .foregroundStyle(.primary)
       actionRows
     }
     // Each row keeps its natural width instead of compressing, so the
@@ -58,7 +69,6 @@ internal struct StatusView: View {
     // which is what stops the text being truncated to fit a window the
     // holder never chose. `windowResizability(.contentSize)` then makes
     // that minimum the smallest the window can be dragged to.
-    .fixedSize(horizontal: true, vertical: false)
     .padding(Self.contentPadding)
     .frame(minWidth: Self.minimumWidth, alignment: .leading)
     .task { await model.refresh() }
@@ -189,9 +199,12 @@ internal struct StatusView: View {
         value: String(localized: "Insert your identity card")
       )
     case .sealed:
+      // The label carries the interface, because that is the difference
+      // the holder can act on: a card on an antenna needs the number
+      // below it, a card in the slot needs nothing.
       LabeledContent(
-        "Card",
-        value: String(localized: "Identity card on the contactless interface")
+        "Card on NFC",
+        value: String(localized: "Identity card")
       )
     case .unsupported:
       LabeledContent(
@@ -200,10 +213,15 @@ internal struct StatusView: View {
       )
     case .failed(let failure):
       LabeledContent("Card", value: Self.label(for: failure))
-    case .supported(let report):
+    // The two linters want opposite things here: swiftlint's
+    // pattern_matching_keywords asks for one `let` before the case,
+    // swift-format's UseLetInEveryBoundCaseVariable asks for one per
+    // binding. swift-format wins, because it is the formatter.
+    // swiftlint:disable:next pattern_matching_keywords
+    case .supported(let report, let name):
       LabeledContent(
-        "Card",
-        value: String(localized: "Identity card recognized")
+        "Card on reader",
+        value: name ?? String(localized: "Identity card")
       )
       LabeledContent("PIN1", value: Self.label(for: report.pin1))
       LabeledContent("PIN2", value: Self.label(for: report.pin2))
@@ -213,12 +231,8 @@ internal struct StatusView: View {
 
   private static func safariLabel(for snapshot: CardStatusSnapshot?) -> String {
     guard let snapshot else { return String(localized: "Checking...") }
-    if snapshot.safariIdentityPresent {
-      return String(localized: "Ready - the card is available to Safari")
-    }
-    return String(
-      localized: "Not available - this version does not yet publish the card"
-    )
+    return snapshot.safariIdentityPresent
+      ? String(localized: "Ready") : String(localized: "Not available")
   }
 
   private static func hexLabel(_ value: UInt16) -> String {
@@ -256,7 +270,10 @@ internal struct StatusView: View {
         localized: "Unexpected answer from the card (\(Self.hexLabel(statusWord)))"
       )
     case .remaining(let count):
-      String(localized: "\(Int(count.attemptsRemaining)) attempts remaining")
+      // "5/5" rather than "5 attempts remaining": the denominator is the
+      // fact worth showing, because 4 alone does not say how far from
+      // trouble the card is.
+      String(localized: "\(Int(count.attemptsRemaining))/\(Int(RetryCount.pristineAllowance))")
     case .verified:
       String(localized: "Verified in this session")
     }

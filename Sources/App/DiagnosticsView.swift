@@ -27,9 +27,16 @@ internal struct DiagnosticsView: View {
   /// The capture on screen, or nil until the first read finishes.
   @State private var snapshot: DiagnosticsSnapshot?
 
+  /// Why a clear did not clear, when it did not.
+  @State private var clearNote: String?
+
   internal var body: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: Self.sectionSpacing) {
+        if let clearNote {
+          Text(clearNote)
+            .foregroundStyle(.red)
+        }
         if let snapshot {
           ForEach(snapshot.sections) { section in
             sectionView(section)
@@ -68,8 +75,11 @@ internal struct DiagnosticsView: View {
     }
     ToolbarItem {
       Button("Clear", role: .destructive) {
-        ExtensionTrace.clear()
+        let status = ExtensionTrace.clear()
         snapshot = DiagnosticsSnapshot.collect()
+        clearNote =
+          status == errSecSuccess || status == errSecItemNotFound
+          ? nil : String(localized: "Clear refused by the keychain: \(Int(status))")
       }
     }
   }

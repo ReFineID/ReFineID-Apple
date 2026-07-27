@@ -28,8 +28,9 @@ internal struct CardStatusSnapshot: Equatable, Sendable {
     /// No card is present in the reader.
     case noCard
 
-    /// A supported card and its counter-safe probe report.
-    case supported(CredentialProbeReport)
+    /// A supported card, what it calls itself when it says, and its
+    /// counter-safe probe report.
+    case supported(CredentialProbeReport, name: String?)
 
     /// An identity card reached over a contactless interface, whose
     /// application stays sealed until PACE has run.
@@ -142,7 +143,11 @@ internal struct CardStatusSnapshot: Equatable, Sendable {
         } catch CardOperationError.selectRejected {
           return .unsupported
         }
-        return .supported(try operations.probeCredentials())
+        let report = try operations.probeCredentials()
+        // Best effort, and after the counters: a card that will not name
+        // itself is still a card, and this must not cost the reading
+        // that matters.
+        return .supported(report, name: try? operations.readTokenDescription())
       }
     } catch CardOperationError.sessionUnavailable {
       return .failed(.sessionUnavailable)

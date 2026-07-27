@@ -1,60 +1,19 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "%lld attempts remaining": {
+    "%lld/%lld": {
+      "extractionState": "manual",
       "localizations": {
-        "en": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "1 attempt remaining"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%lld attempts remaining"
-                }
-              }
-            }
-          }
-        },
         "fi": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "1 yritys jäljellä"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%lld yritystä jäljellä"
-                }
-              }
-            }
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld/%lld"
           }
         },
         "sv": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "1 försök kvar"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%lld försök kvar"
-                }
-              }
-            }
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld/%lld"
           }
         }
       }
@@ -108,6 +67,40 @@
         }
       }
     },
+    "Card on NFC": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortti NFC:llä"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kort via NFC"
+          }
+        }
+      }
+    },
+    "Card on reader": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortti lukijassa"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kort i läsaren"
+          }
+        }
+      }
+    },
     "Checking...": {
       "localizations": {
         "fi": {
@@ -120,6 +113,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kontrollerar..."
+          }
+        }
+      }
+    },
+    "Clear refused by the keychain: %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avainnippu esti tyhjennyksen: %lld"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nyckelringen nekade rensningen: %lld"
           }
         }
       }
@@ -206,35 +216,19 @@
         }
       }
     },
-    "Identity card on the contactless interface": {
+    "Identity card": {
       "extractionState": "manual",
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Henkilökortti lähiluettavassa liitännässä"
+            "value": "Henkilökortti"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Identitetskort på det kontaktlösa gränssnittet"
-          }
-        }
-      }
-    },
-    "Identity card recognized": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Henkilökortti tunnistettu"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Identitetskortet har identifierats"
+            "value": "Identitetskort"
           }
         }
       }
@@ -303,18 +297,19 @@
         }
       }
     },
-    "Not available - this version does not yet publish the card": {
+    "Not available": {
+      "extractionState": "manual",
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ei käytettävissä - tämä versio ei vielä julkaise korttia"
+            "value": "Ei käytettävissä"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Inte tillgängligt - den här versionen publicerar ännu inte kortet"
+            "value": "Inte tillgängligt"
           }
         }
       }
@@ -354,18 +349,19 @@
         }
       }
     },
-    "Ready - the card is available to Safari": {
+    "Ready": {
+      "extractionState": "manual",
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Valmis - kortti on Safarin käytettävissä"
+            "value": "Valmis"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Klart - kortet är tillgängligt för Safari"
+            "value": "Klar"
           }
         }
       }

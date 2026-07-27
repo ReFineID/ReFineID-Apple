@@ -1,12 +1,18 @@
 import Foundation
 
-/// Extracts the full hardware serial from EF.TokenInfo content.
+/// Extracts what EF.TokenInfo says about the card.
 ///
 /// PKCS#15 TokenInfo is `SEQUENCE { version INTEGER, serialNumber OCTET
-/// STRING, ... }`; the serial is the hex rendering of the octet string,
-/// matching the reference implementation. Everything after the serial
-/// is deliberately ignored - the minimal driver needs nothing else from
-/// this file.
+/// STRING, manufacturerID Label OPTIONAL, label [0] Label OPTIONAL,
+/// ... }`; the serial is the hex rendering of the octet string, matching
+/// the reference implementation.
+///
+/// The two optional strings after it are what the card calls itself, and
+/// they are worth reading for one reason: a status screen that can say
+/// which card is in the reader is telling the holder something only the
+/// card knows, instead of the same "identity card recognized" for every
+/// card ever made. Both are optional and neither is trusted for
+/// anything: they are shown, never matched on.
 public enum TokenInfoFile {
   private static let hexDigits = Array("0123456789ABCDEF")
 
@@ -15,6 +21,9 @@ public enum TokenInfoFile {
   private static let hexDigitsPerByte = 2
 
   private static let minimumFieldCount = 2
+
+  /// Tag of the context-specific `label [0]` field.
+  private static let labelTag: UInt8 = 0x80
 
   /// Parses the serial, or nil when the outer SEQUENCE, the leading
   /// INTEGER, or the serial octet string is missing or malformed.
@@ -32,6 +41,35 @@ public enum TokenInfoFile {
       return nil
     }
     return TokenSerial(value: hexEncode(fields[1].value))
+  }
+
+  /// What the card calls itself: its manufacturer and its label, as far
+  /// as it offers them, or nil when it offers neither.
+  ///
+  /// Display only. A card is identified by what it can do and what its
+  /// certificate says, never by a string it hands out about itself.
+  public static func description(fromContent content: Data) -> String? {
+    guard
+      let outer = try? DerTlvRecord.sequence(in: content),
+      let sequence = outer.first,
+      sequence.tag == Iso7816Values.derSequenceTag,
+      let fields = try? DerTlvRecord.sequence(in: sequence.value)
+    else {
+      return nil
+    }
+    let named = fields.dropFirst(Self.minimumFieldCount).compactMap { field -> String? in
+      guard field.tag == Iso7816Values.derUtf8StringTag || field.tag == Self.labelTag else {
+        return nil
+      }
+      // Failable rather than lossy: a label that is not valid UTF-8 is
+      // not a label, and a string of replacement characters on a status
+      // screen is worse than no name at all.
+      guard let text = String(bytes: field.value, encoding: .utf8) else { return nil }
+      let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+      return trimmed.isEmpty ? nil : trimmed
+    }
+    guard !named.isEmpty else { return nil }
+    return named.joined(separator: " ")
   }
 
   private static func hexEncode(_ data: Data) -> String {

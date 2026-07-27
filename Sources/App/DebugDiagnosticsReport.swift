@@ -78,8 +78,9 @@
         lines.append("card: no card in the reader")
       case .sealed:
         lines.append("card: identity card, contactless interface (sealed until PACE)")
-      case .supported(let report):
-        lines.append("card: supported")
+      // swiftlint:disable:next pattern_matching_keywords
+      case .supported(let report, let name):
+        lines.append("card: supported" + (name.map { " - " + $0 } ?? ""))
         lines.append("pin1: " + Self.label(for: report.pin1))
         lines.append("pin2: " + Self.label(for: report.pin2))
         lines.append("puk: " + Self.label(for: report.puk))
