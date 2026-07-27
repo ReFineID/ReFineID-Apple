@@ -61,6 +61,22 @@ internal enum PaceCommand {
   /// `classByte` selects chaining: the first three rounds set the chaining
   /// bit, the last one clears it, and that is how the card learns the
   /// exchange is over.
+  /// The two SELECT encodings tried, in order, to reach master file.
+  ///
+  /// Cards differ in which they accept: the first selects by file
+  /// identifier, the second by name. Both were established against real
+  /// cards rather than read off a specification, and the order is the
+  /// order that was measured to work.
+  ///
+  /// Provenance: `select_mf` in the donor
+  /// `crates/refineid-lib-core/src/pkcs15.rs`.
+  internal static func selectMasterFileVariants() -> [Data] {
+    [
+      PaceValues.selectMasterFileByIdentifier,
+      PaceValues.selectMasterFileByName,
+    ]
+  }
+
   internal static func generalAuthenticate(template: Data, classByte: UInt8) -> Data? {
     guard let expectedLength = Self.maximumExpectedLength else { return nil }
     return Self.bytes(

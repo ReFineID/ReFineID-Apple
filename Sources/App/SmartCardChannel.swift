@@ -33,14 +33,26 @@ internal struct SmartCardChannel: CardChannel {
     self.smartCard = smartCard
   }
 
+  /// Sends one command and waits for the card, tracing the exchange.
+  ///
+  /// The app's own card work -- priming, above all -- was invisible while
+  /// only the extensions were traced, which meant a failed hold could be
+  /// read about afterwards but never diagnosed. Instruction byte, sizes,
+  /// status word and timing only; `VERIFY` is redacted wholesale by
+  /// ``CardExchangeTrace``, so no PIN reaches the buffer.
   internal func transmit(_ payload: Data) throws -> Data {
     let reply = Box<Data?>(nil)
     let semaphore = DispatchSemaphore(value: 0)
+    let started = ContinuousClock.now
     smartCard.transmit(payload) { response, _ in
       reply.value = response
       semaphore.signal()
     }
     semaphore.wait()
+    let elapsed = started.duration(to: ContinuousClock.now)
+    ExtensionTrace.append(
+      CardExchangeTrace.line(request: payload, response: reply.value, elapsed: elapsed)
+    )
     guard let response = reply.value else {
       throw CardOperationError.malformedResponse
     }

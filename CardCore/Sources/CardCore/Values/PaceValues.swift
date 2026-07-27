@@ -1,3 +1,5 @@
+import Foundation
+
 /// The dedicated home for PACE and secure-messaging wire values.
 ///
 /// PACE is the FINEID card's contactless door: the CAN is turned into a
@@ -251,4 +253,55 @@ internal enum PaceValues {
   /// A mismatch means the session keys differ and the channel must be
   /// abandoned, not retried on the same keys.
   internal static let authenticationTokenCardTag: UInt8 = 0x86
+
+  /// SELECT, the instruction that moves the card between files.
+  private static let selectInstruction: UInt8 = 0xA4
+
+  /// SELECT P1: by file identifier.
+  private static let selectByIdentifier: UInt8 = 0x00
+
+  /// SELECT P1: by name.
+  private static let selectByName: UInt8 = 0x04
+
+  /// SELECT P2: return no file control information.
+  private static let selectNoResponseData: UInt8 = 0x0C
+
+  /// Length of a master-file identifier.
+  private static let masterFileIdentifierLength: UInt8 = 0x02
+
+  /// High byte of the master file identifier `3F00`.
+  private static let masterFileIdentifierHigh: UInt8 = 0x3F
+
+  /// Low byte of the master file identifier `3F00`.
+  private static let masterFileIdentifierLow: UInt8 = 0x00
+
+  /// SELECT master file by identifier: the first encoding tried.
+  ///
+  /// A FINEID card refuses PACE's MSE:Set AT unless the session is at
+  /// master-file level, and contactless discovery leaves an application
+  /// selected instead.
+  internal static let selectMasterFileByIdentifier = Data([
+    Iso7816Values.classInterindustry,
+    selectInstruction,
+    selectByIdentifier,
+    selectNoResponseData,
+    masterFileIdentifierLength,
+    masterFileIdentifierHigh,
+    masterFileIdentifierLow,
+  ])
+
+  /// SELECT master file by name: the fallback encoding.
+  ///
+  /// Cards differ in which of the two they accept, so both are tried in
+  /// this order. Established against real cards, not read off a
+  /// specification.
+  internal static let selectMasterFileByName = Data([
+    Iso7816Values.classInterindustry,
+    selectInstruction,
+    selectByName,
+    selectNoResponseData,
+    masterFileIdentifierLength,
+    masterFileIdentifierHigh,
+    masterFileIdentifierLow,
+  ])
 }

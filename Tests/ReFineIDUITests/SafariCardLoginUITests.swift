@@ -151,7 +151,18 @@ internal final class SafariCardLoginUITests: XCTestCase {
       XCTFail("Safari showed no address field to type into")
       return
     }
+    // Safari's address field takes a tap to focus and does not report
+    // that focus synchronously, so typing straight after the tap fails
+    // with "neither element nor any descendant has keyboard focus".
+    // Tapping and then waiting for the keyboard is what makes this
+    // reliable; without the wait it passes or fails on machine speed.
     address.tap()
+    if !safari.keyboards.element.waitForExistence(timeout: Self.fieldTimeout) {
+      // Some layouts need a second tap: the first dismisses whatever had
+      // focus, the second lands on the field.
+      address.tap()
+      _ = safari.keyboards.element.waitForExistence(timeout: Self.fieldTimeout)
+    }
     address.typeText(UITestEnvironment.targetSite + "\n")
     attachScreenshot(safari.screenshot(), named: "02-site-requested")
 

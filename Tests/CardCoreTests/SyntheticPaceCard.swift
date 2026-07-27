@@ -19,6 +19,12 @@ internal final class SyntheticPaceCard: CardChannel {
   /// expects.
   internal struct Rejected: Error, Equatable {}
 
+  /// SELECT, which the terminal issues to reach master file before PACE.
+  ///
+  /// A real card refuses MSE:Set AT anywhere else, so the terminal always
+  /// sends this first and this card has to answer it.
+  private static let select: UInt8 = 0xA4
+
   /// MANAGE SECURITY ENVIRONMENT.
   private static let manageSecurityEnvironment: UInt8 = 0x22
 
@@ -189,7 +195,7 @@ internal final class SyntheticPaceCard: CardChannel {
   internal func transmit(_ payload: Data) throws -> Data {
     let bytes = Array(payload)
     guard bytes.count >= Self.bodyOffset else { throw Rejected() }
-    if bytes[1] == Self.manageSecurityEnvironment {
+    if bytes[1] == Self.select || bytes[1] == Self.manageSecurityEnvironment {
       return WireHex.data(Self.successHex)
     }
     guard bytes[1] == Self.generalAuthenticate else { throw Rejected() }

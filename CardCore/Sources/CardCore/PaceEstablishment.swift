@@ -40,6 +40,11 @@ public struct PaceEstablishment {
     /// The card answered a PACE command with something other than success.
     case cardRejected(StatusWord)
 
+    /// The card would not return to master-file level, where PACE has to
+    /// start. Carries the last status word seen, or nil when the card
+    /// answered nothing usable at all.
+    case masterFileRefused(StatusWord?)
+
     /// A response was not the dynamic authentication data the round
     /// expects, or a command could not be encoded within the short form.
     case malformedResponse
@@ -110,11 +115,44 @@ public struct PaceEstablishment {
     return keys
   }
 
+  /// Puts the card at master-file level before PACE is attempted.
+  ///
+  /// A FINEID card refuses PACE's MSE:Set AT with `SW=6985` unless the
+  /// session is at MF, and contactless discovery does not leave it there:
+  /// the tag is only delivered after a successful SELECT from the reader's
+  /// application whitelist, so the card arrives with an application
+  /// already selected. Without this the handshake does not fail cleanly --
+  /// it drags, and the field it needs is gone before it finishes.
+  ///
+  /// Two encodings are tried in this order because cards differ in which
+  /// they accept, and both were established by probe against real cards
+  /// rather than read off a specification.
+  ///
+  /// Provenance: `select_mf` in the donor
+  /// `crates/refineid-lib-core/src/pkcs15.rs`, called before
+  /// `run_pace_with_can` in `crates/refineid-lib-ffi/src/card_ops.rs`.
+  private func selectMasterFile() throws {
+    var lastStatus: StatusWord?
+    for command in PaceCommand.selectMasterFileVariants() {
+      // Deliberately NOT the throwing `transmit`: a refusal of the first
+      // encoding is expected and is exactly what the second one is for,
+      // so the status has to come back as a value rather than as an
+      // error that ends the loop.
+      let response = try ContinuedResponse.transmitting(command, over: channel)
+      if response.statusWord == .success {
+        return
+      }
+      lastStatus = response.statusWord
+    }
+    throw Failure.masterFileRefused(lastStatus)
+  }
+
   /// Runs PACE with `accessNumber` and returns the session keys.
   ///
   /// The CAN is used for exactly one thing, in one place: deriving the key
   /// that deciphers the nonce. It is not retained past that point.
   public func establish(with accessNumber: CardAccessNumber) throws -> PaceSessionKeys {
+    try selectMasterFile()
     guard let environment = PaceCommand.securityEnvironment() else {
       throw Failure.malformedResponse
     }
