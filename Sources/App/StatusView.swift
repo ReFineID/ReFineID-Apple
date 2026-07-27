@@ -17,6 +17,9 @@ internal struct StatusView: View {
 
   @State private var transports = TransportPreferences()
 
+  /// Whether the diagnostics capture is on screen.
+  @State private var showsDiagnostics = false
+
   private let versions = BundledVersions.read(from: .main)
 
   internal var body: some View {
@@ -48,17 +51,40 @@ internal struct StatusView: View {
     .padding(Self.contentPadding)
     .frame(minWidth: Self.minimumWidth)
     .task { await model.refresh() }
+    .sheet(isPresented: $showsDiagnostics) { diagnosticsSheet }
   }
 
   /// What the holder can do from here.
   ///
   /// The card-details screen is iOS only: a card access number matters
   /// only on the contactless interface, which macOS has no way to reach.
+  ///
+  /// Diagnostics is deliberately reachable from here rather than hidden
+  /// behind a launch flag: when a login fails on a device that is not
+  /// plugged into anything, the only instrument left is the one the
+  /// holder can open.
   @ViewBuilder private var actionRows: some View {
     Button("Refresh") {
       Task { await model.refresh() }
     }
     .disabled(model.isRefreshing)
+    Button("Diagnostics") {
+      showsDiagnostics = true
+    }
+    .accessibilityIdentifier("diagnosticsButton")
+  }
+
+  /// The capture, in its own stack so it has a title bar to dismiss from
+  /// on both platforms.
+  @ViewBuilder private var diagnosticsSheet: some View {
+    NavigationStack {
+      DiagnosticsView()
+        .toolbar {
+          ToolbarItem(placement: .cancellationAction) {
+            Button("Done") { showsDiagnostics = false }
+          }
+        }
+    }
   }
 
   /// Transport switches.

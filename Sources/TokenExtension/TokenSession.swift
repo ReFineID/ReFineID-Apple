@@ -29,6 +29,11 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
   /// one PIN use).
   private var collectedPin: String?
 
+  /// How long something started at `instant` has taken, in milliseconds.
+  private static func elapsed(since instant: ContinuousClock.Instant) -> String {
+    TraceTiming.milliseconds(instant.duration(to: ContinuousClock.now))
+  }
+
   // The @objc requirement is throwing; the ObjC bridge rejects a
   // non-throwing override, so `throws` stays though the body cannot fail.
   // swiftlint:disable unneeded_throws_rethrows
@@ -62,12 +67,38 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
     return supported
   }
 
+  /// The signature the system asked for, timed end to end.
+  ///
+  /// Entry and exit are traced here rather than in the two transport
+  /// bodies below, so that every signature costs exactly two lines
+  /// whichever way the card was reached, and so that the elapsed time
+  /// covers the whole of what Safari waited for. The exchanges in
+  /// between arrive from ``SmartCardChannel``.
   internal func tokenSession(
     _: TKTokenSession,
     sign dataToSign: Data,
     keyObjectID _: TKToken.ObjectID,
     algorithm: TKTokenKeyAlgorithm
   ) throws -> Data {
+    let started = ContinuousClock.now
+    TokenLog.notice(
+      "sign: entry input=\(dataToSign.count)B "
+        + "algo=\(SigningAlgorithmResolver.describe(algorithm))"
+    )
+    do {
+      let signature = try signed(dataToSign: dataToSign, algorithm: algorithm)
+      TokenLog.notice(
+        "sign: exit ok out=\(signature.count)B ms=\(Self.elapsed(since: started))"
+      )
+      return signature
+    } catch {
+      TokenLog.error("sign: exit failed \(error) ms=\(Self.elapsed(since: started))")
+      throw error
+    }
+  }
+
+  /// Routes one signature to the transport the card was reached over.
+  private func signed(dataToSign: Data, algorithm: TKTokenKeyAlgorithm) throws -> Data {
     guard let cardToken = token as? Token else {
       throw TKError(.badParameter)
     }
@@ -76,12 +107,15 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
     // inside a PACE channel; without one, this is the contact path and
     // nothing about it changes.
     guard let accessNumber = cardToken.primedAccessNumber else {
+      TokenLog.trace("sign: transport=reader")
       return try signThroughReader(
         token: cardToken,
         dataToSign: dataToSign,
         algorithm: algorithm
       )
     }
+    TokenLog.trace(
+      "sign: transport=near-field, held session=\(cardToken.heldSession.current != nil)")
     return try signInField(
       token: cardToken,
       accessNumber: accessNumber,
@@ -96,9 +130,6 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
     dataToSign: Data,
     algorithm: TKTokenKeyAlgorithm
   ) throws -> Data {
-    TokenLog.notice(
-      "sign: called algo=\(SigningAlgorithmResolver.describe(algorithm)) input=\(dataToSign.count)B"
-    )
     guard
       let request = SigningAlgorithmResolver.resolve(
         algorithm,
@@ -128,7 +159,7 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
           publicKey: token.leafPublicKey
         )
       }
-      TokenLog.notice("sign: success, \(signature.count) DER bytes")
+      TokenLog.trace("sign: reader path produced \(signature.count) DER bytes")
       return signature
     } catch let error as TokenError {
       TokenLog.error("sign: failed \(error)")
@@ -146,7 +177,10 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
   /// The contactless signature, in the order the field allows.
   ///
   /// That order is the whole of it, and no other order works. Nothing on
-  /// this path logs.
+  /// this path writes: the lines it takes are recorded in memory and
+  /// written out by the exit line in ``tokenSession(_:sign:keyObjectID:algorithm:)``,
+  /// because a keychain round trip inside the field is exactly the kind
+  /// of cost that was measured losing the handshake.
   private func signInField(
     token: Token,
     accessNumber: CardAccessNumber,
@@ -175,6 +209,12 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
     } else {
       authorized = Pin1SigningWindow.pin1()
     }
+    // Which of the two supplied the PIN is the first thing a failed
+    // contactless login needs to know, and it is sayable without saying
+    // anything about the PIN itself.
+    TokenLog.trace(
+      "sign: pin1 source=\(entered != nil ? "prompt" : "window") authorized=\(authorized != nil)"
+    )
     // Ask for the PIN BEFORE touching the card. A contactless token never
     // reuses the card-bound PIN1 cache, so a signature with no PIN can
     // only end in this throw - and reaching it after PACE leaves the card

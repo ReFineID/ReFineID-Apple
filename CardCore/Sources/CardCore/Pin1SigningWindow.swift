@@ -51,6 +51,17 @@ public enum Pin1SigningWindow {
     SecItemDelete(query() as CFDictionary)
   }
 
+  /// How long an open window has been idle, or nil when none is open.
+  ///
+  /// Deliberately does not restamp and does not close an expired window:
+  /// a diagnostics screen asking how idle the window is must not keep it
+  /// alive, and must not change the state the next login will meet. That
+  /// is the whole difference between this and ``isOpen(now:)``.
+  public static func idle(now: Date = Date()) -> Duration? {
+    guard let window = read(), isLive(window, now: now) else { return nil }
+    return .seconds(now.timeIntervalSince(window.lastUsed))
+  }
+
   /// Whether a usable window is open, without consuming it.
   public static func isOpen(now: Date = Date()) -> Bool {
     guard let window = read() else { return false }

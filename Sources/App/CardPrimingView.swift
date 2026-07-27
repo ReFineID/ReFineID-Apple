@@ -10,6 +10,12 @@
   /// the card gives up here is public -- the certificate it shows every
   /// website, and its serial -- and the screen says so, because the
   /// holder is being asked to let this device remember something.
+  ///
+  /// The result rows carry an accessibility identifier that names the
+  /// state rather than the row -- `primeRegistered` or
+  /// `primeNotRegistered` -- so a test can assert on what happened without
+  /// reading a localized sentence. The register is `UITestIdentifiers` in
+  /// `Tests/ReFineIDUITests`.
   @available(iOS 26.0, *)
   internal struct CardPrimingView: View {
     private static let noteSpacing: CGFloat = 4
@@ -42,6 +48,7 @@
         Button("Set up this card") {
           Task { await model.prime() }
         }
+        .accessibilityIdentifier("primeStartButton")
         .disabled(model.isRunning || !model.contents.hasCardAccessNumber || !model.allowsNearField)
         if model.isRunning {
           ProgressView()
@@ -84,12 +91,16 @@
           "Card details",
           value: outcome.stored
             ? String(localized: "Stored on this iPhone")
-            : String(localized: "Not stored"))
+            : String(localized: "Not stored")
+        )
+        .accessibilityIdentifier(outcome.stored ? "primeStored" : "primeNotStored")
         LabeledContent(
           "Safari",
           value: outcome.registered
             ? String(localized: "Can ask for this card")
-            : String(localized: "Not set up"))
+            : String(localized: "Not set up")
+        )
+        .accessibilityIdentifier(outcome.registered ? "primeRegistered" : "primeNotRegistered")
       } header: {
         Text("Result")
       }

@@ -9,12 +9,18 @@ import LocalAuthentication
 /// secrets while signing a request made in Safari and has no interface of
 /// its own, so a biometric access control on the keychain items
 /// themselves would stall those logins on a prompt nobody can see. Every
-/// path that shows, changes, or clears a secret goes through this type.
+/// path that turns a stored secret into something this device can spend
+/// without the holder goes through this type.
 ///
 /// Biometry falls back to the passcode rather than requiring a face: a
 /// holder whose Face ID fails at a card reader still needs a way in, and
 /// the passcode is the same secret that protects the keychain item
 /// underneath.
+///
+/// A debug build honours ``DebugBiometricBypass``, which is what lets the
+/// UI tests drive the gated steps on a device where no prompt can be
+/// answered programmatically. Nothing of that exists in a release build --
+/// see that type for why it is safe.
 internal enum CardCredentialGate {
   /// Why an attempt did not result in access.
   internal enum Refusal: Error {
@@ -30,6 +36,11 @@ internal enum CardCredentialGate {
   /// `reason` is shown verbatim in the system prompt, so it should say
   /// what is about to happen in the holder's terms.
   internal static func authenticate(reason: String) async throws {
+    #if DEBUG
+      if DebugBiometricBypass.isRequested {
+        return
+      }
+    #endif
     let context = LAContext()
     context.localizedCancelTitle = String(localized: "Cancel")
     var availability: NSError?

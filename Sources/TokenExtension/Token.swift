@@ -133,19 +133,29 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
     instanceID: CardInstanceIdentifier,
     primed: PrimedIdentity
   ) throws {
+    // Recorded, not written: this whole initializer runs inside the two
+    // seconds the system gives the mint, and every line here is written
+    // out by the `createToken` outcome that follows. Each refusal is
+    // named, because they all leave the same error at the boundary and
+    // the difference between them is the diagnosis.
+    TokenLog.trace("Token.init(primed): instance=\(instanceID.value)")
     guard let accessNumber = CardAccessNumber(digits: primed.can) else {
+      TokenLog.trace("Token.init(primed): stored card access number is not usable")
       throw TokenError.primeMissing
     }
     guard let leaf = SecCertificateCreateWithData(nil, primed.certDER as CFData) else {
+      TokenLog.trace("Token.init(primed): stored leaf \(primed.certDER.count)B is not a cert")
       throw TokenError.certificateUnreadable
     }
     guard
       let profile = CardKeyProfile.resolve(fromCertificate: leaf),
       SigningAlgorithmResolver.supportsSigning(profile)
     else {
+      TokenLog.trace("Token.init(primed): key profile unsupported for signing")
       throw TokenError.unsupportedKeyProfile
     }
     guard let publicKey = SecCertificateCopyKey(leaf) else {
+      TokenLog.trace("Token.init(primed): leaf carries no usable public key")
       throw TokenError.certificateUnreadable
     }
     self.keyProfile = profile
@@ -164,6 +174,7 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
       profile: profile
     )
     observeSlotState(of: smartCard)
+    TokenLog.trace("Token.init(primed): published, profile=\(String(describing: profile))")
   }
 
   /// Reads the leaf and (best-effort) issuer certificates and resolves
@@ -186,7 +197,14 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
   // The @objc requirement is throwing; keep `throws` for the bridge.
   // swiftlint:disable:next unneeded_throws_rethrows
   internal func createSession(_: TKToken) throws -> TKTokenSession {
-    TokenSession(token: self)
+    // The transport is the useful half: it says which of the two mints
+    // this token came from, and therefore which sign path is about to
+    // run. `TKToken` publishes no instance identifier to name it with.
+    TokenLog.info(
+      "createSession: session requested, transport="
+        + (primedAccessNumber == nil ? "reader" : "near-field")
+    )
+    return TokenSession(token: self)
   }
 
   /// Takes a card session now and keeps it, so the signature that
@@ -207,7 +225,7 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
     do {
       try channel.beginSession()
     } catch {
-      TokenLog.info("Token.holdSession: no session retained")
+      TokenLog.info("Token.holdSession: no session retained (\(error))")
       return
     }
     heldSession.retain(channel)
@@ -288,5 +306,9 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
   /// about 2.5 seconds of the holder's time for nothing.
   deinit {
     heldSession.release()
+    // Last chance to get the trace out of a process ctkd is dropping: a
+    // token going away is often the only sign of what ended a login, and
+    // anything still only recorded would go with it.
+    TokenLog.flush()
   }
 }

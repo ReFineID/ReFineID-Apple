@@ -28,8 +28,10 @@ internal final class CardCredentialsModel {
     await gated(
       reason: String(localized: "Save the card access number for this device")
     ) {
-      guard CardCredentialStore.save(cardAccessNumber: digits) else {
-        return String(localized: "That is not a valid card access number.")
+      let status = CardCredentialStore.save(cardAccessNumber: digits)
+      guard status == errSecSuccess else {
+        return String(
+          localized: "Could not store the card access number (\(status)).")
       }
       return nil
     }
@@ -40,8 +42,9 @@ internal final class CardCredentialsModel {
     await gated(
       reason: String(localized: "Save PIN1 so this device can sign without asking")
     ) {
-      guard CardCredentialStore.save(pin1: digits) else {
-        return String(localized: "That is not a valid PIN1.")
+      let status = CardCredentialStore.save(pin1: digits)
+      guard status == errSecSuccess else {
+        return String(localized: "Could not store PIN1 (\(status)).")
       }
       return nil
     }
@@ -74,6 +77,16 @@ internal final class CardCredentialsModel {
   /// Runs `work` only once the holder has authenticated, then refreshes.
   ///
   /// `work` returns a message when it failed, or nil when it succeeded.
+  ///
+  /// This is the gate, and it is the only one: the keychain items
+  /// themselves carry no access control, because the token extension has
+  /// to read PIN1 while signing a request made in Safari and has no
+  /// interface to answer a prompt with. Every path that writes or drops a
+  /// stored secret therefore comes through here.
+  ///
+  /// ``CardCredentialGate`` is also the single place a debug build can be
+  /// told to skip the prompt, and nothing outside `#if DEBUG` can ask it
+  /// to.
   private func gated(reason: String, work: () -> String?) async {
     failure = nil
     do {

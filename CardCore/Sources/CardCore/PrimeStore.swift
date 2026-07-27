@@ -92,6 +92,77 @@ public enum PrimeStore {
     SecItemDelete(query as CFDictionary)
   }
 
+  /// How many cards this device currently holds a prime for.
+  ///
+  /// A count and nothing else. The record names one card and carries its
+  /// card access number, so a caller that only needs to know whether
+  /// priming stuck gets a number rather than something to leak. Zero is
+  /// also the answer when the keychain refuses the search, which reads the
+  /// same way to a caller: there is no prime here to serve a login with.
+  public static func storedCount() -> Int {
+    var query: [String: Any] = [
+      kSecClass as String: kSecClassGenericPassword,
+      kSecAttrService as String: service,
+      kSecUseDataProtectionKeychain as String: true,
+      kSecAttrSynchronizable as String: false,
+    ]
+    query[kSecMatchLimit as String] = kSecMatchLimitAll
+    query[kSecReturnAttributes as String] = true
+    var items: CFTypeRef?
+    guard SecItemCopyMatching(query as CFDictionary, &items) == errSecSuccess,
+      let found = items as? [[String: Any]]
+    else {
+      return 0
+    }
+    return found.count
+  }
+
+  /// What this device holds for each primed card, presence only.
+  ///
+  /// ``storedCount()`` answers whether priming stuck at all; this answers
+  /// which part of it stuck, which is the difference between a card that
+  /// was never read and one whose issuer certificate never arrived. The
+  /// records are decoded here, inside the type that owns them, and only
+  /// presence and sizes leave: no card access number, no certificate
+  /// bytes, no serial. An unreadable or undecodable record is skipped
+  /// rather than reported as an empty one, because a prime that cannot be
+  /// decoded is a prime the extension will not see either.
+  public static func presence() -> [PrimePresence] {
+    var search: [String: Any] = [
+      kSecClass as String: kSecClassGenericPassword,
+      kSecAttrService as String: service,
+      kSecUseDataProtectionKeychain as String: true,
+      kSecAttrSynchronizable as String: false,
+    ]
+    search[kSecMatchLimit as String] = kSecMatchLimitAll
+    search[kSecReturnAttributes as String] = true
+    search[kSecReturnData as String] = true
+    var items: CFTypeRef?
+    guard SecItemCopyMatching(search as CFDictionary, &items) == errSecSuccess,
+      let found = items as? [[String: Any]]
+    else {
+      return []
+    }
+    return found.compactMap(presence(ofItem:)).sorted { $0.instance < $1.instance }
+  }
+
+  /// One found keychain item as a presence report, or nil when it does
+  /// not decode into a prime at all.
+  private static func presence(ofItem attributes: [String: Any]) -> PrimePresence? {
+    guard let instance = attributes[kSecAttrAccount as String] as? String,
+      let data = attributes[kSecValueData as String] as? Data,
+      let stored = try? JSONDecoder().decode(PrimedIdentity.self, from: data)
+    else {
+      return nil
+    }
+    return PrimePresence(
+      instance: instance,
+      hasCardAccessNumber: !stored.can.isEmpty,
+      certificateBytes: stored.certDER.count,
+      issuerBytes: stored.issuerDER?.count ?? 0,
+      hasTokenSerial: stored.tokenSerial != nil)
+  }
+
   /// Item coordinates shared by every operation on one card's prime.
   ///
   /// The accessibility attribute is deliberately absent here: it belongs

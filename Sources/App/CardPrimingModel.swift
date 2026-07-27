@@ -14,6 +14,14 @@
   @MainActor
   @Observable
   internal final class CardPrimingModel {
+    /// Why the holder is being asked to confirm before the hold starts.
+    ///
+    /// Names what the confirmation buys rather than what it protects: the
+    /// holder is agreeing to let websites use this card for a while, not
+    /// approving an abstract keychain read.
+    private static let signingWindowReason = String(
+      localized: "Confirm it is you before websites may use this card.")
+
     /// What the device currently holds, so the screen can say whether
     /// priming is even possible.
     internal private(set) var contents = CardCredentialStore.contents()
@@ -77,19 +85,20 @@
     /// Opens the fifteen-minute signing window when this device keeps
     /// PIN1, so the logins that follow do not stall on a PIN nobody can
     /// type.
+    ///
+    /// The holder is asked to confirm first. This is the step that lets
+    /// the token extension sign later with nobody present, so it is the
+    /// one step here worth a prompt; a refusal is not a failure, it just
+    /// leaves every website asking for PIN1 itself.
     private func openSigningWindow() async {
       guard contents.hasPin1 else { return }
       do {
-        try await CardCredentialGate.authenticate(
-          reason: String(localized: "Let websites use your card for the next fifteen minutes"))
+        try await CardCredentialGate.authenticate(reason: Self.signingWindowReason)
       } catch {
-        note(String(localized: "Not authenticated. Websites will ask for PIN1 instead."))
+        note(String(localized: "Not confirmed. Websites will ask for PIN1 themselves."))
         return
       }
-      guard
-        CardCredentialStore.openSigningWindow(
-          reason: String(localized: "Use the stored PIN1 for the next fifteen minutes"))
-      else {
+      guard CardCredentialStore.openSigningWindow() else {
         note(String(localized: "The stored PIN1 could not be used. Websites will ask for it."))
         return
       }

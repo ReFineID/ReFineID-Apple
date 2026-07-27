@@ -35,14 +35,27 @@ internal struct SmartCardChannel: CardChannel {
     self.smartCard = smartCard
   }
 
+  /// Sends one APDU, and records what it was and what it cost.
+  ///
+  /// This is the one place every exchange the extension makes passes
+  /// through -- plain and secure-messaged alike, since the secure channel
+  /// wraps this one -- so it is where the trace is taken. The recorded
+  /// line carries the instruction, the sizes, the status word and the
+  /// elapsed time, never a payload, and VERIFY is redacted wholesale
+  /// (``CardExchangeTrace``).
   internal func transmit(_ payload: Data) throws -> Data {
     let reply = Box<Data?>(nil)
     let semaphore = DispatchSemaphore(value: 0)
+    let started = ContinuousClock.now
     smartCard.transmit(payload) { response, _ in
       reply.value = response
       semaphore.signal()
     }
     semaphore.wait()
+    let elapsed = started.duration(to: ContinuousClock.now)
+    TokenLog.trace(
+      CardExchangeTrace.line(request: payload, response: reply.value, elapsed: elapsed)
+    )
     guard let response = reply.value else {
       throw CardOperationError.malformedResponse
     }
@@ -66,19 +79,28 @@ internal struct SmartCardChannel: CardChannel {
     let began = Box(false)
     let failure = Box<Error?>(nil)
     let semaphore = DispatchSemaphore(value: 0)
+    let started = ContinuousClock.now
     smartCard.beginSession { opened, error in
       began.value = opened
       failure.value = error
       semaphore.signal()
     }
     semaphore.wait()
+    let elapsed = TraceTiming.milliseconds(started.duration(to: ContinuousClock.now))
     guard began.value else {
+      // The failure is the diagnosis here: TKError -7 on the built-in
+      // contactless slot means the field the mint held has already ended.
+      TokenLog.trace(
+        "session: begin refused ms=\(elapsed) reason=\(String(describing: failure.value))"
+      )
       throw failure.value ?? CardOperationError.sessionUnavailable
     }
+    TokenLog.trace("session: begin ok ms=\(elapsed)")
   }
 
   /// Ends a session opened with ``beginSession()``.
   internal func endSession() {
+    TokenLog.trace("session: end")
     smartCard.endSession()
   }
 

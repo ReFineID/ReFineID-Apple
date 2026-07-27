@@ -39,6 +39,7 @@ internal final class HeldCardSession: @unchecked Sendable {
     lock.lock()
     defer { lock.unlock() }
     self.channel = channel
+    TokenLog.trace("held session: taken")
   }
 
   /// Ends and forgets the held session; safe to call repeatedly.
@@ -52,6 +53,10 @@ internal final class HeldCardSession: @unchecked Sendable {
     let outgoing = channel
     channel = nil
     lock.unlock()
+    // Whether there was one to give back is the interesting half: a
+    // signature that found no held session is a signature that was about
+    // to meet TKError -7.
+    TokenLog.trace("held session: released held=\(outgoing != nil)")
     outgoing?.endSession()
   }
 }

@@ -17,6 +17,7 @@
 		6D0000000000000000000009 /* CryptoTokenKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2D0000000000000000000003 /* CryptoTokenKit.framework */; };
 		6D000000000000000000000A /* ReFineIDDiscoveryExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2D000000000000000000000A /* ReFineIDDiscoveryExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		6D000000000000000000000B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 2D0000000000000000000008 /* PrivacyInfo.xcprivacy */; };
+		6D000000000000000000000C /* CardCore in Frameworks */ = {isa = PBXBuildFile; productRef = AD0000000000000000000005 /* CardCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -33,6 +34,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 4D0000000000000000000004;
 			remoteInfo = ReFineIDDiscoveryExtension;
+		};
+		7D0000000000000000000005 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1D0000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4D0000000000000000000001;
+			remoteInfo = ReFineID;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -65,6 +73,7 @@
 		2D000000000000000000000B /* DiscoveryExtension-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "DiscoveryExtension-Info.plist"; sourceTree = "<group>"; };
 		2D000000000000000000000C /* DiscoveryExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DiscoveryExtension.entitlements; sourceTree = "<group>"; };
 		2D000000000000000000000D /* DiscoveryExtension-iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "DiscoveryExtension-iOS.entitlements"; sourceTree = "<group>"; };
+		2D000000000000000000000E /* ReFineIDUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ReFineIDUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -86,6 +95,11 @@
 		3D0000000000000000000004 /* DiscoveryExtension */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = DiscoveryExtension;
+			sourceTree = "<group>";
+		};
+		3D0000000000000000000005 /* ReFineIDUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ReFineIDUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -121,6 +135,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6D0000000000000000000009 /* CryptoTokenKit.framework in Frameworks */,
+				6D000000000000000000000C /* CardCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -145,6 +160,7 @@
 				2D0000000000000000000002 /* ReFineIDTokenExtension.appex */,
 				2D000000000000000000000A /* ReFineIDDiscoveryExtension.appex */,
 				2D0000000000000000000009 /* CardCoreTests.xctest */,
+				2D000000000000000000000E /* ReFineIDUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -153,6 +169,7 @@
 			isa = PBXGroup;
 			children = (
 				3D0000000000000000000003 /* CardCoreTests */,
+				3D0000000000000000000005 /* ReFineIDUITests */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -281,10 +298,32 @@
 			);
 			name = ReFineIDDiscoveryExtension;
 			packageProductDependencies = (
+				AD0000000000000000000005 /* CardCore */,
 			);
 			productName = ReFineIDDiscoveryExtension;
 			productReference = 2D000000000000000000000A /* ReFineIDDiscoveryExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
+		};
+		4D0000000000000000000005 /* ReFineIDUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9D0000000000000000000006 /* Build configuration list for PBXNativeTarget "ReFineIDUITests" */;
+			buildPhases = (
+				5D000000000000000000000D /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7D0000000000000000000006 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				3D0000000000000000000005 /* ReFineIDUITests */,
+			);
+			name = ReFineIDUITests;
+			packageProductDependencies = (
+			);
+			productName = ReFineIDUITests;
+			productReference = 2D000000000000000000000E /* ReFineIDUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
 
@@ -303,6 +342,10 @@
 					};
 					4D0000000000000000000004 = {
 						CreatedOnToolsVersion = 26.6;
+					};
+					4D0000000000000000000005 = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = 4D0000000000000000000001;
 					};
 				};
 			};
@@ -329,6 +372,7 @@
 				4D0000000000000000000002 /* ReFineIDTokenExtension */,
 				4D0000000000000000000004 /* ReFineIDDiscoveryExtension */,
 				4D0000000000000000000003 /* CardCoreTests */,
+				4D0000000000000000000005 /* ReFineIDUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -389,6 +433,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5D000000000000000000000D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -401,6 +452,11 @@
 			isa = PBXTargetDependency;
 			target = 4D0000000000000000000004 /* ReFineIDDiscoveryExtension */;
 			targetProxy = 7D0000000000000000000003 /* PBXContainerItemProxy */;
+		};
+		7D0000000000000000000006 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4D0000000000000000000001 /* ReFineID */;
+			targetProxy = 7D0000000000000000000005 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -960,6 +1016,60 @@
 			};
 			name = Release;
 		};
+		8D0000000000000000000010 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 114;
+				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 26.7.25;
+				PRODUCT_BUNDLE_IDENTIFIER = fi.refineid.ReFineID.UITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = ReFineID;
+			};
+			name = Debug;
+		};
+		8D0000000000000000000011 /* TestFlight */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 114;
+				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 26.7.25;
+				PRODUCT_BUNDLE_IDENTIFIER = fi.refineid.ReFineID.UITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = ReFineID;
+			};
+			name = TestFlight;
+		};
+		8D0000000000000000000012 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 114;
+				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 26.7.25;
+				PRODUCT_BUNDLE_IDENTIFIER = fi.refineid.ReFineID.UITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = ReFineID;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1013,6 +1123,16 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		9D0000000000000000000006 /* Build configuration list for PBXNativeTarget "ReFineIDUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8D0000000000000000000010 /* Debug */,
+				8D0000000000000000000011 /* TestFlight */,
+				8D0000000000000000000012 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -1034,6 +1154,11 @@
 			productName = CardCore;
 		};
 		AD0000000000000000000004 /* CardCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AD0000000000000000000001 /* XCLocalSwiftPackageReference "CardCore" */;
+			productName = CardCore;
+		};
+		AD0000000000000000000005 /* CardCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = AD0000000000000000000001 /* XCLocalSwiftPackageReference "CardCore" */;
 			productName = CardCore;

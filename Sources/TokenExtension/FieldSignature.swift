@@ -82,9 +82,17 @@ internal struct FieldSignature {
         opened = fresh
         plain = fresh
       }
+      let started = ContinuousClock.now
       let keys = try PaceEstablishment(channel: plain).establish(with: accessNumber)
       let secure = SecureMessagingChannel(wrapping: plain, sessionKeys: keys)
       try CardOperations(channel: secure).selectFineidApplication()
+      // Recorded, never written: a keychain round trip inside the field
+      // is the cost this whole path is shaped to avoid. The exit line of
+      // the signature writes this out afterwards.
+      TokenLog.trace(
+        "pace: channel open retained=\(retained != nil) "
+          + "ms=\(TraceTiming.milliseconds(started.duration(to: ContinuousClock.now)))"
+      )
       return secure
     }
 
@@ -92,7 +100,11 @@ internal struct FieldSignature {
     do {
       secure = try secureChannel()
     } catch {
-      guard Self.refusesStaleChannel(error) else { throw error }
+      guard Self.refusesStaleChannel(error) else {
+        TokenLog.trace("pace: failed \(error)")
+        throw error
+      }
+      TokenLog.trace("pace: card refused a stale channel, retrying once")
       secure = try secureChannel()
     }
     return try sign(in: secure, pin1: pin1, request: request)

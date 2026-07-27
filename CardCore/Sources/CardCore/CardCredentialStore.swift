@@ -5,35 +5,26 @@ import Security
 ///
 /// Neither value is ever handed back for display: they are written once,
 /// and afterwards the store will only say whether something is present.
+///
 /// Both are `WhenUnlockedThisDeviceOnly` and non-synchronizable, so
 /// neither is written into a backup, restored onto another device, or
 /// sent to iCloud. Neither attribute implies the other; both are set.
 ///
-/// The two differ in how they are read back, because they are not
-/// equally secret.
+/// Neither item carries a `SecAccessControl`. PIN1 did, briefly, and it
+/// is worth recording why it does not now: the token extension has to
+/// read PIN1 while signing a request made in Safari and has no interface
+/// to answer a prompt with, so an item-level gate cannot serve the flow
+/// this app exists for. It also broke storage outright -- a protected
+/// item survives a delete that skips the authentication interface, and
+/// the add that follows fails as a duplicate, so a perfectly good PIN
+/// looked rejected.
 ///
-/// **PIN1 is protected as strongly as the platform allows.** Its item
-/// carries a `SecAccessControl`, so a read fails inside the Security
-/// framework unless the holder authenticates at that moment -- policy
-/// checked in app code would be bypassable by anything that can call
-/// this type, an access control is not. The policy is
-/// `.biometryCurrentSet` rather than `.userPresence`, so knowing the
-/// device passcode is not enough, and enrolling a new face or finger
-/// invalidates it instead of silently extending access to whoever
-/// enrolled it. The cost is stated in the interface: change your
-/// biometrics and PIN1 must be entered again.
-///
-/// **The card access number is protected, but not gated.** It is printed
-/// on the front of the card, so a biometric prompt in front of it would
-/// buy very little and would cost a prompt every time a card is set up.
-/// It is still never displayed, never backed up, never synced -- it is
-/// simply readable by this app and its token extension without asking.
-/// That is a deliberate trade for a semi-public value, recorded here so
-/// it reads as a decision rather than an oversight.
-///
-/// Secrets cannot live *inside* the Secure Enclave, which holds only
-/// keys. What the enclave provides is the key material these items are
-/// encrypted under, and the biometric evaluation gating PIN1.
+/// The biometric gate therefore lives one layer up, in the app's
+/// `CardCredentialGate`, in front of every path that stores or drops one
+/// of these values. That is weaker than an access control -- app code can
+/// be talked past, the Security framework cannot -- and it is a deliberate
+/// trade, recorded in `Documentation/decisions.md` rather than left to be
+/// discovered here.
 public enum CardCredentialStore {
   /// What the store currently holds.
   public struct Contents: Equatable, Sendable {
@@ -68,9 +59,9 @@ public enum CardCredentialStore {
 
   /// Stores the card access number, replacing any previous one.
   @discardableResult
-  public static func save(cardAccessNumber digits: String) -> Bool {
-    guard CardAccessNumber(digits: digits) != nil else { return false }
-    return write(digits, account: cardAccessNumberAccount, gated: false)
+  public static func save(cardAccessNumber digits: String) -> OSStatus {
+    guard CardAccessNumber(digits: digits) != nil else { return errSecParam }
+    return write(digits, account: cardAccessNumberAccount)
   }
 
   /// Stores PIN1 for unattended signing, replacing any previous one.
@@ -80,9 +71,9 @@ public enum CardCredentialStore {
   /// present. Offer it as a choice, never as a default, and say so where
   /// the choice is made.
   @discardableResult
-  public static func save(pin1 digits: String) -> Bool {
-    guard Pin1(digits: digits) != nil else { return false }
-    return write(digits, account: pin1Account, gated: true)
+  public static func save(pin1 digits: String) -> OSStatus {
+    guard Pin1(digits: digits) != nil else { return errSecParam }
+    return write(digits, account: pin1Account)
   }
 
   /// The stored card access number.
@@ -91,14 +82,13 @@ public enum CardCredentialStore {
   /// prompt in front of it would cost the holder an interruption on
   /// every card setup for very little.
   public static func cardAccessNumber() -> CardAccessNumber? {
-    read(account: cardAccessNumberAccount, reason: nil)
+    read(account: cardAccessNumberAccount)
       .flatMap(CardAccessNumber.init(digits:))
   }
 
-  /// The stored PIN1, after the holder authenticates, or nil when they
-  /// never opted in.
-  public static func pin1(reason: String) -> Pin1? {
-    read(account: pin1Account, reason: reason).flatMap(Pin1.init(digits:))
+  /// The stored PIN1, or nil when the holder never entered one.
+  public static func pin1() -> Pin1? {
+    read(account: pin1Account).flatMap(Pin1.init(digits:))
   }
 
   /// The primed identity for a card that was just read, built around the
@@ -116,7 +106,7 @@ public enum CardCredentialStore {
     issuer: Data?,
     tokenSerial: String?
   ) -> PrimedIdentity? {
-    guard let digits = read(account: cardAccessNumberAccount, reason: nil) else {
+    guard let digits = read(account: cardAccessNumberAccount) else {
       return nil
     }
     return PrimedIdentity(
@@ -130,15 +120,15 @@ public enum CardCredentialStore {
   ///
   /// The window is how the first PIN reaches the token extension, which
   /// has no interface to ask for one with while Safari waits. Reading the
-  /// master copy is gated, so `reason` is shown to the holder; the window
+  /// window
   /// it opens is not, and closes itself after fifteen idle minutes.
   ///
   /// The digits never leave this type: they are read, handed to
   /// ``Pin1SigningWindow``, and dropped. Returns false when no PIN1 is
   /// stored, the holder did not authenticate, or the window could not be
   /// written.
-  public static func openSigningWindow(reason: String) -> Bool {
-    guard let digits = read(account: pin1Account, reason: reason) else { return false }
+  public static func openSigningWindow() -> Bool {
+    guard let digits = read(account: pin1Account) else { return false }
     return Pin1SigningWindow.open(pin1: digits)
   }
 
@@ -173,20 +163,6 @@ public enum CardCredentialStore {
     ]
   }
 
-  /// The access control PIN1 carries.
-  ///
-  /// Returns nil only when the platform refuses to build it, in which
-  /// case PIN1 is not stored at all: writing it without its access
-  /// control would leave it readable without authentication, which is
-  /// the one thing this must never do.
-  private static func pin1AccessControl() -> SecAccessControl? {
-    SecAccessControlCreateWithFlags(
-      nil,
-      kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-      .biometryCurrentSet,
-      nil)
-  }
-
   /// Whether an item is present, without authenticating.
   ///
   /// The lookup explicitly skips any interface. A protected item then
@@ -203,17 +179,12 @@ public enum CardCredentialStore {
 
   /// Reads a value.
   ///
-  /// A `reason` is shown in the biometric prompt for items that carry an
-  /// access control; passing nil reads an ungated item without asking.
   /// Nothing in the app calls this to display a value -- it exists so
   /// card setup can use what was entered earlier.
-  private static func read(account: String, reason: String?) -> String? {
+  private static func read(account: String) -> String? {
     var query = self.query(account: account)
     query[kSecReturnData as String] = true
     query[kSecMatchLimit as String] = kSecMatchLimitOne
-    if let reason {
-      query[kSecUseOperationPrompt as String] = reason
-    }
     var item: CFTypeRef?
     guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
       let data = item as? Data
@@ -223,28 +194,38 @@ public enum CardCredentialStore {
     return String(data: data, encoding: .utf8)
   }
 
-  /// Writes a value, biometrically gated only when `gated` is set.
-  private static func write(_ digits: String, account: String, gated: Bool) -> Bool {
-    guard let data = digits.data(using: .utf8) else { return false }
+  /// Writes a value.
+  ///
+  /// Returns the keychain's own status rather than a bare false, because
+  /// a refusal here is not the holder's fault, and telling them their PIN
+  /// is invalid when the store merely could not replace an item sends
+  /// them looking in the wrong place.
+  private static func write(_ digits: String, account: String) -> OSStatus {
+    guard let data = digits.data(using: .utf8) else { return errSecParam }
     var attributes = query(account: account)
     attributes[kSecValueData as String] = data
-    if gated {
-      guard let control = pin1AccessControl() else { return false }
-      attributes[kSecAttrAccessControl as String] = control
-    } else {
-      attributes[kSecAttrAccessible as String] =
-        kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-    }
+    attributes[kSecAttrAccessible as String] =
+      kSecAttrAccessibleWhenUnlockedThisDeviceOnly
     delete(account: account)
-    return SecItemAdd(attributes as CFDictionary, nil) == errSecSuccess
+    let status = SecItemAdd(attributes as CFDictionary, nil)
+    guard status == errSecDuplicateItem else { return status }
+    // The old item outlived the delete, which a protected item can do.
+    // Replacing its data in place still gets the holder what they asked
+    // for, and it keeps the access control that is already on it.
+    return SecItemUpdate(
+      query(account: account) as CFDictionary,
+      [kSecValueData as String: data] as CFDictionary)
   }
 
   /// Removes an item.
   ///
-  /// Deletion never needs the value, so it never prompts.
+  /// Deletion does NOT skip the authentication interface. Skipping it
+  /// makes a biometrically protected item answer
+  /// `errSecInteractionNotAllowed` and survive, after which the add that
+  /// follows fails as a duplicate and a perfectly good PIN looks
+  /// rejected. Measured: this is exactly why storing PIN1 appeared to do
+  /// nothing while storing the ungated access number worked.
   private static func delete(account: String) {
-    var query = self.query(account: account)
-    query[kSecUseAuthenticationUI as String] = kSecUseAuthenticationUISkip
-    SecItemDelete(query as CFDictionary)
+    SecItemDelete(query(account: account) as CFDictionary)
   }
 }

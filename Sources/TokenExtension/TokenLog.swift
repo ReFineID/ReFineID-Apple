@@ -1,3 +1,4 @@
+import CardCore
 import Foundation
 import OSLog
 
@@ -35,9 +36,39 @@ internal enum TokenLog {
     append("ERROR \(message)")
   }
 
-  /// Appends one timestamped line to the pullable file log.
+  /// A line for the shared trace only, recorded but not written out yet.
+  ///
+  /// The lines taken inside a live field take this cheap path on purpose.
+  /// A contactless signature runs in a field that lasts about two
+  /// seconds, and a file write plus a keychain round trip per APDU would
+  /// spend that field on narrating itself; ``ExtensionTrace/record(_:)``
+  /// only touches memory. They reach the shared item at the next ordinary
+  /// log line, which on every path here is the one that ends the
+  /// operation.
+  internal static func trace(_ message: String) {
+    ExtensionTrace.record(message)
+  }
+
+  /// Writes out everything ``trace(_:)`` has recorded.
+  ///
+  /// Called where an operation ends without a log line of its own, so a
+  /// trace is never left stranded in a process ctkd is about to reap.
+  internal static func flush() {
+    ExtensionTrace.flush()
+  }
+
+  /// Appends one timestamped line to the pullable file log, and to the
+  /// trace the containing app can read.
+  ///
+  /// The file above lives in this extension's own container, which no other
+  /// process may open, so on iOS 26 - where `log stream --device` is gone
+  /// and `log collect` fails - it is unreachable from a cable. Every line
+  /// therefore also goes to `ExtensionTrace`, a bounded keychain buffer in
+  /// the shared access group, which the app prints on demand. Both carry
+  /// the same already-sanitized text.
   private static func append(_ line: String) {
     let stamp = ISO8601DateFormatter().string(from: Date())
+    ExtensionTrace.append(line)
     let data = Data("[\(stamp)] \(line)\n".utf8)
     if let handle = try? FileHandle(forWritingTo: fileURL) {
       defer { try? handle.close() }

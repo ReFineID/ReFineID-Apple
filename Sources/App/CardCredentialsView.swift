@@ -12,11 +12,23 @@ import SwiftUI
 /// a set value can be replaced or forgotten. There is no explanatory
 /// text: a setup screen that needs paragraphs to be understood is the
 /// wrong screen.
+///
+/// Every control a test drives carries an accessibility identifier, and
+/// the register of them is `UITestIdentifiers` in `Tests/ReFineIDUITests`.
+/// Identifiers rather than labels, because a label is localized: a device
+/// set to Finnish would otherwise fail every query for a reason that has
+/// nothing to do with the card. They cost nothing at runtime and they are
+/// what VoiceOver already wants.
 internal struct CardCredentialsView: View {
   @State private var model = CardCredentialsModel()
   @State private var cardAccessNumberEntry = ""
   @State private var pin1Entry = ""
   @State private var isScanning = false
+
+  #if os(macOS)
+    @State private var siteEntry = ""
+    @State private var siteNote: String?
+  #endif
 
   internal var body: some View {
     Form {
@@ -25,6 +37,15 @@ internal struct CardCredentialsView: View {
       if model.contents.hasCardAccessNumber {
         primingSection
       }
+      #if os(macOS)
+        preferredSiteSection
+        if let siteNote {
+          Section {
+            Text(siteNote)
+              .foregroundStyle(.secondary)
+          }
+        }
+      #endif
       if let failure = model.failure {
         Section {
           Text(failure)
@@ -47,9 +68,11 @@ internal struct CardCredentialsView: View {
     Section("Card access number") {
       if model.contents.hasCardAccessNumber {
         LabeledContent("Card access number", value: String(localized: "Set"))
+          .accessibilityIdentifier("cardAccessNumberStatus")
         Button("Replace") {
           Task { await model.forgetCardAccessNumber() }
         }
+        .accessibilityIdentifier("replaceCardAccessNumber")
       } else {
         entryRow
         Button("Save") {
@@ -57,6 +80,7 @@ internal struct CardCredentialsView: View {
           cardAccessNumberEntry = ""
           Task { await model.saveCardAccessNumber(entry) }
         }
+        .accessibilityIdentifier("saveCardAccessNumber")
         .disabled(cardAccessNumberEntry.count != CardAccessNumber.digitCount)
       }
     }
@@ -68,6 +92,7 @@ internal struct CardCredentialsView: View {
       HStack {
         TextField("Six digits", text: $cardAccessNumberEntry)
           .keyboardType(.numberPad)
+          .accessibilityIdentifier("cardAccessNumberField")
         if CardAccessNumberScanner.isAvailable {
           Button {
             isScanning = true
@@ -80,6 +105,7 @@ internal struct CardCredentialsView: View {
       }
     #else
       TextField("Six digits", text: $cardAccessNumberEntry)
+        .accessibilityIdentifier("cardAccessNumberField")
     #endif
   }
 
@@ -88,9 +114,11 @@ internal struct CardCredentialsView: View {
     Section("PIN1") {
       if model.contents.hasPin1 {
         LabeledContent("PIN1", value: String(localized: "Set"))
+          .accessibilityIdentifier("pin1Status")
         Button("Replace") {
           Task { await model.forgetPin1() }
         }
+        .accessibilityIdentifier("replacePin1")
       } else {
         pin1Field
         Button("Save") {
@@ -98,6 +126,7 @@ internal struct CardCredentialsView: View {
           pin1Entry = ""
           Task { await model.savePin1(entry) }
         }
+        .accessibilityIdentifier("savePin1")
         .disabled(pin1Entry.count < Pin1.minimumDigitCount)
       }
     }
@@ -107,10 +136,26 @@ internal struct CardCredentialsView: View {
     #if os(iOS)
       SecureField("PIN1", text: $pin1Entry)
         .keyboardType(.numberPad)
+        .accessibilityIdentifier("pin1Field")
     #else
       SecureField("PIN1", text: $pin1Entry)
+        .accessibilityIdentifier("pin1Field")
     #endif
   }
+
+  #if os(macOS)
+    /// Lets the holder consent once per site instead of once per login.
+    @ViewBuilder private var preferredSiteSection: some View {
+      Section("Safari") {
+        TextField("https://example.fi", text: $siteEntry)
+        Button("Offer this card to that site automatically") {
+          rememberSite()
+        }
+        .disabled(siteEntry.isEmpty)
+      }
+    }
+
+  #endif
 
   /// The hold that registers this card for Safari.
   @ViewBuilder private var primingSection: some View {
@@ -119,6 +164,7 @@ internal struct CardCredentialsView: View {
         NavigationLink("Register this card") {
           CardPrimingView()
         }
+        .accessibilityIdentifier("registerCardLink")
       }
     #endif
   }
@@ -128,6 +174,7 @@ internal struct CardCredentialsView: View {
       NavigationLink("Card status") {
         StatusView()
       }
+      .accessibilityIdentifier("cardStatusLink")
       Button("Forget this card", role: .destructive) {
         Task { await model.forgetEverything() }
       }
@@ -151,6 +198,22 @@ internal struct CardCredentialsView: View {
             Button("Cancel") { isScanning = false }
           }
         }
+      }
+    }
+  #endif
+
+  #if os(macOS)
+    /// Records the preference, reporting what the keychain said.
+    private func rememberSite() {
+      let site = siteEntry
+      siteEntry = ""
+      do {
+        try PreferredCardIdentity.remember(forSite: site)
+        siteNote = String(localized: "Safari will use your card for \(site).")
+      } catch PreferredCardIdentity.Failure.noIdentity {
+        siteNote = String(localized: "Insert the card first.")
+      } catch {
+        siteNote = String(localized: "The site could not be remembered.")
       }
     }
   #endif

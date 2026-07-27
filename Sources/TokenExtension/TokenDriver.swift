@@ -30,6 +30,12 @@ internal final class TokenDriver: TKSmartCardTokenDriver, TKSmartCardTokenDriver
   /// classify without touching the card.
   private static let nearFieldSlotMarker = "NFC"
 
+  /// How many times the mint looks for a prime before giving up.
+  private static let primeWaitAttempts = 12
+
+  /// How long the mint waits between looks for a prime.
+  private static let primeWaitInterval: TimeInterval = 0.25
+
   override internal init() {
     super.init()
     delegate = self
@@ -38,6 +44,33 @@ internal final class TokenDriver: TKSmartCardTokenDriver, TKSmartCardTokenDriver
   /// How long something started at `instant` has taken, in milliseconds.
   private static func elapsed(since instant: ContinuousClock.Instant) -> String {
     TraceTiming.milliseconds(instant.duration(to: ContinuousClock.now))
+  }
+
+  /// Reads the prime, allowing briefly for one being written right now.
+  ///
+  /// The very first hold of a new card is a race the mint would
+  /// otherwise always lose. `ctkd` asks for a token the moment the card
+  /// enters the slot, while the app is still running PACE and reading
+  /// the certificate that becomes the prime -- so the first lookup finds
+  /// nothing, and on a plain miss nothing ever asks again, leaving no
+  /// token to register and setup reporting that it "did not take".
+  ///
+  /// Waiting a little converts that race into a hit. The wait is short
+  /// and bounded because the system gives a mint roughly two seconds,
+  /// and a card that was genuinely never primed must still fail quickly
+  /// rather than hold the field: an already-primed card hits on the
+  /// first read and waits not at all.
+  private static func awaitPrime(instanceID: CardInstanceIdentifier) -> PrimedIdentity? {
+    for attempt in 1...primeWaitAttempts {
+      if let primed = PrimeStore.read(instanceID: instanceID) {
+        if attempt > 1 {
+          TokenLog.trace("mintFromPrime: prime arrived on attempt \(attempt)")
+        }
+        return primed
+      }
+      Thread.sleep(forTimeInterval: primeWaitInterval)
+    }
+    return nil
   }
 
   internal func tokenDriver(
@@ -81,33 +114,6 @@ internal final class TokenDriver: TKSmartCardTokenDriver, TKSmartCardTokenDriver
     }
   }
 
-  /// Reads the prime, allowing briefly for one being written right now.
-  ///
-  /// The very first hold of a new card is a race the mint would
-  /// otherwise always lose. `ctkd` asks for a token the moment the card
-  /// enters the slot, while the app is still running PACE and reading
-  /// the certificate that becomes the prime -- so the first lookup finds
-  /// nothing, and on a plain miss nothing ever asks again, leaving no
-  /// token to register and setup reporting that it "did not take".
-  ///
-  /// Waiting a little converts that race into a hit. The wait is short
-  /// and bounded because the system gives a mint roughly two seconds,
-  /// and a card that was genuinely never primed must still fail quickly
-  /// rather than hold the field: an already-primed card hits on the
-  /// first read and waits not at all.
-  private static func awaitPrime(instanceID: CardInstanceIdentifier) -> PrimedIdentity? {
-    for attempt in 1...primeWaitAttempts {
-      if let primed = PrimeStore.read(instanceID: instanceID) {
-        if attempt > 1 {
-          TokenLog.trace("mintFromPrime: prime arrived on attempt \(attempt)")
-        }
-        return primed
-      }
-      Thread.sleep(forTimeInterval: primeWaitInterval)
-    }
-    return nil
-  }
-
   /// Materializes the contactless token from the prime store without
   /// touching the card, and leaves it holding a live card session.
   ///
@@ -123,12 +129,6 @@ internal final class TokenDriver: TKSmartCardTokenDriver, TKSmartCardTokenDriver
   /// side of the contract: `registerSmartCard` accepts only a token
   /// created for a live slot, so a field to hold is exactly what this
   /// path can assume.
-  /// How many times the mint looks for a prime before giving up.
-  private static let primeWaitAttempts = 12
-
-  /// How long the mint waits between looks for a prime.
-  private static let primeWaitInterval: TimeInterval = 0.25
-
   private func mintFromPrime(
     smartCard: TKSmartCard,
     aid: Data?,
