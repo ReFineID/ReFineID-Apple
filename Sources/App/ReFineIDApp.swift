@@ -11,7 +11,12 @@ internal struct ReFineIDApp: App {
       .windowResizability(.contentSize)
     #else
       WindowGroup {
-        StatusView()
+        // Only iOS reaches a card over NFC, and only the contactless
+        // interface needs a card access number, so the credential screen
+        // exists on iOS alone.
+        NavigationStack {
+          StatusView()
+        }
       }
     #endif
   }

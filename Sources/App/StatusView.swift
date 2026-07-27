@@ -43,14 +43,27 @@ internal struct StatusView: View {
       cardRows
       LabeledContent("Safari login", value: Self.safariLabel(for: model.snapshot))
       transportRows
-      Button("Refresh") {
-        Task { await model.refresh() }
-      }
-      .disabled(model.isRefreshing)
+      actionRows
     }
     .padding(Self.contentPadding)
     .frame(minWidth: Self.minimumWidth)
     .task { await model.refresh() }
+  }
+
+  /// What the holder can do from here.
+  ///
+  /// The card-details screen is iOS only: a card access number matters
+  /// only on the contactless interface, which macOS has no way to reach.
+  @ViewBuilder private var actionRows: some View {
+    #if os(iOS)
+      NavigationLink("Card details") {
+        CardCredentialsView()
+      }
+    #endif
+    Button("Refresh") {
+      Task { await model.refresh() }
+    }
+    .disabled(model.isRefreshing)
   }
 
   /// Transport switches.
