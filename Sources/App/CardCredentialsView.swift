@@ -19,6 +19,7 @@ internal struct CardCredentialsView: View {
     Form {
       cardAccessNumberSection
       pin1Section
+      primingSection
       forgetSection
       if let failure = model.failure {
         Section {
@@ -94,6 +95,31 @@ internal struct CardCredentialsView: View {
         that.
         """)
     }
+  }
+
+  /// The one hold that sets the card up for Safari.
+  ///
+  /// Only reachable where the phone has an antenna and a system that
+  /// offers an NFC smart-card slot; on anything else the card is reached
+  /// through a reader, which needs no priming and no card access number.
+  @ViewBuilder private var primingSection: some View {
+    #if canImport(CoreNFC) && os(iOS)
+      if #available(iOS 26.0, *), SupportedCardTransports.offersNearField {
+        Section {
+          NavigationLink("Set up Safari login") {
+            CardPrimingView()
+          }
+          .disabled(!model.contents.hasCardAccessNumber)
+        } footer: {
+          Text(
+            """
+            Read the card once with the phone itself, so websites can ask \
+            for it later without reading it again. Needs the card access \
+            number above.
+            """)
+        }
+      }
+    #endif
   }
 
   /// The way back to a device that knows nothing.
