@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!-- iOS discovery-extension entitlements: deliberately empty, and its own
+     file rather than the minting extension's.
+
+     This half declares the AID that ctkd polls with and refuses every
+     createToken. It reads no keychain item, holds no card session, and
+     stores nothing, so it is granted nothing - in particular not the
+     keychain group the minting extension needs. Sharing one file between
+     the two would hand this binary that group the next time the minting
+     half needs another. -->
+<dict/>
+</plist>

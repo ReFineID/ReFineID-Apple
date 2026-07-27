@@ -14,6 +14,9 @@
 		6D0000000000000000000006 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 2D0000000000000000000008 /* PrivacyInfo.xcprivacy */; };
 		6D0000000000000000000007 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 2D0000000000000000000008 /* PrivacyInfo.xcprivacy */; };
 		6D0000000000000000000008 /* CardCore in Frameworks */ = {isa = PBXBuildFile; productRef = AD0000000000000000000004 /* CardCore */; };
+		6D0000000000000000000009 /* CryptoTokenKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2D0000000000000000000003 /* CryptoTokenKit.framework */; };
+		6D000000000000000000000A /* ReFineIDDiscoveryExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2D000000000000000000000A /* ReFineIDDiscoveryExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		6D000000000000000000000B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 2D0000000000000000000008 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -23,6 +26,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 4D0000000000000000000002;
 			remoteInfo = ReFineIDTokenExtension;
+		};
+		7D0000000000000000000003 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1D0000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4D0000000000000000000004;
+			remoteInfo = ReFineIDDiscoveryExtension;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -34,6 +44,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				6D0000000000000000000003 /* ReFineIDTokenExtension.appex in Embed Foundation Extensions */,
+				6D000000000000000000000A /* ReFineIDDiscoveryExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -50,6 +61,10 @@
 		2D0000000000000000000007 /* TokenExtension-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "TokenExtension-Info.plist"; sourceTree = "<group>"; };
 		2D0000000000000000000008 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		2D0000000000000000000009 /* CardCoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CardCoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2D000000000000000000000A /* ReFineIDDiscoveryExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ReFineIDDiscoveryExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		2D000000000000000000000B /* DiscoveryExtension-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "DiscoveryExtension-Info.plist"; sourceTree = "<group>"; };
+		2D000000000000000000000C /* DiscoveryExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DiscoveryExtension.entitlements; sourceTree = "<group>"; };
+		2D000000000000000000000D /* DiscoveryExtension-iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "DiscoveryExtension-iOS.entitlements"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -66,6 +81,11 @@
 		3D0000000000000000000003 /* CardCoreTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = CardCoreTests;
+			sourceTree = "<group>";
+		};
+		3D0000000000000000000004 /* DiscoveryExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = DiscoveryExtension;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -96,6 +116,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5D000000000000000000000B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6D0000000000000000000009 /* CryptoTokenKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -115,6 +143,7 @@
 			children = (
 				2D0000000000000000000001 /* ReFineID.app */,
 				2D0000000000000000000002 /* ReFineIDTokenExtension.appex */,
+				2D000000000000000000000A /* ReFineIDDiscoveryExtension.appex */,
 				2D0000000000000000000009 /* CardCoreTests.xctest */,
 			);
 			name = Products;
@@ -133,6 +162,7 @@
 			children = (
 				3D0000000000000000000001 /* App */,
 				3D0000000000000000000002 /* TokenExtension */,
+				3D0000000000000000000004 /* DiscoveryExtension */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -144,6 +174,9 @@
 				2D0000000000000000000006 /* ReFineID-Info.plist */,
 				2D0000000000000000000005 /* TokenExtension.entitlements */,
 				2D0000000000000000000007 /* TokenExtension-Info.plist */,
+				2D000000000000000000000B /* DiscoveryExtension-Info.plist */,
+				2D000000000000000000000C /* DiscoveryExtension.entitlements */,
+				2D000000000000000000000D /* DiscoveryExtension-iOS.entitlements */,
 				2D0000000000000000000008 /* PrivacyInfo.xcprivacy */,
 			);
 			path = Config;
@@ -173,6 +206,7 @@
 			);
 			dependencies = (
 				7D0000000000000000000002 /* PBXTargetDependency */,
+				7D0000000000000000000004 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				3D0000000000000000000001 /* App */,
@@ -230,6 +264,28 @@
 			productReference = 2D0000000000000000000009 /* CardCoreTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		4D0000000000000000000004 /* ReFineIDDiscoveryExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9D0000000000000000000005 /* Build configuration list for PBXNativeTarget "ReFineIDDiscoveryExtension" */;
+			buildPhases = (
+				5D000000000000000000000A /* Sources */,
+				5D000000000000000000000B /* Frameworks */,
+				5D000000000000000000000C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				3D0000000000000000000004 /* DiscoveryExtension */,
+			);
+			name = ReFineIDDiscoveryExtension;
+			packageProductDependencies = (
+			);
+			productName = ReFineIDDiscoveryExtension;
+			productReference = 2D000000000000000000000A /* ReFineIDDiscoveryExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -243,6 +299,9 @@
 						CreatedOnToolsVersion = 26.6;
 					};
 					4D0000000000000000000002 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+					4D0000000000000000000004 = {
 						CreatedOnToolsVersion = 26.6;
 					};
 				};
@@ -268,6 +327,7 @@
 			targets = (
 				4D0000000000000000000001 /* ReFineID */,
 				4D0000000000000000000002 /* ReFineIDTokenExtension */,
+				4D0000000000000000000004 /* ReFineIDDiscoveryExtension */,
 				4D0000000000000000000003 /* CardCoreTests */,
 			);
 		};
@@ -287,6 +347,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				6D0000000000000000000007 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5D000000000000000000000C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6D000000000000000000000B /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -314,6 +382,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5D000000000000000000000A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -321,6 +396,11 @@
 			isa = PBXTargetDependency;
 			target = 4D0000000000000000000002 /* ReFineIDTokenExtension */;
 			targetProxy = 7D0000000000000000000001 /* PBXContainerItemProxy */;
+		};
+		7D0000000000000000000004 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4D0000000000000000000004 /* ReFineIDDiscoveryExtension */;
+			targetProxy = 7D0000000000000000000003 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -772,6 +852,114 @@
 			};
 			name = Release;
 		};
+		8D000000000000000000000D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "Config/DiscoveryExtension-iOS.entitlements";
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Config/DiscoveryExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 114;
+				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/DiscoveryExtension-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "ReFineID Card Discovery";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../../Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 26.7.25;
+				PRODUCT_BUNDLE_IDENTIFIER = fi.refineid.ReFineID.discovery;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		8D000000000000000000000E /* TestFlight */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "Config/DiscoveryExtension-iOS.entitlements";
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Config/DiscoveryExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 114;
+				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/DiscoveryExtension-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "ReFineID Card Discovery";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../../Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 26.7.25;
+				PRODUCT_BUNDLE_IDENTIFIER = fi.refineid.ReFineID.discovery;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = TestFlight;
+		};
+		8D000000000000000000000F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "Config/DiscoveryExtension-iOS.entitlements";
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Config/DiscoveryExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 114;
+				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/DiscoveryExtension-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "ReFineID Card Discovery";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../../Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 26.7.25;
+				PRODUCT_BUNDLE_IDENTIFIER = fi.refineid.ReFineID.discovery;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -811,6 +999,16 @@
 				8D000000000000000000000A /* Debug */,
 				8D000000000000000000000B /* TestFlight */,
 				8D000000000000000000000C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9D0000000000000000000005 /* Build configuration list for PBXNativeTarget "ReFineIDDiscoveryExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8D000000000000000000000D /* Debug */,
+				8D000000000000000000000E /* TestFlight */,
+				8D000000000000000000000F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
