@@ -19,6 +19,9 @@
     /// Open the signing window from the stored PIN1.
     case openSigningWindow = "--open-signing-window"
 
+    /// Runs one PACE handshake over an attached reader and times it.
+    case paceCheck = "--pace-check"
+
     /// Run the card priming flow with no interface.
     case prime = "--prime"
 
@@ -53,8 +56,8 @@
     /// window would have existed.
     internal var needsScene: Bool {
       switch self {
-      case .diagnostics, .resetCardState, .setCan, .setPin1, .signProbe,
-        .tokenPublishProbe, .trace:
+      case .diagnostics, .paceCheck, .resetCardState, .setCan, .setPin1,
+        .signProbe, .tokenPublishProbe, .trace:
         false
       case .ctkSignProbe, .openSigningWindow, .prime:
         true
@@ -67,7 +70,7 @@
     /// from the command line at each launch and never committed anywhere.
     internal var takesValue: Bool {
       switch self {
-      case .ctkSignProbe, .diagnostics, .openSigningWindow, .prime,
+      case .ctkSignProbe, .diagnostics, .openSigningWindow, .paceCheck, .prime,
         .resetCardState, .tokenPublishProbe, .trace:
         false
       case .setCan, .setPin1, .signProbe:

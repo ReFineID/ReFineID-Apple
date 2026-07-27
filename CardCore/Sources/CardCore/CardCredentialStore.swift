@@ -158,7 +158,14 @@ public enum CardCredentialStore {
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
       kSecAttrAccount as String: account,
-      kSecUseDataProtectionKeychain as String: true,
+      // iOS only. On macOS the data-protection keychain requires a
+      // keychain-access-group entitlement, and asking for one there
+      // fails signing on a development profile -- every store call then
+      // answers errSecMissingEntitlement and the app cannot keep a card
+      // access number at all. The file keychain needs no entitlement and
+      // is protected by the same login keychain the rest of the system
+      // uses.
+      kSecUseDataProtectionKeychain as String: KeychainPlatform.usesDataProtection,
       kSecAttrSynchronizable as String: false,
     ]
   }

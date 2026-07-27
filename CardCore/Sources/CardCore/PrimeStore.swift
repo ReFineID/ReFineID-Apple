@@ -86,7 +86,7 @@ public enum PrimeStore {
     let query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
-      kSecUseDataProtectionKeychain as String: true,
+      kSecUseDataProtectionKeychain as String: KeychainPlatform.usesDataProtection,
       kSecAttrSynchronizable as String: false,
     ]
     SecItemDelete(query as CFDictionary)
@@ -103,7 +103,7 @@ public enum PrimeStore {
     var query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
-      kSecUseDataProtectionKeychain as String: true,
+      kSecUseDataProtectionKeychain as String: KeychainPlatform.usesDataProtection,
       kSecAttrSynchronizable as String: false,
     ]
     query[kSecMatchLimit as String] = kSecMatchLimitAll
@@ -131,7 +131,7 @@ public enum PrimeStore {
     var search: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
-      kSecUseDataProtectionKeychain as String: true,
+      kSecUseDataProtectionKeychain as String: KeychainPlatform.usesDataProtection,
       kSecAttrSynchronizable as String: false,
     ]
     search[kSecMatchLimit as String] = kSecMatchLimitAll
@@ -173,7 +173,7 @@ public enum PrimeStore {
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
       kSecAttrAccount as String: instanceID.value,
-      kSecUseDataProtectionKeychain as String: true,
+      kSecUseDataProtectionKeychain as String: KeychainPlatform.usesDataProtection,
       kSecAttrSynchronizable as String: false,
     ]
   }

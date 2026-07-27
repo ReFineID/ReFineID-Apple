@@ -51,8 +51,8 @@
         DebugConsole.finish(succeeded: await Self.openSigningWindow())
       case .prime:
         DebugConsole.finish(succeeded: await Self.prime())
-      case .diagnostics, .resetCardState, .setCan, .setPin1, .signProbe,
-        .tokenPublishProbe, .trace:
+      case .diagnostics, .paceCheck, .resetCardState, .setCan, .setPin1,
+        .signProbe, .tokenPublishProbe, .trace:
         DebugConsole.emit(mode.rawValue + ": runs before the window opens, not here")
         DebugConsole.finish(succeeded: false)
       }

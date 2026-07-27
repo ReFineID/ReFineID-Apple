@@ -86,6 +86,8 @@
           succeeded: false)
       case .diagnostics:
         DebugModeReport(lines: DebugDiagnosticsReport.lines(), succeeded: true)
+      case .paceCheck:
+        DebugPaceCheck.perform()
       case .resetCardState:
         DebugModeReport(lines: DebugCardStateReset.perform(), succeeded: true)
       case .setCan:

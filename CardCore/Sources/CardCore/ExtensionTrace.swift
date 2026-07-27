@@ -187,7 +187,7 @@ public enum ExtensionTrace {
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: Self.service,
       kSecAttrAccount as String: Self.account,
-      kSecUseDataProtectionKeychain as String: true,
+      kSecUseDataProtectionKeychain as String: KeychainPlatform.usesDataProtection,
       kSecAttrSynchronizable as String: false,
     ]
   }
