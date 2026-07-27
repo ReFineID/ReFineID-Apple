@@ -155,6 +155,13 @@ internal enum Iso7816Values {
   /// SW `0x6988`: secure-messaging data objects incorrect.
   internal static let swSmDataObjectsIncorrect: UInt16 = 0x6988
 
+  /// SW `0x6999`: the card refuses the command outright.
+  ///
+  /// Measured on the contactless interface: a session that ended with a
+  /// PACE channel still open leaves the card answering this to the next
+  /// approach until it is met again in a fresh session.
+  internal static let swStaleSecureChannel: UInt16 = 0x6999
+
   /// SW `0x6A82`: file or application not found.
   internal static let swFileNotFound: UInt16 = 0x6A82
 

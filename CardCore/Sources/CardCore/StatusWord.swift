@@ -43,6 +43,14 @@ public enum StatusWord: Equatable, Sendable {
   /// `6988`: secure-messaging data objects incorrect.
   case smDataObjectsIncorrect
 
+  /// `6999`: the card refuses the command outright.
+  ///
+  /// Measured meaning on the contactless interface: a previous session
+  /// ended with the PACE secure channel still open on the card, and it
+  /// refuses the next approach with this until it is met in a fresh
+  /// session. One retry recovers it; a second never has.
+  case staleSecureChannel
+
   /// `9000`: normal processing.
   case success
 
@@ -67,6 +75,7 @@ public enum StatusWord: Equatable, Sendable {
     Iso7816Values.swAuthenticationBlocked: .authenticationBlocked,
     Iso7816Values.swReferenceDataInvalidated: .referenceDataInvalidated,
     Iso7816Values.swSmDataObjectsIncorrect: .smDataObjectsIncorrect,
+    Iso7816Values.swStaleSecureChannel: .staleSecureChannel,
     Iso7816Values.swFileNotFound: .fileNotFound,
     Iso7816Values.swReferenceDataNotFound: .referenceDataNotFound,
   ]
@@ -96,6 +105,8 @@ public enum StatusWord: Equatable, Sendable {
       Iso7816Values.swSecurityNotSatisfied
     case .smDataObjectsIncorrect:
       Iso7816Values.swSmDataObjectsIncorrect
+    case .staleSecureChannel:
+      Iso7816Values.swStaleSecureChannel
     case .success:
       Iso7816Values.swSuccess
     case .wrongExpectedLength(let availableLength):

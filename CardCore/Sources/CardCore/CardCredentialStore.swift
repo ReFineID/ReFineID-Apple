@@ -101,6 +101,47 @@ public enum CardCredentialStore {
     read(account: pin1Account, reason: reason).flatMap(Pin1.init(digits:))
   }
 
+  /// The primed identity for a card that was just read, built around the
+  /// stored card access number.
+  ///
+  /// The prime store needs the six digits, and this type is where they
+  /// live. Handing them out so a caller could assemble the record itself
+  /// would put a card access number in a `String` in the app, in the
+  /// extension, and in every caller added later; assembling the record
+  /// here means the digits go from the keychain into the prime without
+  /// passing through any other file. Returns nil when nothing is stored
+  /// or the record would not validate.
+  public static func primedIdentity(
+    certificate: Data,
+    issuer: Data?,
+    tokenSerial: String?
+  ) -> PrimedIdentity? {
+    guard let digits = read(account: cardAccessNumberAccount, reason: nil) else {
+      return nil
+    }
+    return PrimedIdentity(
+      can: digits,
+      certificate: certificate,
+      issuer: issuer,
+      tokenSerial: tokenSerial)
+  }
+
+  /// Opens the fifteen-minute signing window from the stored PIN1.
+  ///
+  /// The window is how the first PIN reaches the token extension, which
+  /// has no interface to ask for one with while Safari waits. Reading the
+  /// master copy is gated, so `reason` is shown to the holder; the window
+  /// it opens is not, and closes itself after fifteen idle minutes.
+  ///
+  /// The digits never leave this type: they are read, handed to
+  /// ``Pin1SigningWindow``, and dropped. Returns false when no PIN1 is
+  /// stored, the holder did not authenticate, or the window could not be
+  /// written.
+  public static func openSigningWindow(reason: String) -> Bool {
+    guard let digits = read(account: pin1Account, reason: reason) else { return false }
+    return Pin1SigningWindow.open(pin1: digits)
+  }
+
   /// Removes PIN1, returning to a prompt for every signature.
   public static func forgetPin1() {
     delete(account: pin1Account)
