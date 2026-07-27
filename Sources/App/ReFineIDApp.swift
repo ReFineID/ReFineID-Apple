@@ -1,3 +1,4 @@
+import CardCore
 import SwiftUI
 
 /// Application entry point: one small status surface on every platform.
@@ -52,6 +53,11 @@ internal struct ReFineIDApp: App {
   }
 
   internal init() {
+    // Builds with the retired fifteen-minute policy wrote a second PIN1
+    // item. Nothing reads it now, so remove it on the first launch after
+    // an upgrade rather than leave sensitive dead data in the keychain.
+    CardCredentialStore.removeLegacySigningWindow()
+
     // Nothing that talks to another process belongs here. Handing the
     // card access number to the driver was done from this initializer
     // and it hung the app: reading the driver configuration is a

@@ -3,6 +3,38 @@
 Decisions with dates and rationale. `Documentation/release-plan.md` controls scope and
 security behavior; this file records the concrete values chosen under it.
 
+## 2026-07-28 Stored PIN1 is directly available to the iOS token extension
+
+The fifteen-minute software signing window is removed from the iOS
+contactless path. If the holder explicitly stores PIN1, the token extension
+reads it for each system-driven signature without requiring the containing
+app to be opened again.
+
+The old window was not a dependable security boundary. Safari can launch
+the extension independently, and the extension has no reliable interface
+in which to ask the app to reopen a window before CryptoTokenKit's roughly
+two-second NFC operation expires. In practice the window converted a
+correctly primed card into an unavailable identity after fifteen minutes
+and produced repeated card/certificate/card prompts.
+
+The stored item remains `WhenUnlockedThisDeviceOnly` and
+non-synchronizable. The tradeoff is explicit: possession of an unlocked
+phone plus the card can authorize a signature without reopening ReFineID.
+The system certificate-consent UI remains outside the extension and cannot
+be preselected by it.
+
+## 2026-07-28 Status and diagnostics must not enumerate token identities
+
+`SecItemCopyMatching` against the `com.apple.token` identity group is not a
+passive readiness check on iOS. It can cause ctkd to create a token and
+present the "Ready to Scan" sheet. The status screen was therefore capable
+of starting the NFC operation it claimed only to report, and a diagnostics
+capture could consume the field before a Safari test.
+
+Status now observes already-published token IDs through `TKTokenWatcher`.
+Diagnostics reports the typed application stores and watcher state, and
+states that token keychain counts were intentionally not queried.
+
 ## 2026-07-27 Split the CryptoTokenKit driver into discovery and minting
 
 Two app extensions, not one, because the two roles are mutually exclusive
@@ -109,9 +141,9 @@ an access control is real and is accepted here rather than left implicit.
 The contactless path is a handover between two processes. The app primes
 a card and writes what it read; the token extension is asked for a token
 seconds later and has to find it. Three stores carry that handover, all in
-CardCore: `PrimeStore` (the primed identity), `Pin1SigningWindow` (the
-fifteen-minute PIN1 window) and `CardTransportStore` (the holder's
-transport preference).
+CardCore: `PrimeStore` (the primed identity), `CardCredentialStore` (the
+explicitly stored CAN and optional PIN1) and `CardTransportStore` (the
+holder's transport preference).
 
 An app extension carries its own `application-identifier`, so by default
 it addresses its own private keychain group and cannot see a single item

@@ -27,16 +27,4 @@ public enum TraceTiming {
       + Double(parts.attoseconds) / Self.attosecondsPerMillisecond
     return String(format: Self.format, value)
   }
-
-  /// The elapsed time in seconds, one decimal place, no unit.
-  ///
-  /// The signing window is measured in minutes, and reading its idleness
-  /// in milliseconds would be a number nobody can hold in their head.
-  public static func seconds(_ elapsed: Duration) -> String {
-    let parts = elapsed.components
-    let value =
-      Double(parts.seconds)
-      + Double(parts.attoseconds) / Self.attosecondsPerMillisecond / Self.millisecondsPerSecond
-    return String(format: Self.format, value)
-  }
 }

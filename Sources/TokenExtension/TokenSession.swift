@@ -214,24 +214,28 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
       throw TKError(.badParameter)
     }
     // The PIN the system collected through beginAuth, or the one the
-    // holder authorized earlier through the signing window. The window
-    // exists because the system-driven path reaches supports(signData)
-    // and then asks for a signature with no interface to ask for a PIN
-    // with; without it that signature could never be attempted.
+    // holder explicitly chose to store for automatic signing. The
+    // system-driven path often asks for a signature with no usable PIN
+    // interface, so the stored value is what makes Safari independent of
+    // the containing app after one-time setup.
     let entered = collectedPin.flatMap { $0.isEmpty ? nil : $0 }
     collectedPin = nil
     let authorized: Pin1?
+    let pinSource: String
     if let entered {
       authorized = Pin1(digits: entered)
+      pinSource = "prompt"
+    } else if let stored = CardCredentialStore.pin1() {
+      authorized = consume stored
+      pinSource = "stored"
     } else {
-      authorized = Pin1SigningWindow.pin1()
+      authorized = nil
+      pinSource = "none"
     }
     // Which of the two supplied the PIN is the first thing a failed
     // contactless login needs to know, and it is sayable without saying
     // anything about the PIN itself.
-    TokenLog.trace(
-      "sign: pin1 source=\(entered != nil ? "prompt" : "window") authorized=\(authorized != nil)"
-    )
+    TokenLog.trace("sign: pin1 source=\(pinSource) authorized=\(authorized != nil)")
     // Ask for the PIN BEFORE touching the card. A contactless token never
     // reuses the card-bound PIN1 cache, so a signature with no PIN can
     // only end in this throw - and reaching it after PACE leaves the card
@@ -242,11 +246,16 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
     }
     do {
       let signature = FieldSignature(
-        smartCard: try getSmartCard(),
         token: token,
         accessNumber: accessNumber
       )
       return try signature.perform(pin1: pin1, request: request)
+    } catch SmartCardChannel.TransportError.responseTimedOut {
+      // A timed-out transmit leaves the card and our secure-messaging
+      // counter in an unknowable state. End and forget that held session
+      // so the next system attempt starts with a genuinely fresh field.
+      token.heldSession.release()
+      throw TKError(.communicationError)
     } catch let error as TokenError {
       throw error.asTKError
     } catch let error as TKError {

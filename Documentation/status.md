@@ -85,7 +85,7 @@ hands the card over without one, and the extension there could only
 claim a card in order to refuse it, so it is no longer embedded in the
 Mac app.
 
-## iOS: setup works, the login is unproven
+## iOS: setup works; system-Safari signing remains timing-sensitive
 
 Priming works end to end on the phone, over the phone's own NFC antenna,
 in pure Swift:
@@ -95,10 +95,57 @@ in pure Swift:
     stored: true   registered: true
 
 That exercises the ported PACE stack, secure messaging and the
-certificate read against a real card. What has NOT yet been demonstrated
-on this app is a completed Safari signature over NFC. The reference
-implementation does it, and the same three rules are carried here, but
-carrying a rule is not the same as having watched it hold.
+certificate read against a real card. End-to-end system-Safari login has
+worked in earlier device runs, but it is not yet reliable enough to call
+the current pure-Swift build complete.
+
+The clean build-16 trace on 2026-07-28 removed one important ambiguity.
+`ctkd` gave the system-owned NFC operation 1.833 seconds from field start
+to forced termination. The token minted in 44.6 ms, held its session and
+started PACE on a worker before `createToken` returned. The first two
+commands answered, but the first GENERAL AUTHENTICATE never called back
+before the field was ended:
+
+| Exchange | Result | Elapsed |
+| --- | --- | ---: |
+| SELECT master file (`A4`) | response | 14.7 ms |
+| MSE:SET AT (`22`) | response | 27.2 ms |
+| GENERAL AUTHENTICATE nonce (`86`) | no response | 2,005.1 ms |
+
+This disproves a Swift-concurrency starvation theory: PACE was already
+running outside the signing callback and the callback waited for that
+same work. It does not yet prove whether the missing response is card
+position/field strength, a Core NFC/CTK handover issue, or another
+transport bug. A clean app-owned Core NFC PACE run is the next comparison.
+
+For comparison, the reference Rust transport captured one complete failed
+Suomi.fi attempt on the same phone and card. `ctkd` opened the retained
+session at 23:47:46.812 and ended it at 23:47:48.689: 1,877 ms total.
+The budget below is measured backwards from that real cutoff.
+
+| Card operation | Command -> response | Time | Elapsed | Budget left |
+| --- | ---: | ---: | ---: | ---: |
+| SELECT master file | 7 B -> 2 B | 12 ms | 86 ms | 1,791 ms |
+| PACE MSE:SET AT | 23 B -> 2 B | 19 ms | 107 ms | 1,770 ms |
+| PACE encrypted nonce | 8 B -> 22 B | 34 ms | 143 ms | 1,734 ms |
+| PACE generic mapping | 107 B -> 103 B | 712 ms | 862 ms | 1,015 ms |
+| PACE key agreement | 107 B -> 103 B | 603 ms | 1,492 ms | 385 ms |
+| PACE mutual authentication | 18 B -> 14 B | 44 ms | 1,560 ms | 317 ms |
+| SELECT PKCS#15 | 35 B -> 16 B | 43 ms | 1,620 ms | 257 ms |
+| VERIFY PIN1 | 35 B -> 16 B | 72 ms | 1,700 ms | 177 ms |
+| MSE:SET DST | 35 B -> 16 B | 38 ms | 1,757 ms | 120 ms |
+| PSO:HASH | 67 B -> 67 B | 92 ms | 1,858 ms | 19 ms |
+| PSO:COMPUTE DIGITAL SIGNATURE | 19 B -> no reply | 7 ms to cutoff | 1,877 ms | 0 ms |
+
+The final PSO has taken about 390 ms when it completes, so this attempt
+needed roughly 380 ms more field time. The two card-side PACE EC rounds
+alone consumed 1,315 ms.
+
+The roughly 20-second Core NFC lifetime seen during priming is a different
+budget. It belongs to an app-owned tag-reader session. Safari's
+CryptoTokenKit operation owns a replacement slot and has measured between
+about 1.8 and 2.45 seconds, depending on the attempt; the longer number
+cannot be used as Safari's signing budget.
 
 ## Swift PACE arithmetic is no longer a field-budget problem
 
@@ -142,6 +189,12 @@ Tests remain Debug. This matters on the phone -- installing the ordinary
 Run action must not silently put `-Onone` arithmetic inside the NFC window.
 `-Ounchecked` was also measured and was no faster than `-O`, so the safety
 checks remain.
+
+Xcode 26 still injects coverage into the local Swift package when building
+through the scheme unless `CLANG_COVERAGE_MAPPING=NO
+ENABLE_CODE_COVERAGE=NO` is supplied on the command line. A verified live
+artifact has no `__llvm_prf*` or `__llvm_cov*` sections in either the app
+or token extension.
 
 ## The rules the NFC path must not break
 
@@ -196,9 +249,12 @@ a delete that skips the authentication interface and the add that follows
 fails as a duplicate. The gate can return once the flow it must not block
 is proven.
 
-PIN1 additionally travels through a signing window that closes after
-fifteen idle minutes, sliding on each use, so an abandoned phone stops
-being able to sign without anyone doing anything.
+There is no fifteen-minute software signing window on iOS now. Safari can
+request the token extension while the containing app is absent, and that
+extension has no reliable UI in which to reopen a window. When the holder
+explicitly chooses to store PIN1, the extension reads that stored value
+for each contactless signature. Device unlock and the system certificate
+consent remain the surrounding controls.
 
 ## Instruments
 
@@ -207,9 +263,11 @@ reasoning about the code, including the two that made priming work at
 all. They are worth keeping.
 
 - **In-app diagnostics** (Status -> Diagnostics): registered tokens,
-  watcher tokens, driver configurations, prime presence, signing-window
-  idle time, transport preference, keychain counts, and the extension
-  trace, with share and copy.
+  watcher tokens, driver configurations, prime presence, stored-credential
+  policy, transport preference, and the extension trace, with share and
+  copy. It deliberately does not enumerate `com.apple.token` identities:
+  that supposedly read-only query was measured presenting the NFC reader
+  sheet and changing the failure being diagnosed.
 - **Extension trace**: a rolling keychain buffer both extensions write
   and the app reads. On iOS 26 `log stream --device` is gone and
   `log collect` fails, so this is the only way to see inside an
@@ -218,7 +276,7 @@ all. They are worth keeping.
   wholesale.
 - **DEBUG-only launch modes**: `--diagnostics`, `--trace`,
   `--reset-card-state`, `--set-can`, `--set-pin1`,
-  `--open-signing-window`, `--prime`. Absent from a Release build,
+  `--prime`. Absent from a Release build,
   verified by grepping the built binary.
 - **macOS logging still works**, unlike iOS: `log show --predicate
   'subsystem == "fi.refineid.ReFineID"'` shows the extension directly.

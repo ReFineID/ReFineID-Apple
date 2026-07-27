@@ -1,17 +1,16 @@
 import CardCore
 import CryptoTokenKit
 import Foundation
-import Security
 
 /// One reading of everything that decides whether a login can work, taken
 /// all at once so the parts can be compared against each other.
 ///
 /// The parts only mean something together. A registered smart-card token
 /// with no prime behind it fails differently from a prime with no
-/// registration; a signing window that closed explains a signature that
-/// was never attempted; an extension trace with no `createToken` line in
-/// it says the failure happened before our code ran at all. Reading them
-/// one screen at a time loses exactly the comparison that diagnoses.
+/// registration; a missing stored PIN explains a signature that was never
+/// attempted; an extension trace with no `createToken` line in it says
+/// the failure happened before our code ran at all. Reading them one
+/// screen at a time loses exactly the comparison that diagnoses.
 ///
 /// Deliberately not localized. A diagnostic that changes wording with the
 /// device language cannot be diffed against yesterday's capture, and this
@@ -57,9 +56,10 @@ internal struct DiagnosticsSnapshot: Sendable {
 
   /// Reads everything, now, on the caller's thread.
   ///
-  /// Every part is a keychain or CryptoTokenKit query taking
-  /// milliseconds; none of it touches a card, so none of it needs a
-  /// session, a prompt, or the holder to be holding anything.
+  /// Every part reads an already-known store or CryptoTokenKit's passive
+  /// state. It never enumerates token keychain items: that query can ask
+  /// the extension to mint a token and present an NFC reader sheet, so a
+  /// diagnostic capture doing it would alter the failure being observed.
   internal static func collect() -> Self {
     Self(
       sections: [
@@ -67,7 +67,7 @@ internal struct DiagnosticsSnapshot: Sendable {
         Self.watcherTokens(),
         Self.driverConfigurations(),
         Self.primeStore(),
-        Self.signingWindow(),
+        Self.credentialPolicy(),
         Self.transportPreference(),
         Self.keychainCounts(),
         Self.extensionTrace(),
@@ -144,18 +144,17 @@ internal struct DiagnosticsSnapshot: Sendable {
       lines: lines.isEmpty ? [Self.nothing] : lines)
   }
 
-  /// Whether the extension may sign without a prompt, and for how much
-  /// longer it may.
+  /// How a contactless signature obtains PIN1.
   ///
-  /// Reading this must not restamp the window, or the screen would keep
-  /// alive the thing it is reporting on.
-  private static func signingWindow() -> Section {
-    guard let idle = Pin1SigningWindow.idle() else {
-      return Section(title: "Signing window", lines: ["closed"])
-    }
+  /// Presence only. A diagnostic must never read or print the digits.
+  private static func credentialPolicy() -> Section {
+    let contents = CardCredentialStore.contents()
     return Section(
-      title: "Signing window",
-      lines: ["open, idle " + TraceTiming.seconds(idle) + " s"])
+      title: "Contactless signing credential",
+      lines: [
+        "PIN1 stored: " + Self.yesNo(contents.hasPin1),
+        "policy: direct use, no software expiry",
+      ])
   }
 
   /// Which transports the extension is allowed to serve.
@@ -177,32 +176,21 @@ internal struct DiagnosticsSnapshot: Sendable {
       ])
   }
 
-  /// How many keychain items of each class this app can see, by group.
+  /// Why raw keychain item counts are not collected here.
   ///
-  /// Counts only. A published identity's label carries the holder's name
-  /// and its serial is the card's, so the items are counted and never
-  /// described. The token group is where CryptoTokenKit publishes what a
-  /// token minted; the app group is where the prime, the window and this
-  /// trace live.
+  /// A `com.apple.token` identity/certificate/key search is active on
+  /// iOS, even with authentication UI skipped: it was measured opening a
+  /// "Ready to Scan" sheet from the diagnostics screen. The typed store
+  /// sections above already report the app-owned records without a broad
+  /// keychain search, and the token watcher reports ctkd's published
+  /// state without waking a card.
   private static func keychainCounts() -> Section {
-    let classes: [(name: String, identifier: CFString)] = [
-      ("identity", kSecClassIdentity),
-      ("certificate", kSecClassCertificate),
-      ("key", kSecClassKey),
-      ("password", kSecClassGenericPassword),
-    ]
-    let groups: [(name: String, group: String?)] = [
-      ("token", kSecAttrAccessGroupToken as String),
-      ("app", nil),
-    ]
-    var lines: [String] = []
-    for entry in classes {
-      for group in groups {
-        lines.append(
-          entry.name + "/" + group.name + ": " + Self.count(of: entry.identifier, in: group.group))
-      }
-    }
-    return Section(title: "Keychain items", lines: lines)
+    Section(
+      title: "Keychain items",
+      lines: [
+        "token identity/certificate/key: not queried (would request NFC)",
+        "app records: reported by the typed sections above",
+      ])
   }
 
   /// What the extensions left behind, oldest first.
@@ -211,29 +199,6 @@ internal struct DiagnosticsSnapshot: Sendable {
     return Section(
       title: "Extension trace (\(trace.count))",
       lines: trace.isEmpty ? ["(nothing recorded)"] : trace)
-  }
-
-  /// How many items of one class one group holds, and what the search
-  /// said.
-  ///
-  /// The search skips any interface: a biometrically gated item would
-  /// otherwise prompt the holder just to draw a count, and the prompt
-  /// would arrive with no explanation of what asked for it.
-  private static func count(of identifier: CFString, in group: String?) -> String {
-    var search: [String: Any] = [
-      kSecClass as String: identifier,
-      kSecMatchLimit as String: kSecMatchLimitAll,
-      kSecReturnAttributes as String: true,
-      kSecUseDataProtectionKeychain as String: true,
-      kSecUseAuthenticationUI as String: kSecUseAuthenticationUISkip,
-    ]
-    if let group {
-      search[kSecAttrAccessGroup as String] = group
-    }
-    var result: CFTypeRef?
-    let status = SecItemCopyMatching(search as CFDictionary, &result)
-    let items = (result as? [[String: Any]]) ?? []
-    return "\(items.count) (status \(status))"
   }
 
   /// A boolean as something readable in a list of facts.

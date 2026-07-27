@@ -25,11 +25,9 @@
   ///   ``DebugLaunchMode/trace`` only read or write this device's own
   ///   state. They run from the app initializer, before any window exists,
   ///   and exit there.
-  /// - ``DebugLaunchMode/prime`` and
-  ///   ``DebugLaunchMode/openSigningWindow`` need a live scene: CoreNFC
-  ///   will not open a slot for a process with no foreground window, and a
-  ///   Face ID prompt has nothing to present over. Those are handed to
-  ///   ``DebugSceneRunnerView``, which runs them on appear and exits.
+  /// - ``DebugLaunchMode/prime`` needs a live scene: CoreNFC will not open
+  ///   a slot for a process with no foreground window. It is handed to
+  ///   ``DebugSceneRunnerView``, which runs it on appear and exits.
   ///
   /// Exit status is the contract: zero when the mode achieved what it was
   /// asked for, non-zero when it did not -- a priming run that stored the
@@ -80,7 +78,7 @@
     /// Runs one mode that needs no window.
     internal static func report(for mode: DebugLaunchMode) -> DebugModeReport {
       switch mode {
-      case .ctkSignProbe, .openSigningWindow, .prime:
+      case .ctkSignProbe, .prime:
         DebugModeReport(
           lines: [mode.rawValue + ": needs a live scene; it is run from the window instead"],
           succeeded: false)

@@ -7,8 +7,8 @@
      default it addresses its own private keychain group and cannot see a
      single item the containing app wrote. Everything the contactless
      path depends on is written by the app and read here - the primed
-     identity (CardCore/PrimeStore), the fifteen-minute signing window
-     (CardCore/Pin1SigningWindow) and the transport preference
+     identity (CardCore/PrimeStore), the explicitly stored credentials
+     (CardCore/CardCredentialStore) and the transport preference
      (CardCore/CardTransportStore). Without this group PrimeStore.read
      returns nil for every card, createToken refuses with primeMissing,
      and no contactless login is possible at all.

@@ -13,6 +13,12 @@ import Foundation
 /// and is what the proven reference does; an async/await bridge on that
 /// thread is not (it hangs the sign, looping the PIN prompt).
 internal struct SmartCardChannel: CardChannel {
+  /// A transport failure before the card produced a protocol response.
+  internal enum TransportError: Error, Equatable, Sendable {
+    /// CryptoTokenKit did not complete one APDU within the field budget.
+    case responseTimedOut
+  }
+
   /// Carries a value across the semaphore boundary; sound because the
   /// semaphore serialises the write before the wait returns.
   private final class Box<Value>: @unchecked Sendable {
@@ -75,6 +81,17 @@ internal struct SmartCardChannel: CardChannel {
   /// The same budget, in the units `DispatchSemaphore` wants.
   private static let sessionWaitBudget: DispatchTimeInterval = .seconds(sessionWaitSeconds)
 
+  /// Maximum useful wait for one APDU on the system-driven NFC field.
+  ///
+  /// The expensive card-side PACE exchanges have measured below one
+  /// second. Once one command has taken two seconds, the system field's
+  /// whole system field window is already gone; waiting for Core NFC's
+  /// roughly twenty-second expiry only makes the retry slower.
+  private static let responseWaitSeconds: Int = 2
+
+  /// The APDU response budget in the units `DispatchSemaphore` wants.
+  private static let responseWaitBudget: DispatchTimeInterval = .seconds(responseWaitSeconds)
+
   /// A reader hands back exactly the bytes the card produced, so a
   /// chunked read may ask for the plain chunk.
   internal var readChunkLength: ReadChunkLength {
@@ -103,7 +120,14 @@ internal struct SmartCardChannel: CardChannel {
       reply.value = response
       semaphore.signal()
     }
-    semaphore.wait()
+    guard semaphore.wait(timeout: .now() + Self.responseWaitBudget) == .success else {
+      let elapsed = started.duration(to: ContinuousClock.now)
+      TokenLog.trace(
+        CardExchangeTrace.line(request: payload, response: nil, elapsed: elapsed)
+      )
+      TokenLog.trace("apdu: response timed out")
+      throw TransportError.responseTimedOut
+    }
     let elapsed = started.duration(to: ContinuousClock.now)
     TokenLog.trace(
       CardExchangeTrace.line(request: payload, response: reply.value, elapsed: elapsed)

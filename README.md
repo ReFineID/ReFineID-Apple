@@ -10,3 +10,20 @@ Requires Xcode 26 on macOS 26. From a fresh clone, no other setup:
 xcodebuild -project ReFineID.xcodeproj -scheme ReFineID build
 xcodebuild -project ReFineID.xcodeproj -scheme ReFineID test
 ```
+
+For an iPhone timing build, use the optimized `Profile` configuration and
+override Xcode's Swift-package coverage injection:
+
+```sh
+xcodebuild build \
+  -project ReFineID.xcodeproj \
+  -scheme ReFineID \
+  -configuration Profile \
+  -destination 'generic/platform=iOS' \
+  CLANG_COVERAGE_MAPPING=NO \
+  ENABLE_CODE_COVERAGE=NO
+```
+
+The override matters even though the project configuration disables coverage:
+Xcode 26 otherwise adds `-profile-generate -profile-coverage-mapping` while
+building the local `CardCore` package.

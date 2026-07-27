@@ -1,5 +1,4 @@
 import CardCore
-import CryptoTokenKit
 import Foundation
 
 /// One signature made through the contactless interface, in the order the
@@ -18,9 +17,6 @@ import Foundation
 /// transport was a Rust FFI relay; here it is CardCore's own PACE,
 /// secure messaging and card operations.
 internal struct FieldSignature {
-  /// The card, as the session handed it over.
-  private let smartCard: TKSmartCard
-
   /// The token this signature belongs to, and the source of everything
   /// the prime already read: the leaf public key and the card serial.
   private let token: Token
@@ -28,97 +24,25 @@ internal struct FieldSignature {
   /// The primed card access number PACE opens the card with.
   private let accessNumber: CardAccessNumber
 
-  internal init(smartCard: TKSmartCard, token: Token, accessNumber: CardAccessNumber) {
-    self.smartCard = smartCard
+  internal init(token: Token, accessNumber: CardAccessNumber) {
     self.token = token
     self.accessNumber = accessNumber
   }
 
-  /// Whether this failure is the card refusing an approach because an
-  /// earlier session left its PACE channel open on it.
-  ///
-  /// The card answers `SW 6999` until it is met again in a fresh session;
-  /// one retry recovers it, measured on hardware, and a second never has.
-  private static func refusesStaleChannel(_ error: Error) -> Bool {
-    if let failure = error as? PaceEstablishment.Failure,
-      case .cardRejected(.staleSecureChannel) = failure
-    {
-      return true
-    }
-    if let failure = error as? CardOperationError,
-      case .selectRejected(.staleSecureChannel) = failure
-    {
-      return true
-    }
-    return false
-  }
-
   /// Establishes the contactless channel and signs `request` in it.
   ///
-  /// The PIN is spent exactly once: everything the retry repeats is
-  /// idempotent and PIN-free, so a stale-channel refusal cannot cause a
-  /// second VERIFY.
+  /// The PIN is spent exactly once. There is deliberately no fresh-card
+  /// fallback here: once ctkd's field has ended, opening another session
+  /// merely waits through `TKError -7` and cannot continue the original
+  /// PACE channel.
   internal func perform(pin1: consuming Pin1, request: SignRequest) throws -> Data {
-    // Prefer the session the mint took and kept open. On the
-    // system-driven path the slot that minted this token has ended by
-    // now, and a fresh beginSession fails with TKError -7 - there is no
-    // field left to open, while the retained one still has one. It is
-    // released when the slot reports the card missing, and never here.
-    let retained = token.heldSession.current
-    var opened: SmartCardChannel?
-    defer { opened?.endSession() }
-
-    func secureChannel() throws -> SecureMessagingChannel {
-      let plain: SmartCardChannel
-      if let retained {
-        plain = retained
-      } else {
-        opened?.endSession()
-        let fresh = SmartCardChannel(smartCard)
-        // Always inside a session: a sessionless transmit on the built-in
-        // contactless slot is parked by ctkd forever, with no error and
-        // no timeout.
-        try fresh.beginSession()
-        opened = fresh
-        plain = fresh
-      }
-      let started = ContinuousClock.now
-      // PACE has to start at master-file level. A FINEID card refuses
-      // MSE:Set AT with SW=6985 anywhere else, and contactless discovery
-      // leaves an application selected instead -- the tag is only handed
-      // over after a successful SELECT from the reader's whitelist. The
-      // app's priming has always done this; the signature did not, which
-      // is the difference between the two paths.
-      //
-      // Best effort, exactly as the priming flow treats it: if the card
-      // is already at master file the select is redundant, and PACE is
-      // the thing whose failure should be reported.
-      try? CardOperations(channel: plain).selectMasterFile()
-      let keys = try PaceEstablishment(channel: plain).establish(with: accessNumber)
-      let secure = SecureMessagingChannel(wrapping: plain, sessionKeys: keys)
-      try CardOperations(channel: secure).selectFineidApplication()
-      // Recorded, never written: a keychain round trip inside the field
-      // is the cost this whole path is shaped to avoid. The exit line of
-      // the signature writes this out afterwards.
-      TokenLog.trace(
-        "pace: channel open retained=\(retained != nil) "
-          + "ms=\(TraceTiming.milliseconds(started.duration(to: ContinuousClock.now)))"
-      )
-      return secure
-    }
-
-    let secure: SecureMessagingChannel
-    do {
-      secure = try secureChannel()
-    } catch {
-      guard Self.refusesStaleChannel(error) else {
-        TokenLog.trace("pace: failed \(error)")
-        throw error
-      }
-      TokenLog.trace("pace: card refused a stale channel, retrying once")
-      secure = try secureChannel()
-    }
-    return try sign(in: secure, pin1: pin1, request: request)
+    // The mint starts PACE immediately on a worker and retains that exact
+    // secure channel. This keeps the expensive work ahead of Safari's
+    // later sign callback and keeps its mutable counter for a second
+    // signature from the same token.
+    let lease = try token.heldSession.preparedChannel(accessNumber: accessNumber)
+    defer { _ = lease.channel }
+    return try sign(in: lease.channel, pin1: pin1, request: request)
   }
 
   /// VERIFY PIN1 and the on-card signature, inside the PACE channel.

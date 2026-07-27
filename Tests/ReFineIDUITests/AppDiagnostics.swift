@@ -7,7 +7,7 @@ import XCTest
 /// already draws for exactly this purpose. Every line on that screen
 /// exists because its absence once made a failure unreadable: which tokens
 /// are registered, what the watcher publishes, whether a prime is stored,
-/// whether the signing window is open, and what the extensions left
+/// whether a signing credential is stored, and what the extensions left
 /// behind.
 ///
 /// Nothing on that screen is a secret. It counts and names states -- it

@@ -22,7 +22,7 @@ import Foundation
 /// Provenance: the CAN handling of the ReFineID iOS browser donor
 /// `Sources/ReFineIDBrowserKit/Card/Pace.swift`, whose `establish` took the
 /// six digits as a bare `String` and validated them inline.
-public struct CardAccessNumber {
+public struct CardAccessNumber: Sendable {
   /// The exact number of digits a card access number carries.
   public static let digitCount: Int = 6
 

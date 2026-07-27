@@ -1,7 +1,6 @@
 import CardCore
 import CryptoTokenKit
 import Foundation
-import Security
 
 /// One captured reading of reader, card, and credential state.
 ///
@@ -57,9 +56,12 @@ internal struct CardStatusSnapshot: Equatable, Sendable {
     }
   }
 
-  /// Token identifiers published by this driver carry this prefix
-  /// (both the historical and current class identifiers).
-  private static let tokenPrefix = "fi.refineid."
+  /// Token identifiers published by the smart-card extension carry this
+  /// exact class prefix.
+  ///
+  /// The discovery extension has a different class and must not make the
+  /// status look ready by itself.
+  private static let tokenPrefix = "fi.refineid.ReFineID.ctk:"
 
   /// The reader's name, or nil when no reader is attached.
   internal let readerName: String?
@@ -74,9 +76,13 @@ internal struct CardStatusSnapshot: Equatable, Sendable {
   /// run, and it is the same on both interfaces of one card.
   internal let cardType: CardTypeIdentification?
 
-  /// True when an identity of ours is in the keychain for Safari to
-  /// find, which is the only honest answer to "can Safari use the card
-  /// right now?" -- see `publishesAnIdentity`.
+  /// True when the smart-card extension has a live published token for
+  /// Safari to enumerate.
+  ///
+  /// This deliberately does not query the token keychain. Enumerating
+  /// token identities is an active operation on iOS: it can ask the
+  /// extension to create a token and present the NFC reader sheet merely
+  /// because this status screen appeared.
   internal let safariIdentityPresent: Bool
 
   /// Captures a fresh snapshot: discovers the first slot, then runs one
@@ -117,33 +123,15 @@ internal struct CardStatusSnapshot: Equatable, Sendable {
     )
   }
 
-  /// Whether an identity of ours is in the keychain for Safari to find.
+  /// Whether this driver currently publishes a token.
   ///
-  /// The question is "can Safari use the card right now?", and the
-  /// honest answer is whatever Safari itself would enumerate: an
-  /// identity -- a certificate with its key -- in the token access
-  /// group. A registered token is not that. The screen said "Ready"
-  /// beside a card Safari could not use, because a token can be
-  /// registered while publishing nothing, and because the driver's own
-  /// credential configuration is listed as a token as well.
+  /// `TKTokenWatcher` observes ctkd's already-published state and does not
+  /// enumerate keychain identities. A direct `SecItemCopyMatching`
+  /// identity query looked more exact, but on iOS it was measured
+  /// opening a "Ready to Scan" sheet from this screen. Status must remain
+  /// an observer, never become another login attempt.
   private static func publishesAnIdentity() -> Bool {
-    let query: [String: Any] = [
-      kSecClass as String: kSecClassIdentity,
-      kSecAttrAccessGroup as String: kSecAttrAccessGroupToken,
-      kSecReturnAttributes as String: true,
-      kSecMatchLimit as String: kSecMatchLimitAll,
-    ]
-    var found: CFTypeRef?
-    guard
-      SecItemCopyMatching(query as CFDictionary, &found) == errSecSuccess,
-      let items = found as? [[String: Any]]
-    else {
-      return false
-    }
-    return items.contains { attributes in
-      let tokenID = attributes[kSecAttrTokenID as String] as? String
-      return tokenID?.hasPrefix(Self.tokenPrefix) == true
-    }
+    TKTokenWatcher().tokenIDs.contains { $0.hasPrefix(Self.tokenPrefix) }
   }
 
   /// Runs the synchronous, blocking card session on a background GCD

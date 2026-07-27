@@ -11,7 +11,15 @@ import SwiftUI
 internal struct StatusView: View {
   private static let rowSpacing: CGFloat = 12
   private static let contentPadding: CGFloat = 24
-  private static let minimumWidth: CGFloat = 560
+
+  /// Smallest useful desktop window; a phone must instead accept its
+  /// proposed width or this wider frame is centred and clipped on both
+  /// sides.
+  #if os(macOS)
+    private static let minimumWidth: CGFloat? = 560
+  #else
+    private static let minimumWidth: CGFloat? = nil
+  #endif
 
   /// Wide enough for six digits with room to see them.
   private static let entryWidth: CGFloat = 120
@@ -96,17 +104,10 @@ internal struct StatusView: View {
       }
       actionRows
     }
-    // Each row keeps its natural width instead of compressing, so the
-    // window's own minimum grows to whatever the longest line needs --
-    // which is what stops the text being truncated to fit a window the
-    // holder never chose. `windowResizability(.contentSize)` then makes
-    // that minimum the smallest the window can be dragged to.
     .padding(Self.contentPadding)
-    // The window cannot be made smaller than what it has to say. The
-    // content keeps its natural height as well as its natural width, so
-    // with `windowResizability(.contentSize)` the smallest the window
-    // can be dragged to is the size that still shows every row -- there
-    // is no useful window here that hides the card's status.
+    // On macOS the window cannot be made narrower than the status it has
+    // to show. On iOS the nil minimum accepts the screen width instead;
+    // imposing the desktop width there shifts both edges off-screen.
     .fixedSize(horizontal: false, vertical: true)
     .frame(minWidth: Self.minimumWidth, alignment: .leading)
     .task {

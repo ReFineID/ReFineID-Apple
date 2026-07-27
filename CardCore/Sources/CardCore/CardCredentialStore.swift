@@ -50,6 +50,10 @@ public enum CardCredentialStore {
   /// Account for PIN1, present only when the holder opted in.
   private static let pin1Account = "pin1"
 
+  /// Keychain coordinates used by the retired timed signing window.
+  private static let legacySigningWindowService = "fi.refineid.pin1window"
+  private static let legacySigningWindowAccount = "current"
+
   /// What is stored, without reading any secret.
   public static func contents() -> Contents {
     Contents(
@@ -159,6 +163,23 @@ public enum CardCredentialStore {
     read(account: pin1Account).flatMap(Pin1.init(digits:))
   }
 
+  /// Removes the duplicate PIN item written by builds with a timed
+  /// signing window.
+  ///
+  /// Current builds sign directly from the holder's explicitly stored
+  /// credential, so the derived copy has no reader and must not survive
+  /// an upgrade indefinitely.
+  public static func removeLegacySigningWindow() {
+    let query: [String: Any] = [
+      kSecClass as String: kSecClassGenericPassword,
+      kSecAttrService as String: legacySigningWindowService,
+      kSecAttrAccount as String: legacySigningWindowAccount,
+      kSecUseDataProtectionKeychain as String: KeychainPlatform.usesDataProtection,
+      kSecAttrSynchronizable as String: false,
+    ]
+    SecItemDelete(query as CFDictionary)
+  }
+
   /// The primed identity for a card that was just read, built around the
   /// stored card access number.
   ///
@@ -182,22 +203,6 @@ public enum CardCredentialStore {
       certificate: certificate,
       issuer: issuer,
       tokenSerial: tokenSerial)
-  }
-
-  /// Opens the fifteen-minute signing window from the stored PIN1.
-  ///
-  /// The window is how the first PIN reaches the token extension, which
-  /// has no interface to ask for one with while Safari waits. Reading the
-  /// window
-  /// it opens is not, and closes itself after fifteen idle minutes.
-  ///
-  /// The digits never leave this type: they are read, handed to
-  /// ``Pin1SigningWindow``, and dropped. Returns false when no PIN1 is
-  /// stored, the holder did not authenticate, or the window could not be
-  /// written.
-  public static func openSigningWindow() -> Bool {
-    guard let digits = read(account: pin1Account) else { return false }
-    return Pin1SigningWindow.open(pin1: digits)
   }
 
   /// Removes the card access number, from the driver's copy as well.

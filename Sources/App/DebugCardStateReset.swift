@@ -8,11 +8,10 @@
   /// Every measurement starts from zero or it is not a measurement. A
   /// smart-card token registered by yesterday's build answers the query
   /// today's build was meant to answer; a prime record written before a
-  /// contents-version bump serves a login that should have failed; an open
-  /// signing window makes an unattended signature look like a working PIN
-  /// path; and an old trace line reads as if this run had produced it. Each
-  /// of those has cost a wrong conclusion, so the reset clears all four and
-  /// then prints what is left.
+  /// contents-version bump serves a login that should have failed; and an
+  /// old trace line reads as if this run had produced it. Each of those
+  /// has cost a wrong conclusion, so the reset clears all three and then
+  /// prints what is left.
   ///
   /// What it does NOT clear is the stored card access number and PIN1.
   /// Those are the holder's own setup rather than measured state, and
@@ -50,8 +49,6 @@
       #endif
       PrimeStore.forgetAll()
       lines.append("prime store: cleared")
-      Pin1SigningWindow.close()
-      lines.append("signing window: closed")
       ExtensionTrace.clear()
       lines.append("extension trace: cleared")
       lines += Self.remainingLines()

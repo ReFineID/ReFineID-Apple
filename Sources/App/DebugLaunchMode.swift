@@ -16,9 +16,6 @@
     /// Print everything the status screen shows, as text.
     case diagnostics = "--diagnostics"
 
-    /// Open the signing window from the stored PIN1.
-    case openSigningWindow = "--open-signing-window"
-
     /// Runs one PACE handshake over an attached reader and times it.
     case paceCheck = "--pace-check"
 
@@ -47,10 +44,10 @@
 
     /// Whether this mode has to wait for a live scene.
     ///
-    /// Three of them cannot run the way the rest do. CoreNFC will not open
-    /// a slot for a process with no foreground window; a Face ID prompt
-    /// has nothing to present over; and the system PIN sheet the extension
-    /// raises needs the app's run loop to be running to appear at all.
+    /// Two of them cannot run the way the rest do. CoreNFC will not open
+    /// a slot for a process with no foreground window, and the system PIN
+    /// sheet the extension raises needs the app's run loop to be running
+    /// to appear at all.
     /// Every other mode only reads or writes this device's own state, or
     /// drives a reader that needs no interface, and is finished before a
     /// window would have existed.
@@ -59,7 +56,7 @@
       case .diagnostics, .paceCheck, .resetCardState, .setCan, .setPin1,
         .signProbe, .tokenPublishProbe, .trace:
         false
-      case .ctkSignProbe, .openSigningWindow, .prime:
+      case .ctkSignProbe, .prime:
         true
       }
     }
@@ -70,8 +67,8 @@
     /// from the command line at each launch and never committed anywhere.
     internal var takesValue: Bool {
       switch self {
-      case .ctkSignProbe, .diagnostics, .openSigningWindow, .paceCheck, .prime,
-        .resetCardState, .tokenPublishProbe, .trace:
+      case .ctkSignProbe, .diagnostics, .paceCheck, .prime, .resetCardState,
+        .tokenPublishProbe, .trace:
         false
       case .setCan, .setPin1, .signProbe:
         true

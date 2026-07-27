@@ -31,7 +31,7 @@ internal final class TokenDriver: TKSmartCardTokenDriver, TKSmartCardTokenDriver
   private static let nearFieldSlotMarker = "NFC"
 
   /// How many times the mint looks for a prime before giving up.
-  private static let primeWaitAttempts = 12
+  private static let primeWaitAttempts = 20
 
   /// How long the mint waits between looks for a prime.
   private static let primeWaitInterval: TimeInterval = 0.25
@@ -56,10 +56,13 @@ internal final class TokenDriver: TKSmartCardTokenDriver, TKSmartCardTokenDriver
   /// token to register and setup reporting that it "did not take".
   ///
   /// Waiting a little converts that race into a hit. The wait is short
-  /// and bounded because the system gives a mint roughly two seconds,
-  /// and a card that was genuinely never primed must still fail quickly
-  /// rather than hold the field: an already-primed card hits on the
-  /// first read and waits not at all.
+  /// and bounded because a card that was genuinely never primed must
+  /// still fail rather than hold the field indefinitely. The five-second
+  /// ceiling comes from a clean iPhone measurement: PACE plus all three
+  /// reads needed by the prime reached the store about 3.6 seconds after
+  /// the mint began, just after the former three-second ceiling expired.
+  /// An already-primed card still hits on the first read and waits not at
+  /// all.
   private static func awaitPrime(instanceID: CardInstanceIdentifier) -> PrimedIdentity? {
     for attempt in 1...primeWaitAttempts {
       if let primed = PrimeStore.read(instanceID: instanceID) {
@@ -161,14 +164,12 @@ internal final class TokenDriver: TKSmartCardTokenDriver, TKSmartCardTokenDriver
       "mintFromPrime: prime HIT for \(instanceID.value) "
         + "leaf=\(primed.certDER.count)B issuer=\(primed.issuerDER?.count ?? -1)B"
     )
-    let token = try Token(
+    return try Token(
       primedSmartCard: smartCard,
       aid: aid,
       tokenDriver: tokenDriver,
       instanceID: instanceID,
       primed: primed
     )
-    token.holdSession(on: smartCard)
-    return token
   }
 }

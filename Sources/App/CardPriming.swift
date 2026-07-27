@@ -170,6 +170,20 @@
       step(.found, .done)
       progress(String(localized: "Card found. Keep holding."))
 
+      // Replacing the extension can remove its system registration while
+      // leaving the keychain prime intact. The ATR identifies the card
+      // without an APDU, so restore without repeating PACE and the reads.
+      if let instance = CardInstanceIdentifier(answerToReset: session.answerToReset),
+        PrimeStore.read(instanceID: instance) != nil
+      {
+        step(.secureChannel, .done)
+        step(.certificate, .done)
+        step(.stored, .done)
+        progress(String(localized: "Card details stored on this iPhone."))
+        return await Self.finish(
+          instance: instance, session: session, progress: progress, step: step)
+      }
+
       let payload: Payload
       step(.secureChannel, .running)
       do {
@@ -208,7 +222,7 @@
       // to register and fails, and the holder would have to present the
       // card all over again.
       return await Self.finish(
-        payload: payload, session: session, progress: progress, step: step)
+        instance: payload.instance, session: session, progress: progress, step: step)
     }
 
     /// Registers the live card and reports how the hold ended.
@@ -217,7 +231,7 @@
     /// with the card in the slot, which is why it takes the live session
     /// rather than being called after the hold.
     private static func finish(
-      payload: Payload,
+      instance: CardInstanceIdentifier,
       session: NearFieldCardSession,
       progress: @escaping Progress,
       step: StepReport
@@ -225,7 +239,7 @@
       session.update(message: String(localized: "Setting up Safari. Keep holding."))
       step(.registered, .running)
       let registered = await Self.register(
-        instance: payload.instance, session: session, progress: progress)
+        instance: instance, session: session, progress: progress)
       step(.registered, registered ? .done : .failed)
       session.update(
         message: registered
@@ -321,6 +335,10 @@
     ) async -> Bool {
       let manager = TKSmartCardTokenRegistrationManager.default
       let tokenID = await Self.tokenID(for: instance, session: session)
+      if manager.registeredSmartCardTokens.contains(tokenID) {
+        progress(String(localized: "Card registered for Safari."))
+        return true
+      }
       for attempt in 1...Self.registrationAttemptLimit {
         guard session.holdsValidCard else {
           progress(String(localized: "The card left before setup finished."))
@@ -332,6 +350,12 @@
           progress(String(localized: "Card registered for Safari."))
           return true
         } catch {
+          // CryptoTokenKit may publish while the throwing call unwinds;
+          // already registered is also success for this idempotent action.
+          if manager.registeredSmartCardTokens.contains(tokenID) {
+            progress(String(localized: "Card registered for Safari."))
+            return true
+          }
           progress(String(localized: "Setup attempt \(attempt) did not take."))
         }
       }

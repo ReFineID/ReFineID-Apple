@@ -2,7 +2,6 @@ import CardCore
 import CryptoTokenKit
 import Foundation
 import Security
-
 /// The token instance for one inserted card.
 ///
 /// At creation it reads the on-card authentication certificate through
@@ -14,10 +13,8 @@ import Security
 internal final class Token: TKSmartCardToken, TKTokenDelegate {
   /// The auth certificate and its key share this keychain object ID.
   private static let authObjectID = "auth"
-
   /// The published issuing-CA certificate's object ID (cert-only).
   private static let issuerObjectID = "issuer-ca"
-
   /// The authentication key's profile, resolved from the leaf and used
   /// by the session to advertise and select signing algorithms.
   internal let keyProfile: CardKeyProfile
@@ -185,12 +182,13 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
       instanceID: instanceID.value,
       tokenDriver: tokenDriver
     )
+    observeSlotState(of: smartCard)
+    holdSession(on: smartCard)
     try publish(
       PublishedIdentity(leafDER: primed.certDER, issuerDER: primed.issuerDER),
       leaf: leaf,
       profile: profile
     )
-    observeSlotState(of: smartCard)
     TokenLog.trace("Token.init(primed): published, profile=\(String(describing: profile))")
   }
 
@@ -315,6 +313,9 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
       return
     }
     heldSession.retain(channel)
+    if let accessNumber = sealedAccessNumber {
+      heldSession.startPACE(with: accessNumber)
+    }
   }
 
   /// Releases the held session when the card is genuinely gone.
@@ -382,7 +383,6 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
     )
     keychainContents?.fill(with: items)
   }
-
   /// Gives back the held session when the token itself goes away.
   ///
   /// The slot observation covers the card leaving; this covers `ctkd`

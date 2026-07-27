@@ -7,13 +7,12 @@
 
   /// The window a scene-bound debug mode runs in.
   ///
-  /// Two of the modes cannot run the way the rest do. CoreNFC will not open
-  /// a slot for a process with no foreground window, and the biometric
-  /// prompt that guards the stored PIN1 has nothing to present over, so
-  /// running either in the app initializer gets a refusal that looks
-  /// exactly like a broken card path. This view exists only to be on screen
-  /// while the work runs: it prints to stdout as it goes and exits the
-  /// process when the work is done, so
+  /// Two modes cannot run the way the rest do. CoreNFC will not open a
+  /// slot for a process with no foreground window, and the system PIN
+  /// sheet needs a live run loop. Running either in the app initializer
+  /// gets a refusal that looks exactly like a broken card path. This view
+  /// exists only to be on screen while the work runs: it prints to stdout
+  /// as it goes and exits the process when the work is done, so
   /// `xcrun devicectl device process launch --console` still sees a run
   /// that starts, narrates itself, and ends with a status.
   ///
@@ -47,8 +46,6 @@
         let report = await Self.offMainThread(CtkSignProbe.report)
         DebugConsole.emit(report.lines)
         DebugConsole.finish(succeeded: report.succeeded)
-      case .openSigningWindow:
-        DebugConsole.finish(succeeded: await Self.openSigningWindow())
       case .prime:
         DebugConsole.finish(succeeded: await Self.prime())
       case .diagnostics, .paceCheck, .resetCardState, .setCan, .setPin1,
@@ -73,26 +70,6 @@
           continuation.resume(returning: work())
         }
       }
-    }
-
-    /// Opens the fifteen-minute signing window from the stored PIN1.
-    ///
-    /// The read is gated by the holder's biometrics and blocks inside the
-    /// Security framework until they answer, so it is dispatched off the
-    /// cooperative pool -- a blocked cooperative thread is how a run that
-    /// should have shown a prompt instead shows nothing.
-    private static func openSigningWindow() async -> Bool {
-      DebugConsole.emit("=== open signing window ===")
-      DebugConsole.emit("pin1 stored: \(CardCredentialStore.contents().hasPin1)")
-      let opened = await withCheckedContinuation { continuation in
-        DispatchQueue.global(qos: .userInitiated).async {
-          continuation.resume(returning: CardCredentialStore.openSigningWindow())
-        }
-      }
-      DebugConsole.emit("open: \(opened)")
-      DebugConsole.emit("signing window open: \(Pin1SigningWindow.isOpen())")
-      DebugConsole.emit("=== end ===")
-      return opened
     }
 
     /// Runs the card priming flow with no interface but the system sheet.
