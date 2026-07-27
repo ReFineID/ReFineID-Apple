@@ -83,6 +83,17 @@ internal struct FieldSignature {
         plain = fresh
       }
       let started = ContinuousClock.now
+      // PACE has to start at master-file level. A FINEID card refuses
+      // MSE:Set AT with SW=6985 anywhere else, and contactless discovery
+      // leaves an application selected instead -- the tag is only handed
+      // over after a successful SELECT from the reader's whitelist. The
+      // app's priming has always done this; the signature did not, which
+      // is the difference between the two paths.
+      //
+      // Best effort, exactly as the priming flow treats it: if the card
+      // is already at master file the select is redundant, and PACE is
+      // the thing whose failure should be reported.
+      try? CardOperations(channel: plain).selectMasterFile()
       let keys = try PaceEstablishment(channel: plain).establish(with: accessNumber)
       let secure = SecureMessagingChannel(wrapping: plain, sessionKeys: keys)
       try CardOperations(channel: secure).selectFineidApplication()

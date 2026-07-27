@@ -30,6 +30,12 @@ public enum CardExchangeTrace {
   /// What is printed in place of a redacted value.
   private static let redacted: String = "redacted"
 
+  /// How many leading command bytes a debug trace shows.
+  ///
+  /// Enough for the header, length and the first of the data field, which
+  /// is what distinguishes one PACE step from another.
+  private static let tracedHeadLength: Int = 12
+
   /// One exchange as a trace line.
   ///
   /// `response` is the raw transport answer including its status word, or
@@ -51,7 +57,20 @@ public enum CardExchangeTrace {
     guard instruction != Iso7816Values.insVerify else {
       return named + " verify tx=" + Self.redacted + tail
     }
-    return named + " tx=\(request.count)" + tail
+    #if DEBUG
+      // The header and a little of the body, while the contactless path
+      // is still being brought up: an instruction byte alone cannot show
+      // that two implementations send the same command, and that
+      // comparison is the whole of the current work. SELECT, MSE and
+      // GENERAL AUTHENTICATE carry no secret -- VERIFY returned above,
+      // before reaching this line, and is the only command that does.
+      let head = request.prefix(Self.tracedHeadLength)
+        .map { String(format: Self.byteFormat, $0) }
+        .joined()
+      return named + " tx=\(request.count) head=" + head + tail
+    #else
+      return named + " tx=\(request.count)" + tail
+    #endif
   }
 
   /// The instruction byte, or nil when the payload is too short to have
