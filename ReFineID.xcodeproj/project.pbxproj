@@ -15,7 +15,7 @@
 		6D0000000000000000000007 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 2D0000000000000000000008 /* PrivacyInfo.xcprivacy */; };
 		6D0000000000000000000008 /* CardCore in Frameworks */ = {isa = PBXBuildFile; productRef = AD0000000000000000000004 /* CardCore */; };
 		6D0000000000000000000009 /* CryptoTokenKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2D0000000000000000000003 /* CryptoTokenKit.framework */; };
-		6D000000000000000000000A /* ReFineIDDiscoveryExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2D000000000000000000000A /* ReFineIDDiscoveryExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		6D000000000000000000000A /* ReFineIDDiscoveryExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2D000000000000000000000A /* ReFineIDDiscoveryExtension.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		6D000000000000000000000B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 2D0000000000000000000008 /* PrivacyInfo.xcprivacy */; };
 		6D000000000000000000000C /* CardCore in Frameworks */ = {isa = PBXBuildFile; productRef = AD0000000000000000000005 /* CardCore */; };
 /* End PBXBuildFile section */

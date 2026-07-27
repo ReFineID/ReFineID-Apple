@@ -58,10 +58,46 @@ public enum CardCredentialStore {
   }
 
   /// Stores the card access number, replacing any previous one.
+  ///
+  /// Also hands it to the token driver, which on macOS cannot read the
+  /// keychain item this just wrote. See `publishCardAccessNumberToDriver`.
   @discardableResult
   public static func save(cardAccessNumber digits: String) -> OSStatus {
     guard CardAccessNumber(digits: digits) != nil else { return errSecParam }
-    return write(digits, account: cardAccessNumberAccount)
+    let status = write(digits, account: cardAccessNumberAccount)
+    if status == errSecSuccess {
+      publishToDriver(digits: digits)
+    }
+    return status
+  }
+
+  /// Hands the stored card access number to the token driver, for the
+  /// platform where it cannot read the keychain item itself.
+  ///
+  /// Called by the app when it starts, not only when the number is
+  /// entered: a number stored before this channel existed, or by a
+  /// previous version, would otherwise stay invisible to the driver
+  /// until the holder happened to type it again.
+  ///
+  /// Answers whether anything was published, so a caller can say so.
+  /// False covers both nothing stored and a process that is not the
+  /// driver's hosting application, neither of which is an error.
+  @discardableResult
+  public static func publishCardAccessNumberToDriver() -> Bool {
+    guard let digits = read(account: cardAccessNumberAccount) else { return false }
+    return publishToDriver(digits: digits)
+  }
+
+  /// The platform half of the above: iOS shares a keychain access group
+  /// with its extensions and needs no second copy of the number, so it
+  /// does not make one.
+  @discardableResult
+  private static func publishToDriver(digits: String) -> Bool {
+    #if os(macOS)
+      return DriverConfiguredCredentials.publish(digits: digits)
+    #else
+      return false
+    #endif
   }
 
   /// Stores PIN1 for unattended signing, replacing any previous one.
@@ -82,8 +118,40 @@ public enum CardCredentialStore {
   /// prompt in front of it would cost the holder an interruption on
   /// every card setup for very little.
   public static func cardAccessNumber() -> CardAccessNumber? {
-    read(account: cardAccessNumberAccount)
+    if let stored = read(account: cardAccessNumberAccount)
       .flatMap(CardAccessNumber.init(digits:))
+    {
+      return stored
+    }
+    // The token driver's own copy, which on macOS is the only one it can
+    // read. Second rather than first, so the keychain stays the source of
+    // truth wherever it is readable.
+    #if os(macOS)
+      return DriverConfiguredCredentials.cardAccessNumber()
+    #else
+      return nil
+    #endif
+  }
+
+  /// The keychain's own answer to "could the card access number be read
+  /// from this process?", for when it could not.
+  ///
+  /// `cardAccessNumber()` answers nil for every reason there is, and the
+  /// reasons want different things done about them: `errSecItemNotFound`
+  /// is setup that has not happened, while a refusal is one process
+  /// being unable to read what another one wrote. A caller that has
+  /// already failed can say which it hit instead of guessing.
+  /// Asks for the value, not merely the item: on macOS the two are
+  /// different questions, because finding an item needs no authorization
+  /// while reading its data is what the access control governs. A probe
+  /// that omitted the data reported success for an item it could not
+  /// actually read.
+  public static func cardAccessNumberReadStatus() -> OSStatus {
+    var query = self.query(account: cardAccessNumberAccount)
+    query[kSecMatchLimit as String] = kSecMatchLimitOne
+    query[kSecReturnData as String] = true
+    var item: CFTypeRef?
+    return SecItemCopyMatching(query as CFDictionary, &item)
   }
 
   /// The stored PIN1, or nil when the holder never entered one.
@@ -132,9 +200,12 @@ public enum CardCredentialStore {
     return Pin1SigningWindow.open(pin1: digits)
   }
 
-  /// Removes the card access number.
+  /// Removes the card access number, from the driver's copy as well.
   public static func forgetCardAccessNumber() {
     delete(account: cardAccessNumberAccount)
+    #if os(macOS)
+      DriverConfiguredCredentials.withdraw()
+    #endif
   }
 
   /// Removes PIN1, returning to a prompt for every signature.
@@ -146,6 +217,9 @@ public enum CardCredentialStore {
   public static func forgetAll() {
     delete(account: cardAccessNumberAccount)
     delete(account: pin1Account)
+    #if os(macOS)
+      DriverConfiguredCredentials.withdraw()
+    #endif
   }
 
   /// Item coordinates shared by every operation.

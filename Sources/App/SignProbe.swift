@@ -47,9 +47,8 @@
     private static func run(pin: String) async -> [String] {
       guard
         let manager = TKSmartCardSlotManager.default,
-        let slotName = manager.slotNames.first,
-        let slot = await manager.getSlot(withName: slotName),
-        let smartCard = slot.makeSmartCard()
+        let found = await CardSlotSearch.occupied(in: manager),
+        let smartCard = found.slot.makeSmartCard()
       else {
         return ["FAIL: no reader/card"]
       }

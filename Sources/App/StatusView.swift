@@ -26,7 +26,7 @@ internal struct StatusView: View {
     VStack(alignment: .leading, spacing: Self.rowSpacing) {
       Text(verbatim: "ReFineID")
         .font(.largeTitle.bold())
-      Text("Use your Finnish identity card in Safari with a USB-C card reader.")
+      Text("Finnish identity card middleware")
         .foregroundStyle(.secondary)
       Divider()
       LabeledContent(

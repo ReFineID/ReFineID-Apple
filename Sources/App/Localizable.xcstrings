@@ -155,6 +155,23 @@
         }
       }
     },
+    "Finnish identity card middleware": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suomalaisen henkilökortin väliohjelmisto"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mellanprogram för finländskt identitetskort"
+          }
+        }
+      }
+    },
     "Identity card recognized": {
       "localizations": {
         "fi": {
@@ -410,22 +427,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Okänd"
-          }
-        }
-      }
-    },
-    "Use your Finnish identity card in Safari with a USB-C card reader.": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Käytä suomalaista henkilökorttiasi Safarissa USB-C-kortinlukijalla."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Använd ditt finländska identitetskort i Safari med en USB-C-kortläsare."
           }
         }
       }

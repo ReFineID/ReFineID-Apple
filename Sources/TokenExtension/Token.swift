@@ -32,13 +32,22 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
   /// the signature never spends its field re-reading EF.4331 to get it.
   internal let leafPublicKey: SecKey
 
-  /// The card access number the app primed for this card, contactless
-  /// tokens only; nil for a contact token.
+  /// The card access number this card must be unsealed with; nil when the
+  /// card answered in the clear.
   ///
-  /// Never logged. Its presence is what tells the session which card it
-  /// is holding: a primed token signs behind PACE and a secure-messaging
-  /// channel, a contact token signs in the clear.
-  internal let primedAccessNumber: CardAccessNumber?
+  /// Never logged. Its presence, not the slot it arrived on, is what
+  /// tells the session which card it is holding: with one, every verb
+  /// travels inside a PACE channel; without one, the card is spoken to
+  /// directly.
+  ///
+  /// A contactless card is sealed whichever antenna reaches it -- the
+  /// phone's own or the one in a desk reader -- so this is set on both,
+  /// and the two differ only in where the number came from. The phone
+  /// takes it from the prime, because the system ends that slot about two
+  /// seconds after the mint and there is no room to read anything. A
+  /// reader holds its field indefinitely, so there the card is unsealed
+  /// and read on the spot, and no prime is needed at all.
+  internal let sealedAccessNumber: CardAccessNumber?
 
   /// The card's token serial as the prime read it, contactless tokens
   /// only.
@@ -63,7 +72,7 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
     tokenDriver: TKSmartCardTokenDriver
   ) throws {
     TokenLog.info("Token.init: reading identity")
-    let identity = try Self.readIdentity(from: smartCard)
+    let (identity, accessNumber) = try Self.readIdentity(from: smartCard)
     TokenLog.info(
       "Token.init: leaf=\(identity.leafDER.count) issuer=\(identity.issuerDER?.count ?? -1)"
     )
@@ -89,7 +98,7 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
     }
     self.keyProfile = profile
     self.leafPublicKey = publicKey
-    self.primedAccessNumber = nil
+    self.sealedAccessNumber = accessNumber
     self.primedSerial = nil
     // Same derivation and same contents version as the contactless mint
     // below; only the material differs, because only here has the card
@@ -160,7 +169,7 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
     }
     self.keyProfile = profile
     self.leafPublicKey = publicKey
-    self.primedAccessNumber = accessNumber
+    self.sealedAccessNumber = accessNumber
     self.primedSerial = primed.tokenSerial.flatMap(TokenSerial.init(value:))
     super.init(
       smartCard: smartCard,
@@ -177,32 +186,104 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
     TokenLog.trace("Token.init(primed): published, profile=\(String(describing: profile))")
   }
 
-  /// Reads the leaf and (best-effort) issuer certificates and resolves
-  /// the key profile, all in one exclusive card session.
-  private static func readIdentity(from smartCard: TKSmartCard) throws -> PublishedIdentity {
+  /// Reads the leaf and (best-effort) issuer certificates in one
+  /// exclusive card session, unsealing the card first if it asks to be.
+  ///
+  /// The card is asked rather than assumed. A slot name says which
+  /// reader answered, not which interface of it the card is on: this
+  /// reader publishes its contact, contactless and SAM interfaces under
+  /// one name that differs only by a trailing index, and nothing in the
+  /// name says which index is the antenna. What does distinguish them is
+  /// the card's own answer -- a contactless FINEID card refuses SELECT of
+  /// the PKCS#15 application with `6982` until PACE has run, and a
+  /// contact one simply selects it -- so the answer is the
+  /// classification, and it costs one command to get.
+  ///
+  /// Only that one status word takes the second path. Any other failure
+  /// is reported as itself, because a card that is missing, mute or
+  /// something else entirely is not a card that wants a card access
+  /// number, and running PACE at it would replace a legible fault with a
+  /// wrong one.
+  private static func readIdentity(
+    from smartCard: TKSmartCard
+  ) throws -> (identity: PublishedIdentity, accessNumber: CardAccessNumber?) {
     TokenLog.info("readIdentity: opening session")
     return try SmartCardChannel(smartCard).withSession { channel in
-      let operations = CardOperations(channel: channel)
-      TokenLog.info("readIdentity: selecting application")
-      try operations.selectFineidApplication()
-      TokenLog.info("readIdentity: reading leaf EF.4331")
-      let leaf = try operations.readCertificate(.authentication)
-      TokenLog.info("readIdentity: leaf \(leaf.count) bytes; reading issuer EF.4336")
-      let issuer = try? operations.readCertificate(.issuing)
-      TokenLog.info("readIdentity: issuer \(issuer?.count ?? -1) bytes")
-      return PublishedIdentity(leafDER: leaf, issuerDER: issuer)
+      do {
+        TokenLog.info("readIdentity: selecting application")
+        try CardOperations(channel: channel).selectFineidApplication()
+      } catch CardOperationError.selectRejected(.securityNotSatisfied) {
+        TokenLog.info("readIdentity: application is sealed; unsealing")
+        return try Self.unsealed(over: channel)
+      }
+      return (try Self.certificates(read: CardOperations(channel: channel)), nil)
     }
+  }
+
+  /// Runs PACE over an already-open channel and reads through it.
+  ///
+  /// This is the priming flow the app runs on the phone, in the
+  /// extension and without the deadline. A reader powers the card
+  /// continuously, so there is no field to lose and nothing to store
+  /// ahead of time: the certificate is read live, exactly as the contact
+  /// path reads it, and the identity is published from what the card
+  /// just said.
+  ///
+  /// The card access number is the one the holder entered. Absent, this
+  /// stops here with a typed refusal -- a sealed card and no number is
+  /// setup that has not been done, not a fault to keep retrying at.
+  private static func unsealed(
+    over channel: SmartCardChannel
+  ) throws -> (identity: PublishedIdentity, accessNumber: CardAccessNumber?) {
+    guard let accessNumber = CardCredentialStore.cardAccessNumber() else {
+      // The status separates the two faults that look identical here:
+      // nothing stored is setup not done, while a refusal is this
+      // process being unable to read what the app wrote.
+      TokenLog.error(
+        "readIdentity: card is sealed and no card access number is readable "
+          + "(status=\(CardCredentialStore.cardAccessNumberReadStatus()))"
+      )
+      throw TokenError.primeMissing
+    }
+    let started = ContinuousClock.now
+    // PACE has to start at master-file level: the card refuses MSE:Set AT
+    // with 6985 anywhere else. Best effort, as everywhere else this runs:
+    // PACE is the step whose failure should be the one reported.
+    try? CardOperations(channel: channel).selectMasterFile()
+    let keys = try PaceEstablishment(channel: channel).establish(with: accessNumber)
+    let secure = SecureMessagingChannel(wrapping: channel, sessionKeys: keys)
+    TokenLog.info("readIdentity: PACE ok ms=\(Self.elapsed(since: started))")
+    let operations = CardOperations(channel: secure)
+    try operations.selectFineidApplication()
+    return (try Self.certificates(read: operations), accessNumber)
+  }
+
+  /// Reads the leaf, and the issuer if the card offers one.
+  private static func certificates(
+    read operations: CardOperations
+  ) throws -> PublishedIdentity {
+    TokenLog.info("readIdentity: reading leaf EF.4331")
+    let leaf = try operations.readCertificate(.authentication)
+    TokenLog.info("readIdentity: leaf \(leaf.count) bytes; reading issuer EF.4336")
+    let issuer = try? operations.readCertificate(.issuing)
+    TokenLog.info("readIdentity: issuer \(issuer?.count ?? -1) bytes")
+    return PublishedIdentity(leafDER: leaf, issuerDER: issuer)
+  }
+
+  /// How long something started at `instant` has taken, in milliseconds.
+  private static func elapsed(since instant: ContinuousClock.Instant) -> String {
+    TraceTiming.milliseconds(instant.duration(to: ContinuousClock.now))
   }
 
   // The @objc requirement is throwing; keep `throws` for the bridge.
   // swiftlint:disable:next unneeded_throws_rethrows
   internal func createSession(_: TKToken) throws -> TKTokenSession {
-    // The transport is the useful half: it says which of the two mints
-    // this token came from, and therefore which sign path is about to
-    // run. `TKToken` publishes no instance identifier to name it with.
+    // Which interface this card is on is the useful half: it says which
+    // sign path is about to run. `TKToken` publishes no instance
+    // identifier to name it with.
     TokenLog.info(
-      "createSession: session requested, transport="
-        + (primedAccessNumber == nil ? "reader" : "near-field")
+      "createSession: session requested, interface="
+        + (sealedAccessNumber == nil ? "contact" : "contactless")
     )
     return TokenSession(token: self)
   }

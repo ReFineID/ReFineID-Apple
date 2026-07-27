@@ -38,8 +38,17 @@
       }
       let names = manager.slotNames
       lines.append("slots (\(names.count)):")
+      // Named with what each one holds. A dual-interface reader
+      // publishes its contact, contactless and SAM interfaces under one
+      // name differing only by a trailing index, and the index does not
+      // say which is which -- the answer to reset does. A contact FINEID
+      // card opens `3B 7F`; a card on the antenna is reached through
+      // T=CL, whose synthesized answer opens `3B 8x 80 01`.
       for name in names {
+        let slot = Self.slot(named: name, in: manager)
         lines.append("  " + name)
+        lines.append("      state=" + Self.description(of: slot?.state))
+        lines.append("      atr=" + Self.hex(slot?.atr?.bytes))
       }
       guard let accessNumber = CardCredentialStore.cardAccessNumber() else {
         return DebugModeReport(
@@ -52,6 +61,35 @@
       }
       lines.append("using slot: " + name)
       return Self.run(on: card, accessNumber: accessNumber, lines: lines)
+    }
+
+    /// What a slot state is called, for the listing above.
+    private static func description(of state: TKSmartCardSlot.State?) -> String {
+      switch state {
+      case .empty:
+        "empty"
+      case .missing:
+        "missing"
+      case .muteCard:
+        "mute card"
+      case .probing:
+        "probing"
+      case .validCard:
+        "valid card"
+      case nil:
+        "no slot"
+      @unknown default:
+        "unknown"
+      }
+    }
+
+    /// Bytes as spaced hex, or a dash.
+    ///
+    /// An answer to reset is public: it names the card's interface and
+    /// carries no holder data.
+    private static func hex(_ bytes: Data?) -> String {
+      guard let bytes, !bytes.isEmpty else { return "-" }
+      return bytes.map { String(format: "%02X", $0) }.joined(separator: " ")
     }
 
     /// The first slot that has a card in it, with that card.

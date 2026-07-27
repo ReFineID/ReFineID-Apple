@@ -1,12 +1,26 @@
-# Status, 26.7.27 (165)
+# Status, 26.7.27
 
 What works, what does not, and what each was measured with. Written from
 device and Mac runs on 2026-07-27, not from intent.
 
-## macOS: card login works
+## macOS: card login works, on both interfaces
 
-Safari signs in with the card through a USB-C reader, driven entirely by
-this app and its token extension. Measured across `admin.iki.fi` and
+Safari signs in with the card through a reader, driven entirely by this
+app and its token extension -- with the card in the contact slot, and
+with the card resting on a reader's contactless antenna. The second was
+proven on 2026-07-27 against an ACR1581U, whose PICC interface the card
+answers over T=CL:
+
+    slots (3):
+      ACS ACR1581 1S Dual Reader(1)
+          state=valid card
+          atr=3B 8F 80 01 80 31 B8 65 B0 85 05 10 24 12 24 60 82 90 00 22
+    createSession: session requested, interface=contactless
+    sign: exit ok out=103B ms=1012.7
+
+A contactless signature costs about a second, nearly all of it the PACE
+handshake that opens the secure channel; a contact one costs about a
+third of that and needs no handshake at all. Measured across `admin.iki.fi` and
 `card.refineid.fi`, several signatures each:
 
     supports: op=2 algo=msgX962SHA256 profile=ecdsaP384 -> YES
@@ -23,6 +37,53 @@ is what makes several sites in a row bearable.
 
 Setup on macOS is nothing more than inserting the card: the extension
 reads the leaf and issuer over the reader and publishes them.
+
+## How the driver knows which interface it is on
+
+It asks the card rather than reading the slot's name. A dual-interface
+reader publishes its contact, contactless and SAM interfaces under one
+name differing only by a trailing index, and nothing in the name says
+which index is the antenna -- while the card answers the question
+itself: SELECT of the PKCS#15 application returns `6982` on the
+contactless interface until PACE has run, and succeeds on the contact
+one. One command, and no guessing.
+
+Taking "the first slot" instead was a bug in three places at once: the
+status screen described the empty SAM socket beside the card, and a
+probe reported "no reader or card" about a card that was signing for
+Safari at the time. `CardSlotSearch` is now the one implementation.
+
+## Handing the card access number to the driver on macOS
+
+The two processes cannot share a keychain item there. An item carries an
+access list naming the application that created it, and a token
+extension is a different application: it finds the item and is refused
+the value with `errSecInteractionNotAllowed` (-25308), which it cannot
+resolve, because a driver hosted by `ctkd` has no interface to authorize
+with. A shared keychain access group is the right answer and is what iOS
+uses, but it is a restricted entitlement and the local signing profile
+will not carry it.
+
+CryptoTokenKit's own token configuration is the channel instead, which
+its header documents for exactly this: data that the token
+implementation and its hosting application both use, that the system
+does not interpret, with access credentials as the stated example. Only
+the hosting application can write it and every other caller is handed an
+empty store, so the driver's own app bundle is the boundary.
+
+It costs one oddity worth knowing: every token configuration is listed
+as a token, so this entry appears in `TKTokenWatcher` beside real cards.
+It holds no keychain items and so offers Safari nothing, but anything
+asking "is a card available?" must exclude it by name or it answers yes
+with no card present.
+
+## The discovery extension is iOS-only
+
+It declares the travel-document application identifier so the phone's
+NFC polling has something selectable before PACE. On macOS a reader
+hands the card over without one, and the extension there could only
+claim a card in order to refuse it, so it is no longer embedded in the
+Mac app.
 
 ## iOS: setup works, the login is unproven
 

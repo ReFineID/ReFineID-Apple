@@ -102,11 +102,11 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
     guard let cardToken = token as? Token else {
       throw TKError(.badParameter)
     }
-    // The primed card access number IS the transport. With one, this card
-    // was reached through a field and every verb below has to travel
-    // inside a PACE channel; without one, this is the contact path and
-    // nothing about it changes.
-    guard let accessNumber = cardToken.primedAccessNumber else {
+    // The card access number IS the transport. With one, this card was
+    // reached through a field -- the phone's antenna or a reader's -- and
+    // every verb below has to travel inside a PACE channel; without one,
+    // the card is in a contact slot and nothing about it changes.
+    guard let accessNumber = cardToken.sealedAccessNumber else {
       TokenLog.trace("sign: transport=reader")
       return try signThroughReader(
         token: cardToken,

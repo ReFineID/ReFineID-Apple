@@ -65,7 +65,7 @@ internal struct CardStatusSnapshot: Equatable, Sendable {
   /// synchronous and blocking, so it must not stall Swift concurrency).
   internal static func capture() async -> Self {
     let tokenPresent = TKTokenWatcher().tokenIDs.contains { tokenID in
-      tokenID.hasPrefix(Self.tokenPrefix)
+      tokenID.hasPrefix(Self.tokenPrefix) && !Self.namesCredentialConfiguration(tokenID)
     }
     guard let manager = TKSmartCardSlotManager.default else {
       return Self(
@@ -74,7 +74,7 @@ internal struct CardStatusSnapshot: Equatable, Sendable {
         safariIdentityPresent: tokenPresent
       )
     }
-    guard let slotName = manager.slotNames.first else {
+    guard let slotName = await CardSlotSearch.nameToReportOn(in: manager) else {
       return Self(readerName: nil, card: .noCard, safariIdentityPresent: tokenPresent)
     }
     guard
@@ -93,6 +93,16 @@ internal struct CardStatusSnapshot: Equatable, Sendable {
       card: cardState,
       safariIdentityPresent: tokenPresent
     )
+  }
+
+  /// Whether this identifier names the driver's own credential
+  /// configuration rather than a card.
+  ///
+  /// It is listed as a token because every token configuration is, but
+  /// it holds no identity, so its presence says nothing about whether a
+  /// card is available.
+  private static func namesCredentialConfiguration(_ tokenID: String) -> Bool {
+    tokenID.hasSuffix(":" + DriverConfiguredCredentials.configurationInstanceID)
   }
 
   /// Runs the synchronous, blocking card session on a background GCD
