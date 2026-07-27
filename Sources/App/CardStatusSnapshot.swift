@@ -31,6 +31,16 @@ internal struct CardStatusSnapshot: Equatable, Sendable {
     /// A supported card and its counter-safe probe report.
     case supported(CredentialProbeReport)
 
+    /// An identity card reached over a contactless interface, whose
+    /// application stays sealed until PACE has run.
+    ///
+    /// Distinct from `unsupported`, which it used to be reported as: the
+    /// card is a perfectly good one and the driver signs with it, it
+    /// simply will not answer a plain SELECT. Saying "not a supported
+    /// identity card" about a card the same app is signing with sends
+    /// the holder looking for a different card.
+    case sealed
+
     /// A card without the FINEID application.
     case unsupported
   }
@@ -123,6 +133,12 @@ internal struct CardStatusSnapshot: Equatable, Sendable {
         let operations = CardOperations(channel: channel)
         do {
           try operations.selectFineidApplication()
+        } catch CardOperationError.selectRejected(.securityNotSatisfied) {
+          // The contactless answer, and the only one that means "ask me
+          // again inside a secure channel". Probing further would cost a
+          // PACE handshake on every refresh, for counters the holder can
+          // read on the contact interface.
+          return .sealed
         } catch CardOperationError.selectRejected {
           return .unsupported
         }

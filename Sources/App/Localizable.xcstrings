@@ -139,6 +139,23 @@
         }
       }
     },
+    "Done": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valmis"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klar"
+          }
+        }
+      }
+    },
     "Driver included": {
       "localizations": {
         "fi": {
@@ -151,6 +168,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Medföljande drivrutin"
+          }
+        }
+      }
+    },
+    "Enter the card access number below to use it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ota se käyttöön syöttämällä kortin käyttönumero alla."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ange kortets åtkomstnummer nedan för att använda det."
           }
         }
       }
@@ -168,6 +202,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mellanprogram för finländskt identitetskort"
+          }
+        }
+      }
+    },
+    "Identity card on the contactless interface": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henkilökortti lähiluettavassa liitännässä"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identitetskort på det kontaktlösa gränssnittet"
           }
         }
       }
@@ -351,6 +402,23 @@
         }
       }
     },
+    "Set up your card": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ota kortti käyttöön"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konfigurera ditt kort"
+          }
+        }
+      }
+    },
     "Smart-card support is unavailable on this device": {
       "localizations": {
         "fi": {
@@ -427,6 +495,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Okänd"
+          }
+        }
+      }
+    },
+    "Use a connected card reader": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Käytä liitettyä kortinlukijaa"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Använd en ansluten kortläsare"
           }
         }
       }

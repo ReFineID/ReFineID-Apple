@@ -76,6 +76,8 @@
         lines.append("card: failed - " + Self.label(for: failure))
       case .noCard:
         lines.append("card: no card in the reader")
+      case .sealed:
+        lines.append("card: identity card, contactless interface (sealed until PACE)")
       case .supported(let report):
         lines.append("card: supported")
         lines.append("pin1: " + Self.label(for: report.pin1))

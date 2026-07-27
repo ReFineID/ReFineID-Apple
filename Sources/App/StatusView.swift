@@ -13,12 +13,18 @@ internal struct StatusView: View {
   private static let contentPadding: CGFloat = 24
   private static let minimumWidth: CGFloat = 320
 
+  /// Enough height for the setup form not to open as a letterbox.
+  private static let credentialsHeight: CGFloat = 420
+
   @State private var model = CardStatusModel()
 
   @State private var transports = TransportPreferences()
 
   /// Whether the diagnostics capture is on screen.
   @State private var showsDiagnostics = false
+
+  /// Whether the card setup screen is on screen.
+  @State private var showsCredentials = false
 
   private let versions = BundledVersions.read(from: .main)
 
@@ -52,18 +58,30 @@ internal struct StatusView: View {
     .frame(minWidth: Self.minimumWidth)
     .task { await model.refresh() }
     .sheet(isPresented: $showsDiagnostics) { diagnosticsSheet }
+    .sheet(
+      isPresented: $showsCredentials,
+      onDismiss: { Task { await model.refresh() } },
+      content: { credentialsSheet }
+    )
   }
 
   /// What the holder can do from here.
   ///
-  /// The card-details screen is iOS only: a card access number matters
-  /// only on the contactless interface, which macOS has no way to reach.
+  /// Setting the card up is reachable on the Mac as well now. It was
+  /// iOS-only while a card access number was thought to matter only on
+  /// the phone's own antenna -- but a desk reader has an antenna too,
+  /// and a card resting on it is sealed in exactly the same way, so a
+  /// Mac that cannot be told the number cannot use that card at all.
   ///
   /// Diagnostics is deliberately reachable from here rather than hidden
   /// behind a launch flag: when a login fails on a device that is not
   /// plugged into anything, the only instrument left is the one the
   /// holder can open.
   @ViewBuilder private var actionRows: some View {
+    Button("Set up your card") {
+      showsCredentials = true
+    }
+    .accessibilityIdentifier("credentialsButton")
     Button("Refresh") {
       Task { await model.refresh() }
     }
@@ -72,6 +90,20 @@ internal struct StatusView: View {
       showsDiagnostics = true
     }
     .accessibilityIdentifier("diagnosticsButton")
+  }
+
+  /// The setup screen, in its own stack so it has a title bar to
+  /// dismiss from.
+  @ViewBuilder private var credentialsSheet: some View {
+    NavigationStack {
+      CardCredentialsView()
+        .toolbar {
+          ToolbarItem(placement: .confirmationAction) {
+            Button("Done") { showsCredentials = false }
+          }
+        }
+    }
+    .frame(minWidth: Self.minimumWidth, minHeight: Self.credentialsHeight)
   }
 
   /// The capture, in its own stack so it has a title bar to dismiss from
@@ -106,7 +138,7 @@ internal struct StatusView: View {
         )
       )
       Toggle(
-        "Use connected USB-C reader",
+        "Use a connected card reader",
         isOn: Binding(
           get: { transports.permits(.reader) },
           set: { transports.setPermitted($0, for: .reader) }
@@ -129,6 +161,14 @@ internal struct StatusView: View {
         "Card",
         value: String(localized: "Insert your identity card")
       )
+    case .sealed:
+      LabeledContent(
+        "Card",
+        value: String(localized: "Identity card on the contactless interface")
+      )
+      Text("Enter the card access number below to use it.")
+        .font(.footnote)
+        .foregroundStyle(.secondary)
     case .unsupported:
       LabeledContent(
         "Card",
