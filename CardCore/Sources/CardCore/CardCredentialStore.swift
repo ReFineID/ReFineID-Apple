@@ -3,21 +3,34 @@ import Security
 
 /// Where this device keeps the card access number, and optionally PIN1.
 ///
-/// Both are held as keychain items whose protection class is
-/// `WhenUnlockedThisDeviceOnly` and which are explicitly
-/// non-synchronizable, so they never enter a backup, never restore onto
-/// another device, and never reach iCloud. The keys that encrypt them are
-/// derived inside the Secure Enclave; secrets themselves cannot live in
-/// the enclave, which holds only keys, so this protection class is what
-/// "enclave-backed" actually means for a stored value.
+/// These values are written once and never handed back for display. The
+/// store is deliberately shaped so that no combination of backup,
+/// sync, or code running as this app can produce them again:
 ///
-/// Biometry deliberately does NOT gate these items. The token extension
-/// reads them while signing a request the holder made in Safari, with no
-/// interface of its own to present a Face ID prompt, so a biometric
-/// access control here would stall every system-driven login on a prompt
-/// nobody can answer. The gate belongs where a person is present: the app
-/// authenticates before it will show, change, or clear anything, which is
-/// what ``CardCredentialGate`` is for.
+/// - **Biometry is enforced by the item, not by this app.** Each item
+///   carries a `SecAccessControl` requiring the current biometric set,
+///   so a read fails in the Security framework itself unless the holder
+///   authenticates at that moment. Policy checked in app code would be
+///   bypassable by anything that can call this type; an access control
+///   is not.
+/// - **`.biometryCurrentSet` rather than `.userPresence`,** so knowing
+///   the device passcode is not enough, and enrolling a new face or
+///   finger invalidates the items rather than silently extending access
+///   to whoever enrolled it. The cost is honest: change your biometrics
+///   and these values must be entered again.
+/// - **`WhenUnlockedThisDeviceOnly`,** so they are never written into a
+///   backup and never restore onto another device.
+/// - **`synchronizable` false,** so they never reach iCloud. Neither
+///   attribute implies the other; both are required.
+///
+/// Secrets cannot live *inside* the Secure Enclave, which holds only
+/// keys. What the enclave provides here is the key material these items
+/// are encrypted under and the biometric evaluation that gates them,
+/// which is what "enclave-backed storage" means for a stored value.
+///
+/// The token extension does not read this store. It signs from the
+/// primed identity written during card setup, so nothing here has to be
+/// readable while the holder is absent.
 public enum CardCredentialStore {
   /// What the store currently holds.
   public struct Contents: Equatable, Sendable {
@@ -69,14 +82,19 @@ public enum CardCredentialStore {
     return write(digits, account: pin1Account)
   }
 
-  /// The stored card access number, or nil.
-  public static func cardAccessNumber() -> CardAccessNumber? {
-    read(account: cardAccessNumberAccount).flatMap(CardAccessNumber.init(digits:))
+  /// The stored card access number, after the holder authenticates.
+  ///
+  /// `reason` is shown in the system's biometric prompt, so it should
+  /// say what the value is about to be used for.
+  public static func cardAccessNumber(reason: String) -> CardAccessNumber? {
+    read(account: cardAccessNumberAccount, reason: reason)
+      .flatMap(CardAccessNumber.init(digits:))
   }
 
-  /// The stored PIN1, or nil when the holder never opted in.
-  public static func pin1() -> Pin1? {
-    read(account: pin1Account).flatMap(Pin1.init(digits:))
+  /// The stored PIN1, after the holder authenticates, or nil when they
+  /// never opted in.
+  public static func pin1(reason: String) -> Pin1? {
+    read(account: pin1Account, reason: reason).flatMap(Pin1.init(digits:))
   }
 
   /// Removes PIN1, returning to a prompt for every signature.
@@ -92,30 +110,56 @@ public enum CardCredentialStore {
 
   /// Item coordinates shared by every operation.
   ///
-  /// `ThisDeviceOnly` is what keeps these out of backups and off other
-  /// devices; `synchronizable` false is what keeps them out of iCloud.
-  /// Both are required -- neither implies the other.
+  /// `ThisDeviceOnly` keeps these out of backups and off other devices;
+  /// `synchronizable` false keeps them out of iCloud. Both are required
+  /// -- neither implies the other.
   private static func query(account: String) -> [String: Any] {
     [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
       kSecAttrAccount as String: account,
       kSecUseDataProtectionKeychain as String: true,
-      kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
       kSecAttrSynchronizable as String: false,
     ]
   }
 
+  /// The access control every stored value carries.
+  ///
+  /// Returns nil only when the platform refuses to build it, in which
+  /// case nothing is stored: a value written without its access control
+  /// would be readable without authentication, which is exactly what
+  /// this store exists to prevent.
+  private static func accessControl() -> SecAccessControl? {
+    SecAccessControlCreateWithFlags(
+      nil,
+      kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+      .biometryCurrentSet,
+      nil)
+  }
+
+  /// Whether an item is present, without authenticating.
+  ///
+  /// The lookup explicitly skips any interface. A protected item then
+  /// answers `errSecInteractionNotAllowed`, which is itself proof that
+  /// it exists -- so both that and success count as present, and neither
+  /// prompts the holder just to draw a status row.
   private static func exists(account: String) -> Bool {
     var query = self.query(account: account)
     query[kSecMatchLimit as String] = kSecMatchLimitOne
-    return SecItemCopyMatching(query as CFDictionary, nil) == errSecSuccess
+    query[kSecUseAuthenticationUI as String] = kSecUseAuthenticationUISkip
+    let status = SecItemCopyMatching(query as CFDictionary, nil)
+    return status == errSecSuccess || status == errSecInteractionNotAllowed
   }
 
-  private static func read(account: String) -> String? {
+  /// Reads a value, which prompts the holder for biometrics.
+  ///
+  /// Nothing in the app calls this to show a value; it exists so the
+  /// card setup flow can use what was entered earlier.
+  private static func read(account: String, reason: String) -> String? {
     var query = self.query(account: account)
     query[kSecReturnData as String] = true
     query[kSecMatchLimit as String] = kSecMatchLimitOne
+    query[kSecUseOperationPrompt as String] = reason
     var item: CFTypeRef?
     guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
       let data = item as? Data
@@ -126,14 +170,22 @@ public enum CardCredentialStore {
   }
 
   private static func write(_ digits: String, account: String) -> Bool {
-    guard let data = digits.data(using: .utf8) else { return false }
+    guard let data = digits.data(using: .utf8), let control = accessControl() else {
+      return false
+    }
     delete(account: account)
     var attributes = query(account: account)
     attributes[kSecValueData as String] = data
+    attributes[kSecAttrAccessControl as String] = control
     return SecItemAdd(attributes as CFDictionary, nil) == errSecSuccess
   }
 
+  /// Removes an item.
+  ///
+  /// Deletion never needs the value, so it never prompts.
   private static func delete(account: String) {
-    SecItemDelete(query(account: account) as CFDictionary)
+    var query = self.query(account: account)
+    query[kSecUseAuthenticationUI as String] = kSecUseAuthenticationUISkip
+    SecItemDelete(query as CFDictionary)
   }
 }

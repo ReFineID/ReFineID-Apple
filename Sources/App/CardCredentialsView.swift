@@ -82,10 +82,11 @@ internal struct CardCredentialsView: View {
     } footer: {
       Text(
         """
-        Optional. Storing PIN1 lets a website sign you in without asking \
-        for it, which also means anything that reaches your card on this \
-        device can sign without you present. Leave it off unless you want \
-        that trade.
+        Optional. Storing PIN1 lets a website sign you in without typing \
+        it every time. It is held under the same Face ID protection as \
+        the card access number, and it is still a trade: a signature can \
+        then be made with your card without you typing anything. Leave it \
+        off unless you want that.
         """)
     }
   }
@@ -99,9 +100,12 @@ internal struct CardCredentialsView: View {
     } footer: {
       Text(
         """
-        Card details stay on this iPhone. They are never included in a \
-        backup, never restored onto another device, and never sent to \
-        iCloud. Face ID protects every change here.
+        Card details are entered once and never shown again. They stay on \
+        this iPhone: never in a backup, never restored onto another \
+        device, never sent to iCloud. Reading them requires Face ID at \
+        that moment, so knowing the passcode is not enough. Adding or \
+        changing a face or fingerprint clears them, and they must be \
+        entered again.
         """)
     }
   }
