@@ -357,8 +357,11 @@ internal struct StatusView: View {
     guard isEnteredNumberComplete else { return }
     let entry = cardAccessNumberEntry
     cardAccessNumberEntry = ""
-    credentials.saveCardAccessNumber(entry)
     Task {
+      // The row exists because a sealed card is present, which is
+      // exactly what the proving add needs: the number is stored only
+      // once the card has accepted it, bound to the card's serial.
+      _ = await credentials.addCard(proving: entry)
       await model.refresh()
     }
   }

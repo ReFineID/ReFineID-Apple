@@ -23,7 +23,6 @@
     @State private var credentials = CardCredentialsModel()
     @State private var entry = ""
     @State private var reading = false
-    @State private var note: String?
 
     /// Whether the entry is the six digits a CAN is.
     private var isEntryComplete: Bool {
@@ -34,7 +33,6 @@
       Form {
         cardsSection
         addSection
-        unboundSection
       }
       .formStyle(.grouped)
       .frame(width: Self.windowWidth)
@@ -50,6 +48,9 @@
         }
         ForEach(credentials.cards, id: \.serial) { card in
           cardRow(card)
+        }
+        if let stored = credentials.storedCardAccessNumber {
+          unknownCardRow(stored)
         }
       }
     }
@@ -75,33 +76,10 @@
             .font(.footnote)
             .foregroundStyle(.secondary)
         }
-        if let note {
-          Text(note)
-            .font(.footnote)
-            .foregroundStyle(.red)
-        }
         if let failure = credentials.failure {
           Text(failure)
             .font(.footnote)
             .foregroundStyle(.red)
-        }
-      }
-    }
-
-    /// The single number older builds stored: unbound, tried after the
-    /// directory, forgettable in one word.
-    @ViewBuilder private var unboundSection: some View {
-      if let stored = credentials.storedCardAccessNumber {
-        Section("Unbound number") {
-          LabeledContent("CAN") {
-            HStack {
-              Text(stored)
-                .monospacedDigit()
-                .textSelection(.enabled)
-              Button("Forget") { credentials.forgetCardAccessNumber() }
-                .accessibilityIdentifier("managerForgetCardAccessNumber")
-            }
-          }
         }
       }
     }
@@ -125,30 +103,36 @@
       }
     }
 
+    /// A number older builds stored without a card, kept until deleted
+    /// or superseded by a proper add of the same digits.
+    @ViewBuilder
+    private func unknownCardRow(_ stored: String) -> some View {
+      LabeledContent("Unknown card") {
+        HStack(alignment: .firstTextBaseline) {
+          VStack(alignment: .trailing) {
+            Text(stored)
+              .monospacedDigit()
+            Text("not bound; tried after the cards above")
+              .font(.caption)
+              .foregroundStyle(.secondary)
+          }
+          .textSelection(.enabled)
+          Button("Delete") { credentials.forgetCardAccessNumber() }
+            .accessibilityIdentifier("managerForgetCardAccessNumber")
+        }
+      }
+    }
+
     /// Reads the present card with the typed CAN and records the pair.
     private func add() {
       guard isEntryComplete, !reading else { return }
       reading = true
-      note = nil
       let digits = entry
       Task {
-        let answer = await CardSerialProbe.read(unsealingWith: digits)
-        reading = false
-        guard let answer else {
-          note = String(
-            localized: """
-              No card answered. The contact slot reads directly; a card on \
-              the antenna answers only its own CAN.
-              """)
-          return
+        if await credentials.addCard(proving: digits) {
+          entry = ""
         }
-        credentials.addCard(
-          can: digits,
-          serial: answer.serial.value,
-          modelKey: answer.modelKey,
-          model: answer.model
-        )
-        entry = ""
+        reading = false
       }
     }
   }
