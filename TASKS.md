@@ -142,6 +142,21 @@ Legend:
 
 ## 8. Native macOS status application
 
+- [ ] Show the card access number editor whenever a reader is attached, not
+  only while a sealed card is readable (`StatusView` gates on `.sealed`).
+  A wrong stored number keeps the reader busy with failed PACE attempts, so
+  the sealed state the row waits for may never render, and the number
+  cannot be entered before the card is placed. Reader NFC capability is not
+  knowable from slot names, so any attached reader (or a stored number)
+  should surface the row.
+- [ ] Name the forget action honestly. The stored-number row offers only
+  "Replace", which forgets immediately even when nothing is re-entered;
+  a holder who wants the number gone is not offered that in words.
+- [ ] Bind each stored card access number to its card, keyed by the ISO
+  7816-3 historical bytes, which are interface-stable
+  (`Documentation/card-types.md`); a second card must not inherit the
+  first card's number. Keep every per-card driver-configuration entry
+  excluded from card-availability checks by name.
 - [ ] Implement a minimal SwiftUI window with native macOS behavior.
 - [ ] Show application and bundled extension versions.
 - [ ] Research and use only a public API for extension readiness; otherwise use
