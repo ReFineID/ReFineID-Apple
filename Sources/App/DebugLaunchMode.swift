@@ -16,6 +16,9 @@
     /// Print everything the status screen shows, as text.
     case diagnostics = "--diagnostics"
 
+    /// Drop the stored card access number, wherever it is kept.
+    case forgetCan = "--forget-can"
+
     /// Runs one PACE handshake over an attached reader and times it.
     case paceCheck = "--pace-check"
 
@@ -53,8 +56,8 @@
     /// window would have existed.
     internal var needsScene: Bool {
       switch self {
-      case .diagnostics, .paceCheck, .resetCardState, .setCan, .setPin1,
-        .signProbe, .tokenPublishProbe, .trace:
+      case .diagnostics, .forgetCan, .paceCheck, .resetCardState, .setCan,
+        .setPin1, .signProbe, .tokenPublishProbe, .trace:
         false
       case .ctkSignProbe, .prime:
         true
@@ -67,8 +70,8 @@
     /// from the command line at each launch and never committed anywhere.
     internal var takesValue: Bool {
       switch self {
-      case .ctkSignProbe, .diagnostics, .paceCheck, .prime, .resetCardState,
-        .tokenPublishProbe, .trace:
+      case .ctkSignProbe, .diagnostics, .forgetCan, .paceCheck, .prime,
+        .resetCardState, .tokenPublishProbe, .trace:
         false
       case .setCan, .setPin1, .signProbe:
         true

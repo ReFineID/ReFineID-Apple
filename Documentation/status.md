@@ -275,7 +275,7 @@ all. They are worth keeping.
   never a PIN, CAN, serial or holder name, and `VERIFY` is redacted
   wholesale.
 - **DEBUG-only launch modes**: `--diagnostics`, `--trace`,
-  `--reset-card-state`, `--set-can`, `--set-pin1`,
+  `--reset-card-state`, `--set-can`, `--forget-can`, `--set-pin1`,
   `--prime`. Absent from a Release build,
   verified by grepping the built binary.
 - **macOS logging still works**, unlike iOS: `log show --predicate

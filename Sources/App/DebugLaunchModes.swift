@@ -20,10 +20,10 @@
   ///
   /// Two kinds of mode, and the difference is the scene:
   ///
-  /// - ``DebugLaunchMode/diagnostics``, ``DebugLaunchMode/resetCardState``,
-  ///   ``DebugLaunchMode/setCan``, ``DebugLaunchMode/setPin1`` and
-  ///   ``DebugLaunchMode/trace`` only read or write this device's own
-  ///   state. They run from the app initializer, before any window exists,
+  /// - ``DebugLaunchMode/diagnostics``, ``DebugLaunchMode/forgetCan``,
+  ///   ``DebugLaunchMode/resetCardState``, ``DebugLaunchMode/setCan``,
+  ///   ``DebugLaunchMode/setPin1`` and ``DebugLaunchMode/trace`` only read
+  ///   or write this device's own state. They run from the app initializer, before any window exists,
   ///   and exit there.
   /// - ``DebugLaunchMode/prime`` needs a live scene: CoreNFC will not open
   ///   a slot for a process with no foreground window. It is handed to
@@ -84,6 +84,8 @@
           succeeded: false)
       case .diagnostics:
         DebugModeReport(lines: DebugDiagnosticsReport.lines(), succeeded: true)
+      case .forgetCan:
+        Self.forgetCardAccessNumber()
       case .paceCheck:
         DebugPaceCheck.perform()
       case .resetCardState:
@@ -121,6 +123,20 @@
         named: "set-can",
         digits: Self.value(after: .setCan),
         save: CardCredentialStore.save(cardAccessNumber:))
+    }
+
+    /// Drops the stored card access number, every copy of it.
+    ///
+    /// `CardCredentialStore.forgetCardAccessNumber` deletes the keychain
+    /// item and, on macOS, withdraws the driver-configuration copy the
+    /// token extension reads -- the pair whose halves must never part.
+    /// The report says what remains rather than what was done.
+    private static func forgetCardAccessNumber() -> DebugModeReport {
+      CardCredentialStore.forgetCardAccessNumber()
+      let remains = CardCredentialStore.contents().hasCardAccessNumber
+      return DebugModeReport(
+        lines: ["forget-can: " + (remains ? "a stored number remains" : "nothing stored remains")],
+        succeeded: !remains)
     }
 
     /// Stores the PIN1 given after `--set-pin1`.
