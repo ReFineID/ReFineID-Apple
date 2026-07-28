@@ -35,7 +35,7 @@ public struct RetryCount {
   public init?(attemptsRemaining: UInt8)  // refuses implausible values
 }
 
-func admitToCache(state: CredentialRetryState)  // pristine is a named fact
+func evaluate(probeOutcome: RetryProbeOutcome) -> RetryFloorVerdict
 ```
 
 The second form gives later code compile-time evidence that validation
@@ -97,8 +97,9 @@ Credential values get the strictest treatment the language allows:
   at-most-once handoff to the card command.
 - No PIN, PUK, serial, certificate, or APDU payload reaches a formatting
   or logging API. Data is classified before it reaches one.
-- A PIN entered while counters are not pristine exists only for that one
-  operation and is destroyed after it, success or failure.
+- PIN1 enters reusable process memory only after the card accepts it. That
+  memory is bound to the complete card serial, zeroizing, and cleared on
+  the first confirmed rejection. PIN2 and PUK never enter it.
 
 ## Unknown data stays unknown
 

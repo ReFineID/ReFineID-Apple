@@ -8,10 +8,11 @@ import Security
 /// The counterpart of ``FieldSignature``, and the difference between
 /// them is time rather than secrecy. Both may run inside a PACE channel;
 /// only this one can afford to look at the card first. A reader holds
-/// its field for as long as the work takes, so a signature here reads
-/// the serial and the three attempt counters before it does anything
-/// irreversible -- which is what lets a PIN be reused for the rest of a
-/// login flow instead of asked for once per signature.
+/// its field for as long as the work takes, so a signature here reads the
+/// serial and PIN1 retry counter before it does anything irreversible.
+/// PIN2 and PUK are unrelated to authentication and stay off this path.
+/// A PIN the card accepts can then be reused for the rest of the extension
+/// process instead of asked for once per signature.
 ///
 /// A card held against a phone gets none of that: the system ends the
 /// slot about two seconds after the mint, so ``FieldSignature`` asks for
@@ -24,14 +25,13 @@ internal enum ReaderSignature {
     unsealingWith accessNumber: CardAccessNumber?,
     enteredPin: String?,
     request: SignRequest,
-    publicKey: SecKey
+    token: Token
   ) throws -> Data {
     try performSign(
       channel: try unsealed(channel, with: accessNumber),
-      unsealed: accessNumber != nil,
       enteredPin: enteredPin,
       request: request,
-      publicKey: publicKey
+      token: token
     )
   }
 
@@ -60,12 +60,11 @@ internal enum ReaderSignature {
   /// The PIN to spend: freshly entered, or reused from the card-bound
   /// cache, or none -- in which case the system is asked to prompt.
   ///
-  /// The cache serves only a pristine card, the same serial, and an
-  /// entry inside the idle window; anything else asks the holder again.
+  /// Accepted-PIN memory is bound to the full card serial and lives only
+  /// for this extension process; a miss asks the holder again.
   private static func pin(
     entered: String?,
-    serial: TokenSerial,
-    pristine: Bool
+    serial: TokenSerial
   ) throws -> Pin1 {
     if let entered {
       guard let built = Pin1(digits: entered) else {
@@ -74,7 +73,7 @@ internal enum ReaderSignature {
       return built
     }
     guard
-      let cached = CredentialMemory.pin1Cache.checkout(serial: serial, pristine: pristine)
+      let cached = CredentialMemory.acceptedPin1.checkout(serial: serial)
     else {
       throw TokenError.authenticationRequired
     }
@@ -89,19 +88,17 @@ internal enum ReaderSignature {
   /// `Task`/`await` (the async bridge hung here). Mirrors the reference.
   private static func performSign(
     channel: any CardChannel,
-    unsealed: Bool,
     enteredPin: String?,
     request: SignRequest,
-    publicKey: SecKey
+    token: Token
   ) throws -> Data {
     let operations = CardOperations(channel: channel)
     try operations.selectFineidApplication()
-    let (serial, pristine) = try Self.probeAndGate(operations, overSecureChannel: unsealed)
+    let serial = try Self.probePin1AndReadSerial(operations)
 
     // Where the PIN came from is not a second answer to be returned:
     // reaching this line without one entered means the cache supplied it.
-    let fromCache = enteredPin == nil
-    let pin1 = try Self.pin(entered: enteredPin, serial: serial, pristine: pristine)
+    let pin1 = try Self.pin(entered: enteredPin, serial: serial)
 
     let fingerprint = pin1.fingerprint(boundTo: serial)
     guard !CredentialMemory.rejectedPins.isKnownRejected(fingerprint) else {
@@ -113,8 +110,14 @@ internal enum ReaderSignature {
     do {
       try operations.verifyPin1(pin1.consumeForSingleTransmission())
     } catch CardOperationError.pinRejected {
-      CredentialMemory.rejectedPins.recordRejection(fingerprint)
-      CredentialMemory.pin1Cache.clear()
+      token.revokeAutomaticIdentityAfterPin1Rejection(
+        serial: serial,
+        fingerprint: fingerprint)
+      throw TokenError.pinRejected
+    } catch CardOperationError.pinBlocked {
+      token.revokeAutomaticIdentityAfterPin1Rejection(
+        serial: serial,
+        fingerprint: fingerprint)
       throw TokenError.pinRejected
     }
 
@@ -128,66 +131,42 @@ internal enum ReaderSignature {
       TokenLog.error("sign: raw signature \(raw.count) bytes has wrong shape")
       throw TokenError.signatureMalformed
     }
-    guard request.isSatisfied(by: signature, from: publicKey) else {
+    guard request.isSatisfied(by: signature, from: token.leafPublicKey) else {
       TokenLog.error("sign: local verify FAILED - card returned a bad signature")
       throw TokenError.signatureMalformed
     }
     TokenLog.info("sign: local verify OK, \(signature.count) wire bytes")
-    Self.cacheOnSuccess(
-      pristine: pristine,
-      fromCache: fromCache,
-      enteredPin: enteredPin,
-      serial: serial
-    )
+    Self.rememberOnSuccess(enteredPin: enteredPin, serial: serial)
     return signature
   }
 
-  /// A fresh probe of all three counters and the card-health gate.
+  /// Reads only the retry state of the credential this operation spends.
   ///
-  /// PIN1, PIN2, and PUK must all be above 2 (else fail closed); returns
-  /// the serial and whether the card is pristine (5/5/5).
-  private static func probeAndGate(
-    _ operations: CardOperations,
-    overSecureChannel: Bool
-  ) throws -> (serial: TokenSerial, pristine: Bool) {
-    TokenLog.info("sign: card-health probe")
-    // Over a secure channel the PUK counter is not asked for at all: the
-    // card refuses it and ends the channel doing so.
-    let report = try operations.probeCredentials(includingPuk: !overSecureChannel)
-    // Over a secure channel the card may decline a counter outright,
-    // which is not the same as a counter that is low. See
-    // `RetryFloor.evaluateReported`.
-    let verdict =
-      overSecureChannel
-      ? RetryFloor.evaluateReported(report) : RetryFloor.evaluateAll(report)
+  /// PIN2 is used for qualified signatures and PUK for recovery. Reading
+  /// either during authentication adds APDUs and unrelated failure modes
+  /// without protecting PIN1.
+  private static func probePin1AndReadSerial(
+    _ operations: CardOperations
+  ) throws -> TokenSerial {
+    TokenLog.info("sign: PIN1 retry-floor probe")
+    let outcome = try operations.probeRetryCounter(role: .pin1)
+    let verdict = RetryFloor.evaluate(probeOutcome: outcome)
     guard verdict == .proceed else {
-      // Which counter, and what it said. A refusal names one of two very
-      // different faults -- a card genuinely close to blocking, or a
-      // reading that did not come back -- and they want opposite
-      // responses. Attempt counts are not secrets; the status screen
-      // shows the same three.
       TokenLog.error(
-        "sign: card-health floor refuses (\(verdict)) - failing closed; "
-          + "pin1=\(report.pin1) pin2=\(report.pin2) puk=\(report.puk)"
+        "sign: PIN1 retry floor refuses (\(verdict)); pin1=\(outcome)"
       )
       throw TokenError.signRefused
     }
-    return (try operations.readTokenSerial(), report.reportedCountersArePristine)
+    return try operations.readTokenSerial()
   }
 
-  /// Caches the just-used PIN for the rest of a login flow, pristine cards
-  /// only: refresh the timestamp on a reuse, store on a fresh entry.
-  private static func cacheOnSuccess(
-    pristine: Bool,
-    fromCache: Bool,
+  /// Remembers a freshly entered PIN only after the card accepted it.
+  private static func rememberOnSuccess(
     enteredPin: String?,
     serial: TokenSerial
   ) {
-    guard pristine else { return }
-    if fromCache {
-      CredentialMemory.pin1Cache.restamp(serial: serial)
-    } else if let entered = enteredPin, let cachePin = Pin1(digits: entered) {
-      CredentialMemory.pin1Cache.store(cachePin, serial: serial)
+    if let entered = enteredPin, let accepted = Pin1(digits: entered) {
+      CredentialMemory.acceptedPin1.store(accepted, serial: serial)
     }
   }
 }

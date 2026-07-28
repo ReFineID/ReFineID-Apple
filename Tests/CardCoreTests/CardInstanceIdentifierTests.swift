@@ -49,6 +49,17 @@ internal struct CardInstanceIdentifierTests {
   }
 
   @Test
+  internal func tokenNamespaceBuildsAndRecognizesTheFullIdentifier() throws {
+    let serial = try #require(TokenSerial(value: "TEST00001"))
+    let instance = try #require(CardInstanceIdentifier(tokenSerial: serial))
+    let tokenIdentifier = CardTokenNamespace.tokenIdentifier(for: instance)
+    let neighboringDriver = "fi.refineid.ReFineID.ctk2:" + instance.value
+    #expect(tokenIdentifier == "fi.refineid.ReFineID.ctk:refineid-card-test00001")
+    #expect(CardTokenNamespace.owns(tokenIdentifier: tokenIdentifier))
+    #expect(!CardTokenNamespace.owns(tokenIdentifier: neighboringDriver))
+  }
+
+  @Test
   internal func unknownShapesAreNotPublishedAsCardNames() throws {
     let short = try #require(TokenSerial(value: "SHORT"))
     let decimalWrongLength = try #require(TokenSerial(value: "0000000000"))

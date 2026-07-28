@@ -80,9 +80,12 @@ The Swift implementation follows the Rust reference implementation.
 
 ### Retry floor
 
-Immediately before every CTK PIN-bearing command, obtain retry state without
-sending a credential. Perform the check and credential command in one exclusive
-card transaction where the platform permits it.
+Immediately before every CTK PIN-bearing command, obtain the retry state of the
+credential that command will spend, without sending a credential. Perform the
+check and credential command in one exclusive card transaction where the
+platform permits it. Authentication reads PIN1 only. It never reads PIN2 or PUK;
+those counters belong to qualified-signature and recovery operations and remain
+available to the explicit status display.
 
 - Three or more attempts remaining: the CTK operation may proceed.
 - One or two attempts remaining: refuse before prompting for or sending the PIN.
@@ -90,16 +93,23 @@ card transaction where the platform permits it.
 - Missing, malformed, stale, or unreadable retry state: reject attempt to talk to card.
 - CTK has no expert override.
 
-If a wrong PIN sent at three attempts leaves two attempts, clear positive PIN
-state and refuse every later CTK PIN operation. CTK must never consume the last
-attempt and never sends a PIN when only one or two attempts remain.
+If a wrong PIN1 sent at three attempts leaves two attempts, clear positive PIN1
+state and refuse every later authentication operation. CTK must never consume
+the last attempt and never sends PIN1 when only one or two attempts remain.
 Read-only status and certificate inspection remain available when safe.
 
-### PIN1 cache
+### Accepted PIN1 memory
 
-Caching PIN1 (never cache PIN2) is permitted only while the live retry state is
-exactly PIN1/PIN2/PUK = 5/5/5. Represent this as a named `pristine` domain state
-rather than three repeated integer comparisons.
+A PIN1 may enter process memory only after the card has accepted it. The value is
+bound to the complete card serial, stored in zeroizing memory, and may live for
+the token-extension process lifetime. Every signature still obtains fresh PIN1
+retry state and sends VERIFY PIN1; the memory removes repeated user entry, not
+card verification. PIN2 and PUK never enter this memory.
+
+The first confirmed PIN1 rejection clears that card's accepted PIN memory. For
+an automatically configured iOS identity it also removes stored PIN1, that
+physical card's prime, and its CryptoTokenKit registration. Transport, PACE,
+signature, and TLS failures do not revoke identity state.
 
 ## User experience
 

@@ -96,16 +96,6 @@
     internal static let registrationPrompt = String(
       localized: "Present your Finnish identity card.")
 
-    /// The minting extension's CryptoTokenKit class id.
-    ///
-    /// Keep in sync with `Config/TokenExtension-Info.plist`. A token id
-    /// is this class id, a colon, and the token's instance id; addressing
-    /// any other class would register a token this app cannot service.
-    private static let tokenDriverClassID = "fi.refineid.ReFineID.ctk"
-
-    /// Separates the class id from the instance id in a token id.
-    private static let tokenIDSeparator = ":"
-
     /// How many times registration is attempted while the card is live.
     ///
     /// The attempts are immediate and back to back: they separate a
@@ -328,7 +318,7 @@
       session: NearFieldCardSession
     ) async -> String {
       let watcher = TKTokenWatcher()
-      let expected = Self.tokenDriverClassID + Self.tokenIDSeparator + instance.value
+      let expected = CardTokenNamespace.tokenIdentifier(for: instance)
       for _ in 1...Self.tokenPollLimit {
         if let published = watcher.tokenIDs.first(where: { tokenID in tokenID == expected }) {
           return published

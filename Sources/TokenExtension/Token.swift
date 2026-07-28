@@ -59,6 +59,12 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
   /// lost for nothing.
   internal let primedSerial: TokenSerial?
 
+  /// Stable public identity of the physical card represented by this token.
+  ///
+  /// This is also the revocation boundary: a confirmed PIN1 rejection
+  /// removes only this card's stored prime and CryptoTokenKit registration.
+  internal let cardInstanceID: CardInstanceIdentifier
+
   /// The card session taken at the mint and kept open for the signature.
   ///
   /// Empty on the contact path, which opens a session per operation.
@@ -108,6 +114,7 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
       TokenLog.error("Token.init: token serial has no supported printed-card form")
       throw TokenError.unsupportedKeyProfile
     }
+    self.cardInstanceID = instanceID
     super.init(
       smartCard: smartCard,
       aid: aid,
@@ -117,9 +124,6 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
     delegate = self
     TokenLog.info("Token.init: super.init done, publishing profile=\(String(describing: profile))")
     try publish(identity, leaf: leaf, profile: profile)
-    // A fresh token means the card (re-)appeared: clear any cached PIN1 and
-    // lift the disable latch a prior degradation may have set.
-    CredentialMemory.pin1Cache.reset()
     TokenLog.info("Token.init: publish done")
   }
 
@@ -155,6 +159,7 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
     self.sealedAccessNumber = material.accessNumber
     self.interface = .fieldWithDeadline
     self.primedSerial = material.serial
+    self.cardInstanceID = instanceID
     super.init(
       smartCard: smartCard,
       aid: aid,
@@ -216,6 +221,48 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
       profile: profile,
       publicKey: publicKey,
       serial: storedSerial)
+  }
+
+  /// Revokes automatic signing authority after this card rejects PIN1.
+  ///
+  /// This path is deliberately narrower than a generic sign failure.
+  /// Transport loss, PACE failure, malformed signatures, and TLS errors do
+  /// not touch stored state. Only the card's VERIFY response reaches here.
+  ///
+  /// The rejected fingerprint and accepted-PIN memory are process state.
+  /// The stored PIN and prime are persistent authority, so they are removed
+  /// before the failure returns. Registration removal is queued off the CTK
+  /// callback thread to avoid asking ctkd to unregister a token while ctkd is
+  /// still executing that token's sign callback.
+  internal func revokeAutomaticIdentityAfterPin1Rejection(
+    serial: TokenSerial,
+    fingerprint: PinFingerprint
+  ) {
+    CredentialMemory.rejectedPins.recordRejection(fingerprint)
+    CredentialMemory.acceptedPin1.clear(serial: serial)
+
+    guard CardInstanceIdentifier(tokenSerial: serial) == cardInstanceID else {
+      TokenLog.error("PIN1 rejection serial did not match token instance")
+      return
+    }
+
+    let representsStoredIdentity: Bool =
+      switch interface {
+      case .fieldWithDeadline:
+        true
+      case .contact, .steadyField:
+        PrimeStore.contains(instanceID: cardInstanceID)
+      }
+    guard representsStoredIdentity else {
+      TokenLog.notice("PIN1 rejected; no stored automatic identity belonged to this token")
+      return
+    }
+
+    CardCredentialStore.forgetPin1()
+    PrimeStore.forget(instanceID: cardInstanceID)
+    PrimeStore.forgetStaged()
+    TokenRegistrationRevoker.revoke(cardInstanceID)
+    TokenLog.error("PIN1 rejected; stored PIN1, prime, and token registration revoked")
   }
 
   // The @objc requirement is throwing; keep `throws` for the bridge.

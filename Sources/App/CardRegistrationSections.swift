@@ -1,5 +1,6 @@
 #if canImport(CoreNFC) && os(iOS)
 
+  import CardCore
   import CryptoTokenKit
   import SwiftUI
 
@@ -12,12 +13,16 @@
     /// Stable automation names; changing one never changes visible copy.
     private static let startIdentifier = "primeStartButton"
     private static let failedIdentifier = "primeFailed"
-    private static let tokenPrefix = "fi.refineid.ReFineID.ctk:"
-
-    /// Persistent system registration, read without waking NFC.
+    /// Complete persistent identity state, read without waking NFC.
+    ///
+    /// A registration without its prime or stored PIN cannot sign. Treating
+    /// that stale index as ready hid the mint action after a revocation.
     private static var hasRegisteredIdentity: Bool {
-      TKSmartCardTokenRegistrationManager.default.registeredSmartCardTokens
-        .contains { $0.hasPrefix(Self.tokenPrefix) }
+      let credentials = CardCredentialStore.contents()
+      return credentials.hasPin1
+        && PrimeStore.storedCount() > 0
+        && TKSmartCardTokenRegistrationManager.default.registeredSmartCardTokens
+          .contains { CardTokenNamespace.owns(tokenIdentifier: $0) }
     }
 
     /// Whether the parent has either stored or complete entered credentials.

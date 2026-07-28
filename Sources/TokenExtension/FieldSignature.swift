@@ -73,8 +73,17 @@ internal struct FieldSignature {
     do {
       try operations.verifyPin1(pin1.consumeForSingleTransmission())
     } catch CardOperationError.pinRejected {
-      if let fingerprint {
-        CredentialMemory.rejectedPins.recordRejection(fingerprint)
+      if let serial = token.primedSerial, let fingerprint {
+        token.revokeAutomaticIdentityAfterPin1Rejection(
+          serial: serial,
+          fingerprint: fingerprint)
+      }
+      throw TokenError.pinRejected
+    } catch CardOperationError.pinBlocked {
+      if let serial = token.primedSerial, let fingerprint {
+        token.revokeAutomaticIdentityAfterPin1Rejection(
+          serial: serial,
+          fingerprint: fingerprint)
       }
       throw TokenError.pinRejected
     }

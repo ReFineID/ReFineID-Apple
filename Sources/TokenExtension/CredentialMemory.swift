@@ -9,8 +9,8 @@ import CardCore
 internal enum CredentialMemory {
   internal static let rejectedPins = RejectedPinMemory()
 
-  /// The card-bound PIN1 cache: one PIN entry covers a login flow's signs.
+  /// Card-bound PIN1 values accepted during this process lifetime.
   ///
   /// In-memory, zeroized, never persisted.
-  internal static let pin1Cache = Pin1Cache()
+  internal static let acceptedPin1 = AcceptedPin1Memory()
 }

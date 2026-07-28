@@ -166,7 +166,7 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
       throw TKError(.badParameter)
     }
     // The freshly-entered PIN (from a preceding beginAuth), if any. When
-    // nil, performSign may still proceed from the card-bound PIN1 cache;
+    // nil, performSign may still proceed from card-bound accepted-PIN memory;
     // otherwise it throws authenticationRequired and the system prompts.
     let entered = collectedPin.flatMap { $0.isEmpty ? nil : $0 }
     collectedPin = nil
@@ -182,7 +182,7 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
           unsealingWith: accessNumber,
           enteredPin: entered,
           request: request,
-          publicKey: token.leafPublicKey
+          token: token
         )
       }
       TokenLog.trace("sign: reader path produced \(signature.count) DER bytes")
@@ -245,8 +245,9 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
     // contactless login needs to know, and it is sayable without saying
     // anything about the PIN itself.
     TokenLog.trace("sign: pin1 source=\(pinSource) authorized=\(authorized != nil)")
-    // Ask for the PIN BEFORE touching the card. A contactless token never
-    // reuses the card-bound PIN1 cache, so a signature with no PIN can
+    // Ask for the PIN BEFORE touching the card. A contactless token uses
+    // its explicitly stored credential rather than process accepted-PIN
+    // memory, so a signature with no PIN can
     // only end in this throw - and reaching it after PACE leaves the card
     // mid-secure-channel, where the next PACE attempt dies on SELECT with
     // SW 6999.

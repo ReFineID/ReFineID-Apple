@@ -40,6 +40,12 @@ public enum PrimeStore {
     public let isRegistrationField: Bool
   }
 
+  /// One decoded keychain record, still named only inside this store.
+  private struct StoredItem {
+    let account: String
+    let identity: PrimedIdentity
+  }
+
   /// Keychain service the primed identities live under.
   private static let service: String = "fi.refineid.prime"
 
@@ -160,6 +166,42 @@ public enum PrimeStore {
     delete(account: lookupID.value)
   }
 
+  /// Whether a stored prime belongs to this physical card.
+  ///
+  /// The lookup key is derived from an ATR and therefore names a card
+  /// family, not a physical card. Revocation starts with the public card
+  /// serial instead, so it cannot remove another card's prime merely
+  /// because both cards expose the same ATR.
+  public static func contains(instanceID: CardInstanceIdentifier) -> Bool {
+    storedItems().contains { item in
+      guard
+        let serialText = item.identity.tokenSerial,
+        let serial = TokenSerial(value: serialText)
+      else {
+        return false
+      }
+      return CardInstanceIdentifier(tokenSerial: serial) == instanceID
+    }
+  }
+
+  /// Removes every exact or staged prime belonging to one physical card.
+  ///
+  /// A physical card can acquire more than one ATR lookup record across
+  /// interfaces or card generations. The printed-card instance identifier
+  /// is the stable revocation boundary, so all matching records go together.
+  public static func forget(instanceID: CardInstanceIdentifier) {
+    for item in storedItems() {
+      guard
+        let serialText = item.identity.tokenSerial,
+        let serial = TokenSerial(value: serialText),
+        CardInstanceIdentifier(tokenSerial: serial) == instanceID
+      else {
+        continue
+      }
+      delete(account: item.account)
+    }
+  }
+
   /// Removes the short-lived bridge record after registration.
   public static func forgetStaged() {
     delete(account: Self.stagedAccount)
@@ -202,6 +244,21 @@ public enum PrimeStore {
   /// rather than reported as an empty one, because a prime that cannot be
   /// decoded is a prime the extension will not see either.
   public static func presence() -> [PrimePresence] {
+    storedItems()
+      .filter { $0.account != Self.stagedAccount }
+      .map { item in
+        PrimePresence(
+          instance: item.account,
+          hasCardAccessNumber: !item.identity.can.isEmpty,
+          certificateBytes: item.identity.certDER.count,
+          issuerBytes: item.identity.issuerDER?.count ?? 0,
+          hasTokenSerial: item.identity.tokenSerial != nil)
+      }
+      .sorted { $0.instance < $1.instance }
+  }
+
+  /// Every decodable prime, including the short-lived staged record.
+  private static func storedItems() -> [StoredItem] {
     var search: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
@@ -217,25 +274,16 @@ public enum PrimeStore {
     else {
       return []
     }
-    return found.compactMap(presence(ofItem:)).sorted { $0.instance < $1.instance }
-  }
-
-  /// One found keychain item as a presence report, or nil when it does
-  /// not decode into a prime at all.
-  private static func presence(ofItem attributes: [String: Any]) -> PrimePresence? {
-    guard let instance = attributes[kSecAttrAccount as String] as? String,
-      instance != Self.stagedAccount,
-      let data = attributes[kSecValueData as String] as? Data,
-      let stored = try? JSONDecoder().decode(PrimedIdentity.self, from: data)
-    else {
-      return nil
+    return found.compactMap { attributes in
+      guard
+        let account = attributes[kSecAttrAccount as String] as? String,
+        let data = attributes[kSecValueData as String] as? Data,
+        let identity = try? JSONDecoder().decode(PrimedIdentity.self, from: data)
+      else {
+        return nil
+      }
+      return StoredItem(account: account, identity: identity)
     }
-    return PrimePresence(
-      instance: instance,
-      hasCardAccessNumber: !stored.can.isEmpty,
-      certificateBytes: stored.certDER.count,
-      issuerBytes: stored.issuerDER?.count ?? 0,
-      hasTokenSerial: stored.tokenSerial != nil)
   }
 
   /// Item coordinates shared by every operation on one card's prime.

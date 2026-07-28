@@ -51,7 +51,9 @@ internal struct CardOperationsTests {
     #expect(report.pin2 == .remaining(five))
     #expect(report.puk == .remaining(five))
     let state = try #require(report.retryState)
-    #expect(state.isPristine)
+    #expect(state.pin1 == five)
+    #expect(state.pin2 == five)
+    #expect(state.puk == five)
     #expect(channel.isExhausted)
   }
 

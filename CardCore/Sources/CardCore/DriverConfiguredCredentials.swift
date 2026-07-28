@@ -27,7 +27,7 @@ import Foundation
 public enum DriverConfiguredCredentials {
   /// The driver whose configuration this is: `com.apple.ctk.class-id`
   /// in the token extension's Info.plist.
-  private static let classID = "fi.refineid.ReFineID.ctk"
+  private static let classID = CardTokenNamespace.driverClassIdentifier
 
   /// Names the one entry this app keeps.
   ///

@@ -22,8 +22,8 @@ What the driver contains (the whole protocol surface of v1):
 
 - card recognition and named application/file selection (SELECT AID);
 - bounded certificate and chain reads with response continuation;
-- side-effect-free retry-state reads;
-- the retry floor (three or more attempts proceeds, one or two refuses
+- a side-effect-free PIN1 retry-state read before authentication;
+- the PIN1 retry floor (three or more attempts proceeds, one or two refuses
   before any prompt, unreadable state fails closed);
 - PIN1 `VERIFY` with at-most-once transport and rejected-PIN memory;
 - `MSE:SET` + `PSO:CDS` signing and ECDSA/RSA result normalization;
@@ -39,11 +39,10 @@ The Rust core remains the reference oracle.
 
 - Calendar versioning `YY.M.D` with ten-minute-bucket build numbers;
   tagged releases.
-- Safety invariants: the retry floor (proceed only at three or more
-  attempts), pristine-only PIN1 caching, at-most-once credential
-  transport, wrong-PIN rejection memory - identical policy on every
-  platform, and the implementation already demonstrated the
-  rejection memory and 5/5 preservation in hardware runs.
+- Safety invariants: the PIN1 retry floor (proceed only at three or more
+  attempts), process-lifetime card-bound memory only for a PIN1 the card
+  accepted, at-most-once credential transport, and wrong-PIN rejection
+  memory. Normal minting and authentication never probe PIN2 or PUK.
 
 ## 6. Future
 

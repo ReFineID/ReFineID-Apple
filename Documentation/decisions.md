@@ -3,6 +3,27 @@
 Decisions with dates and rationale. `Documentation/release-plan.md` controls scope and
 security behavior; this file records the concrete values chosen under it.
 
+## 2026-07-28 Authentication observes PIN1, not unrelated credentials
+
+Normal identity minting does not read any retry counter. Authentication reads
+one side-effect-free PIN1 retry result immediately before VERIFY PIN1 and fails
+closed when it is unreadable, blocked, or below three attempts. It does not read
+PIN2 or PUK: authentication cannot consume either credential, and those APDUs
+only added field time and unrelated failure modes. The all-credential probe
+remains an explicit status and diagnostics operation.
+
+Once a card accepts a freshly entered PIN1, the token extension may retain a
+zeroizing copy for that complete card serial until the extension process exits.
+This avoids repeated entry while retaining a fresh retry-floor probe and actual
+VERIFY for every signature. There is no timer and no 5/5/5 prerequisite.
+
+The first confirmed PIN1 rejection clears that process memory. When the token is
+an automatically configured iOS identity, it also deletes stored PIN1, every
+prime belonging to that physical card, and the exact CryptoTokenKit
+registration. Only the card's PIN rejection or blocked response triggers that
+revocation; radio loss, PACE failure, bad signature shape, and TLS failure do
+not.
+
 ## 2026-07-28 A card directory replaces the single stored number
 
 Every known card is an entry -- serial, model key, display name, and

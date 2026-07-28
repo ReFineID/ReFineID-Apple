@@ -15,8 +15,8 @@
   /// PSO:CDS over a SHA-384 test digest, re-encodes the signature, and
   /// verifies it against the card's own public key with
   /// `SecKeyVerifySignature`. A correct PIN does not consume a retry
-  /// attempt, so this is safe on a 5/5/5 card. Not part of the shipping
-  /// UI.
+  /// attempt; this diagnostic requires the PIN1 retry floor but does not
+  /// inspect PIN2 or PUK. Not part of the shipping UI.
   ///
   /// The PIN is used and dropped: it is never stored, and nothing below
   /// prints it.
@@ -64,11 +64,9 @@
           let leafDER = try operations.readCertificate(.authentication)
           lines.append("leaf: \(leafDER.count) bytes")
 
-          let report = try operations.probeCredentials()
-          lines.append("PIN1 probe: \(String(describing: report.pin1))")
-          guard case .remaining(let count) = report.pin1,
-            RetryFloor.evaluate(freshReading: count) == .proceed
-          else {
+          let pin1 = try operations.probeRetryCounter(role: .pin1)
+          lines.append("PIN1 probe: \(String(describing: pin1))")
+          guard RetryFloor.evaluate(probeOutcome: pin1) == .proceed else {
             return lines + ["FAIL: retry floor did not permit"]
           }
 

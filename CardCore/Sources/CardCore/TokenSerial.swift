@@ -1,8 +1,8 @@
 /// The complete hardware serial of a card, as read from the card itself.
 ///
-/// This is the identity every security binding uses: the PIN1 cache and the
-/// rejected-PIN memory bind to this full value and never to the short
-/// visual serial printed on the card, which is not an identity.
+/// This is the identity every security binding uses: accepted-PIN and
+/// rejected-PIN memory bind to this full value and never to the short visual
+/// serial printed on the card, which is not an identity.
 /// The value never appears in logs.
 public struct TokenSerial: Equatable, Hashable, Sendable {
   /// A real serial is short; anything longer is a parser or transport

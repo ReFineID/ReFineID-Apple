@@ -42,7 +42,7 @@ public struct Pin1: ~Copyable {
     self.store = ZeroizingDigitStore(bytes: bytes)
   }
 
-  /// Rebuilds a PIN1 that owns `store`, for the PIN1 cache to re-issue.
+  /// Rebuilds a PIN1 that owns `store`, for accepted-PIN memory to re-issue.
   ///
   /// The cached bytes were a valid PIN1 when stored, so this
   /// reconstruction is total.

@@ -319,6 +319,14 @@ explicitly chooses to store PIN1, the extension reads that stored value
 for each contactless signature. Device unlock and the system certificate
 consent remain the surrounding controls.
 
+Reader authentication probes only PIN1 immediately before VERIFY. PIN2 and PUK
+are not part of identity authentication and are read only when the holder opens
+the explicit status/diagnostics flow. A freshly entered PIN1 that the card
+accepts may remain in zeroizing, card-serial-bound memory for the extension
+process lifetime. A confirmed PIN1 rejection removes the automatic identity's
+stored PIN1, physical-card prime, and CryptoTokenKit registration; unrelated
+transport and TLS failures leave them intact.
+
 ## Instruments
 
 Every fix on 2026-07-27 came from an instrument rather than from

@@ -56,13 +56,6 @@ internal struct CardStatusSnapshot: Equatable, Sendable {
     }
   }
 
-  /// Token identifiers published by the smart-card extension carry this
-  /// exact class prefix.
-  ///
-  /// The discovery extension has a different class and must not make the
-  /// status look ready by itself.
-  private static let tokenPrefix = "fi.refineid.ReFineID.ctk:"
-
   /// The reader's name, or nil when no reader is attached.
   internal let readerName: String?
 
@@ -136,9 +129,10 @@ internal struct CardStatusSnapshot: Equatable, Sendable {
     // it reported "Ready" with no card present, from nothing but a
     // stored card access number.
     let credentialEntries =
-      Self.tokenPrefix + DriverConfiguredCredentials.configurationInstanceID
+      CardTokenNamespace.tokenPrefix + DriverConfiguredCredentials.configurationInstanceID
     return TKTokenWatcher().tokenIDs.contains { identifier in
-      identifier.hasPrefix(Self.tokenPrefix) && !identifier.hasPrefix(credentialEntries)
+      CardTokenNamespace.owns(tokenIdentifier: identifier)
+        && !identifier.hasPrefix(credentialEntries)
     }
   }
 

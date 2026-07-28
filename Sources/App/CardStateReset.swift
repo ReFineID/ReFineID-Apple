@@ -20,9 +20,6 @@ internal enum CardStateReset {
     }
   }
 
-  /// Exact token namespace belonging to this app's CTK extension.
-  private static let tokenPrefix = "fi.refineid.ReFineID.ctk:"
-
   /// Clears registrations, identity configurations, primes, and trace.
   internal static func perform() -> Outcome {
     var lines = ["=== reset ReFineID Safari identities ==="]
@@ -56,7 +53,7 @@ internal enum CardStateReset {
     #if os(iOS)
       let manager = TKSmartCardTokenRegistrationManager.default
       let ours = manager.registeredSmartCardTokens
-        .filter { $0.hasPrefix(Self.tokenPrefix) }
+        .filter(CardTokenNamespace.owns(tokenIdentifier:))
         .sorted()
       guard !ours.isEmpty else {
         return (["ReFineID Safari registrations: none"], true)
