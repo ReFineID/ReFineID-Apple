@@ -111,6 +111,13 @@ Legend:
 
 ## 5. Credential-command safety
 
+- [ ] Re-key contactless identities by something card-unique. The ATR
+  digest `CardInstanceIdentifier(answerToReset:)` uses is constant
+  across a production batch, so two same-model cards on one device
+  overwrite each other's primes and can be served each other's stored
+  number and certificate. Bind the prime to the token serial once PACE
+  has read it, and refuse a prime whose serial the card then
+  contradicts.
 - [ ] Add physical-transmit-count spies and tests around every credential path.
   `ScriptedChannel` asserts the exact transmit sequence for the read paths; a
   dedicated spy around the VERIFY path is still to add.
@@ -147,13 +154,16 @@ Legend:
   the app runs -- card present or not. The access number is not a PIN:
   it is printed on the card face and exists to block remote skimming, so
   the holder may see it; it still never enters logs, traces or
-  diagnostics exports. Key entries by the interface-stable ISO 7816-3
-  historical bytes (`Documentation/card-types.md`); label each with card
-  model, and the token serial once a first unseal has read it. The Rust
-  app's per-identification `CANStore` is the precedent. Retires the
-  sealed-only row gate in `StatusView` and the single anonymous stored
-  value; per-card driver-configuration entries stay excluded from
-  card-availability checks by name.
+  diagnostics exports. Key entries by the token serial, learned at the
+  first unseal: a contact insertion reads it with no number at all, and
+  a first successful PACE reads it contactless. Before PACE a card
+  offers nothing card-unique -- the historical bytes name only the
+  model (`Documentation/card-types.md`) and the RF identifier is
+  randomized -- so a sealed card is matched by trying the stored
+  numbers, newest first, narrowed by model. Retires the sealed-only row
+  gate in `StatusView` and the single anonymous stored value; per-card
+  driver-configuration entries stay excluded from card-availability
+  checks by name.
 - [ ] Name the forget action honestly until the editor lands. The
   stored-number row offers only "Replace", which forgets immediately
   even when nothing is re-entered.
