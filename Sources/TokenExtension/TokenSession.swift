@@ -167,7 +167,7 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
     // synchronously - no Swift concurrency on the ctkd thread, which hangs.
     let smartCard = try getSmartCard()
     do {
-      let signature = try SmartCardChannel(smartCard).withSession { channel in
+      let signature = try SmartCardChannel(smartCard, waits: .reader).withSession { channel in
         try ReaderSignature.perform(
           in: channel,
           unsealingWith: accessNumber,

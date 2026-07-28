@@ -31,7 +31,7 @@ extension Token {
   ) throws -> (identity: PublishedIdentity, accessNumber: CardAccessNumber?) {
     TokenLog.info("readIdentity: opening session")
     let answerToReset = smartCard.slot.atr?.bytes
-    return try SmartCardChannel(smartCard).withSession { channel in
+    return try SmartCardChannel(smartCard, waits: .reader).withSession { channel in
       do {
         TokenLog.info("readIdentity: selecting application")
         try CardOperations(channel: channel).selectFineidApplication()

@@ -216,7 +216,7 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
   /// failure here is swallowed rather than failing the mint.
   internal func holdSession(on smartCard: TKSmartCard) {
     guard heldSession.current == nil else { return }
-    let channel = SmartCardChannel(smartCard)
+    let channel = SmartCardChannel(smartCard, waits: .nearField)
     do {
       try channel.beginSession()
     } catch {

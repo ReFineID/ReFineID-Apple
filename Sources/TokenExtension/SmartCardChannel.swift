@@ -67,6 +67,22 @@ internal struct SmartCardChannel: CardChannel {
     }
   }
 
+  /// How long one APDU may wait, set by the transport that owns the
+  /// field.
+  ///
+  /// The phone's system field ends about two seconds after the mint, so
+  /// waiting longer there cannot be repaid: once one command has taken
+  /// two seconds, the window is already gone. A powered reader holds
+  /// the card for as long as the work takes, and the card's PACE
+  /// arithmetic together with the reader's waiting-time extensions can
+  /// legitimately exceed the phone budget -- a reader exchange gets
+  /// room instead of a guillotine, which was tearing the field and
+  /// blinking the reader in a loop.
+  internal enum ResponseWait {
+    case nearField
+    case reader
+  }
+
   /// How long to wait for whoever else has the card.
   ///
   /// The wait used to be unbounded, and an unbounded wait is how one
@@ -81,16 +97,11 @@ internal struct SmartCardChannel: CardChannel {
   /// The same budget, in the units `DispatchSemaphore` wants.
   private static let sessionWaitBudget: DispatchTimeInterval = .seconds(sessionWaitSeconds)
 
-  /// Maximum useful wait for one APDU on the system-driven NFC field.
-  ///
-  /// The expensive card-side PACE exchanges have measured below one
-  /// second. Once one command has taken two seconds, the system field's
-  /// whole system field window is already gone; waiting for Core NFC's
-  /// roughly twenty-second expiry only makes the retry slower.
-  private static let responseWaitSeconds: Int = 2
+  /// The phone budget: the system field is gone past this anyway.
+  private static let nearFieldResponseSeconds: Int = 2
 
-  /// The APDU response budget in the units `DispatchSemaphore` wants.
-  private static let responseWaitBudget: DispatchTimeInterval = .seconds(responseWaitSeconds)
+  /// The reader budget: room for the card's slowest legal answer.
+  private static let readerResponseSeconds: Int = 10
 
   /// A reader hands back exactly the bytes the card produced, so a
   /// chunked read may ask for the plain chunk.
@@ -100,8 +111,18 @@ internal struct SmartCardChannel: CardChannel {
 
   private let smartCard: TKSmartCard
 
-  internal init(_ smartCard: TKSmartCard) {
+  /// The response budget the constructing transport chose.
+  private let responseBudget: DispatchTimeInterval
+
+  internal init(_ smartCard: TKSmartCard, waits: ResponseWait) {
     self.smartCard = smartCard
+    self.responseBudget =
+      switch waits {
+      case .nearField:
+        .seconds(Self.nearFieldResponseSeconds)
+      case .reader:
+        .seconds(Self.readerResponseSeconds)
+      }
   }
 
   /// Sends one APDU, and records what it was and what it cost.
@@ -120,7 +141,7 @@ internal struct SmartCardChannel: CardChannel {
       reply.value = response
       semaphore.signal()
     }
-    guard semaphore.wait(timeout: .now() + Self.responseWaitBudget) == .success else {
+    guard semaphore.wait(timeout: .now() + responseBudget) == .success else {
       let elapsed = started.duration(to: ContinuousClock.now)
       TokenLog.trace(
         CardExchangeTrace.line(request: payload, response: nil, elapsed: elapsed)
