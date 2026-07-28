@@ -272,8 +272,11 @@ limitation when broken.
    Releasing on any other state tore down a signature part way through a
    read.
 3. **Never read from the card what the prime already holds.** The
-   certificate and the token serial are public and unchanging; re-reading
-   either costs more than the field has left.
+   authentication certificate, its matched issuing CA, and the token
+   serial are public and unchanging; re-reading any of them costs more
+   than the field has left. Identity creation also resolves a known
+   issuing CA from the app bundle before using the on-card compatibility
+   fallback.
 
 Two more, learned the same way: a sessionless `TKSmartCard.transmit` on
 the built-in NFC slot is parked by `ctkd` forever, and `createToken` on

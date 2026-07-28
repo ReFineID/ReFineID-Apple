@@ -152,10 +152,10 @@ extension Token {
     let leaf = try operations.readCertificate(.authentication)
     TokenLog.info("readIdentity: leaf \(leaf.count) bytes; reading token serial")
     let serial = try operations.readTokenSerial()
-    TokenLog.info("readIdentity: token serial read; reading issuer EF.4336")
+    TokenLog.info("readIdentity: token serial read; resolving issuer")
     let issuer =
-      (try? operations.readCertificate(.issuing))
-      ?? BundledIssuerCertificate.der(matching: leaf)
+      BundledIssuerCertificate.der(matching: leaf)
+      ?? (try? operations.readCertificate(.issuing))
     TokenLog.info("readIdentity: issuer \(issuer?.count ?? -1) bytes")
     return PublishedIdentity(leafDER: leaf, issuerDER: issuer, tokenSerial: serial)
   }

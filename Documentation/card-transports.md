@@ -43,9 +43,11 @@ iOS 26 added `TKSmartCardSlotManager.createNFCSlot(message:)` and
 device (see `refineid-mono-internal/doc/ios-native-nfc-safari.md`):
 
 1. **Prime, once per card.** The app opens an NFC slot, runs PACE with
-   the CAN, reads the authentication and issuer certificates, and stores
-   them plus the CAN in a keychain item shared with the extension. The
-   card is identified by a hash of its ATR.
+   the CAN, reads the authentication certificate and card serial, and
+   stores them plus the CAN in a keychain item shared with the extension.
+   A known public issuing CA comes from the app bundle after an exact
+   issuer/subject match; only an unknown issuer is read from the card.
+   The card is identified by a hash of its ATR.
 2. **Login.** The app opens an NFC slot; ctkd asks the driver for a
    token; the driver materializes it from the stored prime (no card I/O
    is possible before PACE, so it must not try). The app waits for

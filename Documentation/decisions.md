@@ -3,6 +3,26 @@
 Decisions with dates and rationale. `Documentation/release-plan.md` controls scope and
 security behavior; this file records the concrete values chosen under it.
 
+## 2026-07-29 Resolve known issuing CAs before reading the card
+
+Identity creation reads the authentication leaf and card serial once. It
+resolves the leaf's issuing CA from the app's bundled public FINEID
+intermediates first, using an exact normalized issuer-to-subject match, and
+reads the issuing file from the card only when this build has no match.
+
+The normal G4E path previously selected the master file, selected EF.4336,
+and issued nine protected READ BINARY commands for the same public
+intermediate bundled by this change. A device trace measured those eleven
+exchanges at about 678 ms. They add no freshness or card binding: the leaf
+names its issuer, and the intermediate is a public CA certificate valid from
+2021 to 2041. The G4E resource is the DER certificate served by DVV's
+certificate-authority API, stored as PEM; its SHA-256 fingerprint is
+`AAD1BEAC4696102A88BF9D518D64F8B014F78F9B152579C959998313197924D7`.
+
+This is a preference, not an assumption. Unknown future issuers still take
+the existing on-card fallback and are stored with the prime, so every later
+login remains independent of the app bundle and does no certificate read.
+
 ## 2026-07-28 Authentication observes PIN1, not unrelated credentials
 
 Normal identity minting does not read any retry counter. Reader authentication

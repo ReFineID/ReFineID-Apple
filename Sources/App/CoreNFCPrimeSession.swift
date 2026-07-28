@@ -239,12 +239,17 @@
         guard let instance = CardInstanceIdentifier(tokenSerial: serial) else {
           throw CardPriming.Failure.unidentifiedCard
         }
-        let issuer =
-          (try? operations.readCertificate(.issuing))
-          ?? BundledIssuerCertificate.der(matching: certificate)
         guard SecCertificateCreateWithData(nil, certificate as CFData) != nil else {
           throw CardPriming.Failure.certificateUnreadable
         }
+        // The issuing CA is public and fixed. Prefer the exact
+        // issuer/subject match bundled with the app, so a normal prime
+        // does not spend another SELECT plus a certificate-sized series
+        // of protected READ BINARY commands. Card I/O is only the
+        // compatibility fallback for an issuer this build does not know.
+        let issuer =
+          BundledIssuerCertificate.der(matching: certificate)
+          ?? (try? operations.readCertificate(.issuing))
         step(.certificate, .done)
         progress(String(localized: "Card identity read."))
         return Payload(
