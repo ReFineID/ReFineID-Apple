@@ -142,21 +142,21 @@ Legend:
 
 ## 8. Native macOS status application
 
-- [ ] Show the card access number editor whenever a reader is attached, not
-  only while a sealed card is readable (`StatusView` gates on `.sealed`).
-  A wrong stored number keeps the reader busy with failed PACE attempts, so
-  the sealed state the row waits for may never render, and the number
-  cannot be entered before the card is placed. Reader NFC capability is not
-  knowable from slot names, so any attached reader (or a stored number)
-  should surface the row.
-- [ ] Name the forget action honestly. The stored-number row offers only
-  "Replace", which forgets immediately even when nothing is re-entered;
-  a holder who wants the number gone is not offered that in words.
-- [ ] Bind each stored card access number to its card, keyed by the ISO
-  7816-3 historical bytes, which are interface-stable
-  (`Documentation/card-types.md`); a second card must not inherit the
-  first card's number. Keep every per-card driver-configuration entry
-  excluded from card-availability checks by name.
+- [ ] Add a card directory editor: each known card with its stored access
+  number shown, editable and deletable, reachable from a menu whenever
+  the app runs -- card present or not. The access number is not a PIN:
+  it is printed on the card face and exists to block remote skimming, so
+  the holder may see it; it still never enters logs, traces or
+  diagnostics exports. Key entries by the interface-stable ISO 7816-3
+  historical bytes (`Documentation/card-types.md`); label each with card
+  model, and the token serial once a first unseal has read it. The Rust
+  app's per-identification `CANStore` is the precedent. Retires the
+  sealed-only row gate in `StatusView` and the single anonymous stored
+  value; per-card driver-configuration entries stay excluded from
+  card-availability checks by name.
+- [ ] Name the forget action honestly until the editor lands. The
+  stored-number row offers only "Replace", which forgets immediately
+  even when nothing is re-entered.
 - [ ] Implement a minimal SwiftUI window with native macOS behavior.
 - [ ] Show application and bundled extension versions.
 - [ ] Research and use only a public API for extension readiness; otherwise use
