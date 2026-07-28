@@ -13,6 +13,13 @@ manager window therefore shows, replaces and forgets the stored number
 without requiring a card to be present. PIN1 remains write-only, and
 the number still never enters logs, traces or diagnostics exports.
 
+Storing and reading the number are likewise ungated -- no Face ID,
+Touch ID or passcode prompt -- which amends the 2026-07-27 gate
+decision to cover PIN1 alone. What remains is the storage boundary:
+the item stays `WhenUnlockedThisDeviceOnly` and non-synchronizable,
+so the number is never written into a backup and never sent to
+iCloud.
+
 ## 2026-07-28 Stored PIN1 is directly available to the iOS token extension
 
 The fifteen-minute software signing window is removed from the iOS

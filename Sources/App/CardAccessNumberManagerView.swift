@@ -37,18 +37,15 @@
             .font(.footnote)
             .foregroundStyle(.red)
         }
-        Text("A change is used when a card is next placed on a reader.")
-          .font(.footnote)
-          .foregroundStyle(.secondary)
       }
       .formStyle(.grouped)
       .frame(width: Self.windowWidth)
       .onAppear { credentials.refresh() }
     }
 
-    /// The stored number, readable and selectable, or None.
+    /// The stored CAN, readable and selectable, or None.
     @ViewBuilder private var storedRow: some View {
-      LabeledContent("Stored number") {
+      LabeledContent("Stored CAN") {
         Text(credentials.storedCardAccessNumber ?? String(localized: "None"))
           .monospacedDigit()
           .textSelection(.enabled)
@@ -57,16 +54,17 @@
     }
 
     /// Six digits in, Save when they are all there.
+    ///
+    /// The field starts empty: a placeholder that looks like a number
+    /// reads as one.
     @ViewBuilder private var entryRow: some View {
-      LabeledContent("New number") {
+      LabeledContent("New CAN") {
         HStack {
-          TextField(
-            "Six digits", text: $entry, prompt: Text(verbatim: "123456")
-          )
-          .labelsHidden()
-          .frame(width: Self.entryWidth)
-          .onSubmit { save() }
-          .accessibilityIdentifier("managerCardAccessNumberField")
+          TextField("CAN", text: $entry)
+            .labelsHidden()
+            .frame(width: Self.entryWidth)
+            .onSubmit { save() }
+            .accessibilityIdentifier("managerCardAccessNumberField")
           Button("Save") { save() }
             .disabled(!isEntryComplete)
             .accessibilityIdentifier("managerSaveCardAccessNumber")
@@ -77,7 +75,7 @@
     /// Drops the stored number, in those words.
     @ViewBuilder private var forgetButton: some View {
       Button("Forget stored number") {
-        Task { await credentials.forgetCardAccessNumber() }
+        credentials.forgetCardAccessNumber()
       }
       .disabled(credentials.storedCardAccessNumber == nil)
       .accessibilityIdentifier("managerForgetCardAccessNumber")
@@ -88,7 +86,7 @@
       guard isEntryComplete else { return }
       let digits = entry
       entry = ""
-      Task { await credentials.saveCardAccessNumber(digits) }
+      credentials.saveCardAccessNumber(digits)
     }
   }
 

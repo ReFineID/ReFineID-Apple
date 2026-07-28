@@ -126,7 +126,16 @@ Legend:
 
 ## 6. CTK extension
 
-
+- [ ] Stop the wrong-number retry storm. A failed PACE tears the
+  contactless field, the card re-arrives, ctkd offers it again, and the
+  driver runs the same doomed handshake forever -- the reader blinks
+  and serves nothing else until the card is lifted. Remember the
+  refusal for the card's stay in the field, fail the re-offer fast, and
+  let the status screen say the stored number was refused.
+- [ ] Show the card serial in the manager window when a card offers it:
+  a contact insertion reads it freely, and an unsealed contactless read
+  supplies it afterwards; before PACE the antenna offers nothing
+  card-unique by design.
 - [ ] Handle card removal, reinsertion, fast same-reader swap, reader contention,
   extension reuse, and extension termination (cache resets on a fresh token and
   the OS reaps the process; full matrix still to test).

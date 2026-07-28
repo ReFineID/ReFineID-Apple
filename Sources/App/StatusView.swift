@@ -209,7 +209,7 @@ internal struct StatusView: View {
         HStack(spacing: Self.rowSpacing) {
           Text("Stored")
           Button("Replace") {
-            Task { await credentials.forgetCardAccessNumber() }
+            credentials.forgetCardAccessNumber()
           }
           .accessibilityIdentifier("replaceCardAccessNumber")
         }
@@ -222,7 +222,7 @@ internal struct StatusView: View {
           // as a second label beside the row's own -- wrapped onto two
           // lines and crowding the field it belongs to. The label still
           // exists for anyone reading the screen aloud.
-          TextField("Six digits", text: $cardAccessNumberEntry, prompt: Text(verbatim: "123456"))
+          TextField("CAN", text: $cardAccessNumberEntry)
             .labelsHidden()
             .accessibilityIdentifier("cardAccessNumberField")
             .frame(width: Self.entryWidth)
@@ -357,8 +357,8 @@ internal struct StatusView: View {
     guard isEnteredNumberComplete else { return }
     let entry = cardAccessNumberEntry
     cardAccessNumberEntry = ""
+    credentials.saveCardAccessNumber(entry)
     Task {
-      await credentials.saveCardAccessNumber(entry)
       await model.refresh()
     }
   }

@@ -56,7 +56,7 @@ internal struct CardCredentialsView: View {
         LabeledContent("Card access number", value: String(localized: "Set"))
           .accessibilityIdentifier("cardAccessNumberStatus")
         Button("Replace") {
-          Task { await model.forgetCardAccessNumber() }
+          model.forgetCardAccessNumber()
         }
         .accessibilityIdentifier("replaceCardAccessNumber")
       } else {
@@ -64,7 +64,7 @@ internal struct CardCredentialsView: View {
         Button("Save") {
           let entry = cardAccessNumberEntry
           cardAccessNumberEntry = ""
-          Task { await model.saveCardAccessNumber(entry) }
+          model.saveCardAccessNumber(entry)
         }
         .accessibilityIdentifier("saveCardAccessNumber")
         .disabled(cardAccessNumberEntry.count != CardAccessNumber.digitCount)

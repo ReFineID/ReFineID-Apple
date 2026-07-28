@@ -22,11 +22,12 @@ import Security
 /// looked rejected.
 ///
 /// The biometric gate therefore lives one layer up, in the app's
-/// `CardCredentialGate`, in front of every path that stores or drops one
-/// of these values. That is weaker than an access control -- app code can
-/// be talked past, the Security framework cannot -- and it is a deliberate
-/// trade, recorded in `Documentation/decisions.md` rather than left to be
-/// discovered here.
+/// `CardCredentialGate`, in front of every path that stores or drops
+/// PIN1. That is weaker than an access control -- app code can be talked
+/// past, the Security framework cannot -- and it is a deliberate trade,
+/// recorded in `Documentation/decisions.md` rather than left to be
+/// discovered here. The card access number passes no gate in either
+/// direction (decision 2026-07-28).
 public enum CardCredentialStore {
   /// What the store currently holds.
   public struct Contents: Equatable, Sendable {

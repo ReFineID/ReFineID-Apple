@@ -28,18 +28,19 @@ internal final class CardCredentialsModel {
     storedCardAccessNumber = CardCredentialStore.displayedCardAccessNumber()
   }
 
-  /// Stores the card access number after the holder authenticates.
-  internal func saveCardAccessNumber(_ digits: String) async {
-    await gated(
-      reason: String(localized: "Save the card access number for this device")
-    ) {
-      let status = CardCredentialStore.save(cardAccessNumber: digits)
-      guard status == errSecSuccess else {
-        return String(
-          localized: "Could not store the card access number (\(status)).")
-      }
-      return nil
+  /// Stores the card access number, with no gate in front.
+  ///
+  /// Ungated by decision 2026-07-28: the number is printed on the card
+  /// face, so a prompt in front of storing it protected nothing and
+  /// cost every setup an interruption.
+  internal func saveCardAccessNumber(_ digits: String) {
+    failure = nil
+    let status = CardCredentialStore.save(cardAccessNumber: digits)
+    if status != errSecSuccess {
+      failure = String(
+        localized: "Could not store the card access number (\(status)).")
     }
+    refresh()
   }
 
   /// Stores PIN1 after the holder authenticates.
@@ -56,11 +57,12 @@ internal final class CardCredentialsModel {
   }
 
   /// Forgets the card access number, so it can be entered again.
-  internal func forgetCardAccessNumber() async {
-    await gated(reason: String(localized: "Replace the card access number")) {
-      CardCredentialStore.forgetCardAccessNumber()
-      return nil
-    }
+  ///
+  /// Ungated, like storing it: decision 2026-07-28.
+  internal func forgetCardAccessNumber() {
+    failure = nil
+    CardCredentialStore.forgetCardAccessNumber()
+    refresh()
   }
 
   /// Forgets PIN1, so every signature asks again.
@@ -86,8 +88,9 @@ internal final class CardCredentialsModel {
   /// This is the gate, and it is the only one: the keychain items
   /// themselves carry no access control, because the token extension has
   /// to read PIN1 while signing a request made in Safari and has no
-  /// interface to answer a prompt with. Every path that writes or drops a
-  /// stored secret therefore comes through here.
+  /// interface to answer a prompt with. Every path that writes or drops
+  /// PIN1 therefore comes through here; the card access number needs no
+  /// gate at all (decision 2026-07-28).
   ///
   /// ``CardCredentialGate`` is also the single place a debug build can be
   /// told to skip the prompt, and nothing outside `#if DEBUG` can ask it
