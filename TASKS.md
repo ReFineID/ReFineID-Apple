@@ -126,16 +126,8 @@ Legend:
 
 ## 6. CTK extension
 
-- [ ] Stop the wrong-number retry storm. A failed PACE tears the
-  contactless field, the card re-arrives, ctkd offers it again, and the
-  driver runs the same doomed handshake forever -- the reader blinks
-  and serves nothing else until the card is lifted. Remember the
-  refusal for the card's stay in the field, fail the re-offer fast, and
-  let the status screen say the stored number was refused.
-- [ ] Show the card serial in the manager window when a card offers it:
-  a contact insertion reads it freely, and an unsealed contactless read
-  supplies it afterwards; before PACE the antenna offers nothing
-  card-unique by design.
+- [ ] Let the status screen say a stored number was refused, instead of
+  the refusal being visible only in the log and the latch.
 - [ ] Handle card removal, reinsertion, fast same-reader swap, reader contention,
   extension reuse, and extension termination (cache resets on a fresh token and
   the OS reaps the process; full matrix still to test).
@@ -158,24 +150,10 @@ Legend:
 
 ## 8. Native macOS status application
 
-- [ ] Add a card directory editor: each known card with its stored access
-  number shown, editable and deletable, reachable from a menu whenever
-  the app runs -- card present or not. The access number is not a PIN:
-  it is printed on the card face and exists to block remote skimming, so
-  the holder may see it; it still never enters logs, traces or
-  diagnostics exports. Key entries by the token serial, learned at the
-  first unseal: a contact insertion reads it with no number at all, and
-  a first successful PACE reads it contactless. Before PACE a card
-  offers nothing card-unique -- the historical bytes name only the
-  model (`Documentation/card-types.md`) and the RF identifier is
-  randomized -- so a sealed card is matched by trying the stored
-  numbers, newest first, narrowed by model. Retires the sealed-only row
-  gate in `StatusView` and the single anonymous stored value; per-card
-  driver-configuration entries stay excluded from card-availability
-  checks by name.
-- [ ] Name the forget action honestly until the editor lands. The
-  stored-number row offers only "Replace", which forgets immediately
-  even when nothing is re-entered.
+- [ ] Name the status row's forget action honestly. It offers only
+  "Replace", which forgets immediately even when nothing is re-entered;
+  the Card menu's directory has honest Delete and Forget, the row does
+  not yet.
 - [ ] Implement a minimal SwiftUI window with native macOS behavior.
 - [ ] Show application and bundled extension versions.
 - [ ] Research and use only a public API for extension readiness; otherwise use

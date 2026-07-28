@@ -19,8 +19,8 @@ internal final class CardCredentialsModel {
   internal private(set) var storedCardAccessNumber =
     CardCredentialStore.displayedCardAccessNumber()
 
-  /// The serial of the card the stored number is bound to, when known.
-  internal private(set) var storedBoundSerial = CardCredentialStore.boundSerial()
+  /// Every card the directory knows, newest first.
+  internal private(set) var cards = CardDirectory.entries()
 
   /// Set when the last action failed, for the holder to read.
   internal private(set) var failure: String?
@@ -29,7 +29,22 @@ internal final class CardCredentialsModel {
   internal func refresh() {
     contents = CardCredentialStore.contents()
     storedCardAccessNumber = CardCredentialStore.displayedCardAccessNumber()
-    storedBoundSerial = CardCredentialStore.boundSerial()
+    cards = CardDirectory.entries()
+  }
+
+  /// Records one card in the directory, replacing its previous entry.
+  internal func addCard(can: String, serial: String, modelKey: String, model: String) {
+    failure = nil
+    CardDirectory.upsert(
+      CardDirectory.Entry(serial: serial, modelKey: modelKey, model: model, can: can))
+    refresh()
+  }
+
+  /// Drops one card from the directory.
+  internal func removeCard(serial: String) {
+    failure = nil
+    CardDirectory.remove(serial: serial)
+    refresh()
   }
 
   /// Stores the card access number, with no gate in front.
@@ -37,14 +52,10 @@ internal final class CardCredentialsModel {
   /// Ungated: the number is printed on the card face, so a prompt in
   /// front of storing it protected nothing and cost every setup an
   /// interruption.
-  internal func saveCardAccessNumber(_ digits: String, boundToSerial serial: String?) {
+  internal func saveCardAccessNumber(_ digits: String) {
     failure = nil
     let status = CardCredentialStore.save(cardAccessNumber: digits)
-    if status == errSecSuccess {
-      if let serial {
-        CardCredentialStore.bind(toSerial: serial)
-      }
-    } else {
+    if status != errSecSuccess {
       failure = String(
         localized: "Could not store the card access number (\(status)).")
     }

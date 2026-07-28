@@ -54,9 +54,6 @@ public enum CardCredentialStore {
   /// Account for PIN1, present only when the holder opted in.
   private static let pin1Account = "pin1"
 
-  /// Account for the serial of the card the stored number belongs to.
-  private static let boundSerialAccount = "can-serial"
-
   /// Keychain coordinates used by the retired timed signing window.
   private static let legacySigningWindowService = "fi.refineid.pin1window"
   private static let legacySigningWindowAccount = "current"
@@ -75,23 +72,11 @@ public enum CardCredentialStore {
   @discardableResult
   public static func save(cardAccessNumber digits: String) -> OSStatus {
     guard CardAccessNumber(digits: digits) != nil else { return errSecParam }
-    // A new number belongs to an unknown card until something binds it.
-    delete(account: boundSerialAccount)
     let status = write(digits, account: cardAccessNumberAccount)
     if status == errSecSuccess {
       publishToDriver(digits: digits)
     }
     return status
-  }
-
-  /// Records which card the stored number belongs to.
-  public static func bind(toSerial serial: String) {
-    _ = write(serial, account: boundSerialAccount)
-  }
-
-  /// The serial the stored number is bound to, when one was recorded.
-  public static func boundSerial() -> String? {
-    read(account: boundSerialAccount)
   }
 
   /// An opaque name for the stored number: equal when the number is,
@@ -252,11 +237,9 @@ public enum CardCredentialStore {
       tokenSerial: tokenSerial)
   }
 
-  /// Removes the card access number, from the driver's copy as well,
-  /// and the serial it was bound to.
+  /// Removes the card access number, from the driver's copy as well.
   public static func forgetCardAccessNumber() {
     delete(account: cardAccessNumberAccount)
-    delete(account: boundSerialAccount)
     #if os(macOS)
       DriverConfiguredCredentials.withdraw()
     #endif
@@ -270,8 +253,8 @@ public enum CardCredentialStore {
   /// Removes everything this device knows about the card's secrets.
   public static func forgetAll() {
     delete(account: cardAccessNumberAccount)
-    delete(account: boundSerialAccount)
     delete(account: pin1Account)
+    CardDirectory.removeAll()
     #if os(macOS)
       DriverConfiguredCredentials.withdraw()
     #endif

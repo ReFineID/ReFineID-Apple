@@ -1,4 +1,5 @@
 import CardCore
+import CryptoKit
 import CryptoTokenKit
 import Foundation
 
@@ -59,7 +60,16 @@ extension Token {
     over channel: SmartCardChannel,
     answerToReset: Data?
   ) throws -> (identity: PublishedIdentity, accessNumber: CardAccessNumber?) {
-    guard let accessNumber = CardCredentialStore.cardAccessNumber() else {
+    // The directory's model-matched numbers first, newest first; the
+    // single unbound number last. A sealed card is anonymous before
+    // PACE, so the model is the only filter there is -- and between
+    // card models it is a complete one.
+    let modelKey = answerToReset.flatMap { AnswerToReset(bytes: $0)?.modelKey }
+    var candidates = modelKey.map(CardDirectory.candidates(forModelKey:)) ?? []
+    if let single = CardCredentialStore.cardAccessNumber() {
+      candidates.append(single)
+    }
+    guard !candidates.isEmpty else {
       // The status separates the two faults that look identical here:
       // nothing stored is setup not done, while a refusal is this
       // process being unable to read what the app wrote.
@@ -71,37 +81,63 @@ extension Token {
     }
     // The latch, before any card time is spent: a failed PACE tears the
     // field, the card re-arrives, and the system asks again with
-    // nothing changed. Failing fast here is what keeps a wrong stored
-    // number from blinking the reader for as long as the card rests on
-    // it.
-    let fingerprint = CardCredentialStore.cardAccessNumberFingerprint()
+    // nothing changed. Editing the directory changes the fingerprint,
+    // which is what earns the card a fresh attempt.
+    let fingerprint = Self.candidateFingerprint(modelKey: modelKey)
     if let fingerprint,
       RefusedUnseal.shared.isRefused(fingerprint: fingerprint, answerToReset: answerToReset)
     {
-      TokenLog.info("readIdentity: this number was just refused by this card; not retrying yet")
+      TokenLog.info("readIdentity: these numbers were just refused by this card; not retrying yet")
       throw TokenError.unsealAlreadyRefused
     }
     let started = ContinuousClock.now
-    // PACE has to start at master-file level: the card refuses MSE:Set AT
-    // with 6985 anywhere else. Best effort, as everywhere else this runs:
-    // PACE is the step whose failure should be the one reported.
-    try? CardOperations(channel: channel).selectMasterFile()
-    let keys: PaceSessionKeys
-    do {
-      keys = try PaceEstablishment(channel: channel).establish(with: accessNumber)
-    } catch {
-      if let fingerprint {
-        RefusedUnseal.shared.record(fingerprint: fingerprint, answerToReset: answerToReset)
+    var lastFailure: any Error = TokenError.primeMissing
+    for (index, accessNumber) in candidates.enumerated() {
+      // PACE has to start at master-file level: the card refuses
+      // MSE:Set AT with 6985 anywhere else. Best effort: PACE is the
+      // step whose failure should be the one reported.
+      try? CardOperations(channel: channel).selectMasterFile()
+      do {
+        let keys = try PaceEstablishment(channel: channel).establish(with: accessNumber)
+        RefusedUnseal.shared.clear()
+        let secure = SecureMessagingChannel(wrapping: channel, sessionKeys: keys)
+        TokenLog.info(
+          "readIdentity: PACE ok, candidate \(index + 1)/\(candidates.count) "
+            + "ms=\(Self.elapsed(since: started))")
+        let operations = CardOperations(channel: secure)
+        try operations.selectFineidApplication()
+        return (try Self.certificates(read: operations), accessNumber)
+      } catch let failure as PaceEstablishment.Failure {
+        TokenLog.error(
+          "readIdentity: candidate \(index + 1)/\(candidates.count) refused (\(failure))")
+        lastFailure = failure
+      } catch {
+        // A transport death is not a refusal of this number: the card
+        // stopped answering, and trying more numbers at a mute card
+        // only spends the reader. Latch and report.
+        if let fingerprint {
+          RefusedUnseal.shared.record(fingerprint: fingerprint, answerToReset: answerToReset)
+        }
+        TokenLog.error("readIdentity: transport failed (\(error)); latched against immediate retry")
+        throw error
       }
-      TokenLog.error("readIdentity: PACE failed (\(error)); latched against immediate retry")
-      throw error
     }
-    RefusedUnseal.shared.clear()
-    let secure = SecureMessagingChannel(wrapping: channel, sessionKeys: keys)
-    TokenLog.info("readIdentity: PACE ok ms=\(Self.elapsed(since: started))")
-    let operations = CardOperations(channel: secure)
-    try operations.selectFineidApplication()
-    return (try Self.certificates(read: operations), accessNumber)
+    if let fingerprint {
+      RefusedUnseal.shared.record(fingerprint: fingerprint, answerToReset: answerToReset)
+    }
+    TokenLog.error("readIdentity: every number refused; latched against immediate retry")
+    throw lastFailure
+  }
+
+  /// One digest over everything the loop would try, or nil when there
+  /// is nothing to try.
+  private static func candidateFingerprint(modelKey: String?) -> Data? {
+    let directory = modelKey.flatMap(CardDirectory.candidatesFingerprint(forModelKey:))
+    let single = CardCredentialStore.cardAccessNumberFingerprint()
+    if let directory, let single {
+      return Data(SHA256.hash(data: directory + single))
+    }
+    return directory ?? single
   }
 
   /// Reads the leaf, and the issuer if the card offers one.

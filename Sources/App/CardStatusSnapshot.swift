@@ -135,10 +135,10 @@ internal struct CardStatusSnapshot: Equatable, Sendable {
     // entry the app itself writes must be excluded by name -- counting
     // it reported "Ready" with no card present, from nothing but a
     // stored card access number.
-    let credentialEntry =
+    let credentialEntries =
       Self.tokenPrefix + DriverConfiguredCredentials.configurationInstanceID
     return TKTokenWatcher().tokenIDs.contains { identifier in
-      identifier.hasPrefix(Self.tokenPrefix) && identifier != credentialEntry
+      identifier.hasPrefix(Self.tokenPrefix) && !identifier.hasPrefix(credentialEntries)
     }
   }
 

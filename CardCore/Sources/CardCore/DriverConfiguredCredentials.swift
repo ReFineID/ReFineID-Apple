@@ -48,6 +48,12 @@ public enum DriverConfiguredCredentials {
   /// card present.
   public static let configurationInstanceID = "card-access-number"
 
+  /// Names the card-directory entry beside the single-number entry.
+  ///
+  /// Same channel, same cost: the system lists it as a token, and
+  /// card-availability checks exclude both by their shared prefix.
+  public static let directoryInstanceID = configurationInstanceID + "-directory"
+
   /// The configuration store, or nil in a process that is not the
   /// driver's hosting application.
   private static var configuration: TKTokenDriver.Configuration? {
@@ -113,5 +119,22 @@ public enum DriverConfiguredCredentials {
   /// Withdraws it, so forgetting the card forgets it here too.
   internal static func withdraw() {
     configuration?.removeTokenConfiguration(for: Self.configurationInstanceID)
+  }
+
+  /// Publishes the directory blob for the driver to read.
+  internal static func publishDirectory(_ data: Data) {
+    guard let configuration else { return }
+    configuration.addTokenConfiguration(for: Self.directoryInstanceID).configurationData = data
+  }
+
+  /// The published directory blob, in the process that cannot read the
+  /// keychain item.
+  internal static func directoryData() -> Data? {
+    configuration?.tokenConfigurations[Self.directoryInstanceID]?.configurationData
+  }
+
+  /// Withdraws the directory entry.
+  internal static func withdrawDirectory() {
+    configuration?.removeTokenConfiguration(for: Self.directoryInstanceID)
   }
 }

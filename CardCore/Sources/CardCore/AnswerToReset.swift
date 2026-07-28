@@ -23,6 +23,18 @@ import Foundation
 /// after it. Skip those groups and the historical bytes are what remain,
 /// however many `T0` promised.
 public struct AnswerToReset: Equatable, Sendable {
+  /// Hex of the historical bytes: the card model's name in every
+  /// framing.
+  ///
+  /// The same card answers differently on each interface and through
+  /// each reader, and the historical bytes are the part that identifies
+  /// it in all of them (`Documentation/card-types.md`). One card MODEL,
+  /// not one card: a production batch shares the answer, so this keys
+  /// which stored numbers are worth trying, never which card is present.
+  public var modelKey: String {
+    historicalBytes.map { String(format: "%02x", $0) }.joined()
+  }
+
   /// The historical bytes, in order.
   public let historicalBytes: [UInt8]
 

@@ -3,6 +3,18 @@
 Decisions with dates and rationale. `Documentation/release-plan.md` controls scope and
 security behavior; this file records the concrete values chosen under it.
 
+## 2026-07-28 A card directory replaces the single stored number
+
+Every known card is an entry -- serial, model key, display name, and
+its card access number -- newest first, stored as one JSON blob in the
+keychain and mirrored to a second driver-configuration entry on macOS.
+A sealed card is anonymous before PACE, so the driver filters
+candidates by the ATR historical bytes and tries them newest first;
+between different card models the filter is complete. Add proves a
+typed number against the present card before recording the pair. The
+single unbound number remains as the last candidate and the status
+row's quick entry path.
+
 ## 2026-07-28 The card access number is holder-visible
 
 The store's original rule -- never hand a stored value back for display
