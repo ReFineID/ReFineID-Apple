@@ -5,17 +5,23 @@ security behavior; this file records the concrete values chosen under it.
 
 ## 2026-07-28 Authentication observes PIN1, not unrelated credentials
 
-Normal identity minting does not read any retry counter. Authentication reads
-one side-effect-free PIN1 retry result immediately before VERIFY PIN1 and fails
-closed when it is unreadable, blocked, or below three attempts. It does not read
-PIN2 or PUK: authentication cannot consume either credential, and those APDUs
-only added field time and unrelated failure modes. The all-credential probe
-remains an explicit status and diagnostics operation.
+Normal identity minting does not read any retry counter. Reader authentication
+reads one side-effect-free PIN1 retry result immediately before VERIFY PIN1 and
+fails closed when it is unreadable, blocked, or below three attempts. It does
+not read PIN2 or PUK: authentication cannot consume either credential, and
+those APDUs only added field time and unrelated failure modes. The
+all-credential probe remains an explicit status and diagnostics operation.
+
+The system-driven iPhone NFC field reads no retry counter. Hardware traces
+showed that even one diagnostic APDU can spend the remainder of its field
+deadline after PACE. That path therefore uses only PIN1 the holder explicitly
+stored; a confirmed rejection removes the automatic identity before it can be
+offered again.
 
 Once a card accepts a freshly entered PIN1, the token extension may retain a
 zeroizing copy for that complete card serial until the extension process exits.
 This avoids repeated entry while retaining a fresh retry-floor probe and actual
-VERIFY for every signature. There is no timer and no 5/5/5 prerequisite.
+VERIFY for every reader signature. There is no timer and no 5/5/5 prerequisite.
 
 The first confirmed PIN1 rejection clears that process memory. When the token is
 an automatically configured iOS identity, it also deletes stored PIN1, every

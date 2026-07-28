@@ -80,12 +80,17 @@ The Swift implementation follows the Rust reference implementation.
 
 ### Retry floor
 
-Immediately before every CTK PIN-bearing command, obtain the retry state of the
-credential that command will spend, without sending a credential. Perform the
-check and credential command in one exclusive card transaction where the
-platform permits it. Authentication reads PIN1 only. It never reads PIN2 or PUK;
-those counters belong to qualified-signature and recovery operations and remain
-available to the explicit status display.
+On a reader field with enough time, immediately before a CTK PIN-bearing
+command, obtain the retry state of the credential that command will spend
+without sending a credential. Perform the check and credential command in one
+exclusive card transaction. Authentication reads PIN1 only. It never reads PIN2
+or PUK; those counters belong to qualified-signature and recovery operations
+and remain available to the explicit status display.
+
+The system-driven iPhone NFC field is the measured exception. Its deadline does
+not leave room for a diagnostic APDU before VERIFY and the signature, so it uses
+only the PIN1 the holder explicitly stored. A confirmed rejection immediately
+revokes that automatic identity. It still never probes PIN2 or PUK.
 
 - Three or more attempts remaining: the CTK operation may proceed.
 - One or two attempts remaining: refuse before prompting for or sending the PIN.
@@ -102,9 +107,9 @@ Read-only status and certificate inspection remain available when safe.
 
 A PIN1 may enter process memory only after the card has accepted it. The value is
 bound to the complete card serial, stored in zeroizing memory, and may live for
-the token-extension process lifetime. Every signature still obtains fresh PIN1
-retry state and sends VERIFY PIN1; the memory removes repeated user entry, not
-card verification. PIN2 and PUK never enter this memory.
+the token-extension process lifetime. Every reader signature still obtains
+fresh PIN1 retry state and sends VERIFY PIN1; the memory removes repeated user
+entry, not card verification. PIN2 and PUK never enter this memory.
 
 The first confirmed PIN1 rejection clears that card's accepted PIN memory. For
 an automatically configured iOS identity it also removes stored PIN1, that

@@ -22,9 +22,9 @@ What the driver contains (the whole protocol surface of v1):
 
 - card recognition and named application/file selection (SELECT AID);
 - bounded certificate and chain reads with response continuation;
-- a side-effect-free PIN1 retry-state read before authentication;
-- the PIN1 retry floor (three or more attempts proceeds, one or two refuses
-  before any prompt, unreadable state fails closed);
+- a side-effect-free PIN1 retry-state read before reader authentication;
+- the reader PIN1 retry floor (three or more attempts proceeds, one or two
+  refuses before any prompt, unreadable state fails closed);
 - PIN1 `VERIFY` with at-most-once transport and rejected-PIN memory;
 - `MSE:SET` + `PSO:CDS` signing and ECDSA/RSA result normalization;
 - token publication through the CTK extension.
@@ -42,7 +42,10 @@ The Rust core remains the reference oracle.
 - Safety invariants: the PIN1 retry floor (proceed only at three or more
   attempts), process-lifetime card-bound memory only for a PIN1 the card
   accepted, at-most-once credential transport, and wrong-PIN rejection
-  memory. Normal minting and authentication never probe PIN2 or PUK.
+  memory. Normal minting and authentication never probe PIN2 or PUK. The
+  system-driven NFC field also omits the PIN1 preflight because its measured
+  deadline cannot carry that extra APDU; it uses the explicitly stored PIN1
+  and revokes the identity on a confirmed rejection.
 
 ## 6. Future
 
