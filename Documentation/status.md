@@ -35,8 +35,71 @@ the far end. PIN1 is asked for once and reused from the in-memory cache
 for the following signatures (`reusing cached PIN1 - no prompt`), which
 is what makes several sites in a row bearable.
 
-Setup on macOS is nothing more than inserting the card: the extension
-reads the leaf and issuer over the reader and publishes them.
+Re-proven on 2026-07-28 against the current build, card on the reader's
+antenna, whole exchange in 787 ms:
+
+    supports: op=2 algo=msgX962SHA256 profile=ecdsaP384 -> YES
+    sign: entry input=11782B algo=msgX962SHA256
+    sign: PACE ok ms=396.2
+    sign: PIN1 verified; MSE:SET + PSO:HASH + PSO:CDS
+    sign: local verify OK, 102 DER bytes
+    sign: exit ok out=102B ms=787.5
+
+The refused attempt five seconds before it is the flow working, not
+failing: a first `sign` with no PIN in hand returns
+`authenticationRequired`, the system raises its PIN sheet, and the
+repeat succeeds.
+
+Setup on macOS is a card access number per card, entered once in the
+Card menu; a card in the contact slot needs none at all.
+
+## Every card carries its own access number
+
+A contactless card is sealed until PACE, and PACE is keyed by the six
+digits printed on that particular card -- so one stored number served
+one card, and a desk with two cards pushed the wrong number at one of
+them on every insertion. The Card menu now keeps a directory: each
+known card with its serial, model and number, added by proving the
+typed number against the card that is present, deleted per row.
+
+A sealed card is anonymous before PACE by design, so the driver cannot
+ask which card it is holding. It filters instead: the answer to reset
+names the card's model, and only the entries matching that model are
+tried, newest first. Between two different card models that filter is
+complete -- a generation `04` Gemalto and a generation `05` Thales can
+never be offered each other's number -- and within one model it costs
+at worst one refused handshake per stored number.
+
+A refusal then latches for thirty seconds against the identical retry.
+Without it a wrong number is a storm rather than an error: a failed
+PACE tears the field, the card re-arrives, the system offers it again,
+and the reader blinks and serves nobody until the card is lifted.
+Editing the directory clears the latch, so correcting a number is
+tried immediately.
+
+## What a timeout on macOS is allowed to be
+
+The per-APDU budget was two seconds, and it was right for the phone and
+wrong everywhere else: it is derived from `ctkd` ending the system NFC
+field about two seconds after the mint, and macOS has no such field --
+there is no NFC smart-card slot there at all. On a reader that number
+was a guillotine, cutting live PACE handshakes with `responseTimedOut`,
+which tore the field and fed the retry storm above.
+
+The card declares its own timing and the layer below already enforces
+it: FWI in the ATS gives the frame waiting time on the contactless
+interface, extensible by the card asking for more with S(WTX), and BWT
+plays that role for T=1 on contact. A card that overruns is reported to
+us as an error rather than as silence. So a per-APDU timer of ours is
+either shorter than what the card may legally take -- and kills correct
+work -- or longer, and never fires.
+
+What genuinely needs a bound here is different: waiting for another
+process to release the card, which no protocol timer covers, and the
+whole signing operation, because the deadline that decides a macOS
+login is the consumer's patience rather than the card's speed. Neither
+is yet derived from a measured number; the current values are
+inherited.
 
 ## How the driver knows which interface it is on
 
