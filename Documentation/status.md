@@ -1,7 +1,7 @@
-# Status, 26.7.28
+# Status, 26.7.29
 
 What works, what does not, and what each was measured with. Written from
-device and Mac runs through 2026-07-28, not from intent.
+device and Mac runs through 2026-07-29, not from intent.
 
 ## macOS: card login works, on both interfaces
 
@@ -148,7 +148,7 @@ hands the card over without one, and the extension there could only
 claim a card in order to refuse it, so it is no longer embedded in the
 Mac app.
 
-## iOS: setup works; system-Safari signing remains timing-sensitive
+## iOS: setup and system-Safari signing work
 
 Priming works end to end on the phone, over the phone's own NFC antenna,
 in pure Swift:
@@ -159,8 +159,24 @@ in pure Swift:
 
 That exercises the ported PACE stack, secure messaging and the
 certificate read against a real card. End-to-end system-Safari login has
-worked in earlier device runs, but it is not yet reliable enough to call
-the current pure-Swift build complete.
+now been proven with `suomi.fi`, `oma.posti.fi`,
+`dvv.fineid.fi/en/authentication`, `card.refineid.fi` and
+`admin.iki.fi`.
+
+The first visit to a site can still need a repeat when iOS asks the holder
+to accept the client certificate. In a measured `admin.iki.fi` attempt,
+PACE was ready in 840 ms, but Apple ended that field 1.266 s later while
+the certificate-consent UI was still open. Safari asked for the signature
+3.141 s after the field ended. The extension correctly returned
+`tokenNotFound` in 3.2 ms because that token instance no longer had a
+card. The next attempt minted a fresh token and completed PACE, PIN1
+verification and ECDSA signing in 1.107 s.
+
+That first failure is not a bad certificate or signature. Certificate
+selection belongs to iOS, cannot be accepted by the token extension, and
+can outlive the field that caused iOS to discover the identity. Once the
+choice is remembered, Safari reaches signing while the fresh field is
+alive.
 
 The clean build-16 trace on 2026-07-28 removed one important ambiguity.
 `ctkd` gave the system-owned NFC operation 1.833 seconds from field start

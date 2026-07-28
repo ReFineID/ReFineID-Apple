@@ -3,6 +3,41 @@
 Decisions with dates and rationale. `Documentation/release-plan.md` controls scope and
 security behavior; this file records the concrete values chosen under it.
 
+## 2026-07-29 An ended NFC field is an absent token
+
+The iOS token session maps only `CardOperationError.sessionUnavailable`
+to CryptoTokenKit `tokenNotFound` (`-7`). That error means the token
+instance minted for the previous system NFC field no longer has a card
+behind it, so a retry can open a replacement field and mint a fresh
+instance. PACE refusal, APDU timeout, secure-messaging failure and card
+status errors remain communication failures; none may request a retry
+under the fiction that the card was merely absent.
+
+This was measured on an `admin.iki.fi` client-certificate login. The
+token completed PACE at `21:55:55.359`, Apple ended its field at
+`21:55:56.625`, and Safari asked for the signature only at
+`21:55:59.766`, after the holder had answered the system certificate
+consent. The extension returned `-7` in 3.2 ms. A fresh token on the next
+attempt completed PACE, PIN1 verification and ECDSA signing in 1.107 s.
+
+The certificate-consent UI is outside the extension. It can therefore
+consume the first field before the signature request exists. Once Safari
+remembers that choice, a repeat reaches the signature while its fresh
+field is alive. The extension cannot preselect or accept the certificate.
+
+## 2026-07-29 A mismatched card family is refused before PACE
+
+An iOS prime is looked up by the SHA-256 fingerprint of the card's ATR.
+When a registered generation-05 identity was offered a generation-04
+card, the extension recorded a prime miss and returned `tokenNotFound`
+without one APDU. It did not start PACE and did not send the stored card
+access number or PIN1 to the other card.
+
+This is a card-family guard, not proof of a unique physical card. Cards
+of the same model can share an ATR, and the unique printed serial is not
+available until after PACE. Code and user-facing claims must preserve
+that distinction.
+
 ## 2026-07-29 Resolve known issuing CAs before reading the card
 
 Identity creation reads the authentication leaf and card serial once. It

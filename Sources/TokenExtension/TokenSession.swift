@@ -266,6 +266,14 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
       // so the next system attempt starts with a genuinely fresh field.
       token.heldSession.release()
       throw TKError(.communicationError)
+    } catch CardOperationError.sessionUnavailable {
+      // The system ended the mint field before Safari asked us to sign.
+      // `tokenNotFound` tells CryptoTokenKit that this token instance no
+      // longer has a card behind it, so a retry may open a replacement
+      // NFC field and mint a fresh instance. Keep every real
+      // PACE, APDU and card failure on the communication-error path below.
+      TokenLog.trace("sign: retained field unavailable - requesting a fresh token")
+      throw TKError(.tokenNotFound)
     } catch let error as TokenError {
       throw error.asTKError
     } catch let error as TKError {
