@@ -5,7 +5,7 @@ import SwiftUI
 /// registers the card for Safari.
 ///
 /// This is the screen that matters, so it is the one the app opens on.
-/// Technical state lives behind the Diagnostics row.
+/// Development builds keep technical state behind the Diagnostics row.
 ///
 /// The two credentials and the action they enable form one operation.
 /// Individual replacement controls would imply that they are independent;
@@ -52,7 +52,9 @@ internal struct CardCredentialsView: View {
             .foregroundStyle(.red)
         }
       }
-      diagnosticsSection
+      #if DEBUG
+        diagnosticsSection
+      #endif
       if model.hasForgettableState {
         forgetSection
       }
@@ -196,16 +198,18 @@ internal struct CardCredentialsView: View {
     .accessibilityIdentifier("pin1Visibility")
   }
 
-  private var diagnosticsSection: some View {
-    Section {
-      NavigationLink {
-        DiagnosticsView()
-      } label: {
-        Label("Diagnostics", systemImage: "stethoscope")
+  #if DEBUG
+    private var diagnosticsSection: some View {
+      Section {
+        NavigationLink {
+          DiagnosticsView()
+        } label: {
+          Label("Diagnostics", systemImage: "stethoscope")
+        }
+        .accessibilityIdentifier("diagnosticsButton")
       }
-      .accessibilityIdentifier("diagnosticsButton")
     }
-  }
+  #endif
 
   private var forgetSection: some View {
     Section {

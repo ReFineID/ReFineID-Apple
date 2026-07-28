@@ -352,11 +352,13 @@ Every fix on 2026-07-27 came from an instrument rather than from
 reasoning about the code, including the two that made priming work at
 all. They are worth keeping.
 
-- **In-app diagnostics** (Status -> Diagnostics): registered tokens,
-  watcher tokens, driver configurations, prime presence, stored-credential
-  policy, platform transport availability, and the extension trace, with
-  share and copy. It deliberately does not enumerate `com.apple.token`
-  identities:
+- **Development-only in-app diagnostics** (Status -> Diagnostics): Debug
+  and optimized Profile builds show registered tokens, watcher tokens,
+  driver configurations, prime presence, stored-credential policy,
+  platform transport availability, and the extension trace, with share
+  and copy. TestFlight and Release exclude the diagnostics source files
+  from the app target. The report deliberately does not enumerate
+  `com.apple.token` identities:
   that supposedly read-only query was measured presenting the NFC reader
   sheet and changing the failure being diagnosed.
 - **Extension trace**: a rolling keychain buffer both extensions write

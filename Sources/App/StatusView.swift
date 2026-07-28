@@ -17,7 +17,10 @@ internal struct StatusView: View {
 
   @State private var model = CardStatusModel()
   @State private var credentials = CardCredentialsModel()
-  @State private var showsDiagnostics = false
+
+  #if DEBUG
+    @State private var showsDiagnostics = false
+  #endif
 
   /// Whether Safari cannot currently offer a readable card's identity.
   ///
@@ -50,7 +53,9 @@ internal struct StatusView: View {
     private var phoneBody: some View {
       Form {
         statusSections
-        supportSection
+        #if DEBUG
+          supportSection
+        #endif
       }
       .navigationTitle("Card status")
       .navigationBarTitleDisplayMode(.inline)
@@ -77,7 +82,9 @@ internal struct StatusView: View {
           .foregroundStyle(.secondary)
         Form {
           statusSections
-          supportSection
+          #if DEBUG
+            supportSection
+          #endif
         }
         .formStyle(.grouped)
         .fixedSize(horizontal: false, vertical: true)
@@ -89,24 +96,28 @@ internal struct StatusView: View {
       .padding(Self.desktopPadding)
       .frame(minWidth: Self.desktopMinimumWidth, alignment: .leading)
       .task { await load() }
-      .sheet(isPresented: $showsDiagnostics) {
-        NavigationStack {
-          DiagnosticsView()
+      #if DEBUG
+        .sheet(isPresented: $showsDiagnostics) {
+          NavigationStack {
+            DiagnosticsView()
             .toolbar {
               ToolbarItem(placement: .cancellationAction) {
                 Button("Done") { showsDiagnostics = false }
               }
             }
+          }
         }
-      }
+      #endif
     }
   #endif
 
-  private var supportSection: some View {
-    StatusSupportSection(
-      showsDiagnostics: $showsDiagnostics
-    )
-  }
+  #if DEBUG
+    private var supportSection: some View {
+      StatusSupportSection(
+        showsDiagnostics: $showsDiagnostics
+      )
+    }
+  #endif
 
   /// Read-only state.
   ///

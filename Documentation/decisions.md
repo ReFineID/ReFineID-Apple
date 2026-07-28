@@ -3,6 +3,20 @@
 Decisions with dates and rationale. `Documentation/release-plan.md` controls scope and
 security behavior; this file records the concrete values chosen under it.
 
+## 2026-07-29 Engineering diagnostics are not product functionality
+
+The interactive diagnostics report, shared-trace controls, and support
+disclosure row are present in Debug and Profile builds only. TestFlight and
+Release compile the entry points out and exclude `DiagnosticsView`,
+`DiagnosticsSnapshot`, `DiagnosticsClipboard`, and `StatusSupportSection`
+from the application target. The ordinary card status and explicit
+"Forget this card and identity" recovery action remain product features.
+
+This is a build boundary rather than a hidden switch. An App Store binary
+must not contain dormant engineering screens, while the optimized Profile
+configuration used for live card development still needs the same
+instruments that made the NFC path measurable.
+
 ## 2026-07-29 An ended NFC field is an absent token
 
 The iOS token session maps only `CardOperationError.sessionUnavailable`
