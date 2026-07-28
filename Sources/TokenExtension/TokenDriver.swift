@@ -30,12 +30,6 @@ internal final class TokenDriver: TKSmartCardTokenDriver, TKSmartCardTokenDriver
   /// classify without touching the card.
   private static let nearFieldSlotMarker = "NFC"
 
-  /// How many times the mint looks for a prime before giving up.
-  private static let primeWaitAttempts = 20
-
-  /// How long the mint waits between looks for a prime.
-  private static let primeWaitInterval: TimeInterval = 0.25
-
   override internal init() {
     super.init()
     delegate = self
@@ -44,36 +38,6 @@ internal final class TokenDriver: TKSmartCardTokenDriver, TKSmartCardTokenDriver
   /// How long something started at `instant` has taken, in milliseconds.
   private static func elapsed(since instant: ContinuousClock.Instant) -> String {
     TraceTiming.milliseconds(instant.duration(to: ContinuousClock.now))
-  }
-
-  /// Reads the prime, allowing briefly for one being written right now.
-  ///
-  /// The very first hold of a new card is a race the mint would
-  /// otherwise always lose. `ctkd` asks for a token the moment the card
-  /// enters the slot, while the app is still running PACE and reading
-  /// the certificate that becomes the prime -- so the first lookup finds
-  /// nothing, and on a plain miss nothing ever asks again, leaving no
-  /// token to register and setup reporting that it "did not take".
-  ///
-  /// Waiting a little converts that race into a hit. The wait is short
-  /// and bounded because a card that was genuinely never primed must
-  /// still fail rather than hold the field indefinitely. The five-second
-  /// ceiling comes from a clean iPhone measurement: PACE plus all three
-  /// reads needed by the prime reached the store about 3.6 seconds after
-  /// the mint began, just after the former three-second ceiling expired.
-  /// An already-primed card still hits on the first read and waits not at
-  /// all.
-  private static func awaitPrime(instanceID: CardInstanceIdentifier) -> PrimedIdentity? {
-    for attempt in 1...primeWaitAttempts {
-      if let primed = PrimeStore.read(instanceID: instanceID) {
-        if attempt > 1 {
-          TokenLog.trace("mintFromPrime: prime arrived on attempt \(attempt)")
-        }
-        return primed
-      }
-      Thread.sleep(forTimeInterval: primeWaitInterval)
-    }
-    return nil
   }
 
   internal func tokenDriver(
@@ -87,12 +51,9 @@ internal final class TokenDriver: TKSmartCardTokenDriver, TKSmartCardTokenDriver
     let started = ContinuousClock.now
     TokenLog.info("createToken called: aid=\(aid?.count ?? -1) B via \(transport.rawValue)")
     do {
-      // The holder's choice, read from the store the app writes it to. An
-      // absent preference permits everything, so a Mac that has never
-      // seen the settings screen keeps publishing from its reader.
-      guard CardTransportStore.load().permits(transport) else {
-        throw TokenError.transportDisabled
-      }
+      // Transport selection is automatic. CryptoTokenKit calls this
+      // driver only for a slot that exists, so an attached reader or the
+      // phone's active NFC slot is, by definition, available for use.
       let token: Token =
         switch transport {
         case .nearField:
@@ -118,15 +79,16 @@ internal final class TokenDriver: TKSmartCardTokenDriver, TKSmartCardTokenDriver
   }
 
   /// Materializes the contactless token from the prime store without
-  /// touching the card, and leaves it holding a live card session.
+  /// touching the card.
   ///
   /// Both halves were bought with measured failures. The mint does NO
   /// card I/O: the system owns this slot, and a read here disrupts the
   /// session it manages - the slot goes missing about a second later and
-  /// the identity never reaches Safari. The session taken at the end is
-  /// the field the signature will run in: the minting slot ends about two
-  /// seconds from here, and a `beginSession` issued when the signature
-  /// arrives fails with `TKError -7`.
+  /// the identity never reaches Safari. The one-time registration field
+  /// publishes metadata and deliberately does not take a card session.
+  /// A later signing field takes the session at the end: the minting slot
+  /// ends about two seconds from there, and a `beginSession` issued when
+  /// the signature arrives fails with `TKError -7`.
   ///
   /// The card is live in the slot for all of this, which is the app's
   /// side of the contract: `registerSmartCard` accepts only a token
@@ -140,21 +102,32 @@ internal final class TokenDriver: TKSmartCardTokenDriver, TKSmartCardTokenDriver
     // Each of the three is a different fault wearing the same error, and
     // the difference is the whole diagnosis: no ATR means the slot never
     // identified a card, no identifier means the ATR was empty, and no
-    // prime means this card was never primed on this device (or was
-    // primed under an older contents version).
+    // prime means this card family has no active prime on this device.
     guard let answerToReset = smartCard.slot.atr?.bytes else {
       TokenLog.error("mintFromPrime: slot reports no answer to reset")
       throw TokenError.primeMissing
     }
-    guard let instanceID = CardInstanceIdentifier(answerToReset: answerToReset) else {
+    guard let lookupID = PrimeLookupIdentifier(answerToReset: answerToReset) else {
       TokenLog.error("mintFromPrime: atr=\(answerToReset.count)B names no card")
       throw TokenError.primeMissing
     }
-    guard let primed = Self.awaitPrime(instanceID: instanceID) else {
+    guard
+      let match = PrimeStore.readContactless(
+        lookupID: lookupID,
+        answerToReset: answerToReset)
+    else {
       TokenLog.error(
-        "mintFromPrime: prime MISS for \(instanceID.value), "
+        "mintFromPrime: prime MISS for \(lookupID.value), "
           + "\(PrimeStore.storedCount()) prime(s) stored"
       )
+      throw TokenError.primeMissing
+    }
+    guard
+      let serialText = match.identity.tokenSerial,
+      let serial = TokenSerial(value: serialText),
+      let instanceID = CardInstanceIdentifier(tokenSerial: serial)
+    else {
+      TokenLog.error("mintFromPrime: prime has no supported printed card serial")
       throw TokenError.primeMissing
     }
     // Recorded rather than written: this is inside the two seconds the
@@ -162,14 +135,17 @@ internal final class TokenDriver: TKSmartCardTokenDriver, TKSmartCardTokenDriver
     // `createToken` outcome line follows it.
     TokenLog.trace(
       "mintFromPrime: prime HIT for \(instanceID.value) "
-        + "leaf=\(primed.certDER.count)B issuer=\(primed.issuerDER?.count ?? -1)B"
+        + "leaf=\(match.identity.certDER.count)B "
+        + "issuer=\(match.identity.issuerDER?.count ?? -1)B "
+        + "registration=\(match.isRegistrationField)"
     )
     return try Token(
       primedSmartCard: smartCard,
       aid: aid,
       tokenDriver: tokenDriver,
       instanceID: instanceID,
-      primed: primed
+      primed: match.identity,
+      shouldHoldSession: !match.isRegistrationField
     )
   }
 }

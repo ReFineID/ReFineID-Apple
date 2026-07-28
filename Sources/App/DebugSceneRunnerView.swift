@@ -83,7 +83,8 @@
       #if canImport(CoreNFC) && os(iOS)
         let contents = CardCredentialStore.contents()
         DebugConsole.emit("card access number stored: \(contents.hasCardAccessNumber)")
-        DebugConsole.emit("near field permitted: \(CardTransportStore.load().permits(.nearField))")
+        DebugConsole.emit(
+          "near field available: \(SupportedCardTransports.offersNearField)")
         let outcome = await CardPriming.prime(
           progress: { line in
             DebugConsole.emit("progress: " + line)

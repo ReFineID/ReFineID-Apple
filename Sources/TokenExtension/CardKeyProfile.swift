@@ -1,3 +1,4 @@
+import CardCore
 import Foundation
 import Security
 
@@ -56,6 +57,21 @@ internal enum CardKeyProfile: Equatable {
       Self.rsa3072SignatureBytes
     case .ecdsaP384:
       Self.ecdsaP384SignatureBytes
+    }
+  }
+
+  /// Le sent with PSO:CDS.
+  ///
+  /// P-384 has a 96-byte raw result and uses that exact value. RSA-3072
+  /// is 384 bytes, beyond short Le, so it requests the short maximum and
+  /// relies on CTK's structured transport to keep the continuation inside
+  /// one operation.
+  internal var expectedSignatureLength: ExpectedResponseLength? {
+    switch self {
+    case .ecdsaP384:
+      ExpectedResponseLength(count: Self.ecdsaP384SignatureBytes)
+    case .rsa3072:
+      nil
     }
   }
 

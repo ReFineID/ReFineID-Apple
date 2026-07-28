@@ -1,112 +1,59 @@
 #if os(iOS)
 
-  import CardCore
+  @preconcurrency import AVFoundation
   import SwiftUI
-  import VisionKit
 
-  /// Reads the six printed digits off the card with the camera.
+  /// Reads the structured CAN QR code printed on the card.
   ///
-  /// Typing six digits off a card held in the other hand is the kind of
-  /// small friction that makes setup feel like work, so the camera does
-  /// it instead. Nothing is kept here: the scanner hands back digits and
-  /// the caller decides what to do with them.
+  /// The scanner owns its AVFoundation session. That matters because the
+  /// torch and the video stream must be configured by the same owner:
+  /// changing a camera underneath VisionKit's scanner freezes its preview.
   internal struct CardAccessNumberScanner: UIViewControllerRepresentable {
-    /// Watches recognized text for something shaped like an access
-    /// number.
-    internal final class Coordinator: NSObject, DataScannerViewControllerDelegate {
-      private let onRecognize: (String) -> Void
-      private var hasRecognized = false
-
-      internal init(onRecognize: @escaping (String) -> Void) {
-        self.onRecognize = onRecognize
-      }
-
-      /// The first exactly-six-digit run in a line of recognized text.
-      ///
-      /// Bounded on both sides, so a longer number such as a document
-      /// number cannot be mistaken for an access number.
-      private static func sixDigitRun(in transcript: String) -> String? {
-        var run = ""
-        var candidates: [String] = []
-        for character in transcript + " " {
-          if character.isNumber {
-            run.append(character)
-            continue
-          }
-          if run.count == CardAccessNumber.digitCount {
-            candidates.append(run)
-          }
-          run = ""
-        }
-        return candidates.first
-      }
-
-      internal func dataScanner(
-        _: DataScannerViewController,
-        didAdd addedItems: [RecognizedItem],
-        allItems _: [RecognizedItem]
-      ) {
-        report(addedItems)
-      }
-
-      internal func dataScanner(
-        _: DataScannerViewController,
-        didUpdate updatedItems: [RecognizedItem],
-        allItems _: [RecognizedItem]
-      ) {
-        report(updatedItems)
-      }
-
-      /// Hands back the first six-digit run seen, once.
-      ///
-      /// The camera keeps recognizing while it is open, so without the
-      /// latch the field would be rewritten under the holder's fingers.
-      private func report(_ items: [RecognizedItem]) {
-        guard !hasRecognized else { return }
-        for item in items {
-          guard case .text(let text) = item,
-            let digits = Self.sixDigitRun(in: text.transcript)
-          else {
-            continue
-          }
-          hasRecognized = true
-          onRecognize(digits)
-          return
-        }
-      }
-    }
-
-    /// Whether this device can scan at all.
-    ///
-    /// Older hardware and the simulator cannot, and a scan button that
-    /// does nothing is worse than no button, so the caller hides it.
+    /// Whether this device has a usable back camera.
     internal static var isAvailable: Bool {
-      DataScannerViewController.isSupported && DataScannerViewController.isAvailable
+      guard CardAccessNumberCapturePipeline.preferredBackCamera != nil else {
+        return false
+      }
+      switch AVCaptureDevice.authorizationStatus(for: .video) {
+      case .authorized, .notDetermined:
+        return true
+      case .denied, .restricted:
+        return false
+      @unknown default:
+        return false
+      }
     }
 
-    /// Called with the first six-digit run the camera recognizes.
-    internal let onRecognize: (String) -> Void
-
-    internal func makeCoordinator() -> Coordinator {
-      Coordinator(onRecognize: onRecognize)
+    /// Whether the back camera can illuminate the card.
+    internal static var hasTorch: Bool {
+      CardAccessNumberCapturePipeline.preferredBackCamera?.hasTorch == true
     }
 
-    internal func makeUIViewController(context: Context) -> DataScannerViewController {
-      let scanner = DataScannerViewController(
-        recognizedDataTypes: [.text()],
-        qualityLevel: .accurate,
-        recognizesMultipleItems: false,
-        isHighFrameRateTrackingEnabled: false,
-        isHighlightingEnabled: true)
-      scanner.delegate = context.coordinator
-      try? scanner.startScanning()
-      return scanner
+    /// SwiftUI's desired light state.
+    @Binding internal var torchEnabled: Bool
+
+    /// Called with the CAN parsed from a supported QR payload.
+    internal let onRecognize: @MainActor @Sendable (String) -> Void
+
+    /// Ends all camera work when SwiftUI removes the controller.
+    internal static func dismantleUIViewController(
+      _ scanner: CardAccessNumberScannerViewController,
+      coordinator _: Void
+    ) {
+      scanner.stop()
+    }
+
+    internal func makeUIViewController(
+      context _: Context
+    ) -> CardAccessNumberScannerViewController {
+      CardAccessNumberScannerViewController(onRecognize: onRecognize)
     }
 
     internal func updateUIViewController(
-      _: DataScannerViewController, context _: Context
+      _ scanner: CardAccessNumberScannerViewController,
+      context _: Context
     ) {
-      // The scanner has no state SwiftUI drives; it reports and closes.
+      scanner.setTorchEnabled(torchEnabled)
     }
   }
 

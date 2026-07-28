@@ -14,7 +14,9 @@ client-certificate identity.
 macOS has no NFC smart-card slot at all: `TKSmartCardSlotManager`'s NFC
 surface is `API_UNAVAILABLE(macos)`. Every NFC path in this repository is
 therefore behind `#if canImport(CoreNFC)` plus an iOS 26 availability
-check, and the transport preference hides what the platform cannot do.
+check. The app and extension derive the usable transport from what the
+platform actually presents; there is no separate preference to become
+stale.
 
 ## Why the contactless interface needs a CAN
 
@@ -88,14 +90,13 @@ the key requires a live card. Safari enumerates non-interactively, gets
 nothing, and never offers the certificate. In-app flows are unaffected --
 they hold the card in the field for the whole handshake.
 
-## Transport preference
+## Automatic transport selection
 
-Users can disable either transport. The preference exists because the two
-transports have different costs: a contact reader is faster and needs no
-CAN, while NFC needs no hardware but requires holding the card still for
-several seconds. Disabling NFC also stops the app from ever prompting for
-a CAN.
+The physical environment is the preference. A connected reader is used
+when the platform offers its slot; otherwise iOS can open the built-in
+NFC slot. The app does not expose switches for transports that are either
+present or absent independently of those switches.
 
-The preference must be visible to the token extension as well as the app,
-since they are separate processes, and it must be inert on macOS, where
-only the contact transport exists.
+The token extension makes the same decision from the slot that caused
+CryptoTokenKit to invoke it. macOS offers only contact slots; iOS can
+offer contact or built-in NFC.

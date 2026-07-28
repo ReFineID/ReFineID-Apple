@@ -116,6 +116,28 @@ public enum DriverConfiguredCredentials {
     return stale.count
   }
 
+  /// Drops only card-identity configurations, preserving stored setup.
+  ///
+  /// The driver class is ReFineID's private namespace, so every entry
+  /// except the two named setup channels is an identity published by
+  /// this app or an earlier version of it. This deliberately catches
+  /// legacy ATR-hash instance names as well as current
+  /// `refineid-card-*` names without touching another driver's tokens.
+  public static func dropIdentityTokenConfigurations() -> Int {
+    guard let configuration else { return 0 }
+    let preserved = [
+      Self.configurationInstanceID,
+      Self.directoryInstanceID,
+    ]
+    let identities = configuration.tokenConfigurations.keys.filter { instance in
+      !preserved.contains(instance)
+    }
+    for instance in identities {
+      configuration.removeTokenConfiguration(for: instance)
+    }
+    return identities.count
+  }
+
   /// Withdraws it, so forgetting the card forgets it here too.
   internal static func withdraw() {
     configuration?.removeTokenConfiguration(for: Self.configurationInstanceID)

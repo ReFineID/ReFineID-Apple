@@ -8,6 +8,9 @@ public enum SigningScheme: Equatable, Sendable {
   /// RSASSA-PKCS1-v1_5 (low nibble 2).
   case rsaPkcs1
 
+  /// RSASSA-PSS (low nibble 5).
+  case rsaPss
+
   /// The low nibble contributed to the algorithm-reference byte.
   internal var lowNibble: UInt8 {
     switch self {
@@ -15,6 +18,8 @@ public enum SigningScheme: Equatable, Sendable {
       FineidValues.schemeNibbleEcdsa
     case .rsaPkcs1:
       FineidValues.schemeNibbleRsaPkcs1
+    case .rsaPss:
+      FineidValues.schemeNibbleRsaPss
     }
   }
 }

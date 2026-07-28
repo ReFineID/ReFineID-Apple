@@ -47,18 +47,12 @@ The Rust core remains the reference oracle.
 
 ## 6. Future
 
-- **NFC-for-Safari: an open frontier, not a wall.** iOS 26 ships the full
-   path (`createNFCSlot`, `TKSmartCardTokenRegistrationManager`,
-   system-summoned NFC on demand). As of 2026-07-25 (iPhone 15 Pro Max, iOS
-   26.5.2) the earlier "circular wall" reading is disproven in practice:
-   `createNFCSlot` succeeds with the app's existing NFC entitlements, and a
-   registered NFC-minted token (`...nfc1`) exists on the device -- so ctkd
-   DOES mint a third-party token from the app-created NFC slot, and the card
-   is readable over the system NFC slot (PACE handled by the OS). The earlier
-   `registerSmartCard` `BadParameter` most likely came from registering a
-   contact-reader token instead of the NFC-slot-discovered one. What is not
-   solved *yet* is native mTLS *completing* through WKWebView/Safari for
-   these servers (an optional-client-auth server does not make WKWebView
-   present a client cert yet, and the challenge is not delivered to the
-   app) -- a research frontier to chase (simplest target, card.refineid.fi,
-   first), not a platform impossibility.
+- **NFC-for-Safari is proven on iPhone.** iOS 26 provides the full path:
+  `createNFCSlot`, `TKSmartCardTokenRegistrationManager`, and
+  system-summoned NFC on demand. The app first reads and stages the public
+  identity metadata in a Core NFC field, then opens a CryptoTokenKit field
+  that mints and registers `refineid-card-<printed-card-serial>`. Later
+  Safari client-certificate requests summon a fresh CryptoTokenKit NFC
+  field; the extension retains that card session, establishes PACE, checks
+  PIN1, and signs. This two-field setup avoids the app and extension racing
+  separate PACE exchanges against one card.

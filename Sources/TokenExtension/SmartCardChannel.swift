@@ -103,6 +103,9 @@ internal struct SmartCardChannel: CardChannel {
   /// The reader budget: room for the card's slowest legal answer.
   private static let readerResponseSeconds: Int = 10
 
+  /// Shift from a status word to its high byte.
+  private static let statusWordByteShift: Int = 8
+
   /// A reader hands back exactly the bytes the card produced, so a
   /// chunked read may ask for the plain chunk.
   internal var readChunkLength: ReadChunkLength {
@@ -135,12 +138,14 @@ internal struct SmartCardChannel: CardChannel {
   /// (``CardExchangeTrace``).
   internal func transmit(_ payload: Data) throws -> Data {
     let reply = Box<Data?>(nil)
+    let transportError = Box<Error?>(nil)
     let semaphore = DispatchSemaphore(value: 0)
     let started = ContinuousClock.now
-    smartCard.transmit(payload) { response, _ in
-      reply.value = response
-      semaphore.signal()
-    }
+    startTransmit(
+      payload,
+      reply: reply,
+      transportError: transportError,
+      semaphore: semaphore)
     guard semaphore.wait(timeout: .now() + responseBudget) == .success else {
       let elapsed = started.duration(to: ContinuousClock.now)
       TokenLog.trace(
@@ -154,9 +159,53 @@ internal struct SmartCardChannel: CardChannel {
       CardExchangeTrace.line(request: payload, response: reply.value, elapsed: elapsed)
     )
     guard let response = reply.value else {
+      if let callbackError = transportError.value {
+        throw callbackError
+      }
       throw CardOperationError.malformedResponse
     }
     return response
+  }
+
+  /// Starts either the structured signature send or the byte-exact send.
+  private func startTransmit(
+    _ payload: Data,
+    reply: Box<Data?>,
+    transportError: Box<Error?>,
+    semaphore: DispatchSemaphore
+  ) {
+    if let command = CommandApdu.structuredProtectedSignature(payload) {
+      // RSA-3072 returns more than one short T=0 response. Keeping this
+      // continuation inside CTK's structured operation prevents the
+      // built-in NFC field from ending between a raw 61xx and our next
+      // GET RESPONSE callback.
+      let previousClass = smartCard.cla
+      smartCard.cla = command.cla
+      smartCard.send(
+        ins: command.ins,
+        p1: command.parameter1,
+        p2: command.parameter2,
+        data: command.data,
+        le: command.expectedLength
+      ) { response, statusWord, error in
+        smartCard.cla = previousClass
+        if let response {
+          var complete = response
+          complete.append(
+            UInt8(truncatingIfNeeded: statusWord >> Self.statusWordByteShift))
+          complete.append(UInt8(truncatingIfNeeded: statusWord))
+          reply.value = complete
+        }
+        transportError.value = error
+        semaphore.signal()
+      }
+    } else {
+      smartCard.transmit(payload) { response, error in
+        reply.value = response
+        transportError.value = error
+        semaphore.signal()
+      }
+    }
   }
 
   /// Opens an exclusive session and LEAVES IT OPEN, for the caller to end.

@@ -140,16 +140,24 @@ extension Token {
     return directory ?? single
   }
 
-  /// Reads the leaf, and the issuer if the card offers one.
+  /// Reads the leaf, serial, and the issuer if the card offers one.
+  ///
+  /// The serial is read before the issuer because the leaf read leaves the
+  /// PKCS#15 application selected, while the issuer read navigates to the
+  /// master file.
   private static func certificates(
     read operations: CardOperations
   ) throws -> PublishedIdentity {
     TokenLog.info("readIdentity: reading leaf EF.4331")
     let leaf = try operations.readCertificate(.authentication)
-    TokenLog.info("readIdentity: leaf \(leaf.count) bytes; reading issuer EF.4336")
-    let issuer = try? operations.readCertificate(.issuing)
+    TokenLog.info("readIdentity: leaf \(leaf.count) bytes; reading token serial")
+    let serial = try operations.readTokenSerial()
+    TokenLog.info("readIdentity: token serial read; reading issuer EF.4336")
+    let issuer =
+      (try? operations.readCertificate(.issuing))
+      ?? BundledIssuerCertificate.der(matching: leaf)
     TokenLog.info("readIdentity: issuer \(issuer?.count ?? -1) bytes")
-    return PublishedIdentity(leafDER: leaf, issuerDER: issuer)
+    return PublishedIdentity(leafDER: leaf, issuerDER: issuer, tokenSerial: serial)
   }
 
   /// How long something started at `instant` has taken, in milliseconds.

@@ -28,14 +28,9 @@ internal enum AppDiagnostics {
   /// two.
   internal static func text(from app: XCUIApplication) -> String {
     Self.popToRoot(in: app)
-    let statusLink = app.descendants(matching: .any)[UITestIdentifiers.cardStatusLink]
-    guard statusLink.waitForExistence(timeout: Self.appearTimeout) else {
-      return "diagnostics unavailable: the setup screen never came back"
-    }
-    statusLink.tap()
-    let diagnostics = app.buttons[UITestIdentifiers.diagnosticsButton]
+    let diagnostics = app.descendants(matching: .any)[UITestIdentifiers.diagnosticsButton]
     guard diagnostics.waitForExistence(timeout: Self.appearTimeout) else {
-      return "diagnostics unavailable: the status screen never offered them"
+      return "diagnostics unavailable: the setup screen never came back"
     }
     diagnostics.tap()
     let capture = app.scrollViews.firstMatch

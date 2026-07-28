@@ -18,6 +18,8 @@
 		6D000000000000000000000A /* ReFineIDDiscoveryExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2D000000000000000000000A /* ReFineIDDiscoveryExtension.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		6D000000000000000000000B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 2D0000000000000000000008 /* PrivacyInfo.xcprivacy */; };
 		6D000000000000000000000C /* CardCore in Frameworks */ = {isa = PBXBuildFile; productRef = AD0000000000000000000005 /* CardCore */; };
+		6D000000000000000000000D /* fineid-intermediate-02-citizen-g4r.pem in Resources */ = {isa = PBXBuildFile; fileRef = 2D000000000000000000000F /* fineid-intermediate-02-citizen-g4r.pem */; };
+		6D000000000000000000000E /* fineid-intermediate-02-citizen-g4r.pem in Resources */ = {isa = PBXBuildFile; fileRef = 2D000000000000000000000F /* fineid-intermediate-02-citizen-g4r.pem */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -74,6 +76,7 @@
 		2D000000000000000000000C /* DiscoveryExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DiscoveryExtension.entitlements; sourceTree = "<group>"; };
 		2D000000000000000000000D /* DiscoveryExtension-iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "DiscoveryExtension-iOS.entitlements"; sourceTree = "<group>"; };
 		2D000000000000000000000E /* ReFineIDUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ReFineIDUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2D000000000000000000000F /* fineid-intermediate-02-citizen-g4r.pem */ = {isa = PBXFileReference; lastKnownFileType = text; path = "fineid-intermediate-02-citizen-g4r.pem"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -195,6 +198,7 @@
 				2D000000000000000000000C /* DiscoveryExtension.entitlements */,
 				2D000000000000000000000D /* DiscoveryExtension-iOS.entitlements */,
 				2D0000000000000000000008 /* PrivacyInfo.xcprivacy */,
+				2D000000000000000000000F /* fineid-intermediate-02-citizen-g4r.pem */,
 			);
 			path = Config;
 			sourceTree = "<group>";
@@ -383,6 +387,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6D0000000000000000000006 /* PrivacyInfo.xcprivacy in Resources */,
+				6D000000000000000000000D /* fineid-intermediate-02-citizen-g4r.pem in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -391,6 +396,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6D0000000000000000000007 /* PrivacyInfo.xcprivacy in Resources */,
+				6D000000000000000000000E /* fineid-intermediate-02-citizen-g4r.pem in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

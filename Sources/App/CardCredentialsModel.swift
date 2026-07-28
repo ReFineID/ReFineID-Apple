@@ -100,6 +100,27 @@ internal final class CardCredentialsModel {
     }
   }
 
+  /// Stores any credentials that are not already present before minting.
+  ///
+  /// A nil value means that credential is already stored. The operation
+  /// stops at the first failed write so the NFC field never opens with an
+  /// incomplete credential set.
+  internal func prepareIdentity(
+    cardAccessNumber: String?,
+    pin1: String?
+  ) async -> Bool {
+    if let cardAccessNumber {
+      saveCardAccessNumber(cardAccessNumber)
+      guard contents.hasCardAccessNumber else { return false }
+    }
+    if let pin1 {
+      await savePin1(pin1)
+      guard contents.hasPin1 else { return false }
+    }
+    refresh()
+    return contents.hasCardAccessNumber && contents.hasPin1
+  }
+
   /// Forgets the card access number, so it can be entered again.
   ///
   /// Ungated, like storing it.
@@ -110,18 +131,27 @@ internal final class CardCredentialsModel {
   }
 
   /// Forgets PIN1, so every signature asks again.
-  internal func forgetPin1() async {
-    await gated(reason: String(localized: "Forget the stored PIN1")) {
-      CardCredentialStore.forgetPin1()
-      return nil
-    }
+  ///
+  /// Deletion is deliberately ungated: it removes signing authority from
+  /// this device and never reveals the stored value.
+  internal func forgetPin1() {
+    failure = nil
+    CardCredentialStore.forgetPin1()
+    refresh()
   }
 
-  /// Forgets everything this device knows about the card's secrets.
-  internal func forgetEverything() async {
-    await gated(reason: String(localized: "Forget the card details on this device")) {
-      CardCredentialStore.forgetAll()
-      return nil
+  /// Forgets everything this device knows about the card.
+  ///
+  /// This clears credentials, card-directory entries, primed identities,
+  /// Safari registration, and diagnostic logs without authentication.
+  /// Nothing is disclosed; authority is removed.
+  internal func forgetEverything() {
+    failure = nil
+    let outcome = CardStateReset.perform()
+    CardCredentialStore.forgetAll()
+    refresh()
+    if !outcome.succeeded {
+      failure = outcome.summary
     }
   }
 
@@ -132,9 +162,9 @@ internal final class CardCredentialsModel {
   /// This is the gate, and it is the only one: the keychain items
   /// themselves carry no access control, because the token extension has
   /// to read PIN1 while signing a request made in Safari and has no
-  /// interface to answer a prompt with. Every path that writes or drops
-  /// PIN1 therefore comes through here; the card access number needs no
-  /// gate at all.
+  /// interface to answer a prompt with. PIN1 storage therefore comes
+  /// through here. Deletion intentionally does not: removing a credential
+  /// discloses nothing and reduces what the device can do.
   ///
   /// ``CardCredentialGate`` is also the single place a debug build can be
   /// told to skip the prompt, and nothing outside `#if DEBUG` can ask it

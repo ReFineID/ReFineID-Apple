@@ -5,13 +5,11 @@ import SwiftUI
 /// registers the card for Safari.
 ///
 /// This is the screen that matters, so it is the one the app opens on.
-/// What the card reports about itself is diagnostic and lives behind the
-/// status screen.
+/// Technical state lives behind the Diagnostics row.
 ///
-/// Nothing stored is ever shown again. A value is either set or not, and
-/// a set value can be replaced or forgotten. There is no explanatory
-/// text: a setup screen that needs paragraphs to be understood is the
-/// wrong screen.
+/// The two credentials and the action they enable form one operation.
+/// Individual replacement controls would imply that they are independent;
+/// starting over is instead the explicit forget action below.
 ///
 /// Every control a test drives carries an accessibility identifier, and
 /// the register of them is `UITestIdentifiers` in `Tests/ReFineIDUITests`.
@@ -20,67 +18,122 @@ import SwiftUI
 /// nothing to do with the card. They cost nothing at runtime and they are
 /// what VoiceOver already wants.
 internal struct CardCredentialsView: View {
+  private static let sectionSpacing: CGFloat = 24
+
   @State private var model = CardCredentialsModel()
   @State private var cardAccessNumberEntry = ""
   @State private var pin1Entry = ""
   @State private var isScanning = false
+  @State private var scannerTorchEnabled = false
+  @State private var isPin1Revealed = false
+  @State private var showsForgetConfirmation = false
+  @State private var registrationReset = false
+  @FocusState private var isPin1FieldFocused: Bool
+
+  /// The PIN is valid for storage only inside the card's documented range.
+  private var isPin1EntryComplete: Bool {
+    pin1Entry.count >= Pin1.minimumDigitCount
+      && pin1Entry.count <= Pin1.maximumDigitCount
+  }
+
+  /// Both credentials must be stored or complete before minting starts.
+  private var canPrepareIdentity: Bool {
+    (model.contents.hasCardAccessNumber
+      || cardAccessNumberEntry.count == CardAccessNumber.digitCount)
+      && (model.contents.hasPin1 || isPin1EntryComplete)
+  }
 
   internal var body: some View {
     Form {
-      cardAccessNumberSection
-      pin1Section
-      if model.contents.hasCardAccessNumber {
-        primingSection
-      }
+      createIdentitySection
       if let failure = model.failure {
         Section {
           Text(failure)
             .foregroundStyle(.red)
         }
       }
+      diagnosticsSection
       forgetSection
     }
-    .navigationTitle("Set up your card")
+    #if os(iOS)
+      .listSectionSpacing(Self.sectionSpacing)
+      .navigationTitle("ReFineID")
+      .navigationBarTitleDisplayMode(.large)
+    #endif
     .onAppear { model.refresh() }
     #if os(iOS)
       .sheet(isPresented: $isScanning) {
         scannerSheet
       }
     #endif
-  }
-
-  /// The six printed digits: an entry row while unset, one line once set.
-  @ViewBuilder private var cardAccessNumberSection: some View {
-    Section("Card access number") {
-      if model.contents.hasCardAccessNumber {
-        LabeledContent("Card access number", value: String(localized: "Set"))
-          .accessibilityIdentifier("cardAccessNumberStatus")
-        Button("Replace") {
-          model.forgetCardAccessNumber()
-        }
-        .accessibilityIdentifier("replaceCardAccessNumber")
-      } else {
-        entryRow
-        Button("Save") {
-          let entry = cardAccessNumberEntry
-          cardAccessNumberEntry = ""
-          model.saveCardAccessNumber(entry)
-        }
-        .accessibilityIdentifier("saveCardAccessNumber")
-        .disabled(cardAccessNumberEntry.count != CardAccessNumber.digitCount)
+    .alert(
+      "Forget this card and identity?",
+      isPresented: $showsForgetConfirmation
+    ) {
+      Button("Forget", role: .destructive) {
+        model.forgetEverything()
+        registrationReset.toggle()
       }
     }
   }
 
-  /// The digits field, with the camera beside it where there is one.
-  @ViewBuilder private var entryRow: some View {
+  /// One operation, in its actual order: credentials and then minting.
+  private var createIdentitySection: some View {
+    Section("Set up Finnish ID card") {
+      cardAccessNumberRow
+      pin1Row
+      #if os(iOS)
+        CardRegistrationSections(
+          canPrepareCredentials: canPrepareIdentity,
+          prepareCredentials: prepareIdentity
+        )
+        .id(registrationReset)
+      #endif
+    }
+  }
+
+  /// The CAN entry, or a compact indication that it is already stored.
+  @ViewBuilder private var cardAccessNumberRow: some View {
+    if model.contents.hasCardAccessNumber {
+      LabeledContent("Card Access Number (CAN)") {
+        Image(systemName: "checkmark")
+          .foregroundStyle(.green)
+          .accessibilityLabel("Stored")
+      }
+      .accessibilityIdentifier("cardAccessNumberStatus")
+    } else {
+      cardAccessNumberField
+    }
+  }
+
+  /// PIN1 entry, or a compact indication that it is already stored.
+  @ViewBuilder private var pin1Row: some View {
+    if model.contents.hasPin1 {
+      LabeledContent("PIN1") {
+        Image(systemName: "checkmark")
+          .foregroundStyle(.green)
+          .accessibilityLabel("Stored")
+      }
+      .accessibilityIdentifier("pin1Status")
+    } else {
+      pin1Field
+    }
+  }
+
+  /// The six printed digits, with the QR scanner beside them.
+  @ViewBuilder private var cardAccessNumberField: some View {
     #if os(iOS)
       HStack {
-        TextField("Six digits", text: $cardAccessNumberEntry)
-          .keyboardType(.numberPad)
-          .accessibilityIdentifier("cardAccessNumberField")
+        TextField(
+          "Card Access Number (CAN)",
+          text: LimitedDigitBinding.cardAccessNumber(
+            $cardAccessNumberEntry)
+        )
+        .keyboardType(.numberPad)
+        .accessibilityIdentifier("cardAccessNumberField")
         if CardAccessNumberScanner.isAvailable {
           Button {
+            scannerTorchEnabled = false
             isScanning = true
           } label: {
             Label("Scan", systemImage: "camera")
@@ -90,67 +143,73 @@ internal struct CardCredentialsView: View {
         }
       }
     #else
-      TextField("Six digits", text: $cardAccessNumberEntry)
-        .accessibilityIdentifier("cardAccessNumberField")
+      TextField(
+        "Card Access Number (CAN)",
+        text: LimitedDigitBinding.cardAccessNumber(
+          $cardAccessNumberEntry)
+      )
+      .accessibilityIdentifier("cardAccessNumberField")
     #endif
-  }
-
-  /// PIN1: optional, and the same set-or-not treatment.
-  @ViewBuilder private var pin1Section: some View {
-    Section("PIN1") {
-      if model.contents.hasPin1 {
-        LabeledContent("PIN1", value: String(localized: "Set"))
-          .accessibilityIdentifier("pin1Status")
-        Button("Replace") {
-          Task { await model.forgetPin1() }
-        }
-        .accessibilityIdentifier("replacePin1")
-      } else {
-        pin1Field
-        Button("Save") {
-          let entry = pin1Entry
-          pin1Entry = ""
-          Task { await model.savePin1(entry) }
-        }
-        .accessibilityIdentifier("savePin1")
-        .disabled(pin1Entry.count < Pin1.minimumDigitCount)
-      }
-    }
   }
 
   @ViewBuilder private var pin1Field: some View {
-    #if os(iOS)
-      SecureField("PIN1", text: $pin1Entry)
-        .keyboardType(.numberPad)
-        .accessibilityIdentifier("pin1Field")
-    #else
-      SecureField("PIN1", text: $pin1Entry)
-        .accessibilityIdentifier("pin1Field")
-    #endif
-  }
-
-  /// The hold that registers this card for Safari.
-  @ViewBuilder private var primingSection: some View {
-    #if os(iOS)
-      Section("Safari") {
-        NavigationLink("Register this card") {
-          CardPrimingView()
+    HStack {
+      Group {
+        if isPin1Revealed {
+          TextField(
+            "PIN1",
+            text: LimitedDigitBinding.pin1($pin1Entry))
+        } else {
+          SecureField(
+            "PIN1",
+            text: LimitedDigitBinding.pin1($pin1Entry))
         }
-        .accessibilityIdentifier("registerCardLink")
       }
-    #endif
+      #if os(iOS)
+        .keyboardType(.numberPad)
+        .textInputAutocapitalization(.never)
+      #endif
+      .autocorrectionDisabled()
+      .focused($isPin1FieldFocused)
+      .accessibilityIdentifier("pin1Field")
+
+      pin1VisibilityButton
+    }
   }
 
-  @ViewBuilder private var forgetSection: some View {
+  /// Standard transient visibility control for the unsaved PIN.
+  private var pin1VisibilityButton: some View {
+    Button {
+      isPin1Revealed.toggle()
+      isPin1FieldFocused = true
+    } label: {
+      Label(
+        isPin1Revealed ? "Hide PIN1" : "Show PIN1",
+        systemImage: isPin1Revealed ? "eye.slash" : "eye"
+      )
+      .labelStyle(.iconOnly)
+    }
+    .buttonStyle(.borderless)
+    .disabled(pin1Entry.isEmpty)
+    .accessibilityIdentifier("pin1Visibility")
+  }
+
+  private var diagnosticsSection: some View {
     Section {
-      NavigationLink("Card status") {
-        StatusView()
+      NavigationLink {
+        DiagnosticsView()
+      } label: {
+        Label("Diagnostics", systemImage: "stethoscope")
       }
-      .accessibilityIdentifier("cardStatusLink")
-      Button("Forget this card", role: .destructive) {
-        Task { await model.forgetEverything() }
+      .accessibilityIdentifier("diagnosticsButton")
+    }
+  }
+
+  private var forgetSection: some View {
+    Section {
+      Button("Forget this card and identity", role: .destructive) {
+        showsForgetConfirmation = true
       }
-      .disabled(!model.contents.hasCardAccessNumber && !model.contents.hasPin1)
     }
   }
 
@@ -158,19 +217,61 @@ internal struct CardCredentialsView: View {
     /// The camera, framed so it can be dismissed.
     @ViewBuilder private var scannerSheet: some View {
       NavigationStack {
-        CardAccessNumberScanner { digits in
+        CardAccessNumberScanner(
+          torchEnabled: $scannerTorchEnabled
+        ) { digits in
+          scannerTorchEnabled = false
           cardAccessNumberEntry = digits
           isScanning = false
         }
         .ignoresSafeArea()
-        .navigationTitle("Point at the card")
+        .navigationTitle("Scan card QR code")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-          ToolbarItem(placement: .cancellationAction) {
-            Button("Cancel") { isScanning = false }
+        .toolbar { scannerToolbar }
+      }
+      .onDisappear {
+        scannerTorchEnabled = false
+      }
+    }
+
+    /// Dismissal and light controls kept above the live preview.
+    @ToolbarContentBuilder private var scannerToolbar: some ToolbarContent {
+      ToolbarItem(placement: .cancellationAction) {
+        Button("Cancel") {
+          scannerTorchEnabled = false
+          isScanning = false
+        }
+      }
+      if CardAccessNumberScanner.hasTorch {
+        ToolbarItem(placement: .primaryAction) {
+          Button {
+            scannerTorchEnabled.toggle()
+          } label: {
+            Label(
+              scannerTorchEnabled ? "Turn light off" : "Turn light on",
+              systemImage: scannerTorchEnabled
+                ? "flashlight.on.fill" : "flashlight.off.fill")
           }
+          .accessibilityIdentifier("cardAccessNumberScannerTorch")
         }
       }
     }
   #endif
+
+  /// Stores the entered pair immediately before the NFC operation.
+  @MainActor
+  private func prepareIdentity() async -> Bool {
+    let accessNumber =
+      model.contents.hasCardAccessNumber ? nil : cardAccessNumberEntry
+    let pin1 = model.contents.hasPin1 ? nil : pin1Entry
+
+    cardAccessNumberEntry = ""
+    pin1Entry = ""
+    isPin1Revealed = false
+    isPin1FieldFocused = false
+
+    return await model.prepareIdentity(
+      cardAccessNumber: accessNumber,
+      pin1: pin1)
+  }
 }

@@ -15,6 +15,32 @@ public enum SigningHash: Equatable, Sendable {
   /// SHA-512 (high nibble 6).
   case sha512
 
+  /// SHA-224 digest width.
+  private static let sha224ByteCount = 28
+
+  /// SHA-256 digest width.
+  private static let sha256ByteCount = 32
+
+  /// SHA-384 digest width.
+  private static let sha384ByteCount = 48
+
+  /// SHA-512 digest width.
+  private static let sha512ByteCount = 64
+
+  /// Exact digest size this hash contributes to PSO:HASH.
+  public var digestByteCount: Int {
+    switch self {
+    case .sha224:
+      Self.sha224ByteCount
+    case .sha256:
+      Self.sha256ByteCount
+    case .sha384:
+      Self.sha384ByteCount
+    case .sha512:
+      Self.sha512ByteCount
+    }
+  }
+
   /// The high nibble contributed to the algorithm-reference byte.
   internal var highNibble: UInt8 {
     switch self {

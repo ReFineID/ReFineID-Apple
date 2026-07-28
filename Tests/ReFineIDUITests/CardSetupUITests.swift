@@ -1,7 +1,7 @@
 import XCTest
 
-/// Card setup, driven the way a holder drives it: type the access number,
-/// type PIN1, save both, and read the rows back.
+/// Card setup, driven the way a holder drives it: type the access number
+/// and PIN1, then observe that the one minting action becomes available.
 ///
 /// Both values come from the test runner's environment and neither is
 /// written down here. A run given neither is not a quiet pass: it fails
@@ -21,9 +21,8 @@ internal final class CardSetupUITests: XCTestCase {
       + "after the arguments, and not as a plain exported variable."
   }
 
-  /// Stores both credentials and asserts the screen reads them back as
-  /// set.
-  internal func testStoresCardAccessNumberAndPin1() throws {
+  /// Enters both credentials and asserts that identity creation is ready.
+  internal func testAcceptsCredentialsForIdentityMinting() throws {
     let cardAccessNumber = try XCTUnwrap(
       UITestEnvironment.cardAccessNumber,
       Self.missing(UITestEnvironment.cardAccessNumberVariable))
@@ -42,19 +41,18 @@ internal final class CardSetupUITests: XCTestCase {
       """,
       named: "02-input-sizes")
 
-    let storedCardAccessNumber = CardSetupScreen.store(
-      cardAccessNumber, into: .cardAccessNumber, in: app)
-    attachScreenshot(app.screenshot(), named: "03-card-access-number")
+    let entered = CardSetupScreen.enterCredentials(
+      cardAccessNumber: cardAccessNumber,
+      pin1: pin1,
+      in: app)
+    attachScreenshot(app.screenshot(), named: "03-credentials-entered")
     XCTAssertTrue(
-      storedCardAccessNumber,
-      "the card access number row never came back reading as set")
+      entered,
+      "one of the two credential fields could not be filled")
 
-    let storedPin1 = CardSetupScreen.store(pin1, into: .pin1, in: app)
-    attachScreenshot(app.screenshot(), named: "04-pin1")
-    XCTAssertTrue(storedPin1, "the PIN1 row never came back reading as set")
-
-    let bothStored = CardSetupScreen.credentialsStored(in: app)
-    attachText(AppDiagnostics.text(from: app), named: "05-diagnostics")
-    XCTAssertTrue(bothStored, "setup finished with one of the two rows unset")
+    let mint = app.buttons[UITestIdentifiers.primeStartButton]
+    XCTAssertTrue(
+      mint.waitForExistence(timeout: 10) && mint.isEnabled,
+      "valid CAN and PIN1 did not enable identity minting")
   }
 }

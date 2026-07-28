@@ -13,8 +13,16 @@ internal struct PrimedIdentityTests {
   /// A different DER-shaped byte string, standing in for the issuer.
   private static let sampleIssuerHexDigits = "308200010A0B0C0D"
 
-  /// A plausible PKCS#15 token serial.
-  private static let sampleSerial = "6543210987654321"
+  /// An unmistakably synthetic PKCS#15 token serial.
+  private static let sampleSerial = "SYNTHETIC-PRIME-SERIAL"
+
+  /// Synthetic historical/application bytes for the Core NFC to CTK bridge.
+  private static let sampleContactlessIdentification = Data([
+    0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
+  ])
+
+  /// A fixed synthetic timestamp keeps the coding test deterministic.
+  private static let sampleStagedAt = Date(timeIntervalSince1970: 1_700_000_000)
 
   @Test
   internal func refusesACardAccessNumberThatIsNotSixDigits() {
@@ -41,6 +49,19 @@ internal struct PrimedIdentityTests {
   }
 
   @Test
+  internal func refusesEmptyContactlessIdentification() {
+    let certificate = WireHex.data(Self.sampleCertificateHexDigits)
+    #expect(
+      PrimedIdentity(
+        can: Self.sampleCan,
+        certificate: certificate,
+        issuer: nil,
+        tokenSerial: Self.sampleSerial,
+        contactlessIdentification: Data(),
+        stagedAt: Self.sampleStagedAt) == nil)
+  }
+
+  @Test
   internal func acceptsAPrimeWithoutIssuerOrSerial() throws {
     let certificate = WireHex.data(Self.sampleCertificateHexDigits)
     let identity = try #require(
@@ -57,10 +78,14 @@ internal struct PrimedIdentityTests {
         can: Self.sampleCan,
         certificate: WireHex.data(Self.sampleCertificateHexDigits),
         issuer: WireHex.data(Self.sampleIssuerHexDigits),
-        tokenSerial: Self.sampleSerial))
+        tokenSerial: Self.sampleSerial,
+        contactlessIdentification: Self.sampleContactlessIdentification,
+        stagedAt: Self.sampleStagedAt))
     let payload = try JSONEncoder().encode(identity)
     let decoded = try JSONDecoder().decode(PrimedIdentity.self, from: payload)
     #expect(decoded == identity)
+    #expect(decoded.contactlessIdentification == Self.sampleContactlessIdentification)
+    #expect(decoded.stagedAt == Self.sampleStagedAt)
   }
 
   @Test
@@ -76,5 +101,7 @@ internal struct PrimedIdentityTests {
     #expect(decoded == identity)
     #expect(decoded.issuerDER == nil)
     #expect(decoded.tokenSerial == nil)
+    #expect(decoded.contactlessIdentification == nil)
+    #expect(decoded.stagedAt == nil)
   }
 }

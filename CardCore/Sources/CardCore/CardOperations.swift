@@ -221,21 +221,19 @@ public struct CardOperations {
   /// The digest is loaded via PSO:HASH, never carried inline in PSO:CDS -
   /// the card rejects the inline shape with `6985`.
   ///
-  /// PSO:CDS carries the exact signature length as `Le` up front, never
-  /// `00` (256). The G4E card is T=0-only and answers an over-long `Le`
-  /// with `6Cxx`; the ISO 7816-4 re-issue is not reliably reachable in
-  /// every transport, and - worse - a `6Cxx` between PSO:HASH and a
-  /// re-issued PSO:CDS can drop the loaded hash, making the card sign
-  /// silently-meaningless bytes with no error SW (S1 v4.2 §3.8.1.1). The
-  /// ECDSA signature length is fixed by the curve, so it is known up
-  /// front; anything other than `9000` here fails closed rather than
-  /// re-issuing over a possibly-lost hash. PIN1 must already be verified
-  /// in this session. Returns the raw card signature: `r || s` for ECDSA
-  /// (convert with `EcdsaSignature`).
+  /// P-384 carries its exact 96-byte signature length as `Le` up front.
+  /// The G4E card is T=0-only and a `6Cxx` between PSO:HASH and a re-issued
+  /// PSO:CDS can drop the loaded hash, making the card sign
+  /// silently-meaningless bytes (S1 v4.2 §3.8.1.1), so this path never
+  /// retries that operation. RSA-3072 cannot fit an exact short `Le`; it
+  /// uses `00` and the transport keeps its continuation within the
+  /// operation. PIN1 must already be verified in this session. Returns
+  /// the raw card signature: `r || s` for ECDSA, or one modulus-wide block
+  /// for RSA.
   public func computeAuthenticationSignature(
     overDigest digest: Data,
     algorithm: SigningAlgorithm,
-    expectedSignatureLength: ExpectedResponseLength
+    expectedSignatureLength: ExpectedResponseLength?
   ) throws -> Data {
     let selected = try transmit(.selectSigningEnvironment(algorithm: algorithm))
     guard selected.statusWord == .success else {
@@ -245,9 +243,10 @@ public struct CardOperations {
     guard hashed.statusWord == .success else {
       throw CardOperationError.signRejected(hashed.statusWord)
     }
-    let signed = try transmit(
-      .computeSignatureOverLoadedHash(exactLength: expectedSignatureLength)
-    )
+    let signatureCommand =
+      expectedSignatureLength.map(CommandApdu.computeSignatureOverLoadedHash(exactLength:))
+      ?? .computeSignatureOverLoadedHash()
+    let signed = try transmitSignature(signatureCommand)
     guard signed.statusWord == .success else {
       throw CardOperationError.signRejected(signed.statusWord)
     }
@@ -264,7 +263,7 @@ public struct CardOperations {
   public func computeAuthenticationSignatureTraced(
     overDigest digest: Data,
     algorithm: SigningAlgorithm,
-    expectedSignatureLength: ExpectedResponseLength
+    expectedSignatureLength: ExpectedResponseLength?
   ) throws -> (raw: Data?, steps: [(command: String, statusWord: UInt16)]) {
     var steps: [(command: String, statusWord: UInt16)] = []
     let selected = try transmit(.selectSigningEnvironment(algorithm: algorithm))
@@ -273,9 +272,10 @@ public struct CardOperations {
     let hashed = try transmit(.loadExternalHash(digest))
     steps.append((command: "PSO:HASH", statusWord: hashed.statusWord.encoded))
     guard hashed.statusWord == .success else { return (nil, steps) }
-    let signed = try transmit(
-      .computeSignatureOverLoadedHash(exactLength: expectedSignatureLength)
-    )
+    let signatureCommand =
+      expectedSignatureLength.map(CommandApdu.computeSignatureOverLoadedHash(exactLength:))
+      ?? .computeSignatureOverLoadedHash()
+    let signed = try transmitSignature(signatureCommand)
     steps.append((command: "PSO:CDS", statusWord: signed.statusWord.encoded))
     guard signed.statusWord == .success else { return (nil, steps) }
     return (signed.payload, steps)
@@ -356,5 +356,15 @@ public struct CardOperations {
       throw CardOperationError.malformedResponse
     }
     return response
+  }
+
+  /// Transmits PSO:CDS without applying the short-response parser cap.
+  ///
+  /// RSA-3072 returns 384 bytes. A structured CTK send may deliver the
+  /// whole continued result in one callback, while a raw reader path may
+  /// still expose `61xx`; ``ContinuedResponse`` handles both forms.
+  private func transmitSignature(_ command: CommandApdu) throws -> ResponseApdu {
+    let response = try ContinuedResponse.transmitting(command.encoded, over: channel)
+    return ResponseApdu(payload: response.payload, statusWord: response.statusWord)
   }
 }

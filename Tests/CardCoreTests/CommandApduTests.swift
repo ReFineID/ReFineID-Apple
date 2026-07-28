@@ -95,6 +95,31 @@ internal struct CommandApduTests {
   }
 
   @Test
+  internal func structuredSignatureAcceptsOnlyProtectedMaximumLengthPso() throws {
+    // Synthetic secure-messaging body: the parser intentionally treats it
+    // as opaque and only separates the short case-4 APDU framing.
+    let protectedMaximum = WireHex.data(
+      "0C2A9E9A0D9701008E08000102030405060700")
+    let parsed = try #require(
+      CommandApdu.structuredProtectedSignature(protectedMaximum))
+    #expect(parsed.cla == 0x0C)
+    #expect(parsed.ins == 0x2A)
+    #expect(parsed.parameter1 == 0x9E)
+    #expect(parsed.parameter2 == 0x9A)
+    #expect(parsed.data == WireHex.data("9701008E080001020304050607"))
+    #expect(parsed.expectedLength == 0)
+
+    let exactLengthEcdsa = WireHex.data(
+      "0C2A9E9A0D9701608E08000102030405060760")
+    #expect(CommandApdu.structuredProtectedSignature(exactLengthEcdsa) == nil)
+    #expect(
+      CommandApdu.structuredProtectedSignature(
+        WireHex.data("0CB000000D9701008E08000102030405060700")
+      ) == nil
+    )
+  }
+
+  @Test
   internal func verifyPin1MatchesTheWireVector() {
     // FINEID S1 v4.2 §3.5.2 example shape: 00 20 00 11 0C, then the
     // ASCII digits right-padded with zero bytes to twelve.

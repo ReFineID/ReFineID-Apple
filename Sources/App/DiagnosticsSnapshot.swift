@@ -16,10 +16,13 @@ import Foundation
 /// device language cannot be diffed against yesterday's capture, and this
 /// is read by whoever is holding the card, not by everyone.
 ///
-/// Nothing here prints a card access number, a PIN, a serial or a holder
-/// name -- presence, counts, sizes, identifiers, status and typed reasons
-/// only. Keychain items are counted, never described: a certificate's
-/// label carries the holder's name.
+/// Nothing here prints a card access number, a PIN, a complete PKCS#15
+/// serial or a holder name. The public token identifier deliberately
+/// includes the nine-character serial printed on the card, so the holder
+/// can match system state to the plastic. Everything else is presence,
+/// counts, sizes, identifiers, status and typed reasons only. Keychain
+/// items are counted, never described: a certificate's label carries the
+/// holder's name.
 internal struct DiagnosticsSnapshot: Sendable {
   /// One titled block of lines.
   internal struct Section: Identifiable, Sendable {
@@ -68,7 +71,7 @@ internal struct DiagnosticsSnapshot: Sendable {
         Self.driverConfigurations(),
         Self.primeStore(),
         Self.credentialPolicy(),
-        Self.transportPreference(),
+        Self.transportPolicy(),
         Self.keychainCounts(),
         Self.extensionTrace(),
       ])
@@ -157,21 +160,15 @@ internal struct DiagnosticsSnapshot: Sendable {
       ])
   }
 
-  /// Which transports the extension is allowed to serve.
+  /// Which transports the platform can offer.
   ///
-  /// A transport switched off is answered with `transportDisabled` at
-  /// `createToken`, which looks exactly like a card that was not
-  /// recognized unless this line says otherwise.
-  private static func transportPreference() -> Section {
-    let selection = CardTransportStore.load()
-    let permitted = CardTransport.allCases
-      .filter { selection.permits($0) }
-      .map(\.rawValue)
-      .sorted()
-    return Section(
-      title: "Transport preference",
+  /// Selection is automatic: the extension serves whichever live slot
+  /// CryptoTokenKit gives it.
+  private static func transportPolicy() -> Section {
+    Section(
+      title: "Transport policy",
       lines: [
-        "permitted: " + (permitted.isEmpty ? Self.nothing : permitted.joined(separator: ", ")),
+        "selection: automatic",
         "platform offers near field: " + Self.yesNo(SupportedCardTransports.offersNearField),
       ])
   }

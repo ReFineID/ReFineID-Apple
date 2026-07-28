@@ -29,6 +29,15 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
   /// one PIN use).
   private var collectedPin: String?
 
+  /// Installs this session as CryptoTokenKit's operation delegate.
+  ///
+  /// CryptoTokenKit dispatches key operations only through this weak
+  /// delegate. Conformance alone does not install it.
+  override internal init(token: TKToken) {
+    super.init(token: token)
+    delegate = self
+  }
+
   /// How long something started at `instant` has taken, in milliseconds.
   private static func elapsed(since instant: ContinuousClock.Instant) -> String {
     TraceTiming.milliseconds(instant.duration(to: ContinuousClock.now))

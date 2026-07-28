@@ -13,6 +13,7 @@ internal struct SigningCommandTests {
       (SigningAlgorithm(hash: .sha256, scheme: .ecdsa), "44"),
       (SigningAlgorithm(hash: .sha224, scheme: .ecdsa), "34"),
       (SigningAlgorithm(hash: .sha256, scheme: .rsaPkcs1), "42"),
+      (SigningAlgorithm(hash: .sha256, scheme: .rsaPss), "45"),
     ]
     for (algorithm, referenceHex) in vectors {
       let command = CommandApdu.selectSigningEnvironment(algorithm: algorithm)

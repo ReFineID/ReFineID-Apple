@@ -1,7 +1,6 @@
 #if DEBUG
 
-  import CardCore
-  import CryptoTokenKit
+  import Foundation
 
   /// Returns this device to a known zero before a measurement.
   ///
@@ -23,60 +22,14 @@
   /// Provenance: `--ctk-reset` in the donor
   /// `platform/apple/RefineID/Shared/RefineIDApp.swift`.
   internal enum DebugCardStateReset {
-    /// Prefix every token identifier this project publishes carries.
-    ///
-    /// Only ours are unregistered. A device may carry another vendor's
-    /// smart-card token, and tearing that down would be someone else's
-    /// login broken by our debugging.
-    private static let tokenPrefix: String = "fi.refineid."
-
     /// Line break the diagnostics snapshot's text form uses.
     private static let newline: String = "\n"
 
     /// Clears the measured state and reports what remains.
     internal static func perform() -> [String] {
-      var lines = ["=== reset card state ==="]
-      lines += Self.unregisterOurTokens()
-      #if os(macOS)
-        // Including the driver's own configuration entries. A clean
-        // slate that leaves the system holding configurations for this
-        // driver is not one: the system lists every configuration as a
-        // token and launches the driver to service it, whether or not a
-        // card stands behind it.
-        let dropped = DriverConfiguredCredentials.dropEveryTokenConfiguration()
-        CardCredentialStore.forgetCardAccessNumber()
-        lines.append("driver configurations: dropped \(dropped), withdrew the credential")
-      #endif
-      PrimeStore.forgetAll()
-      lines.append("prime store: cleared")
-      ExtensionTrace.clear()
-      lines.append("extension trace: cleared")
+      var lines = CardStateReset.perform().lines
       lines += Self.remainingLines()
-      lines.append("=== end ===")
       return lines
-    }
-
-    /// Unregisters every smart-card token whose identifier is ours.
-    private static func unregisterOurTokens() -> [String] {
-      #if os(iOS)
-        let manager = TKSmartCardTokenRegistrationManager.default
-        let ours = manager.registeredSmartCardTokens
-          .filter { $0.hasPrefix(Self.tokenPrefix) }
-          .sorted()
-        guard !ours.isEmpty else {
-          return ["registered smart cards: none of ours to unregister"]
-        }
-        return ours.map { tokenID in
-          do {
-            try manager.unregisterSmartCard(tokenID: tokenID)
-            return "unregistered \(tokenID)"
-          } catch {
-            return "unregister \(tokenID) FAILED: \(error)"
-          }
-        }
-      #else
-        return ["registered smart cards: not available on this platform"]
-      #endif
     }
 
     /// The state a following measurement will actually start from.

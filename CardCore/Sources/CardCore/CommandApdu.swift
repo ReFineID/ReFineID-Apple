@@ -8,6 +8,32 @@ import Foundation
 /// (`CredentialBearingCommand`), so the safety class of every command is
 /// part of its type (Documentation/release-plan.md section 5).
 public struct CommandApdu: Equatable, Sendable {
+  /// A short case-4 command split for CryptoTokenKit's structured API.
+  ///
+  /// CTK can keep a T=0 continuation inside one operation when given the
+  /// command this way. That is required for the protected RSA-3072
+  /// PSO:CDS response, whose 384-byte signature cannot fit one short
+  /// response.
+  public struct StructuredCase4: Equatable, Sendable {
+    /// Command class byte.
+    public let cla: UInt8
+
+    /// Instruction byte.
+    public let ins: UInt8
+
+    /// First instruction parameter.
+    public let parameter1: UInt8
+
+    /// Second instruction parameter.
+    public let parameter2: UInt8
+
+    /// Command data, excluding its length byte.
+    public let data: Data
+
+    /// Expected response length passed to CryptoTokenKit.
+    public let expectedLength: Int
+  }
+
   /// The wire bytes handed to the transport.
   public let encoded: Data
 
@@ -247,6 +273,53 @@ public struct CommandApdu: Equatable, Sendable {
         exactLength.encodedByte,
       ])
     )
+  }
+
+  /// Splits only a protected maximum-length PSO:CDS for CTK's structured
+  /// send API.
+  ///
+  /// The maximum-length form is the RSA-3072 path that needs CTK to keep
+  /// T=0 continuation inside one callback. Exact-length ECDSA and every
+  /// other APDU remain byte-exact on the raw transmit path.
+  public static func structuredProtectedSignature(
+    _ command: Data
+  ) -> StructuredCase4? {
+    let classIndex = 0
+    let instructionIndex = 1
+    let parameter1Index = 2
+    let parameter2Index = 3
+    let dataLengthIndex = 4
+    let headerLength = 5
+    let expectedLengthBytes = 1
+    let protectedClass =
+      Iso7816Values.classInterindustry | PaceValues.classSecureMessagingBit
+    let bytes = Array(command)
+    guard
+      bytes.count >= headerLength + expectedLengthBytes,
+      bytes[classIndex] == protectedClass,
+      bytes[instructionIndex] == Iso7816Values.insPerformSecurityOperation,
+      bytes[parameter1Index] == Iso7816Values.psoComputeSignatureP1,
+      bytes[parameter2Index] == Iso7816Values.psoComputeSignatureP2
+    else {
+      return nil
+    }
+    let dataLength = Int(bytes[dataLengthIndex])
+    guard bytes.count == headerLength + dataLength + expectedLengthBytes else {
+      return nil
+    }
+    let dataStart = headerLength
+    let dataEnd = dataStart + dataLength
+    let encodedLength = bytes[dataEnd]
+    guard encodedLength == Iso7816Values.expectedLengthMaximumEncoding else {
+      return nil
+    }
+    return StructuredCase4(
+      cla: protectedClass,
+      ins: Iso7816Values.insPerformSecurityOperation,
+      parameter1: Iso7816Values.psoComputeSignatureP1,
+      parameter2: Iso7816Values.psoComputeSignatureP2,
+      data: Data(bytes[dataStart..<dataEnd]),
+      expectedLength: 0)
   }
 
   /// The counter-safe PIN-container query (FINEID S1 v4.2 §3.15.2).

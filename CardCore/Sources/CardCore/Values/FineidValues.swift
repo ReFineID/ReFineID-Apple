@@ -76,9 +76,10 @@ internal enum FineidValues {
   internal static let hashNibbleSha512: UInt8 = 0x6
 
   /// Algorithm-reference signature low-nibble values (S1 v4.2 §3.6.3
-  /// Table 6): RSASSA-PKCS1-v1_5 and ECDSA.
+  /// Table 6): RSASSA-PKCS1-v1_5, ECDSA, and RSASSA-PSS.
   internal static let schemeNibbleRsaPkcs1: UInt8 = 0x2
   internal static let schemeNibbleEcdsa: UInt8 = 0x4
+  internal static let schemeNibbleRsaPss: UInt8 = 0x5
 
   /// GET DATA P1 for the PIN-container query (S1 v4.2 §3.15.2).
   internal static let pinContainerP1: UInt8 = 0x00

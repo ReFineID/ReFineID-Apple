@@ -4,8 +4,8 @@ import Foundation
 ///
 /// PKCS#15 TokenInfo is `SEQUENCE { version INTEGER, serialNumber OCTET
 /// STRING, manufacturerID Label OPTIONAL, label [0] Label OPTIONAL,
-/// ... }`; the serial is the hex rendering of the octet string, matching
-/// the reference implementation.
+/// ... }`. Current-card printable ASCII is decoded; legacy binary/BCD
+/// remains hexadecimal, matching the reference implementation.
 ///
 /// The two optional strings after it are what the card calls itself, and
 /// they are worth reading for one reason: a status screen that can say
@@ -14,6 +14,9 @@ import Foundation
 /// card ever made. Both are optional and neither is trusted for
 /// anything: they are shown, never matched on.
 public enum TokenInfoFile {
+  /// Current-card serials use this printable ASCII range.
+  private static let printableAscii = UInt8(ascii: " ")...UInt8(ascii: "~")
+
   private static let hexDigits = Array("0123456789ABCDEF")
 
   private static let highNibbleShift = 4
@@ -37,7 +40,7 @@ public enum TokenInfoFile {
     else {
       return nil
     }
-    return TokenSerial(value: hexEncode(fields[1].value))
+    return TokenSerial(value: renderSerial(fields[1].value))
   }
 
   /// What the card calls itself: its manufacturer and its label, as far
@@ -80,5 +83,21 @@ public enum TokenInfoFile {
       rendered.append(Self.hexDigits[Int(byte) & Int(Iso7816Values.lowNibbleMask)])
     }
     return rendered
+  }
+
+  /// Current cards store printable ASCII directly; legacy cards store
+  /// binary/BCD bytes whose hexadecimal form is the stable serial.
+  ///
+  /// This mirrors `render_token_serial` in the Rust core. Keeping the raw
+  /// hex for a current card can accidentally produce an all-decimal string,
+  /// which then looks like neither supported generation and prevents the
+  /// card from receiving a CryptoTokenKit identifier.
+  private static func renderSerial(_ data: Data) -> String {
+    if data.allSatisfy({ byte in Self.printableAscii.contains(byte) }),
+      let printable = String(data: data, encoding: .utf8)
+    {
+      return printable
+    }
+    return hexEncode(data)
   }
 }

@@ -327,8 +327,9 @@ all. They are worth keeping.
 
 - **In-app diagnostics** (Status -> Diagnostics): registered tokens,
   watcher tokens, driver configurations, prime presence, stored-credential
-  policy, transport preference, and the extension trace, with share and
-  copy. It deliberately does not enumerate `com.apple.token` identities:
+  policy, platform transport availability, and the extension trace, with
+  share and copy. It deliberately does not enumerate `com.apple.token`
+  identities:
   that supposedly read-only query was measured presenting the NFC reader
   sheet and changing the failure being diagnosed.
 - **Extension trace**: a rolling keychain buffer both extensions write

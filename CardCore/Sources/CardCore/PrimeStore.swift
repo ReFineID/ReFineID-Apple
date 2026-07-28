@@ -28,8 +28,29 @@ import Security
 /// `SafariIdentityPrime.storePrimedIdentity` in
 /// `platform/apple/RefineID/Local/SafariIdentityPrime+PrimeStore.swift`.
 public enum PrimeStore {
+  /// A contactless lookup result and the field purpose it represents.
+  public struct ContactlessMatch: Sendable {
+    /// The identity metadata to publish.
+    public let identity: PrimedIdentity
+
+    /// True only for the app's one-time registration field.
+    ///
+    /// The token extension must publish without taking a card session in
+    /// this field. Later signing fields take and retain the session.
+    public let isRegistrationField: Bool
+  }
+
   /// Keychain service the primed identities live under.
   private static let service: String = "fi.refineid.prime"
+
+  /// Short-lived bridge from the Core NFC read to the next CTK field.
+  private static let stagedAccount = "staged-contactless-card"
+
+  /// A staged record exists only to bridge two consecutive NFC fields.
+  private static let maximumStagedAge: TimeInterval = 90
+
+  /// Tolerates a small wall-clock adjustment between app and extension.
+  private static let allowedFutureSkew: TimeInterval = 5
 
   /// Stores the primed identity for one card, replacing any previous one.
   ///
@@ -39,13 +60,43 @@ public enum PrimeStore {
   @discardableResult
   public static func store(
     _ identity: PrimedIdentity,
-    forInstance instanceID: CardInstanceIdentifier
+    forLookup lookupID: PrimeLookupIdentifier
   ) -> Bool {
     guard let payload = try? JSONEncoder().encode(identity) else { return false }
-    var attributes = query(instanceID: instanceID)
+    var attributes = query(account: lookupID.value)
     attributes[kSecValueData as String] = payload
     attributes[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-    forget(instanceID: instanceID)
+    forget(lookupID: lookupID)
+    return SecItemAdd(attributes as CFDictionary, nil) == errSecSuccess
+  }
+
+  /// Stages a freshly read Core NFC identity for the next CTK field.
+  ///
+  /// The extension accepts it only while fresh and only when its
+  /// identification bytes occur inside the live CTK ATR. Those bytes
+  /// identify a compatible card family, not one physical card; the setup
+  /// screen therefore requires the holder to keep the same card in place.
+  @discardableResult
+  public static func stage(
+    _ identity: PrimedIdentity,
+    contactlessIdentification: Data
+  ) -> Bool {
+    guard
+      let staged = PrimedIdentity(
+        can: identity.can,
+        certificate: identity.certDER,
+        issuer: identity.issuerDER,
+        tokenSerial: identity.tokenSerial,
+        contactlessIdentification: contactlessIdentification,
+        stagedAt: Date()),
+      let payload = try? JSONEncoder().encode(staged)
+    else {
+      return false
+    }
+    var attributes = query(account: Self.stagedAccount)
+    attributes[kSecValueData as String] = payload
+    attributes[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+    delete(account: Self.stagedAccount)
     return SecItemAdd(attributes as CFDictionary, nil) == errSecSuccess
   }
 
@@ -54,8 +105,38 @@ public enum PrimeStore {
   /// A stored record is re-validated through `PrimedIdentity`'s own
   /// initializer instead of being trusted: decoding proves the bytes are
   /// well-formed JSON, not that they still describe a usable prime.
-  public static func read(instanceID: CardInstanceIdentifier) -> PrimedIdentity? {
-    var query = self.query(instanceID: instanceID)
+  public static func read(lookupID: PrimeLookupIdentifier) -> PrimedIdentity? {
+    read(account: lookupID.value)
+  }
+
+  /// Reads the staged registration record first, then the exact ATR record.
+  ///
+  /// Staged must win even when an old exact record exists. Otherwise a
+  /// re-prime looks like a signing field, and the extension starts PACE
+  /// while the app is trying to register the token.
+  public static func readContactless(
+    lookupID: PrimeLookupIdentifier,
+    answerToReset: Data
+  ) -> ContactlessMatch? {
+    if let staged = read(account: Self.stagedAccount),
+      let stagedAt = staged.stagedAt,
+      let identification = staged.contactlessIdentification
+    {
+      let age = Date().timeIntervalSince(stagedAt)
+      if age >= -Self.allowedFutureSkew,
+        age <= Self.maximumStagedAge,
+        answerToReset.contains(identification)
+      {
+        return ContactlessMatch(identity: staged, isRegistrationField: true)
+      }
+    }
+    guard let exact = read(lookupID: lookupID) else { return nil }
+    return ContactlessMatch(identity: exact, isRegistrationField: false)
+  }
+
+  /// Decodes and validates one record by keychain account.
+  private static func read(account: String) -> PrimedIdentity? {
+    var query = self.query(account: account)
     query[kSecReturnData as String] = true
     query[kSecMatchLimit as String] = kSecMatchLimitOne
     var item: CFTypeRef?
@@ -69,12 +150,19 @@ public enum PrimeStore {
       can: stored.can,
       certificate: stored.certDER,
       issuer: stored.issuerDER,
-      tokenSerial: stored.tokenSerial)
+      tokenSerial: stored.tokenSerial,
+      contactlessIdentification: stored.contactlessIdentification,
+      stagedAt: stored.stagedAt)
   }
 
   /// Removes the primed identity for one card.
-  public static func forget(instanceID: CardInstanceIdentifier) {
-    SecItemDelete(query(instanceID: instanceID) as CFDictionary)
+  public static func forget(lookupID: PrimeLookupIdentifier) {
+    delete(account: lookupID.value)
+  }
+
+  /// Removes the short-lived bridge record after registration.
+  public static func forgetStaged() {
+    delete(account: Self.stagedAccount)
   }
 
   /// Removes every primed identity this device holds.
@@ -100,21 +188,7 @@ public enum PrimeStore {
   /// also the answer when the keychain refuses the search, which reads the
   /// same way to a caller: there is no prime here to serve a login with.
   public static func storedCount() -> Int {
-    var query: [String: Any] = [
-      kSecClass as String: kSecClassGenericPassword,
-      kSecAttrService as String: service,
-      kSecUseDataProtectionKeychain as String: KeychainPlatform.usesDataProtection,
-      kSecAttrSynchronizable as String: false,
-    ]
-    query[kSecMatchLimit as String] = kSecMatchLimitAll
-    query[kSecReturnAttributes as String] = true
-    var items: CFTypeRef?
-    guard SecItemCopyMatching(query as CFDictionary, &items) == errSecSuccess,
-      let found = items as? [[String: Any]]
-    else {
-      return 0
-    }
-    return found.count
+    presence().count
   }
 
   /// What this device holds for each primed card, presence only.
@@ -150,6 +224,7 @@ public enum PrimeStore {
   /// not decode into a prime at all.
   private static func presence(ofItem attributes: [String: Any]) -> PrimePresence? {
     guard let instance = attributes[kSecAttrAccount as String] as? String,
+      instance != Self.stagedAccount,
       let data = attributes[kSecValueData as String] as? Data,
       let stored = try? JSONDecoder().decode(PrimedIdentity.self, from: data)
     else {
@@ -168,13 +243,18 @@ public enum PrimeStore {
   /// The accessibility attribute is deliberately absent here: it belongs
   /// on the write, and a search that filters on it would miss items
   /// written under any other policy instead of replacing them.
-  private static func query(instanceID: CardInstanceIdentifier) -> [String: Any] {
+  private static func query(account: String) -> [String: Any] {
     [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
-      kSecAttrAccount as String: instanceID.value,
+      kSecAttrAccount as String: account,
       kSecUseDataProtectionKeychain as String: KeychainPlatform.usesDataProtection,
       kSecAttrSynchronizable as String: false,
     ]
+  }
+
+  /// Removes one account without exposing its coordinates to callers.
+  private static func delete(account: String) {
+    SecItemDelete(query(account: account) as CFDictionary)
   }
 }

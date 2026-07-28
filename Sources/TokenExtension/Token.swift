@@ -2,6 +2,7 @@ import CardCore
 import CryptoTokenKit
 import Foundation
 import Security
+
 /// The token instance for one inserted card.
 ///
 /// At creation it reads the on-card authentication certificate through
@@ -84,10 +85,9 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
       TokenLog.error("Token.init: unsupported key profile")
       throw TokenError.unsupportedKeyProfile
     }
-    // Only publish an identity we can actually sign with. An RSA card is
-    // recognized but the sign path is ECDSA-only for now; publishing a
-    // canSign key we cannot service would offer Safari a certificate that
-    // never prompts for PIN and always fails the handshake.
+    // Only publish an identity we can actually sign with. Publishing a
+    // canSign key with no supported request shapes would offer Safari a
+    // certificate that can never complete its handshake.
     guard SigningAlgorithmResolver.supportsSigning(profile) else {
       TokenLog.error("Token.init: \(profile) recognized but signing not yet supported")
       throw TokenError.unsupportedKeyProfile
@@ -104,14 +104,9 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
     // phone's path cannot afford at all.
     self.interface = accessNumber == nil ? .contact : .steadyField
     self.primedSerial = nil
-    // Same derivation and same contents version as the contactless mint
-    // below; only the material differs, because only here has the card
-    // already been read. Unreachable in practice: these are the bytes
-    // SecCertificateCreateWithData just accepted, so they are not empty.
-    guard let instanceID = CardInstanceIdentifier(authenticationCertificate: identity.leafDER)
-    else {
-      TokenLog.error("Token.init: leaf certificate has no bytes to name the card with")
-      throw TokenError.certificateUnreadable
+    guard let instanceID = CardInstanceIdentifier(tokenSerial: identity.tokenSerial) else {
+      TokenLog.error("Token.init: token serial has no supported printed-card form")
+      throw TokenError.unsupportedKeyProfile
     }
     super.init(
       smartCard: smartCard,
@@ -119,6 +114,7 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
       instanceID: instanceID.value,
       tokenDriver: tokenDriver
     )
+    delegate = self
     TokenLog.info("Token.init: super.init done, publishing profile=\(String(describing: profile))")
     try publish(identity, leaf: leaf, profile: profile)
     // A fresh token means the card (re-)appeared: clear any cached PIN1 and
@@ -144,7 +140,8 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
     aid: Data?,
     tokenDriver: TKSmartCardTokenDriver,
     instanceID: CardInstanceIdentifier,
-    primed: PrimedIdentity
+    primed: PrimedIdentity,
+    shouldHoldSession: Bool
   ) throws {
     // Recorded, not written: this whole initializer runs inside the two
     // seconds the system gives the mint, and every line here is written
@@ -152,6 +149,40 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
     // named, because they all leave the same error at the boundary and
     // the difference between them is the diagnosis.
     TokenLog.trace("Token.init(primed): instance=\(instanceID.value)")
+    let material = try Self.validated(primed: primed, instanceID: instanceID)
+    self.keyProfile = material.profile
+    self.leafPublicKey = material.publicKey
+    self.sealedAccessNumber = material.accessNumber
+    self.interface = .fieldWithDeadline
+    self.primedSerial = material.serial
+    super.init(
+      smartCard: smartCard,
+      aid: aid,
+      instanceID: instanceID.value,
+      tokenDriver: tokenDriver
+    )
+    delegate = self
+    if shouldHoldSession {
+      observeSlotState(of: smartCard)
+      holdSession(on: smartCard)
+    }
+    try publish(
+      PublishedIdentity(
+        leafDER: primed.certDER,
+        issuerDER: primed.issuerDER,
+        tokenSerial: material.serial),
+      leaf: material.leaf,
+      profile: material.profile
+    )
+    TokenLog.trace(
+      "Token.init(primed): published, profile=\(String(describing: material.profile))")
+  }
+
+  /// Validates every piece of a stored contactless identity.
+  private static func validated(
+    primed: PrimedIdentity,
+    instanceID: CardInstanceIdentifier
+  ) throws -> PrimedTokenMaterial {
     guard let accessNumber = CardAccessNumber(digits: primed.can) else {
       TokenLog.trace("Token.init(primed): stored card access number is not usable")
       throw TokenError.primeMissing
@@ -171,25 +202,20 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
       TokenLog.trace("Token.init(primed): leaf carries no usable public key")
       throw TokenError.certificateUnreadable
     }
-    self.keyProfile = profile
-    self.leafPublicKey = publicKey
-    self.sealedAccessNumber = accessNumber
-    self.interface = .fieldWithDeadline
-    self.primedSerial = primed.tokenSerial.flatMap(TokenSerial.init(value:))
-    super.init(
-      smartCard: smartCard,
-      aid: aid,
-      instanceID: instanceID.value,
-      tokenDriver: tokenDriver
-    )
-    observeSlotState(of: smartCard)
-    holdSession(on: smartCard)
-    try publish(
-      PublishedIdentity(leafDER: primed.certDER, issuerDER: primed.issuerDER),
+    guard
+      let serialText = primed.tokenSerial,
+      let storedSerial = TokenSerial(value: serialText),
+      CardInstanceIdentifier(tokenSerial: storedSerial) == instanceID
+    else {
+      TokenLog.trace("Token.init(primed): stored serial does not name this token")
+      throw TokenError.primeMissing
+    }
+    return PrimedTokenMaterial(
+      accessNumber: accessNumber,
       leaf: leaf,
-      profile: profile
-    )
-    TokenLog.trace("Token.init(primed): published, profile=\(String(describing: profile))")
+      profile: profile,
+      publicKey: publicKey,
+      serial: storedSerial)
   }
 
   // The @objc requirement is throwing; keep `throws` for the bridge.
@@ -205,10 +231,11 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
   /// Takes a card session now and keeps it, so the signature that
   /// follows still has a live field.
   ///
-  /// The contactless mint calls this and nothing else does. On the
-  /// system-driven path the slot that minted this token has ended by the
-  /// time the signature is asked for, and a fresh `beginSession` then
-  /// fails with `TKError -7`; this one session carries the mint, the
+  /// A signing-field contactless mint calls this and nothing else does;
+  /// the one-time registration field deliberately stays passive. On the
+  /// system-driven signing path the slot that minted this token has ended
+  /// by the time the signature is asked for, and a fresh `beginSession`
+  /// then fails with `TKError -7`; this one session carries the mint, the
   /// PACE run and the signature.
   ///
   /// Best effort by design: a token that could not hold a session is

@@ -169,10 +169,9 @@ an access control is real and is accepted here rather than left implicit.
 
 The contactless path is a handover between two processes. The app primes
 a card and writes what it read; the token extension is asked for a token
-seconds later and has to find it. Three stores carry that handover, all in
-CardCore: `PrimeStore` (the primed identity), `CardCredentialStore` (the
-explicitly stored CAN and optional PIN1) and `CardTransportStore` (the
-holder's transport preference).
+seconds later and has to find it. Two stores carry that handover, both in
+CardCore: `PrimeStore` (the primed identity) and
+`CardCredentialStore` (the explicitly stored CAN and optional PIN1).
 
 An app extension carries its own `application-identifier`, so by default
 it addresses its own private keychain group and cannot see a single item
@@ -191,14 +190,14 @@ would silently move every write out of the extension's reach.
 
 macOS is deliberately left alone. Its entitlements carry no keychain
 group, so the app and the extension keep separate keychains there and the
-three stores read as absent in the extension. All three fail open - the
-transport preference to "every transport", the window to "ask for PIN1",
-the prime to "not a contactless card" - so the contact path behaves
-exactly as it always has. macOS has no NFC slot to prime for, and adding a
-group there would widen the reviewed allowlist in
+two stores read as absent in the extension. Both fail open - the
+credential store to "ask for PIN1", the prime to "not a contactless
+card" - so the contact path behaves exactly as it always has. macOS has
+no NFC slot to prime for, and adding a group there would widen the
+reviewed allowlist in
 `Scripts/inspect-archive.sh` for no working feature.
 
-## 2026-07-25 Support both card transports, with a user preference
+## 2026-07-28 Select the available card transport automatically
 
 ReFineID reaches the card over a contact/PC-SC reader and, on iOS 26+,
 over the phone's own NFC antenna. Native CryptoTokenKit mTLS over NFC was
@@ -206,13 +205,12 @@ proven end to end on device on 2026-07-25 (the card signs the TLS
 CertificateVerify; the site returns HTTP 200), which removes the reason
 to defer the contactless path.
 
-Both transports are user-disablable. They differ in cost rather than
-capability: a reader is faster and needs no CAN, while NFC needs no
-hardware but asks the holder to keep the card still for several seconds.
-Disabling NFC also means never asking for a CAN. The preference is inert
-on macOS, which has no NFC smart-card slot
-(`API_UNAVAILABLE(macos)`), and it must be readable by the token
-extension, which is a separate process.
+There is no holder-facing transport preference. A connected card reader
+is used when the platform presents it; otherwise an iPhone uses its NFC
+slot. A switch that merely restates physical availability creates stale
+state and can make a working card appear broken. macOS has no NFC
+smart-card slot (`API_UNAVAILABLE(macos)`), so its available transport is
+necessarily contact.
 
 Architecture and the four implementation rules that the NFC path must not
 violate: `Documentation/card-transports.md`.

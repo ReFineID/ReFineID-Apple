@@ -3,16 +3,16 @@ import Foundation
 /// What the app learned about one card while priming it, so a later
 /// signature does not have to learn it again.
 ///
-/// Everything here is public and unchanging: the certificate the card
-/// holds, the chain above it, and the card's own serial. None of it can
-/// differ the next time the same card is read, so re-reading it buys
-/// nothing -- and it is not free. On the contactless path the read costs
-/// hundreds of milliseconds of secure-messaged APDUs at exactly the
-/// moment the field is shortest: `ctkd` owns the slot and ends the
-/// session about two seconds after the token is minted, and that read was
-/// measured dying part way through. A signature that spends its field
-/// time re-reading a certificate it already has is a login lost for
-/// nothing.
+/// Except for the CAN described below, the material here is public and
+/// unchanging: the certificate the card holds, the chain above it, and
+/// the card's own serial. None of it can differ the next time the same
+/// card is read, so re-reading it buys nothing -- and it is not free. On
+/// the contactless path the read costs hundreds of milliseconds of
+/// secure-messaged APDUs at exactly the moment the field is shortest:
+/// `ctkd` owns the slot and ends the session about two seconds after the
+/// token is minted, and that read was measured dying part way through. A
+/// signature that spends its field time re-reading a certificate it
+/// already has is a login lost for nothing.
 ///
 /// The card access number is the one value here that is not public. It is
 /// carried as digits rather than as a `CardAccessNumber` because this
@@ -42,6 +42,17 @@ public struct PrimedIdentity: Codable, Equatable, Sendable {
   /// The card's PKCS#15 token serial, when the prime read one.
   public let tokenSerial: String?
 
+  /// Core NFC historical/application bytes that bind a staged record to
+  /// the immediately following CryptoTokenKit field.
+  ///
+  /// Persistent ATR lookup records leave this nil.
+  public let contactlessIdentification: Data?
+
+  /// Creation time of a short-lived staged registration record.
+  ///
+  /// Persistent ATR lookup records leave this nil.
+  public let stagedAt: Date?
+
   /// Refuses anything that could not have come from a real prime.
   ///
   /// The card access number must be six digits, the certificate must
@@ -50,13 +61,23 @@ public struct PrimedIdentity: Codable, Equatable, Sendable {
   /// evidence the check happened -- including the reader that decoded it
   /// from the keychain, which reconstructs it through this initializer
   /// rather than trusting what was stored.
-  public init?(can: String, certificate: Data, issuer: Data?, tokenSerial: String?) {
+  public init?(
+    can: String,
+    certificate: Data,
+    issuer: Data?,
+    tokenSerial: String?,
+    contactlessIdentification: Data? = nil,
+    stagedAt: Date? = nil
+  ) {
     guard CardAccessNumber(digits: can) != nil else { return nil }
     guard !certificate.isEmpty else { return nil }
     if let tokenSerial, TokenSerial(value: tokenSerial) == nil { return nil }
+    if let contactlessIdentification, contactlessIdentification.isEmpty { return nil }
     self.can = can
     self.certDER = certificate
     self.issuerDER = issuer
     self.tokenSerial = tokenSerial
+    self.contactlessIdentification = contactlessIdentification
+    self.stagedAt = stagedAt
   }
 }

@@ -14,10 +14,14 @@ internal struct SignRequest {
   /// The digest bytes to hand PSO:HASH.
   internal let digest: Data
 
-  /// The exact length of the card's raw signature, sent as the PSO:CDS
-  /// `Le` up front so the T=0 card never answers `6Cxx` (which can drop
-  /// the loaded hash - S1 v4.2 §3.8.1.1).
-  internal let expectedSignatureLength: ExpectedResponseLength
+  /// The exact PSO:CDS `Le` when it fits a short APDU.
+  ///
+  /// P-384 uses 96 to avoid a destructive `6Cxx` correction. RSA-3072
+  /// leaves this nil and uses the maximum-length structured CTK path.
+  internal let expectedSignatureLength: ExpectedResponseLength?
+
+  /// Exact raw card result size for this key profile.
+  internal let rawSignatureLength: Int
 
   /// The SecKey algorithm for verifying the re-encoded signature.
   ///
@@ -25,6 +29,20 @@ internal struct SignRequest {
   /// `digest` - the card signs the bytes we loaded, and the token checks
   /// them against the leaf's public key before trusting the result.
   internal let verifyAlgorithm: SecKeyAlgorithm
+
+  /// Converts the card result to the form Security.framework expects.
+  ///
+  /// ECDSA cards return `r || s` and CTK expects X9.62 DER. RSA cards
+  /// already return their modulus-wide wire signature unchanged.
+  internal func wireSignature(from raw: Data) -> Data? {
+    guard raw.count == rawSignatureLength else { return nil }
+    switch algorithm.scheme {
+    case .ecdsa:
+      return EcdsaSignature.derFromRawConcatenation(raw)
+    case .rsaPkcs1, .rsaPss:
+      return raw
+    }
+  }
 
   /// Whether `der` really is this request's signature under `publicKey`.
   ///
@@ -34,13 +52,13 @@ internal struct SignRequest {
   /// rather than returning garbage that breaks the handshake opaquely -
   /// and matches the reference implementation's verify-before-return.
   /// Both transports check; the check is local, so it costs no field.
-  internal func isSatisfied(by der: Data, from publicKey: SecKey) -> Bool {
+  internal func isSatisfied(by signature: Data, from publicKey: SecKey) -> Bool {
     var error: Unmanaged<CFError>?
     return SecKeyVerifySignature(
       publicKey,
       verifyAlgorithm,
       digest as CFData,
-      der as CFData,
+      signature as CFData,
       &error
     )
   }

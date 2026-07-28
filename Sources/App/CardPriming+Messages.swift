@@ -24,7 +24,21 @@
     }
 
     internal static func summary(for error: any Error) -> String {
-      switch error {
+      if let failure = error as? Failure {
+        return Self.summary(for: failure)
+      }
+      if let failure = error as? CoreNFCPrimeSession.Failure {
+        return Self.summary(for: failure)
+      }
+      if let failure = error as? NearFieldCardSession.Failure {
+        return Self.summary(for: failure)
+      }
+      return String(localized: "The card could not be read. Hold it still and try again.")
+    }
+
+    /// Explains an app-level priming failure.
+    private static func summary(for failure: Failure) -> String {
+      switch failure {
       case Failure.cardAccessNumberMissing:
         String(localized: "Store the card access number first, then try again.")
       case Failure.certificateUnreadable:
@@ -33,14 +47,38 @@
         String(localized: "The card details could not be stored on this iPhone.")
       case Failure.unidentifiedCard:
         String(localized: "The card was not recognized. Try holding it again.")
-      case NearFieldCardSession.Failure.antennaBusy:
+      case Failure.registrationCardMismatch:
+        String(
+          localized: """
+            The card changed between reading and Safari setup. Keep the \
+            same card in place and try again.
+            """)
+      }
+    }
+
+    /// Explains a Core NFC field failure.
+    private static func summary(for failure: CoreNFCPrimeSession.Failure) -> String {
+      switch failure {
+      case .unavailable:
+        String(localized: "This iPhone could not open its card reader.")
+      case .unsupportedTag:
+        String(localized: "This is not a supported identity card.")
+      case .commandTimedOut:
+        String(localized: "The card stopped answering. Hold it flat and try again.")
+      case .identificationMissing:
+        String(localized: "The card did not provide contactless identification.")
+      }
+    }
+
+    /// Explains a CryptoTokenKit registration-field failure.
+    private static func summary(for failure: NearFieldCardSession.Failure) -> String {
+      switch failure {
+      case .antennaBusy:
         String(localized: "The phone's card reader is busy. Try again in a moment.")
-      case NearFieldCardSession.Failure.cardNeverArrived:
+      case .cardNeverArrived:
         String(localized: "No card was found. Hold the card against the top of the phone.")
-      case NearFieldCardSession.Failure.slotRefused:
+      case .slotRefused:
         String(localized: "This iPhone would not open a card reading session.")
-      default:
-        String(localized: "The card could not be read. Hold it still and try again.")
       }
     }
   }

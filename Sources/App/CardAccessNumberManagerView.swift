@@ -60,12 +60,15 @@
       Section("Add card") {
         LabeledContent("CAN") {
           HStack {
-            TextField("CAN", text: $entry)
-              .labelsHidden()
-              .monospacedDigit()
-              .frame(width: Self.entryWidth)
-              .onSubmit { add() }
-              .accessibilityIdentifier("managerCardAccessNumberField")
+            TextField(
+              "CAN",
+              text: LimitedDigitBinding.cardAccessNumber($entry)
+            )
+            .labelsHidden()
+            .monospacedDigit()
+            .frame(width: Self.entryWidth)
+            .onSubmit { add() }
+            .accessibilityIdentifier("managerCardAccessNumberField")
             Button("Add") { add() }
               .disabled(!isEntryComplete || reading)
               .accessibilityIdentifier("managerAddCard")

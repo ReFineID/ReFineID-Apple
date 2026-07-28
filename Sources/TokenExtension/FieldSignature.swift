@@ -84,11 +84,11 @@ internal struct FieldSignature {
       expectedSignatureLength: request.expectedSignatureLength
     )
     guard
-      let der = EcdsaSignature.derFromRawConcatenation(raw),
-      request.isSatisfied(by: der, from: token.leafPublicKey)
+      let signature = request.wireSignature(from: raw),
+      request.isSatisfied(by: signature, from: token.leafPublicKey)
     else {
       throw TokenError.signatureMalformed
     }
-    return der
+    return signature
   }
 }

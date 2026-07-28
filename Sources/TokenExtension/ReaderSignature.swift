@@ -124,22 +124,22 @@ internal enum ReaderSignature {
       algorithm: request.algorithm,
       expectedSignatureLength: request.expectedSignatureLength
     )
-    guard let der = EcdsaSignature.derFromRawConcatenation(raw) else {
-      TokenLog.error("sign: raw signature \(raw.count) bytes not re-encodable")
+    guard let signature = request.wireSignature(from: raw) else {
+      TokenLog.error("sign: raw signature \(raw.count) bytes has wrong shape")
       throw TokenError.signatureMalformed
     }
-    guard request.isSatisfied(by: der, from: publicKey) else {
+    guard request.isSatisfied(by: signature, from: publicKey) else {
       TokenLog.error("sign: local verify FAILED - card returned a bad signature")
       throw TokenError.signatureMalformed
     }
-    TokenLog.info("sign: local verify OK, \(der.count) DER bytes")
+    TokenLog.info("sign: local verify OK, \(signature.count) wire bytes")
     Self.cacheOnSuccess(
       pristine: pristine,
       fromCache: fromCache,
       enteredPin: enteredPin,
       serial: serial
     )
-    return der
+    return signature
   }
 
   /// A fresh probe of all three counters and the card-health gate.
