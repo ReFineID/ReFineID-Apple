@@ -125,17 +125,34 @@ public enum DriverConfiguredCredentials {
   /// `refineid-card-*` names without touching another driver's tokens.
   public static func dropIdentityTokenConfigurations() -> Int {
     guard let configuration else { return 0 }
-    let preserved = [
-      Self.configurationInstanceID,
-      Self.directoryInstanceID,
-    ]
-    let identities = configuration.tokenConfigurations.keys.filter { instance in
-      !preserved.contains(instance)
-    }
+    let identities = Self.identityTokenConfigurationIDs(in: configuration)
     for instance in identities {
       configuration.removeTokenConfiguration(for: instance)
     }
     return identities.count
+  }
+
+  /// How many card identities this driver configuration still holds.
+  ///
+  /// Presence only. The setup screen uses this to offer its destructive
+  /// forget action for a stale partial identity without reading a token,
+  /// touching a card, or exposing configuration data.
+  public static func identityTokenConfigurationCount() -> Int {
+    guard let configuration else { return 0 }
+    return Self.identityTokenConfigurationIDs(in: configuration).count
+  }
+
+  /// Identity instance names, excluding the two setup-only channels.
+  private static func identityTokenConfigurationIDs(
+    in configuration: TKTokenDriver.Configuration
+  ) -> [String] {
+    let preserved = [
+      Self.configurationInstanceID,
+      Self.directoryInstanceID,
+    ]
+    return configuration.tokenConfigurations.keys.filter { instance in
+      !preserved.contains(instance)
+    }
   }
 
   /// Withdraws it, so forgetting the card forgets it here too.

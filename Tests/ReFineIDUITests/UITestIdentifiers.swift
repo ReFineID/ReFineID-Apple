@@ -25,6 +25,9 @@ internal enum UITestIdentifiers {
   /// The PIN1 entry field, present only while nothing is stored.
   internal static let pin1Field = "pin1Field"
 
+  /// The destructive action, present only while card state exists.
+  internal static let forgetCardIdentityButton = "forgetCardIdentityButton"
+
   /// The line saying a PIN1 is stored.
   internal static let pin1Status = "pin1Status"
 

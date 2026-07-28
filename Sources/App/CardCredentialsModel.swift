@@ -22,6 +22,10 @@ internal final class CardCredentialsModel {
   /// Every card the directory knows, newest first.
   internal private(set) var cards = CardDirectory.entries()
 
+  /// Whether there is anything behind the destructive forget action.
+  internal private(set) var hasForgettableState =
+    CardStateReset.hasForgettableState()
+
   /// Set when the last action failed, for the holder to read.
   internal private(set) var failure: String?
 
@@ -30,6 +34,7 @@ internal final class CardCredentialsModel {
     contents = CardCredentialStore.contents()
     storedCardAccessNumber = CardCredentialStore.displayedCardAccessNumber()
     cards = CardDirectory.entries()
+    hasForgettableState = CardStateReset.hasForgettableState()
   }
 
   #if os(macOS)

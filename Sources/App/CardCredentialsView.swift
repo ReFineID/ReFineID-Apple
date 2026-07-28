@@ -53,7 +53,9 @@ internal struct CardCredentialsView: View {
         }
       }
       diagnosticsSection
-      forgetSection
+      if model.hasForgettableState {
+        forgetSection
+      }
     }
     #if os(iOS)
       .listSectionSpacing(Self.sectionSpacing)
@@ -210,6 +212,7 @@ internal struct CardCredentialsView: View {
       Button("Forget this card and identity", role: .destructive) {
         showsForgetConfirmation = true
       }
+      .accessibilityIdentifier("forgetCardIdentityButton")
     }
   }
 

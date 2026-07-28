@@ -20,6 +20,21 @@ internal enum CardStateReset {
     }
   }
 
+  /// Whether this device has any card or identity state to forget.
+  ///
+  /// Every lookup is passive. In particular, this does not enumerate
+  /// token keychain items or wake the built-in NFC slot merely to decide
+  /// whether a destructive button should be visible.
+  internal static func hasForgettableState() -> Bool {
+    let credentials = CardCredentialStore.contents()
+    return credentials.hasCardAccessNumber
+      || credentials.hasPin1
+      || !CardDirectory.entries().isEmpty
+      || PrimeStore.storedCount() > 0
+      || DriverConfiguredCredentials.identityTokenConfigurationCount() > 0
+      || !Self.registeredOurTokenIDs().isEmpty
+  }
+
   /// Clears registrations, identity configurations, primes, and trace.
   internal static func perform() -> Outcome {
     var lines = ["=== reset ReFineID Safari identities ==="]
@@ -52,9 +67,7 @@ internal enum CardStateReset {
   ) {
     #if os(iOS)
       let manager = TKSmartCardTokenRegistrationManager.default
-      let ours = manager.registeredSmartCardTokens
-        .filter(CardTokenNamespace.owns(tokenIdentifier:))
-        .sorted()
+      let ours = Self.registeredOurTokenIDs()
       guard !ours.isEmpty else {
         return (["ReFineID Safari registrations: none"], true)
       }
@@ -71,6 +84,17 @@ internal enum CardStateReset {
       return (lines, succeeded)
     #else
       return (["ReFineID Safari registrations: not used on this platform"], true)
+    #endif
+  }
+
+  /// ReFineID registrations already known to CryptoTokenKit.
+  private static func registeredOurTokenIDs() -> [String] {
+    #if os(iOS)
+      TKSmartCardTokenRegistrationManager.default.registeredSmartCardTokens
+        .filter(CardTokenNamespace.owns(tokenIdentifier:))
+        .sorted()
+    #else
+      []
     #endif
   }
 }
