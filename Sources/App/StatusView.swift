@@ -357,7 +357,7 @@ internal struct StatusView: View {
     guard isEnteredNumberComplete else { return }
     let entry = cardAccessNumberEntry
     cardAccessNumberEntry = ""
-    credentials.saveCardAccessNumber(entry)
+    credentials.saveCardAccessNumber(entry, boundToSerial: nil)
     Task {
       await model.refresh()
     }

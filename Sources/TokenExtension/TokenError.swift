@@ -38,6 +38,9 @@ internal enum TokenError: Error {
   /// The holder has disabled the transport this card arrived on.
   case transportDisabled
 
+  /// The stored number was just refused by this card; not retrying yet.
+  case unsealAlreadyRefused
+
   /// The leaf's key is not one of the supported profiles.
   case unsupportedKeyProfile
 
@@ -52,7 +55,8 @@ internal enum TokenError: Error {
       TKError(.corruptedData)
     case .pinAlreadyRejected, .pinFormatInvalid, .pinRejected, .signRefused:
       TKError(.authenticationFailed)
-    case .primeMissing, .transportDisabled, .unsupportedKeyProfile:
+    case .primeMissing, .transportDisabled, .unsealAlreadyRefused,
+      .unsupportedKeyProfile:
       // Not this driver's card. Refusal is safe: the system treats the
       // card as unhandled rather than as broken.
       TKError(.tokenNotFound)

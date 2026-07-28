@@ -3,15 +3,17 @@
   import CardCore
   import SwiftUI
 
-  /// The manager window the Card menu opens: see, replace, or forget the
-  /// stored card access number, with no card required.
+  /// The manager window the Card menu opens: one CAN, the card it
+  /// belongs to, and Save / Forget.
   ///
-  /// The status row needs a sealed card to be readable before it appears,
-  /// which is exactly when the reader is busiest -- so management lives
-  /// here, available whenever the app runs. The number is shown, not
-  /// masked: it is printed on the card face and exists to stop remote
-  /// skimming, not to be hidden from its holder (decision 2026-07-28).
-  /// It still never enters logs, traces or diagnostics exports.
+  /// The CAN field holds the stored number and is edited in place. The
+  /// serial row says which card the number is bound to -- from the
+  /// stored binding, or read live from a present card that answers
+  /// without a number (a contact insertion does; a sealed antenna
+  /// offers nothing card-unique before PACE, by design). Saving while a
+  /// card's serial is readable binds the number to that card. The
+  /// number is shown, not masked: it is printed on the card face, and
+  /// it still never enters logs, traces or diagnostics exports.
   internal struct CardAccessNumberManagerView: View {
     /// Window identity, for the menu command that opens it.
     internal static let windowID = "card-access-number"
@@ -22,16 +24,26 @@
     @State private var credentials = CardCredentialsModel()
     @State private var entry = ""
 
-    /// Whether the entry is the six digits a card access number is.
+    /// The present card's serial, when it answered one without a CAN.
+    @State private var liveSerial: TokenSerial?
+
+    /// Whether the entry is the six digits a CAN is.
     private var isEntryComplete: Bool {
       entry.count == CardAccessNumber.digitCount
     }
 
+    /// The bound serial first: that is the recorded fact.
+    ///
+    /// A live read stands in for it until a save binds one.
+    private var serialText: String {
+      credentials.storedBoundSerial ?? liveSerial?.value ?? String(localized: "None")
+    }
+
     internal var body: some View {
       Form {
-        storedRow
-        entryRow
-        forgetButton
+        canRow
+        serialRow
+        actionRow
         if let failure = credentials.failure {
           Text(failure)
             .font(.footnote)
@@ -40,53 +52,62 @@
       }
       .formStyle(.grouped)
       .frame(width: Self.windowWidth)
-      .onAppear { credentials.refresh() }
+      .onAppear { load() }
     }
 
-    /// The stored CAN, readable and selectable, or None.
-    @ViewBuilder private var storedRow: some View {
-      LabeledContent("Stored CAN") {
-        Text(credentials.storedCardAccessNumber ?? String(localized: "None"))
+    /// The one number, edited in place.
+    @ViewBuilder private var canRow: some View {
+      LabeledContent("CAN") {
+        TextField("CAN", text: $entry)
+          .labelsHidden()
+          .monospacedDigit()
+          .frame(width: Self.entryWidth)
+          .onSubmit { save() }
+          .accessibilityIdentifier("managerCardAccessNumberField")
+      }
+    }
+
+    /// The card the number belongs to, when anything can say.
+    @ViewBuilder private var serialRow: some View {
+      LabeledContent("Card serial") {
+        Text(serialText)
           .monospacedDigit()
           .textSelection(.enabled)
-          .accessibilityIdentifier("storedCardAccessNumber")
+          .accessibilityIdentifier("managerCardSerial")
       }
     }
 
-    /// Six digits in, Save when they are all there.
-    ///
-    /// The field starts empty: a placeholder that looks like a number
-    /// reads as one.
-    @ViewBuilder private var entryRow: some View {
-      LabeledContent("New CAN") {
-        HStack {
-          TextField("CAN", text: $entry)
-            .labelsHidden()
-            .frame(width: Self.entryWidth)
-            .onSubmit { save() }
-            .accessibilityIdentifier("managerCardAccessNumberField")
-          Button("Save") { save() }
-            .disabled(!isEntryComplete)
-            .accessibilityIdentifier("managerSaveCardAccessNumber")
-        }
+    /// Save and Forget, in those words.
+    @ViewBuilder private var actionRow: some View {
+      HStack {
+        Button("Save") { save() }
+          .disabled(!isEntryComplete)
+          .accessibilityIdentifier("managerSaveCardAccessNumber")
+        Button("Forget") { forget() }
+          .disabled(credentials.storedCardAccessNumber == nil)
+          .accessibilityIdentifier("managerForgetCardAccessNumber")
       }
     }
 
-    /// Drops the stored number, in those words.
-    @ViewBuilder private var forgetButton: some View {
-      Button("Forget stored number") {
-        credentials.forgetCardAccessNumber()
+    /// Seeds the field from the store and asks a present card its serial.
+    private func load() {
+      credentials.refresh()
+      entry = credentials.storedCardAccessNumber ?? ""
+      Task {
+        liveSerial = await CardSerialProbe.read()
       }
-      .disabled(credentials.storedCardAccessNumber == nil)
-      .accessibilityIdentifier("managerForgetCardAccessNumber")
     }
 
-    /// Stores the entry and clears it; the model reports any refusal.
+    /// Stores the entry, bound to the present card when one answered.
     private func save() {
       guard isEntryComplete else { return }
-      let digits = entry
+      credentials.saveCardAccessNumber(entry, boundToSerial: liveSerial?.value)
+    }
+
+    /// Drops the stored number, its binding, and the field.
+    private func forget() {
+      credentials.forgetCardAccessNumber()
       entry = ""
-      credentials.saveCardAccessNumber(digits)
     }
   }
 

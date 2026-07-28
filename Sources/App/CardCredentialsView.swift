@@ -64,7 +64,7 @@ internal struct CardCredentialsView: View {
         Button("Save") {
           let entry = cardAccessNumberEntry
           cardAccessNumberEntry = ""
-          model.saveCardAccessNumber(entry)
+          model.saveCardAccessNumber(entry, boundToSerial: nil)
         }
         .accessibilityIdentifier("saveCardAccessNumber")
         .disabled(cardAccessNumberEntry.count != CardAccessNumber.digitCount)

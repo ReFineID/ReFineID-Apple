@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import Security
 
@@ -6,7 +7,7 @@ import Security
 /// PIN1 is never handed back for display: written once, present-or-absent
 /// afterwards. The card access number is the holder's to see -- it is
 /// printed on the card face -- and ``displayedCardAccessNumber()`` returns
-/// it for the manager window (decision 2026-07-28). Neither enters a log.
+/// it for the manager window. Neither enters a log.
 ///
 /// Both are `WhenUnlockedThisDeviceOnly` and non-synchronizable, so
 /// neither is written into a backup, restored onto another device, or
@@ -27,7 +28,7 @@ import Security
 /// past, the Security framework cannot -- and it is a deliberate trade,
 /// recorded in `Documentation/decisions.md` rather than left to be
 /// discovered here. The card access number passes no gate in either
-/// direction (decision 2026-07-28).
+/// direction.
 public enum CardCredentialStore {
   /// What the store currently holds.
   public struct Contents: Equatable, Sendable {
@@ -53,6 +54,9 @@ public enum CardCredentialStore {
   /// Account for PIN1, present only when the holder opted in.
   private static let pin1Account = "pin1"
 
+  /// Account for the serial of the card the stored number belongs to.
+  private static let boundSerialAccount = "can-serial"
+
   /// Keychain coordinates used by the retired timed signing window.
   private static let legacySigningWindowService = "fi.refineid.pin1window"
   private static let legacySigningWindowAccount = "current"
@@ -71,11 +75,41 @@ public enum CardCredentialStore {
   @discardableResult
   public static func save(cardAccessNumber digits: String) -> OSStatus {
     guard CardAccessNumber(digits: digits) != nil else { return errSecParam }
+    // A new number belongs to an unknown card until something binds it.
+    delete(account: boundSerialAccount)
     let status = write(digits, account: cardAccessNumberAccount)
     if status == errSecSuccess {
       publishToDriver(digits: digits)
     }
     return status
+  }
+
+  /// Records which card the stored number belongs to.
+  public static func bind(toSerial serial: String) {
+    _ = write(serial, account: boundSerialAccount)
+  }
+
+  /// The serial the stored number is bound to, when one was recorded.
+  public static func boundSerial() -> String? {
+    read(account: boundSerialAccount)
+  }
+
+  /// An opaque name for the stored number: equal when the number is,
+  /// never convertible back to digits.
+  ///
+  /// Lets the token driver remember "this exact number was refused by
+  /// this card" across offers without holding digits, which is what
+  /// stops a wrong number from being retried against the card for as
+  /// long as it rests on the antenna.
+  public static func cardAccessNumberFingerprint() -> Data? {
+    var digits = read(account: cardAccessNumberAccount).map { Data($0.utf8) }
+    #if os(macOS)
+      if digits == nil {
+        digits = DriverConfiguredCredentials.digitsData()
+      }
+    #endif
+    guard let digits else { return nil }
+    return Data(SHA256.hash(data: digits))
   }
 
   /// Hands the stored card access number to the token driver, for the
@@ -110,9 +144,9 @@ public enum CardCredentialStore {
   /// The stored card access number, for the holder to see.
   ///
   /// The number is printed on the card face; hiding it from its holder
-  /// protected nothing and cost the manager window its one job
-  /// (decision 2026-07-28). PIN1 has no counterpart to this, and the
-  /// value still never reaches a log, a trace or a diagnostics export.
+  /// protected nothing and cost the manager window its one job. PIN1
+  /// has no counterpart to this, and the value still never reaches a
+  /// log, a trace or a diagnostics export.
   public static func displayedCardAccessNumber() -> String? {
     read(account: cardAccessNumberAccount)
   }
@@ -218,9 +252,11 @@ public enum CardCredentialStore {
       tokenSerial: tokenSerial)
   }
 
-  /// Removes the card access number, from the driver's copy as well.
+  /// Removes the card access number, from the driver's copy as well,
+  /// and the serial it was bound to.
   public static func forgetCardAccessNumber() {
     delete(account: cardAccessNumberAccount)
+    delete(account: boundSerialAccount)
     #if os(macOS)
       DriverConfiguredCredentials.withdraw()
     #endif
@@ -234,6 +270,7 @@ public enum CardCredentialStore {
   /// Removes everything this device knows about the card's secrets.
   public static func forgetAll() {
     delete(account: cardAccessNumberAccount)
+    delete(account: boundSerialAccount)
     delete(account: pin1Account)
     #if os(macOS)
       DriverConfiguredCredentials.withdraw()

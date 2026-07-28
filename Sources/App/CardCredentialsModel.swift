@@ -8,7 +8,7 @@ import SwiftUI
 /// the model only ever reports *whether* something is stored, never what
 /// it is -- a screen that can show a PIN is a screen that can leak one.
 /// The card access number is the one value read back: it is printed on
-/// the card face and is the holder's to see (decision 2026-07-28).
+/// the card face and is the holder's to see.
 @MainActor
 @Observable
 internal final class CardCredentialsModel {
@@ -19,6 +19,9 @@ internal final class CardCredentialsModel {
   internal private(set) var storedCardAccessNumber =
     CardCredentialStore.displayedCardAccessNumber()
 
+  /// The serial of the card the stored number is bound to, when known.
+  internal private(set) var storedBoundSerial = CardCredentialStore.boundSerial()
+
   /// Set when the last action failed, for the holder to read.
   internal private(set) var failure: String?
 
@@ -26,17 +29,22 @@ internal final class CardCredentialsModel {
   internal func refresh() {
     contents = CardCredentialStore.contents()
     storedCardAccessNumber = CardCredentialStore.displayedCardAccessNumber()
+    storedBoundSerial = CardCredentialStore.boundSerial()
   }
 
   /// Stores the card access number, with no gate in front.
   ///
-  /// Ungated by decision 2026-07-28: the number is printed on the card
-  /// face, so a prompt in front of storing it protected nothing and
-  /// cost every setup an interruption.
-  internal func saveCardAccessNumber(_ digits: String) {
+  /// Ungated: the number is printed on the card face, so a prompt in
+  /// front of storing it protected nothing and cost every setup an
+  /// interruption.
+  internal func saveCardAccessNumber(_ digits: String, boundToSerial serial: String?) {
     failure = nil
     let status = CardCredentialStore.save(cardAccessNumber: digits)
-    if status != errSecSuccess {
+    if status == errSecSuccess {
+      if let serial {
+        CardCredentialStore.bind(toSerial: serial)
+      }
+    } else {
       failure = String(
         localized: "Could not store the card access number (\(status)).")
     }
@@ -58,7 +66,7 @@ internal final class CardCredentialsModel {
 
   /// Forgets the card access number, so it can be entered again.
   ///
-  /// Ungated, like storing it: decision 2026-07-28.
+  /// Ungated, like storing it.
   internal func forgetCardAccessNumber() {
     failure = nil
     CardCredentialStore.forgetCardAccessNumber()
@@ -90,7 +98,7 @@ internal final class CardCredentialsModel {
   /// to read PIN1 while signing a request made in Safari and has no
   /// interface to answer a prompt with. Every path that writes or drops
   /// PIN1 therefore comes through here; the card access number needs no
-  /// gate at all (decision 2026-07-28).
+  /// gate at all.
   ///
   /// ``CardCredentialGate`` is also the single place a debug build can be
   /// told to skip the prompt, and nothing outside `#if DEBUG` can ask it

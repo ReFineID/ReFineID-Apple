@@ -54,6 +54,15 @@ public enum DriverConfiguredCredentials {
     TKTokenDriver.Configuration.driverConfigurations[Self.classID]
   }
 
+  /// The published digits as raw bytes, for fingerprinting only.
+  ///
+  /// `CardCredentialStore.cardAccessNumberFingerprint` digests these so
+  /// the driver can remember "this number was refused" without holding
+  /// digits; nothing else may read this.
+  internal static func digitsData() -> Data? {
+    configuration?.tokenConfigurations[Self.configurationInstanceID]?.configurationData
+  }
+
   /// The card access number the app published, if any.
   internal static func cardAccessNumber() -> CardAccessNumber? {
     guard

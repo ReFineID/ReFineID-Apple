@@ -131,7 +131,15 @@ internal struct CardStatusSnapshot: Equatable, Sendable {
   /// opening a "Ready to Scan" sheet from this screen. Status must remain
   /// an observer, never become another login attempt.
   private static func publishesAnIdentity() -> Bool {
-    TKTokenWatcher().tokenIDs.contains { $0.hasPrefix(Self.tokenPrefix) }
+    // Every token configuration is listed as a token, so the credential
+    // entry the app itself writes must be excluded by name -- counting
+    // it reported "Ready" with no card present, from nothing but a
+    // stored card access number.
+    let credentialEntry =
+      Self.tokenPrefix + DriverConfiguredCredentials.configurationInstanceID
+    return TKTokenWatcher().tokenIDs.contains { identifier in
+      identifier.hasPrefix(Self.tokenPrefix) && identifier != credentialEntry
+    }
   }
 
   /// Runs the synchronous, blocking card session on a background GCD
