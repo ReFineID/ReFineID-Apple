@@ -68,12 +68,19 @@
     }
 
     /// The card the number belongs to, when anything can say.
+    ///
+    /// Read asks the present card again: a contact insertion answers
+    /// its serial freely, a sealed antenna answers nothing before PACE.
     @ViewBuilder private var serialRow: some View {
       LabeledContent("Card serial") {
-        Text(serialText)
-          .monospacedDigit()
-          .textSelection(.enabled)
-          .accessibilityIdentifier("managerCardSerial")
+        HStack {
+          Text(serialText)
+            .monospacedDigit()
+            .textSelection(.enabled)
+            .accessibilityIdentifier("managerCardSerial")
+          Button("Read") { probe() }
+            .accessibilityIdentifier("managerReadCardSerial")
+        }
       }
     }
 
@@ -93,6 +100,11 @@
     private func load() {
       credentials.refresh()
       entry = credentials.storedCardAccessNumber ?? ""
+      probe()
+    }
+
+    /// Asks the present card for its serial, off the main thread.
+    private func probe() {
       Task {
         liveSerial = await CardSerialProbe.read()
       }
