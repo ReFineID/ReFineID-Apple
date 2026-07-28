@@ -261,7 +261,7 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
     CardCredentialStore.forgetPin1()
     PrimeStore.forget(instanceID: cardInstanceID)
     PrimeStore.forgetStaged()
-    TokenRegistrationRevoker.revoke(cardInstanceID)
+    TokenRegistrationRevoker.revoke(cardInstanceID, reason: .pin1Rejection)
     TokenLog.error("PIN1 rejected; stored PIN1, prime, and token registration revoked")
   }
 
@@ -364,7 +364,10 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
       items.append(issuerItem)
     }
     TokenLog.info(
-      "publish: filling \(items.count) items, keychainContents=\(keychainContents != nil)"
+      "publish: filling \(items.count) items, keychainContents=\(keychainContents != nil) "
+        + "publicKeyData=\(keychainKey.publicKeyData?.count ?? -1)B "
+        + "publicKeyHash=\(keychainKey.publicKeyHash?.count ?? -1)B "
+        + "constraints=\(keychainKey.constraints?.count ?? 0)"
     )
     keychainContents?.fill(with: items)
   }

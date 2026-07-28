@@ -15,7 +15,7 @@ theories about TLS versions, readers and server configuration.
 **Cause.** Replacing `ReFineIDTokenExtension.appex` while `ctkd` is
 running leaves PlugInKit holding the previous copy. `ctkd` says so:
 
-    Token driver extension fi.refineid.ReFineID.ctk failed to start:
+    Token driver extension fi.refineid.ReFineID.token failed to start:
       Error Domain=PlugInKit Code=16 "other version in use", useCount = 1
     [CryptoTokenKit:slotwtch] No token driver found for card <TKSmartCardATR ...>
 
@@ -87,3 +87,23 @@ but whether the driver was asked at all:
       --style compact | grep -E "supports:|sign: entry|sign: exit"
 
 Asked and failed is ours. Never asked is not.
+
+## Safari can retain a dead client-identity path
+
+**Symptom.** The same live token signs in to one site, while another site
+fails, hangs, or has a login button that appears to do nothing. No new
+`createSession`, `supports`, or `sign` line appears in the extension
+trace for the failed attempt.
+
+**Confirmed on iOS 2026-07-29.** The connected-reader token had just
+completed a TLS 1.3 signature for `card.refineid.fi`, but the DVV TLS 1.2
+test page failed without invoking the token extension. Terminating only
+Safari and reopening the same DVV page made it request
+`ecdsaMessageSHA256`; two card signatures then passed local verification
+and the page succeeded. No card, token, or ReFineID state changed.
+
+This evidence establishes stale Safari process state, not the internal
+form or lifetime of that state. Do not reset the card identity in
+response. Recreate the site's login conversation first; if the driver is
+still never asked, force-quit Safari, reopen it, and retry. Once a
+`supports` or `sign` line appears, diagnose that exchange instead.

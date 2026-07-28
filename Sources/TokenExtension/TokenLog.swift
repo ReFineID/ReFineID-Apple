@@ -9,7 +9,7 @@ import OSLog
 /// Every line goes to os.Logger AND is appended to a file in the
 /// extension's tmp dir, which is pullable over wireless without a USB swap:
 ///   xcrun devicectl device copy from --device <id> \
-///     --domain-type appDataContainer --domain-identifier fi.refineid.ReFineID.ctk \
+///     --domain-type appDataContainer --domain-identifier fi.refineid.ReFineID.token \
 ///     --source tmp/refineid-token-extension.log --destination /tmp/trace.log
 /// No PIN, PUK, full serial, or certificate content is ever logged - only
 /// lengths, status words, and control flow (release plan section 4.3).

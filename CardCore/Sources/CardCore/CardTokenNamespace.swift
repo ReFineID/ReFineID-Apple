@@ -5,7 +5,7 @@
 /// for registration, status, and revocation.
 public enum CardTokenNamespace {
   /// The token driver's class identifier.
-  public static let driverClassIdentifier = "fi.refineid.ReFineID.ctk"
+  public static let driverClassIdentifier = "fi.refineid.ReFineID.token"
 
   /// CryptoTokenKit separates the class and instance identifiers with this.
   private static let identifierSeparator = ":"

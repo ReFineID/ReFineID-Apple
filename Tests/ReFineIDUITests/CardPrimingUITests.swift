@@ -57,7 +57,7 @@ internal final class CardPrimingUITests: XCTestCase {
     let diagnostics = AppDiagnostics.text(from: app)
     attachText(diagnostics, named: "04-diagnostics")
     XCTAssertTrue(
-      diagnostics.contains("fi.refineid.ReFineID.ctk:"),
+      diagnostics.contains("fi.refineid.ReFineID.token:"),
       "the card was not registered for Safari. "
         + "The attached diagnostics say what this device holds now.")
   }

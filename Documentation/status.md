@@ -178,6 +178,38 @@ can outlive the field that caused iOS to discover the identity. Once the
 choice is remembered, Safari reaches signing while the fresh field is
 alive.
 
+## iOS: a connected USB-C reader signs for Safari
+
+The iPhone also uses a connected smart-card reader as an ordinary live
+CryptoTokenKit token. This was proven on 2026-07-29 with the current
+optimized Profile build and an HID OMNIKEY reader:
+
+| Consumer | TLS path | CTK algorithm and input | Card result |
+| --- | --- | --- | --- |
+| DVV authentication test | TLS 1.2 | `ecdsaMessageSHA256`, 9,490 B | local verify OK, 103 B, 333 ms |
+| DVV authentication test, follow-up | TLS 1.2 | `ecdsaMessageSHA256`, 9,488 B | local verify OK, 102 B, 334 ms |
+| `card.refineid.fi` | TLS 1.3 | `ecdsaMessageSHA384`, 130 B | local verify OK, 104 B, 336 ms |
+
+`oma.posti.fi` also completed its login with this token. After clearing
+Safari's website state and creating a clean ReFineID identity,
+`suomi.fi` presented the identity-certificate consent and PIN1 sheets
+and completed its login too. `admin.iki.fi` then completed its
+renegotiated client-certificate login from the same clean state. The
+first signature returned
+`authenticationRequired`, CryptoTokenKit presented PIN1, and the repeat
+succeeded. Later signatures reused the card-serial-bound in-process PIN1
+while still sending VERIFY PIN1 to the card every time.
+
+The same DVV page initially failed without one new token-extension line.
+Terminating only Safari and reopening the page made the exchanges above
+appear and the page succeed. That is a stale Safari client-identity/TLS
+process state signature: never asked is not a card or token failure.
+
+A successful reader mint removes the same physical card's stored NFC
+prime and persistent smart-card registration. The connected reader is
+then the only offered transport for that identity until NFC is
+deliberately minted again.
+
 The clean build-16 trace on 2026-07-28 removed one important ambiguity.
 `ctkd` gave the system-owned NFC operation 1.833 seconds from field start
 to forced termination. The token minted in 44.6 ms, held its session and

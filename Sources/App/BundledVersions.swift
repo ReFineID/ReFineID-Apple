@@ -10,7 +10,7 @@ internal struct BundledVersions {
   /// to be named rather than taken as whichever `.appex` the file system
   /// happens to list first. Keep in sync with the token extension
   /// target's PRODUCT_BUNDLE_IDENTIFIER.
-  private static let driverBundleIdentifier = "fi.refineid.ReFineID.ctk"
+  private static let driverBundleIdentifier = "fi.refineid.ReFineID.token"
 
   /// The file extension every embedded app extension carries.
   private static let extensionSuffix = "appex"

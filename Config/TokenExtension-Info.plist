@@ -14,7 +14,7 @@
 		<key>NSExtensionAttributes</key>
 		<dict>
 			<key>com.apple.ctk.class-id</key>
-			<string>fi.refineid.ReFineID.ctk</string>
+			<string>fi.refineid.ReFineID.token</string>
 			<key>com.apple.ctk.driver-class</key>
 			<string>ReFineIDTokenExtension.TokenDriver</string>
 			<key>com.apple.ctk.token-type</key>

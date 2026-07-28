@@ -53,8 +53,8 @@ internal struct CardInstanceIdentifierTests {
     let serial = try #require(TokenSerial(value: "TEST00001"))
     let instance = try #require(CardInstanceIdentifier(tokenSerial: serial))
     let tokenIdentifier = CardTokenNamespace.tokenIdentifier(for: instance)
-    let neighboringDriver = "fi.refineid.ReFineID.ctk2:" + instance.value
-    #expect(tokenIdentifier == "fi.refineid.ReFineID.ctk:refineid-card-test00001")
+    let neighboringDriver = "fi.refineid.ReFineID.token2:" + instance.value
+    #expect(tokenIdentifier == "fi.refineid.ReFineID.token:refineid-card-test00001")
     #expect(CardTokenNamespace.owns(tokenIdentifier: tokenIdentifier))
     #expect(!CardTokenNamespace.owns(tokenIdentifier: neighboringDriver))
   }

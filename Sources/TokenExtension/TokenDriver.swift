@@ -61,6 +61,9 @@ internal final class TokenDriver: TKSmartCardTokenDriver, TKSmartCardTokenDriver
         case .reader:
           try Token(smartCard: smartCard, aid: aid, tokenDriver: driver)
         }
+      if transport == .reader {
+        token.supersedeStoredContactlessIdentity()
+      }
       TokenLog.info(
         "createToken succeeded ms=\(Self.elapsed(since: started))"
       )

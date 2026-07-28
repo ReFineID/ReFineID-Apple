@@ -39,7 +39,7 @@ Legend:
   cache invariant, and tag-driven distribution.
 - [ ] Decide and register the final app and extension bundle identifiers.
   Decided 2026-07-22 (`Documentation/decisions.md`: `fi.refineid.ReFineID` +
-  `fi.refineid.ReFineID.ctk`); explicit App ID registration on the release
+  `fi.refineid.ReFineID.token`); explicit App ID registration on the release
   team still pending.
 - [ ] Decide the initial supported card generations, key profiles, readers, and
   system consumers.

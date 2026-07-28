@@ -17,6 +17,20 @@ must not contain dormant engineering screens, while the optimized Profile
 configuration used for live card development still needs the same
 instruments that made the NFC path measurable.
 
+## 2026-07-29 A reader mint supersedes the same card's NFC identity
+
+On iOS, successfully minting a token for a card in a connected reader
+removes that physical card's stored contactless prime and asynchronously
+unregisters its persistent CryptoTokenKit smart-card identity. Inserting a
+reader and card is an explicit physical transport choice; Safari should not
+also wake the phone's NFC field for the same identity.
+
+The boundary is the printed card serial already used by the token instance,
+not the ATR shared by a card family. Other cards are untouched. Stored CAN
+and PIN1 are preserved, and the newly minted live reader token remains
+published. If the holder later wants NFC again, "Mint identity token"
+performs the deliberate one-time contactless setup again.
+
 ## 2026-07-29 An ended NFC field is an absent token
 
 The iOS token session maps only `CardOperationError.sessionUnavailable`
@@ -174,7 +188,7 @@ driver even for the app's own registered slot, nothing is minted, and
 `registerSmartCard` fails. Splitting the roles across separate extensions
 with different class-ids is what made system-Safari login work at all.
 
-- Minting: `fi.refineid.ReFineID.ctk`, `ReFineIDTokenExtension`, declares
+- Minting: `fi.refineid.ReFineID.token`, `ReFineIDTokenExtension`, declares
   no AID.
 - Discovery: `fi.refineid.ReFineID.discovery`,
   `ReFineIDDiscoveryExtension`, declares the AID and refuses every
@@ -334,14 +348,22 @@ calendar release/tag scheme.
 ## 2026-07-22 Bundle identifiers (decided; registration pending)
 
 - Application: `fi.refineid.ReFineID`
-- Token extension: `fi.refineid.ReFineID.ctk`
+- Token extension: `fi.refineid.ReFineID.token`
 - Discovery extension: `fi.refineid.ReFineID.discovery` (added 2026-07-27;
   see the CryptoTokenKit split decision above)
 
 Apple requires an embedded extension's identifier to be prefixed by the
 containing app's identifier.
 
-The P0 task remains open until both identifiers are registered as explicit
+The token extension used the provisional `.ctk` suffix during development.
+It moved once to the final `.token` suffix on 2026-07-29, before release.
+On the development phone, an attribute query could see the provisional
+provider's identity while Apple's exact certificate-reference query
+returned no references after token access had been denied. iOS exposes no
+API or Settings control to inspect or reset that decision. The final
+identifier is stable; changing it is not a runtime recovery mechanism.
+
+The P0 task remains open until all identifiers are registered as explicit
 App IDs on the release team.
 
 ## 2026-07-22 Minimum supported macOS: 26.0

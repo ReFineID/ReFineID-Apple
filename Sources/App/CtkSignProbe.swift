@@ -3,6 +3,7 @@
   import CryptoKit
   import CryptoTokenKit
   import Foundation
+  import LocalAuthentication
   import Security
 
   /// Diagnostic that signs through the real token-extension path.
@@ -34,7 +35,10 @@
         return lines + ["FAIL: no refineid token registered"]
       }
 
-      guard let privateKey = copyTokenKey(tokenID: tokenID) else {
+      lines.append(contentsOf: certificateReferenceReport())
+      let context = LAContext()
+      context.localizedReason = String(localized: "Test the ReFineID identity token")
+      guard let privateKey = copyTokenKey(tokenID: tokenID, context: context) else {
         return lines + dumpTokenKeychain() + ["FAIL: no refineid key in keychain"]
       }
       guard let publicKey = SecKeyCopyPublicKey(privateKey) else {
@@ -102,6 +106,31 @@
       return lines
     }
 
+    /// Runs Apple's minimal token-entitlement diagnostic query unchanged.
+    ///
+    /// A successful attribute-only query proves that ctkd indexed the
+    /// extension's publication. A certificate reference additionally
+    /// crosses the token-access boundary. Keeping this query free of token
+    /// filters and authentication options makes its result directly
+    /// comparable with Apple's documented troubleshooting query.
+    private static func certificateReferenceReport() -> [String] {
+      let query: [CFString: Any] = [
+        kSecClass: kSecClassCertificate,
+        kSecAttrAccessGroup: kSecAttrAccessGroupToken,
+        kSecMatchLimit: kSecMatchLimitAll,
+        kSecReturnRef: true,
+      ]
+      var result: CFTypeRef?
+      let status = SecItemCopyMatching(query as CFDictionary, &result)
+      guard status == errSecSuccess else {
+        return ["certificate/ref exact query: status \(status)"]
+      }
+      if let references = result as? [Any] {
+        return ["certificate/ref exact query: \(references.count) reference(s)"]
+      }
+      return ["certificate/ref exact query: one reference"]
+    }
+
     /// The key as a TLS client would reach it: find the identity, take
     /// its private key.
     ///
@@ -115,7 +144,10 @@
     /// carry it -- so the probe can list an identity it cannot use.
     /// Safari holds the entitlement, so what the probe cannot do says
     /// nothing about whether the login works.
-    private static func identityKey(tokenID: String) -> SecKey? {
+    private static func identityKey(
+      tokenID: String,
+      context: LAContext
+    ) -> SecKey? {
       // Attributes and references together, unfiltered, then matched
       // here. Filtering the query by `kSecAttrTokenID` returned nothing
       // for an identity the same query returns when asked for
@@ -126,12 +158,12 @@
         kSecReturnRef: true,
         kSecReturnAttributes: true,
         kSecMatchLimit: kSecMatchLimitAll,
+        kSecUseAuthenticationContext: context,
       ]
       var found: CFTypeRef?
-      guard
-        SecItemCopyMatching(query as CFDictionary, &found) == errSecSuccess,
-        let matches = found as? [[CFString: Any]]
-      else {
+      let status = SecItemCopyMatching(query as CFDictionary, &found)
+      guard status == errSecSuccess, let matches = found as? [[CFString: Any]] else {
+        DebugConsole.emit("identity/attrs+ref: status \(status)")
         return nil
       }
       for match in matches {
@@ -150,8 +182,11 @@
       return nil
     }
 
-    private static func copyTokenKey(tokenID: String) -> SecKey? {
-      if let key = Self.identityKey(tokenID: tokenID) {
+    private static func copyTokenKey(
+      tokenID: String,
+      context: LAContext
+    ) -> SecKey? {
+      if let key = Self.identityKey(tokenID: tokenID, context: context) {
         return key
       }
       // The token's key lives in the token access group; the query must
@@ -168,6 +203,7 @@
             kSecAttrAccessGroup: kSecAttrAccessGroupToken,
             kSecReturnRef: true,
             kSecMatchLimit: kSecMatchLimitOne,
+            kSecUseAuthenticationContext: context,
           ]
         ),
         (
@@ -177,6 +213,7 @@
             kSecAttrTokenID: tokenID,
             kSecReturnRef: true,
             kSecMatchLimit: kSecMatchLimitOne,
+            kSecUseAuthenticationContext: context,
           ]
         ),
         (
@@ -187,6 +224,7 @@
             kSecReturnAttributes: true,
             kSecReturnRef: true,
             kSecMatchLimit: kSecMatchLimitOne,
+            kSecUseAuthenticationContext: context,
           ]
         ),
       ]

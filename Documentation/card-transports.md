@@ -102,3 +102,8 @@ present or absent independently of those switches.
 The token extension makes the same decision from the slot that caused
 CryptoTokenKit to invoke it. macOS offers only contact slots; iOS can
 offer contact or built-in NFC.
+
+On iOS, a successful connected-reader mint also removes the same
+physical card's stored NFC prime and persistent smart-card registration.
+The live reader token is then the sole offered transport until the holder
+deliberately mints an NFC identity again.
