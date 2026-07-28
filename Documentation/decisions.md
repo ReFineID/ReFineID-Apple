@@ -3,6 +3,16 @@
 Decisions with dates and rationale. `Documentation/release-plan.md` controls scope and
 security behavior; this file records the concrete values chosen under it.
 
+## 2026-07-28 The card access number is holder-visible
+
+The store's original rule -- never hand a stored value back for display
+-- treated the card access number like PIN1. They are not alike: the
+number is printed on the card face, has no retry counter, and exists to
+stop remote skimming, not to be hidden from its holder. The Card menu's
+manager window therefore shows, replaces and forgets the stored number
+without requiring a card to be present. PIN1 remains write-only, and
+the number still never enters logs, traces or diagnostics exports.
+
 ## 2026-07-28 Stored PIN1 is directly available to the iOS token extension
 
 The fifteen-minute software signing window is removed from the iOS

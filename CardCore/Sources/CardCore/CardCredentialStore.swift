@@ -3,8 +3,10 @@ import Security
 
 /// Where this device keeps the card access number, and optionally PIN1.
 ///
-/// Neither value is ever handed back for display: they are written once,
-/// and afterwards the store will only say whether something is present.
+/// PIN1 is never handed back for display: written once, present-or-absent
+/// afterwards. The card access number is the holder's to see -- it is
+/// printed on the card face -- and ``displayedCardAccessNumber()`` returns
+/// it for the manager window (decision 2026-07-28). Neither enters a log.
 ///
 /// Both are `WhenUnlockedThisDeviceOnly` and non-synchronizable, so
 /// neither is written into a backup, restored onto another device, or
@@ -102,6 +104,16 @@ public enum CardCredentialStore {
     #else
       return false
     #endif
+  }
+
+  /// The stored card access number, for the holder to see.
+  ///
+  /// The number is printed on the card face; hiding it from its holder
+  /// protected nothing and cost the manager window its one job
+  /// (decision 2026-07-28). PIN1 has no counterpart to this, and the
+  /// value still never reaches a log, a trace or a diagnostics export.
+  public static func displayedCardAccessNumber() -> String? {
+    read(account: cardAccessNumberAccount)
   }
 
   /// Stores PIN1 for unattended signing, replacing any previous one.

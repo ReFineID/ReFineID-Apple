@@ -10,6 +10,12 @@ internal struct ReFineIDApp: App {
         rootContent
       }
       .windowResizability(.contentSize)
+      .commands { CardCommands() }
+
+      Window("Card Access Number", id: CardAccessNumberManagerView.windowID) {
+        CardAccessNumberManagerView()
+      }
+      .windowResizability(.contentSize)
     #else
       WindowGroup {
         rootContent

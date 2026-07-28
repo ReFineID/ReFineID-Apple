@@ -4,23 +4,28 @@ import SwiftUI
 /// What the credential screen knows and what it is allowed to do.
 ///
 /// Nothing here ever holds a secret longer than the moment it is written:
-/// the entry fields are cleared as soon as a value is stored, and the
-/// model only ever reports *whether* something is stored, never what it
-/// is. Reading a stored secret back for display is deliberately not
-/// offered -- the holder can replace a value they have forgotten, and a
-/// screen that can show a PIN is a screen that can leak one.
+/// the entry fields are cleared as soon as a value is stored. For PIN1
+/// the model only ever reports *whether* something is stored, never what
+/// it is -- a screen that can show a PIN is a screen that can leak one.
+/// The card access number is the one value read back: it is printed on
+/// the card face and is the holder's to see (decision 2026-07-28).
 @MainActor
 @Observable
 internal final class CardCredentialsModel {
   /// What the device currently holds.
   internal private(set) var contents = CardCredentialStore.contents()
 
+  /// The stored card access number, shown by the manager window.
+  internal private(set) var storedCardAccessNumber =
+    CardCredentialStore.displayedCardAccessNumber()
+
   /// Set when the last action failed, for the holder to read.
   internal private(set) var failure: String?
 
-  /// Refreshes what is stored, without touching any secret.
+  /// Refreshes what is stored, without touching PIN1.
   internal func refresh() {
     contents = CardCredentialStore.contents()
+    storedCardAccessNumber = CardCredentialStore.displayedCardAccessNumber()
   }
 
   /// Stores the card access number after the holder authenticates.
