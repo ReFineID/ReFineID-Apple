@@ -59,10 +59,14 @@ internal final class TokenDriver: TKSmartCardTokenDriver, TKSmartCardTokenDriver
         case .nearField:
           try mintFromPrime(smartCard: smartCard, aid: aid, tokenDriver: driver)
         case .reader:
-          try Token(smartCard: smartCard, aid: aid, tokenDriver: driver)
+          try Token(
+            smartCard: smartCard,
+            aid: aid,
+            tokenDriver: driver
+          )
         }
       if transport == .reader {
-        token.supersedeStoredContactlessIdentity()
+        token.supersedeStoredContactlessIdentities()
       }
       TokenLog.info(
         "createToken succeeded ms=\(Self.elapsed(since: started))"

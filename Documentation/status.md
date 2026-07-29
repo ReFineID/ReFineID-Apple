@@ -205,10 +205,20 @@ Terminating only Safari and reopening the page made the exchanges above
 appear and the page succeed. That is a stale Safari client-identity/TLS
 process state signature: never asked is not a card or token failure.
 
-A successful reader mint removes the same physical card's stored NFC
-prime and persistent smart-card registration. The connected reader is
-then the only offered transport for that identity until NFC is
-deliberately minted again.
+A successful reader mint removes every stored ReFineID NFC prime and
+persistent ReFineID smart-card registration. The connected reader is
+then the only offered ReFineID transport, even when the reader card and a
+previously primed NFC card have different serials or key profiles, until
+NFC is deliberately minted again. Apple and third-party identities are
+untouched.
+
+With several connected readers, every supported inserted card is minted and
+remains live, and every live token publishes its authentication identity.
+Safari owns client-certificate selection. A live two-reader test on iOS 26.5
+proved that Safari ignores distinct CTK item labels and renders each signed
+X.509 subject. Two cards belonging to the same person can therefore look
+identical in the picker; different subjects remain distinguishable. The app
+shows only whether one or several usable USB-C reader tokens are connected.
 
 The clean build-16 trace on 2026-07-28 removed one important ambiguity.
 `ctkd` gave the system-owned NFC operation 1.833 seconds from field start

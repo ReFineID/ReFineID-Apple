@@ -103,7 +103,22 @@ The token extension makes the same decision from the slot that caused
 CryptoTokenKit to invoke it. macOS offers only contact slots; iOS can
 offer contact or built-in NFC.
 
-On iOS, a successful connected-reader mint also removes the same
-physical card's stored NFC prime and persistent smart-card registration.
-The live reader token is then the sole offered transport until the holder
-deliberately mints an NFC identity again.
+On iOS, a successful connected-reader mint removes every stored ReFineID
+NFC prime and persistent ReFineID smart-card registration. Connecting a
+reader and inserting a usable card is the holder's global transport
+choice within ReFineID, even when the reader card and a previously primed
+NFC card have different serials or key profiles. Apple and third-party
+identities are untouched. The live reader token is then the sole ReFineID
+transport until the holder deliberately mints an NFC identity again.
+
+When several readers contain supported cards, CryptoTokenKit still mints
+and keeps one live token for every card. Every live token publishes its
+authentication certificate and key. Safari's native client-certificate
+sheet selects the identity; ReFineID does not rank the cards or add a
+second picker.
+
+Safari renders the signed X.509 subject in that sheet, not the CTK item's
+`kSecAttrLabel`. Cards issued to the same subject can therefore appear as
+duplicate rows. This is intentional: altering the signed certificate
+would make it unusable, while cards issued to different people already
+carry distinguishable subjects.

@@ -56,6 +56,9 @@ internal struct CardInstanceIdentifierTests {
     let neighboringDriver = "fi.refineid.ReFineID.token2:" + instance.value
     #expect(tokenIdentifier == "fi.refineid.ReFineID.token:refineid-card-test00001")
     #expect(CardTokenNamespace.owns(tokenIdentifier: tokenIdentifier))
+    #expect(
+      CardTokenNamespace.owns(
+        tokenIdentifier: "fi.refineid.ReFineID.ctk:refineid-card-test00001"))
     #expect(!CardTokenNamespace.owns(tokenIdentifier: neighboringDriver))
   }
 

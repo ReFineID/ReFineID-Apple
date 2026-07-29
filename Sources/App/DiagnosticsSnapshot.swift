@@ -155,6 +155,7 @@ internal struct DiagnosticsSnapshot: Sendable {
     return Section(
       title: "Contactless signing credential",
       lines: [
+        "CAN stored: " + Self.yesNo(contents.hasCardAccessNumber),
         "PIN1 stored: " + Self.yesNo(contents.hasPin1),
         "policy: direct use, no software expiry",
       ])

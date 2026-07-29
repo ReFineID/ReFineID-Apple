@@ -7,11 +7,26 @@ public enum CardTokenNamespace {
   /// The token driver's class identifier.
   public static let driverClassIdentifier = "fi.refineid.ReFineID.token"
 
+  /// Driver class identifiers shipped by older ReFineID builds.
+  ///
+  /// They no longer create tokens, but a persistent Safari registration
+  /// can outlive the build that created it. Destructive ReFineID cleanup
+  /// owns these registrations too; it must not mistake "old" for
+  /// "somebody else's".
+  private static let legacyDriverClassIdentifiers = [
+    "fi.refineid.ReFineID.ctk"
+  ]
+
   /// CryptoTokenKit separates the class and instance identifiers with this.
   private static let identifierSeparator = ":"
 
   /// Prefix shared by every ReFineID smart-card token identifier.
   public static let tokenPrefix = driverClassIdentifier + identifierSeparator
+
+  /// Every token prefix ever issued by ReFineID.
+  private static let ownedTokenPrefixes =
+    ([driverClassIdentifier] + legacyDriverClassIdentifiers)
+    .map { $0 + identifierSeparator }
 
   /// The full CryptoTokenKit token identifier for one physical card.
   public static func tokenIdentifier(for instance: CardInstanceIdentifier) -> String {
@@ -20,6 +35,6 @@ public enum CardTokenNamespace {
 
   /// Whether a full token identifier belongs to this driver.
   public static func owns(tokenIdentifier: String) -> Bool {
-    tokenIdentifier.hasPrefix(tokenPrefix)
+    ownedTokenPrefixes.contains { tokenIdentifier.hasPrefix($0) }
   }
 }

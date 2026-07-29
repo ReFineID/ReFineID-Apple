@@ -2,14 +2,14 @@ import CardCore
 import CryptoTokenKit
 import Foundation
 
-/// Removes a rejected card's system registration outside the sign callback.
+/// Removes stored ReFineID registrations that should no longer be offered.
 internal enum TokenRegistrationRevoker {
   /// Why an automatic registration no longer represents the desired path.
   internal enum Reason {
     /// The card rejected the credential authorizing automatic signatures.
     case pin1Rejection
 
-    /// The holder deliberately inserted the same card into a reader.
+    /// The holder deliberately connected a reader and inserted a usable card.
     case readerMint
 
     /// Stable diagnostic wording that contains no card or credential data.
@@ -46,6 +46,51 @@ internal enum TokenRegistrationRevoker {
           TokenLog.error("\(reason.logPrefix) could not unregister token: \(error)")
         }
       }
+    #endif
+  }
+
+  /// Removes every persistent ReFineID smart-card registration now.
+  ///
+  /// A connected-reader mint calls this before returning its live token.
+  /// The registration manager lists absent-card registrations, not live
+  /// reader tokens; filtering with ``CardTokenNamespace/owns`` destroys
+  /// every ReFineID NFC route without touching Apple, third-party, or the
+  /// reader token that was just published.
+  ///
+  /// Returns how many registrations were removed. The ReFineID prime
+  /// store is already empty when this runs, so even a registration whose
+  /// removal fails cannot mint an NFC token.
+  @discardableResult
+  internal static func revokeAll(reason: Reason) -> Int {
+    #if os(iOS)
+      let manager = TKSmartCardTokenRegistrationManager.default
+      let tokenIDs = manager.registeredSmartCardTokens
+        .filter(CardTokenNamespace.owns(tokenIdentifier:))
+        .sorted()
+      guard !tokenIDs.isEmpty else {
+        TokenLog.info("\(reason.logPrefix) registrations already absent")
+        return 0
+      }
+
+      var removed = 0
+      var failed = 0
+      for tokenID in tokenIDs {
+        do {
+          try manager.unregisterSmartCard(tokenID: tokenID)
+          removed += 1
+        } catch {
+          failed += 1
+        }
+      }
+      if removed > 0 {
+        TokenLog.notice("\(reason.logPrefix) unregistered \(removed) stored identity(s)")
+      }
+      if failed > 0 {
+        TokenLog.error("\(reason.logPrefix) could not unregister \(failed) stored identity(s)")
+      }
+      return removed
+    #else
+      return 0
     #endif
   }
 }

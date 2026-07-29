@@ -3,6 +3,24 @@
 Decisions with dates and rationale. `Documentation/release-plan.md` controls scope and
 security behavior; this file records the concrete values chosen under it.
 
+## 2026-07-29 Every connected reader card is published; Safari selects
+
+CryptoTokenKit creates and retains a live token for every supported card
+inserted in a connected reader. Every live token publishes its signed
+authentication certificate and key. ReFineID does not rank cards, retain a
+preference, or implement a second certificate picker.
+
+Safari owns certificate selection. A live iOS 26.5 test with two tokens proved
+that Safari renders the signed X.509 subject in its client-certificate picker,
+even when the CTK certificate and key carry distinct `kSecAttrLabel` values.
+Two cards issued to the same person can therefore have identical-looking rows;
+cards issued to different people show their different certificate subjects.
+ReFineID must not alter the signed certificate to change that text.
+
+This is the smallest and most compatible boundary: CryptoTokenKit publishes
+the identities, Safari selects one, and the app reports only whether one or
+several usable USB-C reader tokens are live.
+
 ## 2026-07-29 Engineering diagnostics are not product functionality
 
 The interactive diagnostics report, shared-trace controls, and support
@@ -17,19 +35,24 @@ must not contain dormant engineering screens, while the optimized Profile
 configuration used for live card development still needs the same
 instruments that made the NFC path measurable.
 
-## 2026-07-29 A reader mint supersedes the same card's NFC identity
+## 2026-07-29 A reader mint supersedes every ReFineID NFC identity
 
 On iOS, successfully minting a token for a card in a connected reader
-removes that physical card's stored contactless prime and asynchronously
-unregisters its persistent CryptoTokenKit smart-card identity. Inserting a
-reader and card is an explicit physical transport choice; Safari should not
-also wake the phone's NFC field for the same identity.
+removes every stored ReFineID contactless prime and synchronously
+unregisters every persistent ReFineID smart-card identity before the
+reader mint returns. Inserting a reader and a usable card is an explicit
+global transport choice within ReFineID; Safari must not also wake the
+phone's NFC field. Apple and third-party identities are untouched.
 
-The boundary is the printed card serial already used by the token instance,
-not the ATR shared by a card family. Other cards are untouched. Stored CAN
-and PIN1 are preserved, and the newly minted live reader token remains
-published. If the holder later wants NFC again, "Mint identity token"
-performs the deliberate one-time contactless setup again.
+The first implementation scoped removal to the reader card's printed
+serial. A live trace disproved that boundary: the USB reader published an
+RSA card while an EC card remained registered for NFC, so Safari still
+chose NFC. The transport decision is therefore independent of card
+serial, ATR, and key profile. Stored CAN, PIN1, card-directory entries,
+NFC primes, and ReFineID Safari registrations are removed; the newly
+minted live reader token remains published. If the holder later wants NFC
+again, "Mint identity token" performs the deliberate one-time contactless
+setup again.
 
 ## 2026-07-29 An ended NFC field is an absent token
 
