@@ -12,17 +12,16 @@
   /// for the several seconds a hold takes, which is exactly when they
   /// most need to know it is still working.
   ///
-  /// So there are three sounds and they mean three different things: a
-  /// quiet tick that repeats for as long as the card is being read, the
-  /// system's own card-read pling when an identity is registered, and
-  /// its own card-read failure tone when one is not. The tick is what
+  /// So there are three sounds and they mean three different things:
+  /// the provisioning tone repeating for as long as the card is being
+  /// read, the card-provisioned pling when an identity is registered,
+  /// and the card-error tone when one is not. The repeating tone is what
   /// makes the two outcomes legible -- it stops, and what replaces it is
   /// the answer.
   ///
-  /// The two outcome sounds are the ones iOS itself uses for a card that
-  /// was read and a card that was not, taken from the system sound
-  /// library by name (``UISoundLibrary``), so a ReFineID hold sounds
-  /// like every other card operation on the phone. Haptics are
+  /// All three are the sounds iOS itself uses while provisioning a card,
+  /// taken from the system sound library by name (``UISoundLibrary``),
+  /// because that is exactly what a hold is doing. Haptics are
   /// `UINotificationFeedbackGenerator`, likewise the system's own.
   ///
   /// Both obey the phone's switches: a silenced phone plays nothing, and
@@ -34,25 +33,27 @@
     /// The repeating tick, running while the hold is.
     private static var ticking: Task<Void, Never>?
 
-    /// The camera's countdown tick.
+    /// The tone iOS plays while a card is being provisioned.
     ///
-    /// Written to repeat, unlike the keyboard tock, which becomes a
-    /// rattle after four of them.
-    private static let workingSoundName = "camera_timer_countdown"
+    /// A 2.6-second phrase rather than a tick, and the right one by
+    /// meaning: setting an identity up IS provisioning a card. It is
+    /// replayed end to end for as long as the hold runs.
+    private static let workingSoundName = "NFCCardProvisioned"
 
-    /// The pling iOS plays when a card read completes.
+    /// The pling iOS plays when a card finishes provisioning.
     ///
-    /// The sound the holder already knows means the card was read.
-    private static let successSoundName = "nfc_scan_complete"
+    /// The sound the holder already knows means the card is now set up.
+    private static let successSoundName = "NFCCardComplete"
 
-    /// The tone iOS plays when a card read does not complete.
+    /// The tone iOS plays when a card does not provision.
     ///
     /// The whole point of this one: it is the system's own sound for a
     /// card that did not work, so it reaches a holder who has already
     /// looked away and been shown Apple's checkmark.
-    private static let failureSoundName = "nfc_scan_failure"
+    private static let failureSoundName = "NFCCardError"
 
-    /// The keyboard tock, if the countdown tick is not on this system.
+    /// The keyboard tock, if the provisioning tone is not on this
+    /// system.
     private static let workingFallbackID: SystemSoundID = 1_104
 
     /// The bright tink, if the NFC pling is not on this system.
@@ -61,11 +62,15 @@
     /// The blunt alert tone, if the NFC failure tone is not.
     private static let failureFallbackID: SystemSoundID = 1_073
 
-    /// How long between two ticks, in milliseconds.
-    private static let tickMilliseconds: Int = 700
+    /// How long one working phrase runs, in milliseconds.
+    ///
+    /// `NFCCardProvisioned` is 2.61 seconds long, so it is replayed just
+    /// after it ends: sooner and two copies overlap into a stutter,
+    /// later and the hold falls silent in the middle.
+    private static let workingMilliseconds: Int = 2_650
 
-    /// The tick period as the sleep takes it.
-    private static let tickInterval: Duration = .milliseconds(Self.tickMilliseconds)
+    /// That length as the sleep takes it.
+    private static let workingInterval: Duration = .milliseconds(Self.workingMilliseconds)
 
     /// Starts the tick that says the hold is still running.
     ///
@@ -78,7 +83,7 @@
           AudioServicesPlaySystemSound(
             UISoundLibrary.soundID(
               named: Self.workingSoundName, fallback: Self.workingFallbackID))
-          try? await Task.sleep(for: Self.tickInterval)
+          try? await Task.sleep(for: Self.workingInterval)
         }
       }
     }
