@@ -118,12 +118,14 @@
     private static let cardQueue = DispatchQueue(label: "fi.refineid.priming.card")
 
     /// What the system sheet says while the holder is finding the spot.
+    ///
+    /// One line, and only the part the holder cannot work out: where to
+    /// put the card. Apple's own title above it already says a scan is
+    /// wanted, and the meter and sound below say the hold is running, so
+    /// a sentence telling them to keep holding is a third voice saying
+    /// what two already said.
     private static var holdMessage: String {
-      String(
-        localized: """
-          Hold the card flat against the top of the phone. Keep holding \
-          until ReFineID says it is done.
-          """)
+      String(localized: "Hold the card on the top back of the phone.")
     }
 
     /// Primes the card the holder is about to present.
@@ -163,7 +165,7 @@
       // surface the holder can actually see.
       let sheet = PrimingSheetReporter(
         session: session,
-        activity: String(localized: "Card found. Keep holding."))
+        activity: String(localized: "Card found"))
       let report: StepReport = { reached, state in
         step(reached, state)
         sheet.report(reached, state)
@@ -256,7 +258,7 @@
         PrimeStore.store(identity, forLookup: lookup)
       else {
         step(.stored, .failed)
-        sheet.fail(String(localized: "Could not save the card details."))
+        sheet.fail(String(localized: "Could not save card details"))
         return Self.failure(Failure.primeNotStored)
       }
       step(.stored, .done)
@@ -277,15 +279,15 @@
       progress: @escaping Progress,
       step: StepReport
     ) async -> Outcome {
-      sheet.say(String(localized: "Setting up Safari. Keep holding."))
+      sheet.say(String(localized: "Setting up Safari"))
       step(.registered, .running)
       let registered = await Self.register(
         instance: instance, session: sheet.session, progress: progress)
       step(.registered, registered ? .done : .failed)
       if registered {
-        sheet.say(String(localized: "Your card is ready to use."))
+        sheet.say(String(localized: "Ready to use"))
       } else {
-        sheet.fail(String(localized: "Safari setup did not finish."))
+        sheet.fail(String(localized: "Safari setup did not finish"))
       }
       return Outcome(
         stored: true,

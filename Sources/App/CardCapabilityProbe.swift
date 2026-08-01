@@ -28,11 +28,7 @@
 
     /// What the sheet says while the card is being read.
     private static var holdMessage: String {
-      String(
-        localized: """
-          Hold the card flat against the top of the phone. Keep holding \
-          until ReFineID says it is done.
-          """)
+      String(localized: "Hold the card on the top back of the phone.")
     }
 
     /// Reads the advertised capabilities and times one PACE run.
@@ -44,7 +40,7 @@
         return ["no field: \(error)"]
       }
       defer { session.end() }
-      session.update(message: String(localized: "Reading card capabilities. Keep holding."))
+      session.update(message: String(localized: "Reading card capabilities"))
       let accessNumber = CardCredentialStore.cardAccessNumber()
       return await Self.onCardQueue {
         Self.measure(session: session, accessNumber: accessNumber)
@@ -64,7 +60,7 @@
             lines.append("pace: not run, no card access number stored")
             return lines
           }
-          session.update(message: String(localized: "Timing the secure channel. Keep holding."))
+          session.update(message: String(localized: "Timing the secure channel"))
           lines.append("")
           lines.append(contentsOf: Self.paceTiming(channel: channel, accessNumber: accessNumber))
           return lines
