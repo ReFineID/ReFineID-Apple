@@ -46,14 +46,25 @@ public enum PrimeStore {
     let identity: PrimedIdentity
   }
 
+  /// The dated marker naming the app's own registration field.
+  private struct RegistrationFieldMark: Codable {
+    let markedAt: Date
+  }
+
   /// Keychain service the primed identities live under.
   private static let service: String = "fi.refineid.prime"
 
-  /// Short-lived bridge from the Core NFC read to the next CTK field.
+  /// Short-lived bridge record earlier builds staged between two fields.
+  ///
+  /// No longer written; still deleted so a leftover from an earlier
+  /// build cannot linger in the shared group.
   private static let stagedAccount = "staged-contactless-card"
 
-  /// A staged record exists only to bridge two consecutive NFC fields.
-  private static let maximumStagedAge: TimeInterval = 90
+  /// Names the app's registration hold for the extension's mint.
+  private static let registrationMarkAccount = "registration-field-mark"
+
+  /// A mark exists only to bridge one registration hold.
+  private static let maximumMarkAge: TimeInterval = 90
 
   /// Tolerates a small wall-clock adjustment between app and extension.
   private static let allowedFutureSkew: TimeInterval = 5
@@ -76,34 +87,51 @@ public enum PrimeStore {
     return SecItemAdd(attributes as CFDictionary, nil) == errSecSuccess
   }
 
-  /// Stages a freshly read Core NFC identity for the next CTK field.
+  /// Marks the next NFC field as the app's own registration hold.
   ///
-  /// The extension accepts it only while fresh and only when its
-  /// identification bytes occur inside the live CTK ATR. Those bytes
-  /// identify a compatible card family, not one physical card; the setup
-  /// screen therefore requires the holder to keep the same card in place.
+  /// Written BEFORE the app opens its slot: `ctkd` asks the extension
+  /// for a token the moment the card arrives, so anything written after
+  /// that races the mint. While the mark is fresh the extension
+  /// publishes metadata without taking a card session, leaving the card
+  /// to the app for PACE, the reads, and `registerSmartCard`.
   @discardableResult
-  public static func stage(
-    _ identity: PrimedIdentity,
-    contactlessIdentification: Data
-  ) -> Bool {
+  public static func markRegistrationField() -> Bool {
     guard
-      let staged = PrimedIdentity(
-        can: identity.can,
-        certificate: identity.certDER,
-        issuer: identity.issuerDER,
-        tokenSerial: identity.tokenSerial,
-        contactlessIdentification: contactlessIdentification,
-        stagedAt: Date()),
-      let payload = try? JSONEncoder().encode(staged)
+      let payload = try? JSONEncoder().encode(RegistrationFieldMark(markedAt: Date()))
     else {
       return false
     }
-    var attributes = query(account: Self.stagedAccount)
+    var attributes = query(account: Self.registrationMarkAccount)
     attributes[kSecValueData as String] = payload
     attributes[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-    delete(account: Self.stagedAccount)
+    delete(account: Self.registrationMarkAccount)
     return SecItemAdd(attributes as CFDictionary, nil) == errSecSuccess
+  }
+
+  /// Removes the registration mark when the hold ends, however it ends.
+  public static func clearRegistrationField() {
+    delete(account: Self.registrationMarkAccount)
+  }
+
+  /// Whether the app's registration hold is running right now.
+  ///
+  /// Bounded by age rather than trusted forever: the app clears the mark
+  /// when its hold ends, and the age limit covers a run that never got
+  /// to. A stale mark would make a signing field publish without a card
+  /// session, which fails the signature that follows.
+  private static func registrationFieldMarked() -> Bool {
+    var query = self.query(account: Self.registrationMarkAccount)
+    query[kSecReturnData as String] = true
+    query[kSecMatchLimit as String] = kSecMatchLimitOne
+    var item: CFTypeRef?
+    guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
+      let data = item as? Data,
+      let mark = try? JSONDecoder().decode(RegistrationFieldMark.self, from: data)
+    else {
+      return false
+    }
+    let age = Date().timeIntervalSince(mark.markedAt)
+    return age >= -Self.allowedFutureSkew && age <= Self.maximumMarkAge
   }
 
   /// The primed identity for one card, or nil when there is none.
@@ -115,29 +143,19 @@ public enum PrimeStore {
     read(account: lookupID.value)
   }
 
-  /// Reads the staged registration record first, then the exact ATR record.
+  /// The exact ATR record, marked with the purpose of the live field.
   ///
-  /// Staged must win even when an old exact record exists. Otherwise a
-  /// re-prime looks like a signing field, and the extension starts PACE
-  /// while the app is trying to register the token.
+  /// The registration mark must win even when the record predates the
+  /// hold. Otherwise a re-prime looks like a signing field, and the
+  /// extension starts PACE while the app is trying to register the
+  /// token.
   public static func readContactless(
-    lookupID: PrimeLookupIdentifier,
-    answerToReset: Data
+    lookupID: PrimeLookupIdentifier
   ) -> ContactlessMatch? {
-    if let staged = read(account: Self.stagedAccount),
-      let stagedAt = staged.stagedAt,
-      let identification = staged.contactlessIdentification
-    {
-      let age = Date().timeIntervalSince(stagedAt)
-      if age >= -Self.allowedFutureSkew,
-        age <= Self.maximumStagedAge,
-        answerToReset.contains(identification)
-      {
-        return ContactlessMatch(identity: staged, isRegistrationField: true)
-      }
-    }
     guard let exact = read(lookupID: lookupID) else { return nil }
-    return ContactlessMatch(identity: exact, isRegistrationField: false)
+    return ContactlessMatch(
+      identity: exact,
+      isRegistrationField: registrationFieldMarked())
   }
 
   /// Decodes and validates one record by keychain account.
@@ -202,9 +220,13 @@ public enum PrimeStore {
     }
   }
 
-  /// Removes the short-lived bridge record after registration.
+  /// Removes every short-lived bridge record.
+  ///
+  /// The staged account is an earlier build's bridge; deleting it here
+  /// keeps a leftover from ever serving a mint again.
   public static func forgetStaged() {
     delete(account: Self.stagedAccount)
+    delete(account: Self.registrationMarkAccount)
   }
 
   /// Removes every primed identity this device holds.

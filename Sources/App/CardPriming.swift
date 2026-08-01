@@ -7,11 +7,15 @@
   /// The setup flow that teaches this iPhone the card, so later signing
   /// fields spend their time only on PACE, PIN1, and the signature.
   ///
-  /// Priming uses two consecutive system NFC fields while the holder keeps
-  /// the same card in place. Core NFC owns the first field, runs PACE, and
-  /// reads the public, unchanging authentication metadata. CryptoTokenKit
-  /// owns the second field, binds that live card to the staged metadata,
-  /// and registers the resulting token so Safari can ask for it later.
+  /// Priming uses ONE system NFC field: the app opens the CryptoTokenKit
+  /// slot, and inside that single hold runs PACE, reads the public
+  /// authentication metadata, stores it, and registers the resulting
+  /// token. `ctkd` asks the token extension for a token the moment the
+  /// card enters the slot -- while PACE is still running -- so the
+  /// extension bridges the gap with a bounded wait for the prime this
+  /// flow is about to write (`TokenDriver.awaitPrime`). A card this
+  /// device has already primed skips the card I/O entirely and goes
+  /// straight to registration, which is the fastest hold there is.
   ///
   /// Three rules shape this flow, each bought with a measured on-device
   /// failure:
@@ -20,8 +24,9 @@
   ///    two seconds after the mint. The token extension therefore takes
   ///    its card session during `createToken` and KEEPS it for the
   ///    signature; a fresh `beginSession` in the sign fails with TKError
-  ///    -7. That is the extension's side of this arrangement, and it is
-  ///    what the two seconds are spent on.
+  ///    -7. During THIS flow a registration mark, written before the
+  ///    slot opens, tells the extension to publish metadata without
+  ///    taking a session, so the app keeps the card to itself.
   /// 2. That held session is released only when the slot state is
   ///    genuinely `.missing` (``NearFieldCardSession/isMissing``).
   ///    Releasing on any other non-`validCard` state tore a signature
@@ -29,8 +34,7 @@
   /// 3. The signature reads NOTHING it could already know. Everything
   ///    read here is public and unchanging, so it is read once, here,
   ///    where the holder is deliberately holding the card still and the
-  ///    field is not rationed. This is what turned an intermittent
-  ///    signature into a reliable one.
+  ///    field is the app's own rather than a rationed signing field.
   ///
   /// `registerSmartCard` is called while the card is LIVE in the slot.
   /// Registering after the card has left finds nothing to register.
@@ -78,10 +82,6 @@
       /// serve the next login.
       case primeNotStored
 
-      /// The card in the CTK registration field did not match the card
-      /// that Core NFC had just read.
-      case registrationCardMismatch
-
       /// The slot reported no answer to reset, so the card cannot be
       /// named -- and an unnamed card would be served another card's
       /// primed identity.
@@ -111,6 +111,12 @@
     /// Wait between two looks at the token watcher.
     private static let tokenPollInterval: Duration = .milliseconds(100)
 
+    /// The queue every blocking card exchange runs on.
+    ///
+    /// `SmartCardChannel` drives each APDU with a semaphore, so the wait
+    /// must never land on the cooperative pool or the main thread.
+    private static let cardQueue = DispatchQueue(label: "fi.refineid.priming.card")
+
     /// What the system sheet says while the holder is finding the spot.
     private static var holdMessage: String {
       String(
@@ -131,105 +137,113 @@
     ) async -> Outcome {
       guard let accessNumber = CardCredentialStore.cardAccessNumber() else {
         step(.found, .failed)
-        return Outcome(
-          stored: false,
-          registered: false,
-          summary: Self.summary(for: Failure.cardAccessNumberMissing))
+        return Self.failure(Failure.cardAccessNumberMissing)
       }
+      // Marked BEFORE the slot opens: `ctkd` asks the extension for a
+      // token the moment the card arrives, and a mark written after that
+      // would lose the race. The mark makes the extension publish
+      // without taking a card session, leaving the card to this flow.
+      guard PrimeStore.markRegistrationField() else {
+        step(.found, .failed)
+        return Self.failure(Failure.primeNotStored)
+      }
+      defer { PrimeStore.clearRegistrationField() }
 
-      // Field one belongs only to Core NFC. No CTK slot exists yet, so
-      // the token extension cannot take a session or start a competing
-      // PACE exchange while the app reads the identity.
       step(.found, .running)
-      let payload: CoreNFCPrimeSession.Payload
+      let session: NearFieldCardSession
       do {
-        payload = try await CoreNFCPrimeSession.read(
-          accessNumber: accessNumber,
-          progress: progress,
-          step: step)
+        session = try await NearFieldCardSession.open(message: Self.holdMessage)
       } catch {
-        return Outcome(stored: false, registered: false, summary: Self.summary(for: error))
+        step(.found, .failed)
+        return Self.failure(error)
+      }
+      defer { session.end() }
+      step(.found, .done)
+      progress(String(localized: "Card found. Keep holding."))
+
+      guard let lookup = PrimeLookupIdentifier(answerToReset: session.answerToReset) else {
+        step(.secureChannel, .failed)
+        session.update(message: Self.sheetMessage(for: Failure.unidentifiedCard))
+        return Self.failure(Failure.unidentifiedCard)
       }
 
-      guard let identity = Self.stageIdentity(payload, progress: progress) else {
-        step(.stored, .failed)
-        return Outcome(
-          stored: false,
-          registered: false,
-          summary: Self.summary(for: Failure.primeNotStored))
+      // A re-prime restores a lost registration without one APDU. The
+      // extension finds the same record by the same lookup, so the mint
+      // is immediate and the whole hold is the registration.
+      if let instance = Self.storedInstance(lookup: lookup) {
+        for done in [CardPrimingStep.secureChannel, .certificate, .stored] {
+          step(done, .done)
+        }
+        progress(String(localized: "Card details already stored on this iPhone."))
+        return await Self.finish(
+          instance: instance, session: session, progress: progress, step: step)
       }
-      defer { PrimeStore.forgetStaged() }
-      return await Self.registerStagedIdentity(
-        identity,
-        payload: payload,
+
+      return await Self.readStoreRegister(
+        session: session,
+        lookup: lookup,
+        accessNumber: accessNumber,
         progress: progress,
         step: step)
     }
 
-    /// Stores the short-lived bridge consumed by the next CTK field.
-    private static func stageIdentity(
-      _ payload: CoreNFCPrimeSession.Payload,
-      progress: Progress
-    ) -> PrimedIdentity? {
+    /// An Outcome that achieved nothing, explained.
+    private static func failure(_ error: any Error) -> Outcome {
+      Outcome(stored: false, registered: false, summary: Self.summary(for: error))
+    }
+
+    /// The instance an existing prime already names, when one does.
+    private static func storedInstance(
+      lookup: PrimeLookupIdentifier
+    ) -> CardInstanceIdentifier? {
+      guard
+        let existing = PrimeStore.read(lookupID: lookup),
+        let serialText = existing.tokenSerial,
+        let serial = TokenSerial(value: serialText)
+      else {
+        return nil
+      }
+      return CardInstanceIdentifier(tokenSerial: serial)
+    }
+
+    /// Reads the card in this same field, stores the prime, registers.
+    private static func readStoreRegister(
+      session: NearFieldCardSession,
+      lookup: PrimeLookupIdentifier,
+      accessNumber: CardAccessNumber,
+      progress: @escaping Progress,
+      step: @escaping StepReport
+    ) async -> Outcome {
+      step(.secureChannel, .running)
+      let payload: Payload
+      do {
+        payload = try await Self.onCardQueue {
+          try Self.read(from: session, accessNumber: accessNumber, progress: progress, step: step)
+        }
+      } catch {
+        // The sheet is the only thing a holder can see while holding, so
+        // it carries the detail rather than a shrug. Nothing here names
+        // a PIN, CAN or the holder.
+        session.update(message: Self.sheetMessage(for: error))
+        return Self.failure(error)
+      }
+
+      // The exact record is what the extension's mint -- already waiting
+      // in this field -- publishes from, and what every later signing
+      // field reads. The registration mark written before the slot
+      // opened keeps that waiting mint from taking the card session
+      // away from this flow.
+      step(.stored, .running)
       guard
         let identity = CardCredentialStore.primedIdentity(
           certificate: payload.certificate,
           issuer: payload.issuer,
           tokenSerial: payload.tokenSerial),
-        PrimeStore.stage(
-          identity,
-          contactlessIdentification: payload.identification)
-      else {
-        return nil
-      }
-      progress(String(localized: "Identity staged for Safari registration."))
-      return identity
-    }
-
-    /// Opens the second field, binds it to the first, and registers it.
-    private static func registerStagedIdentity(
-      _ identity: PrimedIdentity,
-      payload: CoreNFCPrimeSession.Payload,
-      progress: @escaping Progress,
-      step: StepReport
-    ) async -> Outcome {
-      // The staged record is already visible to the token extension, so
-      // it publishes metadata without touching the card. Later fields
-      // have no staged record and retain the session for PACE plus signing.
-      step(.stored, .running)
-      let session: NearFieldCardSession
-      do {
-        session = try await NearFieldCardSession.open(message: Self.holdMessage)
-      } catch {
-        step(.stored, .failed)
-        return Outcome(
-          stored: false,
-          registered: false,
-          summary: Self.summary(for: error))
-      }
-      defer { session.end() }
-      progress(String(localized: "Safari registration field opened. Keep holding."))
-
-      guard
-        session.answerToReset.contains(payload.identification)
-      else {
-        step(.stored, .failed)
-        session.update(message: Self.sheetMessage(for: Failure.registrationCardMismatch))
-        return Outcome(
-          stored: false,
-          registered: false,
-          summary: Self.summary(for: Failure.registrationCardMismatch))
-      }
-      guard
-        let lookup = PrimeLookupIdentifier(answerToReset: session.answerToReset),
         PrimeStore.store(identity, forLookup: lookup)
       else {
         step(.stored, .failed)
         session.update(message: String(localized: "Could not save the card details."))
-        return Outcome(
-          stored: false,
-          registered: false,
-          summary: Self.summary(for: Failure.primeNotStored))
+        return Self.failure(Failure.primeNotStored)
       }
       step(.stored, .done)
       progress(String(localized: "Card details stored on this iPhone."))
@@ -327,6 +341,17 @@
         try? await Task.sleep(for: Self.tokenPollInterval)
       }
       return expected
+    }
+
+    /// Runs one blocking card exchange off the cooperative pool.
+    private static func onCardQueue<Value: Sendable>(
+      _ body: @escaping @Sendable () throws -> Value
+    ) async throws -> Value {
+      try await withCheckedThrowingContinuation { continuation in
+        Self.cardQueue.async {
+          continuation.resume(with: Result { try body() })
+        }
+      }
     }
   }
 

@@ -30,9 +30,47 @@ internal final class TokenDriver: TKSmartCardTokenDriver, TKSmartCardTokenDriver
   /// classify without touching the card.
   private static let nearFieldSlotMarker = "NFC"
 
+  /// How many times the mint looks for a prime before giving up.
+  private static let primeWaitAttempts = 20
+
+  /// How long the mint waits between looks for a prime.
+  private static let primeWaitInterval: TimeInterval = 0.25
+
   override internal init() {
     super.init()
     delegate = self
+  }
+
+  /// Reads the prime, allowing briefly for one being written right now.
+  ///
+  /// The first hold of a new card is a race the mint would otherwise
+  /// always lose. The prime now happens in the SAME field as the mint:
+  /// `ctkd` asks for a token the moment the card enters the slot, while
+  /// the app is still running PACE and reading the certificate that
+  /// becomes the prime -- so the first lookup finds nothing, and on a
+  /// plain miss nothing ever asks again, leaving no token to register.
+  ///
+  /// Waiting a little converts that race into a hit. The wait is short
+  /// and bounded because a card that was genuinely never primed must
+  /// still fail rather than hold the field indefinitely. The five-second
+  /// ceiling comes from a clean iPhone measurement: PACE plus the reads
+  /// needed by the prime reached the store about 3.6 seconds after the
+  /// mint began, before the bundled-issuer match removed about 0.7
+  /// seconds of that. An already-primed card hits on the first read and
+  /// waits not at all.
+  private static func awaitPrime(
+    lookupID: PrimeLookupIdentifier
+  ) -> PrimeStore.ContactlessMatch? {
+    for attempt in 1...primeWaitAttempts {
+      if let match = PrimeStore.readContactless(lookupID: lookupID) {
+        if attempt > 1 {
+          TokenLog.trace("mintFromPrime: prime arrived on attempt \(attempt)")
+        }
+        return match
+      }
+      Thread.sleep(forTimeInterval: primeWaitInterval)
+    }
+    return nil
   }
 
   /// How long something started at `instant` has taken, in milliseconds.
@@ -118,11 +156,7 @@ internal final class TokenDriver: TKSmartCardTokenDriver, TKSmartCardTokenDriver
       TokenLog.error("mintFromPrime: atr=\(answerToReset.count)B names no card")
       throw TokenError.primeMissing
     }
-    guard
-      let match = PrimeStore.readContactless(
-        lookupID: lookupID,
-        answerToReset: answerToReset)
-    else {
+    guard let match = Self.awaitPrime(lookupID: lookupID) else {
       TokenLog.error(
         "mintFromPrime: prime MISS for \(lookupID.value), "
           + "\(PrimeStore.storedCount()) prime(s) stored"

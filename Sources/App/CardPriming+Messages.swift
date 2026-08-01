@@ -27,9 +27,6 @@
       if let failure = error as? Failure {
         return Self.summary(for: failure)
       }
-      if let failure = error as? CoreNFCPrimeSession.Failure {
-        return Self.summary(for: failure)
-      }
       if let failure = error as? NearFieldCardSession.Failure {
         return Self.summary(for: failure)
       }
@@ -47,26 +44,6 @@
         String(localized: "The card details could not be stored on this iPhone.")
       case Failure.unidentifiedCard:
         String(localized: "The card was not recognized. Try holding it again.")
-      case Failure.registrationCardMismatch:
-        String(
-          localized: """
-            The card changed between reading and Safari setup. Keep the \
-            same card in place and try again.
-            """)
-      }
-    }
-
-    /// Explains a Core NFC field failure.
-    private static func summary(for failure: CoreNFCPrimeSession.Failure) -> String {
-      switch failure {
-      case .unavailable:
-        String(localized: "This iPhone could not open its card reader.")
-      case .unsupportedTag:
-        String(localized: "This is not a supported identity card.")
-      case .commandTimedOut:
-        String(localized: "The card stopped answering. Hold it flat and try again.")
-      case .identificationMissing:
-        String(localized: "The card did not provide contactless identification.")
       }
     }
 
