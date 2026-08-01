@@ -48,16 +48,19 @@ internal struct DiagnosticsView: View {
     #endif
     .toolbar { toolbarContent }
     .task { refresh() }
-    .confirmationDialog(
+    // An alert, not a confirmation dialog: a dialog is presented as a
+    // popover anchored to its source, which drops the cancel action and
+    // was measured landing over the navigation bar, far from the button
+    // that opened it. An alert is centered and always keeps both.
+    .alert(
       "Clear diagnostic logs?",
-      isPresented: $showsClearConfirmation,
-      titleVisibility: .visible
+      isPresented: $showsClearConfirmation
     ) {
-      Button("Clear diagnostic logs", role: .destructive) {
+      Button("Clear", role: .destructive) {
         clearLogs()
       }
       Button("Cancel", role: .cancel) {
-        // The system dismisses the confirmation dialog.
+        // The system dismisses the alert.
       }
     } message: {
       Text(
@@ -68,7 +71,8 @@ internal struct DiagnosticsView: View {
     }
   }
 
-  /// Refresh, share, and copy use standard navigation-bar actions.
+  /// Refresh stays a button; the two report exports share one menu, so
+  /// the bar keeps two controls instead of three and the title fits.
   @ToolbarContentBuilder private var toolbarContent: some ToolbarContent {
     ToolbarItem(placement: .primaryAction) {
       Button {
@@ -78,19 +82,19 @@ internal struct DiagnosticsView: View {
       }
     }
     ToolbarItem(placement: .primaryAction) {
-      ShareLink(item: snapshot?.text ?? "") {
-        Label("Share report", systemImage: "square.and.arrow.up")
-      }
-      .disabled(snapshot == nil)
-    }
-    ToolbarItem(placement: .primaryAction) {
-      Button {
-        copyReport()
+      Menu {
+        Button {
+          copyReport()
+        } label: {
+          Label("Copy report", systemImage: "doc.on.doc")
+        }
+        ShareLink(item: snapshot?.text ?? "") {
+          Label("Share report", systemImage: "square.and.arrow.up")
+        }
       } label: {
         Label(
-          reportCopied ? "Report copied" : "Copy report",
-          systemImage: reportCopied ? "checkmark" : "doc.on.doc"
-        )
+          reportCopied ? "Report copied" : "Report actions",
+          systemImage: reportCopied ? "checkmark" : "square.and.arrow.up")
       }
       .disabled(snapshot == nil)
     }
@@ -109,11 +113,18 @@ internal struct DiagnosticsView: View {
   }
 
   /// One selectable, monospaced report block.
+  ///
+  /// The block scrolls sideways rather than wrapping: these are fixed
+  /// columns of status words and identifiers, and a wrapped line reads
+  /// as two records instead of one.
   private func reportSection(_ section: DiagnosticsSnapshot.Section) -> some View {
     Section {
-      Text(verbatim: section.lines.joined(separator: "\n"))
-        .font(.system(.caption, design: .monospaced))
-        .textSelection(.enabled)
+      ScrollView(.horizontal) {
+        Text(verbatim: section.lines.joined(separator: "\n"))
+          .font(.system(.caption, design: .monospaced))
+          .textSelection(.enabled)
+      }
+      .scrollIndicators(.hidden)
     } header: {
       Text(verbatim: section.title)
     }
