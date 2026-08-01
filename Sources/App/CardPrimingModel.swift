@@ -63,8 +63,15 @@
           // The sheet draws the steps. See `PrimingSheetReporter`.
         })
       let succeeded = outcome.stored && outcome.registered
-      lastRunResult = succeeded ? .succeeded : .failed
-      CardPrimingFeedback.report(succeeded: succeeded)
+      if outcome.cancelled {
+        // A holder who closed the sheet knows what they did. Stop the
+        // sound; do not answer them with a failure tone.
+        lastRunResult = .notRun
+        CardPrimingFeedback.stopWorking()
+      } else {
+        lastRunResult = succeeded ? .succeeded : .failed
+        CardPrimingFeedback.report(succeeded: succeeded)
+      }
       refresh()
       isRunning = false
     }

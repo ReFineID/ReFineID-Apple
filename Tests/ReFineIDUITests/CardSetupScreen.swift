@@ -29,7 +29,6 @@ internal enum CardSetupScreen {
         Self.enter(
           cardAccessNumber,
           field: UITestIdentifiers.cardAccessNumberField,
-          storedStatus: UITestIdentifiers.cardAccessNumberStatus,
           in: app
         )
       else { return false }
@@ -39,7 +38,6 @@ internal enum CardSetupScreen {
         Self.enter(
           pin1,
           field: UITestIdentifiers.pin1Field,
-          storedStatus: UITestIdentifiers.pin1Status,
           in: app
         )
       else { return false }
@@ -47,17 +45,13 @@ internal enum CardSetupScreen {
     return true
   }
 
-  /// Enters one value, or accepts the already-stored state.
+  /// Enters one value into a field that is there whether or not
+  /// something is already stored.
   private static func enter(
     _ digits: String,
     field fieldIdentifier: String,
-    storedStatus statusIdentifier: String,
     in app: XCUIApplication
   ) -> Bool {
-    let status = app.descendants(matching: .any)[statusIdentifier]
-    if status.exists {
-      return true
-    }
     let field = app.descendants(matching: .any)[fieldIdentifier]
     guard field.waitForExistence(timeout: Self.appearTimeout), field.isHittable else {
       return false

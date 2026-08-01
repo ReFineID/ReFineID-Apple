@@ -20,50 +20,28 @@
 
     private let lock = NSLock()
     private var states: [CardPrimingStep: CardPrimingStep.State] = [:]
-    private var activity: String
 
-    internal init(session: NearFieldCardSession, activity: String) {
+    internal init(session: NearFieldCardSession) {
       self.session = session
-      self.activity = activity
     }
 
-    /// Records a step's state and repaints.
+    /// Records a step's state and repaints the meter.
     internal func report(_ step: CardPrimingStep, _ state: CardPrimingStep.State) {
       lock.lock()
       states[step] = state
       let snapshot = states
-      let sentence = activity
       lock.unlock()
-      session.update(message: PrimingSheetMessage.line(states: snapshot, activity: sentence))
+      session.update(message: PrimingSheetMessage.meter(states: snapshot))
     }
 
-    /// Replaces the sentence under the meter and repaints.
+    /// Replaces the whole message with why the hold stopped.
     ///
-    /// The meter is unchanged: what the holder is being told changed,
-    /// not how far the run got.
-    internal func say(_ sentence: String) {
-      lock.lock()
-      activity = sentence
-      let snapshot = states
-      lock.unlock()
-      session.update(message: PrimingSheetMessage.line(states: snapshot, activity: sentence))
-    }
-
-    /// Marks every step that never ran as failed, and says why.
-    ///
-    /// A hold that breaks at PACE leaves three steps that never started,
-    /// and leaving them as empty balls reads as still to come on a sheet
-    /// that is about to dismiss. The step that broke keeps its cross;
-    /// the rest are crossed too, because none of them happened.
+    /// The meter goes when this is called, and deliberately: the panel
+    /// truncates anything past its line, so a meter and a reason
+    /// together cost the reason. A hold that is about to dismiss has one
+    /// thing left to say and it is not how far it got.
     internal func fail(_ sentence: String) {
-      lock.lock()
-      for step in CardPrimingStep.allCases where states[step] != .done {
-        states[step] = .failed
-      }
-      activity = sentence
-      let snapshot = states
-      lock.unlock()
-      session.update(message: PrimingSheetMessage.line(states: snapshot, activity: sentence))
+      session.update(message: sentence)
     }
   }
 

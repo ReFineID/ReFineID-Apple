@@ -68,6 +68,13 @@
 
       /// One sentence for the holder, whatever happened.
       internal let summary: String
+
+      /// Whether the holder closed the sheet themselves.
+      ///
+      /// Distinct from failure on purpose: someone who cancels knows
+      /// what they did and should not be told off for it with an error
+      /// tone.
+      internal var cancelled: Bool = false
     }
 
     /// Why a priming run stopped short.
@@ -163,9 +170,7 @@
       // The meter lives on the sheet from here on: the card is against
       // the phone and Apple's panel is over the app, so this is the only
       // surface the holder can actually see.
-      let sheet = PrimingSheetReporter(
-        session: session,
-        activity: String(localized: "Card found"))
+      let sheet = PrimingSheetReporter(session: session)
       let report: StepReport = { reached, state in
         step(reached, state)
         sheet.report(reached, state)
@@ -201,7 +206,11 @@
 
     /// An Outcome that achieved nothing, explained.
     private static func failure(_ error: any Error) -> Outcome {
-      Outcome(stored: false, registered: false, summary: Self.summary(for: error))
+      Outcome(
+        stored: false,
+        registered: false,
+        summary: Self.summary(for: error),
+        cancelled: (error as? NearFieldCardSession.Failure) == .dismissed)
     }
 
     /// The instance an existing prime already names, when one does.
@@ -279,14 +288,11 @@
       progress: @escaping Progress,
       step: StepReport
     ) async -> Outcome {
-      sheet.say(String(localized: "Setting up Safari"))
       step(.registered, .running)
       let registered = await Self.register(
         instance: instance, session: sheet.session, progress: progress)
       step(.registered, registered ? .done : .failed)
-      if registered {
-        sheet.say(String(localized: "Ready to use"))
-      } else {
+      if !registered {
         sheet.fail(String(localized: "Safari setup did not finish"))
       }
       return Outcome(

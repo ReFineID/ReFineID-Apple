@@ -44,12 +44,15 @@
   @available(iOS 26.0, *)
   internal final class NearFieldCardSession: @unchecked Sendable {
     /// Why a hold never reached a live card.
-    internal enum Failure: Error {
+    internal enum Failure: Error, Equatable {
       /// The radio was still busy after every retry.
       case antennaBusy
 
       /// The slot opened but no card ever became valid in it.
       case cardNeverArrived
+
+      /// The holder closed the system sheet before presenting a card.
+      case dismissed
 
       /// The system would not give this app an NFC slot at all.
       case slotRefused
@@ -80,6 +83,18 @@
         }
         return card
       }
+    }
+
+    /// How a wait for the card ended.
+    private enum Arrived {
+      /// A live card is in the slot.
+      case arrived(TKSmartCard)
+
+      /// The holder closed the sheet.
+      case dismissed
+
+      /// The wait ran out with the sheet still up.
+      case neverArrived
     }
 
     /// How many times a busy radio is retried before giving up.
@@ -152,11 +167,16 @@
         opened.end()
         throw Failure.slotRefused
       }
-      guard let live = await waitForCard(in: openedSlot) else {
+      switch await Self.waitForCard(in: openedSlot, named: openedName, from: manager) {
+      case .arrived(let live):
+        return Self(session: opened, slot: openedSlot, card: live)
+      case .dismissed:
+        opened.end()
+        throw Failure.dismissed
+      case .neverArrived:
         opened.end()
         throw Failure.cardNeverArrived
       }
-      return Self(session: opened, slot: openedSlot, card: live)
     }
 
     /// Asks for the slot, retrying only while the answer says busy.
@@ -202,24 +222,41 @@
 
     /// Waits for the slot to hold a valid card, or gives up.
     ///
-    /// Both mechanisms are needed. The state observer reports the card
-    /// the instant the slot validates it, which is as early as it can be
-    /// known; the poll covers a transition that lands before the observer
-    /// is installed, and a slot that reaches `validCard` without ever
-    /// notifying.
-    private static func waitForCard(in openedSlot: TKSmartCardSlot) async -> TKSmartCard? {
+    /// Both arrival mechanisms are needed. The state observer reports the
+    /// card the instant the slot validates it, which is as early as it
+    /// can be known; the poll covers a transition that lands before the
+    /// observer is installed, and a slot that reaches `validCard` without
+    /// ever notifying.
+    ///
+    /// The poll also watches for the slot leaving the manager, which is
+    /// what a dismissed sheet looks like from here: `ctkd` takes the slot
+    /// away with the panel, and nothing else tells us. Without that check
+    /// a holder who cancels waits out the entire arrival budget -- twenty
+    /// seconds of a flow that is already over, with its sound still
+    /// running.
+    private static func waitForCard(
+      in openedSlot: TKSmartCardSlot,
+      named slotName: String,
+      from manager: TKSmartCardSlotManager
+    ) async -> Arrived {
       let arrival = Arrival(slot: openedSlot)
       let observation = openedSlot.observe(\.state, options: [.initial, .new]) { _, _ in
         _ = arrival.take()
       }
       defer { observation.invalidate() }
       for _ in 1...Self.arrivalPollLimit {
-        if let arrived = arrival.take() {
-          return arrived
+        if let found = arrival.take() {
+          return .arrived(found)
+        }
+        guard manager.slotNames.contains(slotName) else {
+          return .dismissed
         }
         try? await Task.sleep(for: Self.arrivalPollInterval)
       }
-      return arrival.take()
+      if let found = arrival.take() {
+        return .arrived(found)
+      }
+      return .neverArrived
     }
 
     /// Replaces the line of text on the system sheet.

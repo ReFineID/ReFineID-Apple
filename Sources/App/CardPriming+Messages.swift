@@ -56,6 +56,8 @@
         String(localized: "No card was found. Hold the card against the top of the phone.")
       case .slotRefused:
         String(localized: "This iPhone would not open a card reading session.")
+      case .dismissed:
+        String(localized: "Setup was cancelled.")
       }
     }
   }

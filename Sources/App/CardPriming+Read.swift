@@ -43,7 +43,6 @@
         // its first command is the one that has to be accepted -- so a
         // refused reposition is not turned into a failure here.
         try? CardOperations(channel: channel).selectMasterFile()
-        sheet.say(String(localized: "Opening secure channel"))
         progress(String(localized: "Opening a secure channel with the card."))
         let keys: PaceSessionKeys
         do {
@@ -57,7 +56,6 @@
         progress(String(localized: "Secure channel opened."))
         let operations = CardOperations(
           channel: SecureMessagingChannel(wrapping: channel, sessionKeys: keys))
-        sheet.say(String(localized: "Reading certificate"))
         progress(String(localized: "Reading the certificate from the card."))
         do {
           let payload = try Self.readIdentity(operations: operations)

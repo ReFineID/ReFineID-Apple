@@ -38,11 +38,18 @@ internal struct CardCredentialsView: View {
       && pin1Entry.count <= Pin1.maximumDigitCount
   }
 
-  /// Both credentials must be stored or complete before minting starts.
+  /// Both credentials must be usable before minting starts.
+  ///
+  /// A field left empty falls back to what is stored; a field with
+  /// something in it has to be complete, because a half-typed
+  /// replacement is a replacement the holder is still writing.
   private var canPrepareIdentity: Bool {
-    (model.contents.hasCardAccessNumber
-      || cardAccessNumberEntry.count == CardAccessNumber.digitCount)
-      && (model.contents.hasPin1 || isPin1EntryComplete)
+    let numberReady =
+      cardAccessNumberEntry.isEmpty
+      ? model.contents.hasCardAccessNumber
+      : cardAccessNumberEntry.count == CardAccessNumber.digitCount
+    let pinReady = pin1Entry.isEmpty ? model.contents.hasPin1 : isPin1EntryComplete
+    return numberReady && pinReady
   }
 
   internal var body: some View {
@@ -84,7 +91,7 @@ internal struct CardCredentialsView: View {
       }
     #endif
     .alert(
-      "Forget identity?",
+      isRegistered ? "Forget identity?" : "Forget card details?",
       isPresented: $showsForgetConfirmation
     ) {
       Button("Forget", role: .destructive) {
@@ -129,45 +136,31 @@ internal struct CardCredentialsView: View {
     #endif
   }
 
-  /// The CAN entry, or a compact indication that it is already stored.
-  @ViewBuilder private var cardAccessNumberRow: some View {
-    if model.contents.hasCardAccessNumber {
-      LabeledContent("Card Access Number (CAN)") {
-        Image(systemName: "checkmark")
-          .foregroundStyle(.green)
-          .accessibilityLabel("Stored")
-      }
-      .accessibilityIdentifier("cardAccessNumberStatus")
-    } else {
-      cardAccessNumberField
-    }
-  }
-
-  /// PIN1 entry, or a compact indication that it is already stored.
-  @ViewBuilder private var pin1Row: some View {
-    if model.contents.hasPin1 {
-      LabeledContent("PIN1") {
-        Image(systemName: "checkmark")
-          .foregroundStyle(.green)
-          .accessibilityLabel("Stored")
-      }
-      .accessibilityIdentifier("pin1Status")
-    } else {
-      pin1Field
-    }
+  /// The stored marker shown beside a credential that is already kept.
+  private var storedMark: some View {
+    Image(systemName: "checkmark")
+      .foregroundStyle(.green)
+      .accessibilityLabel("Stored")
   }
 
   /// The six printed digits, with the QR scanner beside them.
-  @ViewBuilder private var cardAccessNumberField: some View {
+  ///
+  /// Editable for as long as there is no identity. A setup that breaks
+  /// half way is very often a mistyped number, and a field that turned
+  /// into a checkmark the moment it was stored left the holder with no
+  /// way to correct it short of forgetting everything.
+  @ViewBuilder private var cardAccessNumberRow: some View {
     #if os(iOS)
       HStack {
-        TextField(
-          "Card Access Number (CAN)",
-          text: LimitedDigitBinding.cardAccessNumber(
-            $cardAccessNumberEntry)
-        )
-        .keyboardType(.numberPad)
-        .accessibilityIdentifier("cardAccessNumberField")
+        TextField("Card Access Number (CAN)", text: $cardAccessNumberEntry)
+          .keyboardType(.numberPad)
+          .accessibilityIdentifier("cardAccessNumberField")
+          .onChange(of: cardAccessNumberEntry) { _, typed in
+            cardAccessNumberEntry = LimitedDigits.cardAccessNumber(typed)
+          }
+        if model.contents.hasCardAccessNumber {
+          storedMark
+        }
         if CardAccessNumberScanner.isAvailable {
           Button {
             scannerTorchEnabled = false
@@ -180,26 +173,25 @@ internal struct CardCredentialsView: View {
         }
       }
     #else
-      TextField(
-        "Card Access Number (CAN)",
-        text: LimitedDigitBinding.cardAccessNumber(
-          $cardAccessNumberEntry)
-      )
-      .accessibilityIdentifier("cardAccessNumberField")
+      TextField("Card Access Number (CAN)", text: $cardAccessNumberEntry)
+        .accessibilityIdentifier("cardAccessNumberField")
+        .onChange(of: cardAccessNumberEntry) { _, typed in
+          cardAccessNumberEntry = LimitedDigits.cardAccessNumber(typed)
+        }
     #endif
   }
 
-  @ViewBuilder private var pin1Field: some View {
+  /// PIN1 entry, editable for as long as there is no identity.
+  ///
+  /// A stored PIN is never read back, so the field stays empty and the
+  /// mark beside it is what says one is kept. Typing replaces it.
+  @ViewBuilder private var pin1Row: some View {
     HStack {
       Group {
         if isPin1Revealed {
-          TextField(
-            "PIN1",
-            text: LimitedDigitBinding.pin1($pin1Entry))
+          TextField("PIN1", text: $pin1Entry)
         } else {
-          SecureField(
-            "PIN1",
-            text: LimitedDigitBinding.pin1($pin1Entry))
+          SecureField("PIN1", text: $pin1Entry)
         }
       }
       #if os(iOS)
@@ -209,7 +201,13 @@ internal struct CardCredentialsView: View {
       .autocorrectionDisabled()
       .focused($isPin1FieldFocused)
       .accessibilityIdentifier("pin1Field")
+      .onChange(of: pin1Entry) { _, typed in
+        pin1Entry = LimitedDigits.pin1(typed)
+      }
 
+      if model.contents.hasPin1 {
+        storedMark
+      }
       pin1VisibilityButton
     }
   }
@@ -245,9 +243,17 @@ internal struct CardCredentialsView: View {
     }
   #endif
 
+  /// The destructive action, named for what it actually removes.
+  ///
+  /// Before an identity exists there is none to forget, and offering to
+  /// forget one is a promise about state the device does not hold. What
+  /// it does hold then is the two credentials, so that is what it says.
   private var forgetSection: some View {
     Section {
-      Button("Forget identity", role: .destructive) {
+      Button(
+        isRegistered ? "Forget identity" : "Forget card details",
+        role: .destructive
+      ) {
         showsForgetConfirmation = true
       }
       .accessibilityIdentifier("forgetCardIdentityButton")
@@ -274,11 +280,16 @@ internal struct CardCredentialsView: View {
   }
 
   /// Stores the entered pair immediately before the NFC operation.
+  ///
+  /// A typed value wins over a stored one. The fields stay editable
+  /// until an identity exists precisely so a mistyped number can be
+  /// corrected, and a correction that the store ignored because
+  /// something was already kept would be worse than no field at all. An
+  /// empty field means the holder is content with what is stored.
   @MainActor
   private func prepareIdentity() -> Bool {
-    let accessNumber =
-      model.contents.hasCardAccessNumber ? nil : cardAccessNumberEntry
-    let pin1 = model.contents.hasPin1 ? nil : pin1Entry
+    let accessNumber = cardAccessNumberEntry.isEmpty ? nil : cardAccessNumberEntry
+    let pin1 = pin1Entry.isEmpty ? nil : pin1Entry
 
     cardAccessNumberEntry = ""
     pin1Entry = ""

@@ -72,6 +72,15 @@
     /// That length as the sleep takes it.
     private static let workingInterval: Duration = .milliseconds(Self.workingMilliseconds)
 
+    /// How many phrases the tone may play before stopping itself.
+    ///
+    /// A backstop, not a schedule: the hold normally ends this sound by
+    /// finishing. But a sound that outlives its reason is worse than no
+    /// sound at all -- it says a hold is running when none is -- so it
+    /// gets an end of its own. Twelve phrases is about thirty seconds,
+    /// longer than the arrival budget and every hold measured on device.
+    private static let workingRepeatLimit: Int = 12
+
     /// Starts the tick that says the hold is still running.
     ///
     /// Safe to call twice: a second start replaces the first rather than
@@ -79,7 +88,7 @@
     internal static func startWorking() {
       Self.stopWorking()
       Self.ticking = Task { @MainActor in
-        while !Task.isCancelled {
+        for _ in 1...Self.workingRepeatLimit where !Task.isCancelled {
           AudioServicesPlaySystemSound(
             UISoundLibrary.soundID(
               named: Self.workingSoundName, fallback: Self.workingFallbackID))

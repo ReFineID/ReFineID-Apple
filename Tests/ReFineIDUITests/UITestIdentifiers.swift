@@ -13,23 +13,17 @@
 /// A UI test drives a separate process and cannot share a constant with
 /// it, so this is the register that keeps the two sides honest.
 internal enum UITestIdentifiers {
-  /// The six-digit entry field, present only while nothing is stored.
+  /// The six-digit entry field, present until an identity is set.
   internal static let cardAccessNumberField = "cardAccessNumberField"
-
-  /// The line saying a card access number is stored.
-  internal static let cardAccessNumberStatus = "cardAccessNumberStatus"
 
   /// The row that opens the diagnostics capture from setup.
   internal static let diagnosticsButton = "diagnosticsButton"
 
-  /// The PIN1 entry field, present only while nothing is stored.
+  /// The PIN1 entry field, present until an identity is set.
   internal static let pin1Field = "pin1Field"
 
   /// The destructive action, present only while card state exists.
   internal static let forgetCardIdentityButton = "forgetCardIdentityButton"
-
-  /// The line saying a PIN1 is stored.
-  internal static let pin1Status = "pin1Status"
 
   /// The line saying the identity is set, present once registered.
   internal static let identityStatus = "identityStatus"
