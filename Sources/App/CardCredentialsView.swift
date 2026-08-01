@@ -67,7 +67,11 @@ internal struct CardCredentialsView: View {
             .foregroundStyle(.red)
         }
       }
-      if model.hasForgettableState {
+      // Only an identity is worth a destructive action. Stored
+      // credentials are not: the fields above are editable until an
+      // identity exists, so a wrong number is corrected by typing over
+      // it rather than by forgetting anything.
+      if isRegistered {
         forgetSection
       }
     }
@@ -84,6 +88,7 @@ internal struct CardCredentialsView: View {
     .onAppear {
       model.refresh()
       refreshRegistration()
+      showStoredCardAccessNumber()
     }
     #if os(iOS)
       .sheet(isPresented: $isScanning) {
@@ -91,13 +96,16 @@ internal struct CardCredentialsView: View {
       }
     #endif
     .alert(
-      isRegistered ? "Forget identity?" : "Forget card details?",
+      "Forget identity?",
       isPresented: $showsForgetConfirmation
     ) {
       Button("Forget", role: .destructive) {
         model.forgetEverything()
         registrationReset.toggle()
         isRegistered = false
+        cardAccessNumberEntry = ""
+        pin1Entry = ""
+        isPin1Revealed = false
       }
     }
   }
@@ -136,13 +144,6 @@ internal struct CardCredentialsView: View {
     #endif
   }
 
-  /// The stored marker shown beside a credential that is already kept.
-  private var storedMark: some View {
-    Image(systemName: "checkmark")
-      .foregroundStyle(.green)
-      .accessibilityLabel("Stored")
-  }
-
   /// The six printed digits, with the QR scanner beside them.
   ///
   /// Editable for as long as there is no identity. A setup that breaks
@@ -158,9 +159,6 @@ internal struct CardCredentialsView: View {
           .onChange(of: cardAccessNumberEntry) { _, typed in
             cardAccessNumberEntry = LimitedDigits.cardAccessNumber(typed)
           }
-        if model.contents.hasCardAccessNumber {
-          storedMark
-        }
         if CardAccessNumberScanner.isAvailable {
           Button {
             scannerTorchEnabled = false
@@ -181,17 +179,26 @@ internal struct CardCredentialsView: View {
     #endif
   }
 
-  /// PIN1 entry, editable for as long as there is no identity.
+  /// What the empty PIN1 field says about what is already kept.
   ///
-  /// A stored PIN is never read back, so the field stays empty and the
-  /// mark beside it is what says one is kept. Typing replaces it.
+  /// A stored PIN is never read back -- that is the store's oldest rule
+  /// -- so the field cannot show it. The placeholder says it instead. A
+  /// mark beside an empty box claimed the box was filled, which it was
+  /// not.
+  private var pin1Placeholder: String {
+    model.contents.hasPin1
+      ? String(localized: "PIN1 stored - type to replace")
+      : String(localized: "PIN1")
+  }
+
+  /// PIN1 entry, editable for as long as there is no identity.
   @ViewBuilder private var pin1Row: some View {
     HStack {
       Group {
         if isPin1Revealed {
-          TextField("PIN1", text: $pin1Entry)
+          TextField(pin1Placeholder, text: $pin1Entry)
         } else {
-          SecureField("PIN1", text: $pin1Entry)
+          SecureField(pin1Placeholder, text: $pin1Entry)
         }
       }
       #if os(iOS)
@@ -205,9 +212,6 @@ internal struct CardCredentialsView: View {
         pin1Entry = LimitedDigits.pin1(typed)
       }
 
-      if model.contents.hasPin1 {
-        storedMark
-      }
       pin1VisibilityButton
     }
   }
@@ -243,17 +247,14 @@ internal struct CardCredentialsView: View {
     }
   #endif
 
-  /// The destructive action, named for what it actually removes.
+  /// The destructive action, shown only when there is an identity.
   ///
-  /// Before an identity exists there is none to forget, and offering to
-  /// forget one is a promise about state the device does not hold. What
-  /// it does hold then is the two credentials, so that is what it says.
+  /// It removes everything the device knows about the card, which is
+  /// worth confirming. Before an identity exists there is nothing here
+  /// that needs removing rather than overwriting.
   private var forgetSection: some View {
     Section {
-      Button(
-        isRegistered ? "Forget identity" : "Forget card details",
-        role: .destructive
-      ) {
+      Button("Forget identity", role: .destructive) {
         showsForgetConfirmation = true
       }
       .accessibilityIdentifier("forgetCardIdentityButton")
@@ -271,6 +272,20 @@ internal struct CardCredentialsView: View {
       }
     }
   #endif
+
+  /// Puts a stored card access number back in its field.
+  ///
+  /// The number is printed on the card face and is the holder's to see,
+  /// so a stored one is shown rather than asserted by a mark beside an
+  /// empty box. Seeing the digits is also the only way to notice that
+  /// the stored ones are wrong, which is the usual reason a setup breaks
+  /// half way.
+  private func showStoredCardAccessNumber() {
+    guard cardAccessNumberEntry.isEmpty, let stored = model.storedCardAccessNumber else {
+      return
+    }
+    cardAccessNumberEntry = stored
+  }
 
   /// Reads the persistent registration state, on the platform that has it.
   private func refreshRegistration() {
