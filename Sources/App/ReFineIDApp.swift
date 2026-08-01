@@ -59,6 +59,14 @@ internal struct ReFineIDApp: App {
     // an upgrade rather than leave sensitive dead data in the keychain.
     CardCredentialStore.removeLegacySigningWindow()
 
+    // A hold marks the next NFC field as its own registration field, and
+    // clears the mark when it ends. A hold that never ends -- the app
+    // killed with the panel up -- leaves the mark behind, and while it
+    // stands a signing field publishes without taking the card session
+    // it needs, so the signature that follows fails with TKError -7.
+    // Nothing is being held at launch, so anything left here is stale.
+    PrimeStore.clearRegistrationField()
+
     // Nothing that talks to another process belongs here. Handing the
     // card access number to the driver was done from this initializer
     // and it hung the app: reading the driver configuration is a
