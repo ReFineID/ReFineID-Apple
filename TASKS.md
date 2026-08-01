@@ -1,6 +1,6 @@
 # Apple release task list
 
-Last reviewed: 2026-07-25
+Last reviewed: 2026-08-01
 
 
 

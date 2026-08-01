@@ -237,7 +237,16 @@ This disproves a Swift-concurrency starvation theory: PACE was already
 running outside the signing callback and the callback waited for that
 same work. It does not yet prove whether the missing response is card
 position/field strength, a Core NFC/CTK handover issue, or another
-transport bug. A clean app-owned Core NFC PACE run is the next comparison.
+transport bug.
+
+Resolved on 2026-08-01. The single-field prime ran PACE to completion
+inside a CryptoTokenKit field -- `86` nonce 33.5 ms, the two mapping
+rounds 710.0 and 604.8 ms, mutual authentication 36.6 ms -- followed by
+the certificate and serial reads and a successful registration. The
+difference from build 16 is ownership, not transport: here the app holds
+the field, and the extension's mint publishes from the prime without
+taking the card session. A GENERAL AUTHENTICATE that never returns is
+therefore contention for the card, not a limit of the interface.
 
 For comparison, the reference Rust transport captured one complete failed
 Suomi.fi attempt on the same phone and card. `ctkd` opened the retained
@@ -262,11 +271,14 @@ The final PSO has taken about 390 ms when it completes, so this attempt
 needed roughly 380 ms more field time. The two card-side PACE EC rounds
 alone consumed 1,315 ms.
 
-The roughly 20-second Core NFC lifetime seen during priming is a different
-budget. It belongs to an app-owned tag-reader session. Safari's
-CryptoTokenKit operation owns a replacement slot and has measured between
-about 1.8 and 2.45 seconds, depending on the attempt; the longer number
-cannot be used as Safari's signing budget.
+The roughly 20-second lifetime seen earlier belonged to an app-owned
+Core NFC tag-reader session, which priming no longer uses: since
+2026-08-01 the prime runs in the app's own CryptoTokenKit field. That
+field is held by the app rather than by a Safari operation, so it is not
+rationed the way the signing budget above is. Safari's CryptoTokenKit
+operation owns a replacement slot and has measured between about 1.8 and
+2.45 seconds, depending on the attempt; the longer number cannot be used
+as Safari's signing budget.
 
 ## Swift PACE arithmetic is no longer a field-budget problem
 
@@ -317,7 +329,37 @@ ENABLE_CODE_COVERAGE=NO` is supplied on the command line. A verified live
 artifact has no `__llvm_prf*` or `__llvm_cov*` sections in either the app
 or token extension.
 
-## The rules the NFC path must not break
+## Why one login asks for the card more than once
+
+Measured on device 2026-08-01, one client-certificate login:
+
+| Field | Opened | What it did | Ended |
+| --- | ---: | --- | ---: |
+| selection | 09:07:36.794 | mint, session taken, PACE prepared in 1,444 ms | 09:07:38.921 |
+| signature | 09:07:42.440 | mint, PACE, VERIFY PIN1, PSO -- signed in 1,903 ms | 09:07:44.606 |
+| unused | 09:07:55.423 | mint, session taken, PACE started, nothing signed | -- |
+
+The first field exists so the identity can be published for Safari's
+certificate sheet. `ctkd` ends it about two seconds after the mint,
+which is 09:07:38.921 here. The holder is still reading the consent
+sheet at that point: Safari asked for the signature at 09:07:42.146,
+3.2 seconds after the field had gone. The extension answered `-7` in
+4.0 ms, `ctkd` opened a replacement field, and the signature completed
+there. That is the second prompt, and it is the documented
+ended-field-is-an-absent-token path working correctly.
+
+Neither field is wasted work this side of the boundary: the consent UI
+is outside the extension, cannot be preselected by it, and its duration
+is the holder's reading speed. Once Safari remembers the choice for a
+site, the repeat login reaches the signature inside its first field.
+
+The third field is the open question. It opened 11 seconds after a
+successful signature, minted, took a session, started PACE, and nothing
+ever asked it to sign. Candidates, in order of likelihood: a second TLS
+connection to the same origin performing its own client-certificate
+handshake; a system consumer re-materializing the identity; or an app
+query that wakes `ctkd`. Distinguishing them needs a trace taken with
+the app closed and a single request in flight.
 
 Each cost a measured failure to learn, and each looks like a platform
 limitation when broken.
@@ -399,14 +441,17 @@ all. They are worth keeping.
   driver configurations, prime presence, stored-credential policy,
   platform transport availability, and the extension trace, with share
   and copy. TestFlight and Release exclude the diagnostics source files
-  from the app target. The report deliberately does not enumerate
+  from the app target, and since 2026-07-30 carry no logging of any kind
+  either -- no system log line, no file, no trace item, and not even the
+  message literals. `Scripts/inspect-archive.sh` fails an archive in
+  which any of them reappear. The report deliberately does not enumerate
   `com.apple.token` identities:
   that supposedly read-only query was measured presenting the NFC reader
   sheet and changing the failure being diagnosed.
 - **Extension trace**: a rolling keychain buffer both extensions write
-  and the app reads. On iOS 26 `log stream --device` is gone and
-  `log collect` fails, so this is the only way to see inside an
-  extension. Sizes, instruction bytes, status words and timings only --
+  and the app reads, in Debug and Profile only. On iOS 26
+  `log stream --device` is gone and `log collect` fails, so this is the
+  only way to see inside an extension. Sizes, instruction bytes, status words and timings only --
   never a PIN, CAN, serial or holder name, and `VERIFY` is redacted
   wholesale.
 - **DEBUG-only launch modes**: `--diagnostics`, `--trace`,

@@ -3,6 +3,125 @@
 Decisions with dates and rationale. `Documentation/release-plan.md` controls scope and
 security behavior; this file records the concrete values chosen under it.
 
+## 2026-08-01 A set identity is the whole screen
+
+Once an identity is set there is nothing left to configure, so nothing
+about configuring it is shown. The setup header and the two credential
+checkmarks go, leaving one `Identity` row with one mark, and the
+destructive action reads `Forget identity`.
+
+Before that state the screen has exactly one primary action: a filled,
+full-width `Set identity` button in its own section, rather than a plain
+row named after the minting mechanics. The credential rows collect, the
+button commits, and Apple's NFC sheet owns everything after the tap.
+This is the HIG shape for a setup flow -- at most one prominent button
+per view, labelled for the outcome rather than the implementation.
+
+Diagnostics is pinned under the content at the bottom of the screen. It
+is development-only furniture, not a product feature, and it sits below
+every product control instead of between them.
+
+Confirmations use alerts, not confirmation dialogs. iOS presents a
+confirmation dialog as a popover anchored to its source; the popover
+form drops the cancel action, and it was measured landing across the
+navigation bar far from the button that opened it.
+
+## 2026-08-01 No gate stands in front of storing PIN1
+
+The app-side biometric prompt guarded only the act of writing a PIN the
+holder had just typed. The token extension reads the stored value
+ungated -- it must, inside a two-second signing field -- so possession
+of an unlocked phone plus the card already authorizes a signature, gate
+or no gate. The card's own retry counter is the control that stops a
+guessed PIN.
+
+Removing it deletes a prompt, a passcode-missing failure mode, and the
+`DebugBiometricBypass` flag that existed only to get UI tests past the
+prompt on hardware where Face ID cannot be answered programmatically.
+This supersedes the app-code half of the 2026-07-27 gate decision.
+
+The keychain item is unchanged: `WhenUnlockedThisDeviceOnly`,
+non-synchronizable, never displayed, never in a backup or iCloud.
+
+## 2026-08-01 One NFC field primes and registers
+
+Priming opened two consecutive system NFC fields: a Core NFC read for
+PACE and the certificate, then a CryptoTokenKit slot that existed only
+to mint and register. The holder read two sheets and paid two field
+setups for one setup action.
+
+Both now happen inside the one CryptoTokenKit field. Two bridges make
+that work, and they replace the staged prime record the two-field design
+used:
+
+A registration mark in `PrimeStore`, written BEFORE the slot opens,
+tells the extension's mint to publish metadata without taking a card
+session, so the app keeps the card for PACE, the reads, and
+`registerSmartCard`. Written after the slot opens it would lose the
+race, which is why the staged record could not serve a single field.
+
+`TokenDriver.awaitPrime` returns from before the split: `ctkd` asks for
+a token the moment the card enters the slot, while PACE is still
+running, so the mint waits up to five seconds for the prime rather than
+missing it once and never asking again. The ceiling comes from a
+measured 3.6 s prime, since cut by the bundled-issuer match of
+2026-07-29.
+
+An already-primed card skips the card I/O entirely and the whole hold is
+the registration. The cross-field identity guard goes with the second
+field: with one field there is no cross-field identity to guard, and the
+record the extension reads is keyed by the live field's own ATR.
+
+Proven on device 2026-08-01. One hold ran PACE, the certificate and
+serial reads, and the registration: the prime reached the store on
+`awaitPrime` attempt 13 (about 3.2 s of the five-second ceiling), the
+mint read `registration=true` and took no card session, and
+`createToken` returned in 3,103 ms. This also settles the question the
+2026-07-28 build-16 trace left open: PACE inside a CryptoTokenKit field
+completes when the app owns that field.
+
+## 2026-07-30 A shipped build says nothing
+
+TestFlight and App Store builds carry no diagnostics and write no log of
+any kind: no `os.Logger` line, no file in the extension container, no
+line in the shared keychain trace. Debug and Profile are unchanged and
+keep every instrument, because Profile is what goes on the phone during
+development and the extension trace is still the only way to see inside
+a process `ctkd` hosts.
+
+The gate is `#if DEBUG`, which the project defines for Debug and Profile
+and not for TestFlight or Release, applied at the sinks - ``TokenLog``
+for the token extension, the new ``AppTrace`` for the app's own Core NFC
+and status card channels, and the one `ExtensionTrace.append` in the
+discovery driver. The 86 call sites are untouched.
+
+Two things had to be measured rather than assumed:
+
+`CardCore` never sees the condition. Xcode compiles the local package
+with `-DSWIFT_PACKAGE` alone - not `DEBUG`, not the project's
+`TESTFLIGHT` - so a guard inside `ExtensionTrace` would have removed the
+trace from Profile as well, which is the one build that needs it. The
+gate therefore lives in the targets that do get the condition, and
+`ExtensionTrace` stays as it is. `ExtensionTrace.clear()` is left
+reachable everywhere on purpose: never writing is the requirement, and a
+shipped build must still be able to delete a buffer an earlier
+development build left on the device.
+
+An empty inlined function is not enough on its own. With a plain
+`String` parameter the call disappears but the interpolation that built
+its argument does not: about twenty trace fragments stayed in the
+optimized binary. The messages are `@autoclosure` for that reason. The
+cost is that a closure formed in a scope consuming a noncopyable value
+makes Swift 6.3.3 report a copy of a noncopyable value at the `consume`
+and call it a compiler bug; `TokenSession.signInField` takes the one
+affected value into a `Bool` first.
+
+Measured on the current source: the TestFlight and Release binaries
+contain none of the trace literals and no reference to the extension log
+file; the Profile token extension still contains 23. `Scripts/inspect-archive.sh`
+now fails an archive in which any of them reappear, and rejects the
+Profile bundle when pointed at it.
+
 ## 2026-07-29 Every connected reader card is published; Safari selects
 
 CryptoTokenKit creates and retains a live token for every supported card
@@ -51,8 +170,8 @@ chose NFC. The transport decision is therefore independent of card
 serial, ATR, and key profile. Stored CAN, PIN1, card-directory entries,
 NFC primes, and ReFineID Safari registrations are removed; the newly
 minted live reader token remains published. If the holder later wants NFC
-again, "Mint identity token" performs the deliberate one-time contactless
-setup again.
+again, "Set identity" performs the deliberate one-time contactless setup
+again.
 
 ## 2026-07-29 An ended NFC field is an absent token
 
@@ -289,14 +408,10 @@ rejected. `CardCredentialStore.write` now falls back to `SecItemUpdate`
 on `errSecDuplicateItem` and its `delete` no longer skips the interface,
 which is the fix that part needed regardless.
 
-So `Sources/App/CardCredentialGate` is the gate, and it is the only one:
-every path that stores or drops a card access number or PIN1 goes through
-it, and it is the single place that reads
-`DebugBiometricBypass.isRequested`. That bypass is the one way past the
-prompt, it exists for the UI tests on hardware where Face ID cannot be
-answered programmatically, and it is inside `#if DEBUG` on both sides -
-the flag string is not in a release binary at all. The weakening versus
-an access control is real and is accepted here rather than left implicit.
+An app-side gate (`Sources/App/CardCredentialGate`) then stood in front
+of PIN1 storage until 2026-08-01, when it was removed; see the entry
+below. The keychain-item half of this decision stands: neither item
+carries a `SecAccessControl`, for the reasons measured above.
 
 ## 2026-07-27 One keychain group for the app and its minting extension
 
