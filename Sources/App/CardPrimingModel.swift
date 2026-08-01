@@ -38,23 +38,6 @@
     /// Apple's NFC sheet reports it to the holder.
     internal private(set) var lastRunResult = RunResult.notRun
 
-    /// How far the last or running hold got, step by step.
-    ///
-    /// The system NFC sheet cannot report this. It has no failure state
-    /// at all -- `TKSmartCardSlotNFCSession` offers only a message and
-    /// `endSession`, so it dismisses with the same checkmark whether the
-    /// hold worked or broke at PACE. This is where a holder finds out
-    /// which it was.
-    internal private(set) var steps: [CardPrimingStep: CardPrimingStep.State] = [:]
-
-    /// The sentence the last hold ended with, for the holder to read.
-    internal private(set) var summary: String?
-
-    /// How one step is going, for the view that draws it.
-    internal func state(of step: CardPrimingStep) -> CardPrimingStep.State {
-      steps[step] ?? .waiting
-    }
-
     /// Refreshes what is stored, without touching any secret.
     internal func refresh() {
       contents = CardCredentialStore.contents()
@@ -68,20 +51,19 @@
       guard contents.hasCardAccessNumber, allowsNearField else { return }
       isRunning = true
       lastRunResult = .notRun
-      summary = nil
-      steps = [:]
+      // The tick runs for the whole hold. It is what makes the outcome
+      // legible: it stops, and the tone that replaces it is the answer.
+      CardPrimingFeedback.startWorking()
       let outcome = await CardPriming.prime(
         progress: { _ in
-          // The step rows carry progress; the text is for diagnostics.
+          // The meter on the system NFC sheet carries progress; the
+          // holder is looking at the card, not at this screen.
         },
-        step: { [weak self] step, state in
-          Task { @MainActor in
-            self?.steps[step] = state
-          }
+        step: { _, _ in
+          // The sheet draws the steps. See `PrimingSheetReporter`.
         })
       let succeeded = outcome.stored && outcome.registered
       lastRunResult = succeeded ? .succeeded : .failed
-      summary = outcome.summary
       CardPrimingFeedback.report(succeeded: succeeded)
       refresh()
       isRunning = false

@@ -38,14 +38,7 @@
 
     @State private var model = CardPrimingModel()
 
-    @ViewBuilder internal var body: some View {
-      // The rows are up before the hold starts, as five empty circles,
-      // so the holder can see how many steps there are and how long to
-      // keep holding. They fill in as the hold runs and stay after it:
-      // the system sheet has no failure state to report, so this is the
-      // only place a holder learns that a hold that ended with Apple's
-      // checkmark did not actually register an identity.
-      CardPrimingStepsView(model: model)
+    internal var body: some View {
       // The one primary action of the screen, so it is the one filled,
       // full-width control: the credential rows above collect, this
       // commits. Everything after the tap is Apple's NFC sheet.

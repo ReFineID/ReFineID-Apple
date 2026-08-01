@@ -26,12 +26,12 @@
     ///
     /// Runs on the card queue, inside the card's exclusive session.
     internal static func read(
-      from session: NearFieldCardSession,
+      from sheet: PrimingSheetReporter,
       accessNumber: CardAccessNumber,
       progress: Progress,
       step: StepReport
     ) throws -> Payload {
-      try session.withCardSession { channel in
+      try sheet.session.withCardSession { channel in
         // PACE runs from the master file. The card was discovered by
         // selecting the eMRTD application, and MSE:Set AT from an applet
         // context is answered 6985, so the master file is made current on
@@ -43,7 +43,7 @@
         // its first command is the one that has to be accepted -- so a
         // refused reposition is not turned into a failure here.
         try? CardOperations(channel: channel).selectMasterFile()
-        session.update(message: String(localized: "Opening a secure channel. Keep holding."))
+        sheet.say(String(localized: "Opening a secure channel. Keep holding."))
         progress(String(localized: "Opening a secure channel with the card."))
         let keys: PaceSessionKeys
         do {
@@ -57,7 +57,7 @@
         progress(String(localized: "Secure channel opened."))
         let operations = CardOperations(
           channel: SecureMessagingChannel(wrapping: channel, sessionKeys: keys))
-        session.update(message: String(localized: "Reading the certificate. Keep holding."))
+        sheet.say(String(localized: "Reading the certificate. Keep holding."))
         progress(String(localized: "Reading the certificate from the card."))
         do {
           let payload = try Self.readIdentity(operations: operations)

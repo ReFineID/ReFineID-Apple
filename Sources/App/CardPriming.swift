@@ -158,12 +158,22 @@
         return Self.failure(error)
       }
       defer { session.end() }
-      step(.found, .done)
+      // The meter lives on the sheet from here on: the card is against
+      // the phone and Apple's panel is over the app, so this is the only
+      // surface the holder can actually see.
+      let sheet = PrimingSheetReporter(
+        session: session,
+        activity: String(localized: "Card found. Keep holding."))
+      let report: StepReport = { reached, state in
+        step(reached, state)
+        sheet.report(reached, state)
+      }
+      report(.found, .done)
       progress(String(localized: "Card found. Keep holding."))
 
       guard let lookup = PrimeLookupIdentifier(answerToReset: session.answerToReset) else {
-        step(.secureChannel, .failed)
-        session.update(message: Self.sheetMessage(for: Failure.unidentifiedCard))
+        report(.secureChannel, .failed)
+        sheet.fail(Self.sheetMessage(for: Failure.unidentifiedCard))
         return Self.failure(Failure.unidentifiedCard)
       }
 
@@ -172,19 +182,19 @@
       // is immediate and the whole hold is the registration.
       if let instance = Self.storedInstance(lookup: lookup) {
         for done in [CardPrimingStep.secureChannel, .certificate, .stored] {
-          step(done, .done)
+          report(done, .done)
         }
         progress(String(localized: "Card details already stored on this iPhone."))
         return await Self.finish(
-          instance: instance, session: session, progress: progress, step: step)
+          instance: instance, sheet: sheet, progress: progress, step: report)
       }
 
       return await Self.readStoreRegister(
-        session: session,
+        sheet: sheet,
         lookup: lookup,
         accessNumber: accessNumber,
         progress: progress,
-        step: step)
+        step: report)
     }
 
     /// An Outcome that achieved nothing, explained.
@@ -208,7 +218,7 @@
 
     /// Reads the card in this same field, stores the prime, registers.
     private static func readStoreRegister(
-      session: NearFieldCardSession,
+      sheet: PrimingSheetReporter,
       lookup: PrimeLookupIdentifier,
       accessNumber: CardAccessNumber,
       progress: @escaping Progress,
@@ -218,13 +228,17 @@
       let payload: Payload
       do {
         payload = try await Self.onCardQueue {
-          try Self.read(from: session, accessNumber: accessNumber, progress: progress, step: step)
+          try Self.read(
+            from: sheet,
+            accessNumber: accessNumber,
+            progress: progress,
+            step: step)
         }
       } catch {
         // The sheet is the only thing a holder can see while holding, so
         // it carries the detail rather than a shrug. Nothing here names
         // a PIN, CAN or the holder.
-        session.update(message: Self.sheetMessage(for: error))
+        sheet.fail(Self.sheetMessage(for: error))
         return Self.failure(error)
       }
 
@@ -242,14 +256,14 @@
         PrimeStore.store(identity, forLookup: lookup)
       else {
         step(.stored, .failed)
-        session.update(message: String(localized: "Could not save the card details."))
+        sheet.fail(String(localized: "Could not save the card details."))
         return Self.failure(Failure.primeNotStored)
       }
       step(.stored, .done)
       progress(String(localized: "Card details stored on this iPhone."))
 
       return await Self.finish(
-        instance: payload.instance, session: session, progress: progress, step: step)
+        instance: payload.instance, sheet: sheet, progress: progress, step: step)
     }
 
     /// Registers the live card and reports how the hold ended.
@@ -259,19 +273,20 @@
     /// rather than being called after the hold.
     private static func finish(
       instance: CardInstanceIdentifier,
-      session: NearFieldCardSession,
+      sheet: PrimingSheetReporter,
       progress: @escaping Progress,
       step: StepReport
     ) async -> Outcome {
-      session.update(message: String(localized: "Setting up Safari. Keep holding."))
+      sheet.say(String(localized: "Setting up Safari. Keep holding."))
       step(.registered, .running)
       let registered = await Self.register(
-        instance: instance, session: session, progress: progress)
+        instance: instance, session: sheet.session, progress: progress)
       step(.registered, registered ? .done : .failed)
-      session.update(
-        message: registered
-          ? String(localized: "Your card is ready to use.")
-          : String(localized: "Safari setup did not finish."))
+      if registered {
+        sheet.say(String(localized: "Your card is ready to use."))
+      } else {
+        sheet.fail(String(localized: "Safari setup did not finish."))
+      }
       return Outcome(
         stored: true,
         registered: registered,
