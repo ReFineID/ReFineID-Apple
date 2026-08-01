@@ -31,7 +31,7 @@
     internal let canPrepareCredentials: Bool
 
     /// Stores the two entries before opening the NFC field.
-    internal let prepareCredentials: @MainActor () async -> Bool
+    internal let prepareCredentials: @MainActor () -> Bool
 
     @State private var model = CardPrimingModel()
     @State private var isRegistered = false
@@ -51,7 +51,7 @@
         } else {
           Button("Mint identity token") {
             Task {
-              guard await prepareCredentials() else { return }
+              guard prepareCredentials() else { return }
               await model.prime()
               if case .succeeded = model.lastRunResult {
                 isRegistered = true

@@ -22,14 +22,14 @@ import Security
 /// the add that follows fails as a duplicate, so a perfectly good PIN
 /// looked rejected.
 ///
-/// The biometric gate therefore lives one layer up, in the app's
-/// `CardCredentialGate`, in front of PIN1 storage. Deletion is ungated:
-/// it reveals nothing and removes signing authority from the device.
-/// This is weaker than an access control -- app code can be talked past,
-/// the Security framework cannot -- and it is a deliberate trade,
-/// recorded in `Documentation/decisions.md` rather than left to be
-/// discovered here. The card access number passes no gate in either
-/// direction.
+/// No gate stands in front of storage either. An app-side biometric
+/// prompt guarded only the act of writing a PIN the holder had just
+/// typed; the extension reads the stored value ungated regardless, so
+/// possession of the unlocked phone plus the card already signs. The
+/// card's own retry counter is the control that stops a guessed PIN.
+/// Deletion is likewise ungated: it reveals nothing and removes signing
+/// authority from the device. The trade is recorded in
+/// `Documentation/decisions.md` rather than left to be discovered here.
 public enum CardCredentialStore {
   /// What the store currently holds.
   public struct Contents: Equatable, Sendable {

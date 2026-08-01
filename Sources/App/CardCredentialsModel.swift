@@ -92,17 +92,21 @@ internal final class CardCredentialsModel {
     refresh()
   }
 
-  /// Stores PIN1 after the holder authenticates.
-  internal func savePin1(_ digits: String) async {
-    await gated(
-      reason: String(localized: "Save PIN1 so this device can sign without asking")
-    ) {
-      let status = CardCredentialStore.save(pin1: digits)
-      guard status == errSecSuccess else {
-        return String(localized: "Could not store PIN1 (\(status)).")
-      }
-      return nil
+  /// Stores PIN1, with no gate in front.
+  ///
+  /// Ungated like the card access number. A prompt here protected only
+  /// the act of writing a PIN the holder just typed: the extension reads
+  /// the stored value without any gate -- it must, inside a two-second
+  /// signing field -- so possession of the unlocked phone plus the card
+  /// already signs, gate or no gate. The card's own retry counter is the
+  /// control that actually stops a guessed PIN.
+  internal func savePin1(_ digits: String) {
+    failure = nil
+    let status = CardCredentialStore.save(pin1: digits)
+    if status != errSecSuccess {
+      failure = String(localized: "Could not store PIN1 (\(status)).")
     }
+    refresh()
   }
 
   /// Stores any credentials that are not already present before minting.
@@ -113,13 +117,13 @@ internal final class CardCredentialsModel {
   internal func prepareIdentity(
     cardAccessNumber: String?,
     pin1: String?
-  ) async -> Bool {
+  ) -> Bool {
     if let cardAccessNumber {
       saveCardAccessNumber(cardAccessNumber)
       guard contents.hasCardAccessNumber else { return false }
     }
     if let pin1 {
-      await savePin1(pin1)
+      savePin1(pin1)
       guard contents.hasPin1 else { return false }
     }
     refresh()
@@ -158,35 +162,5 @@ internal final class CardCredentialsModel {
     if !outcome.succeeded {
       failure = outcome.summary
     }
-  }
-
-  /// Runs `work` only once the holder has authenticated, then refreshes.
-  ///
-  /// `work` returns a message when it failed, or nil when it succeeded.
-  ///
-  /// This is the gate, and it is the only one: the keychain items
-  /// themselves carry no access control, because the token extension has
-  /// to read PIN1 while signing a request made in Safari and has no
-  /// interface to answer a prompt with. PIN1 storage therefore comes
-  /// through here. Deletion intentionally does not: removing a credential
-  /// discloses nothing and reduces what the device can do.
-  ///
-  /// ``CardCredentialGate`` is also the single place a debug build can be
-  /// told to skip the prompt, and nothing outside `#if DEBUG` can ask it
-  /// to.
-  private func gated(reason: String, work: () -> String?) async {
-    failure = nil
-    do {
-      try await CardCredentialGate.authenticate(reason: reason)
-    } catch CardCredentialGate.Refusal.unavailable {
-      failure = String(
-        localized: "Set a device passcode before storing card details.")
-      return
-    } catch {
-      failure = String(localized: "Not authenticated.")
-      return
-    }
-    failure = work()
-    refresh()
   }
 }

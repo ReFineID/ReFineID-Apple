@@ -269,7 +269,7 @@ internal struct CardCredentialsView: View {
 
   /// Stores the entered pair immediately before the NFC operation.
   @MainActor
-  private func prepareIdentity() async -> Bool {
+  private func prepareIdentity() -> Bool {
     let accessNumber =
       model.contents.hasCardAccessNumber ? nil : cardAccessNumberEntry
     let pin1 = model.contents.hasPin1 ? nil : pin1Entry
@@ -279,7 +279,7 @@ internal struct CardCredentialsView: View {
     isPin1Revealed = false
     isPin1FieldFocused = false
 
-    return await model.prepareIdentity(
+    return model.prepareIdentity(
       cardAccessNumber: accessNumber,
       pin1: pin1)
   }
