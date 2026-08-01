@@ -81,12 +81,14 @@ internal final class DiscoveryTokenDriver: TKSmartCardTokenDriver,
     createTokenFor smartCard: TKSmartCard,
     aid: Data?
   ) throws -> TKSmartCardToken {
-    let line =
-      "discovery: asked for a token, aid=\(aid?.count ?? -1)B "
-      + "slot=\(smartCard.slot.name) -- refusing with tokenNotFound"
-    if Self.lastWritten.admit(line) {
-      ExtensionTrace.append(line)
-    }
+    #if DEBUG
+      let line =
+        "discovery: asked for a token, aid=\(aid?.count ?? -1)B "
+        + "slot=\(smartCard.slot.name) -- refusing with tokenNotFound"
+      if Self.lastWritten.admit(line) {
+        ExtensionTrace.append(line)
+      }
+    #endif
     throw TKError(.tokenNotFound)
   }
 }

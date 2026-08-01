@@ -98,7 +98,7 @@ internal struct SmartCardChannel: CardChannel {
     }
     semaphore.wait()
     let elapsed = started.duration(to: ContinuousClock.now)
-    ExtensionTrace.append(
+    AppTrace.append(
       CardExchangeTrace.line(request: payload, response: reply.value, elapsed: elapsed)
     )
     guard let response = reply.value else {

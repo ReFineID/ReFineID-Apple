@@ -244,7 +244,14 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
     // Which of the two supplied the PIN is the first thing a failed
     // contactless login needs to know, and it is sayable without saying
     // anything about the PIN itself.
-    TokenLog.trace("sign: pin1 source=\(pinSource) authorized=\(authorized != nil)")
+    //
+    // Taken as a `Bool` first, and not asked inside the trace call:
+    // ``TokenLog/trace(_:)`` takes an autoclosure so a shipped build
+    // never builds the line, and a closure that borrows the noncopyable
+    // `authorized` here makes the compiler report a copy of a
+    // noncopyable value at the `consume` above.
+    let authorizedPinPresent = authorized != nil
+    TokenLog.trace("sign: pin1 source=\(pinSource) authorized=\(authorizedPinPresent)")
     // Ask for the PIN BEFORE touching the card. A contactless token uses
     // its explicitly stored credential rather than process accepted-PIN
     // memory, so a signature with no PIN can
