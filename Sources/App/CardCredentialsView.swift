@@ -113,6 +113,13 @@ internal struct CardCredentialsView: View {
       refreshRegistration()
       showStoredCardAccessNumber()
     }
+    .onChange(of: isRegistered) { _, registered in
+      // A set identity ends the fields' job; nothing they held is worth
+      // keeping in memory once the setup they belonged to is over.
+      if registered {
+        clearEntries()
+      }
+    }
     .onChange(of: model.contents) { _, _ in
       // A hold that stored the number and then broke leaves the field
       // as it was. Seeding again here puts the stored number back in
@@ -132,9 +139,7 @@ internal struct CardCredentialsView: View {
         model.forgetEverything()
         registrationReset.toggle()
         isRegistered = false
-        cardAccessNumberEntry = ""
-        pin1Entry = ""
-        isPin1Revealed = false
+        clearEntries()
       }
     }
   }
@@ -209,27 +214,17 @@ internal struct CardCredentialsView: View {
     #endif
   }
 
-  /// PIN1: editable until one is stored, and settled afterwards.
+  /// PIN1 entry, editable until the IDENTITY is set.
   ///
-  /// A stored PIN is never read back, so once it is kept there is
-  /// nothing to put in a field and nothing to type into one. The row
-  /// says it is stored instead. That is not a mark beside an empty box
-  /// -- there is no box.
+  /// Not until a PIN is stored -- until the identity is. A stored PIN
+  /// that turns out to be wrong is one of the two reasons a setup dies,
+  /// and a field that locked itself the moment it was stored left no way
+  /// to correct it. The field stays; typing replaces what is kept.
+  ///
+  /// It carries no stored mark, because a mark beside an empty box
+  /// claims the box is filled. A stored PIN is never read back, so the
+  /// box is empty whether or not one is kept.
   @ViewBuilder private var pin1Row: some View {
-    if model.contents.hasPin1 {
-      LabeledContent("PIN1") {
-        Image(systemName: "checkmark")
-          .foregroundStyle(.green)
-          .accessibilityLabel("Stored")
-      }
-      .accessibilityIdentifier("pin1Status")
-    } else {
-      pin1Field
-    }
-  }
-
-  /// The PIN entry itself, shown while nothing is stored.
-  @ViewBuilder private var pin1Field: some View {
     HStack {
       Group {
         if isPin1Revealed {
@@ -343,13 +338,24 @@ internal struct CardCredentialsView: View {
     let accessNumber = cardAccessNumberEntry.isEmpty ? nil : cardAccessNumberEntry
     let pin1 = pin1Entry.isEmpty ? nil : pin1Entry
 
-    cardAccessNumberEntry = ""
-    pin1Entry = ""
+    // The fields keep what was typed. Emptying them here was what left a
+    // holder unable to see, check or correct a PIN after a hold that
+    // failed -- the one moment both are worth looking at. They are
+    // cleared when the identity is set and when the card is forgotten,
+    // which is when there is nothing left for them to be about.
     isPin1Revealed = false
     isPin1FieldFocused = false
 
     return model.prepareIdentity(
       cardAccessNumber: accessNumber,
       pin1: pin1)
+  }
+
+  /// Empties both fields once they have nothing left to describe.
+  private func clearEntries() {
+    cardAccessNumberEntry = ""
+    pin1Entry = ""
+    isPin1Revealed = false
+    isPin1FieldFocused = false
   }
 }

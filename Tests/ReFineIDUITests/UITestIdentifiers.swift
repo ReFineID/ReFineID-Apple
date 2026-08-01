@@ -19,10 +19,7 @@ internal enum UITestIdentifiers {
   /// The row that opens the diagnostics capture from setup.
   internal static let diagnosticsButton = "diagnosticsButton"
 
-  /// The row saying a PIN1 is stored, present once one is.
-  internal static let pin1Status = "pin1Status"
-
-  /// The PIN1 entry field, present until one is stored.
+  /// The PIN1 entry field, present until an identity is set.
   internal static let pin1Field = "pin1Field"
 
   /// The destructive action, present only while card state exists.

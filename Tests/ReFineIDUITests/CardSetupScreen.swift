@@ -38,26 +38,19 @@ internal enum CardSetupScreen {
         Self.enter(
           pin1,
           field: UITestIdentifiers.pin1Field,
-          in: app,
-          storedStatus: UITestIdentifiers.pin1Status
+          in: app
         )
       else { return false }
     }
     return true
   }
 
-  /// Enters one value, accepting a row that already says it is stored.
+  /// Enters one value into a field that is there until an identity is.
   private static func enter(
     _ digits: String,
     field fieldIdentifier: String,
-    in app: XCUIApplication,
-    storedStatus statusIdentifier: String? = nil
+    in app: XCUIApplication
   ) -> Bool {
-    if let statusIdentifier,
-      app.descendants(matching: .any)[statusIdentifier].exists
-    {
-      return true
-    }
     let field = app.descendants(matching: .any)[fieldIdentifier]
     guard field.waitForExistence(timeout: Self.appearTimeout), field.isHittable else {
       return false
