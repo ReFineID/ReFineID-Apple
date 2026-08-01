@@ -30,13 +30,29 @@ internal struct CardCredentialsView: View {
   @State private var showsForgetConfirmation = false
   @State private var registrationReset = false
   @State private var isRegistered = false
-  @State private var isHolding = false
   @FocusState private var isPin1FieldFocused: Bool
+
+  #if canImport(CoreNFC) && os(iOS)
+    /// The priming model lives here, above everything a hold hides.
+    @State private var primingModel = CardPrimingModel()
+  #endif
 
   /// The PIN is valid for storage only inside the card's documented range.
   private var isPin1EntryComplete: Bool {
     pin1Entry.count >= Pin1.minimumDigitCount
       && pin1Entry.count <= Pin1.maximumDigitCount
+  }
+
+  /// Whether a card is being held against the phone right now.
+  ///
+  /// Read from the model the parent owns, so it cannot be stranded by
+  /// the very views a hold hides.
+  private var isHolding: Bool {
+    #if canImport(CoreNFC) && os(iOS)
+      return primingModel.isRunning
+    #else
+      return false
+    #endif
   }
 
   /// Both credentials must be usable before minting starts.
@@ -149,7 +165,7 @@ internal struct CardCredentialsView: View {
           canPrepareCredentials: canPrepareIdentity,
           prepareCredentials: prepareIdentity,
           isRegistered: $isRegistered,
-          isHolding: $isHolding
+          model: primingModel
         )
         .id(registrationReset)
       }

@@ -36,11 +36,14 @@
     /// Flipped when a hold ends with a registered identity.
     @Binding internal var isRegistered: Bool
 
-    /// True for as long as a hold is running, so the screen behind
-    /// Apple's panel can get out of the way.
-    @Binding internal var isHolding: Bool
-
-    @State private var model = CardPrimingModel()
+    /// Owned by the parent, not by this view.
+    ///
+    /// The screen behind Apple's panel is cleared while a hold runs, and
+    /// this view is part of what it clears. A run flag kept here would
+    /// go out of the hierarchy with the view that sets it back, and the
+    /// screen would stay empty for good -- which is exactly what
+    /// happened when it was.
+    internal let model: CardPrimingModel
 
     internal var body: some View {
       // The one primary action of the screen, so it is the one filled,
@@ -68,9 +71,6 @@
       )
       .onAppear {
         model.refresh()
-      }
-      .onChange(of: model.isRunning) { _, running in
-        isHolding = running
       }
     }
 
