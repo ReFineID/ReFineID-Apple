@@ -17,4 +17,19 @@ public enum CardTransport: String, CaseIterable, Equatable, Sendable {
 
   /// A contact reader over USB, USB-C, or the platform's PC/SC stack.
   case reader = "reader"
+
+  /// What the system calls the phone's own contactless slot.
+  ///
+  /// `TKSmartCardSlotManager.createNFCSlot` names the slot it opens
+  /// "Built-in NFC Slot"; a reader slot carries the reader's own name.
+  /// The name is all there is to classify a slot by before any card
+  /// I/O, and both the token extension and the app have to reach the
+  /// same verdict about the same slot, so the marker lives here rather
+  /// than once in each of them.
+  public static let nearFieldSlotMarker = "NFC"
+
+  /// Which transport a slot of this name belongs to.
+  public static func transport(forSlotNamed name: String) -> Self {
+    name.localizedCaseInsensitiveContains(Self.nearFieldSlotMarker) ? .nearField : .reader
+  }
 }

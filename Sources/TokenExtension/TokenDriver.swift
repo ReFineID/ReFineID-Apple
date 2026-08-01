@@ -22,14 +22,6 @@ import Foundation
 /// `platform/apple/RefineIDTokenExtension/TokenDriver.swift`, whose
 /// contactless branch was proven on device.
 internal final class TokenDriver: TKSmartCardTokenDriver, TKSmartCardTokenDriverDelegate {
-  /// What the system calls the phone's own contactless slot.
-  ///
-  /// `TKSmartCardSlotManager.createNFCSlot` names the slot it opens
-  /// "Built-in NFC Slot"; a PC/SC reader carries the reader's own name.
-  /// The name is all the driver has to classify a slot by, and it must
-  /// classify without touching the card.
-  private static let nearFieldSlotMarker = "NFC"
-
   /// How many times the mint looks for a prime before giving up.
   private static let primeWaitAttempts = 20
 
@@ -83,9 +75,8 @@ internal final class TokenDriver: TKSmartCardTokenDriver, TKSmartCardTokenDriver
     createTokenFor smartCard: TKSmartCard,
     aid: Data?
   ) throws -> TKSmartCardToken {
-    let transport: CardTransport =
-      smartCard.slot.name.localizedCaseInsensitiveContains(Self.nearFieldSlotMarker)
-      ? .nearField : .reader
+    // The slot name is all there is to classify by before any card I/O.
+    let transport = CardTransport.transport(forSlotNamed: smartCard.slot.name)
     let started = ContinuousClock.now
     TokenLog.info("createToken called: aid=\(aid?.count ?? -1) B via \(transport.rawValue)")
     do {

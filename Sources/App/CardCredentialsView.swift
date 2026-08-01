@@ -209,8 +209,27 @@ internal struct CardCredentialsView: View {
     #endif
   }
 
-  /// PIN1 entry, editable for as long as there is no identity.
+  /// PIN1: editable until one is stored, and settled afterwards.
+  ///
+  /// A stored PIN is never read back, so once it is kept there is
+  /// nothing to put in a field and nothing to type into one. The row
+  /// says it is stored instead. That is not a mark beside an empty box
+  /// -- there is no box.
   @ViewBuilder private var pin1Row: some View {
+    if model.contents.hasPin1 {
+      LabeledContent("PIN1") {
+        Image(systemName: "checkmark")
+          .foregroundStyle(.green)
+          .accessibilityLabel("Stored")
+      }
+      .accessibilityIdentifier("pin1Status")
+    } else {
+      pin1Field
+    }
+  }
+
+  /// The PIN entry itself, shown while nothing is stored.
+  @ViewBuilder private var pin1Field: some View {
     HStack {
       Group {
         if isPin1Revealed {

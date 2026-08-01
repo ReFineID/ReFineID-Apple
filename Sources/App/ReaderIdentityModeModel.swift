@@ -8,6 +8,26 @@
   @MainActor
   @Observable
   internal final class ReaderIdentityModeModel {
+    /// Whether the platform is presenting a contact reader slot at all.
+    ///
+    /// A reader identity cannot exist without a reader. Asking the slot
+    /// manager is a physical fact, where the token arithmetic below is
+    /// an inference -- and an inference with a window in it: `ctkd`
+    /// publishes a freshly minted NFC token before `registerSmartCard`
+    /// has put it in the persistent list, so for a second after every
+    /// setup that token looks exactly like a reader token. That window
+    /// is what flashed a USB-C reader screen at a holder who had no
+    /// reader attached.
+    ///
+    /// The built-in NFC slot exists only while a session is open and
+    /// carries "NFC" in its name; a reader slot carries the reader's.
+    private static var hasReaderSlot: Bool {
+      guard let manager = TKSmartCardSlotManager.default else { return false }
+      return manager.slotNames.contains { name in
+        CardTransport.transport(forSlotNamed: name) == .reader
+      }
+    }
+
     /// Watches physical token publication and removal.
     private let watcher = TKTokenWatcher()
 
@@ -57,6 +77,10 @@
 
     /// Counts live reader tokens while excluding persistent NFC registrations.
     internal func refresh() {
+      guard Self.hasReaderSlot else {
+        liveReaderTokenCount = 0
+        return
+      }
       let refineIDTokenIdentifiers = Set(
         watcher.tokenIDs.filter(CardTokenNamespace.owns(tokenIdentifier:))
       )
