@@ -31,6 +31,9 @@ internal enum UITestIdentifiers {
   /// The line saying a PIN1 is stored.
   internal static let pin1Status = "pin1Status"
 
+  /// The line saying the identity is set, present once registered.
+  internal static let identityStatus = "identityStatus"
+
   /// The button that starts one priming hold.
   internal static let primeStartButton = "primeStartButton"
 

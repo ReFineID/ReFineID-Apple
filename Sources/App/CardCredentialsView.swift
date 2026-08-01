@@ -52,12 +52,14 @@ internal struct CardCredentialsView: View {
             .foregroundStyle(.red)
         }
       }
-      #if DEBUG
-        diagnosticsSection
-      #endif
       if model.hasForgettableState {
         forgetSection
       }
+      // Development-only, so it sits below every product control: a
+      // shipped build has no diagnostics and no logging at all.
+      #if DEBUG
+        diagnosticsSection
+      #endif
     }
     #if os(iOS)
       .listSectionSpacing(Self.sectionSpacing)

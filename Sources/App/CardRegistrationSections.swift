@@ -4,7 +4,8 @@
   import CryptoTokenKit
   import SwiftUI
 
-  /// The single identity-creation action embedded below both credentials.
+  /// The single identity-creation action embedded below both credentials,
+  /// replaced by a plain checkmark row once the identity exists.
   ///
   /// Apple's NFC sheets own live progress and completion. Persistent card
   /// and Safari state belongs in Diagnostics, not below this button.
@@ -13,6 +14,7 @@
     /// Stable automation names; changing one never changes visible copy.
     private static let startIdentifier = "primeStartButton"
     private static let failedIdentifier = "primeFailed"
+    private static let identityIdentifier = "identityStatus"
     /// Complete persistent identity state, read without waking NFC.
     ///
     /// A registration without its prime or stored PIN cannot sign. Treating
@@ -36,7 +38,17 @@
 
     internal var body: some View {
       Group {
-        if !isRegistered {
+        if isRegistered {
+          // The finished state says one word and shows one mark, in the
+          // same shape as the credential rows above it. Everything else
+          // a holder can do from here is the forget action below.
+          LabeledContent("Identity") {
+            Image(systemName: "checkmark")
+              .foregroundStyle(.green)
+              .accessibilityLabel("Set")
+          }
+          .accessibilityIdentifier(Self.identityIdentifier)
+        } else {
           Button("Mint identity token") {
             Task {
               guard await prepareCredentials() else { return }
