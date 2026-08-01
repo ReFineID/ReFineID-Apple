@@ -40,6 +40,14 @@ internal enum FineidValues {
   /// (ISO 7816-4).
   internal static let fileIdMasterFile: UInt16 = 0x3F00
 
+  /// EF.CardAccess: the SecurityInfos a terminal reads BEFORE PACE to
+  /// learn which variants the card supports, under the master file
+  /// (ICAO 9303-11 section 9.2.11).
+  ///
+  /// Freely readable by design: the terminal cannot open a secure
+  /// channel until the card has said how.
+  internal static let fileIdCardAccess: UInt16 = 0x011C
+
   /// EF.4331: the authentication certificate leaf, directly under the
   /// PKCS#15 application (FINEID S4-2 §3).
   ///

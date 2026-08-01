@@ -15,6 +15,8 @@ internal struct DiagnosticsView: View {
   @State private var clearMessage: String?
   @State private var clearSucceeded = true
   @State private var showsClearConfirmation = false
+  @State private var capabilityLines: [String] = []
+  @State private var isProbingCapabilities = false
 
   internal var body: some View {
     List {
@@ -28,6 +30,9 @@ internal struct DiagnosticsView: View {
           .foregroundStyle(clearSucceeded ? Color.secondary : Color.red)
         }
       }
+      #if canImport(CoreNFC) && os(iOS)
+        capabilitySection
+      #endif
       if let snapshot {
         ForEach(snapshot.sections) { section in
           reportSection(section)
@@ -100,6 +105,44 @@ internal struct DiagnosticsView: View {
     }
   }
 
+  #if canImport(CoreNFC) && os(iOS)
+    /// Asks the card what suites it supports and times the one in use.
+    ///
+    /// A card operation, so it is a deliberate action rather than part
+    /// of collecting the report: it opens an NFC field and asks the
+    /// holder to hold the card.
+    @ViewBuilder private var capabilitySection: some View {
+      Section {
+        Button {
+          probeCapabilities()
+        } label: {
+          if isProbingCapabilities {
+            HStack {
+              ProgressView()
+              Text("Reading the card")
+            }
+          } else {
+            Label("Read card capabilities", systemImage: "wave.3.right")
+          }
+        }
+        .disabled(isProbingCapabilities)
+        .accessibilityIdentifier("capabilityProbeButton")
+        if !capabilityLines.isEmpty {
+          ScrollView(.horizontal) {
+            Text(verbatim: capabilityLines.joined(separator: "\n"))
+              .font(.system(.caption, design: .monospaced))
+              .textSelection(.enabled)
+          }
+          .scrollIndicators(.hidden)
+        }
+      } header: {
+        Text("Card capabilities")
+      } footer: {
+        Text("Reads EF.CardAccess and times one PACE handshake.")
+      }
+    }
+  #endif
+
   /// Trace removal is separate from report reading and requires
   /// confirmation because it removes evidence from the previous attempt.
   private var clearLogsSection: some View {
@@ -133,6 +176,25 @@ internal struct DiagnosticsView: View {
   private func refresh() {
     snapshot = DiagnosticsSnapshot.collect()
   }
+
+  #if canImport(CoreNFC) && os(iOS)
+    /// Runs the capability probe, then refreshes so the new trace lines
+    /// it wrote are on screen with it.
+    private func probeCapabilities() {
+      guard !isProbingCapabilities else { return }
+      isProbingCapabilities = true
+      capabilityLines = []
+      Task {
+        if #available(iOS 26.0, *) {
+          capabilityLines = await CardCapabilityProbe.run()
+        } else {
+          capabilityLines = ["needs iOS 26"]
+        }
+        isProbingCapabilities = false
+        refresh()
+      }
+    }
+  #endif
 
   private func copyReport() {
     guard let snapshot else { return }

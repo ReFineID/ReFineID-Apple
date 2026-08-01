@@ -12,6 +12,9 @@ public struct FileIdentifier: Equatable, Sendable {
   /// The master file (root).
   public static let masterFile = Self(value: FineidValues.fileIdMasterFile)
 
+  /// EF.CardAccess: the SecurityInfos readable before PACE.
+  public static let cardAccess = Self(value: FineidValues.fileIdCardAccess)
+
   /// EF.4331: the authentication certificate leaf.
   public static let authCertificate = Self(
     value: FineidValues.fileIdAuthCertificate

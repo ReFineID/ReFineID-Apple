@@ -82,6 +82,24 @@ public struct CardOperations {
     return try readSelectedFile(slot.file)
   }
 
+  /// Reads and parses EF.CardAccess: what PACE variants and domain
+  /// parameters this card advertises.
+  ///
+  /// Runs on the plain channel from the master file, before any secure
+  /// channel exists -- the file is readable unauthenticated because a
+  /// terminal needs it to know how to open one. Nothing in the login
+  /// path calls this; it answers whether a cheaper suite than the fixed
+  /// one is on offer.
+  ///
+  /// Empty when the file carries nothing this build can read, which is
+  /// not a card failure: a card is free to advertise protocols nobody
+  /// here parses, and the fixed suite is what runs either way. An
+  /// absent file throws at selection, like any other missing EF.
+  public func readCardAccessInfo() throws -> [CardAccessFile.SecurityInfo] {
+    try selectMasterFile()
+    return CardAccessFile.parse(try readSelectedFile(.cardAccess))
+  }
+
   /// Selects the master file, trying the proven wire variants in order
   /// (select-by-file-id, then select-by-name) since card generations
   /// differ.
