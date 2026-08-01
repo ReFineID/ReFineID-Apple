@@ -13,34 +13,53 @@
   /// most need to know it is still working.
   ///
   /// So there are three sounds and they mean three different things: a
-  /// quiet tick that repeats for as long as the card is being read, one
-  /// bright tone when an identity is registered, and one blunt tone when
-  /// it is not. The tick is what makes the two outcomes legible -- it
-  /// stops, and what replaces it is the answer.
+  /// quiet tick that repeats for as long as the card is being read, the
+  /// system's own card-read pling when an identity is registered, and
+  /// its own card-read failure tone when one is not. The tick is what
+  /// makes the two outcomes legible -- it stops, and what replaces it is
+  /// the answer.
   ///
-  /// Every sound is a system tone and every haptic is
-  /// `UINotificationFeedbackGenerator`, so both are what the rest of iOS
-  /// already sounds and feels like, and both obey the phone's own
-  /// switches: a silenced phone plays nothing, a phone with haptics off
-  /// feels nothing.
+  /// The two outcome sounds are the ones iOS itself uses for a card that
+  /// was read and a card that was not, taken from the system sound
+  /// library by name (``UISoundLibrary``), so a ReFineID hold sounds
+  /// like every other card operation on the phone. Haptics are
+  /// `UINotificationFeedbackGenerator`, likewise the system's own.
+  ///
+  /// Both obey the phone's switches: a silenced phone plays nothing, and
+  /// a phone with system haptics off feels nothing. The haptic is why
+  /// there are two channels -- it still fires on a silenced phone, so a
+  /// failed hold is never completely quiet.
   @MainActor
   internal enum CardPrimingFeedback {
     /// The repeating tick, running while the hold is.
     private static var ticking: Task<Void, Never>?
 
-    /// `SystemSoundID` 1104, the keyboard tock: quiet enough to repeat
-    /// for several seconds without becoming an alarm.
-    private static let workingSoundID: SystemSoundID = 1_104
-
-    /// `SystemSoundID` 1057, the bright completion tink.
-    private static let successSoundID: SystemSoundID = 1_057
-
-    /// `SystemSoundID` 1073, the blunt alert tone.
+    /// The camera's countdown tick.
     ///
-    /// Deliberately not a quieter or prettier one: this is the sound
-    /// that has to reach a holder who has already looked away and
-    /// believes it worked.
-    private static let failureSoundID: SystemSoundID = 1_073
+    /// Written to repeat, unlike the keyboard tock, which becomes a
+    /// rattle after four of them.
+    private static let workingSoundName = "camera_timer_countdown"
+
+    /// The pling iOS plays when a card read completes.
+    ///
+    /// The sound the holder already knows means the card was read.
+    private static let successSoundName = "nfc_scan_complete"
+
+    /// The tone iOS plays when a card read does not complete.
+    ///
+    /// The whole point of this one: it is the system's own sound for a
+    /// card that did not work, so it reaches a holder who has already
+    /// looked away and been shown Apple's checkmark.
+    private static let failureSoundName = "nfc_scan_failure"
+
+    /// The keyboard tock, if the countdown tick is not on this system.
+    private static let workingFallbackID: SystemSoundID = 1_104
+
+    /// The bright tink, if the NFC pling is not on this system.
+    private static let successFallbackID: SystemSoundID = 1_057
+
+    /// The blunt alert tone, if the NFC failure tone is not.
+    private static let failureFallbackID: SystemSoundID = 1_073
 
     /// How long between two ticks, in milliseconds.
     private static let tickMilliseconds: Int = 700
@@ -56,7 +75,9 @@
       Self.stopWorking()
       Self.ticking = Task { @MainActor in
         while !Task.isCancelled {
-          AudioServicesPlaySystemSound(Self.workingSoundID)
+          AudioServicesPlaySystemSound(
+            UISoundLibrary.soundID(
+              named: Self.workingSoundName, fallback: Self.workingFallbackID))
           try? await Task.sleep(for: Self.tickInterval)
         }
       }
@@ -71,7 +92,12 @@
       Self.stopWorking()
       let generator = UINotificationFeedbackGenerator()
       generator.notificationOccurred(succeeded ? .success : .error)
-      AudioServicesPlaySystemSound(succeeded ? Self.successSoundID : Self.failureSoundID)
+      AudioServicesPlaySystemSound(
+        succeeded
+          ? UISoundLibrary.soundID(
+            named: Self.successSoundName, fallback: Self.successFallbackID)
+          : UISoundLibrary.soundID(
+            named: Self.failureSoundName, fallback: Self.failureFallbackID))
     }
 
     /// Ends the tick without saying anything about the outcome.
