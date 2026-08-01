@@ -93,7 +93,7 @@ internal struct DiagnosticsView: View {
         } label: {
           Label("Copy report", systemImage: "doc.on.doc")
         }
-        ShareLink(item: snapshot?.text ?? "") {
+        ShareLink(item: reportText) {
           Label("Share report", systemImage: "square.and.arrow.up")
         }
       } label: {
@@ -155,6 +155,18 @@ internal struct DiagnosticsView: View {
     }
   }
 
+  /// What the share and copy actions carry.
+  ///
+  /// The capability probe's answer is evidence like every other section,
+  /// and a section that can only be photographed off the screen is a
+  /// section nobody can paste into a report.
+  private var reportText: String {
+    let collected = snapshot?.text ?? ""
+    guard !capabilityLines.isEmpty else { return collected }
+    let probed = (["== Card capabilities =="] + capabilityLines).joined(separator: "\n")
+    return collected.isEmpty ? probed : collected + "\n\n" + probed
+  }
+
   /// One selectable, monospaced report block.
   ///
   /// The block scrolls sideways rather than wrapping: these are fixed
@@ -197,8 +209,8 @@ internal struct DiagnosticsView: View {
   #endif
 
   private func copyReport() {
-    guard let snapshot else { return }
-    DiagnosticsClipboard.copy(snapshot.text)
+    guard snapshot != nil else { return }
+    DiagnosticsClipboard.copy(reportText)
     reportCopied = true
     Task {
       try? await Task.sleep(for: Self.copyFeedbackDuration)

@@ -3,6 +3,25 @@
 Decisions with dates and rationale. `Documentation/release-plan.md` controls scope and
 security behavior; this file records the concrete values chosen under it.
 
+## 2026-08-01 The PACE suite stays fixed, now for a measured reason
+
+`PaceCommand.securityEnvironment()` sends
+id-PACE-ECDH-GM-AES-CBC-CMAC-256 over brainpoolP384r1 without asking
+the card what else it takes. PACE is about three quarters of an NFC
+login, so that assumption was worth testing rather than keeping.
+
+EF.CardAccess was read from the card. It advertises that suite and
+PACE-ECDH-CAM with the same domain parameter, and nothing else: no
+integrated mapping, no smaller curve. The mapping Diffie-Hellman is
+therefore unavoidable and brainpoolP384r1 is the only field on offer.
+CAM is not a saving for a terminal that does not perform chip
+authentication, which this one does not.
+
+The suite stays fixed, and negotiation stays unbuilt: there is nothing
+to negotiate with. `CardAccessFile` and the diagnostics probe remain,
+because the next card generation is the thing that would change this
+answer and re-asking should cost one hold rather than a rewrite.
+
 ## 2026-08-01 A set identity is the whole screen
 
 Once an identity is set there is nothing left to configure, so nothing

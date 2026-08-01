@@ -329,6 +329,36 @@ ENABLE_CODE_COVERAGE=NO` is supplied on the command line. A verified live
 artifact has no `__llvm_prf*` or `__llvm_cov*` sections in either the app
 or token extension.
 
+## PACE is at this card's floor
+
+Measured 2026-08-01 by reading EF.CardAccess from the card. It
+advertises two suites and nothing else:
+
+| Advertised | Domain parameter |
+| --- | --- |
+| PACE-ECDH-GM-AES-CBC-CMAC-256 (`0.4.0.127.0.7.2.2.4.2.4`) | 16, brainpoolP384r1 |
+| PACE-ECDH-CAM-AES-CBC-CMAC-256 (`0.4.0.127.0.7.2.2.4.6.4`) | 16, brainpoolP384r1 |
+
+So the two candidate savings are both absent. There is **no integrated
+mapping**: the mapping Diffie-Hellman the card spends its first
+GENERAL AUTHENTICATE round on cannot be avoided by choosing a
+different suite. And there is **no smaller domain parameter**:
+brainpoolP384r1 is the only curve on offer, so the scalar
+multiplications cost what they cost.
+
+Chip-authentication mapping is not a saving either. CAM folds chip
+authentication into the mapping step, which is worth having when a
+terminal performs chip authentication separately; ReFineID does not, so
+CAM would add the verification work of a protocol we do not run to a
+handshake that would not get shorter. The suite stays as it is.
+
+What does move the number is the field. The same card ran PACE in
+1,068 ms in an app-owned field held still, against 1,333 ms during a
+Safari login on the same day -- the two card rounds measured 535.6 and
+370.2 ms in the first, 692.1 and 593.0 ms in the second. Coupling and
+card position are worth more than any suite choice available here, and
+that is a holder instruction rather than a code change.
+
 ## Why one login asks for the card more than once
 
 Measured on device 2026-08-01, one client-certificate login:
