@@ -1,7 +1,7 @@
-# Status, 26.7.29
+# Status, 26.8.1
 
 What works, what does not, and what each was measured with. Written from
-device and Mac runs through 2026-07-29, not from intent.
+device and Mac runs through 2026-08-01, not from intent.
 
 ## macOS: card login works, on both interfaces
 
@@ -390,6 +390,63 @@ connection to the same origin performing its own client-certificate
 handshake; a system consumer re-materializing the identity; or an app
 query that wakes `ctkd`. Distinguishing them needs a trace taken with
 the app closed and a single request in flight.
+
+## Why the certificate cannot be chosen before the card is presented
+
+Safari fills its client-certificate picker by enumerating `SecIdentity`
+objects matching the server's CA hints. A `SecIdentity` is a certificate
+plus a *usable private key*, and for a CryptoTokenKit smart-card token
+that key exists only while the token does -- which is only while the
+card is in a slot. No card, no key, no identity, nothing to list.
+
+So the field must open first, for no reason except to bring the identity
+into existence so the picker has something to show. That is what makes
+the selection field structurally wasted rather than merely unlucky.
+
+`registerSmartCard` does make a registered token's certificate
+*attributes* visible cold. Safari does not select from attributes, so
+they never reach the picker. This is the still-open item already filed
+in `refineid-mono-internal/doc/releng/apple-feedback-nfc-ctk-registration.md`.
+
+The Apple-side fix would be to populate the picker from registered
+smart-card tokens' attributes, take the holder's choice, and only then
+ask for the card -- one prompt, in the order a person expects. Nothing
+in a token extension can reorder it.
+
+Two things do help today. Safari remembering a site's choice removes the
+picker, and the repeat login then reaches the signature inside its first
+field. And an in-app handshake avoids the problem entirely, because the
+app holds the card for the whole exchange; that is a product decision,
+not a tweak, but it is the only route to a single-prompt login that does
+not wait on Apple.
+
+## An untried idea: release the held session when no signature comes
+
+Not implemented. Recorded so it is not rediscovered as a new thought.
+
+Measured on 2026-08-01, the selection field published its identity at
+`36.820` and `ctkd` ended the field at `38.921`. The picker was usable
+for the whole of those 2.1 seconds while "Ready to Scan" sat in front of
+it. The extension cannot dismiss that panel -- `endSession` belongs to
+`TKSmartCardSlotNFCSession`, which `ctkd` created and the extension
+never sees.
+
+What the extension does control is whether it keeps the card session. If
+holding it is part of what keeps the field alive, releasing on publish
+would let the panel go early. The idea is to hold as now but start a
+short timer, and release if no `sign` request has arrived within roughly
+300 ms: a signature field asks within about 69 ms, so the timer would
+never fire on the path that matters, while a selection field would
+release every time.
+
+Two reasons this is an experiment and not a change. The two seconds look
+like `ctkd`'s own budget rather than something we extend -- the Rust
+reference measured 1.877 s and the Swift path 2.13 s under quite
+different session handling -- so releasing may buy nothing at all. And
+rule 1 below exists because releasing early breaks a signature that does
+arrive; a selection field and a signature field are indistinguishable at
+`createToken` time. Judge it by whether the panel dismisses sooner in
+the extension trace, on the same card, both ways.
 
 Each cost a measured failure to learn, and each looks like a platform
 limitation when broken.
