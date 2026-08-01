@@ -19,6 +19,7 @@ import SwiftUI
 /// what VoiceOver already wants.
 internal struct CardCredentialsView: View {
   private static let sectionSpacing: CGFloat = 24
+  private static let footerPadding: CGFloat = 12
 
   @State private var model = CardCredentialsModel()
   @State private var cardAccessNumberEntry = ""
@@ -28,6 +29,7 @@ internal struct CardCredentialsView: View {
   @State private var isPin1Revealed = false
   @State private var showsForgetConfirmation = false
   @State private var registrationReset = false
+  @State private var isRegistered = false
   @FocusState private var isPin1FieldFocused: Bool
 
   /// The PIN is valid for storage only inside the card's documented range.
@@ -45,7 +47,13 @@ internal struct CardCredentialsView: View {
 
   internal var body: some View {
     Form {
-      createIdentitySection
+      // A set identity replaces the whole setup: nothing about it is
+      // left to configure, so nothing about configuring it is shown.
+      if isRegistered {
+        identitySection
+      } else {
+        createIdentitySection
+      }
       if let failure = model.failure {
         Section {
           Text(failure)
@@ -55,47 +63,70 @@ internal struct CardCredentialsView: View {
       if model.hasForgettableState {
         forgetSection
       }
-      // Development-only, so it sits below every product control: a
-      // shipped build has no diagnostics and no logging at all.
-      #if DEBUG
-        diagnosticsSection
-      #endif
     }
     #if os(iOS)
       .listSectionSpacing(Self.sectionSpacing)
       .navigationTitle("ReFineID")
       .navigationBarTitleDisplayMode(.large)
     #endif
-    .onAppear { model.refresh() }
+    // Development-only, pinned under every product control: a shipped
+    // build has no diagnostics and no logging at all.
+    #if DEBUG
+      .safeAreaInset(edge: .bottom) { diagnosticsFooter }
+    #endif
+    .onAppear {
+      model.refresh()
+      refreshRegistration()
+    }
     #if os(iOS)
       .sheet(isPresented: $isScanning) {
         scannerSheet
       }
     #endif
     .alert(
-      "Forget this card and identity?",
+      "Forget identity?",
       isPresented: $showsForgetConfirmation
     ) {
       Button("Forget", role: .destructive) {
         model.forgetEverything()
         registrationReset.toggle()
+        isRegistered = false
       }
     }
   }
 
+  /// The finished state: one word, one mark.
+  private var identitySection: some View {
+    Section {
+      LabeledContent("Identity") {
+        Image(systemName: "checkmark")
+          .foregroundStyle(.green)
+          .accessibilityLabel("Set")
+      }
+      .accessibilityIdentifier("identityStatus")
+    }
+  }
+
   /// One operation, in its actual order: credentials and then minting.
-  private var createIdentitySection: some View {
+  @ViewBuilder private var createIdentitySection: some View {
     Section("Set up Finnish ID card") {
       cardAccessNumberRow
       pin1Row
-      #if os(iOS)
+    }
+    #if os(iOS)
+      // Its own section and its own visual weight: the credential rows
+      // collect input, this is the screen's one primary action.
+      Section {
         CardRegistrationSections(
           canPrepareCredentials: canPrepareIdentity,
-          prepareCredentials: prepareIdentity
+          prepareCredentials: prepareIdentity,
+          isRegistered: $isRegistered
         )
         .id(registrationReset)
-      #endif
-    }
+      }
+      .listRowBackground(Color.clear)
+      .listRowInsets(EdgeInsets())
+    #endif
   }
 
   /// The CAN entry, or a compact indication that it is already stored.
@@ -201,21 +232,22 @@ internal struct CardCredentialsView: View {
   }
 
   #if DEBUG
-    private var diagnosticsSection: some View {
-      Section {
-        NavigationLink {
-          DiagnosticsView()
-        } label: {
-          Label("Diagnostics", systemImage: "stethoscope")
-        }
-        .accessibilityIdentifier("diagnosticsButton")
+    private var diagnosticsFooter: some View {
+      NavigationLink {
+        DiagnosticsView()
+      } label: {
+        Label("Diagnostics", systemImage: "stethoscope")
       }
+      .accessibilityIdentifier("diagnosticsButton")
+      .padding(.vertical, Self.footerPadding)
+      .frame(maxWidth: .infinity)
+      .background(.bar)
     }
   #endif
 
   private var forgetSection: some View {
     Section {
-      Button("Forget this card and identity", role: .destructive) {
+      Button("Forget identity", role: .destructive) {
         showsForgetConfirmation = true
       }
       .accessibilityIdentifier("forgetCardIdentityButton")
@@ -224,48 +256,22 @@ internal struct CardCredentialsView: View {
 
   #if os(iOS)
     /// The camera, framed so it can be dismissed.
-    @ViewBuilder private var scannerSheet: some View {
-      NavigationStack {
-        CardAccessNumberScanner(
-          torchEnabled: $scannerTorchEnabled
-        ) { digits in
-          scannerTorchEnabled = false
-          cardAccessNumberEntry = digits
-          isScanning = false
-        }
-        .ignoresSafeArea()
-        .navigationTitle("Scan card QR code")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar { scannerToolbar }
-      }
-      .onDisappear {
-        scannerTorchEnabled = false
-      }
-    }
-
-    /// Dismissal and light controls kept above the live preview.
-    @ToolbarContentBuilder private var scannerToolbar: some ToolbarContent {
-      ToolbarItem(placement: .cancellationAction) {
-        Button("Cancel") {
-          scannerTorchEnabled = false
-          isScanning = false
-        }
-      }
-      if CardAccessNumberScanner.hasTorch {
-        ToolbarItem(placement: .primaryAction) {
-          Button {
-            scannerTorchEnabled.toggle()
-          } label: {
-            Label(
-              scannerTorchEnabled ? "Turn light off" : "Turn light on",
-              systemImage: scannerTorchEnabled
-                ? "flashlight.on.fill" : "flashlight.off.fill")
-          }
-          .accessibilityIdentifier("cardAccessNumberScannerTorch")
-        }
+    private var scannerSheet: some View {
+      ScannerSheet(
+        torchEnabled: $scannerTorchEnabled,
+        isScanning: $isScanning
+      ) { digits in
+        cardAccessNumberEntry = digits
       }
     }
   #endif
+
+  /// Reads the persistent registration state, on the platform that has it.
+  private func refreshRegistration() {
+    #if canImport(CoreNFC) && os(iOS)
+      isRegistered = CardRegistrationSections.hasRegisteredIdentity
+    #endif
+  }
 
   /// Stores the entered pair immediately before the NFC operation.
   @MainActor
