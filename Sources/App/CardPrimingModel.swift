@@ -14,7 +14,7 @@
   @Observable
   internal final class CardPrimingModel {
     /// Result retained only for device automation.
-    internal enum RunResult {
+    internal enum RunResult: Equatable {
       case notRun
       case succeeded
       case failed
@@ -38,6 +38,23 @@
     /// Apple's NFC sheet reports it to the holder.
     internal private(set) var lastRunResult = RunResult.notRun
 
+    /// How far the last or running hold got, step by step.
+    ///
+    /// The system NFC sheet cannot report this. It has no failure state
+    /// at all -- `TKSmartCardSlotNFCSession` offers only a message and
+    /// `endSession`, so it dismisses with the same checkmark whether the
+    /// hold worked or broke at PACE. This is where a holder finds out
+    /// which it was.
+    internal private(set) var steps: [CardPrimingStep: CardPrimingStep.State] = [:]
+
+    /// The sentence the last hold ended with, for the holder to read.
+    internal private(set) var summary: String?
+
+    /// How one step is going, for the view that draws it.
+    internal func state(of step: CardPrimingStep) -> CardPrimingStep.State {
+      steps[step] ?? .waiting
+    }
+
     /// Refreshes what is stored, without touching any secret.
     internal func refresh() {
       contents = CardCredentialStore.contents()
@@ -51,16 +68,21 @@
       guard contents.hasCardAccessNumber, allowsNearField else { return }
       isRunning = true
       lastRunResult = .notRun
+      summary = nil
+      steps = [:]
       let outcome = await CardPriming.prime(
         progress: { _ in
-          // Apple's NFC sheet owns holder-facing progress.
+          // The step rows carry progress; the text is for diagnostics.
         },
-        step: { _, _ in
-          // Detailed checkpoints remain in diagnostics, not this form.
+        step: { [weak self] step, state in
+          Task { @MainActor in
+            self?.steps[step] = state
+          }
         })
-      lastRunResult =
-        outcome.stored && outcome.registered
-        ? .succeeded : .failed
+      let succeeded = outcome.stored && outcome.registered
+      lastRunResult = succeeded ? .succeeded : .failed
+      summary = outcome.summary
+      CardPrimingFeedback.report(succeeded: succeeded)
       refresh()
       isRunning = false
     }
