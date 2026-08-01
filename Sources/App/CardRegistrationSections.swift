@@ -36,6 +36,10 @@
     /// Flipped when a hold ends with a registered identity.
     @Binding internal var isRegistered: Bool
 
+    /// True for as long as a hold is running, so the screen behind
+    /// Apple's panel can get out of the way.
+    @Binding internal var isHolding: Bool
+
     @State private var model = CardPrimingModel()
 
     internal var body: some View {
@@ -64,6 +68,9 @@
       )
       .onAppear {
         model.refresh()
+      }
+      .onChange(of: model.isRunning) { _, running in
+        isHolding = running
       }
     }
 

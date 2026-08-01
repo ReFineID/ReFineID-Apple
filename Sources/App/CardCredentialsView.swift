@@ -30,6 +30,7 @@ internal struct CardCredentialsView: View {
   @State private var showsForgetConfirmation = false
   @State private var registrationReset = false
   @State private var isRegistered = false
+  @State private var isHolding = false
   @FocusState private var isPin1FieldFocused: Bool
 
   /// The PIN is valid for storage only inside the card's documented range.
@@ -54,9 +55,15 @@ internal struct CardCredentialsView: View {
 
   internal var body: some View {
     Form {
-      // A set identity replaces the whole setup: nothing about it is
-      // left to configure, so nothing about configuring it is shown.
-      if isRegistered {
+      // While the card is against the phone, Apple's panel is the
+      // screen and everything under it is furniture behind frosted
+      // glass. Clearing it leaves the app's name, which is all a
+      // dimmed backdrop can usefully say.
+      if isHolding {
+        EmptyView()
+      } else if isRegistered {
+        // A set identity replaces the whole setup: nothing about it is
+        // left to configure, so nothing about configuring it is shown.
         identitySection
       } else {
         createIdentitySection
@@ -71,7 +78,7 @@ internal struct CardCredentialsView: View {
       // credentials are not: the fields above are editable until an
       // identity exists, so a wrong number is corrected by typing over
       // it rather than by forgetting anything.
-      if isRegistered {
+      if isRegistered, !isHolding {
         forgetSection
       }
     }
@@ -88,6 +95,12 @@ internal struct CardCredentialsView: View {
     .onAppear {
       model.refresh()
       refreshRegistration()
+      showStoredCardAccessNumber()
+    }
+    .onChange(of: model.contents) { _, _ in
+      // A hold that stored the number and then broke leaves the field
+      // as it was. Seeding again here puts the stored number back in
+      // front of the holder, which is where a wrong one gets noticed.
       showStoredCardAccessNumber()
     }
     #if os(iOS)
@@ -135,7 +148,8 @@ internal struct CardCredentialsView: View {
         CardRegistrationSections(
           canPrepareCredentials: canPrepareIdentity,
           prepareCredentials: prepareIdentity,
-          isRegistered: $isRegistered
+          isRegistered: $isRegistered,
+          isHolding: $isHolding
         )
         .id(registrationReset)
       }
@@ -179,26 +193,14 @@ internal struct CardCredentialsView: View {
     #endif
   }
 
-  /// What the empty PIN1 field says about what is already kept.
-  ///
-  /// A stored PIN is never read back -- that is the store's oldest rule
-  /// -- so the field cannot show it. The placeholder says it instead. A
-  /// mark beside an empty box claimed the box was filled, which it was
-  /// not.
-  private var pin1Placeholder: String {
-    model.contents.hasPin1
-      ? String(localized: "PIN1 stored - type to replace")
-      : String(localized: "PIN1")
-  }
-
   /// PIN1 entry, editable for as long as there is no identity.
   @ViewBuilder private var pin1Row: some View {
     HStack {
       Group {
         if isPin1Revealed {
-          TextField(pin1Placeholder, text: $pin1Entry)
+          TextField("PIN1", text: $pin1Entry)
         } else {
-          SecureField(pin1Placeholder, text: $pin1Entry)
+          SecureField("PIN1", text: $pin1Entry)
         }
       }
       #if os(iOS)

@@ -51,9 +51,6 @@
       guard contents.hasCardAccessNumber, allowsNearField else { return }
       isRunning = true
       lastRunResult = .notRun
-      // The tick runs for the whole hold. It is what makes the outcome
-      // legible: it stops, and the tone that replaces it is the answer.
-      CardPrimingFeedback.startWorking()
       let outcome = await CardPriming.prime(
         progress: { _ in
           // The meter on the system NFC sheet carries progress; the
@@ -62,16 +59,13 @@
         step: { _, _ in
           // The sheet draws the steps. See `PrimingSheetReporter`.
         })
-      let succeeded = outcome.stored && outcome.registered
-      if outcome.cancelled {
-        // A holder who closed the sheet knows what they did. Stop the
-        // sound; do not answer them with a failure tone.
-        lastRunResult = .notRun
-        CardPrimingFeedback.stopWorking()
-      } else {
-        lastRunResult = succeeded ? .succeeded : .failed
-        CardPrimingFeedback.report(succeeded: succeeded)
-      }
+      // The sound is started and answered inside the panel's lifetime,
+      // in `CardPriming`; nothing here makes a noise after it closed. A
+      // hold the holder cancelled never got as far as a sound at all.
+      lastRunResult =
+        outcome.cancelled
+        ? .notRun
+        : (outcome.stored && outcome.registered ? .succeeded : .failed)
       refresh()
       isRunning = false
     }

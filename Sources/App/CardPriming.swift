@@ -109,14 +109,14 @@
     /// transient miss, where one succeeds, from a deterministic
     /// precondition failure, where they all fail the same way. Waiting
     /// between them would only spend the hold.
-    private static let registrationAttemptLimit: Int = 3
+    internal static let registrationAttemptLimit: Int = 3
 
     /// How many times the token watcher is asked whether `ctkd` has
     /// published the token for this card yet.
-    private static let tokenPollLimit: Int = 20
+    internal static let tokenPollLimit: Int = 20
 
     /// Wait between two looks at the token watcher.
-    private static let tokenPollInterval: Duration = .milliseconds(100)
+    internal static let tokenPollInterval: Duration = .milliseconds(100)
 
     /// The queue every blocking card exchange runs on.
     ///
@@ -178,8 +178,34 @@
       report(.found, .done)
       progress(String(localized: "Card found. Keep holding."))
 
-      guard let lookup = PrimeLookupIdentifier(answerToReset: session.answerToReset) else {
-        report(.secureChannel, .failed)
+      // The sound belongs to the panel, and only to the panel. It starts
+      // here because the card is now live in a slot the holder is being
+      // shown, and it is answered below while that panel is still up: a
+      // tone that outlives the sheet is a tone about nothing.
+      await CardPrimingFeedback.startWorking()
+      let outcome = await Self.hold(
+        sheet: sheet,
+        accessNumber: accessNumber,
+        progress: progress,
+        step: report)
+      await CardPrimingFeedback.report(succeeded: outcome.stored && outcome.registered)
+      return outcome
+    }
+
+    /// Everything done with the card live and the panel up.
+    ///
+    /// Split from `prime` so the sound has exactly one place to start
+    /// and one place to be answered, both inside the panel's lifetime.
+    private static func hold(
+      sheet: PrimingSheetReporter,
+      accessNumber: CardAccessNumber,
+      progress: @escaping Progress,
+      step: @escaping StepReport
+    ) async -> Outcome {
+      guard
+        let lookup = PrimeLookupIdentifier(answerToReset: sheet.session.answerToReset)
+      else {
+        step(.secureChannel, .failed)
         sheet.fail(Self.sheetMessage(for: Failure.unidentifiedCard))
         return Self.failure(Failure.unidentifiedCard)
       }
@@ -189,11 +215,11 @@
       // is immediate and the whole hold is the registration.
       if let instance = Self.storedInstance(lookup: lookup) {
         for done in [CardPrimingStep.secureChannel, .certificate, .stored] {
-          report(done, .done)
+          step(done, .done)
         }
         progress(String(localized: "Card details already stored on this iPhone."))
         return await Self.finish(
-          instance: instance, sheet: sheet, progress: progress, step: report)
+          instance: instance, sheet: sheet, progress: progress, step: step)
       }
 
       return await Self.readStoreRegister(
@@ -201,7 +227,7 @@
         lookup: lookup,
         accessNumber: accessNumber,
         progress: progress,
-        step: report)
+        step: step)
     }
 
     /// An Outcome that achieved nothing, explained.
@@ -305,65 +331,6 @@
               The card details were stored, but Safari setup did not \
               finish. Try priming the card again.
               """))
-    }
-
-    /// Registers the live card so the system can ask for it later.
-    private static func register(
-      instance: CardInstanceIdentifier,
-      session: NearFieldCardSession,
-      progress: Progress
-    ) async -> Bool {
-      let manager = TKSmartCardTokenRegistrationManager.default
-      let tokenID = await Self.tokenID(for: instance, session: session)
-      if manager.registeredSmartCardTokens.contains(tokenID) {
-        progress(String(localized: "Card registered for Safari."))
-        return true
-      }
-      for attempt in 1...Self.registrationAttemptLimit {
-        guard session.holdsValidCard else {
-          progress(String(localized: "The card left before setup finished."))
-          return false
-        }
-        do {
-          try manager.registerSmartCard(
-            tokenID: tokenID, promptMessage: Self.registrationPrompt)
-          progress(String(localized: "Card registered for Safari."))
-          return true
-        } catch {
-          // CryptoTokenKit may publish while the throwing call unwinds;
-          // already registered is also success for this idempotent action.
-          if manager.registeredSmartCardTokens.contains(tokenID) {
-            progress(String(localized: "Card registered for Safari."))
-            return true
-          }
-          progress(String(localized: "Setup attempt \(attempt) did not take."))
-        }
-      }
-      return false
-    }
-
-    /// The token id to register, preferring the one the system already
-    /// publishes for this card.
-    ///
-    /// `ctkd` mints the token from the prime store moments after the
-    /// prime is written, so the watcher is asked a few times before the
-    /// id is constructed from the class id instead. The constructed form
-    /// is the same string the system uses, so it registers the same
-    /// token; it just cannot be confirmed first.
-    private static func tokenID(
-      for instance: CardInstanceIdentifier,
-      session: NearFieldCardSession
-    ) async -> String {
-      let watcher = TKTokenWatcher()
-      let expected = CardTokenNamespace.tokenIdentifier(for: instance)
-      for _ in 1...Self.tokenPollLimit {
-        if let published = watcher.tokenIDs.first(where: { tokenID in tokenID == expected }) {
-          return published
-        }
-        guard session.holdsValidCard else { break }
-        try? await Task.sleep(for: Self.tokenPollInterval)
-      }
-      return expected
     }
 
     /// Runs one blocking card exchange off the cooperative pool.
