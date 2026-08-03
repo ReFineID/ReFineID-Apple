@@ -144,7 +144,7 @@ RFC 8017.
   en mémoire seulement, libérées à la fin de la session et jamais
   écrites sur un support persistant.
 - Aucun séquestre de clés, aucun recouvrement, aucune gestion de clés à
-  distance : le moyen n'ouvre aucune connexion réseau.
+  distance.
 
 ## C. Cas d'un moyen de cryptologie relevant de la catégorie 3 de l'annexe 2 du décret n° 2007-663 du 2 mai 2007
 
@@ -366,8 +366,8 @@ SHA-2, FIPS 180-4; ECDSA, FIPS 186-5 and ANSI X9.62; RSA, RFC 8017.
 - PACE session keys are ephemeral: derived per session, held in memory
   only, released when the session ends and never written to persistent
   storage.
-- There is no key escrow, no key recovery and no remote key management:
-  the means opens no network connection.
+- There is no key escrow, no key recovery and no remote key
+  management.
 
 ## C. Case of a means of cryptology falling within category 3 of annex 2 to decree No 2007-663 of 2 May 2007
 
