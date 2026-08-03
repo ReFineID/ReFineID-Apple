@@ -120,15 +120,58 @@ separate regime either way.
 The app is to be available in France, so the French declaration applies:
 supplying a cryptographic means that provides confidentiality requires a
 declaration to ANSSI, and PACE's channel is exactly that. The technical
-dossier is `Documentation/anssi-declaration.md`, in English and in
-French. App Store Connect asks for ANSSI's acknowledgement at step 3 of
-App Encryption Documentation.
+dossier is `Documentation/anssi-declaration.md`, in French with an
+English translation, the French prevailing.
 
 Excluding France was the alternative and was considered: it would have
 removed this step entirely and shipped sooner. It was not taken. A
 Finnish cardholder living in France has a French App Store account, and
 an identity product that quietly does not exist where its holder lives
 is a worse answer than a filing.
+
+That dossier is a document for a regulator to read, not a page of our
+notes, so it carries no repository cross-references and no task list.
+Everything about *doing* the filing lives here instead. Render it with:
+
+    pandoc Documentation/anssi-declaration.md --pdf-engine=typst \
+      -V margin-x=2.2cm -V margin-y=2.2cm -V fontsize=10pt \
+      -o "ReFineID - ANSSI declaration dossier.pdf"
+
+The markdown is the source of truth; the PDF is a rendering. Regenerate
+rather than editing the PDF, or the two drift and the filed one wins.
+
+Before filing, have the French read by somebody who files these. It is
+written to be accurate rather than idiomatic, and a regulator's form is
+a poor place to find a translation error.
+
+### Where it goes
+
+Checked against ANSSI rather than recalled. The dossier is not filed on
+its own: it is the technical documentation attached to ANSSI's own form.
+
+1. Download the form for a *moyen de cryptologie* from
+   https://cyber.gouv.fr/reglementation/reglementation-identite-confiance-numerique/controles-reglementaires-cryptographie/controle-moyen-de-cryptologie/
+   There are two forms on that page. The one wanted here is annexe 2,
+   for a means of cryptology; the other is for a cryptology *service*,
+   which this is not.
+2. Complete it, save it, then print, sign and scan it.
+3. Email `controle@ssi.gouv.fr`, subject `[formalités] ReFineID - ReFineID`,
+   attaching the completed form, the signed scan, and this dossier as
+   the technical documentation.
+
+By post instead, if preferred:
+
+    Secretariat general de la defense et de la securite nationale
+    ANSSI / SDE / PSS / Bureau Controles Reglementaires
+    51, boulevard de La Tour-Maubourg
+    75700 PARIS 07 SP
+    France
+
+What comes back is an *attestation de déclaration*. That attestation is
+what proves the obligation was met and what App Store Connect wants at
+step 3. Ask for the *grand public* classification at declaration time
+rather than afterwards; ANSSI rules on it within two months of the date
+of receipt shown on the attestation.
 
 ## What is still needed
 
