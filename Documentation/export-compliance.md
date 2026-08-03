@@ -159,67 +159,68 @@ pipeline that produced the filed artifact:
       -F locale=en -F includeDetails=true \
       -F "file=@ReFineID - ANSSI declaration dossier - signed.pdf"
 
-`eu-qualified` is the five authorities below, asked in that order. It
+`eu-qualified` is the three authorities below, asked in that order. It
 is a name rather than a default because a signing tool that reaches
-five foreign servers unasked has made that choice for you, and because
-a name is safer to type than five URLs: a mistyped URL is now
-survivable and quietly costs an authority, a mistyped name stops before
-the card is touched.
+foreign servers unasked has made that choice for you, and because a
+name is safer to type than three URLs: a mistyped URL is now survivable
+and quietly costs an authority, a mistyped name stops before the card
+is touched.
 
-Five qualified authorities in four countries, so the proven time
+Three qualified authorities in two countries, so the proven time
 survives any one of them losing its standing. A refusal is survivable:
 each is asked in turn, one that is down or rate limiting is named on
-stderr and skipped, and only silence from all five stops the signing.
-Ask all five. They are alternatives rather than a chain, so more of
-them is strictly more insurance, and there is no sixth to reach for --
-every other qualified authority tried either publishes no endpoint,
-answers 401, or offers only its non-qualified service.
-Belgium answers HTTP 429 after enough requests in a day and Sectigo
-asks for fifteen seconds between them, so spreading the work is not
-only about longevity.
+stderr and skipped, and only silence from all three stops the signing.
+Sectigo asks for fifteen seconds between requests, which the archive
+timestamp can run into, so it falls through to Greece when it does.
 
 The order matters twice. It decides who carries the archive timestamp,
 which is a single token rather than a set -- the first to answer wins
--- and it is the order to reach for anywhere else. Measured
-2026-08-03: Sectigo signs RSA-4096 under a unit whose certificate is
-signed with SHA-384 and runs to 2034, six years past any other, and
-republishes revocation weekly. Greece is RSA-4096 to 2030 under a
-certificate minted this year, with revocation minted per request.
-Belgium is the most official of the three, a federal government service
-answering in real time, but signs P-256 and expires in 2028.
+-- and it is the order to reach for anywhere else. Measured 2026-08-03:
+Sectigo signs RSA-4096 under a unit whose certificate is signed with
+SHA-384 and runs to 2034, longest of the three, and republishes
+revocation weekly. Greece is RSA-4096 to 2030 under a certificate
+minted this year, with revocation minted per request. ACCV is RSA-4096
+to 2029 and last on the evidence rather than on the token: its
+responder and its list both run a 180-day cycle, so what a signature
+freezes from it can be weeks old before the signature exists.
 
-How a member state names the service decides the rest of the order.
-Spain and Greece grant the issuing CA, so any unit it issues is
-qualified and a rotation changes nothing. Belgium grants twenty units
-by certificate, so a rotation opens a window where the endpoint answers
-with a unit its own list does not name: a token that verifies, looks
-right, and is not qualified. The archive timestamp is a single token
-with no second chance, and the order decides who carries it, so Belgium
-is third. Its attestation is still in the file -- every authority that
-answers is kept -- just not the one carrying the archive.
+Both Spain and Greece grant the issuing CA rather than individual
+units, so a rotation cannot silently cost the qualification. That is
+worth having: a list that names units instead opens a window where the
+endpoint answers with a unit its own list does not name, and the token
+verifies, looks right, and is not qualified. Worth re-checking on the
+day rather than assumed -- not whether the endpoints answer, but
+whether the unit answering is still named as granted.
 
-Worth re-checking on the day rather than assumed: not whether the
-endpoints answer, but whether the unit answering is still named as
-granted in its member state's list.
+### Two qualified authorities deliberately not used
 
-Izenpe and ACCV come last on the evidence stored beside their tokens
-rather than on the tokens. Izenpe publishes no responder, only a list,
-which the CRL fallback collects; ACCV runs responder and list on a
-180-day cycle, so what a signature freezes from it can be weeks old
-before the signature exists. Neither weakens the attestation: both are
-granted, and DVV reported an ACCV token as a qualified timestamp with
-exactly that material beside it.
+Both answer, both are granted, and neither is a bad service. They are
+absent for reasons that have nothing to do with the tokens.
 
-Only the Greek one needs a build with a TLS backend (`--features
-boring-tls` or `openssl-tls`); it redirects plain http. Sectigo answers
-on both and the set names it over http, so the authority carrying the
-archive timestamp is reachable from a default build. TLS buys a
-timestamp nothing anyway: RFC 3161 sends a hash and never the document,
-and the returned token is checked against the digest and nonce it was
-asked for, so plain http leaks no content and a tamperer is caught.
+Belgium (`http://tsa.belgium.be/connect`) is run by the federal
+government for the Belgian eID. A Finnish card's signature is not what
+it is offered for, and using a state's service outside the public it
+was provided for is not a thing to do in a filing to another state's
+regulator. It also rate limits hard enough to be unreliable for anyone
+outside that public, which is consistent with the same reading.
 
-A default build therefore files with four of the five rather than
-three, and misses only Greece.
+Izenpe (`http://tsa.izenpe.com`) is qualified and its tokens validate
+as QTSA. But Spain registers it at the unit rather than at the CA, so
+`ROOT CA QC IZENPE` -- which signs its revocation lists -- is not a
+trust anchor anywhere a validator looks. Embedding one of those lists
+earns `INDETERMINATE / NO_CERTIFICATE_CHAIN_FOUND` in a detailed
+report, against evidence whose signature is otherwise intact and whose
+cryptography passes. Nothing is wrong with the token; the file simply
+reads better without a line that invites a question with no good
+answer.
+
+Only the Greek one needs a build with a TLS backend, and only if the
+default is turned off: `tls-rustls` is on by default, and Greece
+redirects plain http. Sectigo answers on both and the set names it over
+http. TLS buys a timestamp nothing anyway: RFC 3161 sends a hash and
+never the document, and the returned token is checked against the
+digest and nonce it was asked for, so plain http leaks no content and a
+tamperer is caught.
 
 `--archive` is what makes it PAdES-B-LTA, the top of the ETSI ladder.
 The validator must answer QESig, PAdES-BASELINE-LTA, TOTAL_PASSED;
@@ -244,7 +245,7 @@ Sign once, when the document is finished and about to be sent.
 While the text is still being edited, render and read -- rendering costs
 nothing and needs neither the card nor the network. Signing a draft
 attests a document that will not be the one filed, spends a card
-operation and a PIN verification on it, and asks five timestamp
+operation and a PIN verification on it, and asks three timestamp
 authorities for tokens over something disposable. That last part has a
 cost you can measure: tsa.belgium.be began answering HTTP 429 after
 enough draft signings in one day.
