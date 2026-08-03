@@ -162,11 +162,29 @@ its own: it is the technical documentation attached to ANSSI's own form.
    It is an XFA dynamic form. Adobe Reader opens it; Preview and most
    other readers show only a "you need a later version" page.
 
-2. Complete it, save it, then print, sign and scan it. The form asks for
-   **two copies** ("a adresser en deux exemplaires").
-3. Email `controle@ssi.gouv.fr`, subject `[formalités] ReFineID - ReFineID`,
-   attaching the completed form, the signed scan, and this dossier as
-   the technical documentation.
+2. Complete it in Adobe Reader and save.
+3. Sign it electronically. Nothing has to be printed:
+
+       qpdf --object-streams=disable annexe1-filled.pdf annexe1-flat.pdf
+       refineid card sign-document --format pades \
+           --in annexe1-flat.pdf --out annexe1-signed.pdf \
+           --timestamp http://tsa.belgium.be/connect --archive
+
+   The `qpdf` step converts the cross-reference streams the form uses
+   into the classic table this signer writes against; the content is
+   untouched. Verified end to end: the result comes back from DVV as
+   QES, PAdES-BASELINE-LTA, TOTAL_PASSED.
+
+   The form asks to be sent "en deux exemplaires", which is an
+   instruction for paper. One signed file is the electronic equivalent.
+
+   A qualified electronic signature has the legal effect of a
+   handwritten one under Article 25(2) of Regulation (EU) No 910/2014,
+   and France is bound by it. The form says the attestation must be
+   "daté et signée"; it does not say by hand.
+4. Email `controle@ssi.gouv.fr`, subject `[formalités] ReFineID - ReFineID`,
+   attaching the signed form and this dossier as the technical
+   documentation.
 
 The form's own sections are A declarant, B the means, C category 3,
 D renewal of a transfer or export authorisation, E documents attached,

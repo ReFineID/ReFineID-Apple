@@ -18,7 +18,11 @@ fait foi.
 
 ## A. Déclarant
 
-Le déclarant est un particulier (rubrique A-2 du formulaire).
+Le déclarant est un particulier (rubrique A.2 du formulaire). ReFineID
+est un nom commercial employé par le déclarant en son nom propre ; il ne
+désigne aucune personne morale. La rubrique A.1 est sans objet : il n'y
+a ni dénomination sociale, ni numéro SIRET, ni société pour le compte de
+laquelle la déclaration serait faite.
 
 | Champ | Valeur |
 |---|---|
@@ -188,8 +192,8 @@ publiquement accessible à l'adresse indiquée en C, ce qui couvre les
 | Champ | Valeur |
 |---|---|
 | Nom et prénoms | Koistinen, Petri |
-| Qualité | Fournisseur et auteur du moyen |
-| Société | ReFineID |
+| Agissant en qualité de | Fournisseur et auteur du moyen, personne physique |
+| Pour le compte de | Lui-même, en son nom propre (aucune personne morale) |
 | Date | 3 août 2026 |
 
 ```{=typst}
@@ -226,7 +230,10 @@ No 2007-663 alone. No transfer or export authorisation is requested.
 
 ## A. Declarant
 
-An individual (section A-2 of the form).
+An individual (section A.2 of the form). ReFineID is a trading name
+used by the declarant in a personal capacity; it names no legal entity.
+Section A.1 does not apply: there is no registered company name, no
+SIRET number, and no company on whose behalf the declaration is made.
 
 | Field | Value |
 |---|---|
@@ -385,8 +392,8 @@ design elements of the means.
 | Field | Value |
 |---|---|
 | Name | Koistinen, Petri |
-| Capacity | Supplier and author of the means |
-| Company | ReFineID |
+| Acting in the capacity of | Supplier and author of the means, private individual |
+| On behalf of | Himself, in his own name (no legal entity) |
 | Date | 3 August 2026 |
 
 ```{=typst}
