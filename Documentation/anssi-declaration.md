@@ -16,11 +16,9 @@ Apple. Il établit avec la carte un canal chiffré et assure à ce titre
 une fonction de confidentialité, outre l'authentification, l'intégrité
 et la signature : sa fourniture relève du régime de déclaration.
 
-Le présent document est la déclaration ; il reprend les rubriques A à F
-de l'annexe I. Le déclarant étant établi en Finlande, le transfert
-depuis la France vers un État membre et l'exportation depuis la France,
-que le IV de l'article 30 soumet à autorisation, ne sont pas de son
-fait.
+Le déclarant étant établi en Finlande, le transfert depuis la France
+vers un État membre et l'exportation depuis la France, que le IV de
+l'article 30 soumet à autorisation, ne sont pas de son fait.
 
 Le déclarant demande la délivrance de l'attestation de déclaration.
 
@@ -281,8 +279,7 @@ encrypted channel with the card and so provides a confidentiality
 function, besides authentication, integrity and signature: its supply
 falls under the declaration regime.
 
-This document is the declaration; it follows sections A to F of annexe
-I. The declarant being established in Finland, transfer from France to
+The declarant being established in Finland, transfer from France to
 a member state and export from France -- which article 30 IV subjects
 to authorisation -- are not performed by him.
 
