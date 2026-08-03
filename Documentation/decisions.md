@@ -153,6 +153,10 @@ and the code is absent. The same answer that took a full archive, an
 export and several minutes of transfer to get from Apple takes about a
 second here.
 
+What was submitted, the cryptography it describes, and why the
+authentication-only exemption was not taken:
+`Documentation/export-compliance.md`.
+
 ## 2026-08-03 Diagnostics is a development tool, on both platforms
 
 TestFlight is a shipped build. It reaches people who are not us, on
