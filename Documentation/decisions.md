@@ -99,6 +99,29 @@ mint read `registration=true` and took no card session, and
 2026-07-28 build-16 trace left open: PACE inside a CryptoTokenKit field
 completes when the app owns that field.
 
+## 2026-08-03 Diagnostics is a development tool, on both platforms
+
+TestFlight is a shipped build. It reaches people who are not us, on
+their own phones and Macs, with their own cards -- so it carries no
+diagnostics screen, no capability probe, and no logging, exactly as
+Release does not. Only Debug and Profile have them, and Profile is what
+goes on a development device.
+
+The exclusion is at file level rather than at a condition:
+`EXCLUDED_SOURCE_FILE_NAMES` removes the diagnostics sources from the
+app target in TestFlight and Release, so they are not compiled at all
+rather than compiled into nothing. A `#if` that is wrong still ships;
+a file that was never given to the compiler cannot.
+
+Verified by building both and reading the binaries rather than trusting
+the settings. In TestFlight for iOS and Release for macOS the app binary
+contains no "Diagnostics", no "Card capabilities", no "EF.CardAccess",
+and no "Clear diagnostic logs"; the token and discovery extensions
+contain no message literal, no `fi.refineid.ReFineID:ctk` subsystem, and
+no trace file path. The one `createToken` hit in an extension is
+`tokenDriver:createTokenForSmartCard:AID:error:`, which is
+CryptoTokenKit's own selector and not ours to remove.
+
 ## 2026-07-30 A shipped build says nothing
 
 TestFlight and App Store builds carry no diagnostics and write no log of

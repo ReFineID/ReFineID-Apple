@@ -815,7 +815,7 @@
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
-				EXCLUDED_SOURCE_FILE_NAMES = "DiagnosticsClipboard.swift DiagnosticsSnapshot.swift DiagnosticsView.swift StatusSupportSection.swift";
+				EXCLUDED_SOURCE_FILE_NAMES = "CardCapabilityProbe.swift DiagnosticsClipboard.swift DiagnosticsSnapshot.swift DiagnosticsView.swift";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/ReFineID-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
@@ -854,7 +854,7 @@
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
-				EXCLUDED_SOURCE_FILE_NAMES = "DiagnosticsClipboard.swift DiagnosticsSnapshot.swift DiagnosticsView.swift StatusSupportSection.swift";
+				EXCLUDED_SOURCE_FILE_NAMES = "CardCapabilityProbe.swift DiagnosticsClipboard.swift DiagnosticsSnapshot.swift DiagnosticsView.swift";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/ReFineID-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
