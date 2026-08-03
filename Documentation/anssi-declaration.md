@@ -9,9 +9,20 @@ Les rubriques suivent celles du formulaire annexe I de l'ANSSI, dans le
 même ordre, afin que le dossier réponde au formulaire point par point.
 
 Nature de la demande : deuxième case du formulaire, **déclaration de
-fourniture** d'un moyen de cryptologie, au titre du seul chapitre II du
-décret n° 2007-663. Aucune demande d'autorisation de transfert ou
-d'exportation n'est formée.
+fourniture, de transfert depuis ou vers un État membre de l'Union
+européenne, d'importation et d'exportation vers un État n'appartenant
+pas à l'Union européenne** d'un moyen de cryptologie, au titre du seul
+chapitre II du décret n° 2007-663.
+
+La distribution se faisant par l'App Store d'Apple, elle n'est pas
+limitée à la France : la fourniture, le transfert vers les autres États
+membres et l'exportation hors de l'Union européenne sont tous
+susceptibles de se produire, et sont donc tous couverts par la présente
+déclaration. La déclaration d'exportation est ouverte au moyen parce
+qu'il relève de la catégorie 3 de l'annexe 2 du décret, justifiée en
+rubrique C.
+
+Aucune demande d'autorisation au titre du chapitre III n'est formée.
 
 Une traduction anglaise suit à titre de référence ; le texte français
 fait foi.
@@ -52,12 +63,13 @@ Le déclarant est également le fabricant du moyen ; la rubrique relative
 
 ## B.2. Description fonctionnelle du moyen
 
-Catégorie : **logiciel**. Le moyen ne comporte aucun élément matériel.
+### B.2.1. Classez le moyen dans la ou les catégorie(s) correspondante(s)
 
-Catégorie de la fonction principale : **sécurité de l'information**
-(bibliothèque et intergiciel cryptographiques).
+**Logiciel.** Le moyen ne comporte aucun élément matériel.
 
-Description générale : ReFineID rend la carte nationale d'identité
+### B.2.2. Description générale du moyen
+
+ReFineID rend la carte nationale d'identité
 finlandaise utilisable comme identité à certificat client au travers des
 cadriciels de sécurité d'Apple. Le moyen lit la carte via l'antenne NFC
 du téléphone ou un lecteur de carte à contact, publie le certificat
@@ -68,9 +80,15 @@ ensuite avec la carte comme avec tout autre certificat client. Le porteur
 s'en sert pour se connecter à des services en ligne avec sa carte
 d'identité.
 
+### B.2.3. Indiquez à quelle catégorie se rapporte la fonction principale du moyen
+
+**Sécurité de l'information** (bibliothèque et intergiciel
+cryptographiques). Aucune des autres catégories proposées -- ordinateur,
+envoi/stockage/réception d'informations, réseau -- ne s'applique.
+
 ## B.3. Description technique des services de cryptologie fournis
 
-### Fonctionnalités cryptographiques
+### B.3.1. Description des fonctionnalités cryptographiques du moyen
 
 Deux fonctions, et aucune autre :
 
@@ -91,13 +109,13 @@ ni fichiers ni supports de stockage, n'offre ni messagerie ni téléphonie
 chiffrée, ne met en oeuvre aucun RPV (VPN) ni tunnel de transport, et
 n'effectue aucune communication réseau propre.
 
-### Catégories de fonctions cryptographiques
+### B.3.2. Indiquez à quelle(s) catégorie(s) se rapporte(nt) la ou les fonctions cryptographiques du moyen
 
 Authentification, intégrité, confidentialité et signature -- toutes
 quatre, exercées entre le moyen et la carte, et non sur les données de
 l'utilisateur.
 
-### Protocoles sécurisés utilisés
+### B.3.3. Indiquez le(s) protocole(s) sécurisé(s) utilisés par le moyen
 
 Ni IPsec, ni SSH, ni protocoles de VoIP, ni SSL/TLS. TLS est assuré par
 le système d'exploitation ; le moyen ne met en oeuvre aucune pile TLS et
@@ -108,7 +126,7 @@ suite `id-PACE-ECDH-GM-AES-CBC-CMAC-256`
 (OID 0.4.0.127.0.7.2.2.4.2.4) ; messagerie sécurisée selon
 ISO/IEC 7816-4.
 
-### Algorithmes et longueurs maximales de clés
+### B.3.4. Précisez les algorithmes cryptographiques utilisés et leurs longueurs maximales de clés
 
 Mis en oeuvre en Swift dans le module `CardCore`, aucun cadriciel Apple
 ne mettant en oeuvre les protocoles propres à la carte. Tous les
@@ -132,7 +150,7 @@ FIPS 197 avec NIST SP 800-38A (CBC) et NIST SP 800-38B avec RFC 4493
 (CMAC) ; SHA-2, FIPS 180-4 ; ECDSA, FIPS 186-4 et ANSI X9.62 ; RSA,
 RFC 8017.
 
-### Gestion des clés
+### Gestion des clés (hors rubriques du formulaire)
 
 - Les clés privées sont générées dans la carte par l'autorité émettrice
   et n'en sortent jamais. Le moyen ne peut pas les lire et ne les détient
@@ -147,9 +165,13 @@ RFC 8017.
 - Aucun séquestre de clés, aucun recouvrement, aucune gestion de clés à
   distance, aucune transmission de clé sur un réseau.
 
-## C. Moyen relevant de la catégorie 3 (grand public)
+## C. Cas d'un moyen de cryptologie relevant de la catégorie 3 de l'annexe 2 du décret n° 2007-663
 
-### Mode de commercialisation et marché visé
+La case est cochée : le déclarant déclare que le moyen relève de la
+catégorie 3 de l'annexe 2 du décret n° 2007-663 du 2 mai 2007. Les
+éléments justificatifs demandés suivent, dans l'ordre du formulaire.
+
+### Présentez le mode de commercialisation du moyen de cryptologie et le marché auquel il s'adresse
 
 Distribution exclusivement par l'App Store d'Apple, au grand public, sans
 négociation, sans personnalisation et sans contrat particulier. Le marché
@@ -157,7 +179,7 @@ visé est le porteur d'une carte nationale d'identité finlandaise
 souhaitant s'authentifier auprès de services en ligne. Le code source est
 public : https://github.com/ReFineID/ReFineID-Apple
 
-### Pourquoi la fonctionnalité cryptographique n'est pas modifiable par l'utilisateur
+### Expliquez pourquoi la fonctionnalité cryptographique du moyen ne peut pas être modifiée facilement par l'utilisateur
 
 La suite cryptographique est fixée à la compilation. La suite PACE et les
 paramètres de domaine sont imposés par la carte et inscrits dans le
@@ -167,7 +189,7 @@ un protocole différent. L'application est signée et son intégrité
 vérifiée par le système d'exploitation, qui refuse d'exécuter un binaire
 modifié.
 
-### Pourquoi l'installation ne nécessite pas d'assistance ultérieure importante
+### Expliquez en quoi les modalités d'installation du moyen ne nécessitent pas d'assistance importante ultérieure de la part du fournisseur
 
 L'installation se fait par l'App Store en une action. Il n'y a ni
 serveur à paramétrer, ni certificat à installer, ni service à souscrire.
@@ -197,23 +219,25 @@ publiquement accessible à l'adresse indiquée en C, ce qui couvre les
 | Date | 3 août 2026 |
 
 ```{=typst}
-#v(1fr)
+#place(bottom + left, block(width: 100%)[
+  #line(length: 100%, stroke: 0.4pt)
+  #v(0.3em)
+  #text(style: "italic", size: 9pt)[
+    Ce document est signé électroniquement. La signature est une signature
+    électronique qualifiée au sens du règlement (UE) nº 910/2014
+    (article 3, point 12), créée par un dispositif qualifié de création de
+    signature électronique et fondée sur un certificat qualifié délivré par
+    l'Agence des services de données numériques et démographiques
+    (Digi- ja väestötietovirasto, DVV), prestataire de services de confiance
+    qualifié finlandais. En vertu de l'article 25, paragraphe 2, du même
+    règlement, elle a l'effet juridique d'une signature manuscrite.
+
+    La validation est possible en ligne et gratuitement à l'adresse
+    #link("https://dvv.fineid.fi/fr/validation"), ou par tout autre moyen
+    retenu par le destinataire.
+  ]
+])
 ```
-
----
-
-*Ce document est signé électroniquement. La signature est une signature
-électronique qualifiée au sens du règlement (UE) nº 910/2014
-(article 3, point 12), créée par un dispositif qualifié de création de
-signature électronique et fondée sur un certificat qualifié délivré par
-l'Agence des services de données numériques et démographiques
-(Digi- ja väestötietovirasto, DVV), prestataire de services de
-confiance qualifié finlandais. En vertu de l'article 25, paragraphe 2,
-du même règlement, elle a l'effet juridique d'une signature manuscrite.*
-
-*La validation est possible en ligne et gratuitement à l'adresse
-<https://dvv.fineid.fi/fr/validation>, ou par tout autre moyen retenu
-par le destinataire.*
 
 ```{=typst}
 #pagebreak()
@@ -225,8 +249,18 @@ Translation of the French dossier above, which prevails. Headings follow
 ANSSI's annexe I form.
 
 Nature of the request: the form's second checkbox, **declaration of
-supply** of a means of cryptology, under chapter II of decree
-No 2007-663 alone. No transfer or export authorisation is requested.
+supply, of transfer from or to a member state of the European Union, of
+import and of export to a state outside the European Union** of a means
+of cryptology, under chapter II of decree No 2007-663 alone.
+
+Distribution is through Apple's App Store and so is not confined to
+France: supply, transfer to other member states and export outside the
+European Union may all occur, and are all covered by this declaration.
+Export is declarable rather than subject to authorisation because the
+means falls under category 3 of annex 2 to the decree, justified in
+section C.
+
+No authorisation under chapter III is requested.
 
 ## A. Declarant
 
@@ -261,10 +295,11 @@ not apply.
 
 ## B.2. Functional description
 
-Category: **software**. The means contains no hardware component.
+### B.2.1. Classification of the means
 
-Principal function category: **information security** (cryptographic
-library and middleware).
+**Software.** The means contains no hardware component.
+
+### B.2.2. General description of the means
 
 ReFineID makes the Finnish national identity card usable as a client
 certificate identity through Apple's security frameworks. It reads the
@@ -275,9 +310,15 @@ the card. Safari and other system consumers then authenticate with the
 card as they would with any other client certificate. The holder uses it
 to sign in to online services with their identity card.
 
+### B.2.3. Category of the principal function
+
+**Information security** (cryptographic library and middleware). None of
+the other categories offered -- computer, sending/storage/reception of
+information, network -- applies.
+
 ## B.3. Technical description
 
-### Cryptographic functionality
+### B.3.1. Description of the cryptographic functionality
 
 Two functions, and nothing else:
 
@@ -296,12 +337,12 @@ The means does not encrypt user data at rest, does not encrypt files or
 storage, provides no encrypted messaging or telephony, implements no VPN
 or transport tunnel, and performs no network communication of its own.
 
-### Categories of cryptographic function
+### B.3.2. Categories the cryptographic functions fall under
 
 Authentication, integrity, confidentiality and signature -- all four,
 exercised between the means and the card, not on the user's data.
 
-### Secure protocols used
+### B.3.3. Secure protocols used by the means
 
 Neither IPsec, SSH, VoIP protocols, nor SSL/TLS. TLS is handled by the
 operating system; the means implements no TLS stack and contributes only
@@ -312,7 +353,7 @@ TR-03110-3, suite `id-PACE-ECDH-GM-AES-CBC-CMAC-256`
 (OID 0.4.0.127.0.7.2.2.4.2.4); Secure Messaging as specified in
 ISO/IEC 7816-4.
 
-### Algorithms and maximum key lengths
+### B.3.4. Cryptographic algorithms used and their maximum key lengths
 
 Implemented in Swift in the `CardCore` module, no Apple framework
 implementing the card's own protocols. All algorithms are published by
@@ -334,7 +375,7 @@ Corresponding standards: ECDH, RFC 5639 and BSI TR-03111; AES, FIPS 197
 with NIST SP 800-38A (CBC) and NIST SP 800-38B with RFC 4493 (CMAC);
 SHA-2, FIPS 180-4; ECDSA, FIPS 186-4 and ANSI X9.62; RSA, RFC 8017.
 
-### Key management
+### Key management (outside the form's sections)
 
 - The card's private keys are generated on the card by the issuing
   authority and never leave it. The means cannot read them and never
@@ -348,9 +389,13 @@ SHA-2, FIPS 180-4; ECDSA, FIPS 186-4 and ANSI X9.62; RSA, RFC 8017.
 - There is no key escrow, no key recovery, no remote key management, and
   no transmission of any key over a network.
 
-## C. Category 3 (mass market)
+## C. Means falling under category 3 of annex 2 to decree No 2007-663
 
-### Marketing and target market
+The box is ticked: the declarant states that the means falls under
+category 3 of annex 2 to decree No 2007-663 of 2 May 2007. The
+supporting points the form asks for follow, in its order.
+
+### Present the means of commercialisation and the market it addresses
 
 Distributed solely through the Apple App Store, to the general public,
 with no negotiation, no customisation and no individual contract. The
@@ -358,7 +403,7 @@ target market is the holder of a Finnish national identity card wishing
 to authenticate to online services. The source code is public:
 https://github.com/ReFineID/ReFineID-Apple
 
-### Why the cryptographic functionality cannot easily be modified by the user
+### Explain why the cryptographic functionality cannot easily be modified by the user
 
 The cryptographic suite is fixed at compile time. The PACE suite and
 domain parameters are imposed by the card and written into the product;
@@ -367,7 +412,7 @@ key length or protocol to be chosen. The application is signed and its
 integrity verified by the operating system, which refuses to run a
 modified binary.
 
-### Why installation requires no significant subsequent support
+### Explain how installation requires no significant subsequent support from the supplier
 
 Installation is a single action through the App Store. There is no server
 to configure, no certificate to install and no service to subscribe to.
@@ -397,19 +442,21 @@ design elements of the means.
 | Date | 3 August 2026 |
 
 ```{=typst}
-#v(1fr)
+#place(bottom + left, block(width: 100%)[
+  #line(length: 100%, stroke: 0.4pt)
+  #v(0.3em)
+  #text(style: "italic", size: 9pt)[
+    This document is electronically signed. The signature is a qualified
+    electronic signature within the meaning of Regulation (EU) No 910/2014
+    (Article 3(12)), created by a qualified electronic signature creation
+    device and based on a qualified certificate issued by the Digital and
+    Population Data Services Agency (DVV), a Finnish qualified trust
+    service provider. Under Article 25(2) of that Regulation it has the
+    legal effect of a handwritten signature.
+
+    Validation is available online, free of charge, at
+    #link("https://dvv.fineid.fi/en/validation"), or by any other means the
+    recipient prefers.
+  ]
+])
 ```
-
----
-
-*This document is electronically signed. The signature is a qualified
-electronic signature within the meaning of Regulation (EU) No 910/2014
-(Article 3(12)), created by a qualified electronic signature creation
-device and based on a qualified certificate issued by the Digital and
-Population Data Services Agency (DVV), a Finnish qualified trust
-service provider. Under Article 25(2) of that Regulation it has the
-legal effect of a handwritten signature.*
-
-*Validation is available online, free of charge, at
-<https://dvv.fineid.fi/en/validation>, or by any other means the
-recipient prefers.*
