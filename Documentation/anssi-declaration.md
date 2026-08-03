@@ -8,7 +8,10 @@ moyen de cryptologie assurant des fonctions de confidentialité et relève
 Les rubriques suivent celles du formulaire annexe I de l'ANSSI, dans le
 même ordre, afin que le dossier réponde au formulaire point par point.
 
-Nature de la demande : **déclaration uniquement** (fourniture en France).
+Nature de la demande : deuxième case du formulaire, **déclaration de
+fourniture** d'un moyen de cryptologie, au titre du seul chapitre II du
+décret n° 2007-663. Aucune demande d'autorisation de transfert ou
+d'exportation n'est formée.
 
 Une traduction anglaise suit à titre de référence ; le texte français
 fait foi.
@@ -108,15 +111,22 @@ ne mettant en oeuvre les protocoles propres à la carte. Tous les
 algorithmes sont publiés par des organismes de normalisation
 internationaux ; aucun n'est propriétaire.
 
-| Algorithme | Longueur de clé | Norme | Usage |
+Les colonnes reprennent celles de la rubrique B.3.4 du formulaire.
+
+| Algorithme | Mode | Taille de clé associée | Fonction |
 |---|---|---|---|
-| ECDH sur brainpoolP384r1 | 384 bits | RFC 5639, BSI TR-03111 | Accord de clés PACE |
-| AES-CBC | 256 bits | FIPS 197, NIST SP 800-38A | Confidentialité de chaque APDU après PACE |
-| AES-CMAC | 256 bits | NIST SP 800-38B, RFC 4493 | Intégrité de chaque APDU après PACE |
-| SHA-256, SHA-384 | s.o. | FIPS 180-4 | Dérivation de clés et condensats de signature |
-| ECDSA sur NIST P-384 | 384 bits | FIPS 186-4, ANSI X9.62 | Vérification de la signature de la carte |
-| RSA PKCS#1 v1.5 | 3072 bits | RFC 8017 | Vérification, cartes à clé RSA |
-| RSA PSS | 3072 bits | RFC 8017 | Vérification, cartes à clé RSA |
+| ECDH sur brainpoolP384r1 | PACE-GM (cartographie générique) | 384 bits | Accord de clés PACE |
+| AES | CBC | 256 bits | Confidentialité de chaque APDU après PACE |
+| AES | CMAC | 256 bits | Intégrité de chaque APDU après PACE |
+| SHA-256, SHA-384 | s.o. | s.o. | Dérivation de clés et condensats de signature |
+| ECDSA sur NIST P-384 | s.o. | 384 bits | Vérification de la signature de la carte |
+| RSA | PKCS#1 v1.5 | 3072 bits | Vérification, cartes à clé RSA |
+| RSA | PSS | 3072 bits | Vérification, cartes à clé RSA |
+
+Normes correspondantes : ECDH, RFC 5639 et BSI TR-03111 ; AES,
+FIPS 197 avec NIST SP 800-38A (CBC) et NIST SP 800-38B avec RFC 4493
+(CMAC) ; SHA-2, FIPS 180-4 ; ECDSA, FIPS 186-4 et ANSI X9.62 ; RSA,
+RFC 8017.
 
 ### Gestion des clés
 
@@ -210,7 +220,9 @@ par le destinataire.*
 Translation of the French dossier above, which prevails. Headings follow
 ANSSI's annexe I form.
 
-Nature of the request: **declaration only** (supply in France).
+Nature of the request: the form's second checkbox, **declaration of
+supply** of a means of cryptology, under chapter II of decree
+No 2007-663 alone. No transfer or export authorisation is requested.
 
 ## A. Declarant
 
@@ -299,15 +311,21 @@ Implemented in Swift in the `CardCore` module, no Apple framework
 implementing the card's own protocols. All algorithms are published by
 international standard bodies; none are proprietary.
 
-| Algorithm | Key length | Standard | Purpose |
+The columns are those of section B.3.4 of the form.
+
+| Algorithm | Mode | Associated key size | Function |
 |---|---|---|---|
-| ECDH on brainpoolP384r1 | 384 bits | RFC 5639, BSI TR-03111 | PACE key agreement |
-| AES-CBC | 256 bits | FIPS 197, NIST SP 800-38A | Confidentiality of each APDU after PACE |
-| AES-CMAC | 256 bits | NIST SP 800-38B, RFC 4493 | Integrity of each APDU after PACE |
-| SHA-256, SHA-384 | n/a | FIPS 180-4 | Key derivation and signature digests |
-| ECDSA on NIST P-384 | 384 bits | FIPS 186-4, ANSI X9.62 | Verification of the card's signature |
-| RSA PKCS#1 v1.5 | 3072 bits | RFC 8017 | Verification, RSA card generations |
-| RSA PSS | 3072 bits | RFC 8017 | Verification, RSA card generations |
+| ECDH on brainpoolP384r1 | PACE-GM (generic mapping) | 384 bits | PACE key agreement |
+| AES | CBC | 256 bits | Confidentiality of each APDU after PACE |
+| AES | CMAC | 256 bits | Integrity of each APDU after PACE |
+| SHA-256, SHA-384 | n/a | n/a | Key derivation and signature digests |
+| ECDSA on NIST P-384 | n/a | 384 bits | Verification of the card's signature |
+| RSA | PKCS#1 v1.5 | 3072 bits | Verification, RSA card generations |
+| RSA | PSS | 3072 bits | Verification, RSA card generations |
+
+Corresponding standards: ECDH, RFC 5639 and BSI TR-03111; AES, FIPS 197
+with NIST SP 800-38A (CBC) and NIST SP 800-38B with RFC 4493 (CMAC);
+SHA-2, FIPS 180-4; ECDSA, FIPS 186-4 and ANSI X9.62; RSA, RFC 8017.
 
 ### Key management
 
