@@ -149,7 +149,7 @@ pipeline that produced the filed artifact:
 
     refineid card sign-document --format pades \
       --in  "ReFineID - ANSSI declaration dossier.pdf" \
-      --out "ReFineID - ANSSI declaration dossier (signed).pdf" \
+      --out "ReFineID - ANSSI declaration dossier - signed.pdf" \
       --reason "Declaration d'un moyen de cryptologie -- decret 2007-663" \
       --location "Helsinki, Finlande" \
       --timestamp eu-qualified \
@@ -157,7 +157,7 @@ pipeline that produced the filed artifact:
 
     curl -s -X POST https://dvv.fineid.fi/api/v1/validate \
       -F locale=en -F includeDetails=true \
-      -F "file=@ReFineID - ANSSI declaration dossier (signed).pdf"
+      -F "file=@ReFineID - ANSSI declaration dossier - signed.pdf"
 
 `eu-qualified` is the five authorities below, asked in that order. It
 is a name rather than a default because a signing tool that reaches
@@ -286,6 +286,13 @@ the market date came to be set two days inside the delay -- 3 August to
 1 October is 59 days -- and it was caught in review rather than by
 ANSSI. There is no hurry toward the French market: if filing slips,
 move the market date before signing rather than shaving the delay.
+
+Parentheses stay out of the filename. They are legal on every platform
+and a nuisance on most: a shell needs them quoted, a URL turns them
+into %28 and %29, and a mail client or an upload form is free to mangle
+them on the way. The file is going to be attached to an email, saved by
+somebody else, and very likely re-uploaded to a validator, so it is
+named with a dash and nothing that needs escaping.
 
 ### Where it goes
 
