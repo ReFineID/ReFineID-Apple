@@ -82,8 +82,12 @@ accepted deliberately rather than by default.
 `ReFineID-Apple` is a public repository, so the whole implementation is
 publicly available encryption source code. 15 CFR 740.13(e) treats that
 differently from closed commercial software: notification by email
-rather than a registration, sent to `crypt@bis.doc.gov` and
-`enc@nsa.gov`. The text to send:
+rather than a registration.
+
+**Sent 2026-08-03, 11:22 EEST, to `enc@nsa.gov`, copy to
+`crypt@bis.doc.gov`.** No reply is expected and none is required; the
+regulation asks for notice, not permission. The text, kept so a later
+notice for a new repository or a moved URL says the same thing:
 
     Subject: TSU notification - publicly available encryption source code
 
