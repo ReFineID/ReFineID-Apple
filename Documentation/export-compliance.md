@@ -115,12 +115,26 @@ Registration Number, which is a free SNAP-R submission usually answered
 in about a business day, not a CCATS. The French declaration is a
 separate regime either way.
 
+## France
+
+The app is to be available in France, so the French declaration applies:
+supplying a cryptographic means that provides confidentiality requires a
+declaration to ANSSI, and PACE's channel is exactly that. The technical
+dossier is `Documentation/anssi-declaration.md`, in English and in
+French. App Store Connect asks for ANSSI's acknowledgement at step 3 of
+App Encryption Documentation.
+
+Excluding France was the alternative and was considered: it would have
+removed this step entirely and shipped sooner. It was not taken. A
+Finnish cardholder living in France has a French App Store account, and
+an identity product that quietly does not exist where its holder lives
+is a worse answer than a filing.
+
 ## What is still needed
 
-1. Export compliance authorisation for the encryption -- in practice a
-   US BIS Encryption Registration Number, plus the French declaration
-   where that applies.
-2. That documentation filed against the app in App Store Connect.
+1. The ANSSI declaration filed, and its acknowledgement received.
+2. That acknowledgement attached to App Encryption Documentation in App
+   Store Connect.
 3. The code Apple issues in return, added to
    `Config/ReFineID-Info.plist` as `ITSEncryptionExportComplianceCode`.
 
