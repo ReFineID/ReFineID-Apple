@@ -176,19 +176,24 @@ publiquement accessible à l'adresse indiquée en C, ce qui couvre les
 | Société | ReFineID |
 | Date | 3 août 2026 |
 
-Ce document est signé électroniquement. La signature est une signature
+---
+
+*Ce document est signé électroniquement. La signature est une signature
 électronique qualifiée au sens du règlement (UE) nº 910/2014
 (article 3, point 12), créée par un dispositif qualifié de création de
 signature électronique et fondée sur un certificat qualifié délivré par
-le Digi- ja väestötietovirasto (DVV), prestataire de services de
+l'Agence des services de données numériques et démographiques
+(Digi- ja väestötietovirasto, DVV), prestataire de services de
 confiance qualifié finlandais. En vertu de l'article 25, paragraphe 2,
-du même règlement, elle a l'effet juridique d'une signature manuscrite.
+du même règlement, elle a l'effet juridique d'une signature manuscrite.*
 
-La validation est possible en ligne et gratuitement à l'adresse
+*La validation est possible en ligne et gratuitement à l'adresse
 <https://dvv.fineid.fi/fr/validation>, ou par tout autre moyen retenu
-par le destinataire.
+par le destinataire.*
 
----
+```{=typst}
+#pagebreak()
+```
 
 # English translation, for reference
 
@@ -350,14 +355,16 @@ design elements of the means.
 | Company | ReFineID |
 | Date | 3 August 2026 |
 
-This document is electronically signed. The signature is a qualified
+---
+
+*This document is electronically signed. The signature is a qualified
 electronic signature within the meaning of Regulation (EU) No 910/2014
 (Article 3(12)), created by a qualified electronic signature creation
 device and based on a qualified certificate issued by the Digital and
 Population Data Services Agency (DVV), a Finnish qualified trust
 service provider. Under Article 25(2) of that Regulation it has the
-legal effect of a handwritten signature.
+legal effect of a handwritten signature.*
 
-Validation is available online, free of charge, at
+*Validation is available online, free of charge, at
 <https://dvv.fineid.fi/en/validation>, or by any other means the
-recipient prefers.
+recipient prefers.*
