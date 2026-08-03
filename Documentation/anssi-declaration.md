@@ -22,6 +22,8 @@ depuis la France vers un État membre et l'exportation depuis la France,
 que le IV de l'article 30 soumet à autorisation, ne sont pas de son
 fait.
 
+Le déclarant demande la délivrance de l'attestation de déclaration.
+
 Le dossier est établi en français et suivi d'une version anglaise.
 
 ## A. Déclarant et/ou demandeur
@@ -286,6 +288,9 @@ This document is the declaration; it follows sections A to F of annexe
 I. The declarant being established in Finland, transfer from France to
 a member state and export from France -- which article 30 IV subjects
 to authorisation -- are not performed by him.
+
+The declarant requests the issue of the corresponding attestation de
+déclaration.
 
 ## A. Declarant and/or applicant
 
