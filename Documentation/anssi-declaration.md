@@ -46,7 +46,7 @@ Contact technique : le déclarant, aux mêmes coordonnées. Il est
 | Référence commerciale | ReFineID pour plateformes Apple |
 | Version | 26.11 |
 | Date de mise sur le marché | 1er novembre 2026 |
-| Plateformes | iOS 26, iPadOS 26, macOS 26 |
+| Plateformes | iOS, iPadOS, macOS |
 
 ### B.2. Description fonctionnelle du moyen
 
@@ -271,7 +271,7 @@ manufacturer.
 | Commercial reference | ReFineID for Apple platforms |
 | Version | 26.11 |
 | Date placed on the market | 1 November 2026 |
-| Platforms | iOS 26, iPadOS 26, macOS 26 |
+| Platforms | iOS, iPadOS, macOS |
 
 ### B.2. Functional description
 
