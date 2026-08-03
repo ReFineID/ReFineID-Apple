@@ -56,19 +56,15 @@ Contact technique : le déclarant, aux mêmes coordonnées. Il est
 
 #### B.2.2. Description générale du moyen
 
-ReFineID rend la carte nationale d'identité
-finlandaise utilisable comme identité numérique fondée sur un certificat client,
-au moyen des infrastructures de sécurité d'Apple. Le moyen lit la carte via l'antenne NFC
-du téléphone ou un lecteur de carte à contact, publie le certificat
-d'authentification et la clé publique de la carte dans le trousseau du
-système par CryptoTokenKit, et transmet les demandes de signature à la
-carte. Safari et les autres applications du système s'authentifient
-ensuite avec la carte comme avec tout autre certificat client. Le porteur
-s'en sert pour se connecter à des services en ligne avec sa carte
-d'identité.
+Le moyen lit la carte via l'antenne NFC du téléphone ou un lecteur de
+carte à contact, publie le certificat d'authentification et la clé
+publique de la carte dans le trousseau du système par CryptoTokenKit, et
+transmet les demandes de signature à la carte. Safari et les autres
+applications du système s'authentifient ensuite avec la carte comme avec
+tout autre certificat client.
 
-La présente déclaration porte sur cette seule application pour
-plateformes Apple, distribuée par l'App Store. Un intergiciel ReFineID
+La présente déclaration porte sur la seule application pour plateformes
+Apple, distribuée par l'App Store. Un intergiciel ReFineID
 pour postes de travail, distribué séparément et dont les fonctions
 cryptographiques diffèrent, n'entre pas dans son champ.
 
@@ -297,16 +293,14 @@ manufacturer.
 
 #### B.2.2. General description of the means
 
-ReFineID makes the Finnish national identity card usable as a client
-certificate identity through Apple's security frameworks. It reads the
-card over the phone's NFC antenna or a contact smart-card reader,
-publishes the card's authentication certificate and public key to the
-system keychain through CryptoTokenKit, and passes signature requests to
-the card. Safari and other system consumers then authenticate with the
-card as they would with any other client certificate. The holder uses it
-to sign in to online services with their identity card.
+The means reads the card over the phone's NFC antenna or a contact
+smart-card reader, publishes the card's authentication certificate and
+public key to the system keychain through CryptoTokenKit, and passes
+signature requests to the card. Safari and other system consumers then
+authenticate with the card as they would with any other client
+certificate.
 
-This declaration covers that Apple-platform application alone,
+This declaration covers the Apple-platform application alone,
 distributed through the App Store. A ReFineID middleware for desktop
 systems, distributed separately and with different cryptographic
 functions, falls outside its scope.
