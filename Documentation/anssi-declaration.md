@@ -9,16 +9,6 @@ Dossier de déclaration au titre de l'article 30 de la loi n° 2004-575
 du 21 juin 2004 pour la confiance dans l'économie numérique (LCEN) et du
 décret n° 2007-663 du 2 mai 2007 pris pour son application.
 
-ReFineID établit avec la carte un canal de messagerie sécurisée selon la
-norme ISO/IEC 7816-4, au moyen du protocole PACE. Les échanges qui y
-passent sont chiffrés (AES-256-CBC) : cette fonction de confidentialité est
-confinée à ce canal, ne s'applique qu'à l'interface sans contact, et ne
-porte ni sur les données de l'utilisateur, ni sur un stockage, ni sur un
-réseau. Elle n'est pas offerte au porteur mais imposée par la politique
-d'accès de la carte, qui refuse toute lecture sans contact tant que PACE
-n'a pas été exécuté. La clé publiée au système d'exploitation est
-réservée à la signature.
-
 La déclaration est faite au titre du chapitre II, sans préjudice de
 l'application du II de l'article 30, qui affranchit de toute formalité
 les moyens assurant exclusivement des fonctions d'authentification ou de
@@ -42,10 +32,6 @@ depuis un État membre. Le transfert vers un État membre depuis la France
 et l'exportation depuis la France vers un État tiers, que le IV de
 l'article 30 soumet à autorisation, ne sont pas le fait du déclarant et
 ne font pas l'objet de la présente déclaration.
-
-Le moyen relève, selon le déclarant, de la catégorie 3 de l'annexe 2 du
-décret, ce qu'il déclare en rubrique C ; jusqu'à l'appréciation de
-l'ANSSI, cette qualification n'est pas présentée comme acquise.
 
 Aucune demande d'autorisation au titre du chapitre III n'est formée.
 
@@ -134,6 +120,13 @@ Deux fonctions, et aucune autre :
    carte, qui réalise la signature. Le moyen met en forme l'entrée, la
    transmet à la carte, et vérifie le résultat avec la clé publique de la
    carte avant de le restituer au système d'exploitation.
+
+Le chiffrement est confiné à ce canal et à la seule interface sans
+contact. Il n'est pas offert au porteur : il est imposé par la
+politique d'accès de la carte. Sur l'interface à contact, le moyen ne
+chiffre rien. La clé publiée au système d'exploitation est réservée à la
+signature : le moyen n'offre à ses appelants ni déchiffrement ni accord
+de clés.
 
 Le moyen ne chiffre pas les données de l'utilisateur au repos, ne chiffre
 ni fichiers ni supports de stockage, n'offre ni messagerie ni téléphonie
@@ -347,15 +340,6 @@ rappelées en pied de page.
 
 # English version
 
-ReFineID establishes an ISO/IEC 7816-4 secure-messaging channel with the
-card by means of the PACE protocol. What passes through it is encrypted
-(AES-256-CBC): that confidentiality function is confined to the channel,
-applies only on the contactless interface, and is applied neither to the
-user's data, nor to storage, nor to any network. It is not offered to the
-holder but imposed by the card's own access policy, which refuses every
-contactless read until PACE has run. The key published to the operating
-system is reserved for signature.
-
 The declaration is made under chapter II, without prejudice to the
 application of article 30 II, which frees from every formality a means
 providing exclusively authentication or integrity-control functions. The
@@ -378,10 +362,6 @@ in France and its transfer from a member state. Transfer from France to a
 member state, and export from France to a third state -- which article
 30 IV subjects to authorisation -- are not performed by the declarant and
 are not the subject of this declaration.
-
-The means falls, in the declarant's view, within category 3 of annex 2 to
-the decree, which he declares in section C. Until ANSSI has assessed it,
-that qualification is not presented as held.
 
 No authorisation under chapter III is requested.
 
@@ -463,6 +443,13 @@ Two functions, and nothing else:
    card, which performs the signature. The means formats the input,
    passes it to the card, and verifies the result against the card's own
    public key before returning it to the operating system.
+
+The encryption is confined to that channel and to the contactless
+interface alone. It is not offered to the holder: it is imposed by the
+card's access policy. On the contact interface the means encrypts
+nothing. The key published to the operating system is reserved for
+signature: the means offers its callers neither decryption nor key
+agreement.
 
 The means does not encrypt user data at rest, does not encrypt files or
 storage, provides no encrypted messaging or telephony, implements no VPN
