@@ -15,7 +15,7 @@ européenne, d'importation et d'exportation vers un État n'appartenant
 pas à l'Union européenne** d'un moyen de cryptologie, au titre du seul
 chapitre II du décret n° 2007-663.
 
-La distribution se faisant par l'App Store d'Apple, elle n'est pas
+La distribution, notamment par l'App Store d'Apple, n'est pas
 limitée à la France : la fourniture, le transfert vers les autres États
 membres et l'exportation hors de l'Union européenne sont tous
 susceptibles de se produire, et sont donc tous couverts par la présente
@@ -173,8 +173,10 @@ suivent, dans son ordre.
 
 ### Présentez le mode de commercialisation du moyen de cryptologie et le marché auquel il s'adresse
 
-Distribution exclusivement par l'App Store d'Apple, au grand public, sans
-négociation, sans personnalisation et sans contrat particulier. Le marché
+Distribution au grand public, sans négociation, sans personnalisation
+et sans contrat particulier. Le canal principal est l'App Store
+d'Apple ; d'autres canaux peuvent s'y ajouter, selon les mêmes
+modalités. Le marché
 visé est le porteur d'une carte nationale d'identité finlandaise
 souhaitant s'authentifier auprès de services en ligne. Le code source est
 public : https://github.com/ReFineID/ReFineID-Apple
@@ -252,8 +254,8 @@ supply, of transfer from or to a member state of the European Union, of
 import and of export to a state outside the European Union** of a means
 of cryptology, under chapter II of decree No 2007-663 alone.
 
-Distribution is through Apple's App Store and so is not confined to
-France: supply, transfer to other member states and export outside the
+Distribution -- through Apple's App Store among other channels -- is
+not confined to France: supply, transfer to other member states and export outside the
 European Union may all occur, and are all covered by this declaration.
 Export is declarable rather than subject to authorisation because the
 means falls under category 3 of annex 2 to the decree, justified in
@@ -396,8 +398,9 @@ order.
 
 ### Present the means of commercialisation and the market it addresses
 
-Distributed solely through the Apple App Store, to the general public,
-with no negotiation, no customisation and no individual contract. The
+Distributed to the general public, with no negotiation, no
+customisation and no individual contract. The principal channel is the
+Apple App Store; other channels may be added, on the same terms. The
 target market is the holder of a Finnish national identity card wishing
 to authenticate to online services. The source code is public:
 https://github.com/ReFineID/ReFineID-Apple
