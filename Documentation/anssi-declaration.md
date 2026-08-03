@@ -248,13 +248,6 @@ moyen.
 
 ## F. Attestation
 
-| Champ | Valeur |
-|:---------------------------|:-----------------------------------------------|
-| Nom et prénoms | Koistinen, Petri |
-| Agissant en qualité de | Fournisseur et auteur du moyen, personne physique |
-| Pour le compte de | Lui-même, en son nom propre (aucune personne morale) |
-| Date | 3 août 2026 |
-
 Je soussigné, Koistinen Petri, agissant en qualité de fournisseur et
 auteur du moyen et pour mon propre compte, certifie que les
 renseignements figurant dans le présent dossier et les pièces qui lui
@@ -265,6 +258,8 @@ droit de nature à modifier la présente déclaration ou les éléments
 joints. Toute omission ou toute fausse déclaration expose le déclarant
 aux sanctions prévues aux articles 34 et 35 de la loi n° 2004-575 du
 21 juin 2004 modifiée.
+
+Fait à Helsinki, le 3 août 2026.
 
 ```{=typst}
 #v(1fr)
@@ -526,13 +521,6 @@ section C, which covers the design elements.
 
 ## F. Attestation
 
-| Field | Value |
-|:---------------------------|:-----------------------------------------------|
-| Name | Koistinen, Petri |
-| Acting in the capacity of | Supplier and author of the means, private individual |
-| On behalf of | Himself, in his own name (no legal entity) |
-| Date | 3 August 2026 |
-
 I, the undersigned, Koistinen Petri, acting as supplier and author of
 the means and on my own behalf, certify that the information in this
 dossier and in the documents attached to it is accurate and has been
@@ -542,6 +530,8 @@ matter of fact or of law liable to alter this declaration or the
 attached material. Any omission or false declaration exposes the
 declarant to the penalties provided for in articles 34 and 35 of law
 No 2004-575 of 21 June 2004 as amended.
+
+Done at Helsinki, 3 August 2026.
 
 ```{=typst}
 #v(1fr)
