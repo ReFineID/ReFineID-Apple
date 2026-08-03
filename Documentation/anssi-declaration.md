@@ -161,6 +161,12 @@ Le porteur saisit le numéro d'accès imprimé au dos de sa carte, présente
 la carte une fois, et le moyen est opérationnel. Aucune intervention du
 fournisseur n'est requise.
 
+## D. Renouvellement d'autorisation de transfert ou d'exportation
+
+Sans objet. La rubrique D ne concerne qu'un moyen ayant déjà fait
+l'objet d'une autorisation de transfert ou d'exportation ; la présente
+demande est une première déclaration et n'en invoque aucune.
+
 ## E. Pièces jointes
 
 Documentation technique : le présent dossier. Le code source complet est
@@ -343,6 +349,12 @@ to configure, no certificate to install and no service to subscribe to.
 The holder enters the access number printed on their card, presents the
 card once, and the means is operational. No supplier intervention is
 required.
+
+## D. Renewal of a transfer or export authorisation
+
+Not applicable. Section D concerns a means for which a transfer or
+export authorisation was previously granted; this is a first
+declaration and invokes none.
 
 ## E. Attachments
 

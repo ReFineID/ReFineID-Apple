@@ -149,15 +149,29 @@ a poor place to find a translation error.
 Checked against ANSSI rather than recalled. The dossier is not filed on
 its own: it is the technical documentation attached to ANSSI's own form.
 
-1. Download the form for a *moyen de cryptologie* from
-   https://cyber.gouv.fr/reglementation/reglementation-identite-confiance-numerique/controles-reglementaires-cryptographie/controle-moyen-de-cryptologie/
-   There are two forms on that page. The one wanted here is annexe 2,
-   for a means of cryptology; the other is for a cryptology *service*,
-   which this is not.
-2. Complete it, save it, then print, sign and scan it.
+1. Download **annexe I**, titled *Déclaration et demande d'autorisation
+   d'opérations relatives a un moyen de cryptologie*:
+
+       https://cyber.gouv.fr/documents/330/crypto_declaration-demande_autorisation_operations_annexe1_v2.pdf
+
+   The link to it from ANSSI's own page 404s; the address above is the
+   one that answers. Do not take annexe 2 instead: its title is
+   *Déclaration de fourniture d'une prestation de cryptologie*, and a
+   prestation is a service. ReFineID supplies a *moyen*.
+
+   It is an XFA dynamic form. Adobe Reader opens it; Preview and most
+   other readers show only a "you need a later version" page.
+
+2. Complete it, save it, then print, sign and scan it. The form asks for
+   **two copies** ("a adresser en deux exemplaires").
 3. Email `controle@ssi.gouv.fr`, subject `[formalités] ReFineID - ReFineID`,
    attaching the completed form, the signed scan, and this dossier as
    the technical documentation.
+
+The form's own sections are A declarant, B the means, C category 3,
+D renewal of a transfer or export authorisation, E documents attached,
+F attestation. D applies only where a transfer or export authorisation
+was granted before, so it is out of scope for a first declaration.
 
 By post instead, if preferred:
 
