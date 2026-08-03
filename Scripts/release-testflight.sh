@@ -110,20 +110,23 @@ release_one() {
     plutil -replace destination -string upload "$options"
   fi
 
-  local -a auth=()
+  # macOS ships bash 3.2, where "${array[@]}" on an empty array trips
+  # `set -u`. The two calls are spelled out rather than guarded with the
+  # ${arr[@]+...} incantation, which is shorter and reads like a typo.
   if [ "$upload" = "yes" ]; then
-    auth=(
-      -authenticationKeyPath "$key_path"
-      -authenticationKeyID "$ASC_KEY_ID"
+    xcodebuild -exportArchive \
+      -archivePath "$archive" \
+      -exportOptionsPlist "$options" \
+      -exportPath "$exported" \
+      -authenticationKeyPath "$key_path" \
+      -authenticationKeyID "$ASC_KEY_ID" \
       -authenticationKeyIssuerID "$ASC_ISSUER_ID"
-    )
+  else
+    xcodebuild -exportArchive \
+      -archivePath "$archive" \
+      -exportOptionsPlist "$options" \
+      -exportPath "$exported"
   fi
-
-  xcodebuild -exportArchive \
-    -archivePath "$archive" \
-    -exportOptionsPlist "$options" \
-    -exportPath "$exported" \
-    "${auth[@]}"
 
   if [ "$upload" = "yes" ]; then
     note "[${platform}] uploaded ${version} (${build})"
