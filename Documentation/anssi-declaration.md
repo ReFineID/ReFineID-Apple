@@ -21,8 +21,7 @@ Le déclarant demande la délivrance de l'attestation de déclaration.
 ## A. Déclarant et/ou demandeur
 
 Le déclarant est un particulier. ReFineID est un nom commercial qu'il
-emploie en son nom propre : ni dénomination sociale, ni numéro SIRET,
-ni personne morale.
+emploie en son nom propre.
 
 | Champ | Valeur |
 |:---------------------------|:-----------------------------------------------|
@@ -263,8 +262,7 @@ déclaration.
 ## A. Declarant and/or applicant
 
 The declarant is an individual. ReFineID is a trading name he uses in a
-personal capacity: no registered company name, no SIRET number, no legal
-entity.
+personal capacity.
 
 | Field | Value |
 |:---------------------------|:-----------------------------------------------|
