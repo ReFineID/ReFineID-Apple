@@ -228,7 +228,23 @@ note "app and both extensions are version $V_APP ($B_APP)"
 if [ "$PLATFORM" = "iOS" ]; then
     plutil -extract ITSAppUsesNonExemptEncryption raw "$APP_PLIST" >/dev/null 2>&1 \
         || fail "ITSAppUsesNonExemptEncryption missing from the app Info.plist"
-    note "export compliance answered ($(plutil -extract ITSAppUsesNonExemptEncryption raw "$APP_PLIST"))"
+    COMPLIANCE=$(plutil -extract ITSAppUsesNonExemptEncryption raw "$APP_PLIST")
+    # Declaring non-exempt is half a statement. Apple compares the code
+    # in the bundle against the export compliance documentation on file
+    # for the app, and rejects the upload with 90592 when there is none
+    # -- after the archive, the export and several minutes of transfer.
+    # The same answer is available here, in seconds, before any of that.
+    if [ "$COMPLIANCE" = "true" ]; then
+        CODE=$(plutil -extract ITSEncryptionExportComplianceCode raw "$APP_PLIST" 2>/dev/null || true)
+        [ -n "$CODE" ] || fail "ITSAppUsesNonExemptEncryption is true but
+  ITSEncryptionExportComplianceCode is missing. App Store Connect will
+  refuse the upload with error 90592. File the export compliance
+  documentation for the app, take the code Apple issues, and add it to
+  Config/ReFineID-Info.plist."
+        note "export compliance answered (non-exempt, code present)"
+    else
+        note "export compliance answered (exempt)"
+    fi
 fi
 
 # --- The AID lives on the discovery extension only -------------------------

@@ -135,6 +135,24 @@ point of the check in `inspect-archive.sh`: the answer belongs in
 reviewed source, not in whatever somebody clicked at four in the
 afternoon.
 
+Declaring it is half the statement. App Store Connect refused the first
+upload with error 90592 -- "the export compliance key value [] in the
+app's Info.plist doesn't match the key value of the app's export
+compliance documentation" -- because a `true` declaration is compared
+against documentation filed for the app, and there was none. So
+`ITSEncryptionExportComplianceCode` has to carry the code Apple issues
+once that documentation is accepted, and until it does, nothing
+uploads.
+
+That is a deliberate wait rather than a workaround. The alternative
+offered itself twice -- drop the key and answer the questionnaire per
+build -- and was refused both times for the same reason the key exists.
+
+`inspect-archive.sh` now fails locally when the declaration is `true`
+and the code is absent. The same answer that took a full archive, an
+export and several minutes of transfer to get from Apple takes about a
+second here.
+
 ## 2026-08-03 Diagnostics is a development tool, on both platforms
 
 TestFlight is a shipped build. It reaches people who are not us, on
