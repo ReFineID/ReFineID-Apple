@@ -310,11 +310,17 @@ supplier or first importer regardless of where they are established.
 A supplier in Helsinki performs neither.
 
 So the declared operations are fourniture in France and transfert
-depuis un Etat membre, both under chapter II. The two operations
-article 30 IV reserves to authorisation are named in the dossier as not
-being the declarant's, which is why no chapter III request accompanies
-it and why category 3 -- which matters only for those two -- is
-declared without being leaned on.
+depuis un Etat membre, both under chapter II. No chapter III request accompanies it, and category 3 -- which matters
+only for the two operations article 30 IV reserves to authorisation --
+is declared without being leaned on.
+
+The dossier does not say those two operations are not the declarant's.
+It said so for a while. A denial invites the question it answers: a
+reader who was not wondering whether this supplier exports cryptology
+from France is wondering once the sentence raises it, and the title
+already makes the positive claim -- fourniture, and transfert depuis un
+Etat membre. Scope is better set by what is claimed than by what is
+disclaimed.
 
 An earlier draft claimed the export leg. It should not have: it asserted
 a scope that only existed if category 3 were already granted, in a
