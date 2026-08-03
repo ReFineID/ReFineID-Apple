@@ -152,16 +152,19 @@ pipeline that produced the filed artifact:
       --out "ReFineID - ANSSI declaration dossier (signed).pdf" \
       --reason "Declaration d'un moyen de cryptologie -- decret 2007-663" \
       --location "Helsinki, Finlande" \
-      --timestamp https://timestamp.sectigo.com/qualified \
-      --timestamp https://timestamp.aped.gov.gr/qtss \
-      --timestamp http://tsa.belgium.be/connect \
-      --timestamp http://tsa.izenpe.com \
-      --timestamp http://tss.accv.es:8318/tsa \
+      --timestamp eu-qualified \
       --archive
 
     curl -s -X POST https://dvv.fineid.fi/api/v1/validate \
       -F locale=en -F includeDetails=true \
       -F "file=@ReFineID - ANSSI declaration dossier (signed).pdf"
+
+`eu-qualified` is the five authorities below, asked in that order. It
+is a name rather than a default because a signing tool that reaches
+five foreign servers unasked has made that choice for you, and because
+a name is safer to type than five URLs: a mistyped URL is now
+survivable and quietly costs an authority, a mistyped name stops before
+the card is touched.
 
 Five qualified authorities in four countries, so the proven time
 survives any one of them losing its standing. A refusal is survivable:
@@ -207,11 +210,16 @@ before the signature exists. Neither weakens the attestation: both are
 granted, and DVV reported an ACCV token as a qualified timestamp with
 exactly that material beside it.
 
-Sectigo and the Greek one are https and need a build with a TLS
-backend (`--features boring-tls`); the others need nothing. RFC 3161
-sends a hash and never the document, so plain http leaks no content,
+Only the Greek one needs a build with a TLS backend (`--features
+boring-tls` or `openssl-tls`); it redirects plain http. Sectigo answers
+on both and the set names it over http, so the authority carrying the
+archive timestamp is reachable from a default build. TLS buys a
+timestamp nothing anyway: RFC 3161 sends a hash and never the document,
 and the returned token is checked against the digest and nonce it was
-asked for.
+asked for, so plain http leaks no content and a tamperer is caught.
+
+A default build therefore files with four of the five rather than
+three, and misses only Greece.
 
 `--archive` is what makes it PAdES-B-LTA, the top of the ETSI ladder.
 The validator must answer QESig, PAdES-BASELINE-LTA, TOTAL_PASSED;
