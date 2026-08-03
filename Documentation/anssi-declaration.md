@@ -44,7 +44,7 @@ Contact technique : le déclarant, aux mêmes coordonnées. Il est
 | Désignation générique | Intergiciel pour carte nationale d'identité |
 | Marque de distribution | ReFineID |
 | Référence commerciale | ReFineID pour plateformes Apple |
-| Version | 26.11 |
+| Version | 26 |
 | Date de mise sur le marché | 1er novembre 2026 |
 | Plateformes | iOS, iPadOS, macOS |
 
@@ -269,7 +269,7 @@ manufacturer.
 | Generic designation | Middleware for a national identity card |
 | Brand | ReFineID |
 | Commercial reference | ReFineID for Apple platforms |
-| Version | 26.11 |
+| Version | 26 |
 | Date placed on the market | 1 November 2026 |
 | Platforms | iOS, iPadOS, macOS |
 
