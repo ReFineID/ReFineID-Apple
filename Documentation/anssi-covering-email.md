@@ -15,8 +15,7 @@ j'emploie en mon nom propre et ne désigne aucune personne morale.
 
 Le dossier reprend les rubriques A à F de votre annexe I, dans le même
 ordre et sous leurs intitulés ou leur équivalent, chaque question
-recevant sa réponse à sa place. Si vous souhaitez le recevoir sous une
-autre forme, je vous le transmettrai dans les meilleurs délais.
+recevant sa réponse à sa place.
 
 Je déclare en rubrique C que le moyen relève de la catégorie 3 de
 l'annexe 2 du décret, sans présenter cette qualification comme acquise :
