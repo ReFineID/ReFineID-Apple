@@ -147,17 +147,28 @@ internal struct StatusView: View {
   }
 
   /// The card type when its answer to reset identifies it.
+  ///
+  /// A card recognized only by its generation is named by that
+  /// generation and nothing more. How confident this build is about the
+  /// exact variant, and whether DVV's table happens to list it, is our
+  /// bookkeeping: it changes nothing the holder can do, and reads as a
+  /// warning about a card that is working perfectly. Development builds
+  /// still say, because there the distinction is the point.
   @ViewBuilder private var cardTypeRow: some View {
     if let identified = model.snapshot?.cardType {
-      switch identified.confidence {
-      case .documented:
+      #if DEBUG
+        switch identified.confidence {
+        case .documented:
+          LabeledContent("Card type", value: identified.name)
+        case .generationOnly:
+          LabeledContent(
+            "Card type",
+            value: String(localized: "\(identified.name), variant not in DVV's table")
+          )
+        }
+      #else
         LabeledContent("Card type", value: identified.name)
-      case .generationOnly:
-        LabeledContent(
-          "Card type",
-          value: String(localized: "\(identified.name), variant not in DVV's table")
-        )
-      }
+      #endif
     }
   }
 
