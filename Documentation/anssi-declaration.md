@@ -40,7 +40,7 @@ Le déclarant est également le fabricant du moyen ; la rubrique relative
 | Marque de distribution | ReFineID |
 | Référence commerciale | ReFineID |
 | Version | Versionnement calendaire `AA.M.J` (26.8.3 à la date du dossier) |
-| Date de mise sur le marché | *[à compléter : date prévue de publication sur l'App Store]* |
+| Date de mise sur le marché | 3 août 2026 |
 | Plateformes | iOS 26, iPadOS 26, macOS 26 |
 
 ## B.2. Description fonctionnelle du moyen
@@ -222,7 +222,7 @@ not apply.
 | Brand | ReFineID |
 | Commercial reference | ReFineID |
 | Version | Calendar versioning `YY.M.D` (26.8.3 at the date of this dossier) |
-| Date placed on the market | *[to be completed: planned App Store release date]* |
+| Date placed on the market | 3 August 2026 |
 | Platforms | iOS 26, iPadOS 26, macOS 26 |
 
 ## B.2. Functional description
