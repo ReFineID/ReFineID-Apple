@@ -70,8 +70,8 @@ Le déclarant est également le fabricant du moyen ; la rubrique relative
 ### B.2.2. Description générale du moyen
 
 ReFineID rend la carte nationale d'identité
-finlandaise utilisable comme identité à certificat client au travers des
-cadriciels de sécurité d'Apple. Le moyen lit la carte via l'antenne NFC
+finlandaise utilisable comme identité numérique fondée sur un certificat client,
+au moyen des infrastructures de sécurité d'Apple. Le moyen lit la carte via l'antenne NFC
 du téléphone ou un lecteur de carte à contact, publie le certificat
 d'authentification et la clé publique de la carte dans le trousseau du
 système par CryptoTokenKit, et transmet les demandes de signature à la
@@ -92,11 +92,11 @@ envoi/stockage/réception d'informations, réseau -- ne s'applique.
 
 Deux fonctions, et aucune autre :
 
-1. **Établissement d'un canal sécurisé avec la carte.** La carte scelle
-   son application PKCS#15 sur l'interface sans contact et refuse toute
+1. **Établissement d'un canal sécurisé avec la carte.** La carte bloque
+   l'accès à son application PKCS#15 sur l'interface sans contact et refuse toute
    lecture (`SW=6982`) tant que PACE n'a pas été exécuté. PACE est un
    accord de clés authentifié par mot de passe, fondé sur le numéro
-   d'accès imprimé sur la carte. Il établit la proximité et dérive des
+   d'accès imprimé sur la carte. Il authentifie la connaissance du numéro d'accès et dérive des
    clés de session ; tous les échanges ultérieurs avec la carte sont
    chiffrés et authentifiés sous ces clés.
 2. **Signatures d'authentification client.** La clé privée reste dans la
@@ -106,7 +106,7 @@ Deux fonctions, et aucune autre :
 
 Le moyen ne chiffre pas les données de l'utilisateur au repos, ne chiffre
 ni fichiers ni supports de stockage, n'offre ni messagerie ni téléphonie
-chiffrées, ne met en œuvre aucun RPV (VPN) ni tunnel de transport, et
+chiffrées, ne met en œuvre aucun réseau privé virtuel (VPN) ni tunnel de transport, et
 n'effectue aucune communication réseau propre.
 
 ### B.3.2. Indiquez à quelle(s) catégorie(s) se rapporte(nt) la ou les fonctions cryptographiques du moyen
@@ -119,7 +119,7 @@ l'utilisateur.
 
 Ni IPsec, ni SSH, ni protocoles de VoIP, ni SSL/TLS. TLS est assuré par
 le système d'exploitation ; le moyen ne met en œuvre aucune pile TLS et
-ne fournit que la signature de la carte.
+se borne à fournir la signature calculée par la carte.
 
 Autres protocoles : PACE selon ICAO Doc 9303 partie 11 et BSI TR-03110-3,
 suite `id-PACE-ECDH-GM-AES-CBC-CMAC-256`
@@ -128,8 +128,9 @@ ISO/IEC 7816-4.
 
 ### B.3.4. Précisez les algorithmes cryptographiques utilisés et leurs longueurs maximales de clés
 
-Mis en œuvre en Swift dans le module `CardCore`, aucun cadriciel Apple
-ne mettant en œuvre les protocoles propres à la carte. Tous les
+La logique des protocoles propres à la carte est mise en œuvre en Swift
+dans le module `CardCore`, au moyen des primitives cryptographiques
+fournies notamment par CryptoKit. Tous les
 algorithmes sont publiés par des organismes de normalisation
 internationaux ; aucun n'est propriétaire.
 
@@ -148,7 +149,7 @@ Les colonnes reprennent celles de la rubrique B.3.4 du formulaire.
 
 Normes correspondantes : ECDH, RFC 5639 et BSI TR-03111 ; AES,
 FIPS 197 avec NIST SP 800-38A (CBC) et NIST SP 800-38B avec RFC 4493
-(CMAC) ; SHA-2, FIPS 180-4 ; ECDSA, FIPS 186-4 et ANSI X9.62 ; RSA,
+(CMAC) ; SHA-2, FIPS 180-4 ; ECDSA, FIPS 186-5 et ANSI X9.62 ; RSA,
 RFC 8017.
 
 ### Gestion des clés (hors rubriques du formulaire)
@@ -157,7 +158,8 @@ RFC 8017.
   et n'en sortent jamais. Le moyen ne peut pas les lire et ne les détient
   jamais.
 - Les clés de session PACE sont éphémères : dérivées par session, gardées
-  en mémoire seulement, détruites à la fin de la session.
+  en mémoire seulement, abandonnées à la fin de la session et jamais
+  écrites sur un support persistant.
 - Le numéro d'accès de la carte, et le cas échéant le PIN1 si le porteur
   choisit de le conserver, sont stockés dans le trousseau Apple avec les
   attributs `WhenUnlockedThisDeviceOnly` et non synchronisables : jamais
@@ -174,9 +176,10 @@ RFC 8017.
 
 ## C. Cas d'un moyen de cryptologie relevant de la catégorie 3 de l'annexe 2 du décret n° 2007-663
 
-Le moyen relève de la catégorie 3 de l'annexe 2 du décret n° 2007-663
-du 2 mai 2007. Les éléments justificatifs demandés par le formulaire
-suivent, dans son ordre.
+Le déclarant estime que le moyen relève de la catégorie 3 de l'annexe 2
+du décret n° 2007-663 du 2 mai 2007 et sollicite cette qualification ;
+il appartient à l'ANSSI de l'apprécier. Les éléments justificatifs
+demandés par le formulaire suivent, dans son ordre.
 
 ### Présentez le mode de commercialisation du moyen de cryptologie et le marché auquel il s'adresse
 
@@ -214,9 +217,20 @@ demande est une première déclaration et n'en invoque aucune.
 
 ## E. Pièces jointes
 
-Documentation technique : le présent dossier. Le code source complet est
-publiquement accessible à l'adresse indiquée en C, ce qui couvre les
-éléments relatifs à la conception du moyen.
+Les pièces demandées par le formulaire, une par une :
+
+| Pièce demandée | État |
+|---|---|
+| Document général présentant la société | Sans objet : le déclarant est une personne physique. |
+| Extrait K bis de moins de trois mois | Sans objet : aucune société immatriculée. |
+| Brochure commerciale | Sans objet : le moyen est distribué sans brochure ; sa fiche publique de distribution en tient lieu. |
+| Brochure technique | Jointe : le présent dossier, rubriques B.2 et B.3. |
+| Manuel utilisateur | Sans objet : l'usage se limite à saisir le numéro d'accès et à présenter la carte, décrit en rubrique C. |
+| Guide administrateur | Sans objet : le moyen ne comporte aucune administration. |
+
+Le code source complet est publiquement accessible à l'adresse indiquée
+en rubrique C, ce qui couvre les éléments relatifs à la conception du
+moyen énumérés à la dernière page du formulaire.
 
 ## F. Signataire
 
@@ -334,7 +348,8 @@ Two functions, and nothing else:
    application on the contactless interface and refuses every read
    (`SW=6982`) until PACE has run. PACE is a password-authenticated key
    agreement keyed by the card access number printed on the card. It
-   establishes proximity and derives session keys; every exchange with
+   authenticates knowledge of the access number and derives session keys;
+   every exchange with
    the card afterwards is encrypted and authenticated under them.
 2. **Client authentication signatures.** The private key stays in the
    card, which performs the signature. The means formats the input,
@@ -382,7 +397,7 @@ The columns are those of section B.3.4 of the form.
 
 Corresponding standards: ECDH, RFC 5639 and BSI TR-03111; AES, FIPS 197
 with NIST SP 800-38A (CBC) and NIST SP 800-38B with RFC 4493 (CMAC);
-SHA-2, FIPS 180-4; ECDSA, FIPS 186-4 and ANSI X9.62; RSA, RFC 8017.
+SHA-2, FIPS 180-4; ECDSA, FIPS 186-5 and ANSI X9.62; RSA, RFC 8017.
 
 ### Key management (outside the form's sections)
 
@@ -390,7 +405,8 @@ SHA-2, FIPS 180-4; ECDSA, FIPS 186-4 and ANSI X9.62; RSA, RFC 8017.
   authority and never leave it. The means cannot read them and never
   holds them.
 - PACE session keys are ephemeral: derived per session, held in memory
-  only, destroyed when the session ends.
+  only, released when the session ends and never written to persistent
+  storage.
 - The card access number, and PIN1 when the holder chooses to keep it,
   are stored in the Apple keychain with the `WhenUnlockedThisDeviceOnly`
   and non-synchronizable attributes: never written to a backup, never
@@ -407,9 +423,10 @@ SHA-2, FIPS 180-4; ECDSA, FIPS 186-4 and ANSI X9.62; RSA, RFC 8017.
 
 ## C. Means falling under category 3 of annex 2 to decree No 2007-663
 
-The means falls under category 3 of annex 2 to decree No 2007-663 of
-2 May 2007. The supporting points the form asks for follow, in its
-order.
+The declarant considers that the means falls under category 3 of annex 2
+to decree No 2007-663 of 2 May 2007 and requests that qualification; it
+is for ANSSI to determine. The supporting points the form asks for
+follow, in its order.
 
 ### Present the means of commercialisation and the market it addresses
 
@@ -445,9 +462,20 @@ declaration and invokes none.
 
 ## E. Attachments
 
-Technical documentation: this dossier. The complete source code is
-publicly accessible at the address given in section C, which covers the
-design elements of the means.
+The items the form asks for, one by one:
+
+| Item requested | Status |
+|---|---|
+| General document presenting the company | Not applicable: the declarant is a private individual. |
+| Extract K bis less than three months old | Not applicable: no registered company. |
+| Commercial brochure | Not applicable: the means is distributed without one; its public listing serves instead. |
+| Technical brochure | Attached: this dossier, sections B.2 and B.3. |
+| User manual | Not applicable: use is limited to entering the access number and presenting the card, described in section C. |
+| Administrator guide | Not applicable: the means has no administration. |
+
+The complete source code is publicly accessible at the address given in
+section C, which covers the design elements listed on the form's final
+page.
 
 ## F. Signatory
 

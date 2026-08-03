@@ -16,9 +16,10 @@ supporting detail.
     ITSAppUsesNonExemptEncryption = true
 
 and must also carry `ITSEncryptionExportComplianceCode` once Apple
-issues one. Without the code App Store Connect refuses the upload with
-error 90592, and `Scripts/inspect-archive.sh` refuses the archive before
-that, locally, in about a second.
+issues one. Without the code App Store Connect blocks the build at
+submission with error 90592 -- the upload itself completes; it is the
+submission that stops -- and `Scripts/inspect-archive.sh` refuses the
+archive before that, locally, in about a second.
 
 ## App Purpose, as submitted
 
@@ -45,9 +46,11 @@ Swift, in `CardCore`, because no Apple framework speaks them:
 | ECDH on brainpoolP384r1 | `BrainpoolP384r1Values`, `PaceEstablishment` | The PACE key agreement. The curve is fixed by the card. |
 | AES-256 CBC | `SecureMessagingChannel` | Confidentiality of every APDU after PACE. |
 | AES-CMAC | `AesCmacValues`, `SecureMessagingChannel` | Integrity of every APDU after PACE. |
-| SHA-256, SHA-384 | `SigningHash`, via CryptoKit | Digests for signing and for key derivation. |
+| SHA-256 | `PaceKeyDerivation`, via CryptoKit | Deriving the PACE session keys. |
+| SHA-224, SHA-256, SHA-384, SHA-512 | `SigningHash`, `SigningAlgorithmResolver` | Digests for the signatures the card makes; which one is the calling service's choice. |
 | ECDSA P-384 | `EcdsaSignature` | Verifying what the card signed; the card holds the private key. |
 | RSA-3072 PKCS#1 v1.5 | `Rsa3072Pkcs1Sha256EncodedMessage` | The same, for card generations with an RSA authentication key. |
+| RSA-3072 PSS | `SigningAlgorithmResolver` | The shape TLS 1.3 asks for from an RSA card; the card computes it. |
 
 The suite PACE runs is
 `id-PACE-ECDH-GM-AES-CBC-CMAC-256` over brainpoolP384r1, which the card
@@ -72,8 +75,9 @@ exemption argued on "authentication only" would have to describe that
 channel as incidental, which it is not; it is the reason the card
 answers at all on the contactless interface.
 
-Declaring non-exempt costs a self-classification or CCATS filing and an
-annual French declaration. Declaring exempt on a judgement call costs
+Declaring non-exempt costs a self-classification or CCATS filing and a
+French declaration. The French one is not annual: it is made once for
+the means, and again only when what was declared changes. Declaring exempt on a judgement call costs
 credibility, in a product whose entire subject is identity. The cost was
 accepted deliberately rather than by default.
 
@@ -173,6 +177,21 @@ comfortably after the filing, not on it. There is no hurry toward the
 French market; if filing slips, move the market date before signing
 rather than shaving the month.
 
+### A correction to the US notice already sent
+
+The notification was prepared citing EAR 740.13(e). That paragraph was
+superseded in September 2016: the current provision for publicly
+available encryption source code is 742.15(b). Notifications made under
+740.13 *before* September 2016 remain valid; this one was not, so it
+cites a provision that no longer carries the requirement.
+
+Two things follow. The notice should be re-sent citing 742.15(b), which
+costs an email. And 742.15(b) is written for *non-standard*
+cryptography; ReFineID implements only published standard algorithms on
+published curves, so whether any notification is owed at all is worth
+settling before re-sending rather than after. BIS publishes the
+current text at https://www.bis.gov/regulations/ear/742.
+
 ### Where it goes
 
 Checked against ANSSI rather than recalled. The dossier is not filed on
@@ -183,8 +202,10 @@ its own: it is the technical documentation attached to ANSSI's own form.
 
        https://cyber.gouv.fr/documents/330/crypto_declaration-demande_autorisation_operations_annexe1_v2.pdf
 
-   The link to it from ANSSI's own page 404s; the address above is the
-   one that answers. Do not take annexe 2 instead: its title is
+   ANSSI's page links it at a `/sites/default/files/` path that returned
+   404 on 2026-08-03; the `/documents/330/` address above answered.
+   Check the page first -- a broken link is likelier to be fixed than
+   the document is to move. Do not take annexe 2 instead: its title is
    *Déclaration de fourniture d'une prestation de cryptologie*, and a
    prestation is a service. ReFineID supplies a *moyen*.
 
@@ -204,16 +225,21 @@ its own: it is the technical documentation attached to ANSSI's own form.
    untouched. Verified end to end: the result comes back from DVV as
    QES, PAdES-BASELINE-LTA, TOTAL_PASSED.
 
-   The form asks to be sent "en deux exemplaires", which is an
-   instruction for paper. One signed file is the electronic equivalent.
+   ANSSI's instruction names two artifacts -- the completed form as
+   saved, and a signed copy -- and asks for two exemplaires. Article
+   25(2) makes a qualified signature the legal equal of a handwritten
+   one, but it does not let us restate someone else's filing procedure
+   in our favour: eIDAS leaves procedural form requirements standing.
+   Send the saved form and the signed form both, and if only one file
+   is wanted, ask ANSSI in writing first and keep the answer.
 
    A qualified electronic signature has the legal effect of a
    handwritten one under Article 25(2) of Regulation (EU) No 910/2014,
    and France is bound by it. The form says the attestation must be
-   "daté et signée"; it does not say by hand.
+   "datée et signée"; it does not say by hand.
 4. Email `controle@ssi.gouv.fr`, subject `[formalités] ReFineID - ReFineID`,
-   attaching the signed form and this dossier as the technical
-   documentation.
+   attaching the completed form as saved, the signed form, and this
+   dossier as the technical documentation.
 
 The form's own sections are A declarant, B the means, C category 3,
 D renewal of a transfer or export authorisation, E documents attached,
@@ -230,9 +256,12 @@ By post instead, if preferred:
 
 What comes back is an *attestation de déclaration*. That attestation is
 what proves the obligation was met and what App Store Connect wants at
-step 3. Ask for the *grand public* classification at declaration time
-rather than afterwards; ANSSI rules on it within two months of the date
-of receipt shown on the attestation.
+step 3. Ask for the *grand public* classification at declaration time rather
+than afterwards; ANSSI rules on it within two months of the date of
+receipt shown on the attestation. Until that ruling arrives the
+classification is requested, not held: do not lean on category 3 for
+exports outside the Union in the meantime, and treat the declaration
+timetable as the one that applies.
 
 ## What is still needed
 
