@@ -198,10 +198,12 @@ catégorie 3 de l'annexe 2 du décret n° 2007-663 du 2 mai 2007. Les
 Distribution au grand public, sans négociation, sans personnalisation
 et sans contrat particulier. Le canal principal est l'App Store
 d'Apple ; d'autres canaux peuvent s'y ajouter, selon les mêmes
-modalités. Le marché
-visé est le porteur d'une carte nationale d'identité finlandaise
-souhaitant s'authentifier auprès de services en ligne. Le code source est
-public :
+modalités. Le marché visé est celui des porteurs d'une carte nationale
+d'identité finlandaise souhaitant s'authentifier auprès de services en
+ligne, où qu'ils résident. C'est à ce titre que le moyen est fourni en
+France : un porteur établi ou de passage en France l'y installe et l'y
+utilise comme ailleurs, l'App Store le distribuant sans restriction de
+territoire. Le code source est public :
 
 https://github.com/ReFineID/ReFineID-Apple
 
@@ -475,8 +477,11 @@ supporting points follow.
 Distributed to the general public, with no negotiation, no
 customisation and no individual contract. The principal channel is the
 Apple App Store; other channels may be added, on the same terms. The
-target market is the holder of a Finnish national identity card wishing
-to authenticate to online services. The source code is public:
+target market is holders of a Finnish national identity card wishing to
+authenticate to online services, wherever they live. That is why the
+means is supplied in France: a holder resident in or travelling through
+France installs and uses it there as anywhere else, the App Store
+distributing without territorial restriction. The source code is public:
 
 https://github.com/ReFineID/ReFineID-Apple
 
