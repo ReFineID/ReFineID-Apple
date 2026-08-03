@@ -9,12 +9,10 @@ Dossier de déclaration au titre de l'article 30 de la loi n° 2004-575
 du 21 juin 2004 pour la confiance dans l'économie numérique (LCEN) et du
 décret n° 2007-663 du 2 mai 2007 pris pour son application.
 
-La déclaration est faite au titre du chapitre II, sans préjudice de
-l'application du II de l'article 30, qui affranchit de toute formalité
-les moyens assurant exclusivement des fonctions d'authentification ou de
-contrôle d'intégrité. Le déclarant ne préjuge pas de cette
-qualification et prie l'ANSSI de bien vouloir lui indiquer si elle
-s'applique au moyen décrit ci-après.
+ReFineID est un moyen de cryptologie assurant, outre des fonctions
+d'authentification, d'intégrité et de signature, une fonction de
+confidentialité : le canal établi avec la carte est chiffré. Sa
+fourniture relève à ce titre du régime de déclaration du chapitre II.
 
 Le présent document constitue la déclaration. Il est établi selon
 l'annexe I de l'ANSSI, dont il reprend les rubriques A à F dans le même
@@ -311,11 +309,10 @@ rappelées en pied de page.
 
 # English version
 
-The declaration is made under chapter II, without prejudice to the
-application of article 30 II, which frees from every formality a means
-providing exclusively authentication or integrity-control functions. The
-declarant does not prejudge that qualification and asks ANSSI to state
-whether it applies to the means described below.
+ReFineID is a means of cryptology which, besides authentication,
+integrity and signature functions, provides a confidentiality function:
+the channel it establishes with the card is encrypted. Its supply
+accordingly falls under the declaration regime of chapter II.
 
 This document is the declaration. It is drawn up according to ANSSI's
 annexe I, following sections A to F in the same order, under their

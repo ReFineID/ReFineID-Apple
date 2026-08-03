@@ -75,6 +75,15 @@ exemption argued on "authentication only" would have to describe that
 channel as incidental, which it is not; it is the reason the card
 answers at all on the contactless interface.
 
+There is a plainer reason too, and it settles the question before the
+argument starts. The point of filing is the attestation, and the
+attestation is what App Store Connect wants. An exemption produces no
+attestation: a ruling that no formality is required leaves nothing to
+hand Apple. So the exemption is not a prize to be argued for -- winning
+it would be the worst outcome available. The declaration claims what the
+means does and asks the agency to acknowledge it; it does not invite the
+agency to consider whether the claim was necessary.
+
 Declaring non-exempt costs a self-classification or CCATS filing and a
 French declaration. The French one is not annual: it is made once for
 the means, and again only when what was declared changes. Declaring exempt on a judgement call costs
