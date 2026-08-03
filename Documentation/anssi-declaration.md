@@ -16,11 +16,11 @@ l'annexe I de l'ANSSI, dont il reprend les rubriques A à F dans le même
 ordre, sous leurs intitulés ou leur équivalent : chaque question y
 trouve sa réponse, à sa place.
 
-Nature de la demande : deuxième case du formulaire, **déclaration de
-fourniture, de transfert depuis ou vers un État membre de l'Union
-européenne, d'importation et d'exportation vers un État n'appartenant
-pas à l'Union européenne** d'un moyen de cryptologie, au titre du seul
-chapitre II du décret n° 2007-663.
+Nature de la demande : **déclaration de fourniture, de transfert depuis
+ou vers un État membre de l'Union européenne, d'importation et
+d'exportation vers un État n'appartenant pas à l'Union européenne**
+d'un moyen de cryptologie, au titre du seul chapitre II du décret
+n° 2007-663.
 
 La distribution, notamment par l'App Store d'Apple, n'est pas
 limitée à la France : la fourniture, le transfert vers les autres États
@@ -174,7 +174,7 @@ FIPS 197 avec NIST SP 800-38A (CBC) et NIST SP 800-38B avec RFC 4493
 (CMAC) ; SHA-2, FIPS 180-4 ; ECDSA, FIPS 186-5 et ANSI X9.62 ; RSA,
 RFC 8017.
 
-#### Gestion des clés (hors rubriques du formulaire)
+#### Gestion des clés
 
 - Les clés privées sont générées dans la carte par l'autorité émettrice
   et n'en sortent jamais. Le moyen ne peut pas les lire et ne les détient
@@ -212,8 +212,8 @@ RFC 8017.
 
 ## C. Cas d'un moyen de cryptologie relevant de la catégorie 3 de l'annexe 2 du décret n° 2007-663 du 2 mai 2007
 
-Case cochée : le déclarant déclare que le moyen de cryptologie relève de
-la catégorie 3 de l'annexe 2 du décret n° 2007-663 du 2 mai 2007. Les
+Le déclarant déclare que le moyen de cryptologie relève de la
+catégorie 3 de l'annexe 2 du décret n° 2007-663 du 2 mai 2007. Les
 éléments justificatifs demandés par le formulaire suivent, dans son
 ordre. Il appartient à l'ANSSI d'apprécier cette qualification ; dans
 l'attente de son appréciation, celle-ci n'est pas présentée comme
@@ -270,7 +270,7 @@ Les pièces demandées par le formulaire, une par une :
 
 Le code source complet est publiquement accessible à l'adresse indiquée
 en rubrique C, ce qui couvre les éléments relatifs à la conception du
-moyen énumérés à la dernière page du formulaire.
+moyen.
 
 ## F. Attestation
 
@@ -336,10 +336,10 @@ annexe I, following sections A to F in the same order, under their
 headings or a close equivalent: every question is answered here, in
 its place.
 
-Nature of the request: the form's second checkbox, **declaration of
-supply, of transfer from or to a member state of the European Union, of
-import and of export to a state outside the European Union** of a means
-of cryptology, under chapter II of decree No 2007-663 alone.
+Nature of the request: **declaration of supply, of transfer from or to
+a member state of the European Union, of import and of export to a
+state outside the European Union** of a means of cryptology, under
+chapter II of decree No 2007-663 alone.
 
 Distribution -- through Apple's App Store among other channels -- is
 not confined to France: supply, transfer to other member states and export outside the
@@ -480,7 +480,7 @@ Corresponding standards: ECDH, RFC 5639 and BSI TR-03111; AES, FIPS 197
 with NIST SP 800-38A (CBC) and NIST SP 800-38B with RFC 4493 (CMAC);
 SHA-2, FIPS 180-4; ECDSA, FIPS 186-5 and ANSI X9.62; RSA, RFC 8017.
 
-#### Key management (outside the form's sections)
+#### Key management
 
 - The card's private keys are generated on the card by the issuing
   authority and never leave it. The means cannot read them and never
@@ -514,8 +514,8 @@ SHA-2, FIPS 180-4; ECDSA, FIPS 186-5 and ANSI X9.62; RSA, RFC 8017.
 
 ## C. Case of a means of cryptology falling within category 3 of annex 2 to decree No 2007-663 of 2 May 2007
 
-Box ticked: the declarant declares that the means of cryptology falls
-within category 3 of annex 2 to decree No 2007-663 of 2 May 2007. The
+The declarant declares that the means of cryptology falls within
+category 3 of annex 2 to decree No 2007-663 of 2 May 2007. The
 supporting points the form asks for follow, in its order. It is for
 ANSSI to assess that qualification; until it has, the qualification is
 not presented as held.
@@ -564,11 +564,10 @@ The items the form asks for, one by one:
 | Commercial brochure | Not applicable: the means is distributed without one; its public listing serves instead. |
 | Technical brochure | Attached: this dossier, sections B.2 and B.3. |
 | User manual | Not applicable: use is limited to entering the access number and presenting the card, described in section C. |
-| Administrator guide | Not applicable: the means has no administration. |
+| Administrator guide | Not applicable: the means has no administration function. |
 
 The complete source code is publicly accessible at the address given in
-section C, which covers the design elements listed on the form's final
-page.
+section C, which covers the design elements.
 
 ## F. Attestation
 
