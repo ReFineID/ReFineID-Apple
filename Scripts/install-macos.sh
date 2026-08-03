@@ -153,13 +153,14 @@ verify_signature "$installed"
 remove_stray_copies
 rm -rf "$derived_data"
 
-# The system registers the extension when the containing app is seen.
-# The app is then quit again, and that matters: its status screen takes
-# an exclusive card session, and a card is exclusive. Left running, it
-# holds the card while the token extension is trying to sign, and the
-# signature blocks on the retry-floor probe with no error and no
-# timeout -- waiting for another process to release the card is not
-# something any protocol timer covers.
+# The system registers the extension when the containing app is seen,
+# and the app is quit again afterwards so a fresh install leaves nothing
+# running that the holder did not open themselves.
+#
+# The window no longer reads the card at all, so it can no longer hold
+# it while the extension signs -- that fault is fixed at the source. The
+# quit stays because Diagnostics and the Card manager still do card I/O
+# on request, and an installer should not leave either of them up.
 note "registering the extension"
 open -a "$installed"
 sleep 3
@@ -170,4 +171,3 @@ note "app quit so it does not hold the card"
 
 report_registrations
 note "done. Remove and re-insert the card so ctkd asks the new driver for a token."
-note "keep the app closed while signing: it takes the card exclusively."
