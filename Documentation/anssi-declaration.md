@@ -88,13 +88,11 @@ cryptographiques).
 
 Deux fonctions, et aucune autre :
 
-1. **Établissement d'un canal sécurisé avec la carte.** La carte bloque
-   l'accès à son application PKCS#15 sur l'interface sans contact et refuse toute
-   lecture tant que PACE n'a pas été exécuté. PACE est un
-   accord de clés authentifié par mot de passe, fondé sur le numéro
-   d'accès imprimé sur la carte. Il établit la preuve de la connaissance du numéro d'accès et dérive des
-   clés de session ; tous les échanges ultérieurs avec la carte sont
-   chiffrés et authentifiés au moyen de ces clés.
+1. **Établissement d'un canal sécurisé avec la carte.** La carte refuse
+   toute lecture de son application PKCS#15 sur l'interface sans contact
+   tant que PACE n'a pas été exécuté. PACE dérive des clés de session à
+   partir du numéro d'accès imprimé sur la carte ; tous les échanges
+   ultérieurs sont chiffrés et authentifiés au moyen de ces clés.
 2. **Signatures d'authentification client.** La clé privée reste dans la
    carte, qui réalise la signature. Le moyen met en forme l'entrée, la
    transmet à la carte, et vérifie le résultat avec la clé publique de la
@@ -210,7 +208,7 @@ Sans objet : première déclaration, aucune autorisation antérieure.
 | Extrait K bis de moins de trois mois | Sans objet : aucune société immatriculée. |
 | Brochure commerciale | Sans objet : le moyen est distribué sans brochure ; sa page sur l'App Store en tient lieu. |
 | Brochure technique | Jointe : le présent dossier, rubriques B.2 et B.3. |
-| Manuel utilisateur | Sans objet : l'usage se limite à saisir le numéro d'accès imprimé sur la carte et à présenter celle-ci. |
+| Manuel utilisateur | Sans objet : le moyen est distribué sans manuel. |
 | Guide administrateur | Sans objet : le moyen ne comporte aucune fonction d'administration. |
 
 ## F. Attestation
@@ -333,13 +331,11 @@ functions, falls outside its scope.
 
 Two functions, and nothing else:
 
-1. **Opening a secure channel to the card.** The card seals its PKCS#15
-   application on the contactless interface and refuses every read
-   until PACE has run. PACE is a password-authenticated key
-   agreement keyed by the card access number printed on the card. It
-   authenticates knowledge of the access number and derives session keys;
-   every exchange with
-   the card afterwards is encrypted and authenticated under them.
+1. **Opening a secure channel to the card.** The card refuses every read
+   of its PKCS#15 application on the contactless interface until PACE has
+   run. PACE derives session keys from the card access number printed on
+   the card; every exchange afterwards is encrypted and authenticated
+   under them.
 2. **Client authentication signatures.** The private key stays in the
    card, which performs the signature. The means formats the input,
    passes it to the card, and verifies the result against the card's own
@@ -449,7 +445,7 @@ Not applicable: a first declaration, with no prior authorisation.
 | Extract K bis less than three months old | Not applicable: no registered company. |
 | Commercial brochure | Not applicable: the means is distributed without one; its public listing serves instead. |
 | Technical brochure | Attached: this dossier, sections B.2 and B.3. |
-| User manual | Not applicable: use is limited to entering the access number printed on the card and presenting it. |
+| User manual | Not applicable: the means is distributed without one. |
 | Administrator guide | Not applicable: the means has no administration function. |
 
 ## F. Attestation
