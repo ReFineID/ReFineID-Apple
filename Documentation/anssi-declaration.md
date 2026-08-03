@@ -22,14 +22,11 @@ l'article 30 soumet à autorisation, ne sont pas de son fait.
 
 Le déclarant demande la délivrance de l'attestation de déclaration.
 
-Le dossier est établi en français et suivi d'une version anglaise.
-
 ## A. Déclarant et/ou demandeur
 
 Le déclarant est un particulier. ReFineID est un nom commercial qu'il
-emploie en son nom propre ; il ne désigne aucune personne morale. Il n'y
-a ni dénomination sociale, ni numéro SIRET, ni société pour le compte de
-laquelle la déclaration serait faite.
+emploie en son nom propre : ni dénomination sociale, ni numéro SIRET,
+ni personne morale.
 
 | Champ | Valeur |
 |:---------------------------|:-----------------------------------------------|
@@ -39,11 +36,8 @@ laquelle la déclaration serait faite.
 | Numéro de téléphone | +358 44 956 4098 |
 | Adresse de courrier électronique | petri.koistinen@iki.fi |
 
-Personne que l'ANSSI peut contacter pour obtenir des informations
-techniques sur le moyen : la même, aux mêmes coordonnées.
-
-Le déclarant est également le fabricant du moyen ; la rubrique relative
-à un fabricant tiers est sans objet.
+Contact technique : le déclarant, aux mêmes coordonnées. Il est
+également le fabricant du moyen.
 
 ## B. Moyen de cryptologie auquel s'appliquent la déclaration et/ou la demande d'autorisation
 
@@ -63,7 +57,7 @@ Le déclarant est également le fabricant du moyen ; la rubrique relative
 
 #### B.2.1. Classez le moyen dans la ou les catégorie(s) correspondante(s)
 
-**Logiciel.** Le moyen ne comporte aucun élément matériel.
+**Logiciel.**
 
 #### B.2.2. Description générale du moyen
 
@@ -86,8 +80,7 @@ cryptographiques diffèrent, n'entre pas dans son champ.
 #### B.2.3. Indiquez à quelle catégorie se rapporte la fonction principale du moyen
 
 **Sécurité de l'information** (bibliothèque et intergiciel
-cryptographiques). Aucune des autres catégories proposées -- ordinateur,
-envoi/stockage/réception d'informations, réseau -- ne s'applique.
+cryptographiques).
 
 ### B.3. Description technique des services de cryptologie fournis
 
@@ -132,8 +125,7 @@ le système d'exploitation ; le moyen ne met en œuvre aucune pile TLS et
 se borne à fournir la signature calculée par la carte.
 
 Autres protocoles : PACE selon ICAO Doc 9303 partie 11 et BSI
-TR-03110-3 ; messagerie sécurisée selon ISO/IEC 7816-4. Les algorithmes
-et longueurs de clé correspondants figurent en rubrique B.3.4.
+TR-03110-3 ; messagerie sécurisée selon ISO/IEC 7816-4.
 
 #### B.3.4. Précisez les algorithmes cryptographiques utilisés et leurs longueurs maximales de clés
 
@@ -155,9 +147,7 @@ internationaux ; aucun n'est propriétaire.
 | RSA | PSS | 3072 bits | Signature d'authentification client |
 
 La fonction de condensation des signatures ECDSA est choisie par le
-service appelant parmi SHA-224, SHA-256, SHA-384 et SHA-512 ; les cartes
-à clé RSA n'emploient que SHA-256. La vérification locale est faite au moyen de la clé
-publique de la carte avant que la signature ne soit rendue au système.
+service appelant ; les cartes à clé RSA n'emploient que SHA-256.
 
 Normes correspondantes : ECDH, RFC 5639 et BSI TR-03111 ; AES,
 FIPS 197 avec NIST SP 800-38A (CBC) et NIST SP 800-38B avec RFC 4493
@@ -177,9 +167,7 @@ RFC 8017.
 
 ## C. Cas d'un moyen de cryptologie relevant de la catégorie 3 de l'annexe 2 du décret n° 2007-663 du 2 mai 2007
 
-Le déclarant déclare que le moyen de cryptologie relève de la
-catégorie 3 de l'annexe 2 du décret n° 2007-663 du 2 mai 2007. Les
-éléments justificatifs suivent.
+Le déclarant déclare que le moyen relève de la catégorie 3.
 
 ### Présentez le mode de commercialisation du moyen de cryptologie et le marché auquel il s'adresse
 
@@ -224,10 +212,6 @@ Sans objet : première déclaration, aucune autorisation antérieure.
 | Brochure technique | Jointe : le présent dossier, rubriques B.2 et B.3. |
 | Manuel utilisateur | Sans objet : l'usage se limite à saisir le numéro d'accès imprimé sur la carte et à présenter celle-ci. |
 | Guide administrateur | Sans objet : le moyen ne comporte aucune fonction d'administration. |
-
-Le code source complet est publiquement accessible à l'adresse indiquée
-en rubrique C, ce qui couvre les éléments relatifs à la conception du
-moyen.
 
 ## F. Attestation
 
@@ -289,9 +273,8 @@ déclaration.
 ## A. Declarant and/or applicant
 
 The declarant is an individual. ReFineID is a trading name he uses in a
-personal capacity; it names no legal entity. There is no registered
-company name, no SIRET number, and no company on whose behalf the
-declaration is made.
+personal capacity: no registered company name, no SIRET number, no legal
+entity.
 
 | Field | Value |
 |:---------------------------|:-----------------------------------------------|
@@ -301,9 +284,8 @@ declaration is made.
 | Telephone | +358 44 956 4098 |
 | Email | petri.koistinen@iki.fi |
 
-Technical contact for ANSSI: the same person, same details. The declarant
-is also the manufacturer, so the third-party manufacturer section does
-not apply.
+Technical contact: the declarant, same details. He is also the
+manufacturer.
 
 ## B. Means of cryptology to which the declaration and/or the authorisation request applies
 
@@ -323,7 +305,7 @@ not apply.
 
 #### B.2.1. Classification of the means
 
-**Software.** The means contains no hardware component.
+**Software.**
 
 #### B.2.2. General description of the means
 
@@ -343,9 +325,7 @@ functions, falls outside its scope.
 
 #### B.2.3. Category of the principal function
 
-**Information security** (cryptographic library and middleware). None of
-the other categories offered -- computer, sending/storage/reception of
-information, network -- applies.
+**Information security** (cryptographic library and middleware).
 
 ### B.3. Technical description
 
@@ -388,8 +368,7 @@ operating system; the means implements no TLS stack and contributes only
 the card's signature.
 
 Other protocols: PACE as specified in ICAO Doc 9303 part 11 and BSI
-TR-03110-3; secure messaging as specified in ISO/IEC 7816-4. The
-corresponding algorithms and key lengths are in section B.3.4.
+TR-03110-3; secure messaging as specified in ISO/IEC 7816-4.
 
 #### B.3.4. Cryptographic algorithms used and their maximum key lengths
 
@@ -409,10 +388,8 @@ published by international standards bodies; none is proprietary.
 | RSA | PKCS#1 v1.5 | 3072 bits | Signed by the card, verified locally |
 | RSA | PSS | 3072 bits | Signed by the card, verified locally |
 
-The digest for an ECDSA signature is chosen by the calling service from
-SHA-224, SHA-256, SHA-384 and SHA-512; RSA card generations use SHA-256
-alone. Local verification is against the card's own public key, before
-the signature is returned to the system.
+The digest for an ECDSA signature is chosen by the calling service; RSA
+card generations use SHA-256 alone.
 
 Corresponding standards: ECDH, RFC 5639 and BSI TR-03111; AES, FIPS 197
 with NIST SP 800-38A (CBC) and NIST SP 800-38B with RFC 4493 (CMAC);
@@ -431,9 +408,7 @@ SHA-2, FIPS 180-4; ECDSA, FIPS 186-5 and ANSI X9.62; RSA, RFC 8017.
 
 ## C. Case of a means of cryptology falling within category 3 of annex 2 to decree No 2007-663 of 2 May 2007
 
-The declarant declares that the means of cryptology falls within
-category 3 of annex 2 to decree No 2007-663 of 2 May 2007. The
-supporting points follow.
+The declarant declares that the means falls within category 3.
 
 ### Present the means of commercialisation and the market it addresses
 
@@ -476,9 +451,6 @@ Not applicable: a first declaration, with no prior authorisation.
 | Technical brochure | Attached: this dossier, sections B.2 and B.3. |
 | User manual | Not applicable: use is limited to entering the access number printed on the card and presenting it. |
 | Administrator guide | Not applicable: the means has no administration function. |
-
-The complete source code is publicly accessible at the address given in
-section C, which covers the design elements.
 
 ## F. Attestation
 
