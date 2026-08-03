@@ -176,6 +176,10 @@ publiquement accessible à l'adresse indiquée en C, ce qui couvre les
 | Société | ReFineID |
 | Date | 3 août 2026 |
 
+```{=typst}
+#v(1fr)
+```
+
 ---
 
 *Ce document est signé électroniquement. La signature est une signature
@@ -354,6 +358,10 @@ design elements of the means.
 | Capacity | Supplier and author of the means |
 | Company | ReFineID |
 | Date | 3 August 2026 |
+
+```{=typst}
+#v(1fr)
+```
 
 ---
 
