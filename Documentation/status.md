@@ -9,7 +9,7 @@ device and Mac runs through 2026-08-03, not from intent.
 placeholders, sections numbered to ANSSI's annexe I field by field,
 declared as a private individual, French proofread (aspell plus a close
 reading; the legal basis was corrected to LCEN article 30 on the way).
-Signed with the card at PAdES-BASELINE-LTA -- three qualified timestamp
+Signed with the card at PAdES-BASELINE-LTA -- qualified timestamp
 authorities, validation material embedded, archive timestamp -- and
 confirmed by two independent validators on 2026-08-03:
 
@@ -23,9 +23,12 @@ against DVV on a real card. ANSSI's own annexe I form (an XFA PDF) was
 also signed and validated the same way, so nothing in the filing needs
 ink.
 
-What remains is human: fill annexe I in Adobe Reader, have the French
-read by a native speaker, and email the form plus dossier to
-`controle@ssi.gouv.fr`. Steps and pitfalls -- including which annexe is
+What remains is human: have the French read by a native speaker, then
+render, sign and email the declaration to `controle@ssi.gouv.fr`.
+ANSSI's annexe I is a template rather than the document -- filling one
+is how you obtain the other -- and this declaration carries the same
+content under the same headings in the same order, so nothing needs to
+be typed into Adobe Reader. Steps and pitfalls -- including which annexe is
 the right one and why the other looks right but is not -- are in
 `export-compliance.md`.
 
