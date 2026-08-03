@@ -22,7 +22,7 @@ The equivalent US notice is in `Documentation/export-compliance.md`
 | Supplier | ReFineID |
 | Contact | Petri Koistinen, petri.koistinen@refineid.fi |
 | Country of establishment | Finland |
-| Postal address | *to be completed on the form* |
+| Postal address | Niittaajankatu 8a A 21, 00810 Helsinki, Finland |
 
 ## Product
 
@@ -108,7 +108,7 @@ ISO/IEC 7816-4.
 | Fournisseur | ReFineID |
 | Contact | Petri Koistinen, petri.koistinen@refineid.fi |
 | Pays d'établissement | Finlande |
-| Adresse postale | *à compléter sur le formulaire* |
+| Adresse postale | Niittaajankatu 8a A 21, 00810 Helsinki, Finlande |
 
 ## Produit
 
