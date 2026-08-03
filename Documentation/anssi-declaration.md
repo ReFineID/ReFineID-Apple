@@ -39,9 +39,8 @@ Le dossier est établi en français et suivi d'une version anglaise.
 
 ## A. Déclarant et/ou demandeur
 
-Le déclarant est un particulier (rubrique A.2 du formulaire). ReFineID
-est un nom commercial employé par le déclarant en son nom propre ; il ne
-désigne aucune personne morale. La rubrique A.1 est sans objet : il n'y
+Le déclarant est un particulier. ReFineID est un nom commercial qu'il
+emploie en son nom propre ; il ne désigne aucune personne morale. Il n'y
 a ni dénomination sociale, ni numéro SIRET, ni société pour le compte de
 laquelle la déclaration serait faite.
 
@@ -111,7 +110,7 @@ Deux fonctions, et aucune autre :
 
 1. **Établissement d'un canal sécurisé avec la carte.** La carte bloque
    l'accès à son application PKCS#15 sur l'interface sans contact et refuse toute
-   lecture (`SW=6982`) tant que PACE n'a pas été exécuté. PACE est un
+   lecture tant que PACE n'a pas été exécuté. PACE est un
    accord de clés authentifié par mot de passe, fondé sur le numéro
    d'accès imprimé sur la carte. Il établit la preuve de la connaissance du numéro d'accès et dérive des
    clés de session ; tous les échanges ultérieurs avec la carte sont
@@ -159,8 +158,6 @@ moyen ; l'AES en mode CBC est appelé dans CommonCrypto ; SHA-2 est appelé
 dans CryptoKit ; la vérification des signatures ECDSA et RSA est faite
 par Security.framework. Tous les algorithmes sont publiés par des
 organismes de normalisation internationaux ; aucun n'est propriétaire.
-
-Les colonnes reprennent celles de la rubrique B.3.4 du formulaire.
 
 | Algorithme | Mode | Taille de clé | Fonction |
 |:-------------------|:-------------|:------------|:-------------------------------|
@@ -223,8 +220,7 @@ RFC 8017.
 
 Le déclarant déclare que le moyen de cryptologie relève de la
 catégorie 3 de l'annexe 2 du décret n° 2007-663 du 2 mai 2007. Les
-éléments justificatifs demandés par le formulaire suivent, dans son
-ordre. Il appartient à l'ANSSI d'apprécier cette qualification ; dans
+éléments justificatifs suivent. Il appartient à l'ANSSI d'apprécier cette qualification ; dans
 l'attente de son appréciation, celle-ci n'est pas présentée comme
 acquise.
 
@@ -266,7 +262,7 @@ demande est une première déclaration et n'en invoque aucune.
 
 ## E. Pièces à joindre
 
-Les pièces demandées par le formulaire, une par une :
+Les pièces, une par une :
 
 | Pièce demandée | État |
 |:---------------------------|:-----------------------------------------------|
@@ -367,10 +363,10 @@ No authorisation under chapter III is requested.
 
 ## A. Declarant and/or applicant
 
-An individual (section A.2 of the form). ReFineID is a trading name
-used by the declarant in a personal capacity; it names no legal entity.
-Section A.1 does not apply: there is no registered company name, no
-SIRET number, and no company on whose behalf the declaration is made.
+The declarant is an individual. ReFineID is a trading name he uses in a
+personal capacity; it names no legal entity. There is no registered
+company name, no SIRET number, and no company on whose behalf the
+declaration is made.
 
 | Field | Value |
 |:---------------------------|:-----------------------------------------------|
@@ -434,7 +430,7 @@ Two functions, and nothing else:
 
 1. **Opening a secure channel to the card.** The card seals its PKCS#15
    application on the contactless interface and refuses every read
-   (`SW=6982`) until PACE has run. PACE is a password-authenticated key
+   until PACE has run. PACE is a password-authenticated key
    agreement keyed by the card access number printed on the card. It
    authenticates knowledge of the access number and derives session keys;
    every exchange with
@@ -479,8 +475,6 @@ operations and the CMAC are written in the means; AES in CBC mode is
 called in CommonCrypto; SHA-2 is called in CryptoKit; ECDSA and RSA
 signature verification is done by Security.framework. All algorithms are
 published by international standards bodies; none is proprietary.
-
-The columns are those of section B.3.4 of the form.
 
 | Algorithm | Mode | Key size | Function |
 |:-------------------|:-------------|:------------|:-------------------------------|
@@ -538,7 +532,7 @@ SHA-2, FIPS 180-4; ECDSA, FIPS 186-5 and ANSI X9.62; RSA, RFC 8017.
 
 The declarant declares that the means of cryptology falls within
 category 3 of annex 2 to decree No 2007-663 of 2 May 2007. The
-supporting points the form asks for follow, in its order. It is for
+supporting points follow. It is for
 ANSSI to assess that qualification; until it has, the qualification is
 not presented as held.
 
@@ -577,7 +571,7 @@ declaration and invokes none.
 
 ## E. Documents to attach
 
-The items the form asks for, one by one:
+The items, one by one:
 
 | Item requested | Status |
 |:---------------------------|:-----------------------------------------------|
