@@ -111,18 +111,18 @@ Deux fonctions, et aucune autre :
    l'accès à son application PKCS#15 sur l'interface sans contact et refuse toute
    lecture (`SW=6982`) tant que PACE n'a pas été exécuté. PACE est un
    accord de clés authentifié par mot de passe, fondé sur le numéro
-   d'accès imprimé sur la carte. Il authentifie la connaissance du numéro d'accès et dérive des
+   d'accès imprimé sur la carte. Il établit la preuve de la connaissance du numéro d'accès et dérive des
    clés de session ; tous les échanges ultérieurs avec la carte sont
-   chiffrés et authentifiés sous ces clés.
+   chiffrés et authentifiés au moyen de ces clés.
 2. **Signatures d'authentification client.** La clé privée reste dans la
    carte, qui réalise la signature. Le moyen met en forme l'entrée, la
    transmet à la carte, et vérifie le résultat avec la clé publique de la
-   carte avant de le rendre au système d'exploitation.
+   carte avant de le restituer au système d'exploitation.
 
 Le moyen ne chiffre pas les données de l'utilisateur au repos, ne chiffre
 ni fichiers ni supports de stockage, n'offre ni messagerie ni téléphonie
 chiffrées, ne met en œuvre aucun réseau privé virtuel (VPN) ni tunnel de transport, et
-n'effectue aucune communication réseau propre.
+n'établit par lui-même aucune communication réseau.
 
 #### B.3.2. Indiquez à quelle(s) catégorie(s) se rapporte(nt) la ou les fonctions cryptographiques du moyen
 
@@ -160,13 +160,13 @@ Les colonnes reprennent celles de la rubrique B.3.4 du formulaire.
 | AES | CMAC | 256 bits | Intégrité de chaque APDU après PACE |
 | SHA-256 | s.o. | s.o. | Dérivation des clés de session PACE |
 | SHA-224, SHA-256, SHA-384, SHA-512 | s.o. | s.o. | Condensats des signatures d'authentification |
-| ECDSA sur NIST P-384 | s.o. | 384 bits | Signée par la carte, vérifiée localement |
-| RSA | PKCS#1 v1.5 | 3072 bits | Signée par la carte, vérifiée localement |
-| RSA | PSS | 3072 bits | Signée par la carte, vérifiée localement |
+| ECDSA sur NIST P-384 | s.o. | 384 bits | Signature d'authentification client |
+| RSA | PKCS#1 v1.5 | 3072 bits | Signature d'authentification client |
+| RSA | PSS | 3072 bits | Signature d'authentification client |
 
-Le condensat des signatures ECDSA est choisi par le service appelant
-parmi SHA-224, SHA-256, SHA-384 et SHA-512 ; les cartes à clé RSA
-n'emploient que SHA-256. La vérification locale est faite contre la clé
+La fonction de condensation des signatures ECDSA est choisie par le
+service appelant parmi SHA-224, SHA-256, SHA-384 et SHA-512 ; les cartes
+à clé RSA n'emploient que SHA-256. La vérification locale est faite au moyen de la clé
 publique de la carte avant que la signature ne soit rendue au système.
 
 Normes correspondantes : ECDH, RFC 5639 et BSI TR-03111 ; AES,
@@ -180,7 +180,7 @@ RFC 8017.
   et n'en sortent jamais. Le moyen ne peut pas les lire et ne les détient
   jamais.
 - Les clés de session PACE sont éphémères : dérivées par session, gardées
-  en mémoire seulement, abandonnées à la fin de la session et jamais
+  en mémoire seulement, libérées à la fin de la session et jamais
   écrites sur un support persistant.
 - Sur iOS et iPadOS, le numéro d'accès de la carte, et le cas échéant le
   PIN1 si le porteur choisit de le conserver, sont conservés dans le
@@ -263,10 +263,10 @@ Les pièces demandées par le formulaire, une par une :
 |:---------------------------|:-----------------------------------------------|
 | Document général présentant la société | Sans objet : le déclarant est une personne physique. |
 | Extrait K bis de moins de trois mois | Sans objet : aucune société immatriculée. |
-| Brochure commerciale | Sans objet : le moyen est distribué sans brochure ; sa fiche publique de distribution en tient lieu. |
+| Brochure commerciale | Sans objet : le moyen est distribué sans brochure ; sa page sur l'App Store en tient lieu. |
 | Brochure technique | Jointe : le présent dossier, rubriques B.2 et B.3. |
 | Manuel utilisateur | Sans objet : l'usage se limite à saisir le numéro d'accès et à présenter la carte, décrit en rubrique C. |
-| Guide administrateur | Sans objet : le moyen ne comporte aucune administration. |
+| Guide administrateur | Sans objet : le moyen ne comporte aucune fonction d'administration. |
 
 Le code source complet est publiquement accessible à l'adresse indiquée
 en rubrique C, ce qui couvre les éléments relatifs à la conception du
