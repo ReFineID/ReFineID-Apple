@@ -298,8 +298,8 @@ its own: it is the technical documentation attached to ANSSI's own form.
    *Déclaration de fourniture d'une prestation de cryptologie*, and a
    prestation is a service, not a moyen.
 
-2. Render and sign, three qualified authorities and an archive
-   timestamp, as above. Nothing is printed and nothing is scanned: a
+2. Render and sign with `--timestamp eu-qualified --archive`, as
+   above. Nothing is printed and nothing is scanned: a
    qualified electronic signature has the legal effect of a handwritten
    one under Article 25(2) of Regulation (EU) No 910/2014, and the
    attestation requires the declaration to be "datée et signée", not
