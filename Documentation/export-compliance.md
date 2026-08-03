@@ -155,14 +155,21 @@ pipeline that produced the filed artifact:
       --timestamp http://tsa.belgium.be/connect \
       --timestamp http://tsa.izenpe.com \
       --timestamp http://tss.accv.es:8318/tsa \
+      --timestamp https://timestamp.aped.gov.gr/qtss \
       --archive
 
     curl -s -X POST https://dvv.fineid.fi/api/v1/validate \
       -F locale=en -F includeDetails=true \
       -F "file=@ReFineID - ANSSI declaration dossier (signed).pdf"
 
-Three qualified timestamp authorities so the proven time survives any
-one of them losing its standing, and --archive for PAdES-B-LTA, the top
+Four qualified timestamp authorities in three countries, so the proven
+time survives any one of them losing its standing -- Belgium rate-limits
+after enough requests in a day, which is a reason to spread them
+anyway. The Greek one is https and needs a build with a TLS backend
+(`--features boring-tls`); the others need nothing. RFC 3161 sends a
+hash and never the document, so plain http leaks no content, and the
+returned token is checked against the digest and nonce it was asked
+for. and --archive for PAdES-B-LTA, the top
 of the ETSI ladder. The validator must answer QES, PAdES-BASELINE-LTA,
 TOTAL_PASSED; anything else means stop and look.
 
