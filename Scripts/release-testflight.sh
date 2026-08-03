@@ -113,11 +113,16 @@ release_one() {
   # macOS ships bash 3.2, where "${array[@]}" on an empty array trips
   # `set -u`. The two calls are spelled out rather than guarded with the
   # ${arr[@]+...} incantation, which is shorter and reads like a typo.
+  # -allowProvisioningUpdates on the export too, not only the archive:
+  # the archive is signed for development and the export re-signs it for
+  # distribution, which needs App Store profiles that do not exist until
+  # something is allowed to create them.
   if [ "$upload" = "yes" ]; then
     xcodebuild -exportArchive \
       -archivePath "$archive" \
       -exportOptionsPlist "$options" \
       -exportPath "$exported" \
+      -allowProvisioningUpdates \
       -authenticationKeyPath "$key_path" \
       -authenticationKeyID "$ASC_KEY_ID" \
       -authenticationKeyIssuerID "$ASC_ISSUER_ID"
@@ -125,7 +130,8 @@ release_one() {
     xcodebuild -exportArchive \
       -archivePath "$archive" \
       -exportOptionsPlist "$options" \
-      -exportPath "$exported"
+      -exportPath "$exported" \
+      -allowProvisioningUpdates
   fi
 
   if [ "$upload" = "yes" ]; then
