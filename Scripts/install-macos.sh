@@ -154,9 +154,20 @@ remove_stray_copies
 rm -rf "$derived_data"
 
 # The system registers the extension when the containing app is seen.
+# The app is then quit again, and that matters: its status screen takes
+# an exclusive card session, and a card is exclusive. Left running, it
+# holds the card while the token extension is trying to sign, and the
+# signature blocks on the retry-floor probe with no error and no
+# timeout -- waiting for another process to release the card is not
+# something any protocol timer covers.
 note "registering the extension"
 open -a "$installed"
 sleep 3
+osascript -e 'tell application "ReFineID" to quit' 2>/dev/null || true
+sleep 1
+pkill -x ReFineID 2>/dev/null || true
+note "app quit so it does not hold the card"
 
 report_registrations
 note "done. Remove and re-insert the card so ctkd asks the new driver for a token."
+note "keep the app closed while signing: it takes the card exclusively."
