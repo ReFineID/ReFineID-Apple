@@ -165,13 +165,11 @@ https://github.com/ReFineID/ReFineID-Apple
 
 ### Expliquez pourquoi la fonctionnalité cryptographique du moyen ne peut pas être modifiée facilement par l'utilisateur
 
-La suite cryptographique est fixée à la compilation. La suite PACE et les
-paramètres de domaine sont imposés par la carte et inscrits dans le
-produit ; aucune interface, aucun réglage et aucun fichier de
-configuration ne permet de choisir un algorithme, une longueur de clé ou
-un protocole différent. L'application est signée et son intégrité
-vérifiée par le système d'exploitation, qui refuse d'exécuter un binaire
-modifié.
+La suite cryptographique est imposée par la carte et fixée à la
+compilation ; aucun réglage ne permet de choisir un algorithme, une
+longueur de clé ou un protocole différent. L'application est signée et
+son intégrité vérifiée par le système d'exploitation, qui refuse
+d'exécuter un binaire modifié.
 
 ### Expliquez en quoi les modalités d'installation du moyen ne nécessitent pas d'assistance importante ultérieure de la part du fournisseur
 
@@ -389,12 +387,10 @@ https://github.com/ReFineID/ReFineID-Apple
 
 ### Explain why the cryptographic functionality cannot easily be modified by the user
 
-The cryptographic suite is fixed at compile time. The PACE suite and
-domain parameters are imposed by the card and written into the product;
-no interface, setting or configuration file allows a different algorithm,
-key length or protocol to be chosen. The application is signed and its
-integrity verified by the operating system, which refuses to run a
-modified binary.
+The cryptographic suite is imposed by the card and fixed at compile
+time; no setting allows a different algorithm, key length or protocol to
+be chosen. The application is signed and its integrity verified by the
+operating system, which refuses to run a modified binary.
 
 ### Explain how installation requires no significant subsequent support from the supplier
 
