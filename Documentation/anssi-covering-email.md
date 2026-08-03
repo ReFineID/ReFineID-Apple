@@ -18,17 +18,6 @@ ordre et sous leurs intitulés ou leur équivalent, chaque question
 recevant sa réponse à sa place. Si vous souhaitez le recevoir sous une
 autre forme, je vous le transmettrai dans les meilleurs délais.
 
-La déclaration est datée et signée au moyen d'une signature électronique
-qualifiée, apposée avec le certificat qualifié de ma carte nationale
-d'identité finlandaise. Elle a, en application de l'article 25,
-paragraphe 2, du règlement (UE) n° 910/2014, un effet juridique
-équivalent à celui d'une signature manuscrite. Vous pouvez la vérifier
-sans rien installer, en déposant le fichier sur le service de validation
-de l'Agence des services de données numériques et démographiques
-(Digi- ja väestötietovirasto), autorité de certification finlandaise :
-
-https://dvv.fineid.fi/fr/validation
-
 Je déclare en rubrique C que le moyen relève de la catégorie 3 de
 l'annexe 2 du décret, sans présenter cette qualification comme acquise :
 il appartient à vos services de l'apprécier.
