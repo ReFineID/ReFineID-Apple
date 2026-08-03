@@ -235,12 +235,11 @@ moyen.
 
 Je soussigné, Koistinen Petri, agissant en qualité de fournisseur et
 auteur du moyen et pour mon propre compte, certifie que les
-renseignements figurant dans le présent dossier et les pièces qui lui
-sont jointes sont exacts et ont été établis de bonne foi, et m'engage à
-porter à la connaissance de l'Agence nationale de la sécurité des
-systèmes d'information, sans délai, tout élément nouveau de fait ou de
-droit de nature à modifier la présente déclaration ou les éléments
-joints.
+renseignements figurant dans le présent dossier sont exacts et ont été
+établis de bonne foi, et m'engage à porter à la connaissance de l'Agence
+nationale de la sécurité des systèmes d'information, sans délai, tout
+élément nouveau de fait ou de droit de nature à modifier la présente
+déclaration.
 
 Fait à Helsinki, le 4 août 2026.
 
@@ -488,11 +487,10 @@ section C, which covers the design elements.
 
 I, the undersigned, Koistinen Petri, acting as supplier and author of
 the means and on my own behalf, certify that the information in this
-dossier and in the documents attached to it is accurate and has been
-established in good faith, and undertake to inform the Agence nationale
-de la sécurité des systèmes d'information without delay of any new
-matter of fact or of law liable to alter this declaration or the
-attached material.
+dossier is accurate and has been established in good faith, and
+undertake to inform the Agence nationale de la sécurité des systèmes
+d'information without delay of any new matter of fact or of law liable
+to alter this declaration.
 
 Done at Helsinki, 4 August 2026.
 
