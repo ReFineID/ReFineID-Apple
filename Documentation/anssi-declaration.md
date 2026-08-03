@@ -1,3 +1,10 @@
+```{=typst}
+// Table cells are short phrases, not prose: justifying them stretches
+// "ECDH on brainpoolP384r1" into "ECDH      on    brainpoolP384r1".
+// Body text stays justified.
+#show table: set par(justify: false)
+```
+
 # ReFineID -- déclaration d'un moyen de cryptologie
 
 Dossier de déclaration au titre de l'article 30 de la loi n° 2004-575
@@ -139,16 +146,21 @@ internationaux ; aucun n'est propriétaire.
 
 Les colonnes reprennent celles de la rubrique B.3.4 du formulaire.
 
-| Algorithme | Mode | Taille de clé associée | Fonction |
-|---|---|---|---|
+| Algorithme | Mode | Taille de clé | Fonction |
+|:-------------------|:-------------|:------------|:-------------------------------|
 | ECDH sur brainpoolP384r1 | PACE-GM (mappage générique) | 384 bits | Accord de clés PACE |
 | AES | CBC | 256 bits | Confidentialité de chaque APDU après PACE |
 | AES | CMAC | 256 bits | Intégrité de chaque APDU après PACE |
 | SHA-256 | s.o. | s.o. | Dérivation des clés de session PACE |
 | SHA-224, SHA-256, SHA-384, SHA-512 | s.o. | s.o. | Condensats des signatures d'authentification |
-| ECDSA sur NIST P-384 | s.o. | 384 bits | Signature par la carte et vérification locale du résultat (condensat SHA-224, SHA-256, SHA-384 ou SHA-512, au choix du service appelant) |
-| RSA | PKCS#1 v1.5 | 3072 bits | Signature par la carte et vérification locale, condensat SHA-256 (cartes à clé RSA) |
-| RSA | PSS | 3072 bits | Signature par la carte et vérification locale, condensat SHA-256 (cartes à clé RSA) |
+| ECDSA sur NIST P-384 | s.o. | 384 bits | Signée par la carte, vérifiée localement |
+| RSA | PKCS#1 v1.5 | 3072 bits | Signée par la carte, vérifiée localement |
+| RSA | PSS | 3072 bits | Signée par la carte, vérifiée localement |
+
+Le condensat des signatures ECDSA est choisi par le service appelant
+parmi SHA-224, SHA-256, SHA-384 et SHA-512 ; les cartes à clé RSA
+n'emploient que SHA-256. La vérification locale est faite contre la clé
+publique de la carte avant que la signature ne soit rendue au système.
 
 Normes correspondantes : ECDH, RFC 5639 et BSI TR-03111 ; AES,
 FIPS 197 avec NIST SP 800-38A (CBC) et NIST SP 800-38B avec RFC 4493
@@ -409,16 +421,21 @@ international standard bodies; none are proprietary.
 
 The columns are those of section B.3.4 of the form.
 
-| Algorithm | Mode | Associated key size | Function |
-|---|---|---|---|
+| Algorithm | Mode | Key size | Function |
+|:-------------------|:-------------|:------------|:-------------------------------|
 | ECDH on brainpoolP384r1 | PACE-GM (generic mapping) | 384 bits | PACE key agreement |
 | AES | CBC | 256 bits | Confidentiality of each APDU after PACE |
 | AES | CMAC | 256 bits | Integrity of each APDU after PACE |
 | SHA-256 | n/a | n/a | Derivation of the PACE session keys |
 | SHA-224, SHA-256, SHA-384, SHA-512 | n/a | n/a | Digests of the authentication signatures |
-| ECDSA on NIST P-384 | n/a | 384 bits | Signature by the card and local verification of the result (SHA-224, SHA-256, SHA-384 or SHA-512 digest, at the calling service's choice) |
-| RSA | PKCS#1 v1.5 | 3072 bits | Signature by the card and local verification, SHA-256 digest (RSA card generations) |
-| RSA | PSS | 3072 bits | Signature by the card and local verification, SHA-256 digest (RSA card generations) |
+| ECDSA on NIST P-384 | n/a | 384 bits | Signed by the card, verified locally |
+| RSA | PKCS#1 v1.5 | 3072 bits | Signed by the card, verified locally |
+| RSA | PSS | 3072 bits | Signed by the card, verified locally |
+
+The digest for an ECDSA signature is chosen by the calling service from
+SHA-224, SHA-256, SHA-384 and SHA-512; RSA card generations use SHA-256
+alone. Local verification is against the card's own public key, before
+the signature is returned to the system.
 
 Corresponding standards: ECDH, RFC 5639 and BSI TR-03111; AES, FIPS 197
 with NIST SP 800-38A (CBC) and NIST SP 800-38B with RFC 4493 (CMAC);
