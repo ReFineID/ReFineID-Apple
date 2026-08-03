@@ -190,10 +190,9 @@ et sans contrat particulier. Le canal principal est l'App Store
 d'Apple ; d'autres canaux peuvent s'y ajouter, selon les mêmes
 modalités. Le marché visé est celui des porteurs d'une carte nationale
 d'identité finlandaise souhaitant s'authentifier auprès de services en
-ligne, où qu'ils résident. C'est à ce titre que le moyen est fourni en
-France : un porteur établi ou de passage en France l'y installe et l'y
-utilise comme ailleurs, l'App Store le distribuant sans restriction de
-territoire. Le code source est public :
+ligne, où qu'ils résident. Le porteur résidant en France relève de
+l'App Store français : le moyen y est donc fourni. Le code source est
+public :
 
 https://github.com/ReFineID/ReFineID-Apple
 
@@ -217,13 +216,9 @@ fournisseur n'est requise.
 
 ## D. Renouvellement d'autorisation de transfert ou d'exportation
 
-Sans objet. La rubrique D ne concerne qu'un moyen ayant déjà fait
-l'objet d'une autorisation de transfert ou d'exportation ; la présente
-demande est une première déclaration et n'en invoque aucune.
+Sans objet : première déclaration, aucune autorisation antérieure.
 
 ## E. Pièces à joindre
-
-Les pièces, une par une :
 
 | Pièce demandée | État |
 |:---------------------------|:-----------------------------------------------|
@@ -461,10 +456,9 @@ Distributed to the general public, with no negotiation, no
 customisation and no individual contract. The principal channel is the
 Apple App Store; other channels may be added, on the same terms. The
 target market is holders of a Finnish national identity card wishing to
-authenticate to online services, wherever they live. That is why the
-means is supplied in France: a holder resident in or travelling through
-France installs and uses it there as anywhere else, the App Store
-distributing without territorial restriction. The source code is public:
+authenticate to online services, wherever they live. A holder resident
+in France is served by the French storefront: the means is therefore
+supplied in France. The source code is public:
 
 https://github.com/ReFineID/ReFineID-Apple
 
@@ -487,13 +481,9 @@ required.
 
 ## D. Renewal of a transfer or export authorisation
 
-Not applicable. Section D concerns a means for which a transfer or
-export authorisation was previously granted; this is a first
-declaration and invokes none.
+Not applicable: a first declaration, with no prior authorisation.
 
 ## E. Documents to attach
-
-The items, one by one:
 
 | Item requested | Status |
 |:---------------------------|:-----------------------------------------------|
