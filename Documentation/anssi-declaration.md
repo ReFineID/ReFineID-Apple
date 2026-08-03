@@ -185,9 +185,9 @@ Sans objet : première déclaration, aucune autorisation antérieure.
 |:---------------------------|:-----------------------------------------------|
 | Document général présentant la société | Sans objet : le déclarant est une personne physique. |
 | Extrait K bis de moins de trois mois | Sans objet : aucune société immatriculée. |
-| Brochure commerciale | Sans objet : le moyen est distribué sans brochure ; sa page sur l'App Store en tient lieu. |
+| Brochure commerciale | Sans objet : il n'en existe pas. |
 | Brochure technique | Jointe : le présent dossier, rubriques B.2 et B.3. |
-| Manuel utilisateur | Sans objet : le moyen est distribué sans manuel. |
+| Manuel utilisateur | Sans objet : il n'en existe pas. |
 | Guide administrateur | Sans objet : le moyen ne comporte aucune fonction d'administration. |
 
 ## F. Attestation
@@ -404,9 +404,9 @@ Not applicable: a first declaration, with no prior authorisation.
 |:---------------------------|:-----------------------------------------------|
 | General document presenting the company | Not applicable: the declarant is a private individual. |
 | Extract K bis less than three months old | Not applicable: no registered company. |
-| Commercial brochure | Not applicable: the means is distributed without one; its public listing serves instead. |
+| Commercial brochure | Not applicable: none exists. |
 | Technical brochure | Attached: this dossier, sections B.2 and B.3. |
-| User manual | Not applicable: the means is distributed without one. |
+| User manual | Not applicable: none exists. |
 | Administrator guide | Not applicable: the means has no administration function. |
 
 ## F. Attestation
