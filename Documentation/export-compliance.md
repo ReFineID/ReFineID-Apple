@@ -143,6 +143,7 @@ Everything about *doing* the filing lives here instead. The exact
 pipeline that produced the filed artifact:
 
     pandoc Documentation/anssi-declaration.md --pdf-engine=typst \
+      -V papersize=a4 \
       -o "ReFineID - ANSSI declaration dossier.pdf"
 
     refineid card sign-document --format pades \
@@ -163,6 +164,12 @@ Three qualified timestamp authorities so the proven time survives any
 one of them losing its standing, and --archive for PAdES-B-LTA, the top
 of the ETSI ladder. The validator must answer QES, PAdES-BASELINE-LTA,
 TOTAL_PASSED; anything else means stop and look.
+
+A4, because the reader is French and Letter is a North American size;
+pandoc's default is Letter, so the flag is not optional. The French half
+also carries the narrow no-break space French typography puts before
+`: ; ! ?` -- it is in the markdown, not applied at render time, so it
+survives whatever renders the file next.
 
 The markdown is the source of truth; the PDF is a rendering. Regenerate
 rather than editing the PDF, or the two drift and the filed one wins.

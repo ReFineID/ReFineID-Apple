@@ -8,22 +8,22 @@ confidentialité et relève à ce titre de l'obligation de déclaration.
 
 Le présent document constitue la déclaration. Il est établi selon
 l'annexe I de l'ANSSI, dont il reprend les rubriques A à F dans le même
-ordre et reproduit les intitulés : chaque question y trouve sa réponse,
+ordre et reproduit les intitulés : chaque question y trouve sa réponse,
 à sa place.
 
-Nature de la demande : deuxième case du formulaire, **déclaration de
+Nature de la demande : deuxième case du formulaire, **déclaration de
 fourniture, de transfert depuis ou vers un État membre de l'Union
 européenne, d'importation et d'exportation vers un État n'appartenant
 pas à l'Union européenne** d'un moyen de cryptologie, au titre du seul
 chapitre II du décret n° 2007-663.
 
 La distribution, notamment par l'App Store d'Apple, n'est pas
-limitée à la France : la fourniture, le transfert vers les autres États
+limitée à la France : la fourniture, le transfert vers les autres États
 membres et l'exportation hors de l'Union européenne sont tous
 susceptibles de se produire, et sont donc tous couverts par la présente
 déclaration. Le déclarant estime que l'exportation peut relever du
 régime de la déclaration au titre de la catégorie 3 de l'annexe 2 du
-décret et sollicite cette qualification en rubrique C ; jusqu'à
+décret et sollicite cette qualification en rubrique C ; jusqu'à
 l'appréciation de l'ANSSI, elle n'est pas présentée comme acquise.
 
 Aucune demande d'autorisation au titre du chapitre III n'est formée.
@@ -33,8 +33,8 @@ Le dossier est établi en français et suivi d'une version anglaise.
 ## A. Déclarant
 
 Le déclarant est un particulier (rubrique A.2 du formulaire). ReFineID
-est un nom commercial employé par le déclarant en son nom propre ; il ne
-désigne aucune personne morale. La rubrique A.1 est sans objet : il n'y
+est un nom commercial employé par le déclarant en son nom propre ; il ne
+désigne aucune personne morale. La rubrique A.1 est sans objet : il n'y
 a ni dénomination sociale, ni numéro SIRET, ni société pour le compte de
 laquelle la déclaration serait faite.
 
@@ -47,9 +47,9 @@ laquelle la déclaration serait faite.
 | Adresse de courrier électronique | petri.koistinen@iki.fi |
 
 Personne que l'ANSSI peut contacter pour obtenir des informations
-techniques sur le moyen : la même, aux mêmes coordonnées.
+techniques sur le moyen : la même, aux mêmes coordonnées.
 
-Le déclarant est également le fabricant du moyen ; la rubrique relative
+Le déclarant est également le fabricant du moyen ; la rubrique relative
 à un fabricant tiers est sans objet.
 
 ## B.1. Informations générales sur le moyen
@@ -93,14 +93,14 @@ envoi/stockage/réception d'informations, réseau -- ne s'applique.
 
 ### B.3.1. Description des fonctionnalités cryptographiques du moyen
 
-Deux fonctions, et aucune autre :
+Deux fonctions, et aucune autre :
 
 1. **Établissement d'un canal sécurisé avec la carte.** La carte bloque
    l'accès à son application PKCS#15 sur l'interface sans contact et refuse toute
    lecture (`SW=6982`) tant que PACE n'a pas été exécuté. PACE est un
    accord de clés authentifié par mot de passe, fondé sur le numéro
    d'accès imprimé sur la carte. Il authentifie la connaissance du numéro d'accès et dérive des
-   clés de session ; tous les échanges ultérieurs avec la carte sont
+   clés de session ; tous les échanges ultérieurs avec la carte sont
    chiffrés et authentifiés sous ces clés.
 2. **Signatures d'authentification client.** La clé privée reste dans la
    carte, qui réalise la signature. Le moyen met en forme l'entrée, la
@@ -121,12 +121,12 @@ l'utilisateur.
 ### B.3.3. Indiquez le(s) protocole(s) sécurisé(s) utilisés par le moyen
 
 Ni IPsec, ni SSH, ni protocoles de VoIP, ni SSL/TLS. TLS est assuré par
-le système d'exploitation ; le moyen ne met en œuvre aucune pile TLS et
+le système d'exploitation ; le moyen ne met en œuvre aucune pile TLS et
 se borne à fournir la signature calculée par la carte.
 
-Autres protocoles : PACE selon ICAO Doc 9303 partie 11 et BSI TR-03110-3,
+Autres protocoles : PACE selon ICAO Doc 9303 partie 11 et BSI TR-03110-3,
 suite `id-PACE-ECDH-GM-AES-CBC-CMAC-256`
-(OID 0.4.0.127.0.7.2.2.4.2.4) ; messagerie sécurisée selon
+(OID 0.4.0.127.0.7.2.2.4.2.4) ; messagerie sécurisée selon
 ISO/IEC 7816-4.
 
 ### B.3.4. Précisez les algorithmes cryptographiques utilisés et leurs longueurs maximales de clés
@@ -135,7 +135,7 @@ La logique des protocoles propres à la carte est mise en œuvre en Swift
 dans le module `CardCore`, au moyen des primitives cryptographiques
 fournies notamment par CryptoKit. Tous les
 algorithmes sont publiés par des organismes de normalisation
-internationaux ; aucun n'est propriétaire.
+internationaux ; aucun n'est propriétaire.
 
 Les colonnes reprennent celles de la rubrique B.3.4 du formulaire.
 
@@ -150,9 +150,9 @@ Les colonnes reprennent celles de la rubrique B.3.4 du formulaire.
 | RSA | PKCS#1 v1.5 | 3072 bits | Signature par la carte et vérification locale, condensat SHA-256 (cartes à clé RSA) |
 | RSA | PSS | 3072 bits | Signature par la carte et vérification locale, condensat SHA-256 (cartes à clé RSA) |
 
-Normes correspondantes : ECDH, RFC 5639 et BSI TR-03111 ; AES,
+Normes correspondantes : ECDH, RFC 5639 et BSI TR-03111 ; AES,
 FIPS 197 avec NIST SP 800-38A (CBC) et NIST SP 800-38B avec RFC 4493
-(CMAC) ; SHA-2, FIPS 180-4 ; ECDSA, FIPS 186-5 et ANSI X9.62 ; RSA,
+(CMAC) ; SHA-2, FIPS 180-4 ; ECDSA, FIPS 186-5 et ANSI X9.62 ; RSA,
 RFC 8017.
 
 ### Gestion des clés (hors rubriques du formulaire)
@@ -160,19 +160,19 @@ RFC 8017.
 - Les clés privées sont générées dans la carte par l'autorité émettrice
   et n'en sortent jamais. Le moyen ne peut pas les lire et ne les détient
   jamais.
-- Les clés de session PACE sont éphémères : dérivées par session, gardées
+- Les clés de session PACE sont éphémères : dérivées par session, gardées
   en mémoire seulement, abandonnées à la fin de la session et jamais
   écrites sur un support persistant.
 - Le numéro d'accès de la carte, et le cas échéant le PIN1 si le porteur
   choisit de le conserver, sont stockés dans le trousseau Apple avec les
-  attributs `WhenUnlockedThisDeviceOnly` et non synchronisables : jamais
+  attributs `WhenUnlockedThisDeviceOnly` et non synchronisables : jamais
   écrits dans une sauvegarde, jamais restaurés sur un autre appareil,
   jamais transmis à iCloud. Le répertoire des cartes connues, qui porte
   un numéro d'accès par carte, est stocké avec les mêmes attributs.
 - Sur macOS, une copie du ou des numéros d'accès est en outre remise au
   pilote de jeton par le magasin de configuration de CryptoTokenKit,
   canal que le système prévoit à cet effet. Cette mention décrit le
-  chemin de configuration Apple utilisé par le pilote ; elle ne le
+  chemin de configuration Apple utilisé par le pilote ; elle ne le
   présente pas comme équivalent aux garanties propres du trousseau. Il
   ne contient ni clé privée ni clé de session, seulement le numéro
   d'accès nécessaire au pilote, et le porteur en demande l'effacement en
@@ -184,24 +184,24 @@ RFC 8017.
 
 Le déclarant estime que le moyen remplit les conditions de la catégorie
 3 de l'annexe 2 du décret n° 2007-663 du 2 mai 2007 et sollicite cette
-qualification ; il appartient à l'ANSSI de l'apprécier. Les éléments
+qualification ; il appartient à l'ANSSI de l'apprécier. Les éléments
 justificatifs demandés par le formulaire suivent, dans son ordre.
 
 ### Présentez le mode de commercialisation du moyen de cryptologie et le marché auquel il s'adresse
 
 Distribution au grand public, sans négociation, sans personnalisation
 et sans contrat particulier. Le canal principal est l'App Store
-d'Apple ; d'autres canaux peuvent s'y ajouter, selon les mêmes
+d'Apple ; d'autres canaux peuvent s'y ajouter, selon les mêmes
 modalités. Le marché
 visé est le porteur d'une carte nationale d'identité finlandaise
 souhaitant s'authentifier auprès de services en ligne. Le code source est
-public : https://github.com/ReFineID/ReFineID-Apple
+public : https://github.com/ReFineID/ReFineID-Apple
 
 ### Expliquez pourquoi la fonctionnalité cryptographique du moyen ne peut pas être modifiée facilement par l'utilisateur
 
 La suite cryptographique est fixée à la compilation. La suite PACE et les
 paramètres de domaine sont imposés par la carte et inscrits dans le
-produit ; aucune interface, aucun réglage et aucun fichier de
+produit ; aucune interface, aucun réglage et aucun fichier de
 configuration ne permet de choisir un algorithme, une longueur de clé ou
 un protocole différent. L'application est signée et son intégrité
 vérifiée par le système d'exploitation, qui refuse d'exécuter un binaire
@@ -218,21 +218,21 @@ fournisseur n'est requise.
 ## D. Renouvellement d'autorisation de transfert ou d'exportation
 
 Sans objet. La rubrique D ne concerne qu'un moyen ayant déjà fait
-l'objet d'une autorisation de transfert ou d'exportation ; la présente
+l'objet d'une autorisation de transfert ou d'exportation ; la présente
 demande est une première déclaration et n'en invoque aucune.
 
 ## E. Pièces jointes
 
-Les pièces demandées par le formulaire, une par une :
+Les pièces demandées par le formulaire, une par une :
 
 | Pièce demandée | État |
 |---|---|
-| Document général présentant la société | Sans objet : le déclarant est une personne physique. |
-| Extrait K bis de moins de trois mois | Sans objet : aucune société immatriculée. |
-| Brochure commerciale | Sans objet : le moyen est distribué sans brochure ; sa fiche publique de distribution en tient lieu. |
-| Brochure technique | Jointe : le présent dossier, rubriques B.2 et B.3. |
-| Manuel utilisateur | Sans objet : l'usage se limite à saisir le numéro d'accès et à présenter la carte, décrit en rubrique C. |
-| Guide administrateur | Sans objet : le moyen ne comporte aucune administration. |
+| Document général présentant la société | Sans objet : le déclarant est une personne physique. |
+| Extrait K bis de moins de trois mois | Sans objet : aucune société immatriculée. |
+| Brochure commerciale | Sans objet : le moyen est distribué sans brochure ; sa fiche publique de distribution en tient lieu. |
+| Brochure technique | Jointe : le présent dossier, rubriques B.2 et B.3. |
+| Manuel utilisateur | Sans objet : l'usage se limite à saisir le numéro d'accès et à présenter la carte, décrit en rubrique C. |
+| Guide administrateur | Sans objet : le moyen ne comporte aucune administration. |
 
 Le code source complet est publiquement accessible à l'adresse indiquée
 en rubrique C, ce qui couvre les éléments relatifs à la conception du
@@ -259,7 +259,7 @@ aux sanctions prévues aux articles 34 et 35 de la loi n° 2004-575 du
 21 juin 2004 modifiée.
 
 La signature de la présente attestation est la signature électronique
-qualifiée apposée sur ce document ; ses conditions de vérification sont
+qualifiée apposée sur ce document ; ses conditions de vérification sont
 rappelées en pied de page.
 
 ```{=typst}
