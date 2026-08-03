@@ -103,9 +103,7 @@ n'établit par lui-même aucune communication réseau.
 
 #### B.3.2. Indiquez à quelle(s) catégorie(s) se rapporte(nt) la ou les fonctions cryptographiques du moyen
 
-Authentification, intégrité, confidentialité et signature -- toutes
-quatre, exercées entre le moyen et la carte, et non sur les données de
-l'utilisateur.
+Authentification, intégrité, confidentialité et signature.
 
 #### B.3.3. Indiquez le(s) protocole(s) sécurisé(s) utilisés par le moyen
 
@@ -338,8 +336,7 @@ or transport tunnel, and performs no network communication of its own.
 
 #### B.3.2. Categories the cryptographic functions fall under
 
-Authentication, integrity, confidentiality and signature -- all four,
-exercised between the means and the card, not on the user's data.
+Authentication, integrity, confidentiality and signature.
 
 #### B.3.3. Secure protocols used by the means
 
