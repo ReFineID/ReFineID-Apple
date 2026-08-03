@@ -269,24 +269,41 @@ written to be accurate rather than idiomatic, and a regulator's form is
 a poor place to find a translation error.
 
 The dossier gives 1 November 2026 as the date placed on the market, and
-the signature block keeps its own date. The gap is deliberate, and the
-rule behind it is **two** months, not one.
+the signature block keeps its own date. The gap is deliberate.
 
-Article 4 of the decree sets one month: *"Un mois au moins avant
-l'opération mentionnée à l'article 3, le dossier de déclaration est
-adressé..."*. Article 8 then doubles it for what this declaration
-covers: *"Ces délais sont également portés à deux mois lorsque la
-déclaration concerne l'exportation de moyens de cryptologie vers des
-Etats non membres de la Communauté européenne."* The dossier declares
-export outside the Union in its own scope statement, so two months is
-the applicable delay. The clock runs from the date the dossier is
-sent, not from the date it is signed.
+One month or two depends on what is declared. Article 4 sets one month;
+article 8 doubles it "lorsque la déclaration concerne l'exportation de
+moyens de cryptologie vers des Etats non membres de la Communaute
+europeenne". The declaration no longer concerns that -- see below -- so
+one month is the applicable delay and the November date leaves a wide
+margin. Two months was assumed while the scope still claimed an export
+leg, and moving the date is the one change from that period worth
+keeping: there is no hurry toward the French market, and a date with
+air in it survives a filing that slips.
 
-This is worth stating exactly, because reading it as one month is how
-the market date came to be set two days inside the delay -- 3 August to
-1 October is 59 days -- and it was caught in review rather than by
-ANSSI. There is no hurry toward the French market: if filing slips,
-move the market date before signing rather than shaving the delay.
+### What is actually declared, and what is not
+
+Article 30 governs French operations. *Fourniture* is supply into the
+French market and is what a supplier established anywhere owes a
+declaration for -- ANSSI is explicit that the obligation falls on the
+supplier or first importer regardless of where they are established.
+*Exportation* means export **from France** to a third state, and
+*transfert vers un Etat membre* means transfer **from France** onward.
+A supplier in Helsinki performs neither.
+
+So the declared operations are fourniture in France and transfert
+depuis un Etat membre, both under chapter II. The two operations
+article 30 IV reserves to authorisation are named in the dossier as not
+being the declarant's, which is why no chapter III request accompanies
+it and why category 3 -- which matters only for those two -- is
+declared without being leaned on.
+
+An earlier draft claimed the export leg. It should not have: it asserted
+a scope that only existed if category 3 were already granted, in a
+document that says in the same breath that it is not.
+
+The clock runs from the date the dossier is sent, not from the date it
+is signed.
 
 Parentheses stay out of the filename. They are legal on every platform
 and a nuisance on most: a shell needs them quoted, a URL turns them

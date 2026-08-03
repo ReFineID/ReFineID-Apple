@@ -7,29 +7,45 @@
 
 Dossier de déclaration au titre de l'article 30 de la loi n° 2004-575
 du 21 juin 2004 pour la confiance dans l'économie numérique (LCEN) et du
-décret n° 2007-663 du 2 mai 2007 pris pour son application. ReFineID
-fournit un moyen de cryptologie assurant des fonctions de
-confidentialité et relève à ce titre de l'obligation de déclaration.
+décret n° 2007-663 du 2 mai 2007 pris pour son application.
+
+ReFineID établit avec la carte un canal de messagerie sécurisée selon la
+norme ISO/IEC 7816-4, au moyen du protocole PACE. Les échanges qui y
+passent sont chiffrés (AES-256-CBC) : cette fonction de confidentialité est
+confinée à ce canal, ne s'applique qu'à l'interface sans contact, et ne
+porte ni sur les données de l'utilisateur, ni sur un stockage, ni sur un
+réseau. Elle n'est pas offerte au porteur mais imposée par la politique
+d'accès de la carte, qui refuse toute lecture sans contact tant que PACE
+n'a pas été exécuté. La clé publiée au système d'exploitation est
+réservée à la signature.
+
+La déclaration est faite au titre du chapitre II, sans préjudice de
+l'application du II de l'article 30, qui affranchit de toute formalité
+les moyens assurant exclusivement des fonctions d'authentification ou de
+contrôle d'intégrité. Le déclarant ne préjuge pas de cette
+qualification et prie l'ANSSI de bien vouloir lui indiquer si elle
+s'applique au moyen décrit ci-après.
 
 Le présent document constitue la déclaration. Il est établi selon
 l'annexe I de l'ANSSI, dont il reprend les rubriques A à F dans le même
 ordre, sous leurs intitulés ou leur équivalent : chaque question y
 trouve sa réponse, à sa place.
 
-Nature de la demande : **déclaration de fourniture, de transfert depuis
-ou vers un État membre de l'Union européenne, d'importation et
-d'exportation vers un État n'appartenant pas à l'Union européenne**
-d'un moyen de cryptologie, au titre du seul chapitre II du décret
-n° 2007-663.
+Nature de la demande : **déclaration de fourniture et de transfert depuis
+un État membre de l'Union européenne** d'un moyen de cryptologie, au
+titre du seul chapitre II du décret n° 2007-663.
 
-La distribution, notamment par l'App Store d'Apple, n'est pas
-limitée à la France : la fourniture, le transfert vers les autres États
-membres et l'exportation hors de l'Union européenne sont tous
-susceptibles de se produire, et sont donc tous couverts par la présente
-déclaration. Le moyen relève, selon le déclarant, de la catégorie 3 de
-l'annexe 2 du décret, ce qu'il déclare en rubrique C ; jusqu'à
-l'appréciation de l'ANSSI, cette qualification n'est pas présentée
-comme acquise.
+Le déclarant est établi en Finlande et le moyen est distribué depuis
+l'Union européenne, notamment par l'App Store d'Apple. Les opérations
+déclarées sont donc la fourniture du moyen en France et son transfert
+depuis un État membre. Le transfert vers un État membre depuis la France
+et l'exportation depuis la France vers un État tiers, que le IV de
+l'article 30 soumet à autorisation, ne sont pas le fait du déclarant et
+ne font pas l'objet de la présente déclaration.
+
+Le moyen relève, selon le déclarant, de la catégorie 3 de l'annexe 2 du
+décret, ce qu'il déclare en rubrique C ; jusqu'à l'appréciation de
+l'ANSSI, cette qualification n'est pas présentée comme acquise.
 
 Aucune demande d'autorisation au titre du chapitre III n'est formée.
 
@@ -331,22 +347,41 @@ rappelées en pied de page.
 
 # English version
 
+ReFineID establishes an ISO/IEC 7816-4 secure-messaging channel with the
+card by means of the PACE protocol. What passes through it is encrypted
+(AES-256-CBC): that confidentiality function is confined to the channel,
+applies only on the contactless interface, and is applied neither to the
+user's data, nor to storage, nor to any network. It is not offered to the
+holder but imposed by the card's own access policy, which refuses every
+contactless read until PACE has run. The key published to the operating
+system is reserved for signature.
+
+The declaration is made under chapter II, without prejudice to the
+application of article 30 II, which frees from every formality a means
+providing exclusively authentication or integrity-control functions. The
+declarant does not prejudge that qualification and asks ANSSI to state
+whether it applies to the means described below.
+
 This document is the declaration. It is drawn up according to ANSSI's
 annexe I, following sections A to F in the same order, under their
 headings or a close equivalent: every question is answered here, in
 its place.
 
-Nature of the request: **declaration of supply, of transfer from or to
-a member state of the European Union, of import and of export to a
-state outside the European Union** of a means of cryptology, under
+Nature of the request: **declaration of supply and of transfer from a
+member state of the European Union** of a means of cryptology, under
 chapter II of decree No 2007-663 alone.
 
-Distribution -- through Apple's App Store among other channels -- is
-not confined to France: supply, transfer to other member states and export outside the
-European Union may all occur, and are all covered by this declaration.
-The means falls, in the declarant's view, within category 3 of annex 2
-to the decree, which he declares in section C. Until ANSSI has assessed
-it, that qualification is not presented as held.
+The declarant is established in Finland and the means is distributed from
+within the European Union, through Apple's App Store among other
+channels. The operations declared are therefore the supply of the means
+in France and its transfer from a member state. Transfer from France to a
+member state, and export from France to a third state -- which article
+30 IV subjects to authorisation -- are not performed by the declarant and
+are not the subject of this declaration.
+
+The means falls, in the declarant's view, within category 3 of annex 2 to
+the decree, which he declares in section C. Until ANSSI has assessed it,
+that qualification is not presented as held.
 
 No authorisation under chapter III is requested.
 
