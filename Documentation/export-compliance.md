@@ -165,6 +165,14 @@ Before filing, have the French read by somebody who files these. It is
 written to be accurate rather than idiomatic, and a regulator's form is
 a poor place to find a translation error.
 
+The dossier gives 1 October 2026 as the date placed on the market, and
+the signature block keeps its own date. The gap is deliberate: the
+decree requires the declaration to be filed at least one month before
+the means is placed on the market, so the market date has to sit
+comfortably after the filing, not on it. There is no hurry toward the
+French market; if filing slips, move the market date before signing
+rather than shaving the month.
+
 ### Where it goes
 
 Checked against ANSSI rather than recalled. The dossier is not filed on
