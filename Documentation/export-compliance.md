@@ -155,17 +155,18 @@ pipeline that produced the filed artifact:
       --timestamp https://timestamp.sectigo.com/qualified \
       --timestamp http://tsa.belgium.be/connect \
       --timestamp https://timestamp.aped.gov.gr/qtss \
-      --timestamp http://tsa.izenpe.com \
       --archive
 
     curl -s -X POST https://dvv.fineid.fi/api/v1/validate \
       -F locale=en -F includeDetails=true \
       -F "file=@ReFineID - ANSSI declaration dossier (signed).pdf"
 
-Four qualified authorities in three countries, so the proven time
+Three qualified authorities in three countries, so the proven time
 survives any one of them losing its standing. A refusal is survivable:
 each is asked in turn, one that is down or rate limiting is named on
-stderr and skipped, and only silence from all four stops the signing.
+stderr and skipped, and only silence from all three stops the signing.
+Three is the floor rather than a comfortable margin -- see the two held
+in reserve below.
 Belgium answers HTTP 429 after enough requests in a day and Sectigo
 asks for fifteen seconds between them, so spreading the work is not
 only about longevity.
@@ -176,15 +177,17 @@ which is a single token rather than a set -- the first to answer wins
 2026-08-03: Sectigo signs RSA-4096 under a unit whose certificate is
 signed with SHA-384 and runs to 2034, six years past any other, and
 republishes revocation weekly. Belgium is the most official of the
-four, a federal government service answering in real time, but signs
+three, a federal government service answering in real time, but signs
 P-256 and expires in 2028. Greece is RSA-4096 to 2030 with revocation
-republished daily. Izenpe publishes no responder, only a list, but
-refreshes it every nine days.
+republished daily.
 
-ACCV (`http://tss.accv.es:8318/tsa`) is qualified, answers, and was
-dropped. Not on its cryptography, which is RSA-4096, but on its
-evidence: responder and list both run a 180-day cycle, so what a
-signature freezes from it can be weeks stale before it is taken.
+Two more are qualified, answer, and are held in reserve rather than
+used. ACCV (`http://tss.accv.es:8318/tsa`) runs its responder and its
+list on a 180-day cycle, so what a signature freezes from it can be
+weeks stale before it is taken. Izenpe (`http://tsa.izenpe.com`)
+publishes no responder at all, only a list. Reach for them if the
+three above ever go quiet together, which would otherwise stop the
+signing outright.
 
 Sectigo and the Greek one are https and need a build with a TLS
 backend (`--features boring-tls`); the others need nothing. RFC 3161
@@ -215,7 +218,7 @@ Sign once, when the document is finished and about to be sent.
 While the text is still being edited, render and read -- rendering costs
 nothing and needs neither the card nor the network. Signing a draft
 attests a document that will not be the one filed, spends a card
-operation and a PIN verification on it, and asks four timestamp
+operation and a PIN verification on it, and asks three timestamp
 authorities for tokens over something disposable. That last part has a
 cost you can measure: tsa.belgium.be began answering HTTP 429 after
 enough draft signings in one day.
