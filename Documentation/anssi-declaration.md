@@ -1,19 +1,10 @@
-# ANSSI declaration dossier
+# ReFineID -- declaration of a means of cryptology
 
-France regulates the supply of cryptographic means under the Code de la
-sécurité intérieure (articles R2321-1 and following, décret n° 2007-663).
-Supplying a means that provides confidentiality requires a declaration to
-ANSSI; a means limited to authentication and integrity does not. ReFineID
-establishes an encrypted channel to the card, so it is declarable.
-
-This file is the technical dossier the declaration is built from. ANSSI's
-own form asks for the declarant, the product and a technical description;
-what follows is that description, in English for the record and in French
-for the filing. The declaration is submitted by a person, not by this
-repository -- nothing here is a substitute for filing it.
-
-The equivalent US notice is in `Documentation/export-compliance.md`
-(15 CFR 740.13(e), sent 2026-08-03).
+ReFineID supplies a means of cryptology that provides confidentiality
+functions, and is therefore declarable under the Code de la sécurité
+intérieure (articles R2321-1 and following, décret n° 2007-663). This
+dossier describes the declarant, the product, and the cryptography it
+implements. The same description follows in French.
 
 ## Declarant
 
@@ -177,19 +168,3 @@ internationaux ; aucun n'est propriétaire.
   jamais transmis à iCloud.
 - Aucun séquestre de clés, aucun recouvrement, aucune gestion de clés à
   distance, aucune transmission de clé sur un réseau.
-
----
-
-## What remains to be done by a person
-
-1. Submit the declaration to ANSSI with the fiche technique above.
-2. Have the French text checked by someone who files these; it is written
-   to be accurate rather than idiomatic, and a regulator's form is a poor
-   place to discover a translation error.
-3. Attach ANSSI's acknowledgement to App Encryption Documentation step 3
-   in App Store Connect.
-4. Add the compliance code Apple issues to `Config/ReFineID-Info.plist`
-   as `ITSEncryptionExportComplianceCode`.
-
-`Scripts/inspect-archive.sh` refuses any archive that declares non-exempt
-encryption without that code, so step 4 cannot be forgotten.
