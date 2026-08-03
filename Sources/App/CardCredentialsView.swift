@@ -55,6 +55,20 @@ internal struct CardCredentialsView: View {
     #endif
   }
 
+  /// Whether this device has an antenna to set an identity with.
+  ///
+  /// An iPad has none, and runs the same binary as an iPhone. Offering
+  /// it a card setup it can never finish -- two fields to fill and a
+  /// button that only ever stays grey -- describes the app as broken
+  /// rather than the device as different.
+  private var offersNearField: Bool {
+    #if canImport(CoreNFC) && os(iOS)
+      return primingModel.allowsNearField
+    #else
+      return true
+    #endif
+  }
+
   /// Both credentials must be usable before minting starts.
   ///
   /// A field left empty falls back to what is stored; a field with
@@ -77,6 +91,11 @@ internal struct CardCredentialsView: View {
       // dimmed backdrop can usefully say.
       if isHolding {
         EmptyView()
+      } else if !offersNearField {
+        // No antenna: a reader is the only way in, and saying so is the
+        // whole screen. There is nothing to store first -- a card in a
+        // contact reader needs no access number.
+        readerOnlySection
       } else if isRegistered {
         // A set identity replaces the whole setup: nothing about it is
         // left to configure, so nothing about configuring it is shown.
@@ -94,7 +113,7 @@ internal struct CardCredentialsView: View {
       // credentials are not: the fields above are editable until an
       // identity exists, so a wrong number is corrected by typing over
       // it rather than by forgetting anything.
-      if isRegistered, !isHolding {
+      if isRegistered, !isHolding, offersNearField {
         forgetSection
       }
     }
@@ -141,6 +160,15 @@ internal struct CardCredentialsView: View {
         isRegistered = false
         clearEntries()
       }
+    }
+  }
+
+  /// What a device with no antenna is told instead of a setup form.
+  private var readerOnlySection: some View {
+    Section {
+      Text("Connect a card reader and insert your card.")
+        .foregroundStyle(.secondary)
+        .accessibilityIdentifier("readerOnlyNotice")
     }
   }
 
@@ -244,25 +272,13 @@ internal struct CardCredentialsView: View {
         pin1Entry = LimitedDigits.pin1(typed)
       }
 
-      pin1VisibilityButton
+      Pin1VisibilityButton(
+        isRevealed: $isPin1Revealed,
+        hasEntry: !pin1Entry.isEmpty
+      ) {
+        isPin1FieldFocused = true
+      }
     }
-  }
-
-  /// Standard transient visibility control for the unsaved PIN.
-  private var pin1VisibilityButton: some View {
-    Button {
-      isPin1Revealed.toggle()
-      isPin1FieldFocused = true
-    } label: {
-      Label(
-        isPin1Revealed ? "Hide PIN1" : "Show PIN1",
-        systemImage: isPin1Revealed ? "eye.slash" : "eye"
-      )
-      .labelStyle(.iconOnly)
-    }
-    .buttonStyle(.borderless)
-    .disabled(pin1Entry.isEmpty)
-    .accessibilityIdentifier("pin1Visibility")
   }
 
   #if DEBUG

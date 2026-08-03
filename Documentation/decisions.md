@@ -99,6 +99,42 @@ mint read `registration=true` and took no card session, and
 2026-07-28 build-16 trace left open: PACE inside a CryptoTokenKit field
 completes when the app owns that field.
 
+## 2026-08-03 iPad is supported, and asks the device rather than the build
+
+The device family becomes iPhone and iPad. An iPad reaches the card the
+only way it can, through a USB-C reader, which is a transport this app
+already drives on macOS.
+
+That required the near-field question to stop being a build-time
+answer. `SupportedCardTransports` returned "yes" for anything that
+imported CoreNFC and ran version 26 -- which iPadOS does, on hardware
+with no antenna. An iPad holder was therefore offered a card setup that
+could never complete: two fields to fill and a button that could only
+ever stay grey. It now asks `TKSmartCardSlotManager.isNFCSupported`,
+the one of the three conditions that differs between two devices
+running the same binary.
+
+A device with no antenna is told the one thing that helps -- connect a
+reader and insert the card -- instead of being shown a setup form it
+cannot use.
+
+## 2026-08-03 Export compliance is declared as non-exempt
+
+`ITSAppUsesNonExemptEncryption` is `true` in the app's Info.plist.
+
+The app does not merely call the platform's cryptography: it implements
+brainpoolP384r1, AES-CMAC secure messaging and the PACE handshake
+itself, in Swift, in this repository. The authentication-only exemption
+was available to argue for and is deliberately not taken. Declaring
+non-exempt costs a self-classification report and an annual French
+declaration; declaring exempt on a judgement call costs credibility we
+would rather not spend, in a product whose whole subject is identity.
+
+Stating it in the bundle rather than answering it per upload is the
+point of the check in `inspect-archive.sh`: the answer belongs in
+reviewed source, not in whatever somebody clicked at four in the
+afternoon.
+
 ## 2026-08-03 Diagnostics is a development tool, on both platforms
 
 TestFlight is a shipped build. It reaches people who are not us, on

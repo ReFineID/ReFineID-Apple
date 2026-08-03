@@ -8,6 +8,8 @@
 		<string>fi</string>
 		<string>sv</string>
 	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<true/>
 	<key>NFCReaderUsageDescription</key>
 	<string>ReFineID reads your identity card over NFC to sign you in.</string>
 	<key>NSCameraUsageDescription</key>

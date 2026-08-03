@@ -40,6 +40,11 @@ if [ -d "$APP/Contents" ]; then
     APPEX_PLIST="$APPEX/Contents/Info.plist"
     APPEX_DISCOVERY_PLIST="$APPEX_DISCOVERY/Contents/Info.plist"
     EXPECTED_ARCHS="arm64 x86_64 "
+    # The discovery extension is iOS-only. It exists to declare the AID
+    # ctkd polls contactless cards with, and a Mac reader hands the card
+    # over without one -- on macOS it could only claim a card in order to
+    # refuse it, so it is not embedded there.
+    HAS_DISCOVERY="no"
     # Sandbox and smart-card access, plus the keys signing adds.
     ALLOWED='^(com\.apple\.security\.app-sandbox|com\.apple\.security\.smartcard|com\.apple\.application-identifier|com\.apple\.developer\.team-identifier|com\.apple\.security\.get-task-allow)$'
     REQUIRED="com.apple.security.app-sandbox com.apple.security.smartcard"
@@ -54,6 +59,7 @@ else
     APPEX_PLIST="$APPEX/Info.plist"
     APPEX_DISCOVERY_PLIST="$APPEX_DISCOVERY/Info.plist"
     EXPECTED_ARCHS="arm64 "
+    HAS_DISCOVERY="yes"
     # iOS sandboxes every app without an entitlement saying so, and grants
     # smart-card access through CryptoTokenKit rather than a sandbox
     # exception. What is reviewed here instead is the shared keychain group
@@ -65,14 +71,32 @@ fi
 note "archive is $PLATFORM"
 
 [ -d "$APPEX" ] || fail "embedded extension missing: $APPEX"
-[ -d "$APPEX_DISCOVERY" ] || fail "embedded extension missing: $APPEX_DISCOVERY"
+if [ "$HAS_DISCOVERY" = "yes" ]; then
+    [ -d "$APPEX_DISCOVERY" ] || fail "embedded extension missing: $APPEX_DISCOVERY"
+    ALL_EXECS="$APP_EXEC $APPEX_EXEC $APPEX_DISCOVERY_EXEC"
+    ALL_BUNDLES="$APP $APPEX $APPEX_DISCOVERY"
+    ALL_APPEXES="$APPEX $APPEX_DISCOVERY"
+    ALL_APPEX_PLISTS="$APPEX_PLIST $APPEX_DISCOVERY_PLIST"
+else
+    [ -d "$APPEX_DISCOVERY" ] && fail "discovery extension is iOS-only: $APPEX_DISCOVERY"
+    ALL_EXECS="$APP_EXEC $APPEX_EXEC"
+    ALL_BUNDLES="$APP $APPEX"
+    ALL_APPEXES="$APPEX"
+    ALL_APPEX_PLISTS="$APPEX_PLIST"
+fi
 
 # --- Exactly one application, exactly two plug-ins ------------------------
 APP_COUNT=$(find "$ARCHIVE/Products" -maxdepth 2 -name "*.app" | wc -l | tr -d ' ')
 [ "$APP_COUNT" = "1" ] || fail "expected 1 .app in archive, found $APP_COUNT"
+if [ "$HAS_DISCOVERY" = "yes" ]; then
+    EXPECTED_PLUGINS=2
+else
+    EXPECTED_PLUGINS=1
+fi
 PLUGIN_COUNT=$(find "$PLUGINS" -maxdepth 1 -mindepth 1 | wc -l | tr -d ' ')
-[ "$PLUGIN_COUNT" = "2" ] || fail "expected 2 plug-ins, found $PLUGIN_COUNT"
-note "one app, two embedded extensions"
+[ "$PLUGIN_COUNT" = "$EXPECTED_PLUGINS" ] \
+    || fail "expected $EXPECTED_PLUGINS plug-in(s), found $PLUGIN_COUNT"
+note "one app, $EXPECTED_PLUGINS embedded extension(s)"
 
 # --- No unexpected executable code ----------------------------------------
 # The only Mach-O files permitted are the three target binaries. Helper tools,
@@ -91,7 +115,7 @@ done
 note "no unexpected executables, libraries, or frameworks"
 
 # --- Declared architectures ------------------------------------------------
-for BIN in "$APP_EXEC" "$APPEX_EXEC" "$APPEX_DISCOVERY_EXEC"; do
+for BIN in $ALL_EXECS; do
     ARCHS=$(lipo -archs "$BIN" | tr ' ' '\n' | sort | tr '\n' ' ')
     [ "$ARCHS" = "$EXPECTED_ARCHS" ] \
         || fail "$BIN architectures: '$ARCHS' (expected $EXPECTED_ARCHS)"
@@ -110,7 +134,7 @@ note "all binaries are ${EXPECTED_ARCHS% }"
 # unguarded call reintroduces its own message text, and that text lands in
 # the binary whether or not the path it sits on ever runs during a test.
 FORBIDDEN_STRINGS='refineid-token-extension\.log|^(sign|session|discovery|mintFromPrime|createToken|supports|beginAuth|unseal|reader|prime): |^--(diagnostics|trace|reset-card-state|set-can|forget-can|set-pin1|prime)$'
-for BIN in "$APP_EXEC" "$APPEX_EXEC" "$APPEX_DISCOVERY_EXEC"; do
+for BIN in $ALL_EXECS; do
     LEAKED=$(strings -a "$BIN" | grep -E "$FORBIDDEN_STRINGS" | sort -u | head -10 || true)
     [ -z "$LEAKED" ] || fail "$(basename "$BIN"): diagnostic or logging strings present:
 $LEAKED"
@@ -120,7 +144,7 @@ note "no diagnostic or logging strings in any binary"
 # --- No coverage instrumentation -------------------------------------------
 # Xcode 26 injects coverage into the local Swift package unless it is told
 # not to on the command line, and a shipped build must carry none.
-for BIN in "$APP_EXEC" "$APPEX_EXEC" "$APPEX_DISCOVERY_EXEC"; do
+for BIN in $ALL_EXECS; do
     COVERAGE=$(otool -l "$BIN" | grep -c "__llvm_prf\|__llvm_cov" || true)
     [ "$COVERAGE" = "0" ] \
         || fail "$(basename "$BIN"): $COVERAGE coverage sections present"
@@ -143,7 +167,7 @@ entitlements_json() {
         || fail "$1: entitlements are not readable as a property list"
 }
 
-for BIN in "$APP" "$APPEX" "$APPEX_DISCOVERY"; do
+for BIN in $ALL_BUNDLES; do
     # Captured before it is parsed, and not piped straight into python3: a
     # `fail` inside a pipeline exits only its own subshell, so the parse
     # would still run on empty input and bury the real message.
@@ -179,7 +203,7 @@ fi
 # --- Same team signs app and extensions -----------------------------------
 TEAM_APP=$(codesign -dv "$APP" 2>&1 | sed -n 's/^TeamIdentifier=//p')
 [ -n "$TEAM_APP" ] || fail "could not read the app's team identifier"
-for BIN in "$APPEX" "$APPEX_DISCOVERY"; do
+for BIN in $ALL_APPEXES; do
     TEAM_EXT=$(codesign -dv "$BIN" 2>&1 | sed -n 's/^TeamIdentifier=//p')
     [ "$TEAM_APP" = "$TEAM_EXT" ] \
         || fail "team mismatch: app '$TEAM_APP' vs $BIN '$TEAM_EXT'"
@@ -189,7 +213,7 @@ note "app and both extensions signed by the same team ($TEAM_APP)"
 # --- Versions agree --------------------------------------------------------
 V_APP=$(plutil -extract CFBundleShortVersionString raw "$APP_PLIST")
 B_APP=$(plutil -extract CFBundleVersion raw "$APP_PLIST")
-for PLIST in "$APPEX_PLIST" "$APPEX_DISCOVERY_PLIST"; do
+for PLIST in $ALL_APPEX_PLISTS; do
     V_EXT=$(plutil -extract CFBundleShortVersionString raw "$PLIST")
     B_EXT=$(plutil -extract CFBundleVersion raw "$PLIST")
     [ "$V_APP" = "$V_EXT" ] || fail "version mismatch: app $V_APP vs $PLIST $V_EXT"
@@ -217,11 +241,19 @@ import json, sys
 attrs = json.load(sys.stdin).get("NSExtension", {}).get("NSExtensionAttributes", {})
 sys.exit(0 if "com.apple.ctk.aid" in attrs else 1)'
 }
-declares_aid "$APPEX_DISCOVERY_PLIST" \
-    || fail "discovery extension declares no com.apple.ctk.aid; no card is ever polled"
+# Only iOS polls for a contactless card, and only iOS embeds the
+# extension that declares what to poll for.
+if [ "$HAS_DISCOVERY" = "yes" ]; then
+    declares_aid "$APPEX_DISCOVERY_PLIST" \
+        || fail "discovery extension declares no com.apple.ctk.aid; no card is ever polled"
+fi
 ! declares_aid "$APPEX_PLIST" \
     || fail "token extension declares com.apple.ctk.aid; the token will never be minted"
-note "AID declared by the discovery extension only"
+if [ "$HAS_DISCOVERY" = "yes" ]; then
+    note "AID declared by the discovery extension only"
+else
+    note "no AID declared; a Mac reader hands the card over without one"
+fi
 
 # --- Privacy manifest present ----------------------------------------------
 [ -f "$APP_RESOURCES/PrivacyInfo.xcprivacy" ] \
