@@ -85,11 +85,10 @@ Les fonctions cryptographiques sont les suivantes :
    carte avant de le restituer au système d'exploitation.
 
 Le chiffrement est confiné à ce canal et à la seule interface sans
-contact. Il n'est pas offert au porteur : il est imposé par la
-politique d'accès de la carte. Sur l'interface à contact, le moyen ne
-chiffre rien. La clé publiée au système d'exploitation est réservée à la
-signature : le moyen n'offre à ses appelants ni déchiffrement ni accord
-de clés.
+contact. Il n'est pas offert au porteur : il est imposé par la politique
+d'accès de la carte. La clé publiée au système d'exploitation est
+réservée à la signature : le moyen n'offre à ses appelants ni
+déchiffrement ni accord de clés.
 
 Le moyen ne chiffre pas les données de l'utilisateur au repos, ne chiffre
 ni fichiers ni supports de stockage, n'offre ni messagerie ni téléphonie
@@ -315,10 +314,9 @@ The cryptographic functions are:
 
 The encryption is confined to that channel and to the contactless
 interface alone. It is not offered to the holder: it is imposed by the
-card's access policy. On the contact interface the means encrypts
-nothing. The key published to the operating system is reserved for
-signature: the means offers its callers neither decryption nor key
-agreement.
+card's access policy. The key published to the operating system is
+reserved for signature: the means offers its callers neither decryption
+nor key agreement.
 
 The means does not encrypt user data at rest, does not encrypt files or
 storage, provides no encrypted messaging or telephony, implements no VPN
