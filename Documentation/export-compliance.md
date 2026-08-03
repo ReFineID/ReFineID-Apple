@@ -121,7 +121,7 @@ The app is to be available in France, so the French declaration applies:
 supplying a cryptographic means that provides confidentiality requires a
 declaration to ANSSI, and PACE's channel is exactly that. The technical
 dossier is `Documentation/anssi-declaration.md`, in French with an
-English translation, the French prevailing.
+English version; both stand on their own.
 
 Excluding France was the alternative and was considered: it would have
 removed this step entirely and shipped sooner. It was not taken. A
@@ -131,14 +131,35 @@ is a worse answer than a filing.
 
 That dossier is a document for a regulator to read, not a page of our
 notes, so it carries no repository cross-references and no task list.
-Everything about *doing* the filing lives here instead. Render it with:
+Everything about *doing* the filing lives here instead. The exact
+pipeline that produced the filed artifact:
 
     pandoc Documentation/anssi-declaration.md --pdf-engine=typst \
-      -V margin-x=2.2cm -V margin-y=2.2cm -V fontsize=10pt \
       -o "ReFineID - ANSSI declaration dossier.pdf"
+
+    refineid card sign-document --format pades \
+      --in  "ReFineID - ANSSI declaration dossier.pdf" \
+      --out "ReFineID - ANSSI declaration dossier (signed).pdf" \
+      --reason "Declaration d'un moyen de cryptologie -- decret 2007-663" \
+      --location "Helsinki, Finlande" \
+      --timestamp http://tsa.belgium.be/connect \
+      --timestamp http://tsa.izenpe.com \
+      --timestamp http://tss.accv.es:8318/tsa \
+      --archive
+
+    curl -s -X POST https://dvv.fineid.fi/api/v1/validate \
+      -F locale=en -F includeDetails=true \
+      -F "file=@ReFineID - ANSSI declaration dossier (signed).pdf"
+
+Three qualified timestamp authorities so the proven time survives any
+one of them losing its standing, and --archive for PAdES-B-LTA, the top
+of the ETSI ladder. The validator must answer QES, PAdES-BASELINE-LTA,
+TOTAL_PASSED; anything else means stop and look.
 
 The markdown is the source of truth; the PDF is a rendering. Regenerate
 rather than editing the PDF, or the two drift and the filed one wins.
+Any edit to the markdown means render, sign and validate again -- the
+signature covers the bytes, not the intent.
 
 Before filing, have the French read by somebody who files these. It is
 written to be accurate rather than idiomatic, and a regulator's form is

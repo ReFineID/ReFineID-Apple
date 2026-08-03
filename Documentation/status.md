@@ -1,7 +1,33 @@
-# Status, 26.8.1
+# Status, 26.8.3
 
 What works, what does not, and what each was measured with. Written from
-device and Mac runs through 2026-08-01, not from intent.
+device and Mac runs through 2026-08-03, not from intent.
+
+## ANSSI: the dossier is ready to file
+
+`Documentation/anssi-declaration.md` is content-complete: no
+placeholders, sections numbered to ANSSI's annexe I field by field,
+declared as a private individual, French proofread (aspell plus a close
+reading; the legal basis was corrected to LCEN article 30 on the way).
+Signed with the card at PAdES-BASELINE-LTA -- three qualified timestamp
+authorities, validation material embedded, archive timestamp -- and
+confirmed by two independent validators on 2026-08-03:
+
+    dvv.fineid.fi:  QES | PAdES-BASELINE-LTA | TOTAL_PASSED | QESIG
+    EU DSS demo:    PAdES-BASELINE-LTA | TOTAL_PASSED | QESig
+
+The signing toolchain is `refineid card sign-document` in the internal
+monorepo: pades, cades, cades-detached, asice-cades, asice/bdoc, levels
+B/T/LT for all and LTA for pades and asice-cades, each level verified
+against DVV on a real card. ANSSI's own annexe I form (an XFA PDF) was
+also signed and validated the same way, so nothing in the filing needs
+ink.
+
+What remains is human: fill annexe I in Adobe Reader, have the French
+read by a native speaker, and email the form plus dossier to
+`controle@ssi.gouv.fr`. Steps and pitfalls -- including which annexe is
+the right one and why the other looks right but is not -- are in
+`export-compliance.md`.
 
 ## macOS: card login works, on both interfaces
 
