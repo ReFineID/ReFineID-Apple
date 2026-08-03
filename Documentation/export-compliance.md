@@ -155,18 +155,22 @@ pipeline that produced the filed artifact:
       --timestamp https://timestamp.sectigo.com/qualified \
       --timestamp https://timestamp.aped.gov.gr/qtss \
       --timestamp http://tsa.belgium.be/connect \
+      --timestamp http://tsa.izenpe.com \
+      --timestamp http://tss.accv.es:8318/tsa \
       --archive
 
     curl -s -X POST https://dvv.fineid.fi/api/v1/validate \
       -F locale=en -F includeDetails=true \
       -F "file=@ReFineID - ANSSI declaration dossier (signed).pdf"
 
-Three qualified authorities in three countries, so the proven time
+Five qualified authorities in four countries, so the proven time
 survives any one of them losing its standing. A refusal is survivable:
 each is asked in turn, one that is down or rate limiting is named on
-stderr and skipped, and only silence from all three stops the signing.
-Three is the floor rather than a comfortable margin -- see the two held
-in reserve below.
+stderr and skipped, and only silence from all five stops the signing.
+Ask all five. They are alternatives rather than a chain, so more of
+them is strictly more insurance, and there is no sixth to reach for --
+every other qualified authority tried either publishes no endpoint,
+answers 401, or offers only its non-qualified service.
 Belgium answers HTTP 429 after enough requests in a day and Sectigo
 asks for fifteen seconds between them, so spreading the work is not
 only about longevity.
@@ -195,13 +199,13 @@ Worth re-checking on the day rather than assumed: not whether the
 endpoints answer, but whether the unit answering is still named as
 granted in its member state's list.
 
-Two more are qualified, answer, and are held in reserve rather than
-used. ACCV (`http://tss.accv.es:8318/tsa`) runs its responder and its
-list on a 180-day cycle, so what a signature freezes from it can be
-weeks stale before it is taken. Izenpe (`http://tsa.izenpe.com`)
-publishes no responder at all, only a list. Reach for them if the
-three above ever go quiet together, which would otherwise stop the
-signing outright.
+Izenpe and ACCV come last on the evidence stored beside their tokens
+rather than on the tokens. Izenpe publishes no responder, only a list,
+which the CRL fallback collects; ACCV runs responder and list on a
+180-day cycle, so what a signature freezes from it can be weeks old
+before the signature exists. Neither weakens the attestation: both are
+granted, and DVV reported an ACCV token as a qualified timestamp with
+exactly that material beside it.
 
 Sectigo and the Greek one are https and need a build with a TLS
 backend (`--features boring-tls`); the others need nothing. RFC 3161
@@ -232,7 +236,7 @@ Sign once, when the document is finished and about to be sent.
 While the text is still being edited, render and read -- rendering costs
 nothing and needs neither the card nor the network. Signing a draft
 attests a document that will not be the one filed, spends a card
-operation and a PIN verification on it, and asks three timestamp
+operation and a PIN verification on it, and asks five timestamp
 authorities for tokens over something disposable. That last part has a
 cost you can measure: tsa.belgium.be began answering HTTP 429 after
 enough draft signings in one day.
