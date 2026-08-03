@@ -63,11 +63,6 @@ transmet les demandes de signature à la carte. Safari et les autres
 applications du système s'authentifient ensuite avec la carte comme avec
 tout autre certificat client.
 
-La présente déclaration porte sur la seule application pour plateformes
-Apple, distribuée par l'App Store. Un intergiciel ReFineID
-pour postes de travail, distribué séparément et dont les fonctions
-cryptographiques diffèrent, n'entre pas dans son champ.
-
 #### B.2.3. Indiquez à quelle catégorie se rapporte la fonction principale du moyen
 
 **Sécurité de l'information** (bibliothèque et intergiciel
@@ -77,7 +72,7 @@ cryptographiques).
 
 #### B.3.1. Description des fonctionnalités cryptographiques du moyen
 
-Deux fonctions, et aucune autre :
+Les fonctions cryptographiques sont les suivantes :
 
 1. **Établissement d'un canal sécurisé avec la carte.** La carte refuse
    toute lecture de son application PKCS#15 sur l'interface sans contact
@@ -298,11 +293,6 @@ signature requests to the card. Safari and other system consumers then
 authenticate with the card as they would with any other client
 certificate.
 
-This declaration covers the Apple-platform application alone,
-distributed through the App Store. A ReFineID middleware for desktop
-systems, distributed separately and with different cryptographic
-functions, falls outside its scope.
-
 #### B.2.3. Category of the principal function
 
 **Information security** (cryptographic library and middleware).
@@ -311,7 +301,7 @@ functions, falls outside its scope.
 
 #### B.3.1. Description of the cryptographic functionality
 
-Two functions, and nothing else:
+The cryptographic functions are:
 
 1. **Opening a secure channel to the card.** The card refuses every read
    of its PKCS#15 application on the contactless interface until PACE has
