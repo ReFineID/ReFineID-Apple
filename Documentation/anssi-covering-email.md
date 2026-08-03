@@ -3,12 +3,11 @@
 Madame, Monsieur,
 
 Je vous prie de bien vouloir trouver ci-joint la déclaration de
-fourniture, de transfert depuis ou vers un État membre de l'Union
-européenne, d'importation et d'exportation vers un État n'appartenant pas
-à l'Union européenne du moyen de cryptologie dénommé ReFineID, établie au
-titre de l'article 30 de la loi n° 2004-575 du 21 juin 2004 pour la
-confiance dans l'économie numérique et du décret n° 2007-663 du 2 mai
-2007 pris pour son application.
+fourniture et de transfert depuis un État membre de l'Union européenne
+du moyen de cryptologie dénommé ReFineID, établie au titre de l'article
+30 de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans
+l'économie numérique et du décret n° 2007-663 du 2 mai 2007 pris pour
+son application.
 
 Le déclarant est un particulier : ReFineID est un nom commercial que
 j'emploie en mon nom propre et ne désigne aucune personne morale.
@@ -18,10 +17,12 @@ ordre et sous leurs intitulés ou leur équivalent, chaque question
 recevant sa réponse à sa place.
 
 Je déclare en rubrique C que le moyen relève de la catégorie 3 de
-l'annexe 2 du décret, sans présenter cette qualification comme acquise :
-il appartient à vos services de l'apprécier.
+l'annexe 2 du décret.
 
 La mise sur le marché est prévue le 1er novembre 2026.
+
+Je vous saurais gré de bien vouloir me délivrer l'attestation de
+déclaration correspondante.
 
 Je me tiens à votre disposition pour tout complément d'information ou
 toute pièce que vous jugeriez utile.

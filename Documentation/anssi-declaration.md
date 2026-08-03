@@ -191,9 +191,7 @@ RFC 8017.
 
 Le déclarant déclare que le moyen de cryptologie relève de la
 catégorie 3 de l'annexe 2 du décret n° 2007-663 du 2 mai 2007. Les
-éléments justificatifs suivent. Il appartient à l'ANSSI d'apprécier cette qualification ; dans
-l'attente de son appréciation, celle-ci n'est pas présentée comme
-acquise.
+éléments justificatifs suivent.
 
 ### Présentez le mode de commercialisation du moyen de cryptologie et le marché auquel il s'adresse
 
@@ -267,10 +265,6 @@ droit de nature à modifier la présente déclaration ou les éléments
 joints. Toute omission ou toute fausse déclaration expose le déclarant
 aux sanctions prévues aux articles 34 et 35 de la loi n° 2004-575 du
 21 juin 2004 modifiée.
-
-La signature de la présente attestation est la signature électronique
-qualifiée apposée sur ce document ; ses conditions de vérification sont
-rappelées en pied de page.
 
 ```{=typst}
 #v(1fr)
@@ -479,9 +473,7 @@ SHA-2, FIPS 180-4; ECDSA, FIPS 186-5 and ANSI X9.62; RSA, RFC 8017.
 
 The declarant declares that the means of cryptology falls within
 category 3 of annex 2 to decree No 2007-663 of 2 May 2007. The
-supporting points follow. It is for
-ANSSI to assess that qualification; until it has, the qualification is
-not presented as held.
+supporting points follow.
 
 ### Present the means of commercialisation and the market it addresses
 
@@ -550,9 +542,6 @@ matter of fact or of law liable to alter this declaration or the
 attached material. Any omission or false declaration exposes the
 declarant to the penalties provided for in articles 34 and 35 of law
 No 2004-575 of 21 June 2004 as amended.
-
-The signature on this attestation is the qualified electronic signature
-applied to this document; how to verify it is set out in the footer.
 
 ```{=typst}
 #v(1fr)
