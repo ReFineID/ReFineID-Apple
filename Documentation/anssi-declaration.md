@@ -5,31 +5,22 @@
 #show table: set par(justify: false)
 ```
 
-Dossier de déclaration au titre de l'article 30 de la loi n° 2004-575
-du 21 juin 2004 pour la confiance dans l'économie numérique (LCEN) et du
-décret n° 2007-663 du 2 mai 2007 pris pour son application.
+Déclaration de fourniture et de transfert depuis un État membre de
+l'Union européenne d'un moyen de cryptologie, au titre de l'article 30
+de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie
+numérique et du chapitre II du décret n° 2007-663 du 2 mai 2007.
 
-ReFineID est un moyen de cryptologie assurant, outre des fonctions
-d'authentification, d'intégrité et de signature, une fonction de
-confidentialité : le canal établi avec la carte est chiffré. Sa
-fourniture relève à ce titre du régime de déclaration du chapitre II.
+ReFineID est un intergiciel qui rend la carte nationale d'identité
+finlandaise utilisable comme identité numérique sur les plateformes
+Apple. Il établit avec la carte un canal chiffré et assure à ce titre
+une fonction de confidentialité, outre l'authentification, l'intégrité
+et la signature : sa fourniture relève du régime de déclaration.
 
-Le présent document constitue la déclaration. Il est établi selon
-l'annexe I de l'ANSSI, dont il reprend les rubriques A à F dans le même
-ordre, sous leurs intitulés ou leur équivalent : chaque question y
-trouve sa réponse, à sa place.
-
-Nature de la demande : **déclaration de fourniture et de transfert depuis
-un État membre de l'Union européenne** d'un moyen de cryptologie, au
-titre du seul chapitre II du décret n° 2007-663.
-
-Le déclarant est établi en Finlande et le moyen est distribué depuis
-l'Union européenne, notamment par l'App Store d'Apple. Les opérations
-déclarées sont donc la fourniture du moyen en France et son transfert
-depuis un État membre. Le transfert vers un État membre depuis la France
-et l'exportation depuis la France vers un État tiers, que le IV de
-l'article 30 soumet à autorisation, ne sont pas le fait du déclarant et
-ne font pas l'objet de la présente déclaration.
+Le présent document est la déclaration ; il reprend les rubriques A à F
+de l'annexe I. Le déclarant étant établi en Finlande, le transfert
+depuis la France vers un État membre et l'exportation depuis la France,
+que le IV de l'article 30 soumet à autorisation, ne sont pas de son
+fait.
 
 Le dossier est établi en français et suivi d'une version anglaise.
 
@@ -64,7 +55,7 @@ Le déclarant est également le fabricant du moyen ; la rubrique relative
 | Désignation générique | Intergiciel pour carte nationale d'identité |
 | Marque de distribution | ReFineID |
 | Référence commerciale | ReFineID pour plateformes Apple (application App Store, identifiant de lot `fi.refineid.ReFineID`) |
-| Version | Versionnement calendaire `AA.M.J` (26.8.3 à la date du dossier) |
+| Version | 26.8.3 |
 | Date de mise sur le marché | 1er novembre 2026 |
 | Plateformes | iOS 26, iPadOS 26, macOS 26 |
 
@@ -298,27 +289,21 @@ Fait à Helsinki, le 3 août 2026.
 
 # English version
 
-ReFineID is a means of cryptology which, besides authentication,
-integrity and signature functions, provides a confidentiality function:
-the channel it establishes with the card is encrypted. Its supply
-accordingly falls under the declaration regime of chapter II.
+Declaration of supply and of transfer from a member state of the
+European Union of a means of cryptology, under article 30 of law
+No 2004-575 of 21 June 2004 for confidence in the digital economy and
+chapter II of decree No 2007-663 of 2 May 2007.
 
-This document is the declaration. It is drawn up according to ANSSI's
-annexe I, following sections A to F in the same order, under their
-headings or a close equivalent: every question is answered here, in
-its place.
+ReFineID is middleware that makes the Finnish national identity card
+usable as a digital identity on Apple platforms. It establishes an
+encrypted channel with the card and so provides a confidentiality
+function, besides authentication, integrity and signature: its supply
+falls under the declaration regime.
 
-Nature of the request: **declaration of supply and of transfer from a
-member state of the European Union** of a means of cryptology, under
-chapter II of decree No 2007-663 alone.
-
-The declarant is established in Finland and the means is distributed from
-within the European Union, through Apple's App Store among other
-channels. The operations declared are therefore the supply of the means
-in France and its transfer from a member state. Transfer from France to a
-member state, and export from France to a third state -- which article
-30 IV subjects to authorisation -- are not performed by the declarant and
-are not the subject of this declaration.
+This document is the declaration; it follows sections A to F of annexe
+I. The declarant being established in Finland, transfer from France to
+a member state and export from France -- which article 30 IV subjects
+to authorisation -- are not performed by him.
 
 ## A. Declarant and/or applicant
 
@@ -349,7 +334,7 @@ not apply.
 | Generic designation | Middleware for a national identity card |
 | Brand | ReFineID |
 | Commercial reference | ReFineID for Apple platforms (App Store application, bundle identifier `fi.refineid.ReFineID`) |
-| Version | Calendar versioning `YY.M.D` (26.8.3 at the date of this dossier) |
+| Version | 26.8.3 |
 | Date placed on the market | 1 November 2026 |
 | Platforms | iOS 26, iPadOS 26, macOS 26 |
 
