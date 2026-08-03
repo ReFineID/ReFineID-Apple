@@ -140,11 +140,21 @@ public enum CardDirectory {
   }
 
   private static func write(_ data: Data) {
-    let attributes: [String: Any] = [kSecValueData as String: data]
+    // The directory holds card access numbers, so it carries the same
+    // protection as the single stored number: this device only, never a
+    // backup, never another device. Without the attribute the keychain
+    // default applies, and that default does travel in a backup and
+    // restore onto another device. Set on update as well as add, so an
+    // item written before this attribute existed is raised to it rather
+    // than left at the default.
+    let attributes: [String: Any] = [
+      kSecValueData as String: data,
+      kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+    ]
     let status = SecItemUpdate(query() as CFDictionary, attributes as CFDictionary)
     guard status == errSecItemNotFound else { return }
     var add = query()
-    add[kSecValueData as String] = data
+    add.merge(attributes) { _, new in new }
     SecItemAdd(add as CFDictionary, nil)
   }
 

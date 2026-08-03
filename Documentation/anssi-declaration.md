@@ -140,10 +140,11 @@ Les colonnes reprennent celles de la rubrique B.3.4 du formulaire.
 | ECDH sur brainpoolP384r1 | PACE-GM (mappage générique) | 384 bits | Accord de clés PACE |
 | AES | CBC | 256 bits | Confidentialité de chaque APDU après PACE |
 | AES | CMAC | 256 bits | Intégrité de chaque APDU après PACE |
-| SHA-256, SHA-384 | s.o. | s.o. | Dérivation de clés et condensats de signature |
-| ECDSA sur NIST P-384 | s.o. | 384 bits | Vérification de la signature de la carte |
-| RSA | PKCS#1 v1.5 | 3072 bits | Vérification, cartes à clé RSA |
-| RSA | PSS | 3072 bits | Vérification, cartes à clé RSA |
+| SHA-256 | s.o. | s.o. | Dérivation des clés de session PACE |
+| SHA-224, SHA-256, SHA-384, SHA-512 | s.o. | s.o. | Condensats des signatures d'authentification |
+| ECDSA sur NIST P-384 | s.o. | 384 bits | Signature par la carte et vérification locale du résultat (condensat SHA-224, SHA-256, SHA-384 ou SHA-512, au choix du service appelant) |
+| RSA | PKCS#1 v1.5 | 3072 bits | Signature par la carte et vérification locale, condensat SHA-256 (cartes à clé RSA) |
+| RSA | PSS | 3072 bits | Signature par la carte et vérification locale, condensat SHA-256 (cartes à clé RSA) |
 
 Normes correspondantes : ECDH, RFC 5639 et BSI TR-03111 ; AES,
 FIPS 197 avec NIST SP 800-38A (CBC) et NIST SP 800-38B avec RFC 4493
@@ -161,7 +162,13 @@ RFC 8017.
   choisit de le conserver, sont stockés dans le trousseau Apple avec les
   attributs `WhenUnlockedThisDeviceOnly` et non synchronisables : jamais
   écrits dans une sauvegarde, jamais restaurés sur un autre appareil,
-  jamais transmis à iCloud.
+  jamais transmis à iCloud. Le répertoire des cartes connues, qui porte
+  un numéro d'accès par carte, est stocké avec les mêmes attributs.
+- Sur macOS, une copie du ou des numéros d'accès est en outre remise au
+  pilote de jeton par le magasin de configuration de CryptoTokenKit,
+  canal que le système prévoit à cet effet : locale à l'appareil, non
+  synchronisée, inscriptible par la seule application hôte, et effacée
+  lorsque le porteur fait oublier la carte.
 - Aucun séquestre de clés, aucun recouvrement, aucune gestion de clés à
   distance, aucune transmission de clé sur un réseau.
 
@@ -367,10 +374,11 @@ The columns are those of section B.3.4 of the form.
 | ECDH on brainpoolP384r1 | PACE-GM (generic mapping) | 384 bits | PACE key agreement |
 | AES | CBC | 256 bits | Confidentiality of each APDU after PACE |
 | AES | CMAC | 256 bits | Integrity of each APDU after PACE |
-| SHA-256, SHA-384 | n/a | n/a | Key derivation and signature digests |
-| ECDSA on NIST P-384 | n/a | 384 bits | Verification of the card's signature |
-| RSA | PKCS#1 v1.5 | 3072 bits | Verification, RSA card generations |
-| RSA | PSS | 3072 bits | Verification, RSA card generations |
+| SHA-256 | n/a | n/a | Derivation of the PACE session keys |
+| SHA-224, SHA-256, SHA-384, SHA-512 | n/a | n/a | Digests of the authentication signatures |
+| ECDSA on NIST P-384 | n/a | 384 bits | Signature by the card and local verification of the result (SHA-224, SHA-256, SHA-384 or SHA-512 digest, at the calling service's choice) |
+| RSA | PKCS#1 v1.5 | 3072 bits | Signature by the card and local verification, SHA-256 digest (RSA card generations) |
+| RSA | PSS | 3072 bits | Signature by the card and local verification, SHA-256 digest (RSA card generations) |
 
 Corresponding standards: ECDH, RFC 5639 and BSI TR-03111; AES, FIPS 197
 with NIST SP 800-38A (CBC) and NIST SP 800-38B with RFC 4493 (CMAC);
@@ -383,10 +391,17 @@ SHA-2, FIPS 180-4; ECDSA, FIPS 186-4 and ANSI X9.62; RSA, RFC 8017.
   holds them.
 - PACE session keys are ephemeral: derived per session, held in memory
   only, destroyed when the session ends.
-- The card access number, and PIN1 where the holder chooses to store it,
-  are held in the Apple keychain with the attributes
-  `WhenUnlockedThisDeviceOnly` and non-synchronizable: never written to a
-  backup, never restored onto another device, never sent to iCloud.
+- The card access number, and PIN1 when the holder chooses to keep it,
+  are stored in the Apple keychain with the `WhenUnlockedThisDeviceOnly`
+  and non-synchronizable attributes: never written to a backup, never
+  restored onto another device, never sent to iCloud. The directory of
+  known cards, which carries one access number per card, is stored with
+  the same attributes.
+- On macOS a copy of the access number(s) is additionally handed to the
+  token driver through CryptoTokenKit's configuration store, the channel
+  the system provides for exactly this: local to the device, not
+  synchronized, writable only by the hosting application, and erased
+  when the holder forgets the card.
 - There is no key escrow, no key recovery, no remote key management, and
   no transmission of any key over a network.
 
