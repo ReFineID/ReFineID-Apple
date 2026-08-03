@@ -5,8 +5,6 @@
 #show table: set par(justify: false)
 ```
 
-# ReFineID -- déclaration d'un moyen de cryptologie
-
 Dossier de déclaration au titre de l'article 30 de la loi n° 2004-575
 du 21 juin 2004 pour la confiance dans l'économie numérique (LCEN) et du
 décret n° 2007-663 du 2 mai 2007 pris pour son application. ReFineID
@@ -15,8 +13,8 @@ confidentialité et relève à ce titre de l'obligation de déclaration.
 
 Le présent document constitue la déclaration. Il est établi selon
 l'annexe I de l'ANSSI, dont il reprend les rubriques A à F dans le même
-ordre et reproduit les intitulés : chaque question y trouve sa réponse,
-à sa place.
+ordre, sous leurs intitulés ou leur équivalent : chaque question y
+trouve sa réponse, à sa place.
 
 Nature de la demande : deuxième case du formulaire, **déclaration de
 fourniture, de transfert depuis ou vers un État membre de l'Union
@@ -28,16 +26,16 @@ La distribution, notamment par l'App Store d'Apple, n'est pas
 limitée à la France : la fourniture, le transfert vers les autres États
 membres et l'exportation hors de l'Union européenne sont tous
 susceptibles de se produire, et sont donc tous couverts par la présente
-déclaration. Le déclarant estime que l'exportation peut relever du
-régime de la déclaration au titre de la catégorie 3 de l'annexe 2 du
-décret et sollicite cette qualification en rubrique C ; jusqu'à
-l'appréciation de l'ANSSI, elle n'est pas présentée comme acquise.
+déclaration. Le moyen relève, selon le déclarant, de la catégorie 3 de
+l'annexe 2 du décret, ce qu'il déclare en rubrique C ; jusqu'à
+l'appréciation de l'ANSSI, cette qualification n'est pas présentée
+comme acquise.
 
 Aucune demande d'autorisation au titre du chapitre III n'est formée.
 
 Le dossier est établi en français et suivi d'une version anglaise.
 
-## A. Déclarant
+## A. Déclarant et/ou demandeur
 
 Le déclarant est un particulier (rubrique A.2 du formulaire). ReFineID
 est un nom commercial employé par le déclarant en son nom propre ; il ne
@@ -46,7 +44,7 @@ a ni dénomination sociale, ni numéro SIRET, ni société pour le compte de
 laquelle la déclaration serait faite.
 
 | Champ | Valeur |
-|---|---|
+|:---------------------------|:-----------------------------------------------|
 | Nom et prénoms | Koistinen, Petri |
 | Nationalité | finlandaise |
 | Adresse | Niittaajankatu 8a A 21, 00810 Helsinki, Finlande |
@@ -59,25 +57,27 @@ techniques sur le moyen : la même, aux mêmes coordonnées.
 Le déclarant est également le fabricant du moyen ; la rubrique relative
 à un fabricant tiers est sans objet.
 
-## B.1. Informations générales sur le moyen
+## B. Moyen de cryptologie auquel s'appliquent la déclaration et/ou la demande d'autorisation
+
+### B.1. Informations générales sur le moyen
 
 | Champ | Valeur |
-|---|---|
+|:---------------------------|:-----------------------------------------------|
 | Dénomination du moyen | ReFineID |
 | Désignation générique | Intergiciel pour carte nationale d'identité |
 | Marque de distribution | ReFineID |
-| Référence commerciale | ReFineID |
+| Référence commerciale | ReFineID pour plateformes Apple (application App Store, identifiant de lot `fi.refineid.ReFineID`) |
 | Version | Versionnement calendaire `AA.M.J` (26.8.3 à la date du dossier) |
-| Date de mise sur le marché | 1er octobre 2026 |
+| Date de mise sur le marché | 1er novembre 2026 |
 | Plateformes | iOS 26, iPadOS 26, macOS 26 |
 
-## B.2. Description fonctionnelle du moyen
+### B.2. Description fonctionnelle du moyen
 
-### B.2.1. Classez le moyen dans la ou les catégorie(s) correspondante(s)
+#### B.2.1. Classez le moyen dans la ou les catégorie(s) correspondante(s)
 
 **Logiciel.** Le moyen ne comporte aucun élément matériel.
 
-### B.2.2. Description générale du moyen
+#### B.2.2. Description générale du moyen
 
 ReFineID rend la carte nationale d'identité
 finlandaise utilisable comme identité numérique fondée sur un certificat client,
@@ -90,15 +90,20 @@ ensuite avec la carte comme avec tout autre certificat client. Le porteur
 s'en sert pour se connecter à des services en ligne avec sa carte
 d'identité.
 
-### B.2.3. Indiquez à quelle catégorie se rapporte la fonction principale du moyen
+La présente déclaration porte sur cette seule application pour
+plateformes Apple, distribuée par l'App Store. Un intergiciel ReFineID
+pour postes de travail, distribué séparément et dont les fonctions
+cryptographiques diffèrent, n'entre pas dans son champ.
+
+#### B.2.3. Indiquez à quelle catégorie se rapporte la fonction principale du moyen
 
 **Sécurité de l'information** (bibliothèque et intergiciel
 cryptographiques). Aucune des autres catégories proposées -- ordinateur,
 envoi/stockage/réception d'informations, réseau -- ne s'applique.
 
-## B.3. Description technique des services de cryptologie fournis
+### B.3. Description technique des services de cryptologie fournis
 
-### B.3.1. Description des fonctionnalités cryptographiques du moyen
+#### B.3.1. Description des fonctionnalités cryptographiques du moyen
 
 Deux fonctions, et aucune autre :
 
@@ -119,13 +124,13 @@ ni fichiers ni supports de stockage, n'offre ni messagerie ni téléphonie
 chiffrées, ne met en œuvre aucun réseau privé virtuel (VPN) ni tunnel de transport, et
 n'effectue aucune communication réseau propre.
 
-### B.3.2. Indiquez à quelle(s) catégorie(s) se rapporte(nt) la ou les fonctions cryptographiques du moyen
+#### B.3.2. Indiquez à quelle(s) catégorie(s) se rapporte(nt) la ou les fonctions cryptographiques du moyen
 
 Authentification, intégrité, confidentialité et signature -- toutes
 quatre, exercées entre le moyen et la carte, et non sur les données de
 l'utilisateur.
 
-### B.3.3. Indiquez le(s) protocole(s) sécurisé(s) utilisés par le moyen
+#### B.3.3. Indiquez le(s) protocole(s) sécurisé(s) utilisés par le moyen
 
 Ni IPsec, ni SSH, ni protocoles de VoIP, ni SSL/TLS. TLS est assuré par
 le système d'exploitation ; le moyen ne met en œuvre aucune pile TLS et
@@ -136,13 +141,15 @@ suite `id-PACE-ECDH-GM-AES-CBC-CMAC-256`
 (OID 0.4.0.127.0.7.2.2.4.2.4) ; messagerie sécurisée selon
 ISO/IEC 7816-4.
 
-### B.3.4. Précisez les algorithmes cryptographiques utilisés et leurs longueurs maximales de clés
+#### B.3.4. Précisez les algorithmes cryptographiques utilisés et leurs longueurs maximales de clés
 
 La logique des protocoles propres à la carte est mise en œuvre en Swift
-dans le module `CardCore`, au moyen des primitives cryptographiques
-fournies notamment par CryptoKit. Tous les
-algorithmes sont publiés par des organismes de normalisation
-internationaux ; aucun n'est propriétaire.
+dans le module `CardCore`. Les primitives se répartissent ainsi : les
+opérations sur la courbe brainpoolP384r1 et le CMAC sont écrits dans le
+moyen ; l'AES en mode CBC est appelé dans CommonCrypto ; SHA-2 est appelé
+dans CryptoKit ; la vérification des signatures ECDSA et RSA est faite
+par Security.framework. Tous les algorithmes sont publiés par des
+organismes de normalisation internationaux ; aucun n'est propriétaire.
 
 Les colonnes reprennent celles de la rubrique B.3.4 du formulaire.
 
@@ -167,7 +174,7 @@ FIPS 197 avec NIST SP 800-38A (CBC) et NIST SP 800-38B avec RFC 4493
 (CMAC) ; SHA-2, FIPS 180-4 ; ECDSA, FIPS 186-5 et ANSI X9.62 ; RSA,
 RFC 8017.
 
-### Gestion des clés (hors rubriques du formulaire)
+#### Gestion des clés (hors rubriques du formulaire)
 
 - Les clés privées sont générées dans la carte par l'autorité émettrice
   et n'en sortent jamais. Le moyen ne peut pas les lire et ne les détient
@@ -175,12 +182,23 @@ RFC 8017.
 - Les clés de session PACE sont éphémères : dérivées par session, gardées
   en mémoire seulement, abandonnées à la fin de la session et jamais
   écrites sur un support persistant.
-- Le numéro d'accès de la carte, et le cas échéant le PIN1 si le porteur
-  choisit de le conserver, sont stockés dans le trousseau Apple avec les
-  attributs `WhenUnlockedThisDeviceOnly` et non synchronisables : jamais
-  écrits dans une sauvegarde, jamais restaurés sur un autre appareil,
-  jamais transmis à iCloud. Le répertoire des cartes connues, qui porte
-  un numéro d'accès par carte, est stocké avec les mêmes attributs.
+- Sur iOS et iPadOS, le numéro d'accès de la carte, et le cas échéant le
+  PIN1 si le porteur choisit de le conserver, sont conservés dans le
+  trousseau de protection des données (*Data Protection Keychain*) avec
+  l'attribut `WhenUnlockedThisDeviceOnly` et sans synchronisation : jamais
+  transmis à iCloud, jamais inclus dans une sauvegarde, jamais restaurés
+  sur un autre appareil.
+- Sur macOS, le PIN1 n'est jamais conservé : le moyen n'y offre pas cette
+  option. Seul le numéro d'accès l'est. Le trousseau de protection des
+  données y exige une habilitation (`keychain-access-groups`) dont le
+  moyen ne dispose pas ; le numéro est donc conservé dans le trousseau de
+  session de l'utilisateur, protégé par le mot de passe de session et
+  jamais transmis à iCloud, mais susceptible de figurer dans une
+  sauvegarde locale du poste et d'être repris par l'assistant de
+  migration.
+- Le répertoire des cartes connues, qui porte un numéro d'accès par
+  carte et aucun PIN, est conservé de la même manière sur chaque
+  plateforme.
 - Sur macOS, une copie du ou des numéros d'accès est en outre remise au
   pilote de jeton par le magasin de configuration de CryptoTokenKit,
   canal que le système prévoit à cet effet. Cette mention décrit le
@@ -192,12 +210,14 @@ RFC 8017.
 - Aucun séquestre de clés, aucun recouvrement, aucune gestion de clés à
   distance, aucune transmission de clé sur un réseau.
 
-## C. Demande de classement au titre de la catégorie 3 de l'annexe 2 du décret n° 2007-663
+## C. Cas d'un moyen de cryptologie relevant de la catégorie 3 de l'annexe 2 du décret n° 2007-663 du 2 mai 2007
 
-Le déclarant estime que le moyen remplit les conditions de la catégorie
-3 de l'annexe 2 du décret n° 2007-663 du 2 mai 2007 et sollicite cette
-qualification ; il appartient à l'ANSSI de l'apprécier. Les éléments
-justificatifs demandés par le formulaire suivent, dans son ordre.
+Case cochée : le déclarant déclare que le moyen de cryptologie relève de
+la catégorie 3 de l'annexe 2 du décret n° 2007-663 du 2 mai 2007. Les
+éléments justificatifs demandés par le formulaire suivent, dans son
+ordre. Il appartient à l'ANSSI d'apprécier cette qualification ; dans
+l'attente de son appréciation, celle-ci n'est pas présentée comme
+acquise.
 
 ### Présentez le mode de commercialisation du moyen de cryptologie et le marché auquel il s'adresse
 
@@ -207,7 +227,9 @@ d'Apple ; d'autres canaux peuvent s'y ajouter, selon les mêmes
 modalités. Le marché
 visé est le porteur d'une carte nationale d'identité finlandaise
 souhaitant s'authentifier auprès de services en ligne. Le code source est
-public : https://github.com/ReFineID/ReFineID-Apple
+public :
+
+https://github.com/ReFineID/ReFineID-Apple
 
 ### Expliquez pourquoi la fonctionnalité cryptographique du moyen ne peut pas être modifiée facilement par l'utilisateur
 
@@ -233,12 +255,12 @@ Sans objet. La rubrique D ne concerne qu'un moyen ayant déjà fait
 l'objet d'une autorisation de transfert ou d'exportation ; la présente
 demande est une première déclaration et n'en invoque aucune.
 
-## E. Pièces jointes
+## E. Pièces à joindre
 
 Les pièces demandées par le formulaire, une par une :
 
 | Pièce demandée | État |
-|---|---|
+|:---------------------------|:-----------------------------------------------|
 | Document général présentant la société | Sans objet : le déclarant est une personne physique. |
 | Extrait K bis de moins de trois mois | Sans objet : aucune société immatriculée. |
 | Brochure commerciale | Sans objet : le moyen est distribué sans brochure ; sa fiche publique de distribution en tient lieu. |
@@ -250,10 +272,10 @@ Le code source complet est publiquement accessible à l'adresse indiquée
 en rubrique C, ce qui couvre les éléments relatifs à la conception du
 moyen énumérés à la dernière page du formulaire.
 
-## F. Signataire
+## F. Attestation
 
 | Champ | Valeur |
-|---|---|
+|:---------------------------|:-----------------------------------------------|
 | Nom et prénoms | Koistinen, Petri |
 | Agissant en qualité de | Fournisseur et auteur du moyen, personne physique |
 | Pour le compte de | Lui-même, en son nom propre (aucune personne morale) |
@@ -282,12 +304,13 @@ rappelées en pied de page.
   #text(style: "italic", size: 9pt)[
     Ce document est signé électroniquement. La signature est une signature
     électronique qualifiée au sens du règlement (UE) n° 910/2014
-    (article 3, point 12), créée par un dispositif qualifié de création de
-    signature électronique et fondée sur un certificat qualifié délivré par
+    (article 3, point 12), créée par un dispositif de création de
+    signature électronique qualifié et fondée sur un certificat qualifié délivré par
     l'Agence des services de données numériques et démographiques
     (Digi- ja väestötietovirasto, DVV), prestataire de services de confiance
     qualifié finlandais. En vertu de l'article 25, paragraphe 2, du même
-    règlement, elle a l'effet juridique d'une signature manuscrite.
+    règlement, elle a un effet juridique équivalent à celui d'une
+    signature manuscrite.
 
     La validation est possible en ligne et gratuitement à l'adresse
     #link("https://dvv.fineid.fi/fr/validation"), ou par tout autre moyen
@@ -309,8 +332,9 @@ rappelées en pied de page.
 # English version
 
 This document is the declaration. It is drawn up according to ANSSI's
-annexe I, following sections A to F in the same order and reproducing
-its headings: every question is answered here, in its place.
+annexe I, following sections A to F in the same order, under their
+headings or a close equivalent: every question is answered here, in
+its place.
 
 Nature of the request: the form's second checkbox, **declaration of
 supply, of transfer from or to a member state of the European Union, of
@@ -320,14 +344,13 @@ of cryptology, under chapter II of decree No 2007-663 alone.
 Distribution -- through Apple's App Store among other channels -- is
 not confined to France: supply, transfer to other member states and export outside the
 European Union may all occur, and are all covered by this declaration.
-Export is declarable rather than subject to authorisation because the
-declarant considers that the means satisfies category 3 of annex 2 to
-the decree and requests that qualification in section C. Until ANSSI has
-assessed it, that qualification is requested, not held.
+The means falls, in the declarant's view, within category 3 of annex 2
+to the decree, which he declares in section C. Until ANSSI has assessed
+it, that qualification is not presented as held.
 
 No authorisation under chapter III is requested.
 
-## A. Declarant
+## A. Declarant and/or applicant
 
 An individual (section A.2 of the form). ReFineID is a trading name
 used by the declarant in a personal capacity; it names no legal entity.
@@ -335,7 +358,7 @@ Section A.1 does not apply: there is no registered company name, no
 SIRET number, and no company on whose behalf the declaration is made.
 
 | Field | Value |
-|---|---|
+|:---------------------------|:-----------------------------------------------|
 | Name | Koistinen, Petri |
 | Nationality | Finnish |
 | Address | Niittaajankatu 8a A 21, 00810 Helsinki, Finland |
@@ -346,25 +369,27 @@ Technical contact for ANSSI: the same person, same details. The declarant
 is also the manufacturer, so the third-party manufacturer section does
 not apply.
 
-## B.1. General information
+## B. Means of cryptology to which the declaration and/or the authorisation request applies
+
+### B.1. General information
 
 | Field | Value |
-|---|---|
+|:---------------------------|:-----------------------------------------------|
 | Name of the means | ReFineID |
 | Generic designation | Middleware for a national identity card |
 | Brand | ReFineID |
-| Commercial reference | ReFineID |
+| Commercial reference | ReFineID for Apple platforms (App Store application, bundle identifier `fi.refineid.ReFineID`) |
 | Version | Calendar versioning `YY.M.D` (26.8.3 at the date of this dossier) |
-| Date placed on the market | 1 October 2026 |
+| Date placed on the market | 1 November 2026 |
 | Platforms | iOS 26, iPadOS 26, macOS 26 |
 
-## B.2. Functional description
+### B.2. Functional description
 
-### B.2.1. Classification of the means
+#### B.2.1. Classification of the means
 
 **Software.** The means contains no hardware component.
 
-### B.2.2. General description of the means
+#### B.2.2. General description of the means
 
 ReFineID makes the Finnish national identity card usable as a client
 certificate identity through Apple's security frameworks. It reads the
@@ -375,15 +400,20 @@ the card. Safari and other system consumers then authenticate with the
 card as they would with any other client certificate. The holder uses it
 to sign in to online services with their identity card.
 
-### B.2.3. Category of the principal function
+This declaration covers that Apple-platform application alone,
+distributed through the App Store. A ReFineID middleware for desktop
+systems, distributed separately and with different cryptographic
+functions, falls outside its scope.
+
+#### B.2.3. Category of the principal function
 
 **Information security** (cryptographic library and middleware). None of
 the other categories offered -- computer, sending/storage/reception of
 information, network -- applies.
 
-## B.3. Technical description
+### B.3. Technical description
 
-### B.3.1. Description of the cryptographic functionality
+#### B.3.1. Description of the cryptographic functionality
 
 Two functions, and nothing else:
 
@@ -403,12 +433,12 @@ The means does not encrypt user data at rest, does not encrypt files or
 storage, provides no encrypted messaging or telephony, implements no VPN
 or transport tunnel, and performs no network communication of its own.
 
-### B.3.2. Categories the cryptographic functions fall under
+#### B.3.2. Categories the cryptographic functions fall under
 
 Authentication, integrity, confidentiality and signature -- all four,
 exercised between the means and the card, not on the user's data.
 
-### B.3.3. Secure protocols used by the means
+#### B.3.3. Secure protocols used by the means
 
 Neither IPsec, SSH, VoIP protocols, nor SSL/TLS. TLS is handled by the
 operating system; the means implements no TLS stack and contributes only
@@ -419,11 +449,14 @@ TR-03110-3, suite `id-PACE-ECDH-GM-AES-CBC-CMAC-256`
 (OID 0.4.0.127.0.7.2.2.4.2.4); Secure Messaging as specified in
 ISO/IEC 7816-4.
 
-### B.3.4. Cryptographic algorithms used and their maximum key lengths
+#### B.3.4. Cryptographic algorithms used and their maximum key lengths
 
-Implemented in Swift in the `CardCore` module, no Apple framework
-implementing the card's own protocols. All algorithms are published by
-international standard bodies; none are proprietary.
+The card's own protocol logic is implemented in Swift in the `CardCore`
+module. The primitives divide as follows: the brainpoolP384r1 curve
+operations and the CMAC are written in the means; AES in CBC mode is
+called in CommonCrypto; SHA-2 is called in CryptoKit; ECDSA and RSA
+signature verification is done by Security.framework. All algorithms are
+published by international standards bodies; none is proprietary.
 
 The columns are those of section B.3.4 of the form.
 
@@ -447,7 +480,7 @@ Corresponding standards: ECDH, RFC 5639 and BSI TR-03111; AES, FIPS 197
 with NIST SP 800-38A (CBC) and NIST SP 800-38B with RFC 4493 (CMAC);
 SHA-2, FIPS 180-4; ECDSA, FIPS 186-5 and ANSI X9.62; RSA, RFC 8017.
 
-### Key management (outside the form's sections)
+#### Key management (outside the form's sections)
 
 - The card's private keys are generated on the card by the issuing
   authority and never leave it. The means cannot read them and never
@@ -455,12 +488,20 @@ SHA-2, FIPS 180-4; ECDSA, FIPS 186-5 and ANSI X9.62; RSA, RFC 8017.
 - PACE session keys are ephemeral: derived per session, held in memory
   only, released when the session ends and never written to persistent
   storage.
-- The card access number, and PIN1 when the holder chooses to keep it,
-  are stored in the Apple keychain with the `WhenUnlockedThisDeviceOnly`
-  and non-synchronizable attributes: never written to a backup, never
-  restored onto another device, never sent to iCloud. The directory of
-  known cards, which carries one access number per card, is stored with
-  the same attributes.
+- On iOS and iPadOS the card access number, and PIN1 when the holder
+  chooses to keep it, are held in the data-protection keychain with the
+  `WhenUnlockedThisDeviceOnly` and non-synchronizable attributes: never
+  sent to iCloud, never included in a backup, never restored onto
+  another device.
+- On macOS PIN1 is never kept: the means does not offer that option
+  there. Only the access number is. The data-protection keychain
+  requires a `keychain-access-groups` entitlement the means does not
+  carry, so the number is held in the user's login keychain, protected
+  by the login password and never sent to iCloud, but capable of
+  appearing in a local backup of the machine and of being carried by
+  Migration Assistant.
+- The directory of known cards, which carries one access number per
+  card and no PIN, is held the same way on each platform.
 - On macOS a copy of the access number(s) is additionally handed to the
   token driver through CryptoTokenKit's configuration store, the channel
   the system provides for this. This describes the Apple configuration
@@ -471,12 +512,13 @@ SHA-2, FIPS 180-4; ECDSA, FIPS 186-5 and ANSI X9.62; RSA, RFC 8017.
 - There is no key escrow, no key recovery, no remote key management, and
   no transmission of any key over a network.
 
-## C. Request for classification under category 3 of annex 2 to decree No 2007-663
+## C. Case of a means of cryptology falling within category 3 of annex 2 to decree No 2007-663 of 2 May 2007
 
-The declarant considers that the means satisfies the conditions for
-category 3 of annex 2 to decree No 2007-663 of 2 May 2007 and requests
-that qualification; it is for ANSSI to determine. The supporting points
-the form asks for follow, in its order.
+Box ticked: the declarant declares that the means of cryptology falls
+within category 3 of annex 2 to decree No 2007-663 of 2 May 2007. The
+supporting points the form asks for follow, in its order. It is for
+ANSSI to assess that qualification; until it has, the qualification is
+not presented as held.
 
 ### Present the means of commercialisation and the market it addresses
 
@@ -485,6 +527,7 @@ customisation and no individual contract. The principal channel is the
 Apple App Store; other channels may be added, on the same terms. The
 target market is the holder of a Finnish national identity card wishing
 to authenticate to online services. The source code is public:
+
 https://github.com/ReFineID/ReFineID-Apple
 
 ### Explain why the cryptographic functionality cannot easily be modified by the user
@@ -510,12 +553,12 @@ Not applicable. Section D concerns a means for which a transfer or
 export authorisation was previously granted; this is a first
 declaration and invokes none.
 
-## E. Attachments
+## E. Documents to attach
 
 The items the form asks for, one by one:
 
 | Item requested | Status |
-|---|---|
+|:---------------------------|:-----------------------------------------------|
 | General document presenting the company | Not applicable: the declarant is a private individual. |
 | Extract K bis less than three months old | Not applicable: no registered company. |
 | Commercial brochure | Not applicable: the means is distributed without one; its public listing serves instead. |
@@ -527,10 +570,10 @@ The complete source code is publicly accessible at the address given in
 section C, which covers the design elements listed on the form's final
 page.
 
-## F. Signatory
+## F. Attestation
 
 | Field | Value |
-|---|---|
+|:---------------------------|:-----------------------------------------------|
 | Name | Koistinen, Petri |
 | Acting in the capacity of | Supplier and author of the means, private individual |
 | On behalf of | Himself, in his own name (no legal entity) |
@@ -560,8 +603,8 @@ applied to this document; how to verify it is set out in the footer.
     (Article 3(12)), created by a qualified electronic signature creation
     device and based on a qualified certificate issued by the Digital and
     Population Data Services Agency (DVV), a Finnish qualified trust
-    service provider. Under Article 25(2) of that Regulation it has the
-    legal effect of a handwritten signature.
+    service provider. Under Article 25(2) of that Regulation it has legal
+    effect equivalent to that of a handwritten signature.
 
     Validation is available online, free of charge, at
     #link("https://dvv.fineid.fi/en/validation"), or by any other means the
