@@ -22,7 +22,7 @@ Le déclarant est un particulier (rubrique A-2 du formulaire).
 | Nom et prénoms | Koistinen, Petri |
 | Nationalité | Finlandaise |
 | Adresse | Niittaajankatu 8a A 21, 00810 Helsinki, Finlande |
-| Numéro de téléphone | *[à compléter]* |
+| Numéro de téléphone | +358 44 956 4098 |
 | Adresse de courrier électronique | petri.koistinen@refineid.fi |
 
 Personne que l'ANSSI peut contacter pour obtenir des informations
@@ -174,7 +174,7 @@ publiquement accessible à l'adresse indiquée en C, ce qui couvre les
 | Nom et prénoms | Koistinen, Petri |
 | Qualité | Fournisseur et auteur du moyen |
 | Société | ReFineID |
-| Date | *[à compléter à la signature]* |
+| Date | 3 août 2026 |
 
 ---
 
@@ -194,7 +194,7 @@ An individual (section A-2 of the form).
 | Name | Koistinen, Petri |
 | Nationality | Finnish |
 | Address | Niittaajankatu 8a A 21, 00810 Helsinki, Finland |
-| Telephone | *[to be completed]* |
+| Telephone | +358 44 956 4098 |
 | Email | petri.koistinen@refineid.fi |
 
 Technical contact for ANSSI: the same person, same details. The declarant
@@ -336,4 +336,4 @@ design elements of the means.
 | Name | Koistinen, Petri |
 | Capacity | Supplier and author of the means |
 | Company | ReFineID |
-| Date | *[to be completed at signature]* |
+| Date | 3 August 2026 |
