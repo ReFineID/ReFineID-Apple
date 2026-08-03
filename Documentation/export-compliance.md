@@ -77,6 +77,40 @@ annual French declaration. Declaring exempt on a judgement call costs
 credibility, in a product whose entire subject is identity. The cost was
 accepted deliberately rather than by default.
 
+## The publicly available source route
+
+`ReFineID-Apple` is a public repository, so the whole implementation is
+publicly available encryption source code. 15 CFR 740.13(e) treats that
+differently from closed commercial software: notification by email
+rather than a registration, sent to `crypt@bis.doc.gov` and
+`enc@nsa.gov`. The text to send:
+
+    Subject: TSU notification - publicly available encryption source code
+
+    Under 15 CFR 740.13(e), notice is given that the following publicly
+    available encryption source code is available at no cost:
+
+    ReFineID - Finnish identity card middleware for Apple platforms
+    https://github.com/ReFineID/ReFineID-Apple
+
+    The software implements PACE (ICAO 9303-11, BSI TR-03110) with ECDH on
+    brainpoolP384r1, AES-256 CBC and AES-CMAC secure messaging, and ECDSA
+    and RSA PKCS#1 v1.5 signature verification. All algorithms are published
+    by international standard bodies; none are proprietary.
+
+    Petri Koistinen
+    ReFineID
+    Finland
+    petri.koistinen@refineid.fi
+
+What this does not settle, and what a qualified answer is worth getting
+before relying on it: whether the exception reaches the App Store
+binary, or only the source in the repository. If only the source, the
+binary falls back to the mass-market route -- an Encryption
+Registration Number, which is a free SNAP-R submission usually answered
+in about a business day, not a CCATS. The French declaration is a
+separate regime either way.
+
 ## What is still needed
 
 1. Export compliance authorisation for the encryption -- in practice a
