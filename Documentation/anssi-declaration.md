@@ -23,7 +23,7 @@ Le déclarant est un particulier (rubrique A-2 du formulaire).
 | Nationalité | Finlandaise |
 | Adresse | Niittaajankatu 8a A 21, 00810 Helsinki, Finlande |
 | Numéro de téléphone | +358 44 956 4098 |
-| Adresse de courrier électronique | petri.koistinen@refineid.fi |
+| Adresse de courrier électronique | petri.koistinen@iki.fi |
 
 Personne que l'ANSSI peut contacter pour obtenir des informations
 techniques sur le moyen : la même, aux mêmes coordonnées.
@@ -195,7 +195,7 @@ An individual (section A-2 of the form).
 | Nationality | Finnish |
 | Address | Niittaajankatu 8a A 21, 00810 Helsinki, Finland |
 | Telephone | +358 44 956 4098 |
-| Email | petri.koistinen@refineid.fi |
+| Email | petri.koistinen@iki.fi |
 
 Technical contact for ANSSI: the same person, same details. The declarant
 is also the manufacturer, so the third-party manufacturer section does
