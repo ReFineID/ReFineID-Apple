@@ -210,9 +210,7 @@ modifié.
 
 L'installation se fait par l'App Store en une action. Il n'y a ni
 serveur à paramétrer, ni certificat à installer, ni abonnement à souscrire.
-Le porteur saisit le numéro d'accès imprimé sur sa carte, présente
-la carte une fois, et le moyen est opérationnel. Aucune intervention du
-fournisseur n'est requise.
+Aucune intervention du fournisseur n'est requise.
 
 ## D. Renouvellement d'autorisation de transfert ou d'exportation
 
@@ -226,7 +224,7 @@ Sans objet : première déclaration, aucune autorisation antérieure.
 | Extrait K bis de moins de trois mois | Sans objet : aucune société immatriculée. |
 | Brochure commerciale | Sans objet : le moyen est distribué sans brochure ; sa page sur l'App Store en tient lieu. |
 | Brochure technique | Jointe : le présent dossier, rubriques B.2 et B.3. |
-| Manuel utilisateur | Sans objet : l'usage se limite à saisir le numéro d'accès et à présenter la carte, décrit en rubrique C. |
+| Manuel utilisateur | Sans objet : l'usage se limite à saisir le numéro d'accès imprimé sur la carte et à présenter celle-ci. |
 | Guide administrateur | Sans objet : le moyen ne comporte aucune fonction d'administration. |
 
 Le code source complet est publiquement accessible à l'adresse indiquée
@@ -466,9 +464,7 @@ modified binary.
 
 Installation is a single action through the App Store. There is no server
 to configure, no certificate to install and no service to subscribe to.
-The holder enters the access number printed on their card, presents the
-card once, and the means is operational. No supplier intervention is
-required.
+No supplier intervention is required.
 
 ## D. Renewal of a transfer or export authorisation
 
@@ -482,7 +478,7 @@ Not applicable: a first declaration, with no prior authorisation.
 | Extract K bis less than three months old | Not applicable: no registered company. |
 | Commercial brochure | Not applicable: the means is distributed without one; its public listing serves instead. |
 | Technical brochure | Attached: this dossier, sections B.2 and B.3. |
-| User manual | Not applicable: use is limited to entering the access number and presenting the card, described in section C. |
+| User manual | Not applicable: use is limited to entering the access number printed on the card and presenting it. |
 | Administrator guide | Not applicable: the means has no administration function. |
 
 The complete source code is publicly accessible at the address given in
