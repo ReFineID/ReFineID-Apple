@@ -188,31 +188,6 @@ RFC 8017.
 - Les clés de session PACE sont éphémères : dérivées par session, gardées
   en mémoire seulement, libérées à la fin de la session et jamais
   écrites sur un support persistant.
-- Sur iOS et iPadOS, le numéro d'accès de la carte, et le cas échéant le
-  PIN1 si le porteur choisit de le conserver, sont conservés dans le
-  trousseau de protection des données (*Data Protection Keychain*) avec
-  l'attribut `WhenUnlockedThisDeviceOnly` et sans synchronisation : jamais
-  transmis à iCloud, jamais inclus dans une sauvegarde, jamais restaurés
-  sur un autre appareil.
-- Sur macOS, le PIN1 n'est jamais conservé : le moyen n'y offre pas cette
-  option. Seul le numéro d'accès l'est. Le trousseau de protection des
-  données y exige une habilitation (`keychain-access-groups`) dont le
-  moyen ne dispose pas ; le numéro est donc conservé dans le trousseau de
-  session de l'utilisateur, protégé par le mot de passe de session et
-  jamais transmis à iCloud, mais susceptible de figurer dans une
-  sauvegarde locale du poste et d'être repris par l'assistant de
-  migration.
-- Le répertoire des cartes connues, qui porte un numéro d'accès par
-  carte et aucun PIN, est conservé de la même manière sur chaque
-  plateforme.
-- Sur macOS, une copie du ou des numéros d'accès est en outre remise au
-  pilote de jeton par le magasin de configuration de CryptoTokenKit,
-  canal que le système prévoit à cet effet. Cette mention décrit le
-  chemin de configuration Apple utilisé par le pilote ; elle ne le
-  présente pas comme équivalent aux garanties propres du trousseau. Il
-  ne contient ni clé privée ni clé de session, seulement le numéro
-  d'accès nécessaire au pilote, et le porteur en demande l'effacement en
-  faisant oublier la carte.
 - Aucun séquestre de clés, aucun recouvrement, aucune gestion de clés à
   distance, aucune transmission de clé sur un réseau.
 
@@ -504,27 +479,6 @@ SHA-2, FIPS 180-4; ECDSA, FIPS 186-5 and ANSI X9.62; RSA, RFC 8017.
 - PACE session keys are ephemeral: derived per session, held in memory
   only, released when the session ends and never written to persistent
   storage.
-- On iOS and iPadOS the card access number, and PIN1 when the holder
-  chooses to keep it, are held in the data-protection keychain with the
-  `WhenUnlockedThisDeviceOnly` and non-synchronizable attributes: never
-  sent to iCloud, never included in a backup, never restored onto
-  another device.
-- On macOS PIN1 is never kept: the means does not offer that option
-  there. Only the access number is. The data-protection keychain
-  requires a `keychain-access-groups` entitlement the means does not
-  carry, so the number is held in the user's login keychain, protected
-  by the login password and never sent to iCloud, but capable of
-  appearing in a local backup of the machine and of being carried by
-  Migration Assistant.
-- The directory of known cards, which carries one access number per
-  card and no PIN, is held the same way on each platform.
-- On macOS a copy of the access number(s) is additionally handed to the
-  token driver through CryptoTokenKit's configuration store, the channel
-  the system provides for this. This describes the Apple configuration
-  path used by the token driver, not an independent guarantee equivalent
-  to the keychain attributes. It contains no private key and no session
-  key, only the access number needed by the driver, and the holder asks
-  for it to be cleared by forgetting the card.
 - There is no key escrow, no key recovery, no remote key management, and
   no transmission of any key over a network.
 
