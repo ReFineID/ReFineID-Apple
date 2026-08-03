@@ -83,19 +83,23 @@ accepted deliberately rather than by default.
 
 ## The publicly available source route
 
-`ReFineID-Apple` is a public repository, so the whole implementation is
-publicly available encryption source code. 15 CFR 740.13(e) treats that
-differently from closed commercial software: notification by email
-rather than a registration.
+`ReFineID-Apple` is a public repository, so the source-code question is
+separate from the App Store binary question. The current EAR provision
+to check for publicly available encryption source code is 15 CFR
+742.15(b), not the old 740.13(e) text. The 2026-08-03 email that cited
+740.13(e) is kept as an audit trail only; do not rely on it as the
+operative notice.
 
-**Sent 2026-08-03, 11:22 EEST, to `enc@nsa.gov`, copy to
-`crypt@bis.doc.gov`.** No reply is expected and none is required; the
-regulation asks for notice, not permission. The text, kept so a later
-notice for a new repository or a moved URL says the same thing:
+Do not re-send mechanically. 742.15(b) is framed around publicly
+available encryption source code, and ReFineID implements published
+standard algorithms rather than non-standard cryptography. Confirm
+whether any source-code notice is actually owed before sending another
+one. If one is sent, it should cite the current provision and keep the
+scope to the public source repository, for example:
 
     Subject: TSU notification - publicly available encryption source code
 
-    Under 15 CFR 740.13(e), notice is given that the following publicly
+    Under 15 CFR 742.15(b), notice is given that the following publicly
     available encryption source code is available at no cost:
 
     ReFineID - Finnish identity card middleware for Apple platforms
@@ -177,21 +181,6 @@ comfortably after the filing, not on it. There is no hurry toward the
 French market; if filing slips, move the market date before signing
 rather than shaving the month.
 
-### A correction to the US notice already sent
-
-The notification was prepared citing EAR 740.13(e). That paragraph was
-superseded in September 2016: the current provision for publicly
-available encryption source code is 742.15(b). Notifications made under
-740.13 *before* September 2016 remain valid; this one was not, so it
-cites a provision that no longer carries the requirement.
-
-Two things follow. The notice should be re-sent citing 742.15(b), which
-costs an email. And 742.15(b) is written for *non-standard*
-cryptography; ReFineID implements only published standard algorithms on
-published curves, so whether any notification is owed at all is worth
-settling before re-sending rather than after. BIS publishes the
-current text at https://www.bis.gov/regulations/ear/742.
-
 ### Where it goes
 
 Checked against ANSSI rather than recalled. The dossier is not filed on
@@ -271,4 +260,6 @@ timetable as the one that applies.
 3. The code Apple issues in return, added to
    `Config/ReFineID-Info.plist` as `ITSEncryptionExportComplianceCode`.
 
-Until step 3, nothing uploads, and the archive inspector says so.
+Until step 3, App Store Connect submission must stop at export
+compliance. An archive may upload for inspection, but it must not be
+submitted for release without the Apple code.

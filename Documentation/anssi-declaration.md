@@ -19,9 +19,10 @@ La distribution, notamment par l'App Store d'Apple, n'est pas
 limitée à la France : la fourniture, le transfert vers les autres États
 membres et l'exportation hors de l'Union européenne sont tous
 susceptibles de se produire, et sont donc tous couverts par la présente
-déclaration. L'exportation relève du régime de la déclaration, et non de celui de
-l'autorisation, parce que le moyen appartient à la catégorie 3 de
-l'annexe 2 du décret ; cette qualification est justifiée en rubrique C.
+déclaration. Le déclarant estime que l'exportation peut relever du
+régime de la déclaration au titre de la catégorie 3 de l'annexe 2 du
+décret et sollicite cette qualification en rubrique C ; jusqu'à
+l'appréciation de l'ANSSI, elle n'est pas présentée comme acquise.
 
 Aucune demande d'autorisation au titre du chapitre III n'est formée.
 
@@ -168,18 +169,21 @@ RFC 8017.
   un numéro d'accès par carte, est stocké avec les mêmes attributs.
 - Sur macOS, une copie du ou des numéros d'accès est en outre remise au
   pilote de jeton par le magasin de configuration de CryptoTokenKit,
-  canal que le système prévoit à cet effet : locale à l'appareil, non
-  synchronisée, inscriptible par la seule application hôte, et effacée
-  lorsque le porteur fait oublier la carte.
+  canal que le système prévoit à cet effet. Cette mention décrit le
+  chemin de configuration Apple utilisé par le pilote ; elle ne le
+  présente pas comme équivalent aux garanties propres du trousseau. Il
+  ne contient ni clé privée ni clé de session, seulement le numéro
+  d'accès nécessaire au pilote, et le porteur en demande l'effacement en
+  faisant oublier la carte.
 - Aucun séquestre de clés, aucun recouvrement, aucune gestion de clés à
   distance, aucune transmission de clé sur un réseau.
 
-## C. Cas d'un moyen de cryptologie relevant de la catégorie 3 de l'annexe 2 du décret n° 2007-663
+## C. Demande de classement au titre de la catégorie 3 de l'annexe 2 du décret n° 2007-663
 
-Le déclarant estime que le moyen relève de la catégorie 3 de l'annexe 2
-du décret n° 2007-663 du 2 mai 2007 et sollicite cette qualification ;
-il appartient à l'ANSSI de l'apprécier. Les éléments justificatifs
-demandés par le formulaire suivent, dans son ordre.
+Le déclarant estime que le moyen remplit les conditions de la catégorie
+3 de l'annexe 2 du décret n° 2007-663 du 2 mai 2007 et sollicite cette
+qualification ; il appartient à l'ANSSI de l'apprécier. Les éléments
+justificatifs demandés par le formulaire suivent, dans son ordre.
 
 ### Présentez le mode de commercialisation du moyen de cryptologie et le marché auquel il s'adresse
 
@@ -279,8 +283,9 @@ Distribution -- through Apple's App Store among other channels -- is
 not confined to France: supply, transfer to other member states and export outside the
 European Union may all occur, and are all covered by this declaration.
 Export is declarable rather than subject to authorisation because the
-means falls under category 3 of annex 2 to the decree, justified in
-section C.
+declarant considers that the means satisfies category 3 of annex 2 to
+the decree and requests that qualification in section C. Until ANSSI has
+assessed it, that qualification is requested, not held.
 
 No authorisation under chapter III is requested.
 
@@ -415,18 +420,20 @@ SHA-2, FIPS 180-4; ECDSA, FIPS 186-5 and ANSI X9.62; RSA, RFC 8017.
   the same attributes.
 - On macOS a copy of the access number(s) is additionally handed to the
   token driver through CryptoTokenKit's configuration store, the channel
-  the system provides for exactly this: local to the device, not
-  synchronized, writable only by the hosting application, and erased
-  when the holder forgets the card.
+  the system provides for this. This describes the Apple configuration
+  path used by the token driver, not an independent guarantee equivalent
+  to the keychain attributes. It contains no private key and no session
+  key, only the access number needed by the driver, and the holder asks
+  for it to be cleared by forgetting the card.
 - There is no key escrow, no key recovery, no remote key management, and
   no transmission of any key over a network.
 
-## C. Means falling under category 3 of annex 2 to decree No 2007-663
+## C. Request for classification under category 3 of annex 2 to decree No 2007-663
 
-The declarant considers that the means falls under category 3 of annex 2
-to decree No 2007-663 of 2 May 2007 and requests that qualification; it
-is for ANSSI to determine. The supporting points the form asks for
-follow, in its order.
+The declarant considers that the means satisfies the conditions for
+category 3 of annex 2 to decree No 2007-663 of 2 May 2007 and requests
+that qualification; it is for ANSSI to determine. The supporting points
+the form asks for follow, in its order.
 
 ### Present the means of commercialisation and the market it addresses
 
