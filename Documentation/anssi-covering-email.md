@@ -1,14 +1,3 @@
-# Courriel d'accompagnement -- déclaration ANSSI
-
-Le dossier est la déclaration ; ce courriel ne fait que l'accompagner. Il
-est écrit en lettre administrative en forme personnelle, allégée pour le
-courrier électronique : pas d'en-tête, mais l'objet, l'appel, le corps et
-la formule de politesse à leur place.
-
-À envoyer à `controle@ssi.gouv.fr`, la déclaration signée en pièce jointe.
-
----
-
 **Objet :** déclaration de fourniture d'un moyen de cryptologie -- ReFineID
 
 Madame, Monsieur,
@@ -25,31 +14,26 @@ Le déclarant est un particulier : ReFineID est un nom commercial que
 j'emploie en mon nom propre et ne désigne aucune personne morale.
 
 Le dossier reprend les rubriques A à F de votre annexe I, dans le même
-ordre et sous les mêmes intitulés, chaque question recevant sa réponse à
-sa place. Si vous souhaitez le recevoir sous une autre forme, je vous le
-transmettrai dans les meilleurs délais.
+ordre et sous leurs intitulés ou leur équivalent, chaque question
+recevant sa réponse à sa place. Si vous souhaitez le recevoir sous une
+autre forme, je vous le transmettrai dans les meilleurs délais.
 
 La déclaration est datée et signée au moyen d'une signature électronique
 qualifiée, apposée avec le certificat qualifié de ma carte nationale
 d'identité finlandaise. Elle a, en application de l'article 25,
-paragraphe 2, du règlement (UE) n° 910/2014, l'effet juridique d'une
-signature manuscrite. Vous pouvez la vérifier sans rien installer, en
-déposant le fichier sur l'un ou l'autre de ces services :
+paragraphe 2, du règlement (UE) n° 910/2014, un effet juridique
+équivalent à celui d'une signature manuscrite. Vous pouvez la vérifier
+sans rien installer, en déposant le fichier sur le service de validation
+de l'Agence des services de données numériques et démographiques
+(Digi- ja väestötietovirasto), autorité de certification finlandaise :
 
-- https://dvv.fineid.fi/fi/validation (autorité finlandaise de
-  certification)
-- https://ec.europa.eu/digital-building-blocks/DSS/webapp-demo/validation
-  (démonstrateur DSS de la Commission européenne)
+https://dvv.fineid.fi/fr/validation
 
-Le format est PAdES-BASELINE-LTA : la signature porte ses propres
-éléments de validation et plusieurs contreseings temporels qualifiés, de
-sorte qu'elle reste vérifiable après l'expiration du certificat.
+Je déclare en rubrique C que le moyen relève de la catégorie 3 de
+l'annexe 2 du décret, sans présenter cette qualification comme acquise :
+il appartient à vos services de l'apprécier.
 
-Je sollicite en rubrique C le classement du moyen au titre de la
-catégorie 3 de l'annexe 2 du décret, sans le présenter comme acquis : il
-appartient à vos services de l'apprécier.
-
-La mise sur le marché est prévue le 1er octobre 2026.
+La mise sur le marché est prévue le 1er novembre 2026.
 
 Je me tiens à votre disposition pour tout complément d'information ou
 toute pièce que vous jugeriez utile.
