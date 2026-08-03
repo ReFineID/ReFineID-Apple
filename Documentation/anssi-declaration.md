@@ -131,10 +131,9 @@ Ni IPsec, ni SSH, ni protocoles de VoIP, ni SSL/TLS. TLS est assuré par
 le système d'exploitation ; le moyen ne met en œuvre aucune pile TLS et
 se borne à fournir la signature calculée par la carte.
 
-Autres protocoles : PACE selon ICAO Doc 9303 partie 11 et BSI TR-03110-3,
-suite `id-PACE-ECDH-GM-AES-CBC-CMAC-256`
-(OID 0.4.0.127.0.7.2.2.4.2.4) ; messagerie sécurisée selon
-ISO/IEC 7816-4.
+Autres protocoles : PACE selon ICAO Doc 9303 partie 11 et BSI
+TR-03110-3 ; messagerie sécurisée selon ISO/IEC 7816-4. Les algorithmes
+et longueurs de clé correspondants figurent en rubrique B.3.4.
 
 #### B.3.4. Précisez les algorithmes cryptographiques utilisés et leurs longueurs maximales de clés
 
@@ -406,10 +405,9 @@ Neither IPsec, SSH, VoIP protocols, nor SSL/TLS. TLS is handled by the
 operating system; the means implements no TLS stack and contributes only
 the card's signature.
 
-Other protocols: PACE as specified in ICAO Doc 9303 Part 11 and BSI
-TR-03110-3, suite `id-PACE-ECDH-GM-AES-CBC-CMAC-256`
-(OID 0.4.0.127.0.7.2.2.4.2.4); Secure Messaging as specified in
-ISO/IEC 7816-4.
+Other protocols: PACE as specified in ICAO Doc 9303 part 11 and BSI
+TR-03110-3; secure messaging as specified in ISO/IEC 7816-4. The
+corresponding algorithms and key lengths are in section B.3.4.
 
 #### B.3.4. Cryptographic algorithms used and their maximum key lengths
 
