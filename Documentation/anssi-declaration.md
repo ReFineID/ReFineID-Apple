@@ -137,7 +137,7 @@ Les colonnes reprennent celles de la rubrique B.3.4 du formulaire.
 
 | Algorithme | Mode | Taille de clé associée | Fonction |
 |---|---|---|---|
-| ECDH sur brainpoolP384r1 | PACE-GM (cartographie générique) | 384 bits | Accord de clés PACE |
+| ECDH sur brainpoolP384r1 | PACE-GM (mappage générique) | 384 bits | Accord de clés PACE |
 | AES | CBC | 256 bits | Confidentialité de chaque APDU après PACE |
 | AES | CMAC | 256 bits | Intégrité de chaque APDU après PACE |
 | SHA-256, SHA-384 | s.o. | s.o. | Dérivation de clés et condensats de signature |
