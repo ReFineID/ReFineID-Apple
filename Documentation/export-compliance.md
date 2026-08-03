@@ -180,6 +180,25 @@ also carries the narrow no-break space French typography puts before
 `: ; ! ?` -- it is in the markdown, not applied at render time, so it
 survives whatever renders the file next.
 
+Sign once, when the document is finished and about to be sent.
+
+While the text is still being edited, render and read -- rendering costs
+nothing and needs neither the card nor the network. Signing a draft
+attests a document that will not be the one filed, spends a card
+operation and a PIN verification on it, and asks three timestamp
+authorities for tokens over something disposable. That last part has a
+cost you can measure: tsa.belgium.be began answering HTTP 429 after
+enough draft signings in one day.
+
+It also destroys evidence. A signed PDF cannot be reproduced -- a fresh
+signature has a different instant, different tokens, different
+revocation answers -- so every re-sign discards an artifact that cannot
+be recovered. That is harmless for a draft and unrecoverable if it was
+the copy that went to ANSSI.
+
+Verifying the signer is a separate job from signing the dossier: sign a
+throwaway file for that.
+
 The markdown is the source of truth; the PDF is a rendering. Regenerate
 rather than editing the PDF, or the two drift and the filed one wins.
 Any edit to the markdown means render, sign and validate again -- the
