@@ -152,26 +152,49 @@ pipeline that produced the filed artifact:
       --out "ReFineID - ANSSI declaration dossier (signed).pdf" \
       --reason "Declaration d'un moyen de cryptologie -- decret 2007-663" \
       --location "Helsinki, Finlande" \
+      --timestamp https://timestamp.sectigo.com/qualified \
       --timestamp http://tsa.belgium.be/connect \
-      --timestamp http://tsa.izenpe.com \
-      --timestamp http://tss.accv.es:8318/tsa \
       --timestamp https://timestamp.aped.gov.gr/qtss \
+      --timestamp http://tsa.izenpe.com \
       --archive
 
     curl -s -X POST https://dvv.fineid.fi/api/v1/validate \
       -F locale=en -F includeDetails=true \
       -F "file=@ReFineID - ANSSI declaration dossier (signed).pdf"
 
-Four qualified timestamp authorities in three countries, so the proven
-time survives any one of them losing its standing -- Belgium rate-limits
-after enough requests in a day, which is a reason to spread them
-anyway. The Greek one is https and needs a build with a TLS backend
-(`--features boring-tls`); the others need nothing. RFC 3161 sends a
-hash and never the document, so plain http leaks no content, and the
-returned token is checked against the digest and nonce it was asked
-for. and --archive for PAdES-B-LTA, the top
-of the ETSI ladder. The validator must answer QES, PAdES-BASELINE-LTA,
-TOTAL_PASSED; anything else means stop and look.
+Four qualified authorities in three countries, so the proven time
+survives any one of them losing its standing. A refusal is survivable:
+each is asked in turn, one that is down or rate limiting is named on
+stderr and skipped, and only silence from all four stops the signing.
+Belgium answers HTTP 429 after enough requests in a day and Sectigo
+asks for fifteen seconds between them, so spreading the work is not
+only about longevity.
+
+The order matters twice. It decides who carries the archive timestamp,
+which is a single token rather than a set -- the first to answer wins
+-- and it is the order to reach for anywhere else. Measured
+2026-08-03: Sectigo signs RSA-4096 under a unit whose certificate is
+signed with SHA-384 and runs to 2034, six years past any other, and
+republishes revocation weekly. Belgium is the most official of the
+four, a federal government service answering in real time, but signs
+P-256 and expires in 2028. Greece is RSA-4096 to 2030 with revocation
+republished daily. Izenpe publishes no responder, only a list, but
+refreshes it every nine days.
+
+ACCV (`http://tss.accv.es:8318/tsa`) is qualified, answers, and was
+dropped. Not on its cryptography, which is RSA-4096, but on its
+evidence: responder and list both run a 180-day cycle, so what a
+signature freezes from it can be weeks stale before it is taken.
+
+Sectigo and the Greek one are https and need a build with a TLS
+backend (`--features boring-tls`); the others need nothing. RFC 3161
+sends a hash and never the document, so plain http leaks no content,
+and the returned token is checked against the digest and nonce it was
+asked for.
+
+`--archive` is what makes it PAdES-B-LTA, the top of the ETSI ladder.
+The validator must answer QESig, PAdES-BASELINE-LTA, TOTAL_PASSED;
+anything else means stop and look.
 
 The language and title are not decoration. Typst tags its PDF output,
 so the file already carries a structure tree; without `lang` the
@@ -192,7 +215,7 @@ Sign once, when the document is finished and about to be sent.
 While the text is still being edited, render and read -- rendering costs
 nothing and needs neither the card nor the network. Signing a draft
 attests a document that will not be the one filed, spends a card
-operation and a PIN verification on it, and asks three timestamp
+operation and a PIN verification on it, and asks four timestamp
 authorities for tokens over something disposable. That last part has a
 cost you can measure: tsa.belgium.be began answering HTTP 429 after
 enough draft signings in one day.
