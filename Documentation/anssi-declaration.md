@@ -1,9 +1,10 @@
 # ReFineID -- déclaration d'un moyen de cryptologie
 
-Dossier de déclaration au titre du Code de la sécurité intérieure
-(articles R2321-1 et suivants, décret n° 2007-663). ReFineID fournit un
-moyen de cryptologie assurant des fonctions de confidentialité et relève
-à ce titre de l'obligation de déclaration.
+Dossier de déclaration au titre de l'article 30 de la loi n° 2004-575
+du 21 juin 2004 pour la confiance dans l'économie numérique (LCEN) et du
+décret n° 2007-663 du 2 mai 2007 pris pour son application. ReFineID
+fournit un moyen de cryptologie assurant des fonctions de
+confidentialité et relève à ce titre de l'obligation de déclaration.
 
 Les rubriques suivent celles du formulaire annexe I de l'ANSSI, dans le
 même ordre, afin que le dossier réponde au formulaire point par point.
@@ -18,14 +19,13 @@ La distribution se faisant par l'App Store d'Apple, elle n'est pas
 limitée à la France : la fourniture, le transfert vers les autres États
 membres et l'exportation hors de l'Union européenne sont tous
 susceptibles de se produire, et sont donc tous couverts par la présente
-déclaration. La déclaration d'exportation est ouverte au moyen parce
-qu'il relève de la catégorie 3 de l'annexe 2 du décret, justifiée en
-rubrique C.
+déclaration. L'exportation relève du régime de la déclaration, et non de celui de
+l'autorisation, parce que le moyen appartient à la catégorie 3 de
+l'annexe 2 du décret ; cette qualification est justifiée en rubrique C.
 
 Aucune demande d'autorisation au titre du chapitre III n'est formée.
 
-Une traduction anglaise suit à titre de référence ; le texte français
-fait foi.
+Le dossier est établi en français et suivi d'une version anglaise.
 
 ## A. Déclarant
 
@@ -38,7 +38,7 @@ laquelle la déclaration serait faite.
 | Champ | Valeur |
 |---|---|
 | Nom et prénoms | Koistinen, Petri |
-| Nationalité | Finlandaise |
+| Nationalité | finlandaise |
 | Adresse | Niittaajankatu 8a A 21, 00810 Helsinki, Finlande |
 | Numéro de téléphone | +358 44 956 4098 |
 | Adresse de courrier électronique | petri.koistinen@iki.fi |
@@ -75,7 +75,7 @@ cadriciels de sécurité d'Apple. Le moyen lit la carte via l'antenne NFC
 du téléphone ou un lecteur de carte à contact, publie le certificat
 d'authentification et la clé publique de la carte dans le trousseau du
 système par CryptoTokenKit, et transmet les demandes de signature à la
-carte. Safari et les autres consommateurs du système s'authentifient
+carte. Safari et les autres applications du système s'authentifient
 ensuite avec la carte comme avec tout autre certificat client. Le porteur
 s'en sert pour se connecter à des services en ligne avec sa carte
 d'identité.
@@ -106,7 +106,7 @@ Deux fonctions, et aucune autre :
 
 Le moyen ne chiffre pas les données de l'utilisateur au repos, ne chiffre
 ni fichiers ni supports de stockage, n'offre ni messagerie ni téléphonie
-chiffrée, ne met en oeuvre aucun RPV (VPN) ni tunnel de transport, et
+chiffrées, ne met en œuvre aucun RPV (VPN) ni tunnel de transport, et
 n'effectue aucune communication réseau propre.
 
 ### B.3.2. Indiquez à quelle(s) catégorie(s) se rapporte(nt) la ou les fonctions cryptographiques du moyen
@@ -118,7 +118,7 @@ l'utilisateur.
 ### B.3.3. Indiquez le(s) protocole(s) sécurisé(s) utilisés par le moyen
 
 Ni IPsec, ni SSH, ni protocoles de VoIP, ni SSL/TLS. TLS est assuré par
-le système d'exploitation ; le moyen ne met en oeuvre aucune pile TLS et
+le système d'exploitation ; le moyen ne met en œuvre aucune pile TLS et
 ne fournit que la signature de la carte.
 
 Autres protocoles : PACE selon ICAO Doc 9303 partie 11 et BSI TR-03110-3,
@@ -128,8 +128,8 @@ ISO/IEC 7816-4.
 
 ### B.3.4. Précisez les algorithmes cryptographiques utilisés et leurs longueurs maximales de clés
 
-Mis en oeuvre en Swift dans le module `CardCore`, aucun cadriciel Apple
-ne mettant en oeuvre les protocoles propres à la carte. Tous les
+Mis en œuvre en Swift dans le module `CardCore`, aucun cadriciel Apple
+ne mettant en œuvre les protocoles propres à la carte. Tous les
 algorithmes sont publiés par des organismes de normalisation
 internationaux ; aucun n'est propriétaire.
 
@@ -159,7 +159,7 @@ RFC 8017.
   en mémoire seulement, détruites à la fin de la session.
 - Le numéro d'accès de la carte, et le cas échéant le PIN1 si le porteur
   choisit de le conserver, sont stockés dans le trousseau Apple avec les
-  attributs `WhenUnlockedThisDeviceOnly` et non synchronisable : jamais
+  attributs `WhenUnlockedThisDeviceOnly` et non synchronisables : jamais
   écrits dans une sauvegarde, jamais restaurés sur un autre appareil,
   jamais transmis à iCloud.
 - Aucun séquestre de clés, aucun recouvrement, aucune gestion de clés à
@@ -167,9 +167,9 @@ RFC 8017.
 
 ## C. Cas d'un moyen de cryptologie relevant de la catégorie 3 de l'annexe 2 du décret n° 2007-663
 
-La case est cochée : le déclarant déclare que le moyen relève de la
-catégorie 3 de l'annexe 2 du décret n° 2007-663 du 2 mai 2007. Les
-éléments justificatifs demandés suivent, dans l'ordre du formulaire.
+Le moyen relève de la catégorie 3 de l'annexe 2 du décret n° 2007-663
+du 2 mai 2007. Les éléments justificatifs demandés par le formulaire
+suivent, dans son ordre.
 
 ### Présentez le mode de commercialisation du moyen de cryptologie et le marché auquel il s'adresse
 
@@ -192,8 +192,8 @@ modifié.
 ### Expliquez en quoi les modalités d'installation du moyen ne nécessitent pas d'assistance importante ultérieure de la part du fournisseur
 
 L'installation se fait par l'App Store en une action. Il n'y a ni
-serveur à paramétrer, ni certificat à installer, ni service à souscrire.
-Le porteur saisit le numéro d'accès imprimé au dos de sa carte, présente
+serveur à paramétrer, ni certificat à installer, ni abonnement à souscrire.
+Le porteur saisit le numéro d'accès imprimé sur sa carte, présente
 la carte une fois, et le moyen est opérationnel. Aucune intervention du
 fournisseur n'est requise.
 
@@ -219,12 +219,13 @@ publiquement accessible à l'adresse indiquée en C, ce qui couvre les
 | Date | 3 août 2026 |
 
 ```{=typst}
-#place(bottom + left, block(width: 100%)[
+#pagebreak()
+#v(1fr)
   #line(length: 100%, stroke: 0.4pt)
   #v(0.3em)
   #text(style: "italic", size: 9pt)[
     Ce document est signé électroniquement. La signature est une signature
-    électronique qualifiée au sens du règlement (UE) nº 910/2014
+    électronique qualifiée au sens du règlement (UE) n° 910/2014
     (article 3, point 12), créée par un dispositif qualifié de création de
     signature électronique et fondée sur un certificat qualifié délivré par
     l'Agence des services de données numériques et démographiques
@@ -236,17 +237,15 @@ publiquement accessible à l'adresse indiquée en C, ce qui couvre les
     #link("https://dvv.fineid.fi/fr/validation"), ou par tout autre moyen
     retenu par le destinataire.
   ]
-])
 ```
 
 ```{=typst}
 #pagebreak()
 ```
 
-# English translation, for reference
+# English version
 
-Translation of the French dossier above, which prevails. Headings follow
-ANSSI's annexe I form.
+Headings follow ANSSI's annexe I form.
 
 Nature of the request: the form's second checkbox, **declaration of
 supply, of transfer from or to a member state of the European Union, of
@@ -391,9 +390,9 @@ SHA-2, FIPS 180-4; ECDSA, FIPS 186-4 and ANSI X9.62; RSA, RFC 8017.
 
 ## C. Means falling under category 3 of annex 2 to decree No 2007-663
 
-The box is ticked: the declarant states that the means falls under
-category 3 of annex 2 to decree No 2007-663 of 2 May 2007. The
-supporting points the form asks for follow, in its order.
+The means falls under category 3 of annex 2 to decree No 2007-663 of
+2 May 2007. The supporting points the form asks for follow, in its
+order.
 
 ### Present the means of commercialisation and the market it addresses
 
@@ -442,7 +441,8 @@ design elements of the means.
 | Date | 3 August 2026 |
 
 ```{=typst}
-#place(bottom + left, block(width: 100%)[
+#pagebreak()
+#v(1fr)
   #line(length: 100%, stroke: 0.4pt)
   #v(0.3em)
   #text(style: "italic", size: 9pt)[
@@ -458,5 +458,4 @@ design elements of the means.
     #link("https://dvv.fineid.fi/en/validation"), or by any other means the
     recipient prefers.
   ]
-])
 ```
