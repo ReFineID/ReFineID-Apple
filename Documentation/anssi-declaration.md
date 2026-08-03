@@ -56,8 +56,8 @@ Le déclarant est également le fabricant du moyen ; la rubrique relative
 | Dénomination du moyen | ReFineID |
 | Désignation générique | Intergiciel pour carte nationale d'identité |
 | Marque de distribution | ReFineID |
-| Référence commerciale | ReFineID pour plateformes Apple (application App Store, identifiant de lot `fi.refineid.ReFineID`) |
-| Version | 26.8.4 |
+| Référence commerciale | ReFineID pour plateformes Apple |
+| Version | 26.11 |
 | Date de mise sur le marché | 1er novembre 2026 |
 | Plateformes | iOS 26, iPadOS 26, macOS 26 |
 
@@ -317,8 +317,8 @@ not apply.
 | Name of the means | ReFineID |
 | Generic designation | Middleware for a national identity card |
 | Brand | ReFineID |
-| Commercial reference | ReFineID for Apple platforms (App Store application, bundle identifier `fi.refineid.ReFineID`) |
-| Version | 26.8.4 |
+| Commercial reference | ReFineID for Apple platforms |
+| Version | 26.11 |
 | Date placed on the market | 1 November 2026 |
 | Platforms | iOS 26, iPadOS 26, macOS 26 |
 
