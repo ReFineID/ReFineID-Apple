@@ -6,8 +6,10 @@ décret n° 2007-663 du 2 mai 2007 pris pour son application. ReFineID
 fournit un moyen de cryptologie assurant des fonctions de
 confidentialité et relève à ce titre de l'obligation de déclaration.
 
-Les rubriques suivent celles du formulaire annexe I de l'ANSSI, dans le
-même ordre, afin que le dossier réponde au formulaire point par point.
+Le présent document constitue la déclaration. Il est établi selon
+l'annexe I de l'ANSSI, dont il reprend les rubriques A à F dans le même
+ordre et reproduit les intitulés : chaque question y trouve sa réponse,
+à sa place.
 
 Nature de la demande : deuxième case du formulaire, **déclaration de
 fourniture, de transfert depuis ou vers un État membre de l'Union
@@ -245,9 +247,24 @@ moyen énumérés à la dernière page du formulaire.
 | Pour le compte de | Lui-même, en son nom propre (aucune personne morale) |
 | Date | 3 août 2026 |
 
+Je soussigné, Koistinen Petri, agissant en qualité de fournisseur et
+auteur du moyen et pour mon propre compte, certifie que les
+renseignements figurant dans le présent dossier et les pièces qui lui
+sont jointes sont exacts et ont été établis de bonne foi, et m'engage à
+porter à la connaissance de l'Agence nationale de la sécurité des
+systèmes d'information, sans délai, tout élément nouveau de fait ou de
+droit de nature à modifier la présente déclaration ou les éléments
+joints. Toute omission ou toute fausse déclaration expose le déclarant
+aux sanctions prévues aux articles 34 et 35 de la loi n° 2004-575 du
+21 juin 2004 modifiée.
+
+La signature de la présente attestation est la signature électronique
+qualifiée apposée sur ce document ; ses conditions de vérification sont
+rappelées en pied de page.
+
 ```{=typst}
-#pagebreak()
 #v(1fr)
+#block(breakable: false)[
   #line(length: 100%, stroke: 0.4pt)
   #v(0.3em)
   #text(style: "italic", size: 9pt)[
@@ -264,6 +281,7 @@ moyen énumérés à la dernière page du formulaire.
     #link("https://dvv.fineid.fi/fr/validation"), ou par tout autre moyen
     retenu par le destinataire.
   ]
+]
 ```
 
 ```{=typst}
@@ -272,7 +290,9 @@ moyen énumérés à la dernière page du formulaire.
 
 # English version
 
-Headings follow ANSSI's annexe I form.
+This document is the declaration. It is drawn up according to ANSSI's
+annexe I, following sections A to F in the same order and reproducing
+its headings: every question is answered here, in its place.
 
 Nature of the request: the form's second checkbox, **declaration of
 supply, of transfer from or to a member state of the European Union, of
@@ -493,9 +513,22 @@ page.
 | On behalf of | Himself, in his own name (no legal entity) |
 | Date | 3 August 2026 |
 
+I, the undersigned, Koistinen Petri, acting as supplier and author of
+the means and on my own behalf, certify that the information in this
+dossier and in the documents attached to it is accurate and has been
+established in good faith, and undertake to inform the Agence nationale
+de la sécurité des systèmes d'information without delay of any new
+matter of fact or of law liable to alter this declaration or the
+attached material. Any omission or false declaration exposes the
+declarant to the penalties provided for in articles 34 and 35 of law
+No 2004-575 of 21 June 2004 as amended.
+
+The signature on this attestation is the qualified electronic signature
+applied to this document; how to verify it is set out in the footer.
+
 ```{=typst}
-#pagebreak()
 #v(1fr)
+#block(breakable: false)[
   #line(length: 100%, stroke: 0.4pt)
   #v(0.3em)
   #text(style: "italic", size: 9pt)[
@@ -511,4 +544,5 @@ page.
     #link("https://dvv.fineid.fi/en/validation"), or by any other means the
     recipient prefers.
   ]
+]
 ```

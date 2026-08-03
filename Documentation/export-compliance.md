@@ -186,49 +186,38 @@ rather than shaving the month.
 Checked against ANSSI rather than recalled. The dossier is not filed on
 its own: it is the technical documentation attached to ANSSI's own form.
 
-1. Download **annexe I**, titled *Déclaration et demande d'autorisation
-   d'opérations relatives a un moyen de cryptologie*:
+1. The declaration is `Documentation/anssi-declaration.md`, rendered and
+   signed. It is drawn up according to annexe I: sections A to F in
+   ANSSI's order, under ANSSI's own headings, carrying the attestation
+   from section F of the form and the box-two statement from its first
+   page.
 
-       https://cyber.gouv.fr/documents/330/crypto_declaration-demande_autorisation_operations_annexe1_v2.pdf
+   ANSSI's annexe I is a template -- a dynamic XFA PDF that only Adobe
+   Reader can fill, and that carries no AcroForm fields, so no other
+   tool can put a value in it. Filling a template is how you obtain a
+   document; the document is what the decree asks for, and this one has
+   the same content in the same order.
 
-   ANSSI's page links it at a `/sites/default/files/` path that returned
-   404 on 2026-08-03; the `/documents/330/` address above answered.
-   Check the page first -- a broken link is likelier to be fixed than
-   the document is to move. Do not take annexe 2 instead: its title is
+   The template is at
+   https://cyber.gouv.fr/documents/330/crypto_declaration-demande_autorisation_operations_annexe1_v2.pdf
+   if it is ever wanted. Do not take annexe 2 instead: it is titled
    *Déclaration de fourniture d'une prestation de cryptologie*, and a
-   prestation is a service. ReFineID supplies a *moyen*.
+   prestation is a service, not a moyen.
 
-   It is an XFA dynamic form. Adobe Reader opens it; Preview and most
-   other readers show only a "you need a later version" page.
+2. Render and sign, three qualified authorities and an archive
+   timestamp, as above. Nothing is printed and nothing is scanned: a
+   qualified electronic signature has the legal effect of a handwritten
+   one under Article 25(2) of Regulation (EU) No 910/2014, and the
+   attestation requires the declaration to be "datée et signée", not
+   inked.
+3. Email `controle@ssi.gouv.fr`, subject `[formalités] ReFineID - ReFineID`,
+   attaching the signed declaration.
 
-2. Complete it in Adobe Reader and save.
-3. Sign it electronically. Nothing has to be printed:
-
-       qpdf --object-streams=disable annexe1-filled.pdf annexe1-flat.pdf
-       refineid card sign-document --format pades \
-           --in annexe1-flat.pdf --out annexe1-signed.pdf \
-           --timestamp http://tsa.belgium.be/connect --archive
-
-   The `qpdf` step converts the cross-reference streams the form uses
-   into the classic table this signer writes against; the content is
-   untouched. Verified end to end: the result comes back from DVV as
-   QES, PAdES-BASELINE-LTA, TOTAL_PASSED.
-
-   ANSSI's instruction names two artifacts -- the completed form as
-   saved, and a signed copy -- and asks for two exemplaires. Article
-   25(2) makes a qualified signature the legal equal of a handwritten
-   one, but it does not let us restate someone else's filing procedure
-   in our favour: eIDAS leaves procedural form requirements standing.
-   Send the saved form and the signed form both, and if only one file
-   is wanted, ask ANSSI in writing first and keep the answer.
-
-   A qualified electronic signature has the legal effect of a
-   handwritten one under Article 25(2) of Regulation (EU) No 910/2014,
-   and France is bound by it. The form says the attestation must be
-   "datée et signée"; it does not say by hand.
-4. Email `controle@ssi.gouv.fr`, subject `[formalités] ReFineID - ReFineID`,
-   attaching the completed form as saved, the signed form, and this
-   dossier as the technical documentation.
+   Say in the body that the declaration follows annexe I section by
+   section and is signed with a qualified electronic signature, and give
+   the validation address so the reader can check it without installing
+   anything. If ANSSI wants their own template back instead, they will
+   say so, and that answer is worth keeping.
 
 The form's own sections are A declarant, B the means, C category 3,
 D renewal of a transfer or export authorisation, E documents attached,
