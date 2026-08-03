@@ -267,13 +267,25 @@ Before filing, have the French read by somebody who files these. It is
 written to be accurate rather than idiomatic, and a regulator's form is
 a poor place to find a translation error.
 
-The dossier gives 1 October 2026 as the date placed on the market, and
-the signature block keeps its own date. The gap is deliberate: the
-decree requires the declaration to be filed at least one month before
-the means is placed on the market, so the market date has to sit
-comfortably after the filing, not on it. There is no hurry toward the
-French market; if filing slips, move the market date before signing
-rather than shaving the month.
+The dossier gives 1 November 2026 as the date placed on the market, and
+the signature block keeps its own date. The gap is deliberate, and the
+rule behind it is **two** months, not one.
+
+Article 4 of the decree sets one month: *"Un mois au moins avant
+l'opération mentionnée à l'article 3, le dossier de déclaration est
+adressé..."*. Article 8 then doubles it for what this declaration
+covers: *"Ces délais sont également portés à deux mois lorsque la
+déclaration concerne l'exportation de moyens de cryptologie vers des
+Etats non membres de la Communauté européenne."* The dossier declares
+export outside the Union in its own scope statement, so two months is
+the applicable delay. The clock runs from the date the dossier is
+sent, not from the date it is signed.
+
+This is worth stating exactly, because reading it as one month is how
+the market date came to be set two days inside the delay -- 3 August to
+1 October is 59 days -- and it was caught in review rather than by
+ANSSI. There is no hurry toward the French market: if filing slips,
+move the market date before signing rather than shaving the delay.
 
 ### Where it goes
 
