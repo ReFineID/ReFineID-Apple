@@ -390,6 +390,32 @@ classification is requested, not held: do not lean on category 3 for
 exports outside the Union in the meantime, and treat the declaration
 timetable as the one that applies.
 
+A real one is public, and worth reading before the waiting starts:
+https://www.debian.org/legal/debian-lenny-crypto-attestation-export.pdf
+-- Debian 5.0 (Lenny), n° 143 ANSSI/SR, 20 January 2011, the declaration
+registered as 1101027 (year, month, sequence). Premier ministre / SGDSN
+letterhead, from the directeur général, signed by the chargé de mission
+responsable des contrôles de la cryptologie.
+
+Its Objet is *Classement d'un moyen de cryptologie*, not *attestation*.
+The act ANSSI performs is the classification; the letter attests it.
+Section C is therefore the section that produces the document App Store
+Connect wants, and the rest of the dossier is there to support it. The
+consequence follows in the next sentence -- transfer within the Union
+and export to a third country may be carried out freely -- and the
+sentence after that disclaims any judgement of quality or any
+recommendation.
+
+Two things it settles that are otherwise worth worrying about. It is
+addressed to a natural person, so an individual declarant with no legal
+entity behind him is unremarkable. And Debian is source-available and
+rebuildable by anyone, which is the strongest case anyone could make
+against "the user cannot easily modify the cryptographic
+functionality" -- and it was classified category 3 regardless. The
+criterion is about the means as supplied, not about whether a fork
+could exist, so the public repository named in section C is not a
+liability there.
+
 ## What is still needed
 
 1. The ANSSI declaration filed, and its acknowledgement received.
