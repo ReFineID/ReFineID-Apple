@@ -143,7 +143,8 @@ Everything about *doing* the filing lives here instead. The exact
 pipeline that produced the filed artifact:
 
     pandoc Documentation/anssi-declaration.md --pdf-engine=typst \
-      -V papersize=a4 \
+      -V papersize=a4 -M lang=fr-FR \
+      -M "title=ReFineID — déclaration d'un moyen de cryptologie" \
       -o "ReFineID - ANSSI declaration dossier.pdf"
 
     refineid card sign-document --format pades \
@@ -164,6 +165,14 @@ Three qualified timestamp authorities so the proven time survives any
 one of them losing its standing, and --archive for PAdES-B-LTA, the top
 of the ETSI ladder. The validator must answer QES, PAdES-BASELINE-LTA,
 TOTAL_PASSED; anything else means stop and look.
+
+The language and title are not decoration. Typst tags its PDF output,
+so the file already carries a structure tree; without `lang` the
+document declared itself `en-US` and a screen reader would have read
+the French half in an English voice, and without `title` the viewer
+showed a heading it had picked up by accident. With both set the
+document announces `fr-FR`, the English half is marked `en` where it
+begins, and the title bar shows the document rather than the filename.
 
 A4, because the reader is French and Letter is a North American size;
 pandoc's default is Letter, so the flag is not optional. The French half

@@ -300,6 +300,12 @@ rappelées en pied de page.
 #pagebreak()
 ```
 
+```{=typst}
+// The second half is English: mark it so a screen reader switches
+// voice and Typst hyphenates by English rules rather than French.
+#set text(lang: "en", region: none)
+```
+
 # English version
 
 This document is the declaration. It is drawn up according to ANSSI's
