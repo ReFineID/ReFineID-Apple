@@ -55,7 +55,7 @@ Le déclarant est également le fabricant du moyen ; la rubrique relative
 | Désignation générique | Intergiciel pour carte nationale d'identité |
 | Marque de distribution | ReFineID |
 | Référence commerciale | ReFineID pour plateformes Apple (application App Store, identifiant de lot `fi.refineid.ReFineID`) |
-| Version | 26.8.3 |
+| Version | 26.8.4 |
 | Date de mise sur le marché | 1er novembre 2026 |
 | Plateformes | iOS 26, iPadOS 26, macOS 26 |
 
@@ -246,7 +246,7 @@ joints. Toute omission ou toute fausse déclaration expose le déclarant
 aux sanctions prévues aux articles 34 et 35 de la loi n° 2004-575 du
 21 juin 2004 modifiée.
 
-Fait à Helsinki, le 3 août 2026.
+Fait à Helsinki, le 4 août 2026.
 
 ```{=typst}
 #v(1fr)
@@ -255,18 +255,10 @@ Fait à Helsinki, le 3 août 2026.
   #v(0.3em)
   #text(style: "italic", size: 9pt)[
     Ce document est signé électroniquement. La signature est une signature
-    électronique qualifiée au sens du règlement (UE) n° 910/2014
-    (article 3, point 12), créée par un dispositif de création de
-    signature électronique qualifié et fondée sur un certificat qualifié délivré par
-    l'Agence des services de données numériques et démographiques
-    (Digi- ja väestötietovirasto, DVV), prestataire de services de confiance
-    qualifié finlandais. En vertu de l'article 25, paragraphe 2, du même
-    règlement, elle a un effet juridique équivalent à celui d'une
-    signature manuscrite.
-
-    La validation est possible en ligne et gratuitement à l'adresse
-    #link("https://dvv.fineid.fi/fr/validation"), ou par tout autre moyen
-    retenu par le destinataire.
+    électronique qualifiée : en vertu de l'article 25, paragraphe 2, du
+    règlement (UE) n° 910/2014, elle a un effet juridique équivalent à celui
+    d'une signature manuscrite. Validation en ligne et gratuite à l'adresse
+    #link("https://dvv.fineid.fi/fr/validation"), entre autres services.
   ]
 ]
 ```
@@ -328,7 +320,7 @@ not apply.
 | Generic designation | Middleware for a national identity card |
 | Brand | ReFineID |
 | Commercial reference | ReFineID for Apple platforms (App Store application, bundle identifier `fi.refineid.ReFineID`) |
-| Version | 26.8.3 |
+| Version | 26.8.4 |
 | Date placed on the market | 1 November 2026 |
 | Platforms | iOS 26, iPadOS 26, macOS 26 |
 
@@ -509,7 +501,7 @@ attached material. Any omission or false declaration exposes the
 declarant to the penalties provided for in articles 34 and 35 of law
 No 2004-575 of 21 June 2004 as amended.
 
-Done at Helsinki, 3 August 2026.
+Done at Helsinki, 4 August 2026.
 
 ```{=typst}
 #v(1fr)
@@ -518,16 +510,10 @@ Done at Helsinki, 3 August 2026.
   #v(0.3em)
   #text(style: "italic", size: 9pt)[
     This document is electronically signed. The signature is a qualified
-    electronic signature within the meaning of Regulation (EU) No 910/2014
-    (Article 3(12)), created by a qualified electronic signature creation
-    device and based on a qualified certificate issued by the Digital and
-    Population Data Services Agency (DVV), a Finnish qualified trust
-    service provider. Under Article 25(2) of that Regulation it has legal
-    effect equivalent to that of a handwritten signature.
-
+    electronic signature: under Article 25(2) of Regulation (EU) No 910/2014
+    it has legal effect equivalent to that of a handwritten signature.
     Validation is available online, free of charge, at
-    #link("https://dvv.fineid.fi/en/validation"), or by any other means the
-    recipient prefers.
+    #link("https://dvv.fineid.fi/en/validation"), among other services.
   ]
 ]
 ```

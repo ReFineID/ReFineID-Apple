@@ -249,6 +249,15 @@ also carries the narrow no-break space French typography puts before
 `: ; ! ?` -- it is in the markdown, not applied at render time, so it
 survives whatever renders the file next.
 
+Sign in the Helsinki working day, not late at night.
+
+The attestation carries "Fait à Helsinki, le ..." and every timestamp in
+the file is UTC. Between midnight and 03:00 EEST those disagree: a
+document made on the 4th in Helsinki is signed at 21:xx UTC on the 3rd,
+and a reader comparing the attestation against a validation report sees
+two dates. Render with the date you will sign on, sign the same day
+while Helsinki and UTC agree, and the question never arises.
+
 Sign once, when the document is finished and about to be sent.
 
 While the text is still being edited, render and read -- rendering costs
