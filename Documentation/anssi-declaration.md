@@ -140,9 +140,7 @@ RFC 8017.
 - Les clés privées sont générées dans la carte par l'autorité émettrice
   et n'en sortent jamais. Le moyen ne peut pas les lire et ne les détient
   jamais.
-- Les clés de session PACE sont éphémères : dérivées par session, gardées
-  en mémoire seulement, libérées à la fin de la session et jamais
-  écrites sur un support persistant.
+- Les clés de session PACE sont éphémères.
 - Aucun séquestre de clés, aucun recouvrement, aucune gestion de clés à
   distance.
 
@@ -363,9 +361,7 @@ SHA-2, FIPS 180-4; ECDSA, FIPS 186-5 and ANSI X9.62; RSA, RFC 8017.
 - The card's private keys are generated on the card by the issuing
   authority and never leave it. The means cannot read them and never
   holds them.
-- PACE session keys are ephemeral: derived per session, held in memory
-  only, released when the session ends and never written to persistent
-  storage.
+- PACE session keys are ephemeral.
 - There is no key escrow, no key recovery and no remote key
   management.
 
