@@ -31,8 +31,6 @@ et l'exportation depuis la France vers un État tiers, que le IV de
 l'article 30 soumet à autorisation, ne sont pas le fait du déclarant et
 ne font pas l'objet de la présente déclaration.
 
-Aucune demande d'autorisation au titre du chapitre III n'est formée.
-
 Le dossier est établi en français et suivi d'une version anglaise.
 
 ## A. Déclarant et/ou demandeur
@@ -330,8 +328,6 @@ in France and its transfer from a member state. Transfer from France to a
 member state, and export from France to a third state -- which article
 30 IV subjects to authorisation -- are not performed by the declarant and
 are not the subject of this declaration.
-
-No authorisation under chapter III is requested.
 
 ## A. Declarant and/or applicant
 
