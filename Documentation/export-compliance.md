@@ -153,8 +153,8 @@ pipeline that produced the filed artifact:
       --reason "Declaration d'un moyen de cryptologie -- decret 2007-663" \
       --location "Helsinki, Finlande" \
       --timestamp https://timestamp.sectigo.com/qualified \
-      --timestamp http://tsa.belgium.be/connect \
       --timestamp https://timestamp.aped.gov.gr/qtss \
+      --timestamp http://tsa.belgium.be/connect \
       --archive
 
     curl -s -X POST https://dvv.fineid.fi/api/v1/validate \
@@ -176,10 +176,24 @@ which is a single token rather than a set -- the first to answer wins
 -- and it is the order to reach for anywhere else. Measured
 2026-08-03: Sectigo signs RSA-4096 under a unit whose certificate is
 signed with SHA-384 and runs to 2034, six years past any other, and
-republishes revocation weekly. Belgium is the most official of the
-three, a federal government service answering in real time, but signs
-P-256 and expires in 2028. Greece is RSA-4096 to 2030 with revocation
-republished daily.
+republishes revocation weekly. Greece is RSA-4096 to 2030 under a
+certificate minted this year, with revocation minted per request.
+Belgium is the most official of the three, a federal government service
+answering in real time, but signs P-256 and expires in 2028.
+
+How a member state names the service decides the rest of the order.
+Spain and Greece grant the issuing CA, so any unit it issues is
+qualified and a rotation changes nothing. Belgium grants twenty units
+by certificate, so a rotation opens a window where the endpoint answers
+with a unit its own list does not name: a token that verifies, looks
+right, and is not qualified. The archive timestamp is a single token
+with no second chance, and the order decides who carries it, so Belgium
+is third. Its attestation is still in the file -- every authority that
+answers is kept -- just not the one carrying the archive.
+
+Worth re-checking on the day rather than assumed: not whether the
+endpoints answer, but whether the unit answering is still named as
+granted in its member state's list.
 
 Two more are qualified, answer, and are held in reserve rather than
 used. ACCV (`http://tss.accv.es:8318/tsa`) runs its responder and its
