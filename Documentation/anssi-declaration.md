@@ -167,7 +167,7 @@ Fait à Helsinki, le 4 août 2026.
     électronique qualifiée : en vertu de l'article 25, paragraphe 2, du
     règlement (UE) n° 910/2014, elle a un effet juridique équivalent à celui
     d'une signature manuscrite. Validation en ligne et gratuite à l'adresse
-    #link("https://dvv.fineid.fi/fr/validation"), entre autres services.
+    #link("https://dvv.fineid.fi/en/validation"), entre autres services.
   ]
 ]
 ```
