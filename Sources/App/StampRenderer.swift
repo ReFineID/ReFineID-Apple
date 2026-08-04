@@ -44,6 +44,12 @@
     /// Clear space kept between the name's ends and the inner circle.
     private static let nameMargin = 10.0
 
+    /// How far the identifier sits below the name.
+    private static let nameLineGap = 7.0
+
+    /// The identifier's size, as a share of the name's.
+    private static let identifierShare = 0.85
+
     /// The circle's Bezier constant: how far a control point sits
     /// along the tangent to approximate a quarter turn.
     private static let arcControl = 0.5523
@@ -156,30 +162,57 @@
       return body
     }
 
-    /// The name, drawn as outlines and shrunk to fit the ring.
+    /// The name, on two lines: who, then the identifier.
     ///
-    /// A name is as long as it is - a double-barrelled surname and a
-    /// long identifier run far wider than a short one - so the size
-    /// is taken from the room available rather than fixed. The room
-    /// is the inner circle's chord at the name's own height, less a
-    /// margin, which is why it is computed rather than guessed.
+    /// A common name on this card reads "SURNAME FORENAME" and then
+    /// the identifier. On one line it reads like a database row and
+    /// has to shrink to fit; on two it reads like a signature block,
+    /// and each line is short enough to stay legible.
     private static func name(
       _ text: String,
       centre: (x: Double, y: Double)
     ) -> String {
-      let baseline = centre.y - Self.baselineDrop - Self.nameDrop
+      let split = text.lastIndex(of: " ")
+      let who = split.map { index in String(text[text.startIndex..<index]) } ?? text
+      let identifier =
+        split.map { index in String(text[text.index(after: index)...]) } ?? ""
+      var body = Self.line(
+        who, centre: centre, drop: Self.nameDrop, size: Self.nameSize
+      )
+      if !identifier.isEmpty {
+        body += Self.line(
+          identifier,
+          centre: centre,
+          drop: Self.nameDrop + Self.nameLineGap,
+          size: Self.nameSize * Self.identifierShare
+        )
+      }
+      return body
+    }
+
+    /// One line of the name, shrunk to the ring's width at its own
+    /// height: the chord narrows as the line sits lower, so the room
+    /// is computed for each line rather than shared.
+    private static func line(
+      _ text: String,
+      centre: (x: Double, y: Double),
+      drop: Double,
+      size: Double
+    ) -> String {
+      let baseline = centre.y - Self.baselineDrop - drop
       let height = abs(baseline - centre.y)
+      guard height < Self.innerRadius else { return "" }
       let halfChord =
         (Self.innerRadius * Self.innerRadius - height * height).squareRoot()
       let room = halfChord * Self.halves - Self.nameMargin
-      var size = Self.nameSize
-      var line = TextOutline.line(text, font: "Helvetica", size: size)
-      if line.width > room, line.width > 0 {
-        size *= room / line.width
-        line = TextOutline.line(text, font: "Helvetica", size: size)
+      var chosen = size
+      var drawn = TextOutline.line(text, font: "Helvetica", size: chosen)
+      if drawn.width > room, drawn.width > 0 {
+        chosen *= room / drawn.width
+        drawn = TextOutline.line(text, font: "Helvetica", size: chosen)
       }
       return "q 1 0 0 1 \(Self.number(centre.x)) \(Self.number(baseline)) cm\n"
-        + "\(line.operators)Q\n"
+        + "\(drawn.operators)Q\n"
     }
 
     /// A circle, as four Bezier quarters.
