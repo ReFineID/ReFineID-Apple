@@ -35,6 +35,28 @@
     /// Whether the card is being read for the signature right now.
     internal private(set) var readingStamp = false
 
+    /// The common name the card's qualified certificate states, read
+    /// beside the signature image.
+    private var signerName: String?
+
+    /// The page the mark goes on, when a signature was read from the
+    /// card, and nothing when none was.
+    private var stampPage: StampPage? {
+      guard let stamp, let name = signerName else { return nil }
+      return StampRenderer.page(
+        StampRenderer.Statement(
+          ringTop: String(
+            localized: "La signature est une signature électronique qualifiée"
+          ),
+          ringBottom: String(
+            localized: "article 25 §2 — règlement (UE) n° 910/2014"
+          ),
+          name: name,
+          signature: stamp
+        )
+      )
+    }
+
     /// The signed file's place: beside the original, stamped with the
     /// UTC instant, colons replaced so the name is safe everywhere.
     nonisolated internal static func destination(
@@ -129,8 +151,9 @@
       stampFailure = nil
       defer { readingStamp = false }
       switch await CardMaintenance.displayedSignature(accessNumber: digits) {
-      case .image(let bytes):
-        stamp = SignatureArtwork.traced(bytes)
+      case .image(let mark):
+        signerName = mark.name
+        stamp = SignatureArtwork.traced(mark.bytes)
         stampFailure =
           stamp == nil
           ? String(localized: "The signature image could not be read.") : nil
@@ -185,8 +208,13 @@
       defer { working = false }
       do {
         let document = try Data(contentsOf: source)
+        let page = stampPage
         let result = try await DocumentSigner.sign(
-          document, pin2: pin2, reason: nil, location: nil
+          document,
+          pin2: pin2,
+          reason: nil,
+          location: nil,
+          stamp: page
         )
         try result.write(to: destination, options: .atomic)
         signed = destination

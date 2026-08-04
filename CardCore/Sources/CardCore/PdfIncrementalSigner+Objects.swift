@@ -16,6 +16,9 @@ extension PdfIncrementalSigner {
 
     /// Its newest cross-reference section and trailer.
     internal let index: PdfDocumentIndex
+
+    /// The catalog's object number, which every reissue starts from.
+    internal let rootNumber: Int
   }
 
   /// Appends the reissued page and form objects.
@@ -83,6 +86,28 @@ extension PdfIncrementalSigner {
       pageNumber,
       Self.insertingIntoDictionary(page, entry: "/Annots [\(field) 0 R]")
     )
+  }
+
+  /// Writes just the reissued interactive form.
+  internal static func appendFormReissue(
+    into out: inout Data,
+    offsets: inout [Int: Int],
+    source: RevisionSource,
+    rootNumber: Int,
+    fieldNumber: Int
+  ) throws {
+    guard let catalog = source.index.body(of: rootNumber, in: source.document)
+    else {
+      throw PdfSigningError.structureUnreadable
+    }
+    let entry = Self.formReissue(
+      source: source,
+      catalog: catalog,
+      rootNumber: rootNumber,
+      field: fieldNumber
+    )
+    offsets[entry.number] = out.count
+    out.append(Data("\(entry.number) 0 obj\n\(entry.body)\nendobj\n".utf8))
   }
 
   /// The form object reissued so its field list includes the widget.
@@ -216,7 +241,7 @@ extension PdfIncrementalSigner {
   }
 
   /// Appends a reference inside the named key's array.
-  private static func appendingToNamedArray(
+  internal static func appendingToNamedArray(
     _ body: String,
     key: String,
     entry: Int

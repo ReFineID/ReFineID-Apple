@@ -54,11 +54,29 @@
       reason: String?,
       location: String?
     ) async throws -> Data {
+      try await Self.sign(
+        document, pin2: pin2, reason: reason, location: location, stamp: nil
+      )
+    }
+
+    /// The same, appending a page carrying the visible mark.
+    ///
+    /// The page is written in the signature's own revision, so it is
+    /// inside what the signature covers. Adding it afterwards would
+    /// leave a document that validators report as changed after
+    /// signing.
+    internal static func sign(
+      _ document: Data,
+      pin2: String,
+      reason: String?,
+      location: String?,
+      stamp: StampPage?
+    ) async throws -> Data {
       let claim = PdfIncrementalSigner.SignatureClaim(
         signedAt: Date(), reason: reason, location: location
       )
       let material = try await Self.cardMaterial(
-        pin2: pin2, document: document, claim: claim
+        pin2: pin2, document: document, claim: claim, stamp: stamp
       )
       let verifiedTokens = try await Self.timestamped(material.signature)
       let tokens = verifiedTokens.map(\.token)
@@ -89,12 +107,13 @@
     private static func cardMaterial(
       pin2: String,
       document: Data,
-      claim: PdfIncrementalSigner.SignatureClaim
+      claim: PdfIncrementalSigner.SignatureClaim,
+      stamp: StampPage?
     ) async throws -> CardMaterial {
       let prepared: PdfSignaturePlaceholder
       do {
         prepared = try PdfIncrementalSigner.prepare(
-          document, revision: .signature(claim)
+          document, revision: .signature(claim), appending: stamp
         )
       } catch let error as PdfSigningError {
         throw Failure.document(error)

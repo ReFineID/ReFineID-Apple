@@ -3,6 +3,18 @@
 /// Sources: ISO 32000-1 (PDF 1.7) for file structure and the
 /// signature dictionary, ETSI EN 319 142-1 for the PAdES entries.
 internal enum PdfValues {
+  /// The two base-14 fonts a stamp draws with.
+  ///
+  /// Declared inside the page's resources rather than as objects of
+  /// their own: they are standard, so nothing is embedded and nothing
+  /// else refers to them. WinAnsi is what carries the accents of a
+  /// French or Finnish name.
+  internal static let stampFonts =
+    "<< /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica"
+    + " /Encoding /WinAnsiEncoding >>"
+    + " /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold"
+    + " /Encoding /WinAnsiEncoding >> >>"
+
   /// Every PDF begins with this.
   internal static let filePrefix = "%PDF-"
 

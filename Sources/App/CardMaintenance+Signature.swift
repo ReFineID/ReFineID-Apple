@@ -25,13 +25,23 @@
       }
     }
 
+    /// A signature image and the name that goes with it.
+    internal struct Mark: Equatable, Sendable {
+      /// The image, as the card stores it.
+      internal let bytes: Data
+
+      /// The common name the qualified certificate states.
+      internal let name: String
+    }
+
     /// What reading the signature answered.
     internal enum SignatureOutcome: Equatable {
       /// The card carries no signature image.
       case absent
 
-      /// The image, as the card stores it.
-      case image(Data)
+      /// The image as the card stores it, and the common name its
+      /// qualified certificate states.
+      case image(Mark)
 
       /// No card was readable.
       case noCard
@@ -53,7 +63,17 @@
         guard let image = try? operations.readDisplayedSignature() else {
           return .absent
         }
-        return .image(image.bytes)
+        // The name is read in the same session, from the certificate
+        // that will verify the signature - so what the mark states
+        // and what signs the document cannot disagree.
+        guard
+          let certificate = try? operations.readCertificate(.qualifiedSignature),
+          let facts = CertificateFacts(der: certificate),
+          let name = DistinguishedName.commonName(inName: facts.subjectName)
+        else {
+          return .absent
+        }
+        return .image(Mark(bytes: image.bytes, name: name))
       }
       return answer ?? .noCard
     }

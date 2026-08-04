@@ -72,6 +72,20 @@ public enum PdfIncrementalSigner {
     _ document: Data,
     revision: Revision
   ) throws -> PdfSignaturePlaceholder {
+    try Self.prepare(document, revision: revision, appending: nil)
+  }
+
+  /// The same, appending a page to carry the signature's visible mark.
+  ///
+  /// The page is written into this revision, so it is inside what the
+  /// signature covers. The widget goes on it rather than on the
+  /// document's own first page, which is why nothing of the original
+  /// needs reissuing beyond the page tree.
+  public static func prepare(
+    _ document: Data,
+    revision: Revision,
+    appending stamp: StampPage?
+  ) throws -> PdfSignaturePlaceholder {
     let index = try PdfDocumentIndex.parse(document)
     guard
       let rootNumber = PdfDocumentIndex.reference(named: "/Root", in: index.trailer),
@@ -80,7 +94,7 @@ public enum PdfIncrementalSigner {
       throw PdfSigningError.structureUnreadable
     }
     let signatureNumber = max(size, 1)
-    let fieldNumber = signatureNumber + 1
+    let numbers = PageNumbers(firstFree: signatureNumber)
     let capacity = Self.capacity(for: revision)
 
     var out = document
@@ -95,25 +109,27 @@ public enum PdfIncrementalSigner {
       number: signatureNumber,
       capacity: capacity
     )
-    offsets[fieldNumber] = out.count
+    offsets[numbers.field] = out.count
     out.append(
       Data(
         Self.widget(
-          revision, field: fieldNumber, signature: signatureNumber
+          revision, field: numbers.field, signature: signatureNumber
         ).utf8
       )
     )
-    try Self.appendReissuedObjects(
+    let highest = try Self.appendRevisionBody(
       into: &out,
       offsets: &offsets,
-      source: RevisionSource(document: document, index: index),
-      rootNumber: rootNumber,
-      fieldNumber: fieldNumber
+      source: RevisionSource(
+        document: document, index: index, rootNumber: rootNumber
+      ),
+      numbers: numbers,
+      stamp: stamp
     )
     try Self.closeRevision(
       into: &out,
       offsets: offsets,
-      size: fieldNumber + 1,
+      size: highest + 1,
       rootNumber: rootNumber,
       index: index
     )
@@ -245,27 +261,6 @@ public enum PdfIncrementalSigner {
     }
     return "\(field) 0 obj\n<< /Type /Annot /Subtype /Widget /FT /Sig"
       + " /T (\(name)) /V \(signature) 0 R /Rect [0 0 0 0] /F 132 >>\nendobj\n"
-  }
-
-  /// A PDF date string, always UTC.
-  private static func pdfDate(_ instant: Date) -> String {
-    var calendar = Calendar(identifier: .gregorian)
-    guard let utc = TimeZone(identifier: "UTC") else {
-      return ""
-    }
-    calendar.timeZone = utc
-    let parts = calendar.dateComponents(
-      [.year, .month, .day, .hour, .minute, .second], from: instant
-    )
-    return String(
-      format: "D:%04d%02d%02d%02d%02d%02d+00'00'",
-      parts.year ?? 0,
-      parts.month ?? 0,
-      parts.day ?? 0,
-      parts.hour ?? 0,
-      parts.minute ?? 0,
-      parts.second ?? 0
-    )
   }
 
   /// A literal string's escapes: backslash and both parentheses.
