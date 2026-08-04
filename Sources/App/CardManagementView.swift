@@ -43,7 +43,9 @@
 
     private static let windowWidth: CGFloat = 460
 
-    private static let rowSymbolSpacing: CGFloat = 6
+    private static let rowSymbolSpacing: CGFloat = 4
+
+    private static let attemptsSpacing: CGFloat = 14
 
     @State private var model = CardManagementModel()
     @State private var task: ManagementTask = .changePin1
@@ -51,9 +53,9 @@
 
     internal var body: some View {
       Form {
-        attemptsSection
         taskSection
         outcomeSection
+        attemptsSection
       }
       .formStyle(.grouped)
       .frame(minWidth: Self.windowWidth)
@@ -78,13 +80,21 @@
       }
     }
 
-    /// The counter-safe reading of all three credentials, colored by
-    /// how close each is to the edge.
+    /// The counter-safe reading, as one quiet line.
+    ///
+    /// Attempts remaining are worth knowing and are not why the window
+    /// was opened, so they sit under the task rather than above it.
     @ViewBuilder private var attemptsSection: some View {
-      Section("Attempts remaining") {
-        attemptsRow("PIN1", model.report?.pin1)
-        attemptsRow("PIN2", model.report?.pin2)
-        attemptsRow("PUK", model.report?.puk)
+      Section {
+        HStack(spacing: Self.attemptsSpacing) {
+          attemptsEntry("PIN1", model.report?.pin1)
+          attemptsEntry("PIN2", model.report?.pin2)
+          attemptsEntry("PUK", model.report?.puk)
+          Spacer()
+        }
+        .font(.footnote)
+      } header: {
+        Text("Attempts remaining")
       }
     }
 
@@ -137,17 +147,20 @@
       }
     }
 
-    /// The color-independent state marker beside each count.
-    private static func attemptsSymbol(_ outcome: RetryProbeOutcome?) -> String {
+    /// The colour-independent marker for a count that needs one, or
+    /// nil while the credential is healthy.
+    private static func attemptsWarning(_ outcome: RetryProbeOutcome?) -> String? {
       switch outcome {
       case .remaining(let count):
-        count.isBlocked
-          ? "xmark.octagon.fill"
-          : count.attemptsRemaining >= RetryFloor.minimumAttemptsToProceed
-            ? "checkmark.circle.fill"
-            : "exclamationmark.triangle.fill"
+        if count.isBlocked {
+          "xmark.octagon.fill"
+        } else if count.attemptsRemaining < RetryFloor.minimumAttemptsToProceed {
+          "exclamationmark.triangle.fill"
+        } else {
+          nil
+        }
       case .verified:
-        "checkmark.circle.fill"
+        nil
       case .locked, .invalidated:
         "xmark.octagon.fill"
       case .noInformation, .other, .none:
@@ -199,13 +212,15 @@
     private static func attemptsColor(_ outcome: RetryProbeOutcome?) -> Color {
       switch outcome {
       case .remaining(let count):
-        count.isBlocked
-          ? .red
-          : count.attemptsRemaining >= RetryFloor.minimumAttemptsToProceed
-            ? .green
-            : .orange
+        if count.isBlocked {
+          .red
+        } else if count.attemptsRemaining < RetryFloor.minimumAttemptsToProceed {
+          .orange
+        } else {
+          .secondary
+        }
       case .verified:
-        .green
+        .secondary
       case .locked, .invalidated:
         .red
       case .noInformation, .other, .none:
@@ -213,18 +228,24 @@
       }
     }
 
-    /// One credential's reading: a symbol and text carry the state, the
-    /// color only underlines it - never color alone.
+    /// One credential's reading.
+    ///
+    /// A symbol appears only when the count is not healthy, so the
+    /// line stays quiet while everything is fine and still never
+    /// relies on colour alone when it is not.
     @ViewBuilder
-    private func attemptsRow(_ name: String, _ outcome: RetryProbeOutcome?) -> some View {
-      LabeledContent(name) {
-        HStack(spacing: Self.rowSymbolSpacing) {
-          Image(systemName: Self.attemptsSymbol(outcome))
-          Text(Self.attemptsText(outcome))
-            .monospacedDigit()
+    private func attemptsEntry(
+      _ name: String,
+      _ outcome: RetryProbeOutcome?
+    ) -> some View {
+      HStack(spacing: Self.rowSymbolSpacing) {
+        if let symbol = Self.attemptsWarning(outcome) {
+          Image(systemName: symbol)
         }
-        .foregroundStyle(Self.attemptsColor(outcome))
+        Text("\(name) \(Self.attemptsText(outcome))")
+          .monospacedDigit()
       }
+      .foregroundStyle(Self.attemptsColor(outcome))
       .accessibilityElement(children: .combine)
       .accessibilityLabel(name)
       .accessibilityValue(Self.attemptsSpoken(outcome))
