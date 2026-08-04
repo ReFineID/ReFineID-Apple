@@ -54,13 +54,20 @@
       let scale = size / Self.traceSize
       var body = ""
       var pen = 0.0
+      var leftmost = Double.greatestFiniteMagnitude
+      var rightmost = -Double.greatestFiniteMagnitude
       for character in text {
-        var glyph = CGGlyph(0)
+        // One glyph slot per code unit. A character outside the basic
+        // plane is two units, and CoreText writes one glyph per unit -
+        // told the length while given room for one, it writes past the
+        // end.
         var codeUnits = Array(String(character).utf16)
+        var glyphs = [CGGlyph](repeating: 0, count: codeUnits.count)
         guard
           CTFontGetGlyphsForCharacters(
-            traced, &codeUnits, &glyph, codeUnits.count
-          )
+            traced, &codeUnits, &glyphs, codeUnits.count
+          ),
+          var glyph = glyphs.first
         else {
           continue
         }
@@ -68,16 +75,25 @@
         CTFontGetAdvancesForGlyphs(traced, .horizontal, &glyph, &advance, 1)
         if let path = CTFontCreatePathForGlyph(traced, glyph, nil) {
           body += Self.operators(of: path, offsetBy: pen)
+          let box = path.boundingBoxOfPath
+          leftmost = min(leftmost, Double(box.minX) + pen)
+          rightmost = max(rightmost, Double(box.maxX) + pen)
         }
         pen += Double(advance.width)
       }
-      let width = pen * scale
-      // Scaled here rather than by the caller, so the line arrives in
-      // the coordinates it will be drawn in.
+      // Measured from the glyph outlines rather than from the sum of
+      // their advances. The two disagreed - by half - and it is the
+      // outlines a reader draws, so a line centred and sized by the
+      // advances ran off the ring it was fitted to.
+      guard leftmost <= rightmost else {
+        return Line(operators: "", width: 0)
+      }
+      let inkWidth = (rightmost - leftmost) * scale
+      let centring = -(leftmost + rightmost) / Self.halves * scale
       let placed =
         "q \(Self.number(scale)) 0 0 \(Self.number(scale))"
-        + " \(Self.number(-width / Self.halves)) 0 cm\n\(body)Q\n"
-      return Line(operators: placed, width: width)
+        + " \(Self.number(centring)) 0 cm\n\(body)Q\n"
+      return Line(operators: placed, width: inkWidth)
     }
 
     /// One glyph's path as operators, shifted along the line.
