@@ -21,6 +21,9 @@
     /// keystroke would lose focus after the first one.
     /// What a session's probe learned about one address.
     internal enum ServiceCheck: Equatable {
+      /// The address answered "not right now".
+      case busy
+
       /// The address answered, but not with timestamps.
       case notTimestampService
 
@@ -193,6 +196,8 @@
       switch verdict {
       case .undecided:
         break
+      case .busy:
+        rows[index].check = .busy
       case .notTimestampService:
         rows[index].check = .notTimestampService
         rows[index].qualified = false

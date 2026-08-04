@@ -91,26 +91,34 @@
           AnyShapeStyle(.secondary),
           "Not on the EU trusted lists"
         )
-        if model.rows.contains(where: { row in
-          row.check == .notTimestampService
-        }) {
-          legendEntry(
-            "xmark.seal.fill",
-            AnyShapeStyle(.red),
-            "Not a time-stamp service"
-          )
-        }
-        if model.rows.contains(where: { row in
-          !row.address.isEmpty && !AuthoritySchemeResolver.isUsable(row.address)
-        }) {
-          legendEntry(
-            "exclamationmark.triangle.fill",
-            AnyShapeStyle(.orange),
-            "Not a usable address"
-          )
-        }
+        conditionalLegendEntries
       }
       .font(.footnote)
+    }
+
+    /// The legend lines that appear only while some row earns them.
+    @ViewBuilder private var conditionalLegendEntries: some View {
+      if model.rows.contains(where: { row in row.check == .busy }) {
+        legendEntry("hourglass", AnyShapeStyle(.yellow), "Busy right now")
+      }
+      if model.rows.contains(where: { row in
+        row.check == .notTimestampService
+      }) {
+        legendEntry(
+          "xmark.seal.fill",
+          AnyShapeStyle(.red),
+          "Not a time-stamp service"
+        )
+      }
+      if model.rows.contains(where: { row in
+        !row.address.isEmpty && !AuthoritySchemeResolver.isUsable(row.address)
+      }) {
+        legendEntry(
+          "exclamationmark.triangle.fill",
+          AnyShapeStyle(.orange),
+          "Not a usable address"
+        )
+      }
     }
 
     /// One row: badge, three cells, delete.
@@ -158,6 +166,12 @@
           .controlSize(.small)
           .frame(width: Self.badgeWidth)
           .accessibilityLabel("testing qualification")
+      } else if row.wrappedValue.check == .busy {
+        Image(systemName: "hourglass")
+          .foregroundStyle(.yellow)
+          .frame(width: Self.badgeWidth)
+          .help("Answers, but busy right now - edit the address to ask again")
+          .accessibilityLabel("busy right now")
       } else if row.wrappedValue.check == .notTimestampService {
         Image(systemName: "xmark.seal.fill")
           .foregroundStyle(.red)
