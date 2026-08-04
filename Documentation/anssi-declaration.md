@@ -10,9 +10,9 @@ l'Union européenne d'un moyen de cryptologie, au titre de l'article 30
 de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie
 numérique et du chapitre II du décret n° 2007-663 du 2 mai 2007.
 
-ReFineID est un intergiciel qui rend la carte nationale d'identité
-finlandaise utilisable comme identité numérique sur les plateformes
-Apple.
+ReFineID est un intergiciel qui permet aux titulaires d'une carte
+nationale d'identité finlandaise résidant en France de l'utiliser comme
+identité numérique sur les plateformes Apple.
 
 Le déclarant demande la délivrance de l'attestation de déclaration.
 
@@ -117,10 +117,7 @@ Le déclarant déclare que le moyen relève de la catégorie 3.
 
 ### Présentez le mode de commercialisation du moyen de cryptologie et le marché auquel il s'adresse
 
-Le moyen sera mis à disposition du public sur l'App Store d'Apple. Il
-s'adresse aux titulaires d'une carte nationale d'identité finlandaise
-résidant en France qui souhaitent s'authentifier auprès de services en
-ligne.
+Le moyen sera mis à disposition du public sur l'App Store d'Apple.
 
 ### Expliquez pourquoi la fonctionnalité cryptographique du moyen ne peut pas être modifiée facilement par l'utilisateur
 
@@ -129,8 +126,7 @@ délivrée par l'État et ne peut pas être modifiée par l'utilisateur.
 
 ### Expliquez en quoi les modalités d'installation du moyen ne nécessitent pas d'assistance importante ultérieure de la part du fournisseur
 
-L'utilisateur installe l'application depuis l'App Store, puis utilise
-celle-ci pour installer le certificat de sa carte sur l'iPhone, sans
+L'utilisateur installe l'application, simple d'utilisation, sans
 intervention du fournisseur.
 
 ## D. Renouvellement d'autorisation de transfert ou d'exportation
@@ -193,7 +189,8 @@ No. 2004-575 of 21 June 2004 on confidence in the digital economy and
 Chapter II of Decree No. 2007-663 of 2 May 2007.
 
 ReFineID is middleware that makes the Finnish national identity card
-usable as a digital identity on Apple platforms.
+usable by cardholders living in France as a digital identity on Apple
+platforms.
 
 The declarant requests an attestation confirming this declaration.
 
@@ -295,8 +292,6 @@ The declarant declares that the product falls within category 3.
 ### Describe the product's distribution model and target market
 
 The product will be made available to the public through Apple's App Store.
-It is intended for holders of a Finnish national identity card residing
-in France who wish to authenticate to online services.
 
 ### Explain why the cryptographic functionality cannot easily be modified by the user
 
@@ -305,8 +300,7 @@ smart card and cannot be modified by the user.
 
 ### Explain how installation requires no significant subsequent support from the supplier
 
-The user installs the app from the App Store and uses it to install the
-card certificate on the iPhone, without supplier assistance.
+The user installs the easy-to-use app without supplier assistance.
 
 ## D. Renewal of a transfer or export authorisation
 
