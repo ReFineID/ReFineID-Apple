@@ -64,8 +64,7 @@ cryptographiques).
 #### B.3.1. Description des fonctionnalités cryptographiques du moyen
 
 Messagerie sécurisée PACE avec la carte, signatures d'authentification
-client et, sur macOS, signatures de documents PAdES avec horodatage
-RFC 3161.
+client et signatures de documents PAdES.
 
 #### B.3.2. Indiquez à quelle(s) catégorie(s) se rapporte(nt) la ou les fonctions cryptographiques du moyen
 
@@ -121,8 +120,8 @@ Le moyen sera mis à disposition du public sur l'App Store d'Apple.
 
 ### Expliquez pourquoi la fonctionnalité cryptographique du moyen ne peut pas être modifiée facilement par l'utilisateur
 
-La suite cryptographique est imposée par la carte à puce finlandaise
-délivrée par l'État et ne peut pas être modifiée par l'utilisateur.
+La suite cryptographique de la carte à puce finlandaise délivrée par
+l'État ne peut pas être modifiée par l'utilisateur.
 
 ### Expliquez en quoi les modalités d'installation du moyen ne nécessitent pas d'assistance importante ultérieure de la part du fournisseur
 
@@ -241,7 +240,7 @@ certificate.
 #### B.3.1. Description of the cryptographic functionality
 
 PACE secure messaging with the card, client-authentication signatures
-and, on macOS, PAdES document signatures with RFC 3161 timestamps.
+and PAdES document signatures.
 
 #### B.3.2. Categories the cryptographic functions fall under
 
@@ -295,8 +294,8 @@ The product will be made available to the public through Apple's App Store.
 
 ### Explain why the cryptographic functionality cannot easily be modified by the user
 
-The cryptographic suite is imposed by the Finnish government-issued
-smart card and cannot be modified by the user.
+The cryptographic suite on the Finnish government-issued smart card
+cannot be modified by the user.
 
 ### Explain how installation requires no significant subsequent support from the supplier
 
