@@ -22,7 +22,13 @@ internal struct DerReader {
   private static let minimumElementLength = 2
 
   /// The bytes being walked.
-  private let bytes: [UInt8]
+  ///
+  /// Held as `Data`, not copied into an `[UInt8]`. A structure with
+  /// many repeated elements - a revocation list with fifty thousand
+  /// entries - constructs one reader per element, and copying the
+  /// whole encoding each time made walking it quadratic in its size,
+  /// on bytes whose signature has not been checked yet.
+  private let bytes: Data
 
   /// The next unread position.
   private var offset: Int
@@ -42,15 +48,26 @@ internal struct DerReader {
 
   /// Walks a whole encoding.
   internal init(_ encoded: Data) {
-    self.bytes = Array(encoded)
+    self.bytes = Self.zeroBased(encoded)
     self.offset = 0
   }
 
   /// Walks one element's content.
   internal init(_ encoded: Data, within element: Element) {
-    self.bytes = Array(encoded)
+    self.bytes = Self.zeroBased(encoded)
     self.offset = element.content.lowerBound
     self.limit = element.content.upperBound
+  }
+
+  /// The same bytes, indexed from zero.
+  ///
+  /// Every position here is an offset from the start of the encoding,
+  /// but a `Data` sliced out of a larger one keeps the larger one's
+  /// indices. Whole encodings - the case that repeats, and the one
+  /// that made this parser quadratic - are already zero-based and are
+  /// passed through untouched; a slice is rebased once.
+  private static func zeroBased(_ encoded: Data) -> Data {
+    encoded.startIndex == 0 ? encoded : Data(encoded)
   }
 
   /// Reads the next element, or nil at the end or on malformed input.

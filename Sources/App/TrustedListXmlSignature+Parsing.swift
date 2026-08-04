@@ -76,6 +76,7 @@
       else {
         throw Failure.wrapping
       }
+      try Self.checkSignatureIsBounded(signature, document: document)
       return signature
     }
 

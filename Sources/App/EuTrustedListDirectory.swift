@@ -225,8 +225,17 @@
       in list: Data
     ) throws -> [Data] {
       let document = try XMLDocument(data: list, options: Self.xmlOptions)
+      // Anchored at the root through child steps only. A `//` search
+      // also finds nodes inside `ds:Signature`, and the enveloped
+      // transform removes that element from the bytes the digest
+      // covers - so a service spliced in there would be read from a
+      // list that verifies perfectly while nothing signed it.
       let services = try document.nodes(
-        forXPath: "//*[local-name()='TSPService']"
+        forXPath: "/*[local-name()='TrustServiceStatusList']"
+          + "/*[local-name()='TrustServiceProviderList']"
+          + "/*[local-name()='TrustServiceProvider']"
+          + "/*[local-name()='TSPServices']"
+          + "/*[local-name()='TSPService']"
       )
       var found: [Data] = []
       for service in services {

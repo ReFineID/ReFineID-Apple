@@ -5,7 +5,7 @@
 
   extension SigningNetwork {
     /// An IPv4 or IPv6 address returned by the system resolver.
-    internal enum NumericAddress {
+    internal enum NumericAddress: Equatable {
       case ipv4(Data)
       case ipv6(Data)
     }
@@ -113,6 +113,11 @@
     private static func resolvedAddresses(for host: String) -> [NumericAddress] {
       var hints = addrinfo()
       hints.ai_family = AF_UNSPEC
+      // One entry per address, not one per socket type. Without this
+      // getaddrinfo answers each address once per stream, datagram and
+      // raw type, so a CDN-hosted CA or trusted list - three addresses,
+      // nine entries - was refused for a cap it never reached.
+      hints.ai_socktype = SOCK_STREAM
       var result: UnsafeMutablePointer<addrinfo>?
       guard getaddrinfo(host, nil, &hints, &result) == 0, let result else {
         return []
@@ -139,12 +144,19 @@
         default:
           break
         }
-        if addresses.count > Self.maximumResolvedAddresses {
-          return []
-        }
         node = info.pointee.ai_next
       }
-      return addresses
+      // The cap counts distinct addresses, which is what the check
+      // downstream actually walks; a name resolving to the same
+      // address twice has not widened anything.
+      var distinct: [NumericAddress] = []
+      for address in addresses where !distinct.contains(address) {
+        distinct.append(address)
+        if distinct.count > Self.maximumResolvedAddresses {
+          return []
+        }
+      }
+      return distinct
     }
 
     /// The in-memory network-order bytes of one socket address member.

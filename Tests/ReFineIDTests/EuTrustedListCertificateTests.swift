@@ -6,6 +6,17 @@ import Testing
 /// Direct checks for national service identities and cache boundaries.
 @Suite
 internal struct EuTrustedListCertificateTests {
+  /// The ETSI containers a service must sit in to be covered by the
+  /// list signature.
+  private static let opening =
+    "<TrustServiceStatusList><TrustServiceProviderList>"
+    + "<TrustServiceProvider><TSPServices>"
+
+  /// Their closing halves.
+  private static let closing =
+    "</TSPServices></TrustServiceProvider>"
+    + "</TrustServiceProviderList></TrustServiceStatusList>"
+
   /// Only the current identity of a granted QTST service contributes;
   /// history and other service types must not become trust anchors.
   @Test
@@ -19,7 +30,7 @@ internal struct EuTrustedListCertificateTests {
     let otherType = Data("other-service-certificate".utf8)
     let list = Data(
       """
-      <TrustServiceStatusList>
+      \(Self.opening)
         <TSPService>
           <ServiceInformation>
             <ServiceTypeIdentifier>http://uri.etsi.org/TrstSvc/Svctype/TSA/QTST</ServiceTypeIdentifier>
@@ -54,7 +65,7 @@ internal struct EuTrustedListCertificateTests {
             </ServiceDigitalIdentity>
           </ServiceInformation>
         </TSPService>
-      </TrustServiceStatusList>
+      \(Self.closing)
       """.utf8
     )
 
@@ -74,7 +85,7 @@ internal struct EuTrustedListCertificateTests {
     let malformed = Data("not an X.509 certificate".utf8)
     let list = Data(
       """
-      <TrustServiceStatusList>
+      \(Self.opening)
         <TSPService>
           <ServiceInformation>
             <ServiceTypeIdentifier>http://uri.etsi.org/TrstSvc/Svctype/TSA/QTST</ServiceTypeIdentifier>
@@ -84,7 +95,7 @@ internal struct EuTrustedListCertificateTests {
             </ServiceDigitalIdentity>
           </ServiceInformation>
         </TSPService>
-      </TrustServiceStatusList>
+      \(Self.closing)
       """.utf8
     )
 
@@ -101,7 +112,7 @@ internal struct EuTrustedListCertificateTests {
   {
     let list = Data(
       """
-      <TrustServiceStatusList>
+      \(Self.opening)
         <TSPService>
           <ServiceInformation>
             <ServiceTypeIdentifier>http://uri.etsi.org/TrstSvc/Svctype/TSA/QTST</ServiceTypeIdentifier>
@@ -109,7 +120,7 @@ internal struct EuTrustedListCertificateTests {
             <ServiceDigitalIdentity/>
           </ServiceInformation>
         </TSPService>
-      </TrustServiceStatusList>
+      \(Self.closing)
       """.utf8
     )
 
@@ -141,7 +152,9 @@ internal struct EuTrustedListCertificateTests {
         <!ENTITY external SYSTEM "file:///etc/hosts">
       ]>
       <TrustServiceStatusList>
+        <SchemeInformation><PointersToOtherTSL>
         <OtherTSLPointer><TSLLocation>&external;</TSLLocation></OtherTSLPointer>
+        </PointersToOtherTSL></SchemeInformation>
       </TrustServiceStatusList>
       """.utf8
     )

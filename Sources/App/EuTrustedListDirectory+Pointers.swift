@@ -41,8 +41,17 @@
       in list: Data
     ) throws -> [TrustedListPointer] {
       let document = try XMLDocument(data: list, options: Self.xmlOptions)
+      // Anchored at the root through child steps only, for the reason
+      // in `qualifiedTimestampCertificates`: a `//` search reaches
+      // into `ds:Signature`, which the enveloped transform excludes
+      // from the digest. A pointer spliced in there would name the
+      // national list to fetch and pin the certificate said to have
+      // signed it - both unsigned, in a list that verifies.
       let nodes = try document.nodes(
-        forXPath: "//*[local-name()='OtherTSLPointer']"
+        forXPath: "/*[local-name()='TrustServiceStatusList']"
+          + "/*[local-name()='SchemeInformation']"
+          + "/*[local-name()='PointersToOtherTSL']"
+          + "/*[local-name()='OtherTSLPointer']"
       )
       var ordered: [TrustedListPointer] = []
       var seen: [String: TrustedListPointer] = [:]

@@ -31,6 +31,15 @@ internal struct EuTrustedListDirectoryTests {
     """
   }
 
+  /// One index document holding the given pointers, in the ETSI
+  /// containers the reader requires - a pointer outside them is not
+  /// covered by the list signature.
+  private static func index(holding pointers: String) -> String {
+    "<TrustServiceStatusList><SchemeInformation><PointersToOtherTSL>"
+      + pointers
+      + "</PointersToOtherTSL></SchemeInformation></TrustServiceStatusList>"
+  }
+
   /// The index reader accepts only XML forms, removes duplicates, and
   /// never follows itself.
   @Test
@@ -54,6 +63,7 @@ internal struct EuTrustedListDirectoryTests {
     let index = Data(
       """
       <TrustServiceStatusList>
+        <SchemeInformation><PointersToOtherTSL>
         \(first)
         \(duplicate)
         \(second)
@@ -64,6 +74,7 @@ internal struct EuTrustedListDirectoryTests {
           </AdditionalInformation>
         </OtherTSLPointer>
         <OtherTSLPointer><TSLLocation>https://ec.europa.eu/tools/lotl/eu-lotl.xml</TSLLocation></OtherTSLPointer>
+        </PointersToOtherTSL></SchemeInformation>
       </TrustServiceStatusList>
       """.utf8
     )
@@ -90,7 +101,7 @@ internal struct EuTrustedListDirectoryTests {
       territory: "DK"
     )
     let index = Data(
-      "<TrustServiceStatusList>\(pointer)</TrustServiceStatusList>".utf8
+      Self.index(holding: pointer).utf8
     )
 
     let pointers = try EuTrustedListDirectory.trustedListPointers(in: index)
@@ -107,6 +118,7 @@ internal struct EuTrustedListDirectoryTests {
     let index = Data(
       """
       <TrustServiceStatusList>
+        <SchemeInformation><PointersToOtherTSL>
         <OtherTSLPointer>
           <ServiceDigitalIdentities>
             <ServiceDigitalIdentity><DigitalId>
@@ -115,6 +127,7 @@ internal struct EuTrustedListDirectoryTests {
           </ServiceDigitalIdentities>
           <TSLLocation>https://example.test/current.xml</TSLLocation>
         </OtherTSLPointer>
+        </PointersToOtherTSL></SchemeInformation>
       </TrustServiceStatusList>
       """.utf8
     )
@@ -135,7 +148,7 @@ internal struct EuTrustedListDirectoryTests {
       territory: "DK"
     )
     let index = Data(
-      "<TrustServiceStatusList>\(pointer)</TrustServiceStatusList>".utf8
+      Self.index(holding: pointer).utf8
     )
 
     #expect(throws: EuTrustedListDirectory.Failure.unusableResponse) {
@@ -154,7 +167,7 @@ internal struct EuTrustedListDirectoryTests {
       territory: "FI"
     )
     let index = Data(
-      "<TrustServiceStatusList>\(pointer)</TrustServiceStatusList>".utf8
+      Self.index(holding: pointer).utf8
     )
 
     #expect(throws: EuTrustedListDirectory.Failure.unusableResponse) {
@@ -178,8 +191,7 @@ internal struct EuTrustedListDirectoryTests {
       territory: "UK"
     )
     let index = Data(
-      "<TrustServiceStatusList>\(current)\(historical)</TrustServiceStatusList>"
-        .utf8
+      Self.index(holding: "\(current)\(historical)").utf8
     )
 
     let pointers = try EuTrustedListDirectory.trustedListPointers(in: index)
@@ -203,8 +215,7 @@ internal struct EuTrustedListDirectoryTests {
       territory: "FI"
     )
     let index = Data(
-      "<TrustServiceStatusList>\(firstPointer)\(secondPointer)</TrustServiceStatusList>"
-        .utf8
+      Self.index(holding: "\(firstPointer)\(secondPointer)").utf8
     )
 
     #expect(throws: EuTrustedListDirectory.Failure.unusableResponse) {
