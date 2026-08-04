@@ -44,6 +44,12 @@ public enum DerValues {
   /// Universal tag: UTF8String.
   internal static let tagUtf8String: UInt8 = 0x0C
 
+  /// Universal tag: PrintableString, the older name encoding.
+  internal static let tagPrintableString: UInt8 = 0x13
+
+  /// Universal tag: IA5String, ASCII by definition.
+  internal static let tagIa5String: UInt8 = 0x16
+
   /// BOOLEAN TRUE content octet: DER requires all bits set.
   internal static let booleanTrue: UInt8 = 0xFF
 

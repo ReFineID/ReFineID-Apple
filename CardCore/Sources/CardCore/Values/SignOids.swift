@@ -51,6 +51,10 @@ internal enum SignOids {
   /// id-ct-TSTInfo (RFC 3161).
   internal static let tstInfo = "1.2.840.113549.1.9.16.1.4"
 
+  /// id-at-commonName: the one name in a subject meant for a person
+  /// to read (RFC 5280 appendix A).
+  internal static let commonName = "2.5.4.3"
+
   /// SHA-384 (RFC 5754); parameters absent, never NULL.
   internal static let sha384 = "2.16.840.1.101.3.4.2.2"
 
