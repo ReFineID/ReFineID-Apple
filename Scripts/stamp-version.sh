@@ -2,7 +2,8 @@
 #
 # Stamp the calendar release version onto the Xcode project.
 #
-# Run this MANUALLY when cutting a release.
+# Run manually when cutting a release; install-macos.sh also runs it,
+# so every installed build carries the bucket it was built in.
 #
 # Sets, across every target's build settings:
 #

@@ -41,6 +41,13 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# Every install carries the ten-minute bucket it was built in, so the
+# About window answers "am I running the copy just installed?" - a
+# build number that only moved on release cuts could not.
+if [[ "$check_only" == "no" ]]; then
+  Scripts/stamp-version.sh
+fi
+
 fail() { echo "install-macos: $*" >&2; exit 1; }
 note() { echo "install-macos: $*"; }
 

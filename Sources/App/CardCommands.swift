@@ -22,9 +22,12 @@
         Button("Card Access Number...") {
           openWindow(id: CardAccessNumberManagerView.windowID)
         }
+        // Disabled rather than hidden: menus keep their shape, and a
+        // grayed item says why it cannot be used - no card.
         Button("PIN Management...") {
           openWindow(id: CardManagementView.windowID)
         }
+        .disabled(!CardPresence.shared.isCardPresent)
         Divider()
         SettingsLink {
           Text("Time-Stamp Authorities...")

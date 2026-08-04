@@ -40,6 +40,21 @@
       signing.pending != nil && Self.isEntryComplete(pin2) && !signing.working
     }
 
+    /// What the identity row and the offered features key on.
+    ///
+    /// Reads two observed facts - the token's publication and the
+    /// slot's physical answer - so the row moves the moment either
+    /// does.
+    private var availability: LoginIdentityModel.Availability {
+      if model.isReady {
+        .ready
+      } else if CardPresence.shared.isCardPresent {
+        .cardWithoutIdentity
+      } else {
+        .noCard
+      }
+    }
+
     internal var body: some View {
       VStack(alignment: .leading, spacing: Self.spacing) {
         Text(verbatim: "ReFineID")
@@ -49,30 +64,49 @@
             identityState
           }
           .accessibilityIdentifier("loginIdentityStatus")
-          documentSection
-          signatureSection
+          // No card, no card work: a drop target that cannot sign
+          // and a PIN window over nothing are not features, they are
+          // questions.
+          if availability != .noCard {
+            documentSection
+            signatureSection
+          }
           outcomeSection
         }
         .formStyle(.grouped)
         .fixedSize(horizontal: false, vertical: true)
-        Button("PIN Management...") {
-          openWindow(id: CardManagementView.windowID)
+        if availability != .noCard {
+          Button("PIN Management...") {
+            openWindow(id: CardManagementView.windowID)
+          }
+          .accessibilityIdentifier("pinManagementButton")
         }
-        .accessibilityIdentifier("pinManagementButton")
       }
       .padding(Self.padding)
       .frame(minWidth: Self.minimumWidth, alignment: .leading)
       .task { publishStoredNumber() }
-      .onAppear { model.refresh() }
+      .onAppear {
+        model.refresh()
+        react(to: availability)
+      }
+      .onChange(of: availability) { _, now in
+        react(to: now)
+      }
     }
 
-    /// Ready, or what to do about it.
+    /// Ready, or what to do about it - and the one state between,
+    /// named honestly instead of asking for a card that is already
+    /// in the reader.
     @ViewBuilder private var identityState: some View {
-      if model.isReady {
+      switch availability {
+      case .ready:
         Image(systemName: "checkmark")
           .foregroundStyle(.green)
           .accessibilityLabel("Ready")
-      } else {
+      case .cardWithoutIdentity:
+        Text("Card detected, not ready - if this lasts, re-insert it")
+          .foregroundStyle(.orange)
+      case .noCard:
         Text("Insert your card")
           .foregroundStyle(.secondary)
       }
@@ -185,6 +219,20 @@
     /// Whether an entry could be a PIN2 at all.
     private static func isEntryComplete(_ entry: String) -> Bool {
       (Pin2.minimumDigitCount...Pin2.maximumDigitCount).contains(entry.count)
+    }
+
+    /// Recovery follows the state: the unready state schedules one
+    /// attempt, the card leaving resets the budget, ready stands
+    /// down.
+    private func react(to availability: LoginIdentityModel.Availability) {
+      switch availability {
+      case .ready:
+        model.cancelRecovery(cardLeft: false)
+      case .cardWithoutIdentity:
+        model.attemptRecovery()
+      case .noCard:
+        model.cancelRecovery(cardLeft: true)
+      }
     }
 
     /// Takes a dropped document, refusing anything that is not a PDF.
