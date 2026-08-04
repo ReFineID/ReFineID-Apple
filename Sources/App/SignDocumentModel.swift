@@ -247,12 +247,23 @@
           over: manifest, pin2: pin2
         )
       else {
+        stampFailure = String(
+          localized:
+            "The card would not sign the code's statement. The document is signed and stamped without it."
+        )
         return stampPage(attestation: nil)
       }
       let payload = StampAttestation.payload(
         manifest: manifest, signature: signature
       )
-      return stampPage(attestation: QrCode.modules(of: payload))
+      guard let modules = QrCode.modules(of: payload) else {
+        stampFailure = String(
+          localized:
+            "The statement did not fit a scannable code. The document is signed and stamped without it."
+        )
+        return stampPage(attestation: nil)
+      }
+      return stampPage(attestation: modules)
     }
 
     /// Reports a failure raised before the card was reached.

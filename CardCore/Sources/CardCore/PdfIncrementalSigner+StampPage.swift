@@ -102,7 +102,7 @@ extension PdfIncrementalSigner {
     out.append(Data(Self.pageObject(numbers, stamp: stamp, tree: treeNumber).utf8))
 
     offsets[numbers.content] = out.count
-    out.append(Data(Self.contentObject(numbers.content, stamp: stamp).utf8))
+    out.append(Self.contentObject(numbers.content, stamp: stamp))
 
     offsets[treeNumber] = out.count
     out.append(
@@ -133,17 +133,29 @@ extension PdfIncrementalSigner {
   }
 
   /// The content stream drawing the mark.
-  private static func contentObject(_ number: Int, stamp: StampPage) -> String {
-    let body = stamp.operators
-    return """
-      \(number) 0 obj
-      << /Length \(body.utf8.count) >>
-      stream
-      \(body)
-      endstream
-      endobj
-
+  ///
+  /// Encoded as Latin-1, not UTF-8. The page draws with the standard
+  /// fonts under WinAnsi encoding, where an accented letter is one
+  /// byte; written as UTF-8 its two bytes are drawn as two letters,
+  /// which is how "électronique" reaches the page as "Ã©lectronique".
+  /// A character outside that encoding is dropped rather than
+  /// mangled - a stamp missing a letter is better than one showing
+  /// nonsense.
+  private static func contentObject(_ number: Int, stamp: StampPage) -> Data {
+    let body =
+      stamp.operators.data(using: .windowsCP1252, allowLossyConversion: true)
+      ?? Data(stamp.operators.utf8)
+    var object = Data(
       """
+      \(number) 0 obj
+      << /Length \(body.count) >>
+      stream
+
+      """.utf8
+    )
+    object.append(body)
+    object.append(Data("\nendstream\nendobj\n\n".utf8))
+    return object
   }
 
   /// The page tree with the appended page in it.
