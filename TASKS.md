@@ -164,7 +164,7 @@ Legend:
 - [ ] Show PIN1, PIN2, and PUK attempts remaining from a side-effect-free read.
 - [ ] Explain the low-attempt (one or two) CTK refusal and zero-attempt blocked
   state.
-- [ ] Link to issuer recovery guidance without pretending v1.0 can unblock.
+- [ ] Link to issuer recovery guidance alongside the app's own unblock flow.
 - [ ] Use manual or event-driven refresh; do not use disruptive periodic polling.
 - [ ] Prove opening, closing, and refreshing the app does not reset the card,
   interfere with CTK, or alter cache lifetime.
@@ -176,8 +176,12 @@ Legend:
   status and error state.
 - [ ] Complete Accessibility Nutrition Labels using verified behavior only.
 - [ ] Add About, license, privacy, support, and security-reporting information.
-- [ ] Confirm v1.0 has no portrait, stored handwritten-signature, activation,
-  PIN-change, or PUK-unblock UI.
+- [ ] Confirm v1.0 has no portrait or stored handwritten-signature UI.
+- [ ] Hardware-verify the management window: activation preflight on both
+  schemes, change and unblock floors, and that no operation runs below
+  three attempts.
+- [ ] Hardware-verify the qualified identity: per-signature PIN2 prompt with
+  no cache, and a real qualified signature in a consuming application.
 
 ## 9. Automated verification
 
@@ -278,8 +282,8 @@ Legend:
 - [ ] Provide exact reader/card setup and a useful no-card review path.
 - [ ] Attach a video showing physical hardware and the complete authentication
   flow without revealing the PIN or cardholder information.
-- [ ] Explain the intentionally excluded management, portrait, signature-image,
-  CLI, remote, and iOS features; ship no hidden mode.
+- [ ] Explain the management features and the intentionally excluded portrait,
+  signature-image, CLI, remote, and iOS features; ship no hidden mode.
 - [ ] Select the exact tested release-candidate build in App Store Connect.
 - [ ] Submit manually to App Review and respond to review questions with retained
   evidence.
@@ -310,7 +314,7 @@ Legend:
   feedback, and security reports without adding tracking to the app.
 - [ ] Define criteria for pausing release and for an emergency update.
 - [ ] Confirm users can remove the driver by removing ReFineID.app.
-- [ ] Triage v1.1 candidates separately: PIN changes, activation, and PUK unblock.
+- [ ] Review the shipped management flows against field evidence.
 - [ ] Review the retry and cache policy after real-world evidence; do not weaken it
   through an unreviewed hotfix.
 

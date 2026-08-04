@@ -3,6 +3,32 @@
 Decisions with dates and rationale. `Documentation/release-plan.md` controls scope and
 security behavior; this file records the concrete values chosen under it.
 
+## 2026-08-04 Card management and PIN2 signing enter scope, macOS first
+
+The full credential set - activation, PIN1/PIN2 change, PUK unblock,
+and PIN2 qualified signatures - is required on macOS, iPadOS and iOS;
+macOS ships first, natively in Swift. The release plan's exclusions
+are lifted accordingly, and the review gate the plan demanded for PIN2
+signing is this entry and the hardware matrix items in TASKS.md.
+
+The shape: CardCore carries the credential commands (VERIFY for both
+PINs, CHANGE REFERENCE DATA, RESET RETRY COUNTER) as consume-once
+noncopyable values, the qualified key joins MSE:SET behind an explicit
+key parameter, and activation classifies the card by its own
+certificate - issuance date authoritative, issuer name fallback,
+refusal over guessing. The management window drives all of it behind
+the same side-effect-free retry floor as authentication, with no
+expert override. The CryptoTokenKit extension publishes the qualified
+identity from live reader mints only, under its own constraint, with
+PIN2 collected per signature and never cached; contactless primes
+publish no qualified key, so the phone login path is untouched.
+
+Chosen against a command-line tool (excluded as before) and against
+direct in-app signing as the first resort: publishing through
+CryptoTokenKit lets every system client request a qualified signature.
+Direct in-app operations remain the fallback if hardware validation
+shows ctkd cannot carry per-signature PIN2 semantics.
+
 ## 2026-08-01 The PACE suite stays fixed, now for a measured reason
 
 `PaceCommand.securityEnvironment()` sends

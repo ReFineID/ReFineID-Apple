@@ -35,6 +35,11 @@ User story is:
 - PIN1-gated authentication signatures for the explicitly supported card and
   key profiles.
 - A memory-only, card-bound PIN1 convenience cache
+- Card management in the app: card activation, PIN1/PIN2 changes, and PUK
+  unblock, each behind the same side-effect-free retry floor as
+  authentication.
+- Publication of the card's PIN2 qualified-signature identity, gated behind
+  a per-signature PIN2 prompt with no cache.
 - Clear no-card, unsupported-card, low-retry, locked-card, and uncertain-state
   guidance in Finnish, Swedish, and English.
 
@@ -43,14 +48,14 @@ User story is:
 - The `refineid` command line tool or any command line installer.
 - Rust libraries, Rust runtime code, helper executables, daemons, or privileged
   helpers in the App Store artifact.
-- Card activation, PIN changes, and PUK unblock operations.
-- PIN2 qualified-signature operations until separately specified and reviewed.
 - Portrait and stored handwritten-signature display.
 - Safari extensions, browser shells, login relays, remote-card operation, NFC,
   telemetry, analytics, accounts, and cloud services.
 - iOS distribution.
 
-PIN and PUK management will be later added to the same native application.
+Card management and PIN2 signing entered scope on 2026-08-04 (see
+`Documentation/decisions.md`); iPadOS and iOS follow the macOS
+implementation.
 
 ### Delivery sequence
 
