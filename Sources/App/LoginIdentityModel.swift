@@ -36,6 +36,21 @@
       case ready
     }
 
+    /// The one instance, built once for the process.
+    ///
+    /// Not a `@State` default. SwiftUI evaluates a `@State` default
+    /// expression on every `init` of the view that declares it -
+    /// which is every re-render - and keeps only the first. Building
+    /// this model there meant every re-render ran a keychain query
+    /// and installed another `TKTokenWatcher` handler, and those
+    /// handlers fired refreshes that caused more re-renders. Measured
+    /// on 2026-08-04 at about nine hundred keychain queries a second,
+    /// which starved `ctkd` and blocked other applications' card use:
+    /// Adobe Acrobat hung for thirty-five seconds inside
+    /// CryptoTokenKit waiting for a session this app was crowding
+    /// out.
+    internal static let shared = LoginIdentityModel()
+
     /// Seconds the unready state must persist before the software
     /// reinsertion is tried.
     private static let recoveryDelaySeconds = 3

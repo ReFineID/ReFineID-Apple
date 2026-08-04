@@ -69,13 +69,19 @@
     /// A mute card counts: it is physically there, and "insert your
     /// card" would be the wrong thing to tell its holder.
     private func recount() {
-      isCardPresent = slots.values.contains { slot in
+      // Assigned only when it differs. Observation notifies on
+      // every write, unchanged or not, and each notification
+      // re-renders the window that reads this.
+      let present = slots.values.contains { slot in
         switch slot.state {
         case .validCard, .muteCard, .probing:
           true
         default:
           false
         }
+      }
+      if present != isCardPresent {
+        isCardPresent = present
       }
     }
   }

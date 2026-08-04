@@ -29,7 +29,7 @@
     @Environment(\.openWindow)
     private var openWindow
 
-    @State private var model = LoginIdentityModel()
+    private let model = LoginIdentityModel.shared
     @State private var signing = SignDocumentModel()
     @State private var pin2 = ""
     @State private var isTargeted = false
