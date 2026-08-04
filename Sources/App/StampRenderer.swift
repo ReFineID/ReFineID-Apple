@@ -74,8 +74,8 @@
     /// A quarter turn, which both arcs measure their rotations from.
     private static let quarterTurn = Double.pi / Self.halves
 
-    /// The mark's red.
-    private static let red = "0.75 0.11 0.15"
+    /// The mark's colour, #0033A0, as the fractions PDF wants.
+    private static let inkColour = "0.0 0.2 0.6275"
 
     /// The code's side, and how far it sits above the page's foot.
     ///
@@ -91,7 +91,7 @@
     internal static func page(_ statement: Statement) -> StampPage {
       let centreX = Self.pageWidth / Self.halves
       let centreY = Self.pageHeight - Self.outerRadius - Self.nameDrop * Self.halves
-      var body = "q\n\(Self.red) RG \(Self.red) rg\n"
+      var body = "q\n\(Self.inkColour) RG \(Self.inkColour) rg\n"
       let centre = (x: centreX, y: centreY)
       body += Self.circle(
         centre: centre, radius: Self.outerRadius, lineWidth: Self.outerLineWidth
