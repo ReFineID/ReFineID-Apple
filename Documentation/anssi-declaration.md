@@ -43,7 +43,7 @@ Le déclarant demande la délivrance de l'attestation de déclaration.
 
 #### B.2.1. Classez le moyen dans la ou les catégorie(s) correspondante(s)
 
-**Logiciel.**
+Logiciel.
 
 #### B.2.2. Description générale du moyen
 
@@ -56,7 +56,7 @@ tout autre certificat client.
 
 #### B.2.3. Indiquez à quelle catégorie se rapporte la fonction principale du moyen
 
-**Sécurité de l'information** (bibliothèque et intergiciel
+Sécurité de l'information (bibliothèque et intergiciel
 cryptographiques).
 
 ### B.3. Description technique des services de cryptologie fournis
@@ -116,14 +116,18 @@ Aucune autorisation antérieure.
 
 ## E. Pièces à joindre
 
-| Pièce demandée | État |
-|:---------------------------|:-----------------------------------------------|
-| Document général présentant la société | Personne physique. |
-| Extrait K bis de moins de trois mois | Aucune société immatriculée. |
-| Brochure commerciale | Aucune. |
-| Brochure technique | Présent dossier, rubriques B.2 et B.3. |
-| Manuel utilisateur | Aucun. |
-| Guide administrateur | Aucune fonction d'administration. |
+ReFineID est un logiciel libre. Le code source et la documentation sont
+disponibles ici :
+
+```{=typst}
+#block[
+  #link("https://github.com/ReFineID/ReFineID-Apple")[
+    #text(fill: rgb("#0969da"))[
+      #underline[https://github.com/ReFineID/ReFineID-Apple]
+    ]
+  ]
+]
+```
 
 ## F. Attestation
 
@@ -202,7 +206,7 @@ The declarant requests an attestation confirming this declaration.
 
 #### B.2.1. Classification of the product
 
-**Software.**
+Software.
 
 #### B.2.2. General description of the product
 
@@ -215,7 +219,7 @@ certificate.
 
 #### B.2.3. Category of the principal function
 
-**Information security** (cryptographic library and middleware).
+Information security (cryptographic library and middleware).
 
 ### B.3. Technical description
 
@@ -273,14 +277,18 @@ No prior authorisation.
 
 ## E. Documents to attach
 
-| Item requested | Status |
-|:---------------------------|:-----------------------------------------------|
-| General document presenting the company | Private individual. |
-| Extract K bis less than three months old | No registered company. |
-| Commercial brochure | None. |
-| Technical brochure | This dossier, sections B.2 and B.3. |
-| User manual | None. |
-| Administrator guide | No administration function. |
+ReFineID is open-source software. The source code and documentation are
+available here:
+
+```{=typst}
+#block[
+  #link("https://github.com/ReFineID/ReFineID-Apple")[
+    #text(fill: rgb("#0969da"))[
+      #underline[https://github.com/ReFineID/ReFineID-Apple]
+    ]
+  ]
+]
+```
 
 ## F. Attestation
 
