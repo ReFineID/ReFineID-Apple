@@ -44,9 +44,17 @@
 
     private static let windowWidth: CGFloat = 460
 
-    private static let rowSymbolSpacing: CGFloat = 4
+    /// Internal, not private: the counter presentation lives in
+    /// CardManagementView+Attempts.swift and lays out the same row.
+    internal static let rowSymbolSpacing: CGFloat = 4
 
     private static let attemptsSpacing: CGFloat = 14
+
+    private static let barHorizontalPadding: CGFloat = 16
+
+    private static let barVerticalPadding: CGFloat = 6
+
+    private static let barLineSpacing: CGFloat = 4
 
     @State private var model = CardManagementModel()
     @State private var task: ManagementTask = .changePin1
@@ -56,10 +64,12 @@
       Form {
         taskSection
         outcomeSection
-        attemptsSection
       }
       .formStyle(.grouped)
       .frame(minWidth: Self.windowWidth)
+      .safeAreaInset(edge: .bottom, spacing: 0) {
+        attemptsBar
+      }
       .toolbar {
         Button("Refresh", systemImage: "arrow.clockwise") {
           Task { await model.refresh() }
@@ -81,33 +91,37 @@
       }
     }
 
-    /// The counters, at the foot of the window.
+    /// The counters, pinned along the foot of the window.
     ///
-    /// Reference information rather than the reason the window was
-    /// opened, so it sits under the task - but it is the number that
-    /// decides whether the task can run at all, so it is legible at a
-    /// glance and says so when it refuses.
-    @ViewBuilder private var attemptsSection: some View {
-      Section {
+    /// A status bar rather than a section: these are what the window
+    /// is judged against, not what it is for, so they stay pinned
+    /// along the foot without taking a place in the form. They are
+    /// still the numbers that decide whether the task can run, so the
+    /// bar says so in words when one of them refuses.
+    @ViewBuilder private var attemptsBar: some View {
+      VStack(alignment: .leading, spacing: Self.barLineSpacing) {
         HStack(spacing: Self.attemptsSpacing) {
+          Text("Attempts left:")
+            .foregroundStyle(.secondary)
           attemptsEntry("PIN1", model.report?.pin1)
           attemptsEntry("PIN2", model.report?.pin2)
           attemptsEntry("PUK", model.report?.puk)
           Spacer()
         }
-        .font(.footnote)
         if refusesAnyCredential {
           Text(
             "ReFineID will not use a credential with one or two "
-              + "attempts left. Restore it to five with other software, "
-              + "or unblock it here once the card has blocked it."
+              + "attempts left. Restore it with other software, or "
+              + "unblock it here once the card has blocked it."
           )
-          .font(.footnote)
           .foregroundStyle(.red)
         }
-      } header: {
-        Text("Attempts left")
       }
+      .font(.footnote)
+      .padding(.horizontal, Self.barHorizontalPadding)
+      .padding(.vertical, Self.barVerticalPadding)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .background(.bar)
     }
 
     /// The tasks this card can actually be asked to do.
@@ -182,119 +196,6 @@
       }
     }
 
-    /// The marker beside each count, so the band is never carried by
-    /// colour alone.
-    private static func attemptsSymbol(_ outcome: RetryProbeOutcome?) -> String {
-      switch outcome {
-      case .remaining(let count):
-        if count.isBlocked {
-          "arrow.counterclockwise.circle.fill"
-        } else if count.attemptsRemaining < RetryFloor.minimumAttemptsToProceed {
-          "xmark.octagon.fill"
-        } else if count.attemptsRemaining < RetryCount.pristineAllowance {
-          "exclamationmark.triangle.fill"
-        } else {
-          "checkmark.circle.fill"
-        }
-      case .verified:
-        "checkmark.circle.fill"
-      case .locked:
-        "arrow.counterclockwise.circle.fill"
-      case .invalidated:
-        "xmark.octagon.fill"
-      case .noInformation, .other, .none:
-        "questionmark.circle"
-      }
-    }
-
-    /// What VoiceOver says for one reading.
-    private static func attemptsSpoken(_ outcome: RetryProbeOutcome?) -> String {
-      switch outcome {
-      case .remaining(let count):
-        if count.attemptsRemaining >= RetryFloor.minimumAttemptsToProceed {
-          String(localized: "\(count.attemptsRemaining) attempts remaining")
-        } else {
-          String(localized: "\(count.attemptsRemaining) attempts remaining - low")
-        }
-      case .verified:
-        String(localized: "verified this session")
-      case .locked:
-        String(localized: "blocked - unblock with the PUK")
-      case .invalidated:
-        String(localized: "invalidated - contact the issuer")
-      case .noInformation, .other:
-        String(localized: "state unknown")
-      case .none:
-        String(localized: "no card present")
-      }
-    }
-
-    /// One probe outcome as a short cell, counted against a full card.
-    private static func attemptsText(_ outcome: RetryProbeOutcome?) -> String {
-      switch outcome {
-      case .remaining(let count):
-        "\(count.attemptsRemaining)/\(RetryCount.pristineAllowance)"
-      case .verified:
-        String(localized: "verified")
-      case .locked:
-        String(localized: "blocked")
-      case .invalidated:
-        String(localized: "invalidated")
-      case .noInformation, .other:
-        String(localized: "unknown")
-      case .none:
-        String(localized: "no card")
-      }
-    }
-
-    /// Full is green, short of full is orange, refused is red, and
-    /// blocked is blue - blocked being the one state that is not a
-    /// warning but an instruction: the PUK undoes it.
-    private static func attemptsColor(_ outcome: RetryProbeOutcome?) -> Color {
-      switch outcome {
-      case .remaining(let count):
-        if count.isBlocked {
-          .blue
-        } else if count.attemptsRemaining < RetryFloor.minimumAttemptsToProceed {
-          .red
-        } else if count.attemptsRemaining < RetryCount.pristineAllowance {
-          .orange
-        } else {
-          .green
-        }
-      case .verified:
-        .green
-      case .locked:
-        .blue
-      case .invalidated:
-        .red
-      case .noInformation, .other, .none:
-        .secondary
-      }
-    }
-
-    /// One credential's reading.
-    ///
-    /// A symbol appears only when the count is not healthy, so the
-    /// line stays quiet while everything is fine and still never
-    /// relies on colour alone when it is not.
-    @ViewBuilder
-    private func attemptsEntry(
-      _ name: String,
-      _ outcome: RetryProbeOutcome?
-    ) -> some View {
-      HStack(spacing: Self.rowSymbolSpacing) {
-        Text("\(name) \(Self.attemptsText(outcome))")
-          .monospacedDigit()
-        Image(systemName: Self.attemptsSymbol(outcome))
-      }
-      .foregroundStyle(Self.attemptsColor(outcome))
-      .accessibilityElement(children: .combine)
-      .accessibilityLabel(name)
-      .accessibilityValue(Self.attemptsSpoken(outcome))
-    }
-
-    /// Speaks an outcome the moment it lands, for a VoiceOver user
     /// whose focus is not on the outcome row.
     private func announce(_ message: String?) {
       guard let message else { return }
