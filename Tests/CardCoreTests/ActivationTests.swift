@@ -68,9 +68,11 @@ internal struct ActivationTests {
   @Test
   internal func activationCodePreflightTreatsAnyLiveReadingAsActivated() throws {
     let five = try #require(RetryCount(attemptsRemaining: 5))
-    let live: [RetryProbeOutcome] = [
-      .remaining(five), .verified, .locked, .invalidated,
-    ]
+    // A live counter is evidence the slot was written to. Invalidated
+    // is not: a card can be in that state before it was ever
+    // activated, and treating it as prior use would withhold
+    // activation from the card that needs it.
+    let live: [RetryProbeOutcome] = [.remaining(five), .verified, .locked]
     for probe in live {
       #expect(
         ActivationPreflight.evaluate(
@@ -81,7 +83,7 @@ internal struct ActivationTests {
       )
     }
     let inconclusive: [RetryProbeOutcome?] = [
-      .noInformation, .other(0), nil,
+      .invalidated, .noInformation, .other(0), nil,
     ]
     for probe in inconclusive {
       #expect(

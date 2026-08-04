@@ -30,6 +30,13 @@
             scheme: scheme, pin1: .alreadyActivated, pin2: nil
           )
         }
+        // Activation presents a credential like any other operation, so
+        // it is held to the same floor: the activation code is checked
+        // against the PUK's counter, a preset activation PIN against
+        // that PIN's own.
+        if let refusal = Self.floorRefusal(operations, scheme: scheme) {
+          return ActivationReport(scheme: scheme, pin1: refusal, pin2: nil)
+        }
         let first = activationStep(
           operations, scheme: scheme, entry: entry, newPin1: newPin1
         )
@@ -75,6 +82,26 @@
         pin1ChangeRecord: record
       )
       return readiness == .alreadyActivated
+    }
+
+    /// The floor for whichever credential this scheme presents, or nil
+    /// when there is room to proceed.
+    private static func floorRefusal(
+      _ operations: CardOperations,
+      scheme: ActivationScheme
+    ) -> Outcome? {
+      let role: CredentialRole =
+        switch scheme {
+        case .activationCodeIsPuk:
+          .puk
+        case .presetActivationPin:
+          .pin1
+        }
+      guard let probe = try? operations.probeRetryCounter(role: role) else {
+        return .floorRefused(.refuseUnreadable)
+      }
+      let verdict = RetryFloor.evaluate(probeOutcome: probe)
+      return verdict == .proceed ? nil : .floorRefused(verdict)
     }
 
     /// The PIN1 half of activation under either scheme.

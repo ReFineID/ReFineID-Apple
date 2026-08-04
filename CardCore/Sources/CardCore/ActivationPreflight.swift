@@ -2,13 +2,15 @@
 public enum ActivationPreflight {
   /// Evaluates readiness from counter-safe probes alone.
   ///
-  /// Under the activation-code scheme (§4.6.1) PIN1 ships blocked, and
-  /// the factory state answers the probe with nothing usable - so ANY
-  /// live reading (remaining attempts, verified, locked, or
-  /// invalidated) means the slot has been written to since
-  /// manufacture, which is evidence of prior activation. A burned
-  /// counter is such evidence too: locked is activated-then-exhausted,
-  /// not factory-fresh.
+  /// Under the activation-code scheme (§4.6.1) both PINs ship blocked
+  /// and the factory state answers the probe with nothing usable, so a
+  /// live counter reading - remaining attempts, verified, or locked -
+  /// means the slot has been written to since manufacture. Locked
+  /// counts because it is activated-then-exhausted, not factory-fresh.
+  ///
+  /// An invalidated slot does NOT count. That is a state a card can be
+  /// in before it was ever activated, and reading it as prior use
+  /// would withhold activation from exactly the card that needs it.
   ///
   /// Under the preset-PIN scheme (§4.6.2) PIN1 ships set to the
   /// activation PIN, so a healthy counter is the expected fresh state
@@ -25,9 +27,9 @@ public enum ActivationPreflight {
       return pin1ChangeRecord == .changed ? .alreadyActivated : .ready
     case .activationCodeIsPuk:
       switch pin1Probe {
-      case .remaining, .verified, .locked, .invalidated:
+      case .remaining, .verified, .locked:
         return .alreadyActivated
-      case .noInformation, .other, .none:
+      case .invalidated, .noInformation, .other, .none:
         return .ready
       }
     }
