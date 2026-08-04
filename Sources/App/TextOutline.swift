@@ -89,6 +89,9 @@
         return Line(operators: "", width: 0)
       }
       let inkWidth = (rightmost - leftmost) * scale
+      // Centred on the origin by its ink, not by its advances: a
+      // round stamp reads as a stamp when what is inside it shares
+      // the ring's axis.
       let centring = -(leftmost + rightmost) / Self.halves * scale
       let placed =
         "q \(Self.number(scale)) 0 0 \(Self.number(scale))"

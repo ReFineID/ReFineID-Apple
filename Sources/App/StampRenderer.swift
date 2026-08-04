@@ -209,6 +209,8 @@
         chosen *= room / drawn.width
         drawn = TextOutline.line(text, font: "Helvetica", size: chosen)
       }
+      // On the ring's own axis: both lines centred under the writing,
+      // which is what makes a round stamp look round.
       return "q 1 0 0 1 \(Self.number(centre.x)) \(Self.number(baseline)) cm\n"
         + "\(drawn.operators)Q\n"
     }

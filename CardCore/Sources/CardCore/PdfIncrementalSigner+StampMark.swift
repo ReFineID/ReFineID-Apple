@@ -86,9 +86,18 @@ extension PdfIncrementalSigner {
       throw PdfSigningError.structureUnreadable
     }
 
+    // A document can be signed by more than one person, and each
+    // stamp is placed by the same rule - so a later one would land
+    // exactly on an earlier one. Ours are marked, so they can be
+    // counted and stepped aside from.
+    let already = Self.stampsAlreadyOn(
+      page: page, index: index, document: document
+    )
     offsets[numbers.content] = out.count
     out.append(
-      Self.markStream(numbers.content, stamp: stamp, page: page)
+      Self.markStream(
+        numbers.content, stamp: stamp, page: page, standingAside: already
+      )
     )
 
     let reissued = Self.pageWithMark(
@@ -107,18 +116,32 @@ extension PdfIncrementalSigner {
   private static func markStream(
     _ number: Int,
     stamp: StampMark,
-    page: String
+    page: String,
+    standingAside: Int
   ) -> Data {
     let box = Self.mediaBox(of: page)
-    let placedX = box.width - stamp.radius - PdfValues.stampMargin
-    let placedY = stamp.radius + PdfValues.stampMargin
+    let step = stamp.radius * PdfValues.stampDiameters + PdfValues.stampGap
+    let firstX = box.width - stamp.radius - PdfValues.stampMargin
+    let firstY = stamp.radius + PdfValues.stampMargin
+    // Along the foot from the right, then up a row when the next one
+    // would not clear the page's left edge.
+    let perRow = max(Int((firstX - stamp.radius) / step) + 1, 1)
+    let column = standingAside % perRow
+    let row = standingAside / perRow
+    let placedX = firstX - Double(column) * step
+    let placedY = firstY + Double(row) * step
     let text =
       "q 1 0 0 1 \(Self.placed(placedX)) \(Self.placed(placedY)) cm\n"
       + stamp.operators + "Q\n"
     let body =
       text.data(using: .windowsCP1252, allowLossyConversion: true)
       ?? Data(text.utf8)
-    var object = Data("\(number) 0 obj\n<< /Length \(body.count) >>\nstream\n".utf8)
+    // The key names this stream as ours. A reader ignores what it
+    // does not know, and the next signing counts them.
+    let header =
+      "\(number) 0 obj\n<< /Length \(body.count)"
+      + " \(PdfValues.stampMarker) true >>\nstream\n"
+    var object = Data(header.utf8)
     object.append(body)
     object.append(Data("\nendstream\nendobj\n\n".utf8))
     return object
@@ -129,6 +152,31 @@ extension PdfIncrementalSigner {
   /// the stream.
   private static func placed(_ value: Double) -> String {
     String(format: "%.4f", value)
+  }
+
+  /// How many stamps this page already carries.
+  ///
+  /// Counted from the streams the page names, by the key each of ours
+  /// is written with - not by looking at what they draw, which would
+  /// mean rendering them.
+  private static func stampsAlreadyOn(
+    page: String,
+    index: PdfDocumentIndex,
+    document: Data
+  ) -> Int {
+    guard let range = page.range(of: "/Contents") else { return 0 }
+    let rest = page[range.upperBound...].drop(while: \.isWhitespace)
+    let listing =
+      rest.first == "["
+      ? String(rest.dropFirst().prefix { character in character != "]" })
+      : String(rest.prefix { character in character != "/" })
+    let numbers = listing.split(separator: "R").compactMap { part in
+      Int(part.split(whereSeparator: \.isWhitespace).first ?? "")
+    }
+    return numbers.count { number in
+      index.body(of: number, in: document)?.contains(PdfValues.stampMarker)
+        == true
+    }
   }
 
   /// The page reissued to draw the mark, hold the widget, and know

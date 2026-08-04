@@ -13,6 +13,19 @@ internal enum PdfValues {
   /// the margin, where it cannot crowd the text it sits beside.
   internal static let stampMargin = 8.0
 
+  /// Clear space between one stamp and the next.
+  internal static let stampGap = 6.0
+
+  /// Radii across a stamp, for stepping from one to the next.
+  internal static let stampDiameters = 2.0
+
+  /// The key naming a content stream as a stamp this program wrote.
+  ///
+  /// A reader ignores keys it does not know; the next signing counts
+  /// them, so a second signer's mark stands beside the first rather
+  /// than on it.
+  internal static let stampMarker = "/ReFineIDStamp"
+
   /// A4, for a page that states no box of its own.
   internal static let a4Width = 595.276
   internal static let a4Height = 841.89
