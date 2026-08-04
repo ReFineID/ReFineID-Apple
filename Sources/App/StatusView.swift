@@ -27,6 +27,9 @@
     private static let padding: CGFloat = 24
     private static let minimumWidth: CGFloat = 420
 
+    @Environment(\.openWindow)
+    private var openWindow
+
     @State private var model = LoginIdentityModel()
 
     internal var body: some View {
@@ -41,6 +44,10 @@
         }
         .formStyle(.grouped)
         .fixedSize(horizontal: false, vertical: true)
+        Button("PIN Management...") {
+          openWindow(id: CardManagementView.windowID)
+        }
+        .accessibilityIdentifier("pinManagementButton")
       }
       .padding(Self.padding)
       .frame(minWidth: Self.minimumWidth, alignment: .leading)

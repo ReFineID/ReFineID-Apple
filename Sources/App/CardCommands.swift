@@ -16,7 +16,7 @@
         Button("Card Access Number...") {
           openWindow(id: CardAccessNumberManagerView.windowID)
         }
-        Button("Card Management...") {
+        Button("PIN Management...") {
           openWindow(id: CardManagementView.windowID)
         }
         #if DEBUG

@@ -39,7 +39,7 @@
     }
 
     /// Window identity, for the menu command that opens it.
-    internal static let windowID = "card-management"
+    internal static let windowID = "pin-management"
 
     private static let windowWidth: CGFloat = 460
 

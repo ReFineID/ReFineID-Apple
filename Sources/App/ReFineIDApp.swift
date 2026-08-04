@@ -17,7 +17,7 @@ internal struct ReFineIDApp: App {
       }
       .windowResizability(.contentSize)
 
-      Window("Card Management", id: CardManagementView.windowID) {
+      Window("PIN Management", id: CardManagementView.windowID) {
         CardManagementView()
       }
       .windowResizability(.contentSize)
