@@ -20,12 +20,39 @@ public enum CredentialAttributes {
   /// bytes and the length byte.
   private static let triesOffset: Int = 3
 
+  /// Offset of the usage-allowance byte inside the window.
+  private static let usageOffset: Int = 4
+
+  /// Offset of the unblocking-allowance byte inside the window.
+  private static let unblockingOffset: Int = 5
+
   /// The number of bytes in one pin-changed tag-length-value window:
   /// two tag bytes, one length byte, one flag byte.
   private static let changedWindowLength: Int = 4
 
   /// Offset of the flag byte inside the pin-changed window.
   private static let changedFlagOffset: Int = 3
+
+  /// How many times a credential may still be used, when the card
+  /// puts a number on it.
+  public static func allowances(fromResponseBody body: Data) -> CredentialAllowances? {
+    let bytes = Array(body)
+    guard bytes.count >= Self.attributesWindowLength else { return nil }
+    for start in 0...(bytes.count - Self.attributesWindowLength) {
+      guard
+        bytes[start] == FineidValues.pinAttributesTagHigh,
+        bytes[start + 1] == FineidValues.pinAttributesTagLow,
+        bytes[start + Self.lengthOffset] == FineidValues.pinAttributesLength
+      else {
+        continue
+      }
+      return CredentialAllowances(
+        usages: .usage(byte: bytes[start + Self.usageOffset]),
+        unblockings: .unblocking(byte: bytes[start + Self.unblockingOffset])
+      )
+    }
+    return nil
+  }
 
   /// Extracts the retries-remaining counter, or nil when the body
   /// carries no parseable attributes object.

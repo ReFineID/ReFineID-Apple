@@ -45,7 +45,7 @@
         Text(verbatim: "ReFineID")
           .font(.largeTitle.bold())
         Form {
-          LabeledContent("Login identity") {
+          LabeledContent("Identity") {
             identityState
           }
           .accessibilityIdentifier("loginIdentityStatus")
@@ -138,14 +138,6 @@
             .focused($pinFocused)
             .onSubmit { sign() }
             .accessibilityIdentifier("signPin2")
-          if !pin2.isEmpty, !Self.isEntryComplete(pin2) {
-            Text(
-              "PIN2 is \(Pin2.minimumDigitCount) to "
-                + "\(Pin2.maximumDigitCount) digits."
-            )
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-          }
           HStack {
             Spacer()
             Button("Sign...") { sign() }

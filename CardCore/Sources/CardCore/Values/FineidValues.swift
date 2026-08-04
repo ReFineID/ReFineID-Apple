@@ -128,9 +128,23 @@ internal enum FineidValues {
   /// PIN-attributes DO tag, low byte.
   internal static let pinAttributesTagLow: UInt8 = 0x21
 
-  /// PIN-attributes DO length: four attribute bytes, the first of
-  /// which is the retries-remaining counter.
+  /// PIN-attributes DO length: four attribute bytes - retries
+  /// remaining, usage allowance, unblocking allowance, and the
+  /// authentication method (S1 v4.2 §3.15.3 Table 19).
   internal static let pinAttributesLength: UInt8 = 0x04
+
+  /// Usage-allowance byte meaning the credential may be presented
+  /// without limit (S1 v4.2 §3.15.3 Table 19).
+  internal static let usageUnlimited: UInt8 = 0xFF
+
+  /// Unblocking-allowance byte meaning the credential may be
+  /// unblocked without limit.
+  ///
+  /// A different marker from the usage one, and measured on a card in
+  /// hand: a PIN reporting this can be unblocked as often as its
+  /// holder needs, which is what makes a PUK reusable rather than
+  /// spent by its first use.
+  internal static let unblockingUnlimited: UInt8 = 0xA5
 
   /// PIN-changed DO tag, high byte (`DF 2F`, S1 v4.2 §3.15.3): whether
   /// the PIN has been changed since manufacture, which is how a card

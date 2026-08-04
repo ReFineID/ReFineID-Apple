@@ -84,12 +84,42 @@
         lines.append("pin1: " + Self.label(for: report.pin1))
         lines.append("pin2: " + Self.label(for: report.pin2))
         lines.append("puk: " + Self.label(for: report.puk))
+        #if os(macOS)
+          lines.append(contentsOf: Self.allowanceLines())
+        #endif
       case .unsupported:
         lines.append("card: present but not a FINEID card")
       }
       lines.append("token published for this card: " + Self.yesNo(snapshot.safariIdentityPresent))
       return lines
     }
+
+    #if os(macOS)
+      /// What the card says about how often each credential may still
+      /// be used - the numbers beside the retry counter in the same
+      /// container, which decide whether a PUK survives being used.
+      private static func allowanceLines() -> [String] {
+        let readings = CardAllowanceProbe.read()
+        guard !readings.isEmpty else {
+          return ["allowances: not readable"]
+        }
+        return readings.map { entry in
+          "allowances \(entry.name): "
+            + "usages=\(Self.describe(entry.allowances.usages)) "
+            + "unblockings=\(Self.describe(entry.allowances.unblockings))"
+        }
+      }
+
+      /// One allowance in words.
+      private static func describe(_ allowance: CredentialAllowance) -> String {
+        switch allowance {
+        case .remaining(let count):
+          String(count)
+        case .unlimited:
+          "unlimited"
+        }
+      }
+    #endif
 
     /// Runs the asynchronous card capture from a synchronous caller.
     ///

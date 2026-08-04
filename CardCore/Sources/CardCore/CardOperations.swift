@@ -204,6 +204,18 @@ public struct CardOperations {
     )
   }
 
+  /// Reads one credential's usage allowances, counter-safe.
+  ///
+  /// The same GET DATA container the retry probe uses, read for the
+  /// other numbers in it: whether the card limits how many times this
+  /// credential may be used, and - for the PUK - how many unblocks it
+  /// has left.
+  public func readAllowances(role: CredentialRole) throws -> CredentialAllowances? {
+    let response = try transmit(.readCredentialAttributes(role: role))
+    guard response.statusWord == .success else { return nil }
+    return CredentialAttributes.allowances(fromResponseBody: response.payload)
+  }
+
   /// Reads a PIN's changed-since-manufacture record, counter-safe
   /// (the GET DATA PIN-container form, S1 v4.2 §3.15.3).
   ///

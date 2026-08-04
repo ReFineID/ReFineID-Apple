@@ -53,7 +53,7 @@ if [ -d "$APP/Contents" ]; then
     # a token extension that could reach the network is a token
     # extension nobody can reason about -- so it is checked per binary
     # below rather than allowed everywhere.
-    ALLOWED='^(com\.apple\.security\.app-sandbox|com\.apple\.security\.smartcard|com\.apple\.security\.network\.client|com\.apple\.application-identifier|com\.apple\.developer\.team-identifier|com\.apple\.security\.get-task-allow)$'
+    ALLOWED='^(com\.apple\.security\.app-sandbox|com\.apple\.security\.smartcard|com\.apple\.security\.network\.client|com\.apple\.security\.files\.user-selected\.read-write|com\.apple\.application-identifier|com\.apple\.developer\.team-identifier|com\.apple\.security\.get-task-allow)$'
     REQUIRED="com.apple.security.app-sandbox com.apple.security.smartcard"
 else
     PLATFORM="iOS"

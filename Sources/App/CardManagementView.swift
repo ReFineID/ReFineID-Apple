@@ -23,17 +23,18 @@
 
       internal var id: Self { self }
 
-      /// The on-screen name.
+      /// The tab's label: short, because a segmented control shows
+      /// every option at once and the fields beneath say the rest.
       internal var name: String {
         switch self {
         case .changePin1:
-          String(localized: "Change PIN1")
+          String(localized: "PIN1")
         case .changePin2:
-          String(localized: "Change PIN2")
+          String(localized: "PIN2")
         case .unblock:
-          String(localized: "Unblock a PIN")
+          String(localized: "Unblock")
         case .activate:
-          String(localized: "Activate the card")
+          String(localized: "Activate")
         }
       }
     }
@@ -80,10 +81,12 @@
       }
     }
 
-    /// The counter-safe reading, as one quiet line.
+    /// The counters, at the foot of the window.
     ///
-    /// Attempts remaining are worth knowing and are not why the window
-    /// was opened, so they sit under the task rather than above it.
+    /// Reference information rather than the reason the window was
+    /// opened, so it sits under the task - but it is the number that
+    /// decides whether the task can run at all, so it is legible at a
+    /// glance and says so when it refuses.
     @ViewBuilder private var attemptsSection: some View {
       Section {
         HStack(spacing: Self.attemptsSpacing) {
@@ -93,8 +96,17 @@
           Spacer()
         }
         .font(.footnote)
+        if refusesAnyCredential {
+          Text(
+            "ReFineID will not use a credential with one or two "
+              + "attempts left. Restore it to five with other software, "
+              + "or unblock it here once the card has blocked it."
+          )
+          .font(.footnote)
+          .foregroundStyle(.red)
+        }
       } header: {
-        Text("Attempts remaining")
+        Text("Attempts left")
       }
     }
 
@@ -117,9 +129,11 @@
             Text(candidate.name).tag(candidate)
           }
         }
-        .pickerStyle(.menu)
+        .pickerStyle(.segmented)
+        .labelsHidden()
         .disabled(model.working)
         .accessibilityIdentifier("managementTask")
+        .accessibilityLabel("Task")
         .onChange(of: task) { _, _ in
           hasChosenTask = true
         }
@@ -158,21 +172,35 @@
       }
     }
 
-    /// The colour-independent marker for a count that needs one, or
-    /// nil while the credential is healthy.
-    private static func attemptsWarning(_ outcome: RetryProbeOutcome?) -> String? {
+    /// Whether any credential sits in the band this app will not use.
+    private var refusesAnyCredential: Bool {
+      guard let report = model.report else { return false }
+      return [report.pin1, report.pin2, report.puk].contains { outcome in
+        guard case .remaining(let count) = outcome else { return false }
+        return !count.isBlocked
+          && count.attemptsRemaining < RetryFloor.minimumAttemptsToProceed
+      }
+    }
+
+    /// The marker beside each count, so the band is never carried by
+    /// colour alone.
+    private static func attemptsSymbol(_ outcome: RetryProbeOutcome?) -> String {
       switch outcome {
       case .remaining(let count):
         if count.isBlocked {
-          "xmark.octagon.fill"
+          "arrow.counterclockwise.circle.fill"
         } else if count.attemptsRemaining < RetryFloor.minimumAttemptsToProceed {
+          "xmark.octagon.fill"
+        } else if count.attemptsRemaining < RetryCount.pristineAllowance {
           "exclamationmark.triangle.fill"
         } else {
-          nil
+          "checkmark.circle.fill"
         }
       case .verified:
-        nil
-      case .locked, .invalidated:
+        "checkmark.circle.fill"
+      case .locked:
+        "arrow.counterclockwise.circle.fill"
+      case .invalidated:
         "xmark.octagon.fill"
       case .noInformation, .other, .none:
         "questionmark.circle"
@@ -201,11 +229,11 @@
       }
     }
 
-    /// One probe outcome as a short cell.
+    /// One probe outcome as a short cell, counted against a full card.
     private static func attemptsText(_ outcome: RetryProbeOutcome?) -> String {
       switch outcome {
       case .remaining(let count):
-        String(count.attemptsRemaining)
+        "\(count.attemptsRemaining)/\(RetryCount.pristineAllowance)"
       case .verified:
         String(localized: "verified")
       case .locked:
@@ -219,20 +247,26 @@
       }
     }
 
-    /// Green is room, orange is the floor coming, red is the edge.
+    /// Full is green, short of full is orange, refused is red, and
+    /// blocked is blue - blocked being the one state that is not a
+    /// warning but an instruction: the PUK undoes it.
     private static func attemptsColor(_ outcome: RetryProbeOutcome?) -> Color {
       switch outcome {
       case .remaining(let count):
         if count.isBlocked {
-          .red
+          .blue
         } else if count.attemptsRemaining < RetryFloor.minimumAttemptsToProceed {
+          .red
+        } else if count.attemptsRemaining < RetryCount.pristineAllowance {
           .orange
         } else {
-          .secondary
+          .green
         }
       case .verified:
-        .secondary
-      case .locked, .invalidated:
+        .green
+      case .locked:
+        .blue
+      case .invalidated:
         .red
       case .noInformation, .other, .none:
         .secondary
@@ -250,11 +284,9 @@
       _ outcome: RetryProbeOutcome?
     ) -> some View {
       HStack(spacing: Self.rowSymbolSpacing) {
-        if let symbol = Self.attemptsWarning(outcome) {
-          Image(systemName: symbol)
-        }
         Text("\(name) \(Self.attemptsText(outcome))")
           .monospacedDigit()
+        Image(systemName: Self.attemptsSymbol(outcome))
       }
       .foregroundStyle(Self.attemptsColor(outcome))
       .accessibilityElement(children: .combine)

@@ -16,5 +16,16 @@
 	<true/>
 	<key>com.apple.security.network.client</key>
 	<true/>
+	<!-- The open and save panels. A sandboxed app reaches a file the
+	     holder picked only through Powerbox, and Powerbox declines to
+	     show a panel at all without this - which looks from the outside
+	     like a button that does nothing.
+
+	     It grants nothing by itself: access follows what the holder
+	     chose in the panel, one file at a time, and there is no
+	     bookmark kept afterwards. Dropping a document already grants
+	     that document; this is what lets the signed one be written. -->
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
 </dict>
 </plist>
