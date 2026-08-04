@@ -150,9 +150,9 @@ d'exécuter un binaire modifié.
 
 ### Expliquez en quoi les modalités d'installation du moyen ne nécessitent pas d'assistance importante ultérieure de la part du fournisseur
 
-L'installation se fait par l'App Store en une action. Il n'y a ni
-serveur à paramétrer, ni certificat à installer, ni abonnement à souscrire.
-Aucune intervention du fournisseur n'est requise.
+L'utilisateur installe l'application depuis l'App Store, puis utilise
+celle-ci pour installer le certificat de sa carte sur l'iPhone, sans
+intervention du fournisseur.
 
 ## D. Renouvellement d'autorisation de transfert ou d'exportation
 
@@ -349,9 +349,8 @@ operating system, which refuses to run a modified binary.
 
 ### Explain how installation requires no significant subsequent support from the supplier
 
-Installation is a single action through the App Store. There is no server
-to configure, no certificate to install and no service to subscribe to.
-No supplier intervention is required.
+The user installs the app from the App Store and uses it to install the
+card certificate on the iPhone, without supplier assistance.
 
 ## D. Renewal of a transfer or export authorisation
 
