@@ -70,7 +70,7 @@
       pin2: String,
       reason: String?,
       location: String?,
-      stamp: StampPage?
+      stamp: StampMark?
     ) async throws -> Data {
       let claim = PdfIncrementalSigner.SignatureClaim(
         signedAt: Date(), reason: reason, location: location
@@ -108,7 +108,7 @@
       pin2: String,
       document: Data,
       claim: PdfIncrementalSigner.SignatureClaim,
-      stamp: StampPage?
+      stamp: StampMark?
     ) async throws -> CardMaterial {
       let prepared: PdfSignaturePlaceholder
       do {

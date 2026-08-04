@@ -9,11 +9,28 @@ internal enum PdfValues {
   /// their own: they are standard, so nothing is embedded and nothing
   /// else refers to them. WinAnsi is what carries the accents of a
   /// French or Finnish name.
-  internal static let stampFonts =
-    "<< /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica"
+  /// How far the mark's edge sits from the page's edge.
+  internal static let stampMargin = 24.0
+
+  /// A4, for a page that states no box of its own.
+  internal static let a4Width = 595.276
+  internal static let a4Height = 841.89
+
+  /// Numbers in a media box, and where each sits in it.
+  internal static let boxCorners = 4
+  internal static let boxLowerLeftX = 0
+  internal static let boxLowerLeftY = 1
+  internal static let boxUpperRightX = 2
+  internal static let boxUpperRightY = 3
+
+  /// The font entries alone, for merging into a page that already has
+  /// a font dictionary.
+  internal static let stampFontEntries =
+    "/RfStampRegular << /Type /Font /Subtype /Type1 /BaseFont /Helvetica"
     + " /Encoding /WinAnsiEncoding >>"
-    + " /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold"
-    + " /Encoding /WinAnsiEncoding >> >>"
+
+  internal static let stampFonts =
+    "<< " + Self.stampFontEntries + " >>"
 
   /// Every PDF begins with this.
   internal static let filePrefix = "%PDF-"

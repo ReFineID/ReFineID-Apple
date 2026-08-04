@@ -123,15 +123,12 @@
 
     /// The page the mark goes on, when a signature was read from the
     /// card, and nothing when none was.
-    private func stampPage(
-      attestation: QrCode.Modules?
-    ) -> StampPage? {
+    private func stampMark() -> StampMark? {
       guard let stamp, let name = signerName else { return nil }
-      return StampRenderer.page(
+      return StampRenderer.mark(
         StampRenderer.Statement(
           name: name,
-          signature: stamp,
-          attestation: attestation
+          signature: stamp
         )
       )
     }
@@ -212,7 +209,7 @@
       defer { working = false }
       do {
         let document = try Data(contentsOf: source)
-        let page = await self.stampedPage(named: source.lastPathComponent, pin2: pin2)
+        let page = stampedMark()
         let result = try await DocumentSigner.sign(
           document,
           pin2: pin2,
@@ -228,43 +225,9 @@
       }
     }
 
-    /// The stamp page with its attestation, when the card gave a
-    /// signature to stamp with.
-    ///
-    /// The statement is signed before the document is, because the
-    /// code carrying it goes on the page the document's own signature
-    /// then covers. Two card operations, one PIN2 entry.
-    private func stampedPage(
-      named filename: String,
-      pin2: String
-    ) async -> StampPage? {
-      guard stamp != nil, let signer = signerName else { return nil }
-      let manifest = StampAttestation.manifest(
-        StampAttestation.Claim(filename: filename, signer: signer),
-        at: Date()
-      )
-      guard
-        let signature = await DocumentSigner.attestation(
-          over: manifest, pin2: pin2
-        )
-      else {
-        stampFailure = String(
-          localized:
-            "The card would not sign the code's statement. The document is signed and stamped without it."
-        )
-        return stampPage(attestation: nil)
-      }
-      let payload = StampAttestation.payload(
-        manifest: manifest, signature: signature
-      )
-      guard let modules = QrCode.modules(of: payload) else {
-        stampFailure = String(
-          localized:
-            "The statement did not fit a scannable code. The document is signed and stamped without it."
-        )
-        return stampPage(attestation: nil)
-      }
-      return stampPage(attestation: modules)
+    /// The mark, when the card gave a signature to stamp with.
+    private func stampedMark() -> StampMark? {
+      stampMark()
     }
 
     /// Reports a failure raised before the card was reached.

@@ -84,7 +84,7 @@ public enum PdfIncrementalSigner {
   public static func prepare(
     _ document: Data,
     revision: Revision,
-    appending stamp: StampPage?
+    appending stamp: StampMark?
   ) throws -> PdfSignaturePlaceholder {
     let index = try PdfDocumentIndex.parse(document)
     guard

@@ -257,7 +257,7 @@ extension PdfIncrementalSigner {
   }
 
   /// Inserts an entry before a dictionary's closing marker.
-  private static func insertingIntoDictionary(
+  internal static func insertingIntoDictionary(
     _ body: String,
     entry: String
   ) -> String {

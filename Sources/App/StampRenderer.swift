@@ -19,14 +19,7 @@
 
       /// The holder's traced handwriting.
       internal let signature: SignatureArtwork.Artwork
-
-      /// The signed statement the code carries, when there is one.
-      internal let attestation: QrCode.Modules?
     }
-
-    /// The page the mark is drawn on, in points.
-    private static let pageWidth = 595.276
-    private static let pageHeight = 841.89
 
     /// The ring.
     private static let outerRadius = 64.0
@@ -47,9 +40,6 @@
 
     /// How far the name sits below the line the signature stands on.
     private static let nameDrop = 9.0
-
-    /// How far the ring's top sits below the page's top edge.
-    private static let ringTop = 96.0
 
     /// The circle's Bezier constant: how far a control point sits
     /// along the tangent to approximate a quarter turn.
@@ -85,23 +75,10 @@
     /// drawing.
     private static let maximumTilt = 15.0
 
-    /// How far the ring's centre sits from the page's corner.
-    private static let cornerInset = 128.0
-
-    /// The code's side, and how far it sits above the page's foot.
-    ///
-    /// Large on purpose. A code carrying a signature and a qualified
-    /// timestamp needs a great many modules, and a phone camera needs
-    /// each of them to be about half a millimetre - so the code is
-    /// the size it has to be to scan, not the size that would look
-    /// tidy.
-    private static let codeSize = 220.0
-    private static let codeMargin = 96.0
-
     /// The page carrying the mark.
-    internal static func page(_ statement: Statement) -> StampPage {
-      let centreX = Self.pageWidth - Self.cornerInset
-      let centreY = Self.cornerInset
+    internal static func mark(_ statement: Statement) -> StampMark {
+      let centreX = 0.0
+      let centreY = 0.0
       var body = "q\n\(Self.inkColour) RG \(Self.inkColour) rg\n"
       body += Self.tilt(about: (centreX, centreY))
       let centre = (x: centreX, y: centreY)
@@ -113,21 +90,8 @@
       )
       body += Self.handwriting(statement.signature, centre: (centreX, centreY))
       body += Self.name(statement.name, centre: (centreX, centreY))
-      // Out of the tilt before the code: a turned code is a code that
-      // has to be found before it can be read.
-      body += "Q\n"
-      if let attestation = statement.attestation {
-        body += QrCode.pdfOperators(
-          attestation,
-          size: Self.codeSize,
-          atX: Self.codeMargin,
-          atY: Self.pageHeight - Self.codeMargin - Self.codeSize
-        )
-      }
-      body += "Q\n"
-      return StampPage(
-        width: Self.pageWidth, height: Self.pageHeight, operators: body
-      )
+      body += "Q\nQ\n"
+      return StampMark(radius: Self.outerRadius, operators: body)
     }
 
     /// A turn of up to `maximumTilt` degrees clockwise, about the
@@ -170,7 +134,7 @@
       let baseline = centre.y - Self.baselineDrop - Self.nameDrop
       let left = centre.x - width / Self.halves
       return """
-        BT /F1 \(Self.nameSize) Tf 1 0 0 1 \(left) \(baseline) Tm
+        BT /RfStampRegular \(Self.nameSize) Tf 1 0 0 1 \(left) \(baseline) Tm
         (\(Self.escaped(text))) Tj ET
 
         """
