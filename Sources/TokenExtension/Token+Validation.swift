@@ -5,6 +5,18 @@ import Security
 
 /// Certificate and stored-prime validation performed before token publication.
 extension Token {
+  /// A resolved qualified-signature identity: leaf, profile, key.
+  internal struct QualifiedMaterial {
+    /// Parsed qualified-signature certificate.
+    internal let leaf: SecCertificate
+
+    /// The qualified key's resolved profile.
+    internal let profile: CardKeyProfile
+
+    /// The qualified leaf's public key.
+    internal let publicKey: SecKey
+  }
+
   /// Reads and validates everything needed for one reader-backed token.
   internal static func validatedReaderMaterial(
     from smartCard: TKSmartCard
@@ -23,14 +35,34 @@ extension Token {
       TokenLog.error("Token.init: token serial has no supported printed-card form")
       throw TokenError.unsupportedKeyProfile
     }
+    let sign = Self.validatedQualifiedMaterial(fromDER: identity.signLeafDER)
     return ReaderTokenMaterial(
       identity: identity,
       accessNumber: accessNumber,
       leaf: leaf,
       profile: profile,
       publicKey: publicKey,
+      signLeaf: sign?.leaf,
+      signProfile: sign?.profile,
+      signPublicKey: sign?.publicKey,
       instanceID: instanceID
     )
+  }
+
+  /// Resolves the qualified-signature leaf, best effort: a card whose
+  /// sign slot is absent or unsupported still publishes its
+  /// authentication identity, just without a qualified key.
+  private static func validatedQualifiedMaterial(
+    fromDER der: Data?
+  ) -> QualifiedMaterial? {
+    guard
+      let der,
+      let leaf = SecCertificateCreateWithData(nil, der as CFData),
+      let (profile, publicKey) = try? Self.validatedSigningKey(in: leaf)
+    else {
+      return nil
+    }
+    return QualifiedMaterial(leaf: leaf, profile: profile, publicKey: publicKey)
   }
 
   /// Validates every piece of a stored contactless identity.

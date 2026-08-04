@@ -11,6 +11,13 @@ internal struct PublishedIdentity {
   /// DER of the issuing-CA certificate, when the card provides it.
   internal let issuerDER: Data?
 
+  /// DER of the qualified-signature leaf (EF.4332), when present.
+  ///
+  /// Read when the card provides the slot and the mint had room to
+  /// read it. Contactless primes carry none: the qualified identity is
+  /// published from live reader mints only.
+  internal let signLeafDER: Data?
+
   /// Complete PKCS#15 token serial read from the same card session.
   ///
   /// The public token identifier is derived from its printed form; the

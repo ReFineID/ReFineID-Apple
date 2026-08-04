@@ -41,8 +41,9 @@ internal enum ReaderSignature {
   /// PACE has to start at master-file level -- the card refuses MSE:Set
   /// AT with 6985 anywhere else -- and the select is best effort, as
   /// everywhere else this runs: PACE is the step whose failure is worth
-  /// reporting.
-  private static func unsealed(
+  /// reporting. Internal, not private: ``QualifiedSignature`` unseals
+  /// the same way.
+  internal static func unsealed(
     _ channel: SmartCardChannel,
     with accessNumber: CardAccessNumber?
   ) throws -> any CardChannel {

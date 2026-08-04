@@ -29,6 +29,13 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
   /// one PIN use).
   private var collectedPin: String?
 
+  /// PIN2 collected by the most recent qualified `beginAuth`.
+  ///
+  /// Consumed by the next qualified `sign` and cleared immediately
+  /// after; never cached anywhere. One prompt, one VERIFY, one
+  /// signature.
+  internal var collectedPin2: String?
+
   /// Installs this session as CryptoTokenKit's operation delegate.
   ///
   /// CryptoTokenKit dispatches key operations only through this weak
@@ -43,14 +50,33 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
     TraceTiming.milliseconds(instant.duration(to: ContinuousClock.now))
   }
 
+  /// The key profile behind one published object ID, or nil for a key
+  /// this token did not publish.
+  private static func profile(
+    for keyObjectID: TKToken.ObjectID,
+    of token: Token
+  ) -> CardKeyProfile? {
+    if (keyObjectID as? String) == Token.signObjectID {
+      return token.signKeyProfile
+    }
+    return token.keyProfile
+  }
+
   // The @objc requirement is throwing; the ObjC bridge rejects a
   // non-throwing override, so `throws` stays though the body cannot fail.
   // swiftlint:disable unneeded_throws_rethrows
   internal func tokenSession(
     _: TKTokenSession,
     beginAuthFor operation: TKTokenOperation,
-    constraint _: Any
+    constraint: Any
   ) throws -> TKTokenAuthOperation {
+    // The constraint names the credential: each published key carries
+    // its own, so the qualified key can never be satisfied by a PIN1
+    // flow or vice versa.
+    if (constraint as? String) == Pin2AuthOperation.signDataConstraint {
+      TokenLog.notice("beginAuth: op=\(operation.rawValue) - presenting PIN2 sheet")
+      return Pin2AuthOperation { [weak self] pin in self?.collectedPin2 = pin }
+    }
     TokenLog.notice("beginAuth: op=\(operation.rawValue) - presenting PIN sheet")
     return Pin1AuthOperation { [weak self] pin in self?.collectedPin = pin }
   }
@@ -59,19 +85,22 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
   internal func tokenSession(
     _: TKTokenSession,
     supports operation: TKTokenOperation,
-    keyObjectID _: TKToken.ObjectID,
+    keyObjectID: TKToken.ObjectID,
     algorithm: TKTokenKeyAlgorithm
   ) -> Bool {
     guard let token = token as? Token else {
       TokenLog.error("supports: session token is not a ReFineID Token")
       return false
     }
+    guard let profile = Self.profile(for: keyObjectID, of: token) else {
+      return false
+    }
     let supported =
       operation == .signData
-      && SigningAlgorithmResolver.advertises(algorithm, profile: token.keyProfile)
+      && SigningAlgorithmResolver.advertises(algorithm, profile: profile)
     TokenLog.notice(
       "supports: op=\(operation.rawValue) algo=\(SigningAlgorithmResolver.describe(algorithm)) "
-        + "profile=\(String(describing: token.keyProfile)) -> \(supported ? "YES" : "NO")"
+        + "profile=\(String(describing: profile)) -> \(supported ? "YES" : "NO")"
     )
     return supported
   }
@@ -86,7 +115,7 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
   internal func tokenSession(
     _: TKTokenSession,
     sign dataToSign: Data,
-    keyObjectID _: TKToken.ObjectID,
+    keyObjectID: TKToken.ObjectID,
     algorithm: TKTokenKeyAlgorithm
   ) throws -> Data {
     let started = ContinuousClock.now
@@ -95,7 +124,11 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
         + "algo=\(SigningAlgorithmResolver.describe(algorithm))"
     )
     do {
-      let signature = try signed(dataToSign: dataToSign, algorithm: algorithm)
+      let signature = try signed(
+        dataToSign: dataToSign,
+        keyObjectID: keyObjectID,
+        algorithm: algorithm
+      )
       TokenLog.notice(
         "sign: exit ok out=\(signature.count)B ms=\(Self.elapsed(since: started))"
       )
@@ -106,10 +139,22 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
     }
   }
 
-  /// Routes one signature to the transport the card was reached over.
-  private func signed(dataToSign: Data, algorithm: TKTokenKeyAlgorithm) throws -> Data {
+  /// Routes one signature to its key, then to the transport the card
+  /// was reached over.
+  private func signed(
+    dataToSign: Data,
+    keyObjectID: TKToken.ObjectID,
+    algorithm: TKTokenKeyAlgorithm
+  ) throws -> Data {
     guard let cardToken = token as? Token else {
       throw TKError(.badParameter)
+    }
+    if (keyObjectID as? String) == Token.signObjectID {
+      return try qualifiedThroughReader(
+        token: cardToken,
+        dataToSign: dataToSign,
+        algorithm: algorithm
+      )
     }
     // Which interface, not which secrecy: a card on a reader's antenna
     // needs the same PACE channel as one held against a phone, but it can

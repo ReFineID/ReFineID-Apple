@@ -18,6 +18,16 @@ internal struct ReaderTokenMaterial {
   /// Public authentication key used to verify every card signature.
   internal let publicKey: SecKey
 
+  /// Parsed qualified-signature certificate, when the card has one.
+  internal let signLeaf: SecCertificate?
+
+  /// Qualified key profile, when the sign leaf resolved to a
+  /// supported one.
+  internal let signProfile: CardKeyProfile?
+
+  /// Public qualified key used to verify every qualified signature.
+  internal let signPublicKey: SecKey?
+
   /// Stable token identity derived from the printed card serial.
   internal let instanceID: CardInstanceIdentifier
 }

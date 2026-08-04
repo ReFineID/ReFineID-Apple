@@ -14,11 +14,21 @@ import Security
 internal final class Token: TKSmartCardToken, TKTokenDelegate {
   /// The auth certificate and its key share this keychain object ID.
   internal static let authObjectID = "auth"
+  /// The qualified-signature certificate and key share this object ID.
+  internal static let signObjectID = "sign"
   /// The published issuing-CA certificate's object ID (cert-only).
   internal static let issuerObjectID = "issuer-ca"
   /// The authentication key's profile, resolved from the leaf and used
   /// by the session to advertise and select signing algorithms.
   internal let keyProfile: CardKeyProfile
+
+  /// The qualified key's profile; nil when this token published no
+  /// qualified identity (absent slot, or a contactless prime).
+  internal let signKeyProfile: CardKeyProfile?
+
+  /// The qualified leaf's public key, for the same fail-closed local
+  /// verification the authentication key gets.
+  internal let signLeafPublicKey: SecKey?
 
   /// The leaf's public key, used by the session to verify each raw card
   /// signature before returning it - a card that lost its loaded hash
@@ -81,6 +91,8 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
     let material = try Self.validatedReaderMaterial(from: smartCard)
     self.keyProfile = material.profile
     self.leafPublicKey = material.publicKey
+    self.signKeyProfile = material.signProfile
+    self.signLeafPublicKey = material.signPublicKey
     self.sealedAccessNumber = material.accessNumber
     // A card read here was read through a reader, whichever of its
     // interfaces answered: this initializer does card I/O, which the
@@ -96,7 +108,13 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
     )
     delegate = self
     TokenLog.info("Token.init: super.init done, profile=\(String(describing: material.profile))")
-    try publish(material.identity, leaf: material.leaf, profile: material.profile)
+    try publish(
+      material.identity,
+      leaf: material.leaf,
+      profile: material.profile,
+      signLeaf: material.signLeaf,
+      signProfile: material.signProfile
+    )
   }
 
   /// Creates the token from a primed identity instead of from the card.
@@ -128,6 +146,8 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
     let material = try Self.validated(primed: primed, instanceID: instanceID)
     self.keyProfile = material.profile
     self.leafPublicKey = material.publicKey
+    self.signKeyProfile = nil
+    self.signLeafPublicKey = nil
     self.sealedAccessNumber = material.accessNumber
     self.interface = .fieldWithDeadline
     self.primedSerial = material.serial
@@ -147,10 +167,13 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
       PublishedIdentity(
         leafDER: primed.certDER,
         issuerDER: primed.issuerDER,
+        signLeafDER: nil,
         tokenSerial: material.serial
       ),
       leaf: material.leaf,
-      profile: material.profile
+      profile: material.profile,
+      signLeaf: nil,
+      signProfile: nil
     )
     TokenLog.trace(
       "Token.init(primed): published, profile=\(String(describing: material.profile))")
