@@ -132,6 +132,23 @@ internal enum FineidValues {
   /// which is the retries-remaining counter.
   internal static let pinAttributesLength: UInt8 = 0x04
 
+  /// PIN-changed DO tag, high byte (`DF 2F`, S1 v4.2 §3.15.3): whether
+  /// the PIN has been changed since manufacture, which is how a card
+  /// issued from 13 January 2026 reports activation (S4-1 §4.6.2).
+  internal static let pinChangedTagHigh: UInt8 = 0xDF
+
+  /// PIN-changed DO tag, low byte.
+  internal static let pinChangedTagLow: UInt8 = 0x2F
+
+  /// PIN-changed DO length: one flag byte.
+  internal static let pinChangedLength: UInt8 = 0x01
+
+  /// PIN-changed flag value meaning "never changed since manufacture".
+  internal static let pinChangedFlagUnchanged: UInt8 = 0x00
+
+  /// PIN-changed flag value meaning "changed at least once".
+  internal static let pinChangedFlagChanged: UInt8 = 0x01
+
   /// The VERIFY P2 reference for a credential role.
   internal static func reference(for role: CredentialRole) -> UInt8 {
     switch role {

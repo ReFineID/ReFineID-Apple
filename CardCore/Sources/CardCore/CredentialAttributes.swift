@@ -20,6 +20,13 @@ public enum CredentialAttributes {
   /// bytes and the length byte.
   private static let triesOffset: Int = 3
 
+  /// The number of bytes in one pin-changed tag-length-value window:
+  /// two tag bytes, one length byte, one flag byte.
+  private static let changedWindowLength: Int = 4
+
+  /// Offset of the flag byte inside the pin-changed window.
+  private static let changedFlagOffset: Int = 3
+
   /// Extracts the retries-remaining counter, or nil when the body
   /// carries no parseable attributes object.
   public static func retryCounter(fromResponseBody body: Data) -> RetryCount? {
@@ -36,5 +43,35 @@ public enum CredentialAttributes {
       return RetryCount(attemptsRemaining: bytes[start + Self.triesOffset])
     }
     return nil
+  }
+
+  /// Extracts the changed-since-manufacture record.
+  ///
+  /// This flag is how a card issued from 13 January 2026 reports
+  /// activation (S4-1 §4.6.2): its PINs ship set to a single-use
+  /// activation PIN, and the first change is the activation. An
+  /// absent object or unknown flag value answers `unreadable`, never
+  /// a guess (Documentation/typing-discipline.md).
+  public static func pinChangeRecord(fromResponseBody body: Data) -> PinChangeRecord {
+    let bytes = Array(body)
+    guard bytes.count >= Self.changedWindowLength else { return .unreadable }
+    for start in 0...(bytes.count - Self.changedWindowLength) {
+      guard
+        bytes[start] == FineidValues.pinChangedTagHigh,
+        bytes[start + 1] == FineidValues.pinChangedTagLow,
+        bytes[start + Self.lengthOffset] == FineidValues.pinChangedLength
+      else {
+        continue
+      }
+      switch bytes[start + Self.changedFlagOffset] {
+      case FineidValues.pinChangedFlagUnchanged:
+        return .unchanged
+      case FineidValues.pinChangedFlagChanged:
+        return .changed
+      default:
+        return .unreadable
+      }
+    }
+    return .unreadable
   }
 }
