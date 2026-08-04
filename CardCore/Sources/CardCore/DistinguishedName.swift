@@ -18,18 +18,50 @@ public enum DistinguishedName {
   /// name - and taking it apart by looking for spaces guesses at
   /// something the certificate already says exactly.
   ///
-  /// The attributes are stored in capitals; they are recased for
-  /// reading, which handles the hyphens and spaces inside a compound
-  /// name. A name whose own spelling defies that rule - one with a
-  /// capital in the middle - comes out conventionally rather than
-  /// correctly, which is the usual bargain with recasing.
+  /// The attributes are stored in capitals, mirroring the machine
+  /// readable zone's conventions, so they are recased for reading.
+  /// The rule is deliberately simple and locale-independent: a
+  /// segment begins after a space or a hyphen, its first character is
+  /// uppercased and the rest lowercased, and the separators are kept
+  /// as they were. Finnish and Swedish need nothing more; only
+  /// languages with locale-sensitive casing would.
+  ///
+  /// Its limits are known and accepted rather than papered over.
+  /// "MCCABE" becomes "Mccabe", "VAN DER BERG" becomes "Van Der
+  /// Berg", and an apostrophe is not a boundary, so "O'BRIEN" becomes
+  /// "O'brien". Guessing at those would misspell as many names as it
+  /// fixed.
+  ///
+  /// The certificate is the right source for this. A card that
+  /// published the holder's own spelling directly would be better
+  /// still, and this card does not; the machine readable zone is
+  /// worse, being transliterated - it writes Ä as AE and Ö as OE, and
+  /// nothing records what the original was.
   public static func personalName(inName name: Data) -> String? {
     let given = Self.attribute(SignOids.givenName, inName: name)
     let family = Self.attribute(SignOids.surname, inName: name)
     let stated = [given, family].compactMap(\.self)
-    let spoken = stated.map(\.capitalized)
+    let spoken = stated.map(Self.recased)
     guard !spoken.isEmpty else { return nil }
     return spoken.joined(separator: " ")
+  }
+
+  /// One name recased for reading.
+  private static func recased(_ text: String) -> String {
+    var out = ""
+    var startsSegment = true
+    for character in text {
+      if character == " " || character == "-" {
+        out.append(character)
+        startsSegment = true
+        continue
+      }
+      out +=
+        startsSegment
+        ? character.uppercased() : character.lowercased()
+      startsSegment = false
+    }
+    return out
   }
 
   /// The holder's identifier, as the certificate states it.

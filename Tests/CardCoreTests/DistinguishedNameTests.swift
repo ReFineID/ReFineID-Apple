@@ -40,6 +40,20 @@ internal struct DistinguishedNameTests {
     return out
   }
 
+  /// A subject stating a given name and a surname of their own, the
+  /// way a citizen certificate does.
+  private static func personalName(given: String, family: String) -> Data {
+    let body =
+      Self.attribute(
+        oid: [0x06, 0x03, 0x55, 0x04, 0x2A],
+        value: Self.element(0x0C, Array(given.utf8))
+      )
+      + Self.attribute(
+        oid: Self.surnameOid, value: Self.element(0x0C, Array(family.utf8))
+      )
+    return Data(Self.element(0x30, body))
+  }
+
   /// One relative name holding one attribute.
   private static func attribute(oid: [UInt8], value: [UInt8]) -> [UInt8] {
     Self.element(0x31, Self.element(0x30, oid + value))
@@ -70,6 +84,32 @@ internal struct DistinguishedNameTests {
     #expect(
       DistinguishedName.commonName(inName: name) == "MÄKELÄ ÉLODIE 000000A"
     )
+  }
+
+  @Test
+  internal func theNameIsRecasedForReading() {
+    // Segments begin after a space or a hyphen, and nowhere else.
+    // Diacritics survive: a Finnish name is the ordinary case here.
+    let name = Self.personalName(given: "MARIA-ELISABETH", family: "SÄÄTILÄ")
+
+    #expect(
+      DistinguishedName.personalName(inName: name) == "Maria-Elisabeth Säätilä"
+    )
+  }
+
+  @Test
+  internal func recasingLeavesTheNamesItCannotKnow() {
+    // Known limits, kept deliberately: guessing at these would
+    // misspell as many names as it fixed.
+    let scottish = Self.personalName(given: "IAN", family: "MCCABE")
+    let dutch = Self.personalName(given: "JAN", family: "VAN DER BERG")
+    let irish = Self.personalName(given: "SEAN", family: "O'BRIEN")
+
+    #expect(DistinguishedName.personalName(inName: scottish) == "Ian Mccabe")
+    #expect(
+      DistinguishedName.personalName(inName: dutch) == "Jan Van Der Berg"
+    )
+    #expect(DistinguishedName.personalName(inName: irish) == "Sean O'brien")
   }
 
   @Test
