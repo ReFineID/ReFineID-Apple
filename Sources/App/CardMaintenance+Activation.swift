@@ -44,6 +44,23 @@
       return report.flatMap(\.self)
     }
 
+    /// Whether this card is still in its factory state, and so can be
+    /// activated at all.
+    ///
+    /// Answers nil when no card is readable or its scheme cannot be
+    /// classified: activation depends on knowing which entry the card
+    /// expects, and offering it without that knowledge invites a
+    /// wrong-length entry that spends a retry.
+    internal static func activationReadiness() async -> ActivationReadiness? {
+      await onCard { operations -> ActivationReadiness? in
+        guard let scheme = classifyScheme(operations) else { return nil }
+        return Self.looksActivated(operations, scheme: scheme)
+          ? .alreadyActivated
+          : .ready
+      }
+      .flatMap(\.self)
+    }
+
     /// Whether the counter-safe preflight sees prior activation.
     private static func looksActivated(
       _ operations: CardOperations,

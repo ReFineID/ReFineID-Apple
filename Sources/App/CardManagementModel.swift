@@ -16,6 +16,13 @@
     /// The last counter-safe probe of all three credentials.
     internal private(set) var report: CredentialProbeReport?
 
+    /// Whether this card can still be activated.
+    ///
+    /// False until a reading says otherwise: activation is a one-time
+    /// factory state, and offering it for a card already in use can
+    /// only spend a retry against a credential the holder replaced.
+    internal private(set) var offersActivation = false
+
     /// Whether an operation (or the probe) is on the card now.
     internal private(set) var working = false
 
@@ -30,6 +37,7 @@
       guard !working else { return }
       working = true
       report = await CardMaintenance.probeCredentials()
+      offersActivation = await CardMaintenance.activationReadiness() == .ready
       working = false
     }
 

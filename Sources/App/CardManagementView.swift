@@ -98,11 +98,22 @@
       }
     }
 
+    /// The tasks this card can actually be asked to do.
+    ///
+    /// Activation is offered only while the card is still in its
+    /// factory state; for a card in use there is no such operation,
+    /// and showing it would invite a retry spent for nothing.
+    private var offeredTasks: [ManagementTask] {
+      ManagementTask.allCases.filter { candidate in
+        candidate != .activate || model.offersActivation
+      }
+    }
+
     /// The chosen task, and only it.
     @ViewBuilder private var taskSection: some View {
       Section {
         Picker("Task", selection: $task) {
-          ForEach(ManagementTask.allCases) { candidate in
+          ForEach(offeredTasks) { candidate in
             Text(candidate.name).tag(candidate)
           }
         }
@@ -260,7 +271,16 @@
 
     /// Opens on what the card needs, until the holder chooses.
     private func suggestTask(from report: CredentialProbeReport?) {
-      guard !hasChosenTask, let report else { return }
+      // A task that stopped being offered cannot stay selected.
+      if !offeredTasks.contains(task) {
+        task = .changePin1
+      }
+      guard !hasChosenTask else { return }
+      if model.offersActivation {
+        task = .activate
+        return
+      }
+      guard let report else { return }
       let blocked: [RetryProbeOutcome] = [.locked, .invalidated]
       if blocked.contains(report.pin1) || blocked.contains(report.pin2) {
         task = .unblock
