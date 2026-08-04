@@ -20,6 +20,7 @@
       "http://timestamp.sectigo.com/qualified",
       "https://timestamp.aped.gov.gr/qtss",
       "http://tss.accv.es:8318/tsa",
+      "http://tsa.belgium.be/connect",
     ]
 
     /// The preferences key of the per-authority usernames.
@@ -36,9 +37,14 @@
       UserDefaults.standard.stringArray(forKey: Self.key) ?? Self.defaults
     }
 
-    /// Persists an edited list; an empty list is the defaults.
+    /// Persists an edited list.
+    ///
+    /// An empty list, or one equal to the shipped set, is stored as
+    /// nothing: choosing exactly the defaults is indistinguishable
+    /// from never editing, and an install that never edited should
+    /// follow the shipped set as new releases change it.
     internal static func save(_ authorities: [String]) {
-      if authorities.isEmpty {
+      if authorities.isEmpty || authorities == Self.defaults {
         UserDefaults.standard.removeObject(forKey: Self.key)
       } else {
         UserDefaults.standard.set(authorities, forKey: Self.key)
