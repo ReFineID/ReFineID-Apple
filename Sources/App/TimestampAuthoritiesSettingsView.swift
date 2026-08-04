@@ -27,19 +27,6 @@
       var isBlank: Bool {
         address.isEmpty && username.isEmpty && password.isEmpty
       }
-
-      /// Whether the address names a service this app could reach.
-      ///
-      /// Both schemes are accepted: timestamping is specified over
-      /// plain HTTP and several qualified authorities publish
-      /// exactly that, so insisting on one scheme would refuse half
-      /// the trusted list.
-      var isUsable: Bool {
-        guard let url = URL(string: address), let scheme = url.scheme else {
-          return false
-        }
-        return (scheme == "http" || scheme == "https") && url.host != nil
-      }
     }
 
     private static let paneWidth: CGFloat = 640
@@ -50,11 +37,18 @@
     private static let legendSpacing: CGFloat = 14
     private static let legendSymbolSpacing: CGFloat = 4
 
+    /// How long an entry rests before its scheme is asked after.
+    private static let typingRestDelay: Duration = .seconds(1)
+
     @State private var rows: [Row]
 
     /// What the stores already hold, keyed by row, so a keystroke
     /// writes only the row it changed.
     @State private var saved: [UUID: Row]
+
+    /// The scheme probes in flight, keyed by row, so another
+    /// keystroke restarts the row's rest timer.
+    @State private var probes: [UUID: Task<Void, Never>] = [:]
 
     @FocusState private var focusedRow: UUID?
 
@@ -121,7 +115,9 @@
           AnyShapeStyle(.secondary),
           "Not qualified - click the seal to mark yours"
         )
-        if rows.contains(where: { row in !row.address.isEmpty && !row.isUsable }) {
+        if rows.contains(where: { row in
+          !row.address.isEmpty && !AuthoritySchemeResolver.isUsable(row.address)
+        }) {
           legendEntry(
             "exclamationmark.triangle.fill",
             AnyShapeStyle(.orange),
@@ -197,7 +193,7 @@
       let address = row.wrappedValue.address
       if address.isEmpty {
         Spacer().frame(width: Self.badgeWidth)
-      } else if !row.wrappedValue.isUsable {
+      } else if !AuthoritySchemeResolver.isUsable(address) {
         Image(systemName: "exclamationmark.triangle.fill")
           .foregroundStyle(.orange)
           .frame(width: Self.badgeWidth)
@@ -257,13 +253,33 @@
     }
 
     /// The empty row at the bottom, waiting for the next authority.
-    private func isOpenLine(_ row: Row) -> Bool {
-      row.isBlank && row.id == rows.last?.id
+    private func isOpenLine(_ row: Row) -> Bool { row.isBlank && row.id == rows.last?.id }
+
+    /// A scheme-less entry is completed once typing rests: https is
+    /// tried first and preferred, http accepted, and the address is
+    /// rewritten only if it has not changed since - and only to a
+    /// scheme the service answered on.
+    private func scheduleSchemeCompletion() {
+      for row in rows
+      where !row.address.isEmpty && !row.address.contains("://") {
+        probes[row.id]?.cancel()
+        let (bare, identity) = (row.address, row.id)
+        probes[identity] = Task { @MainActor in
+          try? await Task.sleep(for: Self.typingRestDelay)
+          guard !Task.isCancelled,
+            let completed = await AuthoritySchemeResolver.complete(bare),
+            let index = rows.firstIndex(where: { $0.id == identity }),
+            rows[index].address == bare
+          else { return }
+          rows[index].address = completed
+        }
+      }
     }
 
     /// Writes what changed and keeps the open line open.
     private func reconcile() {
       tidy()
+      scheduleSchemeCompletion()
       TimestampAuthorityStore.save(rows.map(\.address).filter { !$0.isEmpty })
       for row in rows where !row.address.isEmpty && saved[row.id] != row {
         TimestampAuthorityStore.saveCredentials(
