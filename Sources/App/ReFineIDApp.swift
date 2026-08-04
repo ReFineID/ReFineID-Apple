@@ -14,17 +14,20 @@ internal struct ReFineIDApp: App {
 
       Window("Card Access Number", id: CardAccessNumberManagerView.windowID) {
         CardAccessNumberManagerView()
+          .writingToolsBehavior(.disabled)
       }
       .windowResizability(.contentSize)
 
       Window("PIN Management", id: CardManagementView.windowID) {
         CardManagementView()
+          .writingToolsBehavior(.disabled)
       }
       .windowResizability(.contentSize)
 
       Settings {
         TabView {
           TimestampAuthoritiesSettingsView()
+            .writingToolsBehavior(.disabled)
             .tabItem {
               Label("Time-Stamp Authorities", systemImage: "clock.badge.checkmark")
             }
@@ -55,7 +58,22 @@ internal struct ReFineIDApp: App {
   /// in that mode's runner instead of the app: the mode needs a foreground
   /// window to open an NFC slot or present a prompt, and it exits the
   /// process when it is done. Nothing of that exists in a release build.
+  /// Writing Tools may not touch this app's text.
+  ///
+  /// Every text field here holds a credential or a service address: a
+  /// PIN, a PUK, a card access number, a timestamp authority. Writing
+  /// Tools offers to rewrite, summarise and proofread what is in them,
+  /// which means handing it to a language model - and "Make Friendly"
+  /// beside a PUK field is an offer no holder should be shown, let
+  /// alone accept. Disabling it at the root reaches every field in
+  /// every window.
   @ViewBuilder private var rootContent: some View {
+    contentForLaunchMode
+      .writingToolsBehavior(.disabled)
+  }
+
+  /// The screen for this launch, before the app-wide modifiers.
+  @ViewBuilder private var contentForLaunchMode: some View {
     #if DEBUG
       if let mode = DebugLaunchModes.sceneMode {
         DebugSceneRunnerView(mode: mode)
