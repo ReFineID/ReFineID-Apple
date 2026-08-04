@@ -1,6 +1,7 @@
 #if os(macOS)
 
   import CardCore
+  import CryptoKit
   import Foundation
 
   /// Asks the configured authorities for a qualified timestamp.
@@ -38,6 +39,21 @@
         }
       }
       throw Failure.noAuthorityAnswered(declined)
+    }
+
+    /// One token from one authority over a throwaway digest.
+    ///
+    /// The qualification test uses this to learn who signs at an
+    /// address: the token's own certificates say so, bound to a
+    /// digest that attests nothing.
+    internal static func probeToken(from authority: String) async throws -> Data {
+      var seed = Data(count: OcspRequest.nonceByteCount)
+      seed.withUnsafeMutableBytes { buffer in
+        if let base = buffer.baseAddress {
+          _ = SecRandomCopyBytes(kSecRandomDefault, buffer.count, base)
+        }
+      }
+      return try await Self.token(over: Data(SHA384.hash(data: seed)), from: authority)
     }
 
     /// One token from one authority, checked before it is accepted.
