@@ -63,6 +63,43 @@ public enum QualifiedDocumentCms {
     signerCertificate: Data,
     timestampTokens: [Data]
   ) throws -> Data {
+    try Self.assemble(
+      signedAttributesSet: signedAttributesSet,
+      rawSignature: rawSignature,
+      signerCertificate: signerCertificate,
+      timestampTokens: timestampTokens,
+      carryingCertificate: true
+    )
+  }
+
+  /// The same, with the signer's certificate left out.
+  ///
+  /// A verifier supplies it instead. The certificate is by far the
+  /// largest part of a signature, and leaving it out is what lets one
+  /// fit somewhere small - a printed code, a header beside a file.
+  public static func assembleWithoutCertificates(
+    signedAttributesSet: Data,
+    rawSignature: Data,
+    signerCertificate: Data,
+    timestampTokens: [Data]
+  ) throws -> Data {
+    try Self.assemble(
+      signedAttributesSet: signedAttributesSet,
+      rawSignature: rawSignature,
+      signerCertificate: signerCertificate,
+      timestampTokens: timestampTokens,
+      carryingCertificate: false
+    )
+  }
+
+  /// Shared assembly for both shapes.
+  private static func assemble(
+    signedAttributesSet: Data,
+    rawSignature: Data,
+    signerCertificate: Data,
+    timestampTokens: [Data],
+    carryingCertificate: Bool
+  ) throws -> Data {
     let identity = try issuerAndSerial(of: signerCertificate)
     let signature = try ecdsaSignature(rawSignature)
     var signerInfo: [Data] = [
@@ -89,18 +126,23 @@ public enum QualifiedDocumentCms {
         )
       )
     }
-    let signedData = DerEncoder.sequence([
+    var parts: [Data] = [
       DerEncoder.integer(SignOids.cmsVersion),
       DerEncoder.tlv(DerValues.tagSet, sha384AlgorithmIdentifier()),
       DerEncoder.sequence([DerEncoder.objectIdentifier(SignOids.data)]),
-      DerEncoder.retagged(
-        DerEncoder.tlv(DerValues.tagSet, signerCertificate),
-        to: DerValues.tagContext0Constructed
-      ),
-      DerEncoder.tlv(
-        DerValues.tagSet, DerEncoder.sequence(signerInfo)
-      ),
-    ])
+    ]
+    if carryingCertificate {
+      parts.append(
+        DerEncoder.retagged(
+          DerEncoder.tlv(DerValues.tagSet, signerCertificate),
+          to: DerValues.tagContext0Constructed
+        )
+      )
+    }
+    parts.append(
+      DerEncoder.tlv(DerValues.tagSet, DerEncoder.sequence(signerInfo))
+    )
+    let signedData = DerEncoder.sequence(parts)
     return DerEncoder.sequence([
       DerEncoder.objectIdentifier(SignOids.signedData),
       DerEncoder.tlv(DerValues.tagContext0Constructed, signedData),

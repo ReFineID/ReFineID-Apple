@@ -138,6 +138,44 @@
       }
     }
 
+    /// A detached signature over the stamp's manifest, timestamped,
+    /// with no certificates in it.
+    ///
+    /// This is the second card operation of a stamped signing, and it
+    /// comes first: the code carrying it goes on the page that the
+    /// document's own signature then covers. Certificates are left
+    /// out because the holder's own is larger than everything else
+    /// here together, and nothing fits a scannable code with it.
+    ///
+    /// Answers nil rather than failing the signing: a document that
+    /// cannot carry a code is still a properly signed document, and
+    /// refusing to sign one over a decoration would be the wrong
+    /// trade.
+    internal static func attestation(
+      over manifest: Data,
+      pin2: String
+    ) async -> Data? {
+      let digest = Data(SHA384.hash(data: manifest))
+      let answer = await CardMaintenance.qualifiedSignature(pin2: pin2) {
+        certificate in
+        QualifiedDocumentCms.signedAttributes(
+          byteRangeDigest: digest, signerCertificate: certificate
+        )
+      }
+      guard case .signed(let product) = answer else { return nil }
+      guard
+        let tokens = try? await Self.timestamped(product.signature).map(\.token)
+      else {
+        return nil
+      }
+      return try? QualifiedDocumentCms.assembleWithoutCertificates(
+        signedAttributesSet: product.attributes,
+        rawSignature: product.signature,
+        signerCertificate: product.certificate,
+        timestampTokens: tokens
+      )
+    }
+
     /// One signature timestamp; an archival signature cannot skip it.
     private static func timestamped(
       _ signature: Data

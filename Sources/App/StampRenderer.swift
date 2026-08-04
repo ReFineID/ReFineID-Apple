@@ -26,11 +26,14 @@
 
       /// The holder's traced handwriting.
       internal let signature: SignatureArtwork.Artwork
+
+      /// The signed statement the code carries, when there is one.
+      internal let attestation: QrCode.Modules?
     }
 
     /// The page the mark is drawn on, in points.
     private static let pageWidth = 320.0
-    private static let pageHeight = 340.0
+    private static let pageHeight = 560.0
 
     /// The ring.
     private static let outerRadius = 112.0
@@ -74,10 +77,20 @@
     /// The mark's red.
     private static let red = "0.75 0.11 0.15"
 
+    /// The code's side, and how far it sits above the page's foot.
+    ///
+    /// Large on purpose. A code carrying a signature and a qualified
+    /// timestamp needs a great many modules, and a phone camera needs
+    /// each of them to be about half a millimetre - so the code is
+    /// the size it has to be to scan, not the size that would look
+    /// tidy.
+    private static let codeSize = 190.0
+    private static let codeMargin = 18.0
+
     /// The page carrying the mark.
     internal static func page(_ statement: Statement) -> StampPage {
       let centreX = Self.pageWidth / Self.halves
-      let centreY = Self.pageHeight / Self.halves + Self.nameDrop
+      let centreY = Self.pageHeight - Self.outerRadius - Self.nameDrop * Self.halves
       var body = "q\n\(Self.red) RG \(Self.red) rg\n"
       let centre = (x: centreX, y: centreY)
       body += Self.circle(
@@ -103,6 +116,14 @@
       )
       body += Self.handwriting(statement.signature, centre: (centreX, centreY))
       body += Self.name(statement.name, centre: (centreX, centreY))
+      if let attestation = statement.attestation {
+        body += QrCode.pdfOperators(
+          attestation,
+          size: Self.codeSize,
+          atX: centreX - Self.codeSize / Self.halves,
+          atY: Self.codeMargin
+        )
+      }
       body += "Q\n"
       return StampPage(
         width: Self.pageWidth, height: Self.pageHeight, operators: body
