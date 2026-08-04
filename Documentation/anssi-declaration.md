@@ -18,7 +18,7 @@ Le déclarant demande la délivrance de l'attestation de déclaration.
 
 ## A. Déclarant (personne physique)
 
-| Champ | Valeur |
+| | |
 |:---------------------------|:-----------------------------------------------|
 | Nom et prénoms | Koistinen, Petri |
 | Nationalité | finlandaise |
@@ -30,7 +30,7 @@ Le déclarant demande la délivrance de l'attestation de déclaration.
 
 ### B.1. Informations générales sur le moyen
 
-| Champ | Valeur |
+| | |
 |:---------------------------|:-----------------------------------------------|
 | Nom | ReFineID |
 | Désignation générique | Intergiciel pour carte nationale d'identité |
@@ -63,8 +63,8 @@ cryptographiques).
 
 #### B.3.1. Description des fonctionnalités cryptographiques du moyen
 
-Messagerie sécurisée PACE avec la carte, signatures d'authentification
-client et signatures de documents PAdES.
+Messagerie sécurisée avec la carte, signatures d'authentification client
+et signatures de documents PAdES.
 
 #### B.3.2. Indiquez à quelle(s) catégorie(s) se rapporte(nt) la ou les fonctions cryptographiques du moyen
 
@@ -72,43 +72,25 @@ Authentification, intégrité, confidentialité et signature.
 
 #### B.3.3. Indiquez le(s) protocole(s) sécurisé(s) utilisés par le moyen
 
-Autres protocoles : PACE selon ICAO Doc 9303 partie 11 et BSI
-TR-03110-3 ; messagerie sécurisée selon ISO/IEC 7816-4.
+PACE et messagerie sécurisée ISO/IEC 7816-4.
 
 #### B.3.4. Précisez les algorithmes cryptographiques utilisés et leurs longueurs maximales de clés
 
-Les opérations sur la courbe brainpoolP384r1 et le CMAC sont écrits dans
-le moyen ; l'AES, le SHA-2 et la vérification des signatures ECDSA et RSA
-sont appelés dans les bibliothèques du système d'exploitation. Tous les
-algorithmes sont publiés par des organismes de normalisation
-internationaux ; aucun n'est propriétaire.
-
 | Algorithme | Mode | Taille de clé | Fonction |
 |:-------------------|:-------------|:------------|:-------------------------------|
-| ECDH sur brainpoolP384r1 | PACE-GM (mappage générique) | 384 bits | Accord de clés PACE |
-| AES | CBC | 256 bits | Confidentialité de chaque APDU après PACE |
-| AES | CMAC | 256 bits | Intégrité de chaque APDU après PACE |
-| SHA-256 | s.o. | s.o. | Dérivation des clés de session PACE |
-| SHA-224, SHA-256, SHA-384, SHA-512 | s.o. | s.o. | Condensats des signatures d'authentification |
-| ECDSA sur NIST P-384 | s.o. | 384 bits | Signature d'authentification client |
-| RSA | PKCS#1 v1.5 | 3072 bits | Signature d'authentification client |
-| RSA | PSS | 3072 bits | Signature d'authentification client |
-
-La fonction de condensation des signatures ECDSA est choisie par le
-service appelant ; les cartes à clé RSA n'emploient que SHA-256.
-
-Normes correspondantes : ECDH, RFC 5639 et BSI TR-03111 ; AES,
-FIPS 197 avec NIST SP 800-38A (CBC) et NIST SP 800-38B avec RFC 4493
-(CMAC) ; SHA-2, FIPS 180-4 ; ECDSA, FIPS 186-5 et ANSI X9.62 ; RSA,
-RFC 8017.
+| ECDH sur brainpoolP384r1 | PACE | 384 bits | Accord de clés |
+| AES | CBC | 256 bits | Chiffrement |
+| AES | CMAC | 256 bits | Intégrité |
+| SHA-256 | s.o. | s.o. | Dérivation de clés |
+| SHA-224, SHA-256, SHA-384, SHA-512 | s.o. | s.o. | Condensats de signature |
+| ECDSA sur NIST P-384 | s.o. | 384 bits | Signature |
+| RSA | PKCS#1 v1.5 | 3072 bits | Signature |
+| RSA | PSS | 3072 bits | Signature |
 
 #### Gestion des clés
 
 - Les clés privées sont générées dans la carte par l'autorité émettrice
   et n'en sortent jamais.
-- Les clés de session PACE sont éphémères.
-- Aucun séquestre de clés, aucun recouvrement, aucune gestion de clés à
-  distance.
 
 ## C. Cas d'un moyen de cryptologie relevant de la catégorie 3 de l'annexe 2 du décret n° 2007-663 du 2 mai 2007
 
@@ -195,7 +177,7 @@ The declarant requests an attestation confirming this declaration.
 
 ## A. Declarant (individual)
 
-| Field | Value |
+| | |
 |:---------------------------|:-----------------------------------------------|
 | Name | Koistinen, Petri |
 | Nationality | Finnish |
@@ -207,7 +189,7 @@ The declarant requests an attestation confirming this declaration.
 
 ### B.1. General information
 
-| Field | Value |
+| | |
 |:---------------------------|:-----------------------------------------------|
 | Name | ReFineID |
 | Generic designation | Middleware for a national identity card |
@@ -239,8 +221,8 @@ certificate.
 
 #### B.3.1. Description of the cryptographic functionality
 
-PACE secure messaging with the card, client-authentication signatures
-and PAdES document signatures.
+Secure messaging with the card, client-authentication signatures and
+PAdES document signatures.
 
 #### B.3.2. Categories the cryptographic functions fall under
 
@@ -248,41 +230,25 @@ Authentication, integrity, confidentiality and signature.
 
 #### B.3.3. Secure protocols used by the product
 
-Other protocols: PACE as specified in ICAO Doc 9303 part 11 and BSI
-TR-03110-3; secure messaging as specified in ISO/IEC 7816-4.
+PACE and ISO/IEC 7816-4 secure messaging.
 
 #### B.3.4. Cryptographic algorithms used and their maximum key lengths
 
-The brainpoolP384r1 curve operations and the CMAC are written in the
-product; AES, SHA-2 and ECDSA and RSA signature verification are called
-from the operating system's libraries. All algorithms are
-published by international standards bodies; none is proprietary.
-
 | Algorithm | Mode | Key size | Function |
 |:-------------------|:-------------|:------------|:-------------------------------|
-| ECDH on brainpoolP384r1 | PACE-GM (generic mapping) | 384 bits | PACE key agreement |
-| AES | CBC | 256 bits | Confidentiality of each APDU after PACE |
-| AES | CMAC | 256 bits | Integrity of each APDU after PACE |
-| SHA-256 | n/a | n/a | Derivation of the PACE session keys |
-| SHA-224, SHA-256, SHA-384, SHA-512 | n/a | n/a | Digests of the authentication signatures |
-| ECDSA on NIST P-384 | n/a | 384 bits | Signed by the card, verified locally |
-| RSA | PKCS#1 v1.5 | 3072 bits | Signed by the card, verified locally |
-| RSA | PSS | 3072 bits | Signed by the card, verified locally |
-
-The digest for an ECDSA signature is chosen by the calling service; RSA
-card generations use SHA-256 alone.
-
-Corresponding standards: ECDH, RFC 5639 and BSI TR-03111; AES, FIPS 197
-with NIST SP 800-38A (CBC) and NIST SP 800-38B with RFC 4493 (CMAC);
-SHA-2, FIPS 180-4; ECDSA, FIPS 186-5 and ANSI X9.62; RSA, RFC 8017.
+| ECDH on brainpoolP384r1 | PACE | 384 bits | Key agreement |
+| AES | CBC | 256 bits | Encryption |
+| AES | CMAC | 256 bits | Integrity |
+| SHA-256 | n/a | n/a | Key derivation |
+| SHA-224, SHA-256, SHA-384, SHA-512 | n/a | n/a | Signature digests |
+| ECDSA on NIST P-384 | n/a | 384 bits | Signature |
+| RSA | PKCS#1 v1.5 | 3072 bits | Signature |
+| RSA | PSS | 3072 bits | Signature |
 
 #### Key management
 
 - The card's private keys are generated on the card by the issuing
   authority and never leave it.
-- PACE session keys are ephemeral.
-- There is no key escrow, no key recovery and no remote key
-  management.
 
 ## C. Cryptographic product within category 3 of annex 2 to decree No 2007-663 of 2 May 2007
 
