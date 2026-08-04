@@ -1,6 +1,5 @@
 #if os(macOS)
 
-  import AppKit
   import CardCore
   import Foundation
   import Observation
@@ -14,14 +13,6 @@
   @MainActor
   @Observable
   internal final class SignDocumentModel {
-    /// The one model both windows use.
-    ///
-    /// A document dropped on the status window has to reach the
-    /// signing window, and the two are separate scenes with separate
-    /// state; sharing the model is what lets a drop anywhere in the
-    /// app mean the same thing.
-    internal static let shared = SignDocumentModel()
-
     /// The document waiting to be signed.
     internal private(set) var pending: URL?
 
@@ -52,26 +43,10 @@
         .appendingPathExtension(source.pathExtension)
     }
 
-    /// Where the signed document will go: the original's folder, under
-    /// the timestamped name, confirmed by the holder.
-    ///
-    /// The panel opens already filled in, so confirming is one key -
-    /// and confirming is also what grants this app permission to create
-    /// the file. The sandbox the App Store requires hands over a
-    /// dropped file, never the folder around it, so a sibling cannot be
-    /// written without being asked for. Asked before signing rather
-    /// than after: a panel shown afterwards could be cancelled with a
-    /// card signature already spent, and this way a cancel is free.
-    private static func chosenDestination(for source: URL) -> URL? {
-      let suggested = Self.destination(for: source, at: Date())
-      let panel = NSSavePanel()
-      panel.allowedContentTypes = [.pdf]
-      panel.nameFieldStringValue = suggested.lastPathComponent
-      panel.directoryURL = suggested.deletingLastPathComponent()
-      panel.message = String(localized: "Where to keep the signed document.")
-      panel.prompt = String(localized: "Sign")
-      guard panel.runModal() == .OK else { return nil }
-      return panel.url
+    /// The name a signed document should be offered under: the
+    /// original's, with the instant it was signed.
+    nonisolated internal static func suggestedName(for source: URL) -> String {
+      Self.destination(for: source, at: Date()).lastPathComponent
     }
 
     /// One sentence per failure.
@@ -130,15 +105,16 @@
       signed = nil
     }
 
-    /// Signs the pending document with the entered PIN2.
+    /// Signs the pending document into `destination`.
     ///
-    /// Where the result goes is settled before the card is touched, so
-    /// that cancelling costs nothing.
-    internal func sign(pin2: String) async {
+    /// Where it goes is decided by the caller, before this is called
+    /// and before the card is touched: the sandbox the App Store
+    /// requires hands this app a dropped file and not the folder
+    /// around it, so the write has to be granted through a save panel,
+    /// and a panel raised after signing could be cancelled with a PIN2
+    /// signature already spent.
+    internal func sign(pin2: String, to destination: URL) async {
       guard let source = pending, !working else { return }
-      guard let destination = Self.chosenDestination(for: source) else {
-        return
-      }
       // Replacing the original is refused rather than confirmed. It
       // destroys the only unsigned copy, and the signature is taken
       // over bytes already read into memory - so the file that
@@ -164,6 +140,12 @@
       } catch {
         failure = Self.message(for: error)
       }
+    }
+
+    /// Reports a failure raised before the card was reached.
+    internal func report(_ message: String) {
+      failure = message
+      signed = nil
     }
   }
 

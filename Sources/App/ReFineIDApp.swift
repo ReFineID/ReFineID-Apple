@@ -22,11 +22,6 @@ internal struct ReFineIDApp: App {
       }
       .windowResizability(.contentSize)
 
-      Window("Sign a Document", id: SignDocumentView.windowID) {
-        SignDocumentView()
-      }
-      .windowResizability(.contentSize)
-
       Settings {
         TabView {
           TimestampAuthoritiesSettingsView()
