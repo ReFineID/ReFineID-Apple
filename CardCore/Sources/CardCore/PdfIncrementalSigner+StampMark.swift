@@ -135,7 +135,7 @@ extension PdfIncrementalSigner {
       body.contains("/Annots")
       ? Self.appendingToNamedArray(body, key: "/Annots", entry: field)
       : Self.insertingIntoDictionary(body, entry: "/Annots [\(field) 0 R]")
-    return Self.withStampFonts(body)
+    return body
   }
 
   /// The page's `/Contents` turned into an array naming both streams.
@@ -155,27 +155,6 @@ extension PdfIncrementalSigner {
     return page.replacingOccurrences(
       of: "/Contents \(existing)",
       with: "/Contents [\(existing) \(content) 0 R]"
-    )
-  }
-
-  /// The page's resources, with the two standard fonts the mark draws
-  /// with added.
-  private static func withStampFonts(_ page: String) -> String {
-    guard let range = page.range(of: "/Font") else {
-      guard page.contains("/Resources") else {
-        return Self.insertingIntoDictionary(
-          page, entry: "/Resources << /Font \(PdfValues.stampFonts) >>"
-        )
-      }
-      return page.replacingOccurrences(
-        of: "/Resources <<",
-        with: "/Resources << /Font \(PdfValues.stampFonts)"
-      )
-    }
-    let rest = page[range.upperBound...].drop(while: \.isWhitespace)
-    guard rest.first == "<" else { return page }
-    return page.replacingOccurrences(
-      of: "/Font <<", with: "/Font << \(PdfValues.stampFontEntries)"
     )
   }
 

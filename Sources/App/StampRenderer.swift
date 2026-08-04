@@ -123,21 +123,14 @@
       return body
     }
 
-    /// The name, centred under the ring by measurement.
+    /// The name, drawn as outlines rather than text.
     private static func name(
       _ text: String,
       centre: (x: Double, y: Double)
     ) -> String {
-      let width = Self.width(text, font: "Helvetica", size: Self.nameSize)
-      // Under the line the signature stands on, inside the ring: the
-      // hand above, the name it belongs to below.
       let baseline = centre.y - Self.baselineDrop - Self.nameDrop
-      let left = centre.x - width / Self.halves
-      return """
-        BT /RfStampRegular \(Self.nameSize) Tf 1 0 0 1 \(left) \(baseline) Tm
-        (\(Self.escaped(text))) Tj ET
-
-        """
+      let line = TextOutline.line(text, font: "Helvetica", size: Self.nameSize)
+      return "q 1 0 0 1 \(centre.x) \(baseline) cm\n\(line.operators)Q\n"
     }
 
     /// A circle, as four Bezier quarters.
@@ -168,53 +161,6 @@
           + " \(end.x) \(end.y) c\n"
       }
       return body + "h\nS\n"
-    }
-
-    /// Each character's advance, measured rather than assumed, so the
-    /// ring text is spaced the way the font intends.
-    private static func advances(
-      _ text: String,
-      font: String,
-      size: Double
-    ) -> [Double] {
-      // Measured at a large size and scaled down. Asked at four
-      // points, CoreText answers with hinted advances rounded to
-      // whole pixels, and the ring text comes out gapped between
-      // letters - "si gnatur e" rather than "signature".
-      let measured = CTFontCreateWithName(
-        font as CFString, Self.metricSize, nil
-      )
-      let scale = size / Self.metricSize
-      return text.map { character in
-        var glyph = CGGlyph(0)
-        var codeUnits = Array(String(character).utf16)
-        guard
-          CTFontGetGlyphsForCharacters(
-            measured, &codeUnits, &glyph, codeUnits.count
-          )
-        else {
-          return size * Self.fallbackAdvanceShare
-        }
-        var advance = CGSize.zero
-        CTFontGetAdvancesForGlyphs(measured, .horizontal, &glyph, &advance, 1)
-        return Double(advance.width) * scale
-      }
-    }
-
-    /// One string's width at a size.
-    private static func width(
-      _ text: String,
-      font: String,
-      size: Double
-    ) -> Double {
-      Self.advances(text, font: font, size: size).reduce(0, +)
-    }
-
-    /// A literal string's escapes.
-    private static func escaped(_ text: String) -> String {
-      text.replacingOccurrences(of: "\\", with: "\\\\")
-        .replacingOccurrences(of: "(", with: "\\(")
-        .replacingOccurrences(of: ")", with: "\\)")
     }
   }
 
