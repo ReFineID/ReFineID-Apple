@@ -12,6 +12,15 @@ public struct FileIdentifier: Equatable, Sendable {
   /// The master file (root).
   public static let masterFile = Self(value: FineidValues.fileIdMasterFile)
 
+  /// EF.COM: the travel-document application's inventory of the
+  /// data groups this card carries.
+  public static let commonData = Self(value: FineidValues.fileIdCommonData)
+
+  /// EF.DG7: the holder's handwritten signature.
+  public static let displayedSignature = Self(
+    value: FineidValues.fileIdDisplayedSignature
+  )
+
   /// EF.CardAccess: the SecurityInfos readable before PACE.
   public static let cardAccess = Self(value: FineidValues.fileIdCardAccess)
 

@@ -12,6 +12,12 @@ public struct ApplicationIdentifier: Equatable, Sendable {
     FineidValues.applicationAidHexDigits
   )
 
+  /// The ICAO eMRTD application a Finnish identity card also
+  /// implements, source of the holder's signature image.
+  public static let travelDocumentApplication: Self = constant(
+    FineidValues.travelDocumentAidHexDigits
+  )
+
   /// The validated AID bytes, read by the command encoder.
   internal let bytes: [UInt8]
 

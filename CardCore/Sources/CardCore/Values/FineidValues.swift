@@ -40,6 +40,35 @@ internal enum FineidValues {
   /// (ISO 7816-4).
   internal static let fileIdMasterFile: UInt16 = 0x3F00
 
+  /// The ICAO eMRTD LDS application.
+  ///
+  /// A Finnish identity card also implements it. Measured on
+  /// 2026-08-04 it answers a SELECT on either interface, but every
+  /// file inside stays sealed until PACE.
+  internal static let travelDocumentAidHexDigits = "A0000002471001"
+
+  /// EF.COM: the list of data groups this card actually carries.
+  internal static let fileIdCommonData: UInt16 = 0x011E
+
+  /// EF.DG7: the displayed signature or usual mark.
+  internal static let fileIdDisplayedSignature: UInt16 = 0x0107
+
+  /// The tag EF.COM uses for its data-group list.
+  internal static let dataGroupListTag: UInt8 = 0x5C
+
+  /// The tag DG7 marks the whole displayed-signature template with.
+  internal static let displayedSignatureTag: UInt8 = 0x67
+
+  /// The first byte of the biometric image's two-byte tag, the
+  /// high-tag-number form's introducer.
+  internal static let biometricTemplateTag: UInt8 = 0x5F
+
+  /// The second byte, which names the image itself.
+  internal static let biometricImageTag: UInt8 = 0x43
+
+  /// The data-group list entry standing for DG7.
+  internal static let dataGroupSevenMarker: UInt8 = 0x67
+
   /// EF.CardAccess: the SecurityInfos a terminal reads BEFORE PACE to
   /// learn which variants the card supports, under the master file
   /// (ICAO 9303-11 section 9.2.11).

@@ -95,6 +95,10 @@ public enum DerValues {
   /// Length byte: long-form marker bit (X.690 §8.1.3.5).
   internal static let longFormMask: UInt8 = 0x80
 
+  /// The bits of a long-form length octet that count the octets to
+  /// follow.
+  internal static let longFormCountMask: UInt8 = 0x7F
+
   /// Length byte: number-of-length-bytes mask in the long form.
   internal static let lengthCountMask: UInt8 = 0x7F
 
