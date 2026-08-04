@@ -146,16 +146,10 @@ Le déclarant déclare que le moyen relève de la catégorie 3.
 
 ### Présentez le mode de commercialisation du moyen de cryptologie et le marché auquel il s'adresse
 
-Distribution au grand public, sans négociation, sans personnalisation
-et sans contrat particulier. Le canal principal est l'App Store
-d'Apple ; d'autres canaux peuvent s'y ajouter, selon les mêmes
-modalités. Le marché visé est celui des porteurs d'une carte nationale
-d'identité finlandaise souhaitant s'authentifier auprès de services en
-ligne, où qu'ils résident. Le porteur résidant en France relève de
-l'App Store français : le moyen y est donc fourni. Le code source est
-public :
-
-https://github.com/ReFineID/ReFineID-Apple
+Le moyen sera mis à disposition du public sur l'App Store d'Apple. Il
+s'adresse aux titulaires d'une carte nationale d'identité finlandaise
+résidant en France qui souhaitent s'authentifier auprès de services en
+ligne.
 
 ### Expliquez pourquoi la fonctionnalité cryptographique du moyen ne peut pas être modifiée facilement par l'utilisateur
 
@@ -363,15 +357,9 @@ The declarant declares that the means falls within category 3.
 
 ### Present the means of commercialisation and the market it addresses
 
-Distributed to the general public, with no negotiation, no
-customisation and no individual contract. The principal channel is the
-Apple App Store; other channels may be added, on the same terms. The
-target market is holders of a Finnish national identity card wishing to
-authenticate to online services, wherever they live. A holder resident
-in France is served by the French storefront: the means is therefore
-supplied in France. The source code is public:
-
-https://github.com/ReFineID/ReFineID-Apple
+The tool will be made available to the public through Apple's App Store.
+It is intended for holders of a Finnish national identity card residing
+in France who wish to authenticate to online services.
 
 ### Explain why the cryptographic functionality cannot easily be modified by the user
 
