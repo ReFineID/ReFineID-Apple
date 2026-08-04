@@ -8,14 +8,24 @@
   ///
   /// A wrong PUK spends the PUK itself and exhausting it is terminal
   /// for the card, which is why the driver holds the retry floor
-  /// against the PUK's counter before anything is sent.
+  /// against the PUK's counter before anything is sent. Keyboard-first:
+  /// Return advances from field to field, and on the last field it
+  /// submits when the entries are complete.
   internal struct CredentialUnblockSection: View {
+    /// The keyboard path through the section.
+    private enum Field {
+      case puk
+      case new
+      case repeated
+    }
+
     internal let model: CardManagementModel
 
     @State private var target: CredentialRole = .pin1
     @State private var puk = ""
     @State private var new = ""
     @State private var repeated = ""
+    @FocusState private var focus: Field?
 
     /// The entry bounds of the targeted PIN.
     private var targetBounds: ClosedRange<Int> {
@@ -45,13 +55,16 @@
             unblock()
           }
           .buttonStyle(.borderedProminent)
+          .keyboardShortcut(.defaultAction)
           .disabled(!isComplete || model.working)
           .accessibilityIdentifier("managementUnblock")
         }
       }
+      .onAppear { focus = .puk }
     }
 
-    /// The target picker and the three secret fields.
+    /// The target picker and the three secret fields, threaded for
+    /// Return.
     @ViewBuilder private var entryRows: some View {
       Picker("PIN", selection: $target) {
         Text("PIN1").tag(CredentialRole.pin1)
@@ -63,17 +76,37 @@
         .onChange(of: puk) { _, typed in
           puk = LimitedDigits.puk(typed)
         }
+        .focused($focus, equals: .puk)
+        .onSubmit { advance(from: .puk) }
         .accessibilityIdentifier("managementUnblockPuk")
       SecureField("New PIN", text: $new)
         .onChange(of: new) { _, typed in
           new = LimitedDigits.pin(typed)
         }
+        .focused($focus, equals: .new)
+        .onSubmit { advance(from: .new) }
         .accessibilityIdentifier("managementUnblockNew")
       SecureField("New PIN again", text: $repeated)
         .onChange(of: repeated) { _, typed in
           repeated = LimitedDigits.pin(typed)
         }
+        .focused($focus, equals: .repeated)
+        .onSubmit { advance(from: .repeated) }
         .accessibilityIdentifier("managementUnblockRepeat")
+    }
+
+    /// Return advances; on the last field it submits when complete.
+    private func advance(from field: Field) {
+      switch field {
+      case .puk:
+        focus = .new
+      case .new:
+        focus = .repeated
+      case .repeated:
+        if isComplete {
+          unblock()
+        }
+      }
     }
 
     /// Runs the unblock and clears the fields when the card accepted.
@@ -87,6 +120,7 @@
           puk = ""
           new = ""
           repeated = ""
+          focus = nil
         }
       }
     }

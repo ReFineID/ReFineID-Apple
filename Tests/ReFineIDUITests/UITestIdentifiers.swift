@@ -8,8 +8,9 @@
 ///
 /// Each constant must match the `.accessibilityIdentifier(...)` of the
 /// same spelling in `Sources/App/CardCredentialsView.swift`,
-/// `Sources/App/CardRegistrationSections.swift` and
-/// `Sources/App/DiagnosticsView.swift`.
+/// `Sources/App/CardRegistrationSections.swift`,
+/// `Sources/App/DiagnosticsView.swift`, and the card-management
+/// sections under `Sources/App/`.
 /// A UI test drives a separate process and cannot share a constant with
 /// it, so this is the register that keeps the two sides honest.
 internal enum UITestIdentifiers {
@@ -36,4 +37,22 @@ internal enum UITestIdentifiers {
 
   /// The button that temporarily reveals or conceals unsaved PIN1.
   internal static let pin1Visibility = "pin1Visibility"
+
+  /// The management window's task picker.
+  internal static let managementTask = "managementTask"
+
+  /// The management window's toolbar refresh.
+  internal static let managementRefresh = "managementRefresh"
+
+  /// The PIN1 change action; fields are Current/New/Repeat suffixed.
+  internal static let managementChangePin1 = "managementChangePIN1"
+
+  /// The PIN2 change action; fields are Current/New/Repeat suffixed.
+  internal static let managementChangePin2 = "managementChangePIN2"
+
+  /// The unblock action; Target/Puk/New/Repeat sit beside it.
+  internal static let managementUnblock = "managementUnblock"
+
+  /// The activation action; Entry/Pin1/Pin2 fields sit beside it.
+  internal static let managementActivate = "managementActivate"
 }

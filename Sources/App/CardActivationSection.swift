@@ -11,6 +11,15 @@
   /// issued; the driver classifies the card and refuses a wrong-length
   /// entry before anything is spent.
   internal struct CardActivationSection: View {
+    /// The keyboard path through the section.
+    private enum Field {
+      case entry
+      case pin1
+      case pin1Repeat
+      case pin2
+      case pin2Repeat
+    }
+
     internal let model: CardManagementModel
 
     @State private var entry = ""
@@ -19,6 +28,7 @@
     @State private var newPin2 = ""
     @State private var newPin2Repeated = ""
     @State private var allowReactivation = false
+    @FocusState private var focus: Field?
 
     /// Ready when every entry can possibly be right; the exact
     /// activation-entry length is the card's to judge.
@@ -59,27 +69,55 @@
         .onChange(of: entry) { _, typed in
           entry = LimitedDigits.puk(typed)
         }
+        .focused($focus, equals: .entry)
+        .onSubmit { advance(from: .entry) }
         .accessibilityIdentifier("managementActivationEntry")
       SecureField("New PIN1", text: $newPin1)
         .onChange(of: newPin1) { _, typed in
           newPin1 = LimitedDigits.pin(typed)
         }
+        .focused($focus, equals: .pin1)
+        .onSubmit { advance(from: .pin1) }
         .accessibilityIdentifier("managementActivationPin1")
       SecureField("New PIN1 again", text: $newPin1Repeated)
         .onChange(of: newPin1Repeated) { _, typed in
           newPin1Repeated = LimitedDigits.pin(typed)
         }
+        .focused($focus, equals: .pin1Repeat)
+        .onSubmit { advance(from: .pin1Repeat) }
         .accessibilityIdentifier("managementActivationPin1Repeat")
       SecureField("New PIN2", text: $newPin2)
         .onChange(of: newPin2) { _, typed in
           newPin2 = LimitedDigits.pin(typed)
         }
+        .focused($focus, equals: .pin2)
+        .onSubmit { advance(from: .pin2) }
         .accessibilityIdentifier("managementActivationPin2")
       SecureField("New PIN2 again", text: $newPin2Repeated)
         .onChange(of: newPin2Repeated) { _, typed in
           newPin2Repeated = LimitedDigits.pin(typed)
         }
+        .focused($focus, equals: .pin2Repeat)
+        .onSubmit { advance(from: .pin2Repeat) }
         .accessibilityIdentifier("managementActivationPin2Repeat")
+    }
+
+    /// Return advances; on the last field it submits when complete.
+    private func advance(from field: Field) {
+      switch field {
+      case .entry:
+        focus = .pin1
+      case .pin1:
+        focus = .pin1Repeat
+      case .pin1Repeat:
+        focus = .pin2
+      case .pin2:
+        focus = .pin2Repeat
+      case .pin2Repeat:
+        if isComplete {
+          activate()
+        }
+      }
     }
 
     /// Runs activation and clears the fields when both PINs were set.
@@ -103,6 +141,7 @@
           newPin2 = ""
           newPin2Repeated = ""
           allowReactivation = false
+          focus = nil
         }
       }
     }

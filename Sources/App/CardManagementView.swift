@@ -56,18 +56,25 @@
         outcomeSection
       }
       .formStyle(.grouped)
-      .frame(width: Self.windowWidth)
+      .frame(minWidth: Self.windowWidth)
       .toolbar {
         Button("Refresh", systemImage: "arrow.clockwise") {
           Task { await model.refresh() }
         }
         .help("Read the attempt counters again")
+        .keyboardShortcut("r", modifiers: .command)
         .disabled(model.working)
         .accessibilityIdentifier("managementRefresh")
       }
       .task { await model.refresh() }
       .onChange(of: model.report) { _, report in
         suggestTask(from: report)
+      }
+      .onChange(of: model.failure) { _, failure in
+        announce(failure)
+      }
+      .onChange(of: model.notice) { _, notice in
+        announce(notice)
       }
     }
 
@@ -221,6 +228,13 @@
       .accessibilityElement(children: .combine)
       .accessibilityLabel(name)
       .accessibilityValue(Self.attemptsSpoken(outcome))
+    }
+
+    /// Speaks an outcome the moment it lands, for a VoiceOver user
+    /// whose focus is not on the outcome row.
+    private func announce(_ message: String?) {
+      guard let message else { return }
+      AccessibilityNotification.Announcement(message).post()
     }
 
     /// Opens on what the card needs, until the holder chooses.
