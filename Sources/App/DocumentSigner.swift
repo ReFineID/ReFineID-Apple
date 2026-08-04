@@ -27,6 +27,9 @@
 
       /// A network step an archival signature cannot omit failed.
       case network(Error)
+
+      /// Complete, authenticated LT evidence could not be collected.
+      case validation(Error)
     }
 
     /// What one card session produced.
@@ -57,7 +60,8 @@
       let material = try await Self.cardMaterial(
         pin2: pin2, document: document, claim: claim
       )
-      let tokens = try await Self.timestamped(material.signature)
+      let verifiedTokens = try await Self.timestamped(material.signature)
+      let tokens = verifiedTokens.map(\.token)
       let cms = try QualifiedDocumentCms.assemble(
         signedAttributesSet: material.signedAttributes,
         rawSignature: material.signature,
@@ -65,10 +69,15 @@
         timestampTokens: tokens
       )
       let signed = try material.placeholder.filled(with: cms)
-      let evidence = await ValidationMaterialCollector.collect(
-        signerCertificate: material.certificate,
-        timestampTokens: tokens
-      )
+      let evidence: PdfValidationStore.Material
+      do {
+        evidence = try await ValidationMaterialCollector.collect(
+          signerCertificate: material.certificate,
+          timestampTokens: verifiedTokens
+        )
+      } catch {
+        throw Failure.validation(error)
+      }
       let withEvidence = try PdfValidationStore.appended(
         to: signed, material: evidence
       )
@@ -111,7 +120,9 @@
     }
 
     /// One signature timestamp; an archival signature cannot skip it.
-    private static func timestamped(_ signature: Data) async throws -> [Data] {
+    private static func timestamped(
+      _ signature: Data
+    ) async throws -> [TimestampTokenVerifier.VerifiedToken] {
       let der = try QualifiedDocumentCms.derSignature(signature)
       do {
         return [try await TimestampClient.token(over: Data(SHA384.hash(data: der)))]
@@ -132,7 +143,7 @@
       }
       do {
         let token = try await TimestampClient.token(over: prepared.digest)
-        return try prepared.filled(with: token)
+        return try prepared.filled(with: token.token)
       } catch let error as PdfSigningError {
         throw Failure.document(error)
       } catch {

@@ -22,6 +22,7 @@
 		6D000000000000000000000E /* fineid-intermediate-02-citizen-g4r.pem in Resources */ = {isa = PBXBuildFile; fileRef = 2D000000000000000000000F /* fineid-intermediate-02-citizen-g4r.pem */; };
 		6D000000000000000000000F /* fineid-intermediate-01-citizen-g4e.pem in Resources */ = {isa = PBXBuildFile; fileRef = 2D0000000000000000000010 /* fineid-intermediate-01-citizen-g4e.pem */; };
 		6D0000000000000000000010 /* fineid-intermediate-01-citizen-g4e.pem in Resources */ = {isa = PBXBuildFile; fileRef = 2D0000000000000000000010 /* fineid-intermediate-01-citizen-g4e.pem */; };
+		BD0000000000000000000008 /* CardCore in Frameworks */ = {isa = PBXBuildFile; productRef = AD0000000000000000000006 /* CardCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -40,6 +41,13 @@
 			remoteInfo = ReFineIDDiscoveryExtension;
 		};
 		7D0000000000000000000005 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1D0000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4D0000000000000000000001;
+			remoteInfo = ReFineID;
+		};
+		BD0000000000000000000006 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1D0000000000000000000001 /* Project object */;
 			proxyType = 1;
@@ -80,6 +88,7 @@
 		2D000000000000000000000E /* ReFineIDUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ReFineIDUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2D000000000000000000000F /* fineid-intermediate-02-citizen-g4r.pem */ = {isa = PBXFileReference; lastKnownFileType = text; path = "fineid-intermediate-02-citizen-g4r.pem"; sourceTree = "<group>"; };
 		2D0000000000000000000010 /* fineid-intermediate-01-citizen-g4e.pem */ = {isa = PBXFileReference; lastKnownFileType = text; path = "fineid-intermediate-01-citizen-g4e.pem"; sourceTree = "<group>"; };
+		BD0000000000000000000001 /* ReFineIDTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ReFineIDTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -106,6 +115,11 @@
 		3D0000000000000000000005 /* ReFineIDUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = ReFineIDUITests;
+			sourceTree = "<group>";
+		};
+		BD0000000000000000000002 /* ReFineIDTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ReFineIDTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -145,6 +159,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BD0000000000000000000004 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BD0000000000000000000008 /* CardCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -166,6 +188,7 @@
 				2D0000000000000000000002 /* ReFineIDTokenExtension.appex */,
 				2D000000000000000000000A /* ReFineIDDiscoveryExtension.appex */,
 				2D0000000000000000000009 /* CardCoreTests.xctest */,
+				BD0000000000000000000001 /* ReFineIDTests.xctest */,
 				2D000000000000000000000E /* ReFineIDUITests.xctest */,
 			);
 			name = Products;
@@ -175,6 +198,7 @@
 			isa = PBXGroup;
 			children = (
 				3D0000000000000000000003 /* CardCoreTests */,
+				BD0000000000000000000002 /* ReFineIDTests */,
 				3D0000000000000000000005 /* ReFineIDUITests */,
 			);
 			path = Tests;
@@ -333,6 +357,29 @@
 			productReference = 2D000000000000000000000E /* ReFineIDUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		BD0000000000000000000005 /* ReFineIDTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BF0000000000000000000001 /* Build configuration list for PBXNativeTarget "ReFineIDTests" */;
+			buildPhases = (
+				BD0000000000000000000003 /* Sources */,
+				BD0000000000000000000004 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BD0000000000000000000007 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				BD0000000000000000000002 /* ReFineIDTests */,
+			);
+			name = ReFineIDTests;
+			packageProductDependencies = (
+				AD0000000000000000000006 /* CardCore */,
+			);
+			productName = ReFineIDTests;
+			productReference = BD0000000000000000000001 /* ReFineIDTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -352,6 +399,10 @@
 						CreatedOnToolsVersion = 26.6;
 					};
 					4D0000000000000000000005 = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = 4D0000000000000000000001;
+					};
+					BD0000000000000000000005 = {
 						CreatedOnToolsVersion = 26.6;
 						TestTargetID = 4D0000000000000000000001;
 					};
@@ -380,6 +431,7 @@
 				4D0000000000000000000002 /* ReFineIDTokenExtension */,
 				4D0000000000000000000004 /* ReFineIDDiscoveryExtension */,
 				4D0000000000000000000003 /* CardCoreTests */,
+				BD0000000000000000000005 /* ReFineIDTests */,
 				4D0000000000000000000005 /* ReFineIDUITests */,
 			);
 		};
@@ -452,6 +504,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BD0000000000000000000003 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -469,6 +528,11 @@
 			isa = PBXTargetDependency;
 			target = 4D0000000000000000000001 /* ReFineID */;
 			targetProxy = 7D0000000000000000000005 /* PBXContainerItemProxy */;
+		};
+		BD0000000000000000000007 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4D0000000000000000000001 /* ReFineID */;
+			targetProxy = BD0000000000000000000006 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -733,7 +797,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Config/ReFineID.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 54;
+				CURRENT_PROJECT_VERSION = 131;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -774,7 +838,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Config/ReFineID.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 54;
+				CURRENT_PROJECT_VERSION = 131;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -814,7 +878,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Config/ReFineID.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 54;
+				CURRENT_PROJECT_VERSION = 131;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -855,7 +919,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Config/ReFineID.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 54;
+				CURRENT_PROJECT_VERSION = 131;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -895,7 +959,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Config/TokenExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 54;
+				CURRENT_PROJECT_VERSION = 131;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -932,7 +996,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Config/TokenExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 54;
+				CURRENT_PROJECT_VERSION = 131;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -968,7 +1032,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Config/TokenExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 54;
+				CURRENT_PROJECT_VERSION = 131;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1004,7 +1068,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Config/TokenExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 54;
+				CURRENT_PROJECT_VERSION = 131;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1037,7 +1101,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 54;
+				CURRENT_PROJECT_VERSION = 131;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 26.8.4;
@@ -1052,7 +1116,7 @@
 			buildSettings = {
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 54;
+				CURRENT_PROJECT_VERSION = 131;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 26.8.4;
@@ -1066,7 +1130,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 54;
+				CURRENT_PROJECT_VERSION = 131;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 26.8.4;
@@ -1080,7 +1144,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 54;
+				CURRENT_PROJECT_VERSION = 131;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 26.8.4;
@@ -1097,7 +1161,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Config/DiscoveryExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 54;
+				CURRENT_PROJECT_VERSION = 131;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1134,7 +1198,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Config/DiscoveryExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 54;
+				CURRENT_PROJECT_VERSION = 131;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1170,7 +1234,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Config/DiscoveryExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 54;
+				CURRENT_PROJECT_VERSION = 131;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1206,7 +1270,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Config/DiscoveryExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 54;
+				CURRENT_PROJECT_VERSION = 131;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1239,7 +1303,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 54;
+				CURRENT_PROJECT_VERSION = 131;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -1258,7 +1322,7 @@
 			buildSettings = {
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 54;
+				CURRENT_PROJECT_VERSION = 131;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -1276,7 +1340,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 54;
+				CURRENT_PROJECT_VERSION = 131;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -1294,7 +1358,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 54;
+				CURRENT_PROJECT_VERSION = 131;
 				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -1305,6 +1369,70 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = ReFineID;
+			};
+			name = Release;
+		};
+		BE0000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 131;
+				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 26.8.4;
+				PRODUCT_BUNDLE_IDENTIFIER = fi.refineid.ReFineID.Tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ReFineID.app/Contents/MacOS/ReFineID";
+			};
+			name = Debug;
+		};
+		BE0000000000000000000002 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 131;
+				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 26.8.4;
+				PRODUCT_BUNDLE_IDENTIFIER = fi.refineid.ReFineID.Tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ReFineID.app/Contents/MacOS/ReFineID";
+			};
+			name = Profile;
+		};
+		BE0000000000000000000003 /* TestFlight */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 131;
+				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 26.8.4;
+				PRODUCT_BUNDLE_IDENTIFIER = fi.refineid.ReFineID.Tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ReFineID.app/Contents/MacOS/ReFineID";
+			};
+			name = TestFlight;
+		};
+		BE0000000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 131;
+				DEVELOPMENT_TEAM = 4ZJC3SFJR2;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 26.8.4;
+				PRODUCT_BUNDLE_IDENTIFIER = fi.refineid.ReFineID.Tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ReFineID.app/Contents/MacOS/ReFineID";
 			};
 			name = Release;
 		};
@@ -1377,6 +1505,17 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		BF0000000000000000000001 /* Build configuration list for PBXNativeTarget "ReFineIDTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BE0000000000000000000001 /* Debug */,
+				BE0000000000000000000002 /* Profile */,
+				BE0000000000000000000003 /* TestFlight */,
+				BE0000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -1403,6 +1542,11 @@
 			productName = CardCore;
 		};
 		AD0000000000000000000005 /* CardCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AD0000000000000000000001 /* XCLocalSwiftPackageReference "CardCore" */;
+			productName = CardCore;
+		};
+		AD0000000000000000000006 /* CardCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = AD0000000000000000000001 /* XCLocalSwiftPackageReference "CardCore" */;
 			productName = CardCore;

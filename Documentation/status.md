@@ -1,7 +1,8 @@
-# Status, 26.8.3
+# Status, 26.8.4
 
 What works, what does not, and what each was measured with. Written from
-device and Mac runs through 2026-08-03, not from intent.
+device and Mac runs through 2026-08-03, not from intent. Code and document
+status below is current through 2026-08-04.
 
 ## ANSSI: the dossier is ready to file
 

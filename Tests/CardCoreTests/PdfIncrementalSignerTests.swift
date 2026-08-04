@@ -10,10 +10,22 @@ internal struct PdfIncrementalSignerTests {
   /// The smallest structurally complete PDF: catalog, page tree, one
   /// page, a classic cross-reference table and a trailer.
   private static var minimalPdf: Data {
+    Self.pdf(catalog: "<< /Type /Catalog /Pages 2 0 R >>")
+  }
+
+  /// One claim, for the tests that do not care what it says.
+  private static var claim: PdfIncrementalSigner.SignatureClaim {
+    PdfIncrementalSigner.SignatureClaim(
+      signedAt: Date(timeIntervalSince1970: 0), reason: nil, location: nil
+    )
+  }
+
+  /// Builds the minimal document with a caller-supplied catalog.
+  private static func pdf(catalog: String) -> Data {
     var text = "%PDF-1.7\n"
     var offsets: [Int] = []
     for (number, body) in [
-      (1, "<< /Type /Catalog /Pages 2 0 R >>"),
+      (1, catalog),
       (2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>"),
       (3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>"),
     ] {
@@ -28,13 +40,6 @@ internal struct PdfIncrementalSignerTests {
     text += "trailer\n<< /Size 4 /Root 1 0 R >>\n"
     text += "startxref\n\(xrefOffset)\n%%EOF\n"
     return Data(text.utf8)
-  }
-
-  /// One claim, for the tests that do not care what it says.
-  private static var claim: PdfIncrementalSigner.SignatureClaim {
-    PdfIncrementalSigner.SignatureClaim(
-      signedAt: Date(timeIntervalSince1970: 0), reason: nil, location: nil
-    )
   }
 
   /// The document as Latin-1, the way the writer reads it.
@@ -70,6 +75,27 @@ internal struct PdfIncrementalSignerTests {
     )
     #expect(prepared.document.prefix(original.count) == original)
     #expect(prepared.document.count > original.count)
+  }
+
+  @Test
+  internal func reissuedObjectsPreserveRawEightBitBytes() throws {
+    let marker = Data("(raw-X-byte)".utf8)
+    var original = Self.pdf(
+      catalog: "<< /Type /Catalog /Pages 2 0 R /Note (raw-X-byte) >>"
+    )
+    let markerRange = try #require(original.range(of: marker))
+    let byteIndex = markerRange.lowerBound + Data("(raw-".utf8).count
+    original[byteIndex] = 0xE9
+
+    let prepared = try PdfIncrementalSigner.prepare(
+      original, revision: .documentTimestamp
+    )
+
+    let rawByteCount = prepared.document.reduce(into: 0) { count, byte in
+      if byte == 0xE9 { count += 1 }
+    }
+    #expect(rawByteCount == 2)
+    #expect(!prepared.document.contains(Data([0xC3, 0xA9])))
   }
 
   @Test

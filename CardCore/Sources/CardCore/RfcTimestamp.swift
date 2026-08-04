@@ -1,18 +1,19 @@
 import Foundation
 
-/// The RFC 3161 request and response handling for qualified
-/// timestamps.
+/// RFC 3161 request construction and response binding checks.
 ///
-/// Building the request and checking the answer are pure; the HTTP
-/// exchange belongs to the caller. The binding check is what keeps a
-/// wrong or replayed token out: status granted, TSTInfo of the right
-/// type and version, the message imprint byte-equal to what was
-/// asked, and the nonce echoed exactly. Chain validation is
-/// deliberately left to validators - the signer cannot anchor trust
-/// for the reader.
+/// The HTTP exchange and certificate trust decision belong to the
+/// caller. This layer parses the TimeStampResp and proves that its
+/// TSTInfo names SHA-384, carries the requested imprint and nonce, and
+/// has a usable generation time. `TimestampTokenVerifier` performs the
+/// CMS signature and signer-certificate checks before a token is used.
 public enum RfcTimestamp {
   /// A refused or unusable timestamp answer.
   public enum TokenFailure: Error, Equatable {
+    /// The token names a message-imprint algorithm other than the one
+    /// requested.
+    case imprintAlgorithmMismatch
+
     /// The token's imprint is not the digest that was sent.
     case imprintMismatch
 
@@ -26,8 +27,20 @@ public enum RfcTimestamp {
     case rejected(status: Int)
   }
 
-  /// The TimeStampReq: version 1, the SHA-384 imprint, a nonce, and
-  /// an explicit request for the signing certificate.
+  /// Parsed content shared with the platform signature verifier.
+  internal struct TokenContents {
+    /// The encapsulated TSTInfo octets.
+    internal let tstInfo: Data
+
+    /// The time claimed by that signed TSTInfo.
+    internal let generatedAt: Date
+  }
+
+  /// SHA-384 output size in octets.
+  private static let sha384DigestByteCount = 48
+
+  /// The TimeStampReq: version 1, the SHA-384 imprint, a nonce, and an
+  /// explicit request for the signing certificate.
   public static func request(digest: Data, nonceBytes: Data) -> Data {
     DerEncoder.sequence([
       DerEncoder.integer(SignOids.timestampRequestVersion),
@@ -40,132 +53,45 @@ public enum RfcTimestamp {
     ])
   }
 
-  /// The verified TimeStampToken out of a TimeStampResp, verbatim.
+  /// The checked TimeStampToken out of a TimeStampResp, verbatim.
   public static func token(
     fromResponse response: Data,
     digest: Data,
     nonceBytes: Data
   ) throws -> Data {
-    var outer = DerReader(response)
-    guard let envelope = outer.next(), envelope.tag == DerValues.tagSequence
-    else {
+    guard digest.count == Self.sha384DigestByteCount else {
       throw TokenFailure.malformed
     }
-    var reader = DerReader(response, within: envelope)
-    guard let statusInfo = reader.next() else {
+    let encoded = try Self.encodedToken(inResponse: response)
+    let contents = try Self.contents(in: encoded)
+    let binding = try Self.binding(in: contents.tstInfo)
+    guard Self.isSha384(binding.algorithm) else {
+      throw TokenFailure.imprintAlgorithmMismatch
+    }
+    guard binding.digest.count == Self.sha384DigestByteCount else {
       throw TokenFailure.malformed
     }
-    var statusReader = DerReader(response, within: statusInfo)
-    guard
-      let status = statusReader.next(), status.tag == DerValues.tagInteger,
-      let statusValue = statusReader.integerValue(of: status)
-    else {
-      throw TokenFailure.malformed
-    }
-    guard SignOids.grantedStatuses.contains(statusValue) else {
-      throw TokenFailure.rejected(status: statusValue)
-    }
-    guard let tokenElement = reader.next() else {
-      throw TokenFailure.malformed
-    }
-    try checkBinding(
-      response: response,
-      element: tokenElement,
-      digest: digest,
-      nonceBytes: nonceBytes
-    )
-    return reader.data(of: tokenElement)
-  }
-
-  /// The TSTInfo checks: type, version, imprint, nonce.
-  private static func checkBinding(
-    response: Data,
-    element: DerReader.Element,
-    digest: Data,
-    nonceBytes: Data
-  ) throws {
-    guard let tstInfo = Self.tstInfoContent(response: response, element: element)
-    else {
-      throw TokenFailure.malformed
-    }
-    var outer = DerReader(tstInfo)
-    guard let sequence = outer.next() else { throw TokenFailure.malformed }
-    var reader = DerReader(tstInfo, within: sequence)
-    guard
-      let version = reader.next(),
-      reader.integerValue(of: version) == SignOids.tstInfoVersion,
-      reader.next() != nil,
-      let imprint = reader.next()
-    else {
-      throw TokenFailure.malformed
-    }
-    var imprintReader = DerReader(tstInfo, within: imprint)
-    guard
-      imprintReader.next() != nil,
-      let hashed = imprintReader.next(),
-      hashed.tag == DerValues.tagOctetString
-    else {
-      throw TokenFailure.malformed
-    }
-    guard imprintReader.contentData(of: hashed) == digest else {
+    guard binding.digest == digest else {
       throw TokenFailure.imprintMismatch
     }
-    // Fields after the imprint: the serial INTEGER, genTime, then the
-    // optional run where the nonce is the first INTEGER (RFC 3161).
-    guard reader.next() != nil, reader.next() != nil else {
-      throw TokenFailure.malformed
+    guard binding.nonce == DerEncoder.unsignedInteger(nonceBytes) else {
+      throw TokenFailure.nonceMismatch
     }
-    let expected = DerEncoder.unsignedInteger(nonceBytes)
-    while let candidate = reader.next() {
-      guard candidate.tag == DerValues.tagInteger else { continue }
-      guard reader.data(of: candidate) == expected else {
-        throw TokenFailure.nonceMismatch
-      }
-      return
-    }
-    throw TokenFailure.nonceMismatch
+    return encoded
   }
 
-  /// The TSTInfo eContent octets inside the token's SignedData.
-  private static func tstInfoContent(
-    response: Data,
-    element: DerReader.Element
-  ) -> Data? {
-    var contentInfo = DerReader(response, within: element)
-    guard
-      let typeOid = contentInfo.next(),
-      contentInfo.data(of: typeOid)
-        == DerEncoder.objectIdentifier(SignOids.signedData),
-      let explicitWrap = contentInfo.next()
-    else {
-      return nil
-    }
-    var wrapped = DerReader(response, within: explicitWrap)
-    guard let signedData = wrapped.next() else { return nil }
-    var signedReader = DerReader(response, within: signedData)
-    guard
-      signedReader.next() != nil,
-      signedReader.next() != nil,
-      let encapsulated = signedReader.next()
-    else {
-      return nil
-    }
-    var encapsulatedReader = DerReader(response, within: encapsulated)
-    guard
-      let contentType = encapsulatedReader.next(),
-      encapsulatedReader.data(of: contentType)
-        == DerEncoder.objectIdentifier(SignOids.tstInfo),
-      let eContent = encapsulatedReader.next()
-    else {
-      return nil
-    }
-    var eContentReader = DerReader(response, within: eContent)
-    guard
-      let octets = eContentReader.next(),
-      octets.tag == DerValues.tagOctetString
-    else {
-      return nil
-    }
-    return eContentReader.contentData(of: octets)
+  /// The generation time carried by a token's TSTInfo.
+  ///
+  /// This is a parsed claim until `TimestampTokenVerifier` verifies the
+  /// token's CMS signature.
+  public static func generationTime(in token: Data) throws -> Date {
+    try Self.contents(in: token).generatedAt
+  }
+
+  /// The encapsulated TSTInfo and its generation time.
+  internal static func contents(in token: Data) throws -> TokenContents {
+    let tstInfo = try Self.tstInfoContent(in: token)
+    let binding = try Self.binding(in: tstInfo)
+    return TokenContents(tstInfo: tstInfo, generatedAt: binding.generatedAt)
   }
 }

@@ -2,13 +2,12 @@
 
   import Foundation
 
-  /// The two kinds of fetch an archival signature needs: a timestamp
-  /// from an authority, and the public evidence that proves a chain.
+  /// Fetches a timestamp and the public certificate-status material an
+  /// archival signature needs.
   ///
-  /// These are the only network operations the app performs, and what
-  /// travels is a digest or a certificate identifier - never a key, a
-  /// PIN, or one byte of the document. TLS is the operating system's;
-  /// this speaks only HTTP semantics on top of it.
+  /// What travels is a digest, certificate identifier, or public
+  /// certificate material - never a key, PIN, or document byte. TLS is
+  /// supplied by the operating system.
   internal enum SigningNetwork {
     /// Why a fetch could not be used.
     internal enum Failure: Error, Equatable {
@@ -17,6 +16,18 @@
 
       /// The service answered with an error status.
       case httpStatus(Int)
+
+      /// Basic credentials would cross an unauthenticated connection.
+      case insecureCredentials
+
+      /// One exchange tried to follow too many redirects.
+      case redirectLimitExceeded
+
+      /// A certificate-published address does not name the public Internet.
+      case unsafeAddress
+
+      /// A redirect changed a protected endpoint or left HTTP(S).
+      case unsafeRedirect
 
       /// The answer was empty or beyond the accepted size.
       case unusableBody
@@ -33,7 +44,7 @@
     private static let timeout: TimeInterval = 30
 
     /// HTTP statuses that carry a usable body.
-    private static let successStatuses = 200..<300
+    internal static let successStatuses = 200..<300
 
     /// POSTs a DER request and answers the DER response.
     ///
@@ -43,11 +54,39 @@
       _ body: Data,
       to address: String,
       contentType: String,
-      credentials: (username: String, password: String)?
+      credentials: (username: String, password: String)?,
+      endpoint: Endpoint
     ) async throws -> Data {
-      guard let url = URL(string: address), url.scheme?.hasPrefix("http") == true
-      else {
-        throw Failure.badAddress
+      let request = try Self.postRequest(
+        body,
+        to: address,
+        contentType: contentType,
+        credentials: credentials,
+        endpoint: endpoint
+      )
+      let protected = try Self.protectedRequest(of: request, for: endpoint)
+      return try await Self.perform(
+        protected,
+        limit: Self.maximumResponseBytes,
+        endpoint: endpoint,
+        carriesCredentials: credentials != nil
+      )
+    }
+
+    /// Builds one timestamp or OCSP request without sending it.
+    ///
+    /// Kept as a direct test boundary for the scheme and credential
+    /// rules that must hold before URLSession sees the request.
+    internal static func postRequest(
+      _ body: Data,
+      to address: String,
+      contentType: String,
+      credentials: (username: String, password: String)?,
+      endpoint: Endpoint
+    ) throws -> URLRequest {
+      let url = try Self.httpUrl(address, for: endpoint)
+      if credentials != nil, url.scheme?.lowercased() != "https" {
+        throw Failure.insecureCredentials
       }
       var request = URLRequest(url: url, timeoutInterval: Self.timeout)
       request.httpMethod = "POST"
@@ -58,44 +97,73 @@
         let encoded = Data(pair.utf8).base64EncodedString()
         request.setValue("Basic \(encoded)", forHTTPHeaderField: "Authorization")
       }
-      return try await Self.perform(request, limit: Self.maximumResponseBytes)
+      return request
     }
 
-    /// GETs a certificate or revocation list.
+    /// GETs one public endpoint with a caller-defined body cap.
     ///
-    /// One redirect is followed, which is what certificate authorities
-    /// publishing through a CDN require; a chain of them is refused,
-    /// because an issuer URL should not be a tour.
+    /// Two public redirects are followed for certificate material. This covers
+    /// the official Danish TSL's canonical-host hop and media-host hop; longer
+    /// chains are refused because an untrusted URL should not be a tour.
+    internal static func get(
+      _ address: String,
+      maximumBytes: Int,
+      endpoint: Endpoint
+    ) async throws -> Data {
+      guard maximumBytes > 0 else { throw Failure.unusableBody }
+      let url = try Self.httpUrl(address, for: endpoint)
+      let request = URLRequest(url: url, timeoutInterval: Self.timeout)
+      let protected = try Self.protectedRequest(
+        of: request,
+        for: endpoint
+      )
+      return try await Self.perform(
+        protected,
+        limit: maximumBytes,
+        endpoint: endpoint,
+        carriesCredentials: false
+      )
+    }
+
+    /// GETs certificate or revocation material with its existing size cap.
     internal static func get(
       _ address: String,
       allowingListSize: Bool
     ) async throws -> Data {
-      guard let url = URL(string: address), url.scheme?.hasPrefix("http") == true
-      else {
-        throw Failure.badAddress
-      }
       let limit = allowingListSize ? Self.maximumListBytes : Self.maximumResponseBytes
-      let request = URLRequest(url: url, timeoutInterval: Self.timeout)
-      return try await Self.perform(request, limit: limit)
+      return try await Self.get(
+        address,
+        maximumBytes: limit,
+        endpoint: .certificateMaterial
+      )
     }
 
     /// Runs one exchange and checks its status and size.
     private static func perform(
       _ request: URLRequest,
-      limit: Int
+      limit: Int,
+      endpoint: Endpoint,
+      carriesCredentials: Bool
     ) async throws -> Data {
       let configuration = URLSessionConfiguration.ephemeral
       configuration.httpCookieStorage = nil
       configuration.urlCache = nil
       configuration.httpAdditionalHeaders = ["Accept": "*/*"]
-      let session = URLSession(configuration: configuration)
+      configuration.timeoutIntervalForRequest = Self.timeout
+      configuration.timeoutIntervalForResource = Self.timeout
+      let collector = BoundedResponseCollector(
+        initial: request,
+        endpoint: endpoint,
+        carriesCredentials: carriesCredentials,
+        limit: limit
+      )
+      let session = URLSession(
+        configuration: configuration,
+        delegate: collector,
+        delegateQueue: nil
+      )
       defer { session.finishTasksAndInvalidate() }
-      let (data, response) = try await session.data(for: request)
-      if let http = response as? HTTPURLResponse,
-        !Self.successStatuses.contains(http.statusCode)
-      {
-        throw Failure.httpStatus(http.statusCode)
-      }
+      let data = try await collector.response(using: session, request: request)
       guard !data.isEmpty, data.count <= limit else {
         throw Failure.unusableBody
       }

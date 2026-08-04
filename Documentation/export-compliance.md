@@ -223,13 +223,12 @@ cryptography passes. Nothing is wrong with the token; the file simply
 reads better without a line that invites a question with no good
 answer.
 
-Only the Greek one needs a build with a TLS backend, and only if the
-default is turned off: `tls-rustls` is on by default, and Greece
-redirects plain http. Sectigo answers on both and the set names it over
-http. TLS buys a timestamp nothing anyway: RFC 3161 sends a hash and
-never the document, and the returned token is checked against the
-digest and nonce it was asked for, so plain http leaks no content and a
-tamperer is caught.
+RFC 3161 sends a digest rather than the document. ReFineID accepts a
+reply only after checking its message-imprint algorithm, digest, nonce,
+CMS signature, timestamp-signing certificate chain, and the signer's
+identity against the EU trusted lists. Some qualified authorities still
+publish HTTP timestamp or revocation endpoints in those lists, so the
+cryptographic checks cannot be delegated to the transport.
 
 `--archive` is what makes it PAdES-B-LTA, the top of the ETSI ladder.
 The validator must answer QESig, PAdES-BASELINE-LTA, TOTAL_PASSED;

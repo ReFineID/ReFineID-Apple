@@ -1,0 +1,76 @@
+import CardCore
+import Foundation
+import Testing
+
+/// Direct CMS CertificateSet extraction checks for timestamp chains.
+@Suite
+internal struct CmsCertificatesTests {
+  /// Tags used only to assemble synthetic CMS fixtures.
+  private enum Tag {
+    static let context0: UInt8 = 0xA0
+    static let sequence: UInt8 = 0x30
+    static let set: UInt8 = 0x31
+  }
+
+  /// id-signedData.
+  private static let signedData = "1.2.840.113549.1.7.2"
+
+  /// A minimal SignedData with one caller-provided CertificateSet body.
+  private static func token(
+    certificates: Data,
+    contentType: String = Self.signedData,
+    trailingSignedData: Data = Data()
+  ) -> Data {
+    let signed = DerEncoder.sequence([
+      DerEncoder.integer(1),
+      DerEncoder.tlv(Tag.set, Data()),
+      DerEncoder.sequence([DerEncoder.objectIdentifier("1.2.3")]),
+      DerEncoder.tlv(Tag.context0, certificates),
+      DerEncoder.tlv(Tag.set, Data()),
+      trailingSignedData,
+    ])
+    return DerEncoder.sequence([
+      DerEncoder.objectIdentifier(contentType),
+      DerEncoder.tlv(Tag.context0, signed),
+    ])
+  }
+
+  /// Every ordinary certificate is returned verbatim and non-certificate
+  /// CertificateChoices are ignored.
+  @Test
+  internal func ordinaryCertificatesAreReturnedVerbatim() {
+    let first = DerEncoder.sequence([DerEncoder.integer(1)])
+    let second = DerEncoder.sequence([DerEncoder.integer(2)])
+    let attributeCertificate = DerEncoder.tlv(
+      Tag.context0,
+      DerEncoder.integer(3)
+    )
+    let token = Self.token(
+      certificates: first + attributeCertificate + second
+    )
+
+    #expect(CmsCertificates.inside(token) == [first, second])
+  }
+
+  /// A lookalike ContentInfo or trailing top-level bytes never supplies
+  /// trust material.
+  @Test
+  internal func malformedOrWrongContentInfoReturnsNoCertificates() {
+    let certificate = DerEncoder.sequence([DerEncoder.integer(1)])
+    let wrongType = Self.token(
+      certificates: certificate,
+      contentType: "1.2.840.113549.1.7.1"
+    )
+    var trailing = Self.token(certificates: certificate)
+    trailing.append(0)
+    let malformedSignedData = Self.token(
+      certificates: certificate,
+      trailingSignedData: DerEncoder.integer(9)
+    )
+
+    #expect(CmsCertificates.inside(wrongType).isEmpty)
+    #expect(CmsCertificates.inside(trailing).isEmpty)
+    #expect(CmsCertificates.inside(malformedSignedData).isEmpty)
+    #expect(CmsCertificates.inside(Data("not cms".utf8)).isEmpty)
+  }
+}

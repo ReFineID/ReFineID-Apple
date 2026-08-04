@@ -10,8 +10,8 @@ import Foundation
 /// responders match that form; an absent-parameters request is
 /// answered "unknown" by some of them.
 public enum OcspRequest {
-  /// Random bytes in the nonce (RFC 8954 §2.1).
-  public static let nonceByteCount = 16
+  /// Random bytes in the nonce (RFC 9654 section 2.1).
+  public static let nonceByteCount = 32
 
   /// The DER request for one certificate under one issuer.
   ///

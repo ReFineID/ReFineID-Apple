@@ -30,6 +30,16 @@ internal struct DerReader {
   /// The end of the walkable region; nil means the whole input.
   private var limit: Int?
 
+  /// Whether the reader consumed its complete selected region.
+  ///
+  /// A parser that accepts an expected prefix but leaves a second element
+  /// behind has not validated one ASN.1 value. Protocol parsers use this
+  /// after every fixed-shape structure so concatenated or smuggled values
+  /// do not become silently invisible.
+  internal var isAtEnd: Bool {
+    offset == (limit ?? bytes.count)
+  }
+
   /// Walks a whole encoding.
   internal init(_ encoded: Data) {
     self.bytes = Array(encoded)
@@ -77,7 +87,6 @@ internal struct DerReader {
   internal func data(of element: Element) -> Data {
     Data(bytes[element.raw])
   }
-
   /// The content octets of one element.
   internal func contentData(of element: Element) -> Data {
     Data(bytes[element.content])

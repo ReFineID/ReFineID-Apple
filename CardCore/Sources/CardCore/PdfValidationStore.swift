@@ -9,8 +9,44 @@ import Foundation
 /// a raw stream object with no filter: a validator reading these
 /// wants the bytes the responder signed, not a re-encoding.
 public enum PdfValidationStore {
+  /// Inputs already resolved for one incremental DSS revision.
+  private struct RevisionContext {
+    /// The document receiving the revision.
+    let document: Data
+
+    /// The document's newest cross-reference index.
+    let index: PdfDocumentIndex
+
+    /// The catalog object's number.
+    let rootNumber: Int
+
+    /// The next unused object number before this revision.
+    let size: Int
+
+    /// The catalog body.
+    let catalog: String
+
+    /// New validation material.
+    let material: Material
+
+    /// Material retained from the earlier DSS.
+    let previous: PreviousStore
+  }
+
+  /// References assigned to newly appended evidence streams.
+  private struct AddedMaterial {
+    /// New certificate references.
+    let certificates: [StoreReference]
+
+    /// New OCSP response references.
+    let ocspResponses: [StoreReference]
+
+    /// New CRL references.
+    let revocationLists: [StoreReference]
+  }
+
   /// The material collected for one signature.
-  public struct Material: Equatable {
+  public struct Material: Equatable, Sendable {
     /// Certificates of the chain, the signer's own excluded - it
     /// travels in the CMS.
     public let certificates: [Data]
@@ -55,51 +91,104 @@ public enum PdfValidationStore {
     else {
       throw PdfSigningError.structureUnreadable
     }
+    let previous = try Self.previousStore(
+      in: catalog, index: index, document: document
+    )
+    return try Self.appendedRevision(
+      RevisionContext(
+        document: document,
+        index: index,
+        rootNumber: rootNumber,
+        size: size,
+        catalog: catalog,
+        material: material,
+        previous: previous
+      )
+    )
+  }
 
-    var out = document
+  /// Writes the objects and cross-reference section of the new revision.
+  private static func appendedRevision(_ context: RevisionContext) throws -> Data {
+    var out = context.document
     if out.last != UInt8(ascii: "\n") {
       out.append(UInt8(ascii: "\n"))
     }
     var offsets: [Int: Int] = [:]
-    var next = max(size, 1)
-
-    let certificateNumbers = Self.appendBlobs(
-      material.certificates, into: &out, offsets: &offsets, next: &next
-    )
-    let ocspNumbers = Self.appendBlobs(
-      material.ocspResponses, into: &out, offsets: &offsets, next: &next
-    )
-    let crlNumbers = Self.appendBlobs(
-      material.revocationLists, into: &out, offsets: &offsets, next: &next
+    var next = max(context.size, 1)
+    let added = Self.appendMaterialBlobs(
+      context.material, into: &out, offsets: &offsets, next: &next
     )
 
     let storeBody = Self.storeDictionary(
-      certificates: certificateNumbers,
-      ocspResponses: ocspNumbers,
-      revocationLists: crlNumbers
+      certificates: context.previous.certificates + added.certificates,
+      ocspResponses: context.previous.ocspResponses + added.ocspResponses,
+      revocationLists: context.previous.revocationLists + added.revocationLists,
+      previous: context.previous
     )
     let storeNumber = next
     next += 1
     offsets[storeNumber] = out.count
-    out.append(Data("\(storeNumber) 0 obj\n\(storeBody)\nendobj\n".utf8))
+    guard let storeBytes = storeBody.data(using: .isoLatin1) else {
+      throw PdfSigningError.structureUnreadable
+    }
+    out.append(Data("\(storeNumber) 0 obj\n".utf8))
+    out.append(storeBytes)
+    out.append(Data("\nendobj\n".utf8))
 
-    offsets[rootNumber] = out.count
-    let updatedCatalog = Self.catalogReferencing(storeNumber, in: catalog)
-    out.append(Data("\(rootNumber) 0 obj\n\(updatedCatalog)\nendobj\n".utf8))
+    offsets[context.rootNumber] = out.count
+    let updatedCatalog = try Self.catalogReferencing(
+      storeNumber, in: context.catalog
+    )
+    guard let catalogBytes = updatedCatalog.data(using: .isoLatin1) else {
+      throw PdfSigningError.structureUnreadable
+    }
+    out.append(Data("\(context.rootNumber) 0 obj\n".utf8))
+    out.append(catalogBytes)
+    out.append(Data("\nendobj\n".utf8))
 
     let xrefOffset = out.count
     out.append(
-      Data(
-        PdfIncrementalSigner.crossReferenceSection(
-          offsets: offsets,
-          size: next,
-          rootNumber: rootNumber,
-          xrefOffset: xrefOffset,
-          trailer: (index.trailer, index.previousStartXref)
-        ).utf8
+      try PdfIncrementalSigner.crossReferenceSection(
+        offsets: offsets,
+        size: next,
+        rootNumber: context.rootNumber,
+        xrefOffset: xrefOffset,
+        trailer: (context.index.trailer, context.index.previousStartXref)
       )
     )
     return out
+  }
+
+  /// Appends the three kinds of new evidence stream.
+  private static func appendMaterialBlobs(
+    _ material: Material,
+    into out: inout Data,
+    offsets: inout [Int: Int],
+    next: inout Int
+  ) -> AddedMaterial {
+    let certificates = Self.appendBlobs(
+      Self.orderedUnique(material.certificates),
+      into: &out,
+      offsets: &offsets,
+      next: &next
+    )
+    let ocspResponses = Self.appendBlobs(
+      Self.orderedUnique(material.ocspResponses),
+      into: &out,
+      offsets: &offsets,
+      next: &next
+    )
+    let revocationLists = Self.appendBlobs(
+      Self.orderedUnique(material.revocationLists),
+      into: &out,
+      offsets: &offsets,
+      next: &next
+    )
+    return AddedMaterial(
+      certificates: certificates,
+      ocspResponses: ocspResponses,
+      revocationLists: revocationLists
+    )
   }
 
   /// Appends one stream object per blob, answering their numbers.
@@ -108,8 +197,8 @@ public enum PdfValidationStore {
     into out: inout Data,
     offsets: inout [Int: Int],
     next: inout Int
-  ) -> [Int] {
-    var numbers: [Int] = []
+  ) -> [StoreReference] {
+    var references: [StoreReference] = []
     for blob in blobs {
       let number = next
       next += 1
@@ -117,52 +206,31 @@ public enum PdfValidationStore {
       out.append(Data("\(number) 0 obj\n<< /Length \(blob.count) >>\nstream\n".utf8))
       out.append(blob)
       out.append(Data("\nendstream\nendobj\n".utf8))
-      numbers.append(number)
+      references.append(StoreReference(number: number, generation: 0))
     }
-    return numbers
+    return references
   }
 
   /// The store dictionary; empty categories are omitted entirely.
   private static func storeDictionary(
-    certificates: [Int],
-    ocspResponses: [Int],
-    revocationLists: [Int]
+    certificates: [StoreReference],
+    ocspResponses: [StoreReference],
+    revocationLists: [StoreReference],
+    previous: PreviousStore
   ) -> String {
-    var entries: [String] = []
-    for (key, numbers) in [
+    var entries = ["/Type /DSS"]
+    for (key, references) in [
       ("/Certs", certificates),
       ("/OCSPs", ocspResponses),
       ("/CRLs", revocationLists),
-    ] where !numbers.isEmpty {
-      let references = numbers.map { number in "\(number) 0 R" }
-      entries.append("\(key) [\(references.joined(separator: " "))]")
+    ] where !references.isEmpty {
+      let values = Self.orderedUnique(references).map(\.rendered)
+      entries.append("\(key) [\(values.joined(separator: " "))]")
     }
+    if let vri = previous.vri {
+      entries.append("/VRI \(vri)")
+    }
+    entries.append(contentsOf: previous.otherEntries)
     return "<< \(entries.joined(separator: " ")) >>"
-  }
-
-  /// The catalog with its store reference added or replaced.
-  private static func catalogReferencing(
-    _ storeNumber: Int,
-    in catalog: String
-  ) -> String {
-    guard let range = catalog.range(of: "/DSS") else {
-      guard let close = catalog.range(of: ">>", options: .backwards) else {
-        return catalog
-      }
-      return String(catalog[catalog.startIndex..<close.lowerBound])
-        + "\n/DSS \(storeNumber) 0 R\n"
-        + String(catalog[close.lowerBound...])
-    }
-    // An existing store is superseded rather than merged: this
-    // revision's material is collected fresh for this signature, and
-    // a validator reads the newest catalog.
-    let rest = catalog[range.upperBound...]
-    let afterValue =
-      rest.firstIndex { character in
-        character == "/" || character == ">"
-      } ?? rest.endIndex
-    return String(catalog[catalog.startIndex..<range.lowerBound])
-      + "/DSS \(storeNumber) 0 R "
-      + String(rest[afterValue...])
   }
 }

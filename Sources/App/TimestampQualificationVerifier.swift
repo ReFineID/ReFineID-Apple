@@ -12,7 +12,7 @@
   /// qualification is decided and nowhere else.
   internal enum TimestampQualificationVerifier {
     /// What the test concluded, or that it could not.
-    internal enum Verdict {
+    internal enum Verdict: Equatable {
       /// The service answered "not right now": rate limited, timing
       /// out, or failing. Something is there and said so itself, but
       /// the test could not run.
@@ -78,27 +78,12 @@
     /// Asks the service to prove itself and the trusted lists to
     /// judge it.
     internal static func verdict(for authority: String) async -> Verdict {
-      let token: Data
       do {
-        token = try await TimestampClient.probeToken(from: authority)
+        _ = try await TimestampClient.probeToken(from: authority)
+        return .qualified
       } catch {
         return Self.classify(error)
       }
-      let chain = CmsCertificates.inside(token)
-      guard !chain.isEmpty else { return .undecided }
-      guard
-        let identities =
-          try? await EuTrustedListDirectory.qualifiedTimestampIdentities(),
-        !identities.certificates.isEmpty
-      else { return .undecided }
-      if chain.contains(where: { identities.certificates.contains($0) }) {
-        return .qualified
-      }
-      let keys = chain.compactMap { der in
-        CertificateFacts(der: der)?.publicKeyBits
-      }
-      return keys.contains { identities.publicKeys.contains($0) }
-        ? .qualified : .notQualified
     }
 
     /// What a failed probe says about the address.
@@ -112,14 +97,22 @@
     /// consistent with a real service. The costly mistake would be
     /// branding a real authority "not a time-stamp service"; an
     /// undecided verdict costs nothing, since it changes nothing.
-    private static func classify(_ error: Error) -> Verdict {
+    internal static func classify(_ error: Error) -> Verdict {
       switch error {
       case SigningNetwork.Failure.httpStatus(let status):
         Self.classify(status: status)
+      case TimestampClient.Failure.signerNotQualified:
+        .notQualified
       case SigningNetwork.Failure.unusableBody,
         RfcTimestamp.TokenFailure.malformed,
+        RfcTimestamp.TokenFailure.imprintAlgorithmMismatch,
         RfcTimestamp.TokenFailure.imprintMismatch,
-        RfcTimestamp.TokenFailure.nonceMismatch:
+        RfcTimestamp.TokenFailure.nonceMismatch,
+        TimestampTokenVerifier.Failure.malformed,
+        TimestampTokenVerifier.Failure.invalidSignature,
+        TimestampTokenVerifier.Failure.signerCertificateMissing,
+        TimestampTokenVerifier.Failure.signingCertificateMismatch,
+        TimestampTokenVerifier.Failure.invalidTimestampingCertificate:
         .notTimestampService
       default:
         .undecided

@@ -17,6 +17,13 @@
     {
       "target" : {
         "containerPath" : "container:ReFineID.xcodeproj",
+        "identifier" : "BD0000000000000000000005",
+        "name" : "ReFineIDTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:ReFineID.xcodeproj",
         "identifier" : "4D0000000000000000000003",
         "name" : "CardCoreTests"
       }

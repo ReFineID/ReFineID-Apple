@@ -11,26 +11,48 @@ public enum CmsCertificates {
   /// order written, or an empty array when there are none.
   public static func inside(_ token: Data) -> [Data] {
     var outer = DerReader(token)
-    guard let contentInfo = outer.next() else { return [] }
+    guard
+      let contentInfo = outer.next(),
+      contentInfo.tag == DerValues.tagSequence,
+      outer.isAtEnd
+    else { return [] }
     var info = DerReader(token, within: contentInfo)
     guard
-      info.next() != nil,
-      let explicitWrap = info.next()
+      let contentType = info.next(),
+      info.data(of: contentType)
+        == DerEncoder.objectIdentifier(SignOids.signedData),
+      let explicitWrap = info.next(),
+      explicitWrap.tag == DerValues.tagContext0Constructed,
+      info.isAtEnd
     else {
       return []
     }
     var wrapped = DerReader(token, within: explicitWrap)
-    guard let signedData = wrapped.next() else { return [] }
+    guard
+      let signedData = wrapped.next(),
+      signedData.tag == DerValues.tagSequence,
+      wrapped.isAtEnd
+    else { return [] }
     var reader = DerReader(token, within: signedData)
     // version, digestAlgorithms, encapContentInfo, then the optional
     // certificates field.
     guard
-      reader.next() != nil,
-      reader.next() != nil,
-      reader.next() != nil,
+      let version = reader.next(),
+      version.tag == DerValues.tagInteger,
+      let algorithms = reader.next(),
+      algorithms.tag == DerValues.tagSet,
+      let content = reader.next(),
+      content.tag == DerValues.tagSequence,
       let candidate = reader.next(),
       candidate.tag == DerValues.tagContext0Constructed
     else {
+      return []
+    }
+    var trailing = reader.next()
+    if trailing?.tag == DerValues.tagContext1Constructed {
+      trailing = reader.next()
+    }
+    guard trailing?.tag == DerValues.tagSet, reader.isAtEnd else {
       return []
     }
     var list = DerReader(token, within: candidate)

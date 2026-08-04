@@ -50,7 +50,7 @@
     }
 
     /// One sentence per failure.
-    private static func message(for error: Error) -> String {
+    internal static func message(for error: Error) -> String {
       switch error {
       case DocumentSigner.Failure.card(let outcome):
         Self.cardMessage(outcome)
@@ -68,6 +68,9 @@
       case DocumentSigner.Failure.network:
         "A timestamp or revocation service could not be reached. An "
           + "archival signature needs both, so nothing was written."
+      case DocumentSigner.Failure.validation:
+        "Complete authenticated certificate and revocation evidence could "
+          + "not be collected. No signed file was written."
       default:
         "The document could not be signed."
       }

@@ -39,6 +39,17 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
+               BlueprintIdentifier = "BD0000000000000000000005"
+               BuildableName = "ReFineIDTests.xctest"
+               BlueprintName = "ReFineIDTests"
+               ReferencedContainer = "container:ReFineID.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
                BlueprintIdentifier = "4D0000000000000000000003"
                BuildableName = "CardCoreTests.xctest"
                BlueprintName = "CardCoreTests"

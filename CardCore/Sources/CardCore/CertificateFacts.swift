@@ -27,9 +27,37 @@ public struct CertificateFacts {
   /// Where this certificate's status can be asked (AIA OCSP).
   public let ocspUrls: [String]
 
-  /// Whether this certificate issued itself, which ends a chain walk.
+  /// Where a full certificate revocation list can be fetched.
+  public let crlUrls: [String]
+
+  /// Whether the certificate has one critical extended-key-usage
+  /// extension containing only id-kp-timeStamping (RFC 3161 section
+  /// 2.3).
+  public let hasTimestampingExtendedKeyUsage: Bool
+
+  /// The basic-constraints verdict used to keep timestamp signers from
+  /// acting as certification authorities.
+  internal let basicConstraints: BasicConstraints
+
+  /// The KeyUsage verdict used for timestamp-signature authorization.
+  internal let timestampingKeyUsage: TimestampingKeyUsage
+
+  /// Whether issuer and subject names are identical.
+  ///
+  /// This is only a structural self-issued fact. A chain walker must still
+  /// authenticate the self-signature and apply its explicit trust policy.
   public var isSelfIssued: Bool {
     issuerName == subjectName
+  }
+
+  /// Whether this certificate has the non-trust profile required of an
+  /// RFC 3161 signer.
+  ///
+  /// Anchor selection must not relax these leaf rules.
+  internal var isPermittedTimestampSigner: Bool {
+    self.hasTimestampingExtendedKeyUsage
+      && self.basicConstraints.isPermittedTimestampSigner
+      && self.timestampingKeyUsage.isPermittedTimestampSigner
   }
 
   /// Reads what is needed, or nil when the certificate does not parse
@@ -67,9 +95,13 @@ public struct CertificateFacts {
       return nil
     }
     self.publicKeyBits = bits
-    let access = Self.accessDescriptions(in: der, reader: &reader)
-    self.issuerCertificateUrls = access.issuers
-    self.ocspUrls = access.ocsp
+    let extensions = Self.extensionFacts(in: der, reader: &reader)
+    self.issuerCertificateUrls = extensions.issuers
+    self.ocspUrls = extensions.responders
+    self.crlUrls = extensions.revocationLists
+    self.hasTimestampingExtendedKeyUsage = extensions.timestampingUsage == .valid
+    self.basicConstraints = extensions.basicConstraints
+    self.timestampingKeyUsage = extensions.timestampingKeyUsage
   }
 
   /// The subjectPublicKey bits, dropping the unused-bits count.
@@ -88,84 +120,5 @@ public struct CertificateFacts {
     let content = reader.contentData(of: bitString)
     guard !content.isEmpty else { return nil }
     return content.dropFirst()
-  }
-
-  /// The AIA URLs, split by access method.
-  ///
-  /// The extension is optional and so is every field in it; a
-  /// certificate that names no issuer URL simply ends the walk, and
-  /// one that names no responder falls back to a revocation list.
-  private static func accessDescriptions(
-    in der: Data,
-    reader: inout DerReader
-  ) -> (issuers: [String], ocsp: [String]) {
-    while let element = reader.next() {
-      guard element.tag == DerValues.tagContext3Constructed else { continue }
-      var wrapper = DerReader(der, within: element)
-      guard let extensions = wrapper.next() else { continue }
-      var list = DerReader(der, within: extensions)
-      while let entry = list.next() {
-        if let value = Self.accessExtensionValue(entry, in: der) {
-          return Self.urls(in: value, der: der)
-        }
-      }
-    }
-    return ([], [])
-  }
-
-  /// The extnValue of one access extension, or nil for anything else.
-  private static func accessExtensionValue(
-    _ entry: DerReader.Element,
-    in der: Data
-  ) -> DerReader.Element? {
-    var reader = DerReader(der, within: entry)
-    guard
-      let oid = reader.next(),
-      reader.data(of: oid)
-        == DerEncoder.objectIdentifier(SignOids.authorityInfoAccess),
-      var value = reader.next()
-    else {
-      return nil
-    }
-    // The criticality flag is optional and precedes the value.
-    if value.tag == DerValues.tagBoolean {
-      guard let following = reader.next() else { return nil }
-      value = following
-    }
-    return value
-  }
-
-  /// The URLs inside one access extension, by method.
-  private static func urls(
-    in value: DerReader.Element,
-    der: Data
-  ) -> (issuers: [String], ocsp: [String]) {
-    var issuers: [String] = []
-    var responders: [String] = []
-    var valueReader = DerReader(der, within: value)
-    guard let descriptions = valueReader.next() else {
-      return ([], [])
-    }
-    var list = DerReader(der, within: descriptions)
-    while let description = list.next() {
-      var parts = DerReader(der, within: description)
-      guard
-        let method = parts.next(),
-        let location = parts.next(),
-        location.tag == DerValues.tagContext6Primitive,
-        let url = String(
-          bytes: parts.contentData(of: location), encoding: .ascii
-        )
-      else {
-        continue
-      }
-      let methodOid = parts.data(of: method)
-      if methodOid == DerEncoder.objectIdentifier(SignOids.caIssuers) {
-        issuers.append(url)
-      } else if methodOid == DerEncoder.objectIdentifier(SignOids.ocsp) {
-        responders.append(url)
-      }
-    }
-    return (issuers, responders)
   }
 }

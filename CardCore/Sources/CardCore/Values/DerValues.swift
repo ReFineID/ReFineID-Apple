@@ -31,25 +31,56 @@ public enum DerValues {
   /// Universal tag: NULL, whose content is always empty.
   internal static let tagNull: UInt8 = 0x05
 
+  /// Universal tag: GeneralizedTime.
+  internal static let tagGeneralizedTime: UInt8 = 0x18
+
   /// Universal tag: BIT STRING, whose first content octet counts the
   /// unused bits of the last byte.
   internal static let tagBitString: UInt8 = 0x03
 
+  /// Universal tag: ENUMERATED, used by OCSPResponseStatus.
+  internal static let tagEnumerated: UInt8 = 0x0A
+
+  /// Universal tag: UTF8String.
+  internal static let tagUtf8String: UInt8 = 0x0C
+
   /// BOOLEAN TRUE content octet: DER requires all bits set.
   internal static let booleanTrue: UInt8 = 0xFF
+
+  /// ASCII `0`, the first decimal digit.
+  internal static let asciiZero: UInt8 = 0x30
+
+  /// ASCII `9`, the last decimal digit.
+  internal static let asciiNine: UInt8 = 0x39
+
+  /// ASCII `Z`, the UTC GeneralizedTime suffix.
+  internal static let asciiZulu: UInt8 = 0x5A
 
   /// Context-specific constructed tag `[0]`.
   internal static let tagContext0Constructed: UInt8 = 0xA0
 
+  /// Context-specific primitive tag `[0]`.
+  internal static let tagContext0Primitive: UInt8 = 0x80
+
   /// Context-specific constructed tag `[1]`.
   internal static let tagContext1Constructed: UInt8 = 0xA1
+
+  /// Context-specific primitive tag `[1]`.
+  internal static let tagContext1Primitive: UInt8 = 0x81
 
   /// Context-specific constructed tag `[2]`.
   internal static let tagContext2Constructed: UInt8 = 0xA2
 
+  /// Context-specific primitive tag `[2]`.
+  internal static let tagContext2Primitive: UInt8 = 0x82
+
   /// Context-specific constructed tag `[3]`: a certificate's
   /// extensions (RFC 5280 §4.1).
   internal static let tagContext3Constructed: UInt8 = 0xA3
+
+  /// Context-specific constructed tag `[4]`: a GeneralName's
+  /// directoryName (RFC 5280 §4.2.1.6).
+  internal static let tagContext4Constructed: UInt8 = 0xA4
 
   /// Context-specific primitive tag `[6]`: a GeneralName's
   /// uniformResourceIdentifier (RFC 5280 §4.2.1.6).

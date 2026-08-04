@@ -110,7 +110,7 @@ public enum PdfIncrementalSigner {
       rootNumber: rootNumber,
       fieldNumber: fieldNumber
     )
-    Self.closeRevision(
+    try Self.closeRevision(
       into: &out,
       offsets: offsets,
       size: fieldNumber + 1,
@@ -129,17 +129,15 @@ public enum PdfIncrementalSigner {
     size: Int,
     rootNumber: Int,
     index: PdfDocumentIndex
-  ) {
+  ) throws {
     let xrefOffset = out.count
     out.append(
-      Data(
-        Self.crossReferenceSection(
-          offsets: offsets,
-          size: size,
-          rootNumber: rootNumber,
-          xrefOffset: xrefOffset,
-          trailer: (index.trailer, index.previousStartXref)
-        ).utf8
+      try Self.crossReferenceSection(
+        offsets: offsets,
+        size: size,
+        rootNumber: rootNumber,
+        xrefOffset: xrefOffset,
+        trailer: (index.trailer, index.previousStartXref)
       )
     )
   }

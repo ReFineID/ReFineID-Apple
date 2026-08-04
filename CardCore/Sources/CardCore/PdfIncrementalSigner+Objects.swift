@@ -52,7 +52,12 @@ extension PdfIncrementalSigner {
     )
     for entry in reissued {
       offsets[entry.number] = out.count
-      out.append(Data("\(entry.number) 0 obj\n\(entry.body)\nendobj\n".utf8))
+      guard let body = entry.body.data(using: .isoLatin1) else {
+        throw PdfSigningError.structureUnreadable
+      }
+      out.append(Data("\(entry.number) 0 obj\n".utf8))
+      out.append(body)
+      out.append(Data("\nendobj\n".utf8))
     }
   }
 
@@ -137,7 +142,7 @@ extension PdfIncrementalSigner {
     rootNumber: Int,
     xrefOffset: Int,
     trailer: (text: String, previousStartXref: Int)
-  ) -> String {
+  ) throws -> Data {
     let previousStartXref = trailer.previousStartXref
     let trailerText = trailer.text
     var text = "xref\n"
@@ -147,7 +152,7 @@ extension PdfIncrementalSigner {
       text += String(format: "%010d 00000 n \n", offset)
     }
     var carried = ""
-    if let identifier = Self.bracketedValue(named: "/ID", in: trailerText) {
+    if let identifier = try Self.trailerIdentifier(in: trailerText) {
       carried += " /ID \(identifier)"
     }
     if let info = PdfDocumentIndex.reference(named: "/Info", in: trailerText) {
@@ -156,7 +161,10 @@ extension PdfIncrementalSigner {
     text += "trailer\n<< /Size \(size) /Root \(rootNumber) 0 R"
     text += " /Prev \(previousStartXref)\(carried) >>\n"
     text += "startxref\n\(xrefOffset)\n\(PdfValues.endOfFileMarker)\n"
-    return text
+    guard let encoded = text.data(using: .isoLatin1) else {
+      throw PdfSigningError.structureUnreadable
+    }
+    return encoded
   }
 
   /// The first page object: descend the tree's first kid.
@@ -193,19 +201,11 @@ extension PdfIncrementalSigner {
     throw PdfSigningError.structureUnreadable
   }
 
-  /// A bracketed array value, copied verbatim.
-  private static func bracketedValue(
-    named key: String,
-    in dictionary: String
-  ) -> String? {
-    guard
-      let range = dictionary.range(of: key),
-      let open = dictionary[range.upperBound...].firstIndex(of: "["),
-      let close = dictionary[open...].firstIndex(of: "]")
-    else {
-      return nil
-    }
-    return String(dictionary[open...close])
+  /// The top-level trailer identifier, copied with token-aware boundaries.
+  private static func trailerIdentifier(in dictionary: String) throws -> String? {
+    let syntax = try PdfValidationStore.DictionarySyntax(dictionary)
+    guard let entry = syntax.entry(named: "ID") else { return nil }
+    return syntax.value(of: entry)
   }
 
   /// Appends a reference before an array body's closing bracket.

@@ -20,7 +20,10 @@
     /// that, so insisting on one scheme would refuse half the
     /// trusted list.
     internal static func isUsable(_ address: String) -> Bool {
-      guard let url = URL(string: address), let scheme = url.scheme else {
+      guard
+        let url = URL(string: address),
+        let scheme = url.scheme?.lowercased()
+      else {
         return false
       }
       return (scheme == "http" || scheme == "https") && url.host != nil
