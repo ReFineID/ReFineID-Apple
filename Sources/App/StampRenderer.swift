@@ -32,8 +32,8 @@
     }
 
     /// The page the mark is drawn on, in points.
-    private static let pageWidth = 320.0
-    private static let pageHeight = 560.0
+    private static let pageWidth = 595.276
+    private static let pageHeight = 841.89
 
     /// The ring.
     private static let outerRadius = 64.0
@@ -59,6 +59,9 @@
     /// How far the name sits below the line the signature stands on.
     private static let nameDrop = 9.0
 
+    /// How far the ring's top sits below the page's top edge.
+    private static let ringTop = 96.0
+
     /// The circle's Bezier constant: how far a control point sits
     /// along the tangent to approximate a quarter turn.
     private static let arcControl = 0.5523
@@ -69,6 +72,10 @@
     /// The fallback advance for a character the font has no glyph
     /// for, as a fraction of the type size.
     private static let fallbackAdvanceShare = 0.5
+
+    /// The size glyphs are measured at before scaling, large enough
+    /// that hinting cannot round the answer.
+    private static let metricSize = 1_000.0
 
     /// Two, for the halves a centred thing is placed by.
     private static let halves = 2.0
@@ -86,13 +93,13 @@
     /// each of them to be about half a millimetre - so the code is
     /// the size it has to be to scan, not the size that would look
     /// tidy.
-    private static let codeSize = 190.0
-    private static let codeMargin = 18.0
+    private static let codeSize = 150.0
+    private static let codeMargin = 96.0
 
     /// The page carrying the mark.
     internal static func page(_ statement: Statement) -> StampPage {
       let centreX = Self.pageWidth / Self.halves
-      let centreY = Self.pageHeight - Self.outerRadius - Self.nameDrop
+      let centreY = Self.pageHeight - Self.outerRadius - Self.ringTop
       var body = "q\n\(Self.inkColour) RG \(Self.inkColour) rg\n"
       let centre = (x: centreX, y: centreY)
       body += Self.circle(
@@ -239,7 +246,14 @@
       font: String,
       size: Double
     ) -> [Double] {
-      let measured = CTFontCreateWithName(font as CFString, size, nil)
+      // Measured at a large size and scaled down. Asked at four
+      // points, CoreText answers with hinted advances rounded to
+      // whole pixels, and the ring text comes out gapped between
+      // letters - "si gnatur e" rather than "signature".
+      let measured = CTFontCreateWithName(
+        font as CFString, Self.metricSize, nil
+      )
+      let scale = size / Self.metricSize
       return text.map { character in
         var glyph = CGGlyph(0)
         var codeUnits = Array(String(character).utf16)
@@ -252,7 +266,7 @@
         }
         var advance = CGSize.zero
         CTFontGetAdvancesForGlyphs(measured, .horizontal, &glyph, &advance, 1)
-        return Double(advance.width)
+        return Double(advance.width) * scale
       }
     }
 
