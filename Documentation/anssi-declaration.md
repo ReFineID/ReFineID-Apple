@@ -156,18 +156,18 @@ intervention du fournisseur.
 
 ## D. Renouvellement d'autorisation de transfert ou d'exportation
 
-Sans objet : première déclaration, aucune autorisation antérieure.
+Aucune autorisation antérieure.
 
 ## E. Pièces à joindre
 
 | Pièce demandée | État |
 |:---------------------------|:-----------------------------------------------|
-| Document général présentant la société | Sans objet : le déclarant est une personne physique. |
-| Extrait K bis de moins de trois mois | Sans objet : aucune société immatriculée. |
-| Brochure commerciale | Sans objet : il n'en existe pas. |
-| Brochure technique | Jointe : le présent dossier, rubriques B.2 et B.3. |
-| Manuel utilisateur | Sans objet : il n'en existe pas. |
-| Guide administrateur | Sans objet : le moyen ne comporte aucune fonction d'administration. |
+| Document général présentant la société | Personne physique. |
+| Extrait K bis de moins de trois mois | Aucune société immatriculée. |
+| Brochure commerciale | Aucune. |
+| Brochure technique | Présent dossier, rubriques B.2 et B.3. |
+| Manuel utilisateur | Aucun. |
+| Guide administrateur | Aucune fonction d'administration. |
 
 ## F. Attestation
 
@@ -354,18 +354,18 @@ card certificate on the iPhone, without supplier assistance.
 
 ## D. Renewal of a transfer or export authorisation
 
-Not applicable: a first declaration, with no prior authorisation.
+No prior authorisation.
 
 ## E. Documents to attach
 
 | Item requested | Status |
 |:---------------------------|:-----------------------------------------------|
-| General document presenting the company | Not applicable: the declarant is a private individual. |
-| Extract K bis less than three months old | Not applicable: no registered company. |
-| Commercial brochure | Not applicable: none exists. |
-| Technical brochure | Attached: this dossier, sections B.2 and B.3. |
-| User manual | Not applicable: none exists. |
-| Administrator guide | Not applicable: the means has no administration function. |
+| General document presenting the company | Private individual. |
+| Extract K bis less than three months old | No registered company. |
+| Commercial brochure | None. |
+| Technical brochure | This dossier, sections B.2 and B.3. |
+| User manual | None. |
+| Administrator guide | No administration function. |
 
 ## F. Attestation
 
