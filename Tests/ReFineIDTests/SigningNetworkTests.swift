@@ -7,6 +7,14 @@ import Testing
 /// URLSession.
 @Suite
 internal struct SigningNetworkTests {
+  /// Every signing exchange asks the system resolver to validate DNSSEC.
+  @Test
+  internal func dnssecValidationIsRequired() {
+    let configuration = SigningNetwork.validatedSessionConfiguration()
+
+    #expect(configuration.requiresDNSSECValidation)
+  }
+
   /// Only exact HTTP-family schemes with a host are accepted.
   @Test
   internal func lookalikeAndNonNetworkAddressesAreRefused() {

@@ -46,6 +46,15 @@
     /// HTTP statuses that carry a usable body.
     internal static let successStatuses = 200..<300
 
+    /// An ephemeral session whose DNS answers are validated by the system.
+    internal static func validatedSessionConfiguration()
+      -> URLSessionConfiguration
+    {
+      let configuration = URLSessionConfiguration.ephemeral
+      configuration.requiresDNSSECValidation = true
+      return configuration
+    }
+
     /// POSTs a DER request and answers the DER response.
     ///
     /// `credentials`, when present, become an HTTP Basic header - the
@@ -145,7 +154,7 @@
       endpoint: Endpoint,
       carriesCredentials: Bool
     ) async throws -> Data {
-      let configuration = URLSessionConfiguration.ephemeral
+      let configuration = Self.validatedSessionConfiguration()
       configuration.httpCookieStorage = nil
       configuration.urlCache = nil
       configuration.httpAdditionalHeaders = ["Accept": "*/*"]
