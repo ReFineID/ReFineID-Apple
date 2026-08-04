@@ -160,7 +160,7 @@
       if model.working || model.failure != nil || model.notice != nil {
         Section {
           if model.working {
-            Text("Talking to the card...")
+            Text("Talking to the card…")
               .foregroundStyle(.secondary)
           }
           if let failure = model.failure {

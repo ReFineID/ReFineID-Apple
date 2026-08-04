@@ -41,6 +41,9 @@
     /// How far the name sits below the line the signature stands on.
     private static let nameDrop = 9.0
 
+    /// Clear space kept between the name's ends and the inner circle.
+    private static let nameMargin = 10.0
+
     /// The circle's Bezier constant: how far a control point sits
     /// along the tangent to approximate a quarter turn.
     private static let arcControl = 0.5523
@@ -142,13 +145,28 @@
       return body
     }
 
-    /// The name, drawn as outlines rather than text.
+    /// The name, drawn as outlines and shrunk to fit the ring.
+    ///
+    /// A name is as long as it is - a double-barrelled surname and a
+    /// long identifier run far wider than a short one - so the size
+    /// is taken from the room available rather than fixed. The room
+    /// is the inner circle's chord at the name's own height, less a
+    /// margin, which is why it is computed rather than guessed.
     private static func name(
       _ text: String,
       centre: (x: Double, y: Double)
     ) -> String {
       let baseline = centre.y - Self.baselineDrop - Self.nameDrop
-      let line = TextOutline.line(text, font: "Helvetica", size: Self.nameSize)
+      let height = abs(baseline - centre.y)
+      let halfChord =
+        (Self.innerRadius * Self.innerRadius - height * height).squareRoot()
+      let room = halfChord * Self.halves - Self.nameMargin
+      var size = Self.nameSize
+      var line = TextOutline.line(text, font: "Helvetica", size: size)
+      if line.width > room, line.width > 0 {
+        size *= room / line.width
+        line = TextOutline.line(text, font: "Helvetica", size: size)
+      }
       return "q 1 0 0 1 \(Self.number(centre.x)) \(Self.number(baseline)) cm\n"
         + "\(line.operators)Q\n"
     }

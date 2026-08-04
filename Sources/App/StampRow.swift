@@ -11,7 +11,6 @@
   /// the holder's own card for no reason.
   internal struct StampRow: View {
     private static let entryWidth: CGFloat = 130
-    private static let spinnerWidth: CGFloat = 16
     private static let spacing: CGFloat = 6
 
     /// How long the number rests before the card is read, so a
@@ -26,31 +25,30 @@
 
     internal var body: some View {
       LabeledContent("Stamp with CAN (optional)") {
-        HStack(spacing: Self.spacing) {
-          TextField("", text: $accessNumber)
-            .frame(width: Self.entryWidth)
-            .multilineTextAlignment(.trailing)
-            .onChange(of: accessNumber) { _, typed in
-              accessNumber = LimitedDigits.cardAccessNumber(typed)
-            }
-            .accessibilityIdentifier("signAccessNumber")
-          // A slot of fixed width and height, empty or filled. A
-          // frame that constrains only the width still grows the row
-          // when a spinner taller than the text arrives, and the whole
-          // window steps down as the card is read.
-          Color.clear
-            .frame(width: Self.spinnerWidth, height: Self.spinnerWidth)
-            .overlay {
-              if signing.readingStamp {
-                ProgressView().controlSize(.small)
-              }
-            }
-        }
+        TextField("", text: $accessNumber)
+          .frame(width: Self.entryWidth)
+          .multilineTextAlignment(.trailing)
+          .onChange(of: accessNumber) { _, typed in
+            accessNumber = LimitedDigits.cardAccessNumber(typed)
+          }
+          .accessibilityIdentifier("signAccessNumber")
       }
       .task(id: accessNumber) {
         try? await Task.sleep(for: Self.restDelay)
         guard !Task.isCancelled else { return }
         await signing.readStamp(accessNumber: accessNumber)
+      }
+      // Progress on a line of its own, at the leading edge, the way a
+      // status line reads. A spinner tucked in beside a text field is
+      // not a shape macOS uses, and it left a gap in the row whether
+      // it was spinning or not.
+      if signing.readingStamp {
+        HStack(spacing: Self.spacing) {
+          ProgressView().controlSize(.small)
+          Text("Reading the card…")
+        }
+        .font(.footnote)
+        .foregroundStyle(.secondary)
       }
       if let note = signing.stampFailure {
         Text(note)

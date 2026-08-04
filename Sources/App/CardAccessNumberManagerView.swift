@@ -75,7 +75,7 @@
           }
         }
         if reading {
-          Text("Reading the card...")
+          Text("Reading the card…")
             .font(.footnote)
             .foregroundStyle(.secondary)
         }

@@ -81,7 +81,7 @@
         .formStyle(.grouped)
         .fixedSize(horizontal: false, vertical: true)
         if availability != .noCard {
-          Button("PIN Management...") {
+          Button("PIN Management…") {
             openWindow(id: CardManagementView.windowID)
           }
           .accessibilityIdentifier("pinManagementButton")
@@ -154,12 +154,12 @@
           Text(pending.lastPathComponent)
             .lineLimit(1)
             .truncationMode(.middle)
-          Button("Choose a different document...") { choose() }
+          Button("Choose a different document…") { choose() }
             .buttonStyle(.link)
         } else {
           Text("Drop a PDF here to sign it")
             .foregroundStyle(.secondary)
-          Button("Choose...") { choose() }
+          Button("Choose…") { choose() }
             .buttonStyle(.link)
             .accessibilityIdentifier("signChooseDocument")
         }
@@ -181,7 +181,7 @@
           StampRow(signing: signing, accessNumber: $accessNumber)
           HStack {
             Spacer()
-            Button("Sign...") { sign() }
+            Button("Sign…") { sign() }
               .buttonStyle(.borderedProminent)
               .keyboardShortcut(.defaultAction)
               .disabled(!canSign)
@@ -199,7 +199,7 @@
           if signing.working {
             HStack(spacing: Self.dropSpacing) {
               ProgressView().controlSize(.small)
-              Text("Signing: card, timestamp, revocation data...")
+              Text("Signing: card, timestamp, revocation data…")
                 .foregroundStyle(.secondary)
             }
           }
