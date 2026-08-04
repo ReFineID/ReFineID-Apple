@@ -2,295 +2,313 @@
 
   import SwiftUI
 
-  /// The Time-Stamp Authorities pane: the ordered list an archival
-  /// signature asks for its timestamps, first answer used.
+  /// The Time-Stamp Authorities pane: one table, in the order asked.
   ///
-  /// The list is the whole interface. Addresses are edited in place,
-  /// rows are added and removed with the same +/- controls every Mac
-  /// table carries, and the order is changed by dragging - none of
-  /// which needs a sentence of instructions. The one thing that does
-  /// need words, what the badges mean, is written once in the legend
-  /// under the list.
+  /// Every cell is edited in place, like a spreadsheet: the address,
+  /// the Basic-auth username and password beside it - empty for a
+  /// public service - and an open line at the bottom waiting for the
+  /// next authority. Each row carries its own delete control, so
+  /// nothing depends on a selection, and the badges are explained
+  /// once, in the legend underneath.
   internal struct TimestampAuthoritiesSettingsView: View {
-    /// One row: a stable identity and the address being edited.
+    /// One row of the table.
     ///
     /// The identity must not be the address itself - rows are edited
     /// in place, and a row whose identity changed with every
     /// keystroke would lose focus after the first one.
     private struct Row: Identifiable, Equatable {
       let id = UUID()
-      var address: String
+      var address = ""
+      var username = ""
+      var password = ""
+      var qualified = false
+
+      /// Nothing typed in any cell.
+      var isBlank: Bool {
+        address.isEmpty && username.isEmpty && password.isEmpty
+      }
+
+      /// Whether the address names a service this app could reach.
+      ///
+      /// Both schemes are accepted: timestamping is specified over
+      /// plain HTTP and several qualified authorities publish
+      /// exactly that, so insisting on one scheme would refuse half
+      /// the trusted list.
+      var isUsable: Bool {
+        guard let url = URL(string: address), let scheme = url.scheme else {
+          return false
+        }
+        return (scheme == "http" || scheme == "https") && url.host != nil
+      }
     }
 
-    private static let paneWidth: CGFloat = 520
-    private static let listHeight: CGFloat = 160
-    private static let rowSpacing: CGFloat = 8
+    private static let paneWidth: CGFloat = 640
+    private static let listHeight: CGFloat = 170
+    private static let cellSpacing: CGFloat = 8
+    private static let badgeWidth: CGFloat = 16
+    private static let credentialWidth: CGFloat = 110
     private static let legendSpacing: CGFloat = 14
     private static let legendSymbolSpacing: CGFloat = 4
 
     @State private var rows: [Row]
-    @State private var selection: UUID?
-    @State private var editing: UUID?
-    @State private var username = ""
-    @State private var password = ""
+
+    /// What the stores already hold, keyed by row, so a keystroke
+    /// writes only the row it changed.
+    @State private var saved: [UUID: Row]
+
     @FocusState private var focusedRow: UUID?
 
     internal var body: some View {
       Form {
         Section {
-          authorityList
-          controls
+          table
+          HStack {
+            Spacer()
+            Button("Restore Defaults") {
+              restoreDefaults()
+            }
+            .disabled(isShippedSet)
+          }
         } footer: {
           legend
-        }
-        if let editing,
-          let row = rows.first(where: { $0.id == editing })
-        {
-          credentialsSection(for: row.address)
         }
       }
       .formStyle(.grouped)
       .frame(minWidth: Self.paneWidth)
-      .onChange(of: rows) { _, _ in persist() }
-      .onChange(of: focusedRow) { _, now in
-        // Focusing a row is choosing it; a row abandoned empty was
-        // never an address.
-        if let now { selection = now }
-        rows.removeAll { $0.address.isEmpty && $0.id != now }
-      }
+      .onChange(of: rows) { _, _ in reconcile() }
+      .onChange(of: focusedRow) { _, _ in tidy() }
     }
 
-    /// The ordered authorities, edited in place, dragged into the
-    /// order they are asked.
-    @ViewBuilder private var authorityList: some View {
-      List(selection: $selection) {
+    /// The table itself, dragged into the order the services are
+    /// asked.
+    @ViewBuilder private var table: some View {
+      List {
+        columnHeader
         ForEach($rows) { $row in
-          authorityRow($row)
+          tableRow($row)
         }
         .onMove { source, destination in
           rows.move(fromOffsets: source, toOffset: destination)
         }
-        .onDelete { offsets in
-          rows.remove(atOffsets: offsets)
-        }
       }
       .frame(minHeight: Self.listHeight)
-      .onDeleteCommand { removeSelected() }
       .accessibilityLabel("Time-stamp authorities, used in this order")
     }
 
-    /// Add, remove, credentials, and the way back to the shipped set.
-    @ViewBuilder private var controls: some View {
-      HStack {
-        Button {
-          addRow()
-        } label: {
-          Image(systemName: "plus")
-        }
-        .buttonStyle(.borderless)
-        .help("Add an authority")
-        .accessibilityLabel("Add an authority")
-        Button {
-          removeSelected()
-        } label: {
-          Image(systemName: "minus")
-        }
-        .buttonStyle(.borderless)
-        .disabled(selection == nil)
-        .help("Remove the selected authority")
-        .accessibilityLabel("Remove the selected authority")
-        Spacer()
-        Button("Credentials...") {
-          beginEditingCredentials()
-        }
-        .disabled(selection == nil)
-        .help("Some commercial authorities need a username and password")
-        Button("Restore Defaults") {
-          restoreDefaults()
-        }
-        .disabled(rows.map(\.address) == TimestampAuthorityStore.defaults)
+    /// The column names, aligned over their cells.
+    @ViewBuilder private var columnHeader: some View {
+      HStack(spacing: Self.cellSpacing) {
+        Spacer().frame(width: Self.badgeWidth)
+        Text("Address").frame(maxWidth: .infinity, alignment: .leading)
+        Text("Username").frame(width: Self.credentialWidth, alignment: .leading)
+        Text("Password").frame(width: Self.credentialWidth, alignment: .leading)
+        Spacer().frame(width: Self.badgeWidth)
       }
+      .font(.footnote)
+      .foregroundStyle(.secondary)
     }
 
     /// What each badge means, said once.
     @ViewBuilder private var legend: some View {
       HStack(spacing: Self.legendSpacing) {
         legendEntry(
-          symbol: "checkmark.seal.fill",
-          style: AnyShapeStyle(.green),
-          text: "Qualified for eIDAS use"
+          "checkmark.seal.fill",
+          AnyShapeStyle(.green),
+          "Qualified for eIDAS use"
         )
         legendEntry(
-          symbol: "seal",
-          style: AnyShapeStyle(.secondary),
-          text: "Not qualified"
+          "seal",
+          AnyShapeStyle(.secondary),
+          "Not qualified - click the seal to mark yours"
         )
-        if rows.contains(where: { !Self.isUsable($0.address) }) {
+        if rows.contains(where: { row in !row.address.isEmpty && !row.isUsable }) {
           legendEntry(
-            symbol: "exclamationmark.triangle.fill",
-            style: AnyShapeStyle(.orange),
-            text: "Not a usable address"
+            "exclamationmark.triangle.fill",
+            AnyShapeStyle(.orange),
+            "Not a usable address"
           )
         }
       }
       .font(.footnote)
     }
 
+    /// Whether the table shows exactly the shipped set.
+    private var isShippedSet: Bool {
+      rows.map(\.address).filter { !$0.isEmpty }
+        == TimestampAuthorityStore.defaults
+        && rows.allSatisfy { $0.username.isEmpty && $0.password.isEmpty }
+    }
+
     internal init() {
-      _rows = State(
-        initialValue: TimestampAuthorityStore.load().map { Row(address: $0) }
+      let loaded = Self.loadedRows()
+      _rows = State(initialValue: loaded)
+      _saved = State(
+        initialValue: Dictionary(uniqueKeysWithValues: loaded.map { ($0.id, $0) })
       )
     }
 
-    /// Whether the address names a service this app could reach.
-    ///
-    /// Both schemes are accepted: timestamping is specified over
-    /// plain HTTP and several qualified authorities publish exactly
-    /// that, so insisting on one scheme would refuse half the
-    /// trusted list.
-    private static func isUsable(_ address: String) -> Bool {
-      guard let url = URL(string: address), let scheme = url.scheme else {
-        return false
+    /// The stored authorities as rows, with the open line appended.
+    private static func loadedRows() -> [Row] {
+      var loaded = TimestampAuthorityStore.load().map { address in
+        let credentials = TimestampAuthorityStore.credentials(for: address)
+        return Row(
+          address: address,
+          username: credentials?.username ?? "",
+          password: credentials?.password ?? "",
+          qualified: TimestampAuthorityStore.isQualified(address)
+        )
       }
-      return (scheme == "http" || scheme == "https") && url.host != nil
+      loaded.append(Row())
+      return loaded
     }
 
-    /// One row: its badge, its address, and whether it sends
-    /// credentials.
+    /// One row: badge, three cells, delete.
     @ViewBuilder
-    private func authorityRow(_ row: Binding<Row>) -> some View {
-      HStack(spacing: Self.rowSpacing) {
-        badge(for: row.wrappedValue.address)
-        TextField("Address", text: row.address)
+    private func tableRow(_ row: Binding<Row>) -> some View {
+      HStack(spacing: Self.cellSpacing) {
+        badge(row)
+        TextField(
+          isOpenLine(row.wrappedValue) ? "Add an authority" : "Address",
+          text: row.address
+        )
+        .textFieldStyle(.plain)
+        .focused($focusedRow, equals: row.wrappedValue.id)
+        TextField("Username", text: row.username)
           .textFieldStyle(.plain)
-          .labelsHidden()
+          .frame(width: Self.credentialWidth)
           .focused($focusedRow, equals: row.wrappedValue.id)
-        if TimestampAuthorityStore.username(for: row.wrappedValue.address) != nil {
-          Image(systemName: "person.badge.key.fill")
-            .foregroundStyle(.secondary)
-            .help("Sends a username and password")
-            .accessibilityLabel("has credentials")
-        }
+        SecureField("Password", text: row.password)
+          .textFieldStyle(.plain)
+          .frame(width: Self.credentialWidth)
+          .focused($focusedRow, equals: row.wrappedValue.id)
+        deleteControl(row.wrappedValue)
       }
     }
 
-    /// What the legend explains, one symbol per row.
+    /// The row's badge.
+    ///
+    /// The warning for an unusable address, the seal for a usable
+    /// one. A shipped authority's seal is a fact and cannot be
+    /// clicked off; an added authority's seal is the holder's own
+    /// mark, toggled by clicking it, because qualification is a
+    /// trusted-list fact the app cannot verify offline.
     @ViewBuilder
-    private func badge(for address: String) -> some View {
-      if !Self.isUsable(address) {
+    private func badge(_ row: Binding<Row>) -> some View {
+      let address = row.wrappedValue.address
+      if address.isEmpty {
+        Spacer().frame(width: Self.badgeWidth)
+      } else if !row.wrappedValue.isUsable {
         Image(systemName: "exclamationmark.triangle.fill")
           .foregroundStyle(.orange)
+          .frame(width: Self.badgeWidth)
           .accessibilityLabel("not a usable address")
-      } else if TimestampAuthorityStore.isQualified(address) {
-        Image(systemName: "checkmark.seal.fill")
-          .foregroundStyle(.green)
-          .accessibilityLabel("qualified for eIDAS use")
       } else {
-        Image(systemName: "seal")
-          .foregroundStyle(.secondary)
-          .accessibilityLabel("not marked qualified")
+        let shipped = TimestampAuthorityStore.defaults.contains(address)
+        let qualified = shipped || row.wrappedValue.qualified
+        Button {
+          row.wrappedValue.qualified.toggle()
+        } label: {
+          Image(systemName: qualified ? "checkmark.seal.fill" : "seal")
+            .foregroundStyle(
+              qualified ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary)
+            )
+        }
+        .buttonStyle(.borderless)
+        .disabled(shipped)
+        .frame(width: Self.badgeWidth)
+        .help("Whether this service is qualified for eIDAS use")
+        .accessibilityLabel(
+          qualified ? "qualified for eIDAS use" : "not marked qualified"
+        )
+        .accessibilityHint("Toggles the qualification mark")
+      }
+    }
+
+    /// The row's own delete control; the open line has nothing to
+    /// delete.
+    @ViewBuilder
+    private func deleteControl(_ row: Row) -> some View {
+      if isOpenLine(row) {
+        Spacer().frame(width: Self.badgeWidth)
+      } else {
+        Button {
+          rows.removeAll { $0.id == row.id }
+        } label: {
+          Image(systemName: "trash")
+            .foregroundStyle(.secondary)
+        }
+        .buttonStyle(.borderless)
+        .frame(width: Self.badgeWidth)
+        .help("Remove this authority")
+        .accessibilityLabel("Remove \(row.address)")
       }
     }
 
     /// One legend item, symbol and meaning.
     @ViewBuilder
     private func legendEntry(
-      symbol: String,
-      style: AnyShapeStyle,
-      text: LocalizedStringKey
+      _ symbol: String, _ style: AnyShapeStyle, _ text: LocalizedStringKey
     ) -> some View {
       HStack(spacing: Self.legendSymbolSpacing) {
-        Image(systemName: symbol)
-          .foregroundStyle(style)
-        Text(text)
-          .foregroundStyle(.secondary)
+        Image(systemName: symbol).foregroundStyle(style)
+        Text(text).foregroundStyle(.secondary)
       }
       .accessibilityElement(children: .combine)
     }
 
-    /// Basic-auth entry and the qualification mark for one authority.
-    @ViewBuilder
-    private func credentialsSection(for authority: String) -> some View {
-      Section {
-        Toggle(
-          "Qualified for eIDAS use (on a national trusted list)",
-          isOn: Binding(
-            get: { TimestampAuthorityStore.isQualified(authority) },
-            set: { TimestampAuthorityStore.setQualified($0, for: authority) }
-          )
+    /// The empty row at the bottom, waiting for the next authority.
+    private func isOpenLine(_ row: Row) -> Bool {
+      row.isBlank && row.id == rows.last?.id
+    }
+
+    /// Writes what changed and keeps the open line open.
+    private func reconcile() {
+      tidy()
+      TimestampAuthorityStore.save(rows.map(\.address).filter { !$0.isEmpty })
+      for row in rows where !row.address.isEmpty && saved[row.id] != row {
+        TimestampAuthorityStore.saveCredentials(
+          username: row.username, password: row.password, for: row.address
         )
-        .disabled(TimestampAuthorityStore.defaults.contains(authority))
-        TextField("Username", text: $username)
-          .textContentType(nil)
-        SecureField("Password", text: $password)
-        HStack {
-          Spacer()
-          Button("Done") {
-            saveCredentials(for: authority)
-          }
+        if !TimestampAuthorityStore.defaults.contains(row.address) {
+          TimestampAuthorityStore.setQualified(row.qualified, for: row.address)
         }
-      } header: {
-        Text(authority)
+      }
+      forgetOrphans()
+      saved = Dictionary(uniqueKeysWithValues: rows.map { ($0.id, $0) })
+    }
+
+    /// An address deleted or renamed away keeps no marks behind.
+    private func forgetOrphans() {
+      let current = Set(rows.map(\.address))
+      for old in saved.values
+      where !old.address.isEmpty && !current.contains(old.address) {
+        TimestampAuthorityStore.saveCredentials(
+          username: "", password: "", for: old.address
+        )
+        TimestampAuthorityStore.setQualified(false, for: old.address)
       }
     }
 
-    /// Appends an empty row and puts the cursor in it.
-    private func addRow() {
-      let row = Row(address: "")
-      rows.append(row)
-      selection = row.id
-      focusedRow = row.id
-    }
-
-    /// Removes the selected row.
-    private func removeSelected() {
-      guard let selected = selection else { return }
-      rows.removeAll { $0.id == selected }
-      selection = nil
-      if editing == selected {
-        editing = nil
+    /// A blank row is kept only as the open line at the bottom, or
+    /// while the cursor is still in it.
+    private func tidy() {
+      let lastIdentity = rows.last?.id
+      rows.removeAll { row in
+        row.isBlank && row.id != lastIdentity && row.id != focusedRow
       }
-    }
-
-    /// Opens the credential fields for the selected authority.
-    private func beginEditingCredentials() {
-      guard let selected = selection,
-        let row = rows.first(where: { $0.id == selected })
-      else { return }
-      editing = selected
-      username = TimestampAuthorityStore.username(for: row.address) ?? ""
-      password = ""
-    }
-
-    /// Stores what was entered and closes the fields.
-    private func saveCredentials(for authority: String) {
-      TimestampAuthorityStore.saveCredentials(
-        username: username,
-        password: password,
-        for: authority
-      )
-      editing = nil
-      username = ""
-      password = ""
-    }
-
-    /// Saves every non-empty address, in the order shown.
-    ///
-    /// A row that is not yet a usable address is saved too: it is
-    /// wrong visibly, with its warning badge, rather than silently
-    /// dropped behind the holder's back.
-    private func persist() {
-      TimestampAuthorityStore.save(
-        rows.map(\.address).filter { !$0.isEmpty }
-      )
+      if rows.last?.isBlank != true {
+        rows.append(Row())
+      }
     }
 
     /// Back to the shipped authorities.
+    ///
+    /// Only the list itself is reset here: the writes that clear
+    /// leftover credentials and marks follow from the list change,
+    /// through the same reconciliation every edit takes.
     private func restoreDefaults() {
       TimestampAuthorityStore.restoreDefaults()
-      rows = TimestampAuthorityStore.load().map { Row(address: $0) }
-      selection = nil
-      editing = nil
+      rows = Self.loadedRows()
     }
   }
 

@@ -111,8 +111,9 @@
     /// The username lives in preferences, the password in the keychain
     /// - a credential is a secret, a service name is not. An empty
     /// username clears both, which is how a paid authority becomes a
-    /// public one again. The password is write-only: nothing in the
-    /// app reads it back except the signing request itself.
+    /// public one again. The password is read back in exactly two
+    /// places: the signing request, and the settings table it is
+    /// edited in.
     internal static func saveCredentials(
       username: String,
       password: String,
