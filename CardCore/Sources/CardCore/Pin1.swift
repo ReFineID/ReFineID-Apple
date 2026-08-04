@@ -16,12 +16,6 @@ public struct Pin1: ~Copyable {
   /// Longest PIN1 the supported cards accept.
   public static let maximumDigitCount: Int = 12
 
-  /// ASCII "0".
-  private static let asciiDigitMinimum: UInt8 = 48
-
-  /// ASCII "9".
-  private static let asciiDigitMaximum: UInt8 = 57
-
   private let store: ZeroizingDigitStore
 
   /// Validates and takes ownership of the entered digits.
@@ -29,17 +23,16 @@ public struct Pin1: ~Copyable {
   /// Refuses any input that is not 4-12 ASCII digits; there is no other
   /// way to construct a `Pin1`.
   public init?(digits: String) {
-    let bytes = Array(digits.utf8)
     guard
-      bytes.count >= Self.minimumDigitCount,
-      bytes.count <= Self.maximumDigitCount,
-      bytes.allSatisfy({ byte in
-        byte >= Self.asciiDigitMinimum && byte <= Self.asciiDigitMaximum
-      })
+      let digitStore = CredentialDigits.validated(
+        digits,
+        minimumCount: Self.minimumDigitCount,
+        maximumCount: Self.maximumDigitCount
+      )
     else {
       return nil
     }
-    self.store = ZeroizingDigitStore(bytes: bytes)
+    self.store = digitStore
   }
 
   /// Rebuilds a PIN1 that owns `store`, for accepted-PIN memory to re-issue.

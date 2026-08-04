@@ -24,6 +24,22 @@ internal enum Iso7816Values {
   /// VERIFY instruction (7816-4 §11.5.6; FINEID S1 v4.2 §3.5).
   internal static let insVerify: UInt8 = 0x20
 
+  /// CHANGE REFERENCE DATA instruction (7816-4 §11.5.7; FINEID S1 v4.2
+  /// §3.5.3).
+  internal static let insChangeReferenceData: UInt8 = 0x24
+
+  /// RESET RETRY COUNTER instruction (7816-4 §11.5.10; FINEID S1 v4.2
+  /// §3.5.4).
+  internal static let insResetRetryCounter: UInt8 = 0x2C
+
+  /// CHANGE REFERENCE DATA P1: the data field carries the current
+  /// reference data followed by the new (7816-4 §11.5.7).
+  internal static let changeCurrentThenNewP1: UInt8 = 0x00
+
+  /// RESET RETRY COUNTER P1: the data field carries the unblocking key
+  /// followed by the new reference data (7816-4 §11.5.10).
+  internal static let resetWithPukThenNewP1: UInt8 = 0x00
+
   /// GET DATA instruction, odd variant (FINEID S1 v4.2 §3.15.2).
   internal static let insGetData: UInt8 = 0xCB
 

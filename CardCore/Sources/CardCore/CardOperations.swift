@@ -11,7 +11,9 @@ public struct CardOperations {
   /// announcing more is misbehaving.
   private static let maximumContinuations = 128
 
-  private let channel: any CardChannel
+  /// Internal, not private: the credential-bearing extension in
+  /// CardOperations+Credentials.swift drives the same session.
+  internal let channel: any CardChannel
 
   /// Wraps one exclusive session's transport.
   public init(channel: any CardChannel) {
@@ -200,31 +202,6 @@ public struct CardOperations {
       pin2: try probeRetryCounter(role: .pin2),
       puk: includingPuk ? try probeRetryCounter(role: .puk) : .noInformation
     )
-  }
-
-  /// Verifies PIN1, consuming the one-shot credential.
-  ///
-  /// Sends VERIFY with the padded PIN block (the noncopyable transport
-  /// value guarantees at most one card command). Returns normally only
-  /// on `9000`; a wrong PIN throws `pinRejected` carrying the remaining
-  /// attempts, and any other answer throws `pinVerifyFailed`. The caller
-  /// must already have cleared the retry floor.
-  public func verifyPin1(_ transmission: consuming Pin1Transmission) throws {
-    let command = CredentialBearingCommand.verifyPin1(transmission)
-    let raw = try channel.transmit(command.intoTransportPayload())
-    guard let response = ResponseApdu(raw: raw) else {
-      throw CardOperationError.malformedResponse
-    }
-    switch response.statusWord {
-    case .success:
-      return
-    case .pinIncorrect(let remaining):
-      throw CardOperationError.pinRejected(remaining: remaining)
-    case .authenticationBlocked:
-      throw CardOperationError.pinBlocked
-    default:
-      throw CardOperationError.pinVerifyFailed(response.statusWord)
-    }
   }
 
   /// Computes an authentication signature over `digest`.

@@ -4,17 +4,28 @@
 /// channel's own thrown errors; these cases are protocol-level: the
 /// card answered, and the answer was wrong.
 public enum CardOperationError: Error, Equatable, Sendable {
+  /// The credential slot is invalidated (`6984`): its usage or
+  /// unblocking allowance is exhausted, or the slot was never
+  /// activated. Terminal on the card side - issuer recovery is the
+  /// only path.
+  case credentialInvalidated
+
+  /// A credential change or unblock was refused with a status word
+  /// outside the modelled outcomes.
+  case credentialUpdateFailed(StatusWord)
+
   /// A response was shorter than a status word or beyond the
   /// short-form bound.
   case malformedResponse
 
-  /// PIN1 verification was refused because the credential is blocked.
+  /// The presented credential was refused because it is blocked.
   case pinBlocked
 
-  /// PIN1 was rejected; `remaining` attempts are left before it locks.
+  /// The presented credential was rejected; `remaining` attempts are
+  /// left before it locks.
   case pinRejected(remaining: RetryCount)
 
-  /// PIN1 VERIFY returned an unexpected status word.
+  /// VERIFY returned an unexpected status word.
   case pinVerifyFailed(StatusWord)
 
   /// A file read failed with the carried typed reason.
