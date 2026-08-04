@@ -34,17 +34,17 @@
               accessNumber = LimitedDigits.cardAccessNumber(typed)
             }
             .accessibilityIdentifier("signAccessNumber")
-          // After the number, not between the label and it: a slot in
-          // the middle of the row leaves the spinner stranded in open
-          // space, which reads as something gone wrong rather than
-          // something in progress. Fixed width either way, so nothing
-          // moves when it appears.
-          Group {
-            if signing.readingStamp {
-              ProgressView().controlSize(.small)
+          // A slot of fixed width and height, empty or filled. A
+          // frame that constrains only the width still grows the row
+          // when a spinner taller than the text arrives, and the whole
+          // window steps down as the card is read.
+          Color.clear
+            .frame(width: Self.spinnerWidth, height: Self.spinnerWidth)
+            .overlay {
+              if signing.readingStamp {
+                ProgressView().controlSize(.small)
+              }
             }
-          }
-          .frame(width: Self.spinnerWidth)
         }
       }
       .task(id: accessNumber) {

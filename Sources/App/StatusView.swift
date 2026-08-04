@@ -39,6 +39,10 @@
     /// Ready when a document is waiting and the entry could be a PIN2.
     private var canSign: Bool {
       signing.pending != nil && Self.isEntryComplete(pin2) && !signing.working
+        // Not while the card is being read for the stamp: it is one
+        // card, and asking it to sign mid-read is asking it to be in
+        // two places.
+        && !signing.readingStamp
     }
 
     /// What the identity row and the offered features key on.
