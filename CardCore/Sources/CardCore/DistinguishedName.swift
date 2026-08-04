@@ -21,16 +21,21 @@ public enum DistinguishedName {
   /// The attributes are stored in capitals, mirroring the machine
   /// readable zone's conventions, so they are recased for reading.
   /// The rule is deliberately simple and locale-independent: a
-  /// segment begins after a space or a hyphen, its first character is
-  /// uppercased and the rest lowercased, and the separators are kept
-  /// as they were. Finnish and Swedish need nothing more; only
-  /// languages with locale-sensitive casing would.
+  /// segment begins after a space, a hyphen or an apostrophe, its
+  /// first character is uppercased and the rest lowercased, and the
+  /// separators are kept as they were. Finnish and Swedish need
+  /// nothing more; only languages with locale-sensitive casing would.
   ///
-  /// Its limits are known and accepted rather than papered over.
-  /// "MCCABE" becomes "Mccabe", "VAN DER BERG" becomes "Van Der
-  /// Berg", and an apostrophe is not a boundary, so "O'BRIEN" becomes
-  /// "O'brien". Guessing at those would misspell as many names as it
-  /// fixed.
+  /// The apostrophe earns its place: every surname that carries one
+  /// capitalises the letter after it - O'Brien, O'Neill, D'Angelo,
+  /// D'Arcy. It costs the Dutch "'t Hooft", which comes out as
+  /// "'T Hooft", and that is the rarer name by a wide margin.
+  ///
+  /// Its remaining limits are known and accepted rather than papered
+  /// over: "MCCABE" becomes "Mccabe" and "VAN DER BERG" becomes "Van
+  /// Der Berg". Guessing at those would misspell as many names as it
+  /// fixed - a particle rule would have to know that "Van" is a
+  /// particle in Dutch and a surname on its own elsewhere.
   ///
   /// The certificate is the right source for this. A card that
   /// published the holder's own spelling directly would be better
@@ -46,12 +51,20 @@ public enum DistinguishedName {
     return spoken.joined(separator: " ")
   }
 
+  /// What ends one segment of a name and begins the next.
+  ///
+  /// Both apostrophes appear in certificates: the typewriter one and
+  /// the typographic one.
+  private static let segmentSeparators: Set<Character> = [
+    " ", "-", "'", "\u{2019}",
+  ]
+
   /// One name recased for reading.
   private static func recased(_ text: String) -> String {
     var out = ""
     var startsSegment = true
     for character in text {
-      if character == " " || character == "-" {
+      if Self.segmentSeparators.contains(character) {
         out.append(character)
         startsSegment = true
         continue

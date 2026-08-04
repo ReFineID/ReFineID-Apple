@@ -103,13 +103,24 @@ internal struct DistinguishedNameTests {
     // misspell as many names as it fixed.
     let scottish = Self.personalName(given: "IAN", family: "MCCABE")
     let dutch = Self.personalName(given: "JAN", family: "VAN DER BERG")
-    let irish = Self.personalName(given: "SEAN", family: "O'BRIEN")
 
     #expect(DistinguishedName.personalName(inName: scottish) == "Ian Mccabe")
     #expect(
       DistinguishedName.personalName(inName: dutch) == "Jan Van Der Berg"
     )
-    #expect(DistinguishedName.personalName(inName: irish) == "Sean O'brien")
+  }
+
+  @Test
+  internal func aLetterAfterAnApostropheStartsItsOwnSegment() {
+    // Every surname carrying an apostrophe capitalises what follows
+    // it, whichever apostrophe the certificate used.
+    let irish = Self.personalName(given: "SEAN", family: "O'BRIEN")
+    let italian = Self.personalName(given: "GINO", family: "D\u{2019}ANGELO")
+
+    #expect(DistinguishedName.personalName(inName: irish) == "Sean O'Brien")
+    #expect(
+      DistinguishedName.personalName(inName: italian) == "Gino D\u{2019}Angelo"
+    )
   }
 
   @Test
