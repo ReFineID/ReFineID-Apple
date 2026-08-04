@@ -24,14 +24,11 @@ internal struct ReFineIDApp: App {
       }
       .windowResizability(.contentSize)
 
+      // One pane, so no tab bar: a tab bar with a single tab tells the
+      // holder nothing and reads as an unfinished window.
       Settings {
-        TabView {
-          TimestampAuthoritiesSettingsView()
-            .writingToolsBehavior(.disabled)
-            .tabItem {
-              Label("Time-Stamp Authorities", systemImage: "clock.badge.checkmark")
-            }
-        }
+        TimestampAuthoritiesSettingsView()
+          .writingToolsBehavior(.disabled)
       }
 
       // Development builds only: the release configurations exclude the
