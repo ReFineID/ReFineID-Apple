@@ -4,18 +4,20 @@ What works, what does not, and what each was measured with. Written from
 device and Mac runs through 2026-08-03, not from intent. Code and document
 status below is current through 2026-08-04.
 
-## ANSSI: the dossier is ready to file
+## ANSSI: the dossier is ready to sign
 
 `Documentation/anssi-declaration.md` is content-complete: no
 placeholders, sections numbered to ANSSI's annexe I field by field,
 declared as a private individual, French proofread (aspell plus a close
 reading; the legal basis was corrected to LCEN article 30 on the way).
-Signed with the card at PAdES-BASELINE-LTA -- qualified timestamp
-authorities, validation material embedded, archive timestamp -- and
+An earlier artifact was signed with the card at PAdES-BASELINE-LTA and
 confirmed by two independent validators on 2026-08-03:
 
     dvv.fineid.fi:  QES | PAdES-BASELINE-LTA | TOTAL_PASSED | QESIG
     EU DSS demo:    PAdES-BASELINE-LTA | TOTAL_PASSED | QESig
+
+The current French-only, three-page artifact supersedes that file and
+is unsigned. It must be signed and validated again before filing.
 
 The signing toolchain is `refineid card sign-document` in the internal
 monorepo: pades, cades, cades-detached, asice-cades, asice/bdoc, levels

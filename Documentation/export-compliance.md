@@ -137,8 +137,7 @@ separate regime either way.
 The app is to be available in France, so the French declaration applies:
 supplying a cryptographic means that provides confidentiality requires a
 declaration to ANSSI, and PACE's channel is exactly that. The technical
-dossier is `Documentation/anssi-declaration.md`, in French with an
-English version; both stand on their own.
+dossier is `Documentation/anssi-declaration.md`, in French.
 
 Excluding France was the alternative and was considered: it would have
 removed this step entirely and shipped sooner. It was not taken. A
@@ -236,17 +235,18 @@ anything else means stop and look.
 
 The language and title are not decoration. Typst tags its PDF output,
 so the file already carries a structure tree; without `lang` the
-document declared itself `en-US` and a screen reader would have read
-the French half in an English voice, and without `title` the viewer
-showed a heading it had picked up by accident. With both set the
-document announces `fr-FR`, the English half is marked `en` where it
-begins, and the title bar shows the document rather than the filename.
+document declared itself `en-US` and a screen reader would have read it
+in an English voice, and without `title` the viewer showed a heading it
+had picked up by accident. With both set the document announces
+`fr-FR`, and the title bar shows the document rather than the filename.
 
 A4, because the reader is French and Letter is a North American size;
-pandoc's default is Letter, so the flag is not optional. The French half
-also carries the narrow no-break space French typography puts before
-`: ; ! ?` -- it is in the markdown, not applied at render time, so it
-survives whatever renders the file next.
+pandoc's default is Letter, so the flag is not optional. The French
+render is exactly three pages, numbered `Page X sur 3`, including the
+first, so the dossier's completeness is visible before its signature is
+checked. The text also carries the narrow no-break space French
+typography puts before `: ; ! ?` -- it is in the markdown, not applied
+at render time, so it survives whatever renders the file next.
 
 Sign in the Helsinki working day, not late at night.
 
@@ -364,14 +364,13 @@ its own: it is the technical documentation attached to ANSSI's own form.
    one under Article 25(2) of Regulation (EU) No 910/2014, and the
    attestation requires the declaration to be "datée et signée", not
    inked.
-3. Email `controle@ssi.gouv.fr`, subject `[formalités] ReFineID - ReFineID`,
-   attaching the signed declaration.
+3. Email `controle@ssi.gouv.fr`, subject `[formalités] ReFineID – ReFineID`,
+   attaching the signed declaration. The covering text is in
+   `Documentation/anssi-submission-email.txt`.
 
-   Say in the body that the declaration follows annexe I section by
-   section and is signed with a qualified electronic signature, and give
-   the validation address so the reader can check it without installing
-   anything. If ANSSI wants their own template back instead, they will
-   say so, and that answer is worth keeping.
+   The validation address is already in the PDF. If ANSSI wants their
+   own template back instead, they will say so, and that answer is worth
+   keeping.
 
 The form's own sections are A declarant, B the means, C category 3,
 D renewal of a transfer or export authorisation, E documents attached,

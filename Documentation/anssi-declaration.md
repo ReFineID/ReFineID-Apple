@@ -1,3 +1,19 @@
+---
+header-includes:
+  - |
+    ```{=typst}
+    #set page(
+      footer: context [
+        #align(center)[
+          #text(size: 9pt)[
+            Page #counter(page).get().first() sur #counter(page).final().first()
+          ]
+        ]
+      ],
+    )
+    ```
+---
+
 ```{=typst}
 // Table cells are short phrases, not prose: justifying them stretches
 // "ECDH on brainpoolP384r1" into "ECDH      on    brainpoolP384r1".
@@ -152,166 +168,6 @@ Fait à Helsinki, le 4 août 2026.
     règlement (UE) n° 910/2014, elle a un effet juridique équivalent à celui
     d'une signature manuscrite. Validation en ligne et gratuite à l'adresse
     #link("https://dvv.fineid.fi/fr/validation"), entre autres services.
-  ]
-]
-```
-
-```{=typst}
-#pagebreak()
-```
-
-```{=typst}
-// The second half is English: mark it so a screen reader switches
-// voice and Typst hyphenates by English rules rather than French.
-#set text(lang: "en", region: none)
-```
-
-# English version
-
-Declaration of the supply of a cryptographic product and its transfer
-from a Member State of the European Union under Article 30 of Law
-No. 2004-575 of 21 June 2004 on confidence in the digital economy and
-Chapter II of Decree No. 2007-663 of 2 May 2007.
-
-ReFineID is middleware that makes the Finnish national identity card
-usable by cardholders living in France as a digital identity on Apple
-platforms.
-
-The declarant requests an attestation confirming this declaration.
-
-## A. Declarant (individual)
-
-| | |
-|:---------------------------|:-----------------------------------------------|
-| Name | Koistinen, Petri |
-| Nationality | Finnish |
-| Address | Niittaajankatu 8a A 21, 00810 Helsinki, Finland |
-| Telephone | +358 44 956 4098 |
-| Email | petri.koistinen@iki.fi |
-
-## B. Cryptographic product covered by this declaration
-
-### B.1. General information
-
-| | |
-|:---------------------------|:-----------------------------------------------|
-| Name | ReFineID |
-| Generic designation | Middleware for a national identity card |
-| Commercial reference | None |
-| Version | 26 |
-| Planned market placement date | 1 November 2026 |
-| Platforms | iOS, iPadOS, macOS |
-
-### B.2. Functional description
-
-#### B.2.1. Classification of the product
-
-Software.
-
-#### B.2.2. General description of the product
-
-The product reads the card over the phone's NFC antenna or a contact
-smart-card reader, publishes the card's authentication certificate and
-public key to the system keychain through CryptoTokenKit, and passes
-signature requests to the card. Safari and other system consumers then
-authenticate with the card as they would with any other client
-certificate.
-
-#### B.2.3. Category of the principal function
-
-Information security (cryptographic library and middleware).
-
-### B.3. Technical description
-
-#### B.3.1. Description of the cryptographic functionality
-
-Secure messaging with the card, client-authentication signatures and
-PAdES document signatures.
-
-#### B.3.2. Categories the cryptographic functions fall under
-
-Authentication, integrity, confidentiality and signature.
-
-#### B.3.3. Secure protocols used by the product
-
-PACE and ISO/IEC 7816-4 secure messaging.
-
-#### B.3.4. Cryptographic algorithms used and their maximum key lengths
-
-| Algorithm | Mode | Key size | Function |
-|:-------------------|:-------------|:------------|:-------------------------------|
-| ECDH on brainpoolP384r1 | PACE | 384 bits | Key agreement |
-| AES | CBC | 256 bits | Encryption |
-| AES | CMAC | 256 bits | Integrity |
-| SHA-256 | n/a | n/a | Key derivation |
-| SHA-224, SHA-256, SHA-384, SHA-512 | n/a | n/a | Signature digests |
-| ECDSA on NIST P-384 | n/a | 384 bits | Signature |
-| RSA | PKCS#1 v1.5 | 3072 bits | Signature |
-| RSA | PSS | 3072 bits | Signature |
-
-#### Key management
-
-- The card's private keys are generated on the card by the issuing
-  authority and never leave it.
-
-## C. Cryptographic product within category 3 of annex 2 to decree No 2007-663 of 2 May 2007
-
-The declarant declares that the product falls within category 3.
-
-### Describe the product's distribution model and target market
-
-The product will be made available to the public through Apple's App Store.
-
-### Explain why the cryptographic functionality cannot easily be modified by the user
-
-The cryptographic suite on the Finnish government-issued smart card
-cannot be modified by the user.
-
-### Explain how installation requires no significant subsequent support from the supplier
-
-The user installs the easy-to-use app without supplier assistance.
-
-## D. Renewal of a transfer or export authorisation
-
-No prior authorisation.
-
-## E. Documents to attach
-
-ReFineID is open-source software. The source code and documentation are
-available here:
-
-```{=typst}
-#block[
-  #link("https://github.com/ReFineID/ReFineID-Apple")[
-    #text(fill: rgb("#0969da"))[
-      #underline[https://github.com/ReFineID/ReFineID-Apple]
-    ]
-  ]
-]
-```
-
-## F. Attestation
-
-I, the undersigned, Koistinen Petri, acting on my own behalf as the
-supplier, certify that the information in this
-dossier is accurate and has been established in good faith, and
-undertake to inform the Agence nationale de la sécurité des systèmes
-d'information without delay of any new matter of fact or of law liable
-to alter this declaration.
-
-Done at Helsinki, 4 August 2026.
-
-```{=typst}
-#v(1fr)
-#block(breakable: false)[
-  #line(length: 100%, stroke: 0.4pt)
-  #v(0.3em)
-  #text(style: "italic", size: 9pt)[
-    This document is electronically signed. The signature is a qualified
-    electronic signature: under Article 25(2) of Regulation (EU) No 910/2014
-    it has legal effect equivalent to that of a handwritten signature.
-    Validation is available online, free of charge, at
-    #link("https://dvv.fineid.fi/en/validation"), among other services.
   ]
 ]
 ```
