@@ -16,10 +16,7 @@ Apple.
 
 Le déclarant demande la délivrance de l'attestation de déclaration.
 
-## A. Déclarant et/ou demandeur
-
-Le déclarant est un particulier. ReFineID est un nom commercial qu'il
-emploie en son nom propre.
+## A. Déclarant (personne physique)
 
 | Champ | Valeur |
 |:---------------------------|:-----------------------------------------------|
@@ -29,21 +26,17 @@ emploie en son nom propre.
 | Numéro de téléphone | +358 44 956 4098 |
 | Adresse de courrier électronique | petri.koistinen@iki.fi |
 
-Contact technique : le déclarant, aux mêmes coordonnées. Il est
-également le fabricant du moyen.
-
 ## B. Moyen de cryptologie auquel s'appliquent la déclaration et/ou la demande d'autorisation
 
 ### B.1. Informations générales sur le moyen
 
 | Champ | Valeur |
 |:---------------------------|:-----------------------------------------------|
-| Dénomination du moyen | ReFineID |
+| Nom | ReFineID |
 | Désignation générique | Intergiciel pour carte nationale d'identité |
-| Marque de distribution | ReFineID |
-| Référence commerciale | ReFineID pour plateformes Apple |
+| Référence commerciale | Aucune |
 | Version | 26 |
-| Date de mise sur le marché | 1er novembre 2026 |
+| Date prévue de mise sur le marché | 1er novembre 2026 |
 | Plateformes | iOS, iPadOS, macOS |
 
 ### B.2. Description fonctionnelle du moyen
@@ -70,17 +63,9 @@ cryptographiques).
 
 #### B.3.1. Description des fonctionnalités cryptographiques du moyen
 
-Les fonctions cryptographiques sont les suivantes :
-
-1. **Établissement d'un canal sécurisé avec la carte.** La carte refuse
-   toute lecture de son application PKCS#15 sur l'interface sans contact
-   tant que PACE n'a pas été exécuté. PACE dérive des clés de session à
-   partir du numéro d'accès imprimé sur la carte ; tous les échanges
-   ultérieurs sont chiffrés et authentifiés au moyen de ces clés.
-2. **Signatures d'authentification client.** La clé privée reste dans la
-   carte, qui réalise la signature. Le moyen met en forme l'entrée, la
-   transmet à la carte, et vérifie le résultat avec la clé publique de la
-   carte avant de le restituer au système d'exploitation.
+Messagerie sécurisée PACE avec la carte, signatures d'authentification
+client et, sur macOS, signatures de documents PAdES avec horodatage
+RFC 3161.
 
 #### B.3.2. Indiquez à quelle(s) catégorie(s) se rapporte(nt) la ou les fonctions cryptographiques du moyen
 
@@ -213,10 +198,7 @@ usable as a digital identity on Apple platforms.
 The declarant requests the issue of the corresponding attestation de
 déclaration.
 
-## A. Declarant and/or applicant
-
-The declarant is an individual. ReFineID is a trading name he uses in a
-personal capacity.
+## A. Declarant (individual)
 
 | Field | Value |
 |:---------------------------|:-----------------------------------------------|
@@ -226,21 +208,17 @@ personal capacity.
 | Telephone | +358 44 956 4098 |
 | Email | petri.koistinen@iki.fi |
 
-Technical contact: the declarant, same details. He is also the
-manufacturer.
-
 ## B. Means of cryptology to which the declaration and/or the authorisation request applies
 
 ### B.1. General information
 
 | Field | Value |
 |:---------------------------|:-----------------------------------------------|
-| Name of the means | ReFineID |
+| Name | ReFineID |
 | Generic designation | Middleware for a national identity card |
-| Brand | ReFineID |
-| Commercial reference | ReFineID for Apple platforms |
+| Commercial reference | None |
 | Version | 26 |
-| Date placed on the market | 1 November 2026 |
+| Planned market placement date | 1 November 2026 |
 | Platforms | iOS, iPadOS, macOS |
 
 ### B.2. Functional description
@@ -266,17 +244,8 @@ certificate.
 
 #### B.3.1. Description of the cryptographic functionality
 
-The cryptographic functions are:
-
-1. **Opening a secure channel to the card.** The card refuses every read
-   of its PKCS#15 application on the contactless interface until PACE has
-   run. PACE derives session keys from the card access number printed on
-   the card; every exchange afterwards is encrypted and authenticated
-   under them.
-2. **Client authentication signatures.** The private key stays in the
-   card, which performs the signature. The means formats the input,
-   passes it to the card, and verifies the result against the card's own
-   public key before returning it to the operating system.
+PACE secure messaging with the card, client-authentication signatures
+and, on macOS, PAdES document signatures with RFC 3161 timestamps.
 
 #### B.3.2. Categories the cryptographic functions fall under
 
