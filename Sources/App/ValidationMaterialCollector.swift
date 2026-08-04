@@ -17,13 +17,54 @@
     /// How many issuers up a chain may go before it is called broken.
     private static let maximumDepth = 8
 
-    /// Everything reachable from the signer certificate.
+    /// Everything reachable from the signer certificate and from the
+    /// certificates each timestamp token carries.
+    ///
+    /// Both are required: a long-term signature has to let a validator
+    /// judge the timestamps too, not only the signature under them.
+    /// The one exception is the outermost archive timestamp, whose own
+    /// chain cannot be inside what it signs - a later archive
+    /// timestamp is where that would go.
     internal static func collect(
-      signerCertificate: Data
+      signerCertificate: Data,
+      timestampTokens: [Data]
     ) async -> PdfValidationStore.Material {
       var certificates: [Data] = []
       var responses: [Data] = []
-      var current = signerCertificate
+      await Self.walk(
+        from: signerCertificate,
+        certificates: &certificates,
+        responses: &responses
+      )
+      for token in timestampTokens {
+        for embedded in CmsCertificates.inside(token) {
+          if !certificates.contains(embedded) {
+            certificates.append(embedded)
+          }
+          await Self.walk(
+            from: embedded,
+            certificates: &certificates,
+            responses: &responses
+          )
+        }
+      }
+      // No revocation lists: every authority in these chains publishes
+      // a responder, and a distribution-point fetch would be untested
+      // code on the path that decides whether a signature is archival.
+      return PdfValidationStore.Material(
+        certificates: certificates,
+        ocspResponses: responses,
+        revocationLists: []
+      )
+    }
+
+    /// Walks one chain upward, collecting issuers and their status.
+    private static func walk(
+      from start: Data,
+      certificates: inout [Data],
+      responses: inout [Data]
+    ) async {
+      var current = start
 
       for _ in 0..<Self.maximumDepth {
         guard let facts = CertificateFacts(der: current), !facts.isSelfIssued
@@ -54,14 +95,6 @@
         }
         current = issuerDer
       }
-      // No revocation lists: every authority in the chain publishes a
-      // responder, and a distribution-point fetch would be untested
-      // code on a path that decides whether a signature is archival.
-      return PdfValidationStore.Material(
-        certificates: certificates,
-        ocspResponses: responses,
-        revocationLists: []
-      )
     }
 
     /// One issuer certificate, DER or PEM as published.

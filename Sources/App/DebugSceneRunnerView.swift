@@ -49,7 +49,7 @@
       case .prime:
         DebugConsole.finish(succeeded: await Self.prime())
       case .diagnostics, .forgetCan, .paceCheck, .resetCardState, .setCan,
-        .setPin1, .signProbe, .tokenPublishProbe, .trace:
+        .setPin1, .signDocument, .signProbe, .tokenPublishProbe, .trace:
         DebugConsole.emit(mode.rawValue + ": runs before the window opens, not here")
         DebugConsole.finish(succeeded: false)
       }

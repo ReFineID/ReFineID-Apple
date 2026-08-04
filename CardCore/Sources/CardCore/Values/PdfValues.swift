@@ -65,6 +65,31 @@ internal enum PdfValues {
   /// The flag marking an in-use entry.
   internal static let inUseFlag = "n"
 
+  /// The bytes PDF counts as whitespace (ISO 32000-1 §7.2.2).
+  internal static let whitespaceBytes: Set<UInt8> = [
+    Self.nullByte, Self.tabByte, Self.lineFeedByte, Self.formFeedByte,
+    Self.carriageReturnByte, UInt8(ascii: " "),
+  ]
+
+  /// The null byte, which PDF counts as whitespace.
+  internal static let nullByte: UInt8 = 0x00
+
+  /// Horizontal tab.
+  internal static let tabByte: UInt8 = 0x09
+
+  /// Line feed.
+  internal static let lineFeedByte: UInt8 = 0x0A
+
+  /// Form feed.
+  internal static let formFeedByte: UInt8 = 0x0C
+
+  /// Carriage return; with a line feed it is the two-byte ending that
+  /// makes character offsets differ from byte offsets.
+  internal static let carriageReturnByte: UInt8 = 0x0D
+
+  /// The radix cross-reference offsets are written in.
+  internal static let decimalRadix: Int = 10
+
   /// Values in a /ByteRange array: two offset-length pairs, one for
   /// the span before the hole and one for the span after it.
   internal static let byteRangeFieldCount: Int = 4

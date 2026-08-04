@@ -27,7 +27,10 @@
 
     /// The signed file's place: beside the original, stamped with the
     /// UTC instant, colons replaced so the name is safe everywhere.
-    internal static func destination(for source: URL, at instant: Date) -> URL {
+    nonisolated internal static func destination(
+      for source: URL,
+      at instant: Date
+    ) -> URL {
       let formatter = ISO8601DateFormatter()
       formatter.timeZone = TimeZone(secondsFromGMT: 0)
       formatter.formatOptions = [.withInternetDateTime]

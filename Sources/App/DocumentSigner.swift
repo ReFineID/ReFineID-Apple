@@ -66,7 +66,8 @@
       )
       let signed = try material.placeholder.filled(with: cms)
       let evidence = await ValidationMaterialCollector.collect(
-        signerCertificate: material.certificate
+        signerCertificate: material.certificate,
+        timestampTokens: tokens
       )
       let withEvidence = try PdfValidationStore.appended(
         to: signed, material: evidence

@@ -3,10 +3,12 @@ import Foundation
 /// The parts of a PDF's cross-reference chain an incremental update
 /// needs (ISO 32000-1 §7.5).
 ///
-/// Only what signing requires: where the newest table is, what the
-/// trailer says, and where each generation-0 object body lives. The
-/// original bytes are never rewritten - an update appends - so this
-/// reads and never edits.
+/// Everything here counts bytes, never characters. A cross-reference
+/// table addresses byte offsets, and a PDF is binary with ASCII
+/// structure in it: decoding the file to a string first would be wrong
+/// on any document with CRLF line endings, where `\r\n` is one Swift
+/// Character but two bytes - every offset after the first line ending
+/// would then be short by the number of line endings before it.
 internal struct PdfDocumentIndex {
   /// Maximum /Prev hops followed before the chain is called broken.
   private static let maximumChainDepth = 64
@@ -20,13 +22,32 @@ internal struct PdfDocumentIndex {
   /// The offset the file's last `startxref` names.
   internal let previousStartXref: Int
 
+  /// An integer value of a trailer key, when present.
+  internal static func integer(named key: String, in dictionary: String) -> Int? {
+    guard let range = dictionary.range(of: key) else { return nil }
+    let rest = dictionary[range.upperBound...].drop(while: \.isWhitespace)
+    return Int(rest.prefix(while: \.isNumber))
+  }
+
+  /// The object number of an indirect reference value, when the key
+  /// holds one.
+  internal static func reference(
+    named key: String,
+    in dictionary: String
+  ) -> Int? {
+    guard let range = dictionary.range(of: key) else { return nil }
+    let rest = dictionary[range.upperBound...].drop(while: \.isWhitespace)
+    guard rest.first?.isNumber == true else { return nil }
+    return Int(rest.prefix(while: \.isNumber))
+  }
+
   /// Parses the chain from the end of the file.
   internal static func parse(_ document: Data) throws -> Self {
-    let text = Self.latin1(document)
-    guard text.hasPrefix(PdfValues.filePrefix) else {
+    let bytes = PdfBytes(document)
+    guard bytes.starts(with: PdfValues.filePrefix) else {
       throw PdfSigningError.notAPdf
     }
-    guard let startXref = Self.startXref(in: text) else {
+    guard let startXref = Self.startXref(in: bytes) else {
       throw PdfSigningError.structureUnreadable
     }
     var collected: [Int: Int] = [:]
@@ -37,7 +58,7 @@ internal struct PdfDocumentIndex {
     while let current = offset, depth < Self.maximumChainDepth {
       guard visited.insert(current).inserted else { break }
       depth += 1
-      let section = try Self.section(in: text, at: current)
+      let section = try Self.section(in: bytes, at: current)
       for (number, position) in section.offsets where collected[number] == nil {
         collected[number] = position
       }
@@ -57,121 +78,102 @@ internal struct PdfDocumentIndex {
     )
   }
 
-  /// An integer value of a trailer key, when present.
-  internal static func integer(named key: String, in dictionary: String) -> Int? {
-    guard let range = dictionary.range(of: key) else { return nil }
-    let rest = dictionary[range.upperBound...].drop(while: \.isWhitespace)
-    let digits = rest.prefix(while: \.isNumber)
-    return Int(digits)
-  }
-
-  /// The object number of an indirect reference value, when the key
-  /// holds one.
-  internal static func reference(
-    named key: String,
-    in dictionary: String
-  ) -> Int? {
-    guard let range = dictionary.range(of: key) else { return nil }
-    let rest = dictionary[range.upperBound...].drop(while: \.isWhitespace)
-    guard rest.first?.isNumber == true else { return nil }
-    return Int(rest.prefix(while: \.isNumber))
-  }
-
-  /// Bytes as Latin-1: every byte maps to one character, so a string
-  /// offset is a byte offset.
-  ///
-  /// PDF structure is ASCII embedded in binary, and the offsets in a
-  /// cross-reference table count bytes. A UTF-8 reading would collapse
-  /// multi-byte sequences and move every offset after them, so the
-  /// mapping has to be one byte to one character.
-  internal static func latin1(_ document: Data) -> String {
-    String(bytes: document, encoding: .isoLatin1) ?? ""
-  }
-
-  /// The offset the last `startxref` names.
-  private static func startXref(in text: String) -> Int? {
-    guard
-      let range = text.range(of: PdfValues.startXrefKeyword, options: .backwards)
-    else {
+  /// The byte offset the last `startxref` names.
+  private static func startXref(in bytes: PdfBytes) -> Int? {
+    guard let found = bytes.lastRange(of: PdfValues.startXrefKeyword) else {
       return nil
     }
-    let rest = text[range.upperBound...].drop(while: \.isWhitespace)
-    return Int(rest.prefix(while: \.isNumber))
+    return bytes.decimal(at: bytes.skippingWhitespace(from: found.upperBound))
   }
 
   /// One cross-reference section: its entries and its trailer.
   private static func section(
-    in text: String,
+    in bytes: PdfBytes,
     at offset: Int
   ) throws -> (offsets: [Int: Int], trailer: String) {
-    guard offset < text.count else {
+    guard offset < bytes.count else {
       throw PdfSigningError.structureUnreadable
     }
-    let start = text.index(text.startIndex, offsetBy: offset)
-    let tail = text[start...].drop(while: \.isWhitespace)
-    guard tail.hasPrefix(PdfValues.xrefKeyword) else {
-      let window = tail.prefix(PdfValues.streamProbeWindow)
-      throw window.contains(PdfValues.xrefStreamMarker)
-        ? PdfSigningError.crossReferenceStreamUnsupported
-        : PdfSigningError.structureUnreadable
+    let start = bytes.skippingWhitespace(from: offset)
+    guard bytes.hasKeyword(PdfValues.xrefKeyword, at: start) else {
+      throw Self.unsupportedShape(in: bytes, at: start)
     }
-    guard let trailerRange = tail.range(of: PdfValues.trailerKeyword) else {
+    guard
+      let trailerRange = bytes.firstRange(
+        of: PdfValues.trailerKeyword, from: start
+      )
+    else {
       throw PdfSigningError.structureUnreadable
     }
-    let entriesText = tail[tail.startIndex..<trailerRange.lowerBound]
-      .dropFirst(PdfValues.xrefKeyword.count)
-    let parsed = Self.entries(in: entriesText)
-    let trailerText = Self.dictionary(in: tail[trailerRange.upperBound...])
-    return (parsed, trailerText)
+    let entriesStart = start + PdfValues.xrefKeyword.utf8.count
+    let entries = Self.entries(
+      in: bytes.text(in: entriesStart..<trailerRange.lowerBound)
+    )
+    let dictionary = Self.dictionary(in: bytes, from: trailerRange.upperBound)
+    return (entries, dictionary)
+  }
+
+  /// Which refusal a non-table section earns: a cross-reference stream
+  /// is a shape this writer does not extend, anything else is broken.
+  private static func unsupportedShape(
+    in bytes: PdfBytes,
+    at start: Int
+  ) -> PdfSigningError {
+    let windowEnd = min(start + PdfValues.streamProbeWindow, bytes.count)
+    let window = bytes.text(in: start..<windowEnd)
+    return window.contains(PdfValues.xrefStreamMarker)
+      ? .crossReferenceStreamUnsupported
+      : .structureUnreadable
   }
 
   /// The in-use entries of one cross-reference section.
   ///
   /// Subsections are `first count` followed by that many
   /// `offset generation flag` triples (ISO 32000-1 §7.5.4).
-  private static func entries(in text: Substring) -> [Int: Int] {
+  private static func entries(in text: String) -> [Int: Int] {
     var found: [Int: Int] = [:]
-    var tokens = text.split(whereSeparator: \.isWhitespace)[...]
-    while tokens.count >= PdfValues.subsectionHeaderTokens,
-      let first = Int(tokens[tokens.startIndex]),
-      let count = Int(tokens[tokens.index(after: tokens.startIndex)])
+    let tokens = text.split(whereSeparator: \.isWhitespace)
+    var index = 0
+    while index + PdfValues.subsectionHeaderTokens <= tokens.count,
+      let first = Int(tokens[index]),
+      let count = Int(tokens[index + 1])
     {
-      tokens = tokens.dropFirst(PdfValues.subsectionHeaderTokens)
-      for index in 0..<count where tokens.count >= PdfValues.entryTokens {
-        let flagIndex = tokens.index(
-          tokens.startIndex, offsetBy: PdfValues.entryFlagIndex
-        )
-        if tokens[flagIndex] == PdfValues.inUseFlag,
-          let position = Int(tokens[tokens.startIndex])
+      index += PdfValues.subsectionHeaderTokens
+      for entry in 0..<count
+      where index + PdfValues.entryTokens <= tokens.count {
+        if tokens[index + PdfValues.entryFlagIndex] == PdfValues.inUseFlag,
+          let position = Int(tokens[index])
         {
-          found[first + index] = position
+          found[first + entry] = position
         }
-        tokens = tokens.dropFirst(PdfValues.entryTokens)
+        index += PdfValues.entryTokens
       }
     }
     return found
   }
 
-  /// The balanced `<< >>` dictionary at the start of a slice.
-  private static func dictionary(in slice: Substring) -> String {
-    guard let open = slice.range(of: "<<") else { return "" }
+  /// The balanced `<< >>` dictionary starting at or after `offset`.
+  private static func dictionary(in bytes: PdfBytes, from offset: Int) -> String {
+    guard let start = bytes.firstRange(of: "<<", from: offset) else {
+      return ""
+    }
     var depth = 0
-    var index = open.lowerBound
-    while index < slice.endIndex {
-      if slice[index...].hasPrefix("<<") {
+    var cursor = start.lowerBound
+    while cursor < bytes.count {
+      if bytes.hasKeyword("<<", at: cursor) {
         depth += 1
-        index = slice.index(index, offsetBy: PdfValues.dictionaryMarkerLength)
+        cursor += PdfValues.dictionaryMarkerLength
         continue
       }
-      if slice[index...].hasPrefix(">>") {
+      if bytes.hasKeyword(">>", at: cursor) {
         depth -= 1
-        index = slice.index(index, offsetBy: PdfValues.dictionaryMarkerLength)
+        cursor += PdfValues.dictionaryMarkerLength
         if depth == 0 {
-          return String(slice[open.lowerBound..<index])
+          return bytes.text(in: start.lowerBound..<cursor)
         }
         continue
       }
-      index = slice.index(after: index)
+      cursor += 1
     }
     return ""
   }
@@ -181,17 +183,14 @@ internal struct PdfDocumentIndex {
     guard let offset = offsets[number], offset < document.count else {
       return nil
     }
-    let text = Self.latin1(document)
-    let start = text.index(text.startIndex, offsetBy: offset)
+    let bytes = PdfBytes(document)
     guard
-      let objRange = text.range(of: "obj", range: start..<text.endIndex),
-      let endRange = text.range(
-        of: "endobj", range: objRange.upperBound..<text.endIndex
-      )
+      let objRange = bytes.firstRange(of: "obj", from: offset),
+      let endRange = bytes.firstRange(of: "endobj", from: objRange.upperBound)
     else {
       return nil
     }
-    return String(text[objRange.upperBound..<endRange.lowerBound])
+    return bytes.text(in: objRange.upperBound..<endRange.lowerBound)
       .trimmingCharacters(in: .whitespacesAndNewlines)
   }
 }

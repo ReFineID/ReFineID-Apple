@@ -94,13 +94,51 @@
         Self.storeCardAccessNumber()
       case .setPin1:
         Self.storePin1()
+      case .signDocument, .signProbe, .tokenPublishProbe, .trace:
+        Self.probeReport(for: mode)
+      }
+    }
+
+    /// The modes that drive a reader or read what one left behind.
+    private static func probeReport(for mode: DebugLaunchMode) -> DebugModeReport {
+      switch mode {
+      case .signDocument:
+        Self.documentSignatureReport()
       case .signProbe:
         Self.signProbeReport()
       case .tokenPublishProbe:
         TokenPublishProbe.report()
-      case .trace:
+      default:
         Self.traceReport()
       }
+    }
+
+    /// Signs a document with the card; a Mac-only mode, because it
+    /// drives a reader.
+    private static func documentSignatureReport() -> DebugModeReport {
+      #if os(macOS)
+        return DebugDocumentSignature.report(
+          path: Self.pathValue(after: .signDocument)
+        )
+      #else
+        return DebugModeReport(
+          lines: [DebugLaunchMode.signDocument.rawValue + ": macOS only"],
+          succeeded: false
+        )
+      #endif
+    }
+
+    /// The unvalidated argument after a mode, for the modes whose
+    /// value is a path rather than digits.
+    private static func pathValue(after mode: DebugLaunchMode) -> String? {
+      let arguments = ProcessInfo.processInfo.arguments
+      guard let index = arguments.firstIndex(of: mode.rawValue),
+        arguments.index(after: index) < arguments.endIndex
+      else {
+        return nil
+      }
+      let candidate = arguments[arguments.index(after: index)]
+      return candidate.isEmpty ? nil : candidate
     }
 
     /// Signs against the card with the PIN1 given after `--sign-probe`.

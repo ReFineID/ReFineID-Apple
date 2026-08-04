@@ -2,6 +2,29 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<!-- Public-key infrastructure is fetched over plain HTTP, by
+		     design and by specification: RFC 6960 defines OCSP over
+		     HTTP, RFC 3161 defines timestamping over HTTP, and the
+		     caIssuers and OCSP addresses this app fetches are written
+		     inside third-party certificates, so they cannot be
+		     enumerated here as exception domains.
+
+		     Transport security would add nothing to any of them. Every
+		     response is a signed object that this app verifies on its
+		     own terms - a timestamp token is checked against the digest
+		     and nonce it was asked for, a certificate is checked by
+		     what signs it - and requiring TLS first would be circular,
+		     since validating a TLS certificate is itself an OCSP fetch.
+
+		     What bounds the exposure is the code rather than this key:
+		     the app makes exactly two kinds of request, to addresses
+		     that are either configured in Settings or named inside a
+		     certificate it is already validating. -->
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>en</string>
