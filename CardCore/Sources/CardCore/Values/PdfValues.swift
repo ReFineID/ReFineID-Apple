@@ -9,8 +9,9 @@ internal enum PdfValues {
   /// their own: they are standard, so nothing is embedded and nothing
   /// else refers to them. WinAnsi is what carries the accents of a
   /// French or Finnish name.
-  /// How far the mark's edge sits from the page's edge.
-  internal static let stampMargin = 24.0
+  /// How far the mark's edge sits from the page's edge: well into
+  /// the margin, where it cannot crowd the text it sits beside.
+  internal static let stampMargin = 8.0
 
   /// A4, for a page that states no box of its own.
   internal static let a4Width = 595.276
