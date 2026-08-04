@@ -91,16 +91,12 @@
         cgImage,
         in: CGRect(x: 0, y: 0, width: width, height: height)
       )
-      // Core Graphics draws with the origin at the bottom left and the
-      // tracer counts rows from the top, so the rows are handed over
-      // in the order the tracer expects rather than upside down.
-      var ink = [Bool](repeating: false, count: width * height)
-      for row in 0..<height {
-        let source = (height - 1 - row) * width
-        for column in 0..<width {
-          ink[row * width + column] = grey[source + column] < Self.inkThreshold
-        }
-      }
+      // A bitmap context's memory runs top row first, whatever its
+      // drawing origin, and the tracer counts rows from the top too -
+      // so the rows are read straight through. Flipping them here,
+      // reasoning from the drawing origin rather than the memory
+      // layout, put the signature on the page upside down.
+      let ink = grey.map { level in level < Self.inkThreshold }
       return InkOutline.Bitmap(width: width, height: height, ink: ink)
     }
   }
