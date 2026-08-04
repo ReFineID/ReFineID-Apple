@@ -113,7 +113,8 @@ extension PdfIncrementalSigner {
     let placedX = box.width - stamp.radius - PdfValues.stampMargin
     let placedY = stamp.radius + PdfValues.stampMargin
     let text =
-      "q 1 0 0 1 \(placedX) \(placedY) cm\n" + stamp.operators + "Q\n"
+      "q 1 0 0 1 \(Self.placed(placedX)) \(Self.placed(placedY)) cm\n"
+      + stamp.operators + "Q\n"
     let body =
       text.data(using: .windowsCP1252, allowLossyConversion: true)
       ?? Data(text.utf8)
@@ -121,6 +122,13 @@ extension PdfIncrementalSigner {
     object.append(body)
     object.append(Data("\nendstream\nendobj\n\n".utf8))
     return object
+  }
+
+  /// One placement number, without an exponent: PDF has no notation
+  /// for one, and a reader meeting it skips the operator or refuses
+  /// the stream.
+  private static func placed(_ value: Double) -> String {
+    String(format: "%.4f", value)
   }
 
   /// The page reissued to draw the mark, hold the widget, and know

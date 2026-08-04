@@ -74,7 +74,9 @@
       let width = pen * scale
       // Scaled here rather than by the caller, so the line arrives in
       // the coordinates it will be drawn in.
-      let placed = "q \(scale) 0 0 \(scale) \(-width / Self.halves) 0 cm\n\(body)Q\n"
+      let placed =
+        "q \(Self.number(scale)) 0 0 \(Self.number(scale))"
+        + " \(Self.number(-width / Self.halves)) 0 cm\n\(body)Q\n"
       return Line(operators: placed, width: width)
     }
 
@@ -102,6 +104,11 @@
         }
       }
       return body.isEmpty ? "" : body + "f\n"
+    }
+
+    /// One number, written the way PDF reads them: no exponents.
+    private static func number(_ value: Double) -> String {
+      String(format: "%.\(Self.decimals)f", value)
     }
 
     /// One point, shifted and rounded.

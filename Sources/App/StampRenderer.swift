@@ -94,6 +94,17 @@
       return StampMark(radius: Self.outerRadius, operators: body)
     }
 
+    /// One number, written the way PDF reads them.
+    ///
+    /// Swift writes a very small double as 3.9e-15, and PDF has no
+    /// exponent notation - a reader meeting one either skips the
+    /// operator or rejects the stream. Rounding sines and cosines of
+    /// right angles to fixed places writes them as 0.0000, which is
+    /// what they are.
+    private static func number(_ value: Double) -> String {
+      String(format: "%.4f", value)
+    }
+
     /// A turn of up to `maximumTilt` degrees clockwise, about the
     /// ring's own centre, so no two stamps land at the same angle.
     private static func tilt(about centre: (x: Double, y: Double)) -> String {
@@ -103,7 +114,9 @@
       let sine = sin(turn)
       let shiftX = centre.x - centre.x * cosine + centre.y * sine
       let shiftY = centre.y - centre.x * sine - centre.y * cosine
-      return "q \(cosine) \(sine) \(-sine) \(cosine) \(shiftX) \(shiftY) cm\n"
+      return "q \(Self.number(cosine)) \(Self.number(sine))"
+        + " \(Self.number(-sine)) \(Self.number(cosine))"
+        + " \(Self.number(shiftX)) \(Self.number(shiftY)) cm\n"
     }
 
     /// The holder's handwriting, scaled into the ring and standing on
@@ -114,12 +127,18 @@
     ) -> String {
       let scale = Self.signatureWidth / artwork.width
       let left = centre.x - Self.signatureWidth / Self.halves
-      var body = "q \(scale) 0 0 \(scale) \(left) \(centre.y - Self.signatureLift) cm\n"
+      var body =
+        "q \(Self.number(scale)) 0 0 \(Self.number(scale))"
+        + " \(Self.number(left)) \(Self.number(centre.y - Self.signatureLift)) cm\n"
       body += artwork.operators
       body += "Q\n"
-      body += "\(Self.baselineWidth) w "
-      body += "\(centre.x - Self.baselineHalfWidth) \(centre.y - Self.baselineDrop) m "
-      body += "\(centre.x + Self.baselineHalfWidth) \(centre.y - Self.baselineDrop) l S\n"
+      body += "\(Self.number(Self.baselineWidth)) w "
+      body +=
+        "\(Self.number(centre.x - Self.baselineHalfWidth))"
+        + " \(Self.number(centre.y - Self.baselineDrop)) m "
+      body +=
+        "\(Self.number(centre.x + Self.baselineHalfWidth))"
+        + " \(Self.number(centre.y - Self.baselineDrop)) l S\n"
       return body
     }
 
@@ -130,7 +149,8 @@
     ) -> String {
       let baseline = centre.y - Self.baselineDrop - Self.nameDrop
       let line = TextOutline.line(text, font: "Helvetica", size: Self.nameSize)
-      return "q 1 0 0 1 \(centre.x) \(baseline) cm\n\(line.operators)Q\n"
+      return "q 1 0 0 1 \(Self.number(centre.x)) \(Self.number(baseline)) cm\n"
+        + "\(line.operators)Q\n"
     }
 
     /// A circle, as four Bezier quarters.
@@ -144,7 +164,8 @@
       lineWidth: Double
     ) -> String {
       let pull = Self.arcControl * radius
-      var body = "\(lineWidth) w\n\(centre.x + radius) \(centre.y) m\n"
+      var body = "\(Self.number(lineWidth)) w\n"
+      body += "\(Self.number(centre.x + radius)) \(Self.number(centre.y)) m\n"
       for quarter in 0..<Self.quarterTurns {
         let opens = Double(quarter) * Self.quarterTurn
         let closes = opens + Self.quarterTurn
@@ -157,8 +178,9 @@
         let leaving = (x: start.x - pull * sin(opens), y: start.y + pull * cos(opens))
         let arriving = (x: end.x + pull * sin(closes), y: end.y - pull * cos(closes))
         body +=
-          "\(leaving.x) \(leaving.y) \(arriving.x) \(arriving.y)"
-          + " \(end.x) \(end.y) c\n"
+          "\(Self.number(leaving.x)) \(Self.number(leaving.y))"
+          + " \(Self.number(arriving.x)) \(Self.number(arriving.y))"
+          + " \(Self.number(end.x)) \(Self.number(end.y)) c\n"
       }
       return body + "h\nS\n"
     }
