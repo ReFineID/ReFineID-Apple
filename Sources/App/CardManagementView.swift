@@ -70,15 +70,6 @@
       .safeAreaInset(edge: .bottom, spacing: 0) {
         attemptsBar
       }
-      .toolbar {
-        Button("Refresh", systemImage: "arrow.clockwise") {
-          Task { await model.refresh() }
-        }
-        .help("Read the attempt counters again")
-        .keyboardShortcut("r", modifiers: .command)
-        .disabled(model.working)
-        .accessibilityIdentifier("managementRefresh")
-      }
       .task { await model.refresh() }
       .onChange(of: model.report) { _, report in
         suggestTask(from: report)

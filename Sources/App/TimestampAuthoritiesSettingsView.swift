@@ -2,50 +2,73 @@
 
   import SwiftUI
 
-  /// The Time-Stamp Authorities pane in Settings: the ordered list an
-  /// archival signature asks for its qualified timestamps, editable
-  /// and restorable to the shipped set.
+  /// The Time-Stamp Authorities pane: the ordered list an archival
+  /// signature asks for its qualified timestamps.
+  ///
+  /// A list rather than rows with arrow buttons. The order is the whole
+  /// point of this pane - the first authority to answer is the one used
+  /// - and dragging is how a Mac reorders a list, so the rows carry no
+  /// buttons for moving and the list carries the behaviour instead.
   internal struct TimestampAuthoritiesSettingsView: View {
     private static let paneWidth: CGFloat = 520
+    private static let listHeight: CGFloat = 160
+    private static let rowSpacing: CGFloat = 8
 
     @State private var authorities = TimestampAuthorityStore.load()
     @State private var newEntry = ""
-    @State private var editingCredentials: String?
+    @State private var selection: String?
+    @State private var editing: String?
     @State private var username = ""
     @State private var password = ""
 
-    /// Whether the entry parses as an HTTP or HTTPS URL.
+    /// Whether the entry names a service this app could reach.
+    ///
+    /// Both schemes are accepted: timestamping is specified over plain
+    /// HTTP and many qualified authorities publish exactly that, so
+    /// insisting on one scheme would refuse half the trusted list.
     private var isEntryUsable: Bool {
       guard let url = URL(string: newEntry), let scheme = url.scheme else {
         return false
       }
-      return scheme == "http" || scheme == "https"
+      return (scheme == "http" || scheme == "https") && url.host != nil
     }
 
     internal var body: some View {
       Form {
         listSection
         editSection
+        if let editing {
+          credentialsSection(for: editing)
+        }
       }
       .formStyle(.grouped)
       .frame(minWidth: Self.paneWidth)
     }
 
-    /// The ordered authorities, first asked first.
+    /// The ordered authorities, dragged into the order they are asked.
     @ViewBuilder private var listSection: some View {
       Section {
-        Text(
-          "Asked in this order when a signature needs a qualified "
-            + "timestamp; the first authority to answer is used."
-        )
-        .font(.footnote)
-        .foregroundStyle(.secondary)
-        ForEach(Array(authorities.enumerated()), id: \.element) { index, authority in
-          authorityRow(index: index, authority: authority)
-          if editingCredentials == authority {
-            credentialRows(for: authority)
+        List(selection: $selection) {
+          ForEach(authorities, id: \.self) { authority in
+            authorityRow(authority)
+          }
+          .onMove { source, destination in
+            authorities.move(fromOffsets: source, toOffset: destination)
+            TimestampAuthorityStore.save(authorities)
+          }
+          .onDelete { offsets in
+            authorities.remove(atOffsets: offsets)
+            TimestampAuthorityStore.save(authorities)
           }
         }
+        .frame(minHeight: Self.listHeight)
+        .accessibilityLabel("Time-stamp authorities, in the order asked")
+      } header: {
+        Text("Asked in this order; the first to answer is used")
+      } footer: {
+        Text("Drag to reorder. Select one and press Delete to remove it.")
+          .font(.footnote)
+          .foregroundStyle(.secondary)
       }
     }
 
@@ -53,7 +76,7 @@
     @ViewBuilder private var editSection: some View {
       Section {
         HStack {
-          TextField("https://", text: $newEntry)
+          TextField("Address of a time-stamp authority", text: $newEntry)
             .textContentType(nil)
             .onSubmit { add() }
             .accessibilityIdentifier("timestampAuthorityEntry")
@@ -64,10 +87,17 @@
           .accessibilityIdentifier("timestampAuthorityAdd")
         }
         HStack {
+          Button("Credentials...") {
+            beginEditingCredentials()
+          }
+          .disabled(selection == nil)
+          .help("Some commercial authorities need a username and password")
           Spacer()
           Button("Restore Defaults") {
             TimestampAuthorityStore.restoreDefaults()
             authorities = TimestampAuthorityStore.load()
+            selection = nil
+            editing = nil
           }
           .disabled(authorities == TimestampAuthorityStore.defaults)
           .accessibilityIdentifier("timestampAuthorityRestore")
@@ -75,81 +105,27 @@
       }
     }
 
-    /// Basic-auth entry for one paid authority; an empty username
-    /// clears it back to public.
+    /// One authority: whether it is qualified, and its address.
     @ViewBuilder
-    private func credentialRows(for authority: String) -> some View {
-      Toggle(
-        "Qualified for eIDAS use (on a national trusted list)",
-        isOn: Binding(
-          get: { TimestampAuthorityStore.isQualified(authority) },
-          set: { TimestampAuthorityStore.setQualified($0, for: authority) }
-        )
-      )
-      .disabled(TimestampAuthorityStore.defaults.contains(authority))
-      .accessibilityIdentifier("timestampAuthorityQualified")
-      TextField("Username", text: $username)
-        .textContentType(nil)
-        .accessibilityIdentifier("timestampAuthorityUsername")
-      SecureField("Password", text: $password)
-        .accessibilityIdentifier("timestampAuthorityPassword")
-      HStack {
-        Spacer()
-        Button("Save Credentials") {
-          TimestampAuthorityStore.saveCredentials(
-            username: username,
-            password: password,
-            for: authority
-          )
-          editingCredentials = nil
-          username = ""
-          password = ""
-        }
-        .accessibilityIdentifier("timestampAuthoritySaveCredentials")
-      }
-    }
-
-    /// One authority: its place, its URL, and the two things a list
-    /// needs - move up and remove.
-    @ViewBuilder
-    private func authorityRow(index: Int, authority: String) -> some View {
-      HStack {
+    private func authorityRow(_ authority: String) -> some View {
+      HStack(spacing: Self.rowSpacing) {
         qualificationBadge(for: authority)
         Text(authority)
-          .textSelection(.enabled)
-        Spacer()
-        Button("Basic authentication", systemImage: "person.badge.key") {
-          if editingCredentials == authority {
-            editingCredentials = nil
-          } else {
-            editingCredentials = authority
-            username = TimestampAuthorityStore.username(for: authority) ?? ""
-            password = ""
-          }
+          .lineLimit(1)
+          .truncationMode(.middle)
+        if TimestampAuthorityStore.username(for: authority) != nil {
+          Image(systemName: "person.badge.key.fill")
+            .foregroundStyle(.secondary)
+            .help("Sends a username and password")
+            .accessibilityLabel("has credentials")
         }
-        .labelStyle(.iconOnly)
-        .help("Credentials for a paid authority; leave empty for none")
-        Button("Move up", systemImage: "arrow.up") {
-          authorities.swapAt(index, index - 1)
-          TimestampAuthorityStore.save(authorities)
-        }
-        .labelStyle(.iconOnly)
-        .disabled(index == 0)
-        .help("Ask this authority earlier")
-        Button("Remove", systemImage: "minus.circle") {
-          authorities.remove(at: index)
-          TimestampAuthorityStore.save(authorities)
-        }
-        .labelStyle(.iconOnly)
-        .help("Remove this authority")
       }
       .accessibilityElement(children: .combine)
-      .accessibilityLabel("Authority \(index + 1)")
       .accessibilityValue(authority)
     }
 
     /// The seal saying whether this service is qualified for eIDAS
-    /// use; color underlines it, the symbol and label carry it.
+    /// use; colour underlines it, the symbol and label carry it.
     @ViewBuilder
     private func qualificationBadge(for authority: String) -> some View {
       let qualified = TimestampAuthorityStore.isQualified(authority)
@@ -157,12 +133,64 @@
         .foregroundStyle(
           qualified ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary)
         )
-        .help(
-          qualified ? "Qualified for eIDAS use" : "Not marked as qualified"
-        )
+        .help(qualified ? "Qualified for eIDAS use" : "Not marked as qualified")
         .accessibilityLabel(
           qualified ? "eIDAS qualified" : "not marked qualified"
         )
+    }
+
+    /// Basic-auth entry and the qualification mark for one authority.
+    @ViewBuilder
+    private func credentialsSection(for authority: String) -> some View {
+      Section {
+        Toggle(
+          "Qualified for eIDAS use (on a national trusted list)",
+          isOn: Binding(
+            get: { TimestampAuthorityStore.isQualified(authority) },
+            set: { TimestampAuthorityStore.setQualified($0, for: authority) }
+          )
+        )
+        .disabled(TimestampAuthorityStore.defaults.contains(authority))
+        .accessibilityIdentifier("timestampAuthorityQualified")
+        TextField("Username", text: $username)
+          .textContentType(nil)
+          .accessibilityIdentifier("timestampAuthorityUsername")
+        SecureField("Password", text: $password)
+          .accessibilityIdentifier("timestampAuthorityPassword")
+        HStack {
+          Spacer()
+          Button("Done") {
+            saveCredentials(for: authority)
+          }
+          .accessibilityIdentifier("timestampAuthoritySaveCredentials")
+        }
+      } header: {
+        Text(authority)
+      } footer: {
+        Text("Leave the username empty for a public authority.")
+          .font(.footnote)
+          .foregroundStyle(.secondary)
+      }
+    }
+
+    /// Opens the credential fields for the selected authority.
+    private func beginEditingCredentials() {
+      guard let authority = selection else { return }
+      editing = authority
+      username = TimestampAuthorityStore.username(for: authority) ?? ""
+      password = ""
+    }
+
+    /// Stores what was entered and closes the fields.
+    private func saveCredentials(for authority: String) {
+      TimestampAuthorityStore.saveCredentials(
+        username: username,
+        password: password,
+        for: authority
+      )
+      editing = nil
+      username = ""
+      password = ""
     }
 
     /// Appends a checked entry and persists the list.

@@ -88,17 +88,25 @@
       working = false
       guard let activation else {
         failure = "The card could not be classified for activation."
+        await refresh()
         return false
       }
+      let succeeded = describe(activation)
+      await refresh()
+      return succeeded
+    }
+
+    /// Turns an activation result into the sentence shown, and says
+    /// whether both PINs were set.
+    private func describe(_ activation: CardMaintenance.ActivationReport) -> Bool {
+      let entry = activationEntryName(activation.scheme)
       switch (activation.pin1, activation.pin2) {
       case (.success, .success):
         notice = "Card activated: PIN1 and PIN2 are set."
-        await refresh()
         return true
       case (.success, .some(let second)):
-        failure = message(for: second, presenting: activationEntryName(activation.scheme))
+        failure = message(for: second, presenting: entry)
           .map { "PIN1 was set, but PIN2 was not: \($0)" }
-        await refresh()
         return false
       case (.alreadyActivated, _):
         failure =
@@ -106,8 +114,7 @@
           + "a retry; enable reactivation only if you are sure."
         return false
       case (let first, _):
-        failure = message(for: first, presenting: activationEntryName(activation.scheme))
-        await refresh()
+        failure = message(for: first, presenting: entry)
         return false
       }
     }
@@ -138,14 +145,16 @@
       working = false
       if outcome == .success {
         notice = accepted
-        await refresh()
-        return true
+      } else {
+        failure = message(for: outcome, presenting: presenting)
       }
-      failure = message(for: outcome, presenting: presenting)
-      if case .rejected = outcome {
-        await refresh()
-      }
-      return false
+      // Unconditional: the counters are read again after every
+      // operation, whatever it answered, because a wrong entry and a
+      // newly blocked credential both move them and there is no other
+      // way to see it. This is why the window carries no refresh
+      // control - the numbers are never stale after an action.
+      await refresh()
+      return outcome == .success
     }
 
     /// One sentence per outcome; nil only for success.
