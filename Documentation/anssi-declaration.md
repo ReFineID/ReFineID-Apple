@@ -84,17 +84,6 @@ Les fonctions cryptographiques sont les suivantes :
    transmet à la carte, et vérifie le résultat avec la clé publique de la
    carte avant de le restituer au système d'exploitation.
 
-Le chiffrement est confiné à ce canal et à la seule interface sans
-contact. Il n'est pas offert au porteur : il est imposé par la politique
-d'accès de la carte. La clé publiée au système d'exploitation est
-réservée à la signature : le moyen n'offre à ses appelants ni
-déchiffrement ni accord de clés.
-
-Le moyen ne chiffre pas les données de l'utilisateur au repos, ne chiffre
-ni fichiers ni supports de stockage, n'offre ni messagerie ni téléphonie
-chiffrées, et ne met en œuvre aucun réseau privé virtuel (VPN) ni tunnel
-de transport.
-
 #### B.3.2. Indiquez à quelle(s) catégorie(s) se rapporte(nt) la ou les fonctions cryptographiques du moyen
 
 Authentification, intégrité, confidentialité et signature.
@@ -297,16 +286,6 @@ The cryptographic functions are:
    card, which performs the signature. The means formats the input,
    passes it to the card, and verifies the result against the card's own
    public key before returning it to the operating system.
-
-The encryption is confined to that channel and to the contactless
-interface alone. It is not offered to the holder: it is imposed by the
-card's access policy. The key published to the operating system is
-reserved for signature: the means offers its callers neither decryption
-nor key agreement.
-
-The means does not encrypt user data at rest, does not encrypt files or
-storage, provides no encrypted messaging or telephony, and implements no
-VPN or transport tunnel.
 
 #### B.3.2. Categories the cryptographic functions fall under
 
