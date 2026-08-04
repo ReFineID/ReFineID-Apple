@@ -36,26 +36,28 @@
     private static let pageHeight = 560.0
 
     /// The ring.
-    private static let outerRadius = 112.0
-    private static let innerRadius = 100.0
-    private static let outerLineWidth = 3.0
-    private static let innerLineWidth = 1.5
+    private static let outerRadius = 64.0
+    private static let innerRadius = 57.0
+    private static let outerLineWidth = 1.8
+    private static let innerLineWidth = 0.9
 
     /// How far a glyph's baseline sits from the ring it follows.
-    private static let ringMargin = 2.5
+    private static let ringMargin = 1.6
 
     /// The signature's width inside the ring, and the baseline it
     /// stands on.
-    private static let signatureWidth = 150.0
-    private static let baselineHalfWidth = 78.0
-    private static let baselineDrop = 10.0
-    private static let signatureLift = 4.0
-    private static let baselineWidth = 2.0
+    private static let signatureWidth = 86.0
+    private static let baselineHalfWidth = 45.0
+    private static let baselineDrop = 6.0
+    private static let signatureLift = 2.0
+    private static let baselineWidth = 1.2
 
     /// Type sizes.
-    private static let ringTextSize = 7.5
-    private static let nameSize = 9.0
-    private static let nameDrop = 16.0
+    private static let ringTextSize = 4.3
+    private static let nameSize = 5.0
+
+    /// How far the name sits below the line the signature stands on.
+    private static let nameDrop = 9.0
 
     /// The circle's Bezier constant: how far a control point sits
     /// along the tangent to approximate a quarter turn.
@@ -90,7 +92,7 @@
     /// The page carrying the mark.
     internal static func page(_ statement: Statement) -> StampPage {
       let centreX = Self.pageWidth / Self.halves
-      let centreY = Self.pageHeight - Self.outerRadius - Self.nameDrop * Self.halves
+      let centreY = Self.pageHeight - Self.outerRadius - Self.nameDrop
       var body = "q\n\(Self.inkColour) RG \(Self.inkColour) rg\n"
       let centre = (x: centreX, y: centreY)
       body += Self.circle(
@@ -152,10 +154,13 @@
       _ text: String,
       centre: (x: Double, y: Double)
     ) -> String {
-      let width = Self.width(text, font: "Helvetica-Bold", size: Self.nameSize)
-      let baseline = centre.y - Self.outerRadius - Self.nameDrop
+      let width = Self.width(text, font: "Helvetica", size: Self.nameSize)
+      // Under the line the signature stands on, inside the ring: the
+      // hand above, the name it belongs to below.
+      let baseline = centre.y - Self.baselineDrop - Self.nameDrop
+      let left = centre.x - width / Self.halves
       return """
-        BT /F2 \(Self.nameSize) Tf 1 0 0 1 \(centre.x - width / Self.halves) \(baseline) Tm
+        BT /F1 \(Self.nameSize) Tf 1 0 0 1 \(left) \(baseline) Tm
         (\(Self.escaped(text))) Tj ET
 
         """

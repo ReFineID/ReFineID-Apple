@@ -30,7 +30,7 @@
           if signing.readingStamp {
             ProgressView().controlSize(.small)
           }
-          TextField("six digits", text: $accessNumber)
+          TextField("", text: $accessNumber)
             .frame(width: Self.entryWidth)
             .multilineTextAlignment(.trailing)
             .onChange(of: accessNumber) { _, typed in

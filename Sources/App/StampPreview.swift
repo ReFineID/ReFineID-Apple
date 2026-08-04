@@ -23,7 +23,12 @@
           size.width / artwork.width, size.height / artwork.height
         )
         guard scale > 0 else { return }
-        context.scaleBy(x: scale, y: scale)
+        // The operators are in PDF coordinates, which count up from
+        // the bottom; a canvas counts down from the top. Without the
+        // flip the preview shows the signature upside down while the
+        // page it previews is the right way up.
+        context.translateBy(x: 0, y: artwork.height * scale)
+        context.scaleBy(x: scale, y: -scale)
         context.fill(Self.path(from: artwork.operators), with: .color(.primary))
       }
       .accessibilityHidden(true)
