@@ -32,6 +32,7 @@
     private let model = LoginIdentityModel.shared
     @State private var signing = SignDocumentModel()
     @State private var pin2 = ""
+    @State private var accessNumber = ""
     @State private var isTargeted = false
     @FocusState private var pinFocused: Bool
 
@@ -161,7 +162,8 @@
       }
     }
 
-    /// PIN2 and the action, shown once a document is waiting.
+    /// PIN2, the optional stamp, and the action - shown once a
+    /// document is waiting.
     @ViewBuilder private var signatureSection: some View {
       if signing.pending != nil {
         Section {
@@ -172,6 +174,7 @@
             .focused($pinFocused)
             .onSubmit { sign() }
             .accessibilityIdentifier("signPin2")
+          StampRow(signing: signing, accessNumber: $accessNumber)
           HStack {
             Spacer()
             Button("Sign...") { sign() }

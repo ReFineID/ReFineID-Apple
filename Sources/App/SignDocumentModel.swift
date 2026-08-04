@@ -25,6 +25,16 @@
     /// Where the signed file landed.
     internal private(set) var signed: URL?
 
+    /// The traced signature read from the card, when a card access
+    /// number was given and the card carried one.
+    internal private(set) var stamp: SignatureArtwork.Artwork?
+
+    /// Why the stamp could not be read, as one user-facing sentence.
+    internal private(set) var stampFailure: String?
+
+    /// Whether the card is being read for the signature right now.
+    internal private(set) var readingStamp = false
+
     /// The signed file's place: beside the original, stamped with the
     /// UTC instant, colons replaced so the name is safe everywhere.
     nonisolated internal static func destination(
@@ -34,12 +44,12 @@
       let formatter = ISO8601DateFormatter()
       formatter.timeZone = TimeZone(secondsFromGMT: 0)
       formatter.formatOptions = [.withInternetDateTime]
-      let stamp = formatter.string(from: instant)
+      let instantText = formatter.string(from: instant)
         .replacingOccurrences(of: ":", with: "-")
         .replacingOccurrences(of: "+00-00", with: "Z")
       let name = source.deletingPathExtension().lastPathComponent
       return source.deletingLastPathComponent()
-        .appendingPathComponent("\(name) - signed at \(stamp)")
+        .appendingPathComponent("\(name) - signed at \(instantText)")
         .appendingPathExtension(source.pathExtension)
     }
 
@@ -101,11 +111,50 @@
       signed = nil
     }
 
+    /// Reads the holder's handwritten signature off the card and
+    /// traces it, so the stamp can be seen before anything is signed.
+    ///
+    /// An empty access number clears the stamp rather than reading:
+    /// no number, no stamp, which is the whole of the setting.
+    internal func readStamp(accessNumber digits: String) async {
+      guard !digits.isEmpty else {
+        stamp = nil
+        stampFailure = nil
+        return
+      }
+      guard !readingStamp else { return }
+      readingStamp = true
+      stampFailure = nil
+      defer { readingStamp = false }
+      switch await CardMaintenance.displayedSignature(accessNumber: digits) {
+      case .image(let bytes):
+        stamp = SignatureArtwork.traced(bytes)
+        stampFailure =
+          stamp == nil
+          ? String(localized: "The signature image could not be read.") : nil
+      case .absent:
+        stamp = nil
+        stampFailure = String(
+          localized: "This card carries no handwritten signature."
+        )
+      case .wrongAccessNumber:
+        stamp = nil
+        stampFailure = String(
+          localized: "That card access number was refused."
+        )
+      case .noCard:
+        stamp = nil
+        stampFailure = String(localized: "No readable card.")
+      }
+    }
+
     /// Forgets the pending file and any outcome.
     internal func clear() {
       pending = nil
       failure = nil
       signed = nil
+      stamp = nil
+      stampFailure = nil
     }
 
     /// Signs the pending document into `destination`.
