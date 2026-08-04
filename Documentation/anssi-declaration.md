@@ -12,9 +12,7 @@ numérique et du chapitre II du décret n° 2007-663 du 2 mai 2007.
 
 ReFineID est un intergiciel qui rend la carte nationale d'identité
 finlandaise utilisable comme identité numérique sur les plateformes
-Apple. Il établit avec la carte un canal chiffré et assure à ce titre
-une fonction de confidentialité, outre l'authentification, l'intégrité
-et la signature : sa fourniture relève du régime de déclaration.
+Apple.
 
 Le déclarant demande la délivrance de l'attestation de déclaration.
 
@@ -123,8 +121,7 @@ RFC 8017.
 #### Gestion des clés
 
 - Les clés privées sont générées dans la carte par l'autorité émettrice
-  et n'en sortent jamais. Le moyen ne peut pas les lire et ne les détient
-  jamais.
+  et n'en sortent jamais.
 - Les clés de session PACE sont éphémères.
 - Aucun séquestre de clés, aucun recouvrement, aucune gestion de clés à
   distance.
@@ -142,11 +139,8 @@ ligne.
 
 ### Expliquez pourquoi la fonctionnalité cryptographique du moyen ne peut pas être modifiée facilement par l'utilisateur
 
-La suite cryptographique est imposée par la carte et fixée à la
-compilation ; aucun réglage ne permet de choisir un algorithme, une
-longueur de clé ou un protocole différent. L'application est signée et
-son intégrité vérifiée par le système d'exploitation, qui refuse
-d'exécuter un binaire modifié.
+La suite cryptographique est imposée par la carte à puce finlandaise
+délivrée par l'État et ne peut pas être modifiée par l'utilisateur.
 
 ### Expliquez en quoi les modalités d'installation du moyen ne nécessitent pas d'assistance importante ultérieure de la part du fournisseur
 
@@ -214,10 +208,7 @@ No 2004-575 of 21 June 2004 for confidence in the digital economy and
 chapter II of decree No 2007-663 of 2 May 2007.
 
 ReFineID is middleware that makes the Finnish national identity card
-usable as a digital identity on Apple platforms. It establishes an
-encrypted channel with the card and so provides a confidentiality
-function, besides authentication, integrity and signature: its supply
-falls under the declaration regime.
+usable as a digital identity on Apple platforms.
 
 The declarant requests the issue of the corresponding attestation de
 déclaration.
@@ -324,8 +315,7 @@ SHA-2, FIPS 180-4; ECDSA, FIPS 186-5 and ANSI X9.62; RSA, RFC 8017.
 #### Key management
 
 - The card's private keys are generated on the card by the issuing
-  authority and never leave it. The means cannot read them and never
-  holds them.
+  authority and never leave it.
 - PACE session keys are ephemeral.
 - There is no key escrow, no key recovery and no remote key
   management.
@@ -342,10 +332,8 @@ in France who wish to authenticate to online services.
 
 ### Explain why the cryptographic functionality cannot easily be modified by the user
 
-The cryptographic suite is imposed by the card and fixed at compile
-time; no setting allows a different algorithm, key length or protocol to
-be chosen. The application is signed and its integrity verified by the
-operating system, which refuses to run a modified binary.
+The cryptographic suite is imposed by the Finnish government-issued
+smart card and cannot be modified by the user.
 
 ### Explain how installation requires no significant subsequent support from the supplier
 
