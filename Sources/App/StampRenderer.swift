@@ -14,8 +14,11 @@
   internal enum StampRenderer {
     /// What the mark states.
     internal struct Statement {
-      /// The common name the certificate states.
+      /// The holder as a person reads it.
       internal let name: String
+
+      /// The identifier stated under it.
+      internal let identifier: String
 
       /// The holder's traced handwriting.
       internal let signature: SignatureArtwork.Artwork
@@ -98,7 +101,7 @@
         centre: centre, radius: Self.innerRadius, lineWidth: Self.innerLineWidth
       )
       body += Self.handwriting(statement.signature, centre: (centreX, centreY))
-      body += Self.name(statement.name, centre: (centreX, centreY))
+      body += Self.name(statement, centre: (centreX, centreY))
       body += "Q\nQ\n"
       return StampMark(radius: Self.outerRadius, operators: body)
     }
@@ -169,24 +172,19 @@
     /// has to shrink to fit; on two it reads like a signature block,
     /// and each line is short enough to stay legible.
     private static func name(
-      _ text: String,
+      _ statement: Statement,
       centre: (x: Double, y: Double)
     ) -> String {
-      let split = text.lastIndex(of: " ")
-      let who = split.map { index in String(text[text.startIndex..<index]) } ?? text
-      let identifier =
-        split.map { index in String(text[text.index(after: index)...]) } ?? ""
       var body = Self.line(
-        who, centre: centre, drop: Self.nameDrop, size: Self.nameSize
+        statement.name, centre: centre, drop: Self.nameDrop, size: Self.nameSize
       )
-      if !identifier.isEmpty {
-        body += Self.line(
-          identifier,
-          centre: centre,
-          drop: Self.nameDrop + Self.nameLineGap,
-          size: Self.nameSize * Self.identifierShare
-        )
-      }
+      guard !statement.identifier.isEmpty else { return body }
+      body += Self.line(
+        statement.identifier,
+        centre: centre,
+        drop: Self.nameDrop + Self.nameLineGap,
+        size: Self.nameSize * Self.identifierShare
+      )
       return body
     }
 

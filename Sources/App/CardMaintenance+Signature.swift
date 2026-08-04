@@ -30,8 +30,11 @@
       /// The image, as the card stores it.
       internal let bytes: Data
 
-      /// The common name the qualified certificate states.
+      /// The holder as a person reads it.
       internal let name: String
+
+      /// The identifier the certificate states.
+      internal let identifier: String
     }
 
     /// What reading the signature answered.
@@ -69,11 +72,19 @@
         guard
           let certificate = try? operations.readCertificate(.qualifiedSignature),
           let facts = CertificateFacts(der: certificate),
-          let name = DistinguishedName.commonName(inName: facts.subjectName)
+          let name = DistinguishedName.personalName(inName: facts.subjectName)
+            ?? DistinguishedName.commonName(inName: facts.subjectName)
         else {
           return .absent
         }
-        return .image(Mark(bytes: image.bytes, name: name))
+        return .image(
+          Mark(
+            bytes: image.bytes,
+            name: name,
+            identifier: DistinguishedName.identifier(inName: facts.subjectName)
+              ?? ""
+          )
+        )
       }
       return answer ?? .noCard
     }

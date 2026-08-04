@@ -9,11 +9,32 @@ import Foundation
 /// common name, so the reading lives here once rather than in each of
 /// them.
 public enum DistinguishedName {
-  /// `id-at-commonName` (RFC 5280 appendix A), encoded the same way
-  /// the writer encodes every other identifier so the comparison is
-  /// against one encoding rather than a hand-copied one.
-  private static var commonNameOid: Data {
-    DerEncoder.objectIdentifier(SignOids.commonName)
+  /// The holder as a person reads it: given name, then surname, each
+  /// capitalised, or nil when the name states neither.
+  ///
+  /// Built from the separate attributes rather than by cutting up the
+  /// common name. A certificate states "SURNAME FORENAME identifier"
+  /// there, which is an index entry, not how anyone writes their own
+  /// name - and taking it apart by looking for spaces guesses at
+  /// something the certificate already says exactly.
+  ///
+  /// The attributes are stored in capitals; they are recased for
+  /// reading, which handles the hyphens and spaces inside a compound
+  /// name. A name whose own spelling defies that rule - one with a
+  /// capital in the middle - comes out conventionally rather than
+  /// correctly, which is the usual bargain with recasing.
+  public static func personalName(inName name: Data) -> String? {
+    let given = Self.attribute(SignOids.givenName, inName: name)
+    let family = Self.attribute(SignOids.surname, inName: name)
+    let stated = [given, family].compactMap(\.self)
+    let spoken = stated.map(\.capitalized)
+    guard !spoken.isEmpty else { return nil }
+    return spoken.joined(separator: " ")
+  }
+
+  /// The holder's identifier, as the certificate states it.
+  public static func identifier(inName name: Data) -> String? {
+    Self.attribute(SignOids.serialNumber, inName: name)
   }
 
   /// The common name in a DER-encoded Name, or nil when it carries
@@ -26,6 +47,11 @@ public enum DistinguishedName {
   /// accepted - a name this cannot read honestly is better absent
   /// than mangled.
   public static func commonName(inName name: Data) -> String? {
+    Self.attribute(SignOids.commonName, inName: name)
+  }
+
+  /// One attribute's value, found by its object identifier.
+  private static func attribute(_ oid: String, inName name: Data) -> String? {
     var outer = DerReader(name)
     guard
       let sequence = outer.next(),
@@ -37,7 +63,9 @@ public enum DistinguishedName {
     while let relativeName = relativeNames.next() {
       var pairs = DerReader(name, within: relativeName)
       while let pair = pairs.next() {
-        guard let found = Self.commonName(inPair: pair, of: name) else {
+        guard
+          let found = Self.value(inPair: pair, of: name, matching: oid)
+        else {
           continue
         }
         return found
@@ -48,14 +76,15 @@ public enum DistinguishedName {
 
   /// The value of one type-and-value pair, when its type is the
   /// common name.
-  private static func commonName(
+  private static func value(
     inPair pair: DerReader.Element,
-    of name: Data
+    of name: Data,
+    matching oid: String
   ) -> String? {
     var parts = DerReader(name, within: pair)
     guard
       let type = parts.next(),
-      DerReader(name).data(of: type) == Self.commonNameOid,
+      DerReader(name).data(of: type) == DerEncoder.objectIdentifier(oid),
       let value = parts.next(),
       Self.isTextTag(value.tag)
     else {

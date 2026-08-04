@@ -45,6 +45,9 @@
     /// beside the signature image.
     private var signerName: String?
 
+    /// The identifier that goes under it.
+    private var signerIdentifier = ""
+
     /// The signed file's place: beside the original, stamped with the
     /// UTC instant, colons replaced so the name is safe everywhere.
     nonisolated internal static func destination(
@@ -128,6 +131,7 @@
       return StampRenderer.mark(
         StampRenderer.Statement(
           name: name,
+          identifier: signerIdentifier,
           signature: stamp
         )
       )
@@ -153,6 +157,7 @@
       switch await CardMaintenance.displayedSignature(accessNumber: digits) {
       case .image(let mark):
         signerName = mark.name
+        signerIdentifier = mark.identifier
         stamp = SignatureArtwork.traced(mark.bytes)
         stampFailure =
           stamp == nil

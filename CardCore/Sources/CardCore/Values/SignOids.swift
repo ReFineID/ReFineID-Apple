@@ -55,6 +55,16 @@ internal enum SignOids {
   /// to read (RFC 5280 appendix A).
   internal static let commonName = "2.5.4.3"
 
+  /// id-at-surname (RFC 5280 appendix A).
+  internal static let surname = "2.5.4.4"
+
+  /// id-at-serialNumber, which on a citizen certificate carries the
+  /// holder's electronic transaction identifier.
+  internal static let serialNumber = "2.5.4.5"
+
+  /// id-at-givenName.
+  internal static let givenName = "2.5.4.42"
+
   /// SHA-384 (RFC 5754); parameters absent, never NULL.
   internal static let sha384 = "2.16.840.1.101.3.4.2.2"
 
