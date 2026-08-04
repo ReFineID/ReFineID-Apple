@@ -43,6 +43,8 @@
 
     private static let windowWidth: CGFloat = 460
 
+    private static let rowSymbolSpacing: CGFloat = 6
+
     @State private var model = CardManagementModel()
     @State private var task: ManagementTask = .changePin1
     @State private var hasChosenTask = false
@@ -59,6 +61,7 @@
         Button("Refresh", systemImage: "arrow.clockwise") {
           Task { await model.refresh() }
         }
+        .help("Read the attempt counters again")
         .disabled(model.working)
         .accessibilityIdentifier("managementRefresh")
       }
@@ -127,6 +130,46 @@
       }
     }
 
+    /// The color-independent state marker beside each count.
+    private static func attemptsSymbol(_ outcome: RetryProbeOutcome?) -> String {
+      switch outcome {
+      case .remaining(let count):
+        count.isBlocked
+          ? "xmark.octagon.fill"
+          : count.attemptsRemaining >= RetryFloor.minimumAttemptsToProceed
+            ? "checkmark.circle.fill"
+            : "exclamationmark.triangle.fill"
+      case .verified:
+        "checkmark.circle.fill"
+      case .locked, .invalidated:
+        "xmark.octagon.fill"
+      case .noInformation, .other, .none:
+        "questionmark.circle"
+      }
+    }
+
+    /// What VoiceOver says for one reading.
+    private static func attemptsSpoken(_ outcome: RetryProbeOutcome?) -> String {
+      switch outcome {
+      case .remaining(let count):
+        if count.attemptsRemaining >= RetryFloor.minimumAttemptsToProceed {
+          String(localized: "\(count.attemptsRemaining) attempts remaining")
+        } else {
+          String(localized: "\(count.attemptsRemaining) attempts remaining - low")
+        }
+      case .verified:
+        String(localized: "verified this session")
+      case .locked:
+        String(localized: "blocked - unblock with the PUK")
+      case .invalidated:
+        String(localized: "invalidated - contact the issuer")
+      case .noInformation, .other:
+        String(localized: "state unknown")
+      case .none:
+        String(localized: "no card present")
+      }
+    }
+
     /// One probe outcome as a short cell.
     private static func attemptsText(_ outcome: RetryProbeOutcome?) -> String {
       switch outcome {
@@ -163,14 +206,21 @@
       }
     }
 
-    /// One credential's reading as a colored row.
+    /// One credential's reading: a symbol and text carry the state, the
+    /// color only underlines it - never color alone.
     @ViewBuilder
     private func attemptsRow(_ name: String, _ outcome: RetryProbeOutcome?) -> some View {
       LabeledContent(name) {
-        Text(Self.attemptsText(outcome))
-          .foregroundStyle(Self.attemptsColor(outcome))
-          .monospacedDigit()
+        HStack(spacing: Self.rowSymbolSpacing) {
+          Image(systemName: Self.attemptsSymbol(outcome))
+          Text(Self.attemptsText(outcome))
+            .monospacedDigit()
+        }
+        .foregroundStyle(Self.attemptsColor(outcome))
       }
+      .accessibilityElement(children: .combine)
+      .accessibilityLabel(name)
+      .accessibilityValue(Self.attemptsSpoken(outcome))
     }
 
     /// Opens on what the card needs, until the holder chooses.

@@ -32,18 +32,22 @@
     }
 
     internal var body: some View {
-      Section("Unblock a PIN") {
+      Section {
         entryRows
         if !new.isEmpty, !repeated.isEmpty, new != repeated {
           Text("The new entries differ.")
             .font(.footnote)
             .foregroundStyle(.secondary)
         }
-        Button("Unblock") {
-          unblock()
+        HStack {
+          Spacer()
+          Button("Unblock") {
+            unblock()
+          }
+          .buttonStyle(.borderedProminent)
+          .disabled(!isComplete || model.working)
+          .accessibilityIdentifier("managementUnblock")
         }
-        .disabled(!isComplete || model.working)
-        .accessibilityIdentifier("managementUnblock")
       }
     }
 

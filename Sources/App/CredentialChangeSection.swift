@@ -49,7 +49,7 @@
     }
 
     internal var body: some View {
-      Section("Change \(credential.name)") {
+      Section {
         SecureField("Current \(credential.name)", text: $current)
           .onChange(of: current) { _, typed in
             current = LimitedDigits.pin(typed)
@@ -70,11 +70,15 @@
             .font(.footnote)
             .foregroundStyle(.secondary)
         }
-        Button("Change \(credential.name)") {
-          change()
+        HStack {
+          Spacer()
+          Button("Change \(credential.name)") {
+            change()
+          }
+          .buttonStyle(.borderedProminent)
+          .disabled(!isComplete || model.working)
+          .accessibilityIdentifier("managementChange\(credential.name)")
         }
-        .disabled(!isComplete || model.working)
-        .accessibilityIdentifier("managementChange\(credential.name)")
       }
     }
 

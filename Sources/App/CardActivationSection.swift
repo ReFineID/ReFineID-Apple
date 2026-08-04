@@ -31,7 +31,7 @@
     }
 
     internal var body: some View {
-      Section("Activate the card") {
+      Section {
         Text(
           "For a new card: enter the activation code or activation PIN "
             + "from the issuance letter, and choose both PINs."
@@ -41,11 +41,15 @@
         entryRows
         Toggle("Allow reactivation", isOn: $allowReactivation)
           .accessibilityIdentifier("managementActivationOverride")
-        Button("Activate") {
-          activate()
+        HStack {
+          Spacer()
+          Button("Activate") {
+            activate()
+          }
+          .buttonStyle(.borderedProminent)
+          .disabled(!isComplete || model.working)
+          .accessibilityIdentifier("managementActivate")
         }
-        .disabled(!isComplete || model.working)
-        .accessibilityIdentifier("managementActivate")
       }
     }
 
