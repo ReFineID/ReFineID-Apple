@@ -20,8 +20,10 @@ import Foundation
 ///
 /// The advertised AID is the ICAO eMRTD LDS application, chosen because a
 /// Finnish ID card implements it as a travel document and answers a SELECT
-/// for it over the contactless interface before PACE has run, which the
-/// PKCS#15 application does not.
+/// for it before PACE has run, which the PKCS#15 application does not.
+/// Measured on 2026-08-04, that SELECT is answered on either interface -
+/// contact as well as contactless - though every file inside stays sealed
+/// until PACE, so what discovery gains is only the answer itself.
 ///
 /// On macOS the extension still builds and installs; there is no NFC slot
 /// there, so it is simply never asked for anything.

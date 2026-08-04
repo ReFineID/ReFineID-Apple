@@ -36,6 +36,33 @@ to contact:
 The CAN is not a PIN: it authorizes *reading* the card in a field, not
 signing. PIN1 still gates every signature.
 
+## The travel-document application, and what it holds
+
+The card is also an ICAO 9303 travel document. Its eMRTD application
+(AID `A0000002471001`) answers a SELECT on **either** interface --
+measured over a contact reader on 2026-08-04, not only contactless --
+but every file inside it is refused with `SW=6982` until PACE has run,
+exactly like the PKCS#15 application contactless. The same CAN and the
+same brainpoolP384r1 PACE open both.
+
+`EF.COM` on a 2026 card lists five data groups:
+
+| Data group | Tag | Content |
+|---|---|---|
+| DG1 | `61` | machine-readable zone |
+| DG2 | `75` | facial image |
+| DG3 | `63` | fingerprints, sealed behind extended access control |
+| DG7 | `67` | **the holder's handwritten signature** |
+| DG14 | `6E` | chip authentication public keys |
+
+DG7 carries one instance -- the count is explicit in the template and
+the declared length leaves room for no other -- as a baseline JPEG,
+528 x 88 pixels, about 3.7 kB. That is the image the holder signed at
+the registration desk, and reading it needs nothing the app does not
+already do for a login: PACE with the CAN, then a plain READ BINARY
+behind the secure channel. No PIN is presented, so no retry counter is
+touched.
+
 ## The NFC architecture on iOS 26
 
 iOS 26 added `TKSmartCardSlotManager.createNFCSlot(message:)` and
