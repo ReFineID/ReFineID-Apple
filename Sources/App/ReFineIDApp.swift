@@ -95,6 +95,14 @@ internal struct ReFineIDApp: App {
   }
 
   internal init() {
+    // Before anything else: this launch becomes the only running
+    // copy. Different bundle paths - /Applications beside a build
+    // from Xcode - are different apps to LaunchServices, so nothing
+    // else enforces it.
+    #if os(macOS)
+      SingleInstance.enforce()
+    #endif
+
     // Builds with the retired fifteen-minute policy wrote a second PIN1
     // item. Nothing reads it now, so remove it on the first launch after
     // an upgrade rather than leave sensitive dead data in the keychain.
