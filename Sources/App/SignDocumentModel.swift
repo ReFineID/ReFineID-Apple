@@ -129,12 +129,6 @@
       guard let stamp, let name = signerName else { return nil }
       return StampRenderer.page(
         StampRenderer.Statement(
-          ringTop: String(
-            localized: "La signature est une signature électronique qualifiée"
-          ),
-          ringBottom: String(
-            localized: "article 25 §2 — règlement (UE) n° 910/2014"
-          ),
           name: name,
           signature: stamp,
           attestation: attestation

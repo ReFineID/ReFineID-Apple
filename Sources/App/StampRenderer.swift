@@ -14,13 +14,6 @@
   internal enum StampRenderer {
     /// What the mark states.
     internal struct Statement {
-      /// The article the signature takes its effect from, around the
-      /// top of the ring.
-      internal let ringTop: String
-
-      /// Its citation, around the bottom.
-      internal let ringBottom: String
-
       /// The common name the certificate states.
       internal let name: String
 
@@ -41,9 +34,6 @@
     private static let outerLineWidth = 1.8
     private static let innerLineWidth = 0.9
 
-    /// How far a glyph's baseline sits from the ring it follows.
-    private static let ringMargin = 1.6
-
     /// The signature's width inside the ring, and the baseline it
     /// stands on.
     private static let signatureWidth = 86.0
@@ -53,7 +43,6 @@
     private static let baselineWidth = 1.2
 
     /// Type sizes.
-    private static let ringTextSize = 4.3
     private static let nameSize = 5.0
 
     /// How far the name sits below the line the signature stands on.
@@ -93,7 +82,7 @@
     /// each of them to be about half a millimetre - so the code is
     /// the size it has to be to scan, not the size that would look
     /// tidy.
-    private static let codeSize = 150.0
+    private static let codeSize = 220.0
     private static let codeMargin = 96.0
 
     /// The page carrying the mark.
@@ -107,21 +96,6 @@
       )
       body += Self.circle(
         centre: centre, radius: Self.innerRadius, lineWidth: Self.innerLineWidth
-      )
-      // Top glyphs grow outward from their baseline and bottom glyphs
-      // grow inward, so the two baselines sit on opposite sides of the
-      // band to leave the same margin against both rings.
-      body += Self.arcText(
-        statement.ringTop,
-        radius: Self.innerRadius + Self.ringMargin,
-        centre: (centreX, centreY),
-        overTheTop: true
-      )
-      body += Self.arcText(
-        statement.ringBottom,
-        radius: Self.outerRadius - Self.ringMargin,
-        centre: (centreX, centreY),
-        overTheTop: false
       )
       body += Self.handwriting(statement.signature, centre: (centreX, centreY))
       body += Self.name(statement.name, centre: (centreX, centreY))
@@ -201,42 +175,6 @@
           + " \(end.x) \(end.y) c\n"
       }
       return body + "h\nS\n"
-    }
-
-    /// Glyphs laid along an arc at their measured widths.
-    ///
-    /// `overTheTop` places them for the top of the ring, heads
-    /// outward, reading clockwise; otherwise they are turned to read
-    /// left to right along the bottom.
-    private static func arcText(
-      _ text: String,
-      radius: Double,
-      centre: (x: Double, y: Double),
-      overTheTop: Bool
-    ) -> String {
-      let widths = Self.advances(text, font: "Helvetica", size: Self.ringTextSize)
-      let sweep = widths.reduce(0, +) / radius
-      let half = Self.quarterTurn
-      // The text is centred on the top or the bottom of the ring, so
-      // it starts half its own sweep away from there.
-      let fromCentre = sweep / Self.halves
-      var angle = overTheTop ? half + fromCentre : -half - fromCentre
-      var body = "BT /F1 \(Self.ringTextSize) Tf\n"
-      for (index, character) in text.enumerated() {
-        let step = widths[index] / radius
-        let toGlyphMiddle = step / Self.halves
-        let middle =
-          overTheTop ? angle - toGlyphMiddle : angle + toGlyphMiddle
-        let rotation = overTheTop ? middle - half : middle + half
-        let placed =
-          "\(cos(rotation)) \(sin(rotation))"
-          + " \(-sin(rotation)) \(cos(rotation))"
-          + " \(centre.x + radius * cos(middle))"
-          + " \(centre.y + radius * sin(middle))"
-        body += "\(placed) Tm (\(Self.escaped(String(character)))) Tj\n"
-        angle += overTheTop ? -step : step
-      }
-      return body + "ET\n"
     }
 
     /// Each character's advance, measured rather than assumed, so the
