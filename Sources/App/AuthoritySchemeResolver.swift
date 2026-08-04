@@ -54,7 +54,9 @@
     private static func answers(_ url: URL) async -> Bool {
       var request = URLRequest(url: url)
       request.timeoutInterval = Self.probeTimeout
-      let configuration = SigningNetwork.validatedSessionConfiguration()
+      let configuration = SigningNetwork.validatedSessionConfiguration(
+        validating: true
+      )
       configuration.timeoutIntervalForResource = Self.probeTimeout
       let session = URLSession(configuration: configuration)
       defer { session.finishTasksAndInvalidate() }

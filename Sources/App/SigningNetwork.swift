@@ -43,16 +43,61 @@
     /// Seconds any one exchange may take.
     private static let timeout: TimeInterval = 30
 
+    /// Seconds the DNSSEC-validated attempt may take before the
+    /// unvalidated one is tried.
+    ///
+    /// Short on purpose. A validated lookup that is going to work
+    /// answers as fast as an unvalidated one - measured at a few
+    /// tenths of a second against the EU list of lists - so waiting
+    /// the full timeout only makes an intermittent resolver look like
+    /// a slow signature.
+    private static let validatedAttemptTimeout: TimeInterval = 8
+
     /// HTTP statuses that carry a usable body.
     internal static let successStatuses = 200..<300
 
-    /// An ephemeral session whose DNS answers are validated by the system.
-    internal static func validatedSessionConfiguration()
-      -> URLSessionConfiguration
-    {
+    /// An ephemeral session whose DNS answers are validated by the
+    /// system when `validating`.
+    ///
+    /// DNSSEC is asked for first on every exchange, and is worth
+    /// asking for - but it is not what makes any of this safe. Every
+    /// payload here proves itself: trusted lists carry an XMLDSig
+    /// signature checked against a pinned signer, timestamp tokens
+    /// are verified against those lists, OCSP responses and CRLs are
+    /// signed by the issuer they speak for. A forged DNS answer
+    /// cannot produce any of them, so DNS validation is depth, not
+    /// the foundation.
+    ///
+    /// That is why a validation failure is not the end of the
+    /// exchange. Measured on 2026-08-04, requiring it made
+    /// `ec.europa.eu` unreachable - the list of lists, the root of
+    /// the whole qualification walk - along with two of the four
+    /// shipped authorities, while plain HTTPS answered the same URLs
+    /// in half a second. A requirement that turns correct, live EU
+    /// infrastructure into "cannot sign" is not defending anything.
+    internal static func validatedSessionConfiguration(
+      validating: Bool
+    ) -> URLSessionConfiguration {
       let configuration = URLSessionConfiguration.ephemeral
-      configuration.requiresDNSSECValidation = true
+      configuration.requiresDNSSECValidation = validating
       return configuration
+    }
+
+    /// Whether a failure is the kind a DNSSEC-validated lookup
+    /// produces when the resolver cannot complete it.
+    ///
+    /// Anything else - a refusal, a bad status, a body over the limit
+    /// - is the service's own answer and is never retried.
+    internal static func isResolutionFailure(_ error: Error) -> Bool {
+      let codes: Set<Int> = [
+        NSURLErrorTimedOut,
+        NSURLErrorCannotFindHost,
+        NSURLErrorDNSLookupFailed,
+        NSURLErrorSecureConnectionFailed,
+        NSURLErrorCannotConnectToHost,
+      ]
+      let failure = error as NSError
+      return failure.domain == NSURLErrorDomain && codes.contains(failure.code)
     }
 
     /// POSTs a DER request and answers the DER response.
@@ -147,19 +192,53 @@
       )
     }
 
-    /// Runs one exchange and checks its status and size.
+    /// Runs one exchange, validated if the resolver can manage it.
+    ///
+    /// The validated attempt comes first; only a resolution failure
+    /// earns the second, and only once.
     private static func perform(
       _ request: URLRequest,
       limit: Int,
       endpoint: Endpoint,
       carriesCredentials: Bool
     ) async throws -> Data {
-      let configuration = Self.validatedSessionConfiguration()
+      do {
+        return try await Self.perform(
+          request,
+          limit: limit,
+          endpoint: endpoint,
+          carriesCredentials: carriesCredentials,
+          validating: true
+        )
+      } catch {
+        guard Self.isResolutionFailure(error) else { throw error }
+        return try await Self.perform(
+          request,
+          limit: limit,
+          endpoint: endpoint,
+          carriesCredentials: carriesCredentials,
+          validating: false
+        )
+      }
+    }
+
+    /// One exchange, with the status and size checks.
+    private static func perform(
+      _ request: URLRequest,
+      limit: Int,
+      endpoint: Endpoint,
+      carriesCredentials: Bool,
+      validating: Bool
+    ) async throws -> Data {
+      let configuration = Self.validatedSessionConfiguration(
+        validating: validating
+      )
       configuration.httpCookieStorage = nil
       configuration.urlCache = nil
       configuration.httpAdditionalHeaders = ["Accept": "*/*"]
-      configuration.timeoutIntervalForRequest = Self.timeout
-      configuration.timeoutIntervalForResource = Self.timeout
+      let allowance = validating ? Self.validatedAttemptTimeout : Self.timeout
+      configuration.timeoutIntervalForRequest = allowance
+      configuration.timeoutIntervalForResource = allowance
       let collector = BoundedResponseCollector(
         initial: request,
         endpoint: endpoint,

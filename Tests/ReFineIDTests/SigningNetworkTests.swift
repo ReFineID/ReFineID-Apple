@@ -7,12 +7,49 @@ import Testing
 /// URLSession.
 @Suite
 internal struct SigningNetworkTests {
-  /// Every signing exchange asks the system resolver to validate DNSSEC.
+  /// Every signing exchange asks the system resolver to validate
+  /// DNSSEC first, and can be told to stop asking.
   @Test
-  internal func dnssecValidationIsRequired() {
-    let configuration = SigningNetwork.validatedSessionConfiguration()
+  internal func dnssecValidationIsAskedForFirst() {
+    #expect(
+      SigningNetwork.validatedSessionConfiguration(validating: true)
+        .requiresDNSSECValidation
+    )
+    #expect(
+      !SigningNetwork.validatedSessionConfiguration(validating: false)
+        .requiresDNSSECValidation
+    )
+  }
 
-    #expect(configuration.requiresDNSSECValidation)
+  /// Only a resolver-level failure earns the unvalidated retry; a
+  /// service's own answer never does.
+  @Test
+  internal func onlyResolutionFailuresFallBack() {
+    let resolution = [
+      NSURLErrorTimedOut,
+      NSURLErrorCannotFindHost,
+      NSURLErrorDNSLookupFailed,
+      NSURLErrorSecureConnectionFailed,
+      NSURLErrorCannotConnectToHost,
+    ]
+    for code in resolution {
+      #expect(
+        SigningNetwork.isResolutionFailure(
+          NSError(domain: NSURLErrorDomain, code: code)
+        )
+      )
+    }
+    #expect(
+      !SigningNetwork.isResolutionFailure(
+        NSError(domain: NSURLErrorDomain, code: NSURLErrorBadServerResponse)
+      )
+    )
+    #expect(!SigningNetwork.isResolutionFailure(SigningNetwork.Failure.unusableBody))
+    #expect(
+      !SigningNetwork.isResolutionFailure(
+        NSError(domain: NSCocoaErrorDomain, code: NSURLErrorTimedOut)
+      )
+    )
   }
 
   /// Only exact HTTP-family schemes with a host are accepted.
