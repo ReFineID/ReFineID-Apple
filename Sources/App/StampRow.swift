@@ -12,7 +12,6 @@
   internal struct StampRow: View {
     private static let entryWidth: CGFloat = 130
     private static let spinnerWidth: CGFloat = 16
-    private static let previewHeight: CGFloat = 44
     private static let spacing: CGFloat = 6
 
     /// How long the number rests before the card is read, so a
@@ -52,11 +51,6 @@
         try? await Task.sleep(for: Self.restDelay)
         guard !Task.isCancelled else { return }
         await signing.readStamp(accessNumber: accessNumber)
-      }
-      if let stamp = signing.stamp {
-        StampPreview(artwork: stamp)
-          .frame(height: Self.previewHeight)
-          .accessibilityLabel("The signature that will be stamped")
       }
       if let note = signing.stampFailure {
         Text(note)

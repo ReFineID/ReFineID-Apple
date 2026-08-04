@@ -62,6 +62,9 @@
     /// for, as a fraction of the type size.
     private static let fallbackAdvanceShare = 0.5
 
+    /// Degrees in a half turn, for turning degrees into radians.
+    private static let halfTurnDegrees = 180.0
+
     /// The size glyphs are measured at before scaling, large enough
     /// that hinting cannot round the answer.
     private static let metricSize = 1_000.0
@@ -72,8 +75,18 @@
     /// A quarter turn, which both arcs measure their rotations from.
     private static let quarterTurn = Double.pi / Self.halves
 
-    /// The mark's colour, #0033A0, as the fractions PDF wants.
-    private static let inkColour = "0.0 0.2 0.6275"
+    /// The mark's colour, #B02020, as the fractions PDF wants.
+    private static let inkColour = "0.6902 0.1255 0.1255"
+
+    /// The furthest the ring is turned, in degrees.
+    ///
+    /// A rubber stamp is never put down square, and a mark that lands
+    /// at exactly the same angle every time looks like what it is: a
+    /// drawing.
+    private static let maximumTilt = 15.0
+
+    /// How far the ring's centre sits from the page's corner.
+    private static let cornerInset = 128.0
 
     /// The code's side, and how far it sits above the page's foot.
     ///
@@ -87,9 +100,10 @@
 
     /// The page carrying the mark.
     internal static func page(_ statement: Statement) -> StampPage {
-      let centreX = Self.pageWidth / Self.halves
-      let centreY = Self.pageHeight - Self.outerRadius - Self.ringTop
+      let centreX = Self.pageWidth - Self.cornerInset
+      let centreY = Self.cornerInset
       var body = "q\n\(Self.inkColour) RG \(Self.inkColour) rg\n"
+      body += Self.tilt(about: (centreX, centreY))
       let centre = (x: centreX, y: centreY)
       body += Self.circle(
         centre: centre, radius: Self.outerRadius, lineWidth: Self.outerLineWidth
@@ -99,18 +113,33 @@
       )
       body += Self.handwriting(statement.signature, centre: (centreX, centreY))
       body += Self.name(statement.name, centre: (centreX, centreY))
+      // Out of the tilt before the code: a turned code is a code that
+      // has to be found before it can be read.
+      body += "Q\n"
       if let attestation = statement.attestation {
         body += QrCode.pdfOperators(
           attestation,
           size: Self.codeSize,
-          atX: centreX - Self.codeSize / Self.halves,
-          atY: Self.codeMargin
+          atX: Self.codeMargin,
+          atY: Self.pageHeight - Self.codeMargin - Self.codeSize
         )
       }
       body += "Q\n"
       return StampPage(
         width: Self.pageWidth, height: Self.pageHeight, operators: body
       )
+    }
+
+    /// A turn of up to `maximumTilt` degrees clockwise, about the
+    /// ring's own centre, so no two stamps land at the same angle.
+    private static func tilt(about centre: (x: Double, y: Double)) -> String {
+      let degrees = Double.random(in: 0...Self.maximumTilt)
+      let turn = -degrees * Double.pi / Self.halfTurnDegrees
+      let cosine = cos(turn)
+      let sine = sin(turn)
+      let shiftX = centre.x - centre.x * cosine + centre.y * sine
+      let shiftY = centre.y - centre.x * sine - centre.y * cosine
+      return "q \(cosine) \(sine) \(-sine) \(cosine) \(shiftX) \(shiftY) cm\n"
     }
 
     /// The holder's handwriting, scaled into the ring and standing on
