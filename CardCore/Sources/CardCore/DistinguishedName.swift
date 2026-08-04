@@ -9,6 +9,14 @@ import Foundation
 /// common name, so the reading lives here once rather than in each of
 /// them.
 public enum DistinguishedName {
+  /// What ends one segment of a name and begins the next.
+  ///
+  /// Both apostrophes appear in certificates: the typewriter one and
+  /// the typographic one.
+  private static let segmentSeparators: Set<Character> = [
+    " ", "-", "'", "\u{2019}",
+  ]
+
   /// The holder as a person reads it: given name, then surname, each
   /// capitalised, or nil when the name states neither.
   ///
@@ -50,14 +58,6 @@ public enum DistinguishedName {
     guard !spoken.isEmpty else { return nil }
     return spoken.joined(separator: " ")
   }
-
-  /// What ends one segment of a name and begins the next.
-  ///
-  /// Both apostrophes appear in certificates: the typewriter one and
-  /// the typographic one.
-  private static let segmentSeparators: Set<Character> = [
-    " ", "-", "'", "\u{2019}",
-  ]
 
   /// One name recased for reading.
   private static func recased(_ text: String) -> String {
