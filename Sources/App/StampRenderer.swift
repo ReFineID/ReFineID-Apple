@@ -122,17 +122,28 @@
         + " \(Self.number(shiftX)) \(Self.number(shiftY)) cm\n"
     }
 
-    /// The holder's handwriting, scaled into the ring and standing on
-    /// a ruled line.
+    /// The holder's handwriting, fitted to the line it stands on.
+    ///
+    /// Scaled and placed by where the ink is, not by the card image's
+    /// box: the box has blank margins around the writing, and placing
+    /// it puts the margins on the line and the writing wherever they
+    /// leave it. The writing starts where the line starts and ends
+    /// before it does.
     private static func handwriting(
       _ artwork: SignatureArtwork.Artwork,
       centre: (x: Double, y: Double)
     ) -> String {
-      let scale = Self.signatureWidth / artwork.width
-      let left = centre.x - Self.signatureWidth / Self.halves
-      var body =
-        "q \(Self.number(scale)) 0 0 \(Self.number(scale))"
-        + " \(Self.number(left)) \(Self.number(centre.y - Self.signatureLift)) cm\n"
+      let inkWidth = artwork.inkRight - artwork.inkLeft
+      guard inkWidth > 0 else { return "" }
+      let room = Self.baselineHalfWidth * Self.halves
+      let scale = room / inkWidth
+      let left = centre.x - Self.baselineHalfWidth
+      let sits = centre.y - Self.baselineDrop + Self.signatureLift
+      // The operators are in the image's own coordinates, so the
+      // translation carries the ink's own corner to the line's end.
+      var body = "q \(Self.number(scale)) 0 0 \(Self.number(scale))"
+      body += " \(Self.number(left - artwork.inkLeft * scale))"
+      body += " \(Self.number(sits - artwork.inkBottom * scale)) cm\n"
       body += artwork.operators
       body += "Q\n"
       body += "\(Self.number(Self.baselineWidth)) w "

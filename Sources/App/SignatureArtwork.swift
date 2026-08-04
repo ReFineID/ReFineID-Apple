@@ -27,6 +27,17 @@
 
       /// The natural height, in image pixels.
       internal let height: Double
+
+      /// Where the ink actually is, in the same coordinates the
+      /// operators use: PDF's, counting up from the bottom.
+      ///
+      /// The card's image has blank margins around the writing, and
+      /// they are not the same on every card. Placing the box would
+      /// place the margins; placing this places the writing.
+      internal let inkLeft: Double
+      internal let inkRight: Double
+      internal let inkBottom: Double
+      internal let inkTop: Double
     }
 
     /// Grey level below which a pixel counts as ink.
@@ -53,10 +64,23 @@
         height: Double(bitmap.height),
         decimals: Self.coordinateDecimals
       )
+      let across = outlines.flatMap { outline in outline.map(\.across) }
+      let down = outlines.flatMap { outline in outline.map(\.down) }
+      guard
+        let left = across.min(), let right = across.max(),
+        let top = down.min(), let bottom = down.max()
+      else {
+        return nil
+      }
+      let height = Double(bitmap.height)
       return Artwork(
         operators: operators,
         width: Double(bitmap.width),
-        height: Double(bitmap.height)
+        height: height,
+        inkLeft: left,
+        inkRight: right,
+        inkBottom: height - bottom,
+        inkTop: height - top
       )
     }
 
