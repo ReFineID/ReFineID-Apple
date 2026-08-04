@@ -42,15 +42,35 @@ public enum RfcTimestamp {
   /// The TimeStampReq: version 1, the SHA-384 imprint, a nonce, and an
   /// explicit request for the signing certificate.
   public static func request(digest: Data, nonceBytes: Data) -> Data {
-    DerEncoder.sequence([
+    Self.request(
+      digest: digest, nonceBytes: nonceBytes, askingForCertificate: true
+    )
+  }
+
+  /// The same, able to leave the authority's certificate out.
+  ///
+  /// A token carrying the authority's certificate is some four and a
+  /// half kilobytes; without it, thirteen hundred bytes. That is the
+  /// difference between fitting in a printed code and not. Archival
+  /// signatures always ask for it - their validation data needs the
+  /// chain - so only a token bound for somewhere small asks without.
+  public static func request(
+    digest: Data,
+    nonceBytes: Data,
+    askingForCertificate: Bool
+  ) -> Data {
+    var fields: [Data] = [
       DerEncoder.integer(SignOids.timestampRequestVersion),
       DerEncoder.sequence([
         DerEncoder.sequence([DerEncoder.objectIdentifier(SignOids.sha384)]),
         DerEncoder.octetString(digest),
       ]),
       DerEncoder.unsignedInteger(nonceBytes),
-      DerEncoder.booleanTrue(),
-    ])
+    ]
+    if askingForCertificate {
+      fields.append(DerEncoder.booleanTrue())
+    }
+    return DerEncoder.sequence(fields)
   }
 
   /// The checked TimeStampToken out of a TimeStampResp, verbatim.

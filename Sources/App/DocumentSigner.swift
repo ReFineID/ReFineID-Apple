@@ -163,11 +163,19 @@
         )
       }
       guard case .signed(let product) = answer else { return nil }
+      // A compact timestamp, without the authority's certificate: with
+      // one the statement is some five kilobytes and fits no code at
+      // all. The document's own timestamps are untouched and still
+      // carry their chains, which is what archival validation needs.
       guard
-        let tokens = try? await Self.timestamped(product.signature).map(\.token)
+        let der = try? QualifiedDocumentCms.derSignature(product.signature),
+        let token = try? await TimestampClient.compactToken(
+          over: Data(SHA384.hash(data: der))
+        )
       else {
         return nil
       }
+      let tokens = [token]
       return try? QualifiedDocumentCms.assembleWithoutCertificates(
         signedAttributesSet: product.attributes,
         rawSignature: product.signature,

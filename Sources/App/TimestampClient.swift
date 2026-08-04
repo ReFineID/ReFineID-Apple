@@ -62,6 +62,39 @@
       throw Failure.noAuthorityAnswered(declined)
     }
 
+    /// A compact token over `digest`, without the authority's
+    /// certificate, for somewhere too small to carry one.
+    ///
+    /// The imprint and nonce are still checked, so the token is bound
+    /// to what was asked. What is not done is the trusted-list walk:
+    /// without its certificate the signer cannot be looked up, and
+    /// this token is never the evidence an archival signature rests
+    /// on - the document's own timestamps are, and they are unchanged.
+    internal static func compactToken(over digest: Data) async throws -> Data {
+      let authorities = TimestampAuthorityStore.load()
+      var declined: [String] = []
+      for authority in authorities {
+        do {
+          let nonce = try Self.randomBytes()
+          let response = try await SigningNetwork.post(
+            RfcTimestamp.request(
+              digest: digest, nonceBytes: nonce, askingForCertificate: false
+            ),
+            to: authority,
+            contentType: Self.requestContentType,
+            credentials: TimestampAuthorityStore.credentials(for: authority),
+            endpoint: .authority
+          )
+          return try RfcTimestamp.token(
+            fromResponse: response, digest: digest, nonceBytes: nonce
+          )
+        } catch {
+          declined.append("\(authority): \(error)")
+        }
+      }
+      throw Failure.noAuthorityAnswered(declined)
+    }
+
     /// One token from one authority over a throwaway digest.
     ///
     /// The qualification test uses this to learn who signs at an
