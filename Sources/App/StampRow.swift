@@ -10,7 +10,7 @@
   /// unlocks reading the card, so storing it would be keeping a key to
   /// the holder's own card for no reason.
   internal struct StampRow: View {
-    private static let entryWidth: CGFloat = 90
+    private static let entryWidth: CGFloat = 130
     private static let previewHeight: CGFloat = 44
     private static let spacing: CGFloat = 6
 
@@ -25,12 +25,12 @@
     @Binding internal var accessNumber: String
 
     internal var body: some View {
-      LabeledContent("Stamp with CAN") {
+      LabeledContent("Stamp with CAN (optional)") {
         HStack(spacing: Self.spacing) {
           if signing.readingStamp {
             ProgressView().controlSize(.small)
           }
-          TextField("optional", text: $accessNumber)
+          TextField("six digits", text: $accessNumber)
             .frame(width: Self.entryWidth)
             .multilineTextAlignment(.trailing)
             .onChange(of: accessNumber) { _, typed in

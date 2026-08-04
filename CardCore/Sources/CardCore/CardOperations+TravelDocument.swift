@@ -31,15 +31,13 @@ extension CardOperations {
   /// cards, and every later command in the session then fails for a
   /// reason that has nothing to do with the command.
   public func readDataGroupInventory() throws -> DataGroupInventory {
-    let content = try readTravelDocumentFile(.commonData)
-    var outer = DerReader(content)
-    guard let template = outer.next() else {
+    let file = IcaoTlv(try readTravelDocumentFile(.commonData))
+    guard let template = file.outermost else {
       return DataGroupInventory(listing: Data())
     }
-    var fields = DerReader(content, within: template)
-    while let field = fields.next() {
-      guard field.tag == FineidValues.dataGroupListTag else { continue }
-      return DataGroupInventory(listing: fields.contentData(of: field))
+    for field in file.records(within: template.content)
+    where field.tag == FineidValues.dataGroupListTag && !field.hasTwoByteTag {
+      return DataGroupInventory(listing: file.content(of: field))
     }
     return DataGroupInventory(listing: Data())
   }

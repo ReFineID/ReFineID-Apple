@@ -114,10 +114,12 @@
     /// Reads the holder's handwritten signature off the card and
     /// traces it, so the stamp can be seen before anything is signed.
     ///
-    /// An empty access number clears the stamp rather than reading:
-    /// no number, no stamp, which is the whole of the setting.
+    /// Only a complete access number is taken to the card. A number
+    /// is six digits, so anything shorter is not a wrong number, it
+    /// is a number still being typed - reading it would refuse the
+    /// holder's own card and say so while they were mid-entry.
     internal func readStamp(accessNumber digits: String) async {
-      guard !digits.isEmpty else {
+      guard digits.count == CardAccessNumber.digitCount else {
         stamp = nil
         stampFailure = nil
         return
