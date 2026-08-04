@@ -38,18 +38,6 @@
         guard !Task.isCancelled else { return }
         await signing.readStamp(accessNumber: accessNumber)
       }
-      // Progress on a line of its own, at the leading edge, the way a
-      // status line reads. A spinner tucked in beside a text field is
-      // not a shape macOS uses, and it left a gap in the row whether
-      // it was spinning or not.
-      if signing.readingStamp {
-        HStack(spacing: Self.spacing) {
-          ProgressView().controlSize(.small)
-          Text("Reading the card…")
-        }
-        .font(.footnote)
-        .foregroundStyle(.secondary)
-      }
       if let note = signing.stampFailure {
         Text(note)
           .foregroundStyle(.orange)

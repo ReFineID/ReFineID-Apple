@@ -180,6 +180,15 @@
             .accessibilityIdentifier("signPin2")
           StampRow(signing: signing, accessNumber: $accessNumber)
           HStack {
+            // The action row carries the progress too: it is already
+            // there and half empty, and a line that appears and
+            // disappears steps the window as the card is read.
+            if signing.readingStamp {
+              ProgressView().controlSize(.small)
+              Text("Reading the card…")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            }
             Spacer()
             Button("Sign…") { sign() }
               .buttonStyle(.borderedProminent)
