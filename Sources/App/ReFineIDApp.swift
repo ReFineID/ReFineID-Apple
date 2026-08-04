@@ -22,6 +22,15 @@ internal struct ReFineIDApp: App {
       }
       .windowResizability(.contentSize)
 
+      Settings {
+        TabView {
+          TimestampAuthoritiesSettingsView()
+            .tabItem {
+              Label("Time-Stamp Authorities", systemImage: "clock.badge.checkmark")
+            }
+        }
+      }
+
       // Development builds only: the release configurations exclude the
       // diagnostics sources at file level, so the scene must not exist
       // there either.
