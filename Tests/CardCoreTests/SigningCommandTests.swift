@@ -16,11 +16,24 @@ internal struct SigningCommandTests {
       (SigningAlgorithm(hash: .sha256, scheme: .rsaPss), "45"),
     ]
     for (algorithm, referenceHex) in vectors {
-      let command = CommandApdu.selectSigningEnvironment(algorithm: algorithm)
+      let command = CommandApdu.selectSigningEnvironment(
+        algorithm: algorithm,
+        key: .authentication
+      )
       #expect(
         command.encoded == WireHex.data("002241B6068001\(referenceHex)840101")
       )
     }
+  }
+
+  @Test
+  internal func manageSecurityEnvironmentNamesTheQualifiedKey() {
+    // FINEID S1 v4.2 §3.6: MSE:SET DST for the PIN2-gated key (84 01 02).
+    let command = CommandApdu.selectSigningEnvironment(
+      algorithm: SigningAlgorithm(hash: .sha384, scheme: .ecdsa),
+      key: .qualifiedSignature
+    )
+    #expect(command.encoded == WireHex.data("002241B606800154840102"))
   }
 
   @Test

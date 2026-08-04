@@ -4,10 +4,9 @@
 /// channel's own thrown errors; these cases are protocol-level: the
 /// card answered, and the answer was wrong.
 public enum CardOperationError: Error, Equatable, Sendable {
-  /// The credential slot is invalidated (`6984`): its usage or
-  /// unblocking allowance is exhausted, or the slot was never
-  /// activated. Terminal on the card side - issuer recovery is the
-  /// only path.
+  /// The credential slot is invalidated: its usage or unblocking
+  /// allowance is exhausted, or the slot was never activated. Terminal
+  /// on the card side - issuer recovery is the only path.
   case credentialInvalidated
 
   /// A credential change or unblock was refused with a status word

@@ -147,15 +147,16 @@ public struct CommandApdu: Equatable, Sendable {
   }
 
   /// MANAGE SECURITY ENVIRONMENT: SET the Digital Signature Template to
-  /// the authentication key and a signing algorithm
-  /// (FINEID S1 v4.2 §3.6).
+  /// a signing key and algorithm (FINEID S1 v4.2 §3.6).
   ///
-  /// Wire shape `00 22 41 B6 06 80 01 <algRef> 84 01 01`. Pins the card
-  /// to sign with the PIN1-gated auth key under the given algorithm;
-  /// PSO:CDS then produces the signature. Not credential-bearing - the
+  /// The data field is two control-reference data objects: the
+  /// algorithm reference, then the key reference. Pins the card to sign
+  /// with the named key under the given algorithm; PSO:CDS then
+  /// produces the signature. Not credential-bearing - the key's gating
   /// PIN is verified separately.
   public static func selectSigningEnvironment(
-    algorithm: SigningAlgorithm
+    algorithm: SigningAlgorithm,
+    key: CardSigningKey
   ) -> Self {
     let crdo: [UInt8] = [
       FineidValues.crdoAlgorithmReferenceTag,
@@ -163,7 +164,7 @@ public struct CommandApdu: Equatable, Sendable {
       algorithm.reference,
       FineidValues.crdoKeyReferenceTag,
       FineidValues.crdoValueLength,
-      FineidValues.keyReferenceAuthentication,
+      key.reference,
     ]
     var bytes: [UInt8] = [
       Iso7816Values.classInterindustry,

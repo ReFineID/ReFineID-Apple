@@ -38,10 +38,10 @@ extension CardOperations {
   ///
   /// PIN2 authorises the qualified-signature key; it is verified
   /// immediately before the one signature and never cached. Unlike the
-  /// PIN1 path, `6984` is an expected state here - a card whose
-  /// signature slot was never activated answers it - so it maps to
-  /// `credentialInvalidated`. The caller must already have cleared the
-  /// retry floor.
+  /// PIN1 path, an invalidated answer is an expected state here - a
+  /// card whose signature slot was never activated gives it - so it
+  /// maps to `credentialInvalidated`. The caller must already have
+  /// cleared the retry floor.
   public func verifyPin2(_ transmission: consuming Pin2Transmission) throws {
     let command = CredentialBearingCommand.verifyPin2(transmission)
     let raw = try channel.transmit(command.intoTransportPayload())
@@ -124,8 +124,8 @@ extension CardOperations {
   }
 
   /// Sends one credential update and classifies the card's answer: it
-  /// either accepts, counts down the presented credential (`63Cx`), or
-  /// reports the slot blocked (`6983`) or invalidated (`6984`).
+  /// either accepts, counts down the presented credential, or reports
+  /// the slot blocked or invalidated.
   private func performCredentialUpdate(
     _ command: consuming CredentialBearingCommand
   ) throws {

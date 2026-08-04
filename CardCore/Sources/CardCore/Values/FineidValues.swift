@@ -54,6 +54,14 @@ internal enum FineidValues {
   /// This is the identity Safari uses for client authentication.
   internal static let fileIdAuthCertificate: UInt16 = 0x4331
 
+  /// EF.4332: the qualified-signature certificate leaf, directly under
+  /// the PKCS#15 application (FINEID S4-2 §3).
+  internal static let fileIdSignatureCertificate: UInt16 = 0x4332
+
+  /// EF.4335: the on-card issuing CA of the qualified-signature leaf,
+  /// under the master file.
+  internal static let fileIdSignatureIssuingCertificate: UInt16 = 0x4335
+
   /// EF.4334: the on-card issuing root CA, under the master file.
   internal static let fileIdRootCertificate: UInt16 = 0x4334
 
@@ -75,6 +83,10 @@ internal enum FineidValues {
 
   /// Key reference for the PIN1-gated authentication key (S1 v4.2).
   internal static let keyReferenceAuthentication: UInt8 = 0x01
+
+  /// Key reference for the PIN2-gated qualified-signature key
+  /// (S1 v4.2).
+  internal static let keyReferenceQualifiedSignature: UInt8 = 0x02
 
   /// Algorithm-reference hash high-nibble values (S1 v4.2 §3.6.3
   /// Table 6): SHA-224/256/384/512.

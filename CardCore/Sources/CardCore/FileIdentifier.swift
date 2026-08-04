@@ -20,6 +20,16 @@ public struct FileIdentifier: Equatable, Sendable {
     value: FineidValues.fileIdAuthCertificate
   )
 
+  /// EF.4332: the qualified-signature certificate leaf.
+  public static let signatureCertificate = Self(
+    value: FineidValues.fileIdSignatureCertificate
+  )
+
+  /// EF.4335: the on-card issuing CA of the qualified-signature leaf.
+  public static let signatureIssuingCertificate = Self(
+    value: FineidValues.fileIdSignatureIssuingCertificate
+  )
+
   /// EF.4334: the on-card issuing root CA.
   public static let rootCertificate = Self(
     value: FineidValues.fileIdRootCertificate

@@ -11,9 +11,11 @@ import Foundation
 public struct CredentialBearingCommand: ~Copyable {
   private let encoded: Data
 
-  /// PIN1 VERIFY: `00 20 00 11 0C` + the entered digits right-padded
-  /// with zero bytes to the stored length (FINEID S1 v4.2 §3.5.2,
+  /// VERIFY against the PIN1 reference (FINEID S1 v4.2 §3.5.2,
   /// S4-1 v3.1).
+  ///
+  /// The data field is one padded credential block; `build` names the
+  /// layout.
   public static func verifyPin1(
     _ transmission: consuming Pin1Transmission
   ) -> Self {
@@ -25,7 +27,7 @@ public struct CredentialBearingCommand: ~Copyable {
     )
   }
 
-  /// PIN2 VERIFY: `00 20 00 82 0C` + the padded digits (S1 v4.2 §3.5.2).
+  /// VERIFY against the PIN2 reference (S1 v4.2 §3.5.2).
   ///
   /// Verified state persists for the session until SELECT or reset;
   /// callers verify immediately before the one signature and never rely
@@ -41,9 +43,8 @@ public struct CredentialBearingCommand: ~Copyable {
     )
   }
 
-  /// PIN1 CHANGE REFERENCE DATA: `00 24 00 11 18` + the current then
-  /// the new digits, each right-padded to the stored length
-  /// (S1 v4.2 §3.5.3).
+  /// CHANGE REFERENCE DATA against the PIN1 reference: the current
+  /// credential block, then the new (S1 v4.2 §3.5.3).
   ///
   /// Success resets the retry counter to its maximum and clears the
   /// verified flag: the new PIN is set but not presented.
@@ -59,8 +60,8 @@ public struct CredentialBearingCommand: ~Copyable {
     )
   }
 
-  /// PIN2 CHANGE REFERENCE DATA: `00 24 00 82 18` + the current then
-  /// the new digits, each right-padded (S1 v4.2 §3.5.3).
+  /// CHANGE REFERENCE DATA against the PIN2 reference: the current
+  /// credential block, then the new (S1 v4.2 §3.5.3).
   ///
   /// Success resets the retry counter to its maximum and clears the
   /// verified flag: the new PIN is set but not presented.
@@ -76,13 +77,14 @@ public struct CredentialBearingCommand: ~Copyable {
     )
   }
 
-  /// PIN1 RESET RETRY COUNTER: `00 2C 00 11 18` + the PUK then the new
-  /// PIN, each right-padded (S1 v4.2 §3.5.4).
+  /// RESET RETRY COUNTER against the PIN1 reference: the PUK block,
+  /// then the new credential block (S1 v4.2 §3.5.4).
   ///
-  /// P1 `00` resets the target counter AND replaces its value; P2 names
-  /// the target PIN - the PUK itself has no reference byte, it is the
-  /// card's one unblocking key. A wrong PUK counts down the PUK's own
-  /// retry counter, and exhausting it is terminal for the card.
+  /// The reset-and-replace mode both resets the target's counter and
+  /// sets its new value. The command's reference names the target PIN;
+  /// the PUK itself has none, being the card's one unblocking key. A
+  /// wrong PUK counts down the PUK's own retry counter, and exhausting
+  /// it is terminal for the card.
   public static func unblockPin1(
     puk: consuming PukTransmission,
     new: consuming Pin1Transmission
@@ -95,11 +97,12 @@ public struct CredentialBearingCommand: ~Copyable {
     )
   }
 
-  /// PIN2 RESET RETRY COUNTER: `00 2C 00 82 18` + the PUK then the new
-  /// PIN, each right-padded (S1 v4.2 §3.5.4).
+  /// RESET RETRY COUNTER against the PIN2 reference: the PUK block,
+  /// then the new credential block (S1 v4.2 §3.5.4).
   ///
-  /// Same semantics as the PIN1 form: the target is named by P2, the
-  /// PUK is implicit, and a wrong PUK spends the PUK's own counter.
+  /// Same semantics as the PIN1 form: the reference names the target,
+  /// the PUK is implicit, and a wrong PUK spends the PUK's own
+  /// counter.
   public static func unblockPin2(
     puk: consuming PukTransmission,
     new: consuming Pin2Transmission
@@ -112,10 +115,14 @@ public struct CredentialBearingCommand: ~Copyable {
     )
   }
 
-  /// Builds the single wire form: plain header, Lc covering the padded
-  /// block(s), then each credential right-padded with the pad byte to
-  /// the stored length (FINEID cards reject non-zero padding with
-  /// `6A80`).
+  /// Builds the one wire form every credential command shares.
+  ///
+  /// Interindustry class, the instruction, its mode parameter, the
+  /// credential reference, a length byte covering the blocks, then each
+  /// credential right-padded with the pad byte to the stored length -
+  /// FINEID cards reject any other padding. The named constants in
+  /// `Iso7816Values` and `FineidValues` are the single home of the
+  /// actual bytes; the tests hold the assembled vectors.
   ///
   /// Local copies are best-effort zeroized; the Data is owned by the
   /// command and consumed exactly once.
