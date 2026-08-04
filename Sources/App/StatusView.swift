@@ -44,10 +44,16 @@
         }
         .formStyle(.grouped)
         .fixedSize(horizontal: false, vertical: true)
-        Button("PIN Management...") {
-          openWindow(id: CardManagementView.windowID)
+        HStack {
+          Button("Sign a Document...") {
+            openWindow(id: SignDocumentView.windowID)
+          }
+          .accessibilityIdentifier("signDocumentButton")
+          Button("PIN Management...") {
+            openWindow(id: CardManagementView.windowID)
+          }
+          .accessibilityIdentifier("pinManagementButton")
         }
-        .accessibilityIdentifier("pinManagementButton")
       }
       .padding(Self.padding)
       .frame(minWidth: Self.minimumWidth, alignment: .leading)

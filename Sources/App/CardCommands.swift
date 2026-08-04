@@ -13,6 +13,10 @@
 
     internal var body: some Commands {
       CommandMenu("Card") {
+        Button("Sign a Document...") {
+          openWindow(id: SignDocumentView.windowID)
+        }
+        Divider()
         Button("Card Access Number...") {
           openWindow(id: CardAccessNumberManagerView.windowID)
         }

@@ -107,6 +107,14 @@ public enum QualifiedDocumentCms {
     ])
   }
 
+  /// The card's raw r-then-s pair as DER.
+  ///
+  /// A signature timestamp is taken over the signature value as it is
+  /// stored in the CMS, which is this form - not the card's raw pair.
+  public static func derSignature(_ raw: Data) throws -> Data {
+    try Self.ecdsaSignature(raw)
+  }
+
   /// One attribute: its OID and one value in a SET.
   private static func attribute(_ oid: String, value: Data) -> Data {
     DerEncoder.sequence([

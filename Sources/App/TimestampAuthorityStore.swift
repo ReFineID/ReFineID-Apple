@@ -76,6 +76,29 @@
       UserDefaults.standard.set(marked, forKey: Self.qualifiedKey)
     }
 
+    /// The Basic-auth credentials for one authority, or nil when it
+    /// is a public service needing none.
+    internal static func credentials(
+      for authority: String
+    ) -> (username: String, password: String)? {
+      guard let user = Self.username(for: authority) else { return nil }
+      let query: [String: Any] = [
+        kSecClass as String: kSecClassGenericPassword,
+        kSecAttrService as String: Self.passwordService,
+        kSecAttrAccount as String: authority,
+        kSecReturnData as String: true,
+      ]
+      var item: CFTypeRef?
+      guard
+        SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
+        let data = item as? Data,
+        let password = String(data: data, encoding: .utf8)
+      else {
+        return nil
+      }
+      return (user, password)
+    }
+
     /// The Basic-auth username for one authority; nil means the
     /// authority is public and no authentication is sent.
     internal static func username(for authority: String) -> String? {

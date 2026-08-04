@@ -46,7 +46,14 @@ if [ -d "$APP/Contents" ]; then
     # refuse it, so it is not embedded there.
     HAS_DISCOVERY="no"
     # Sandbox and smart-card access, plus the keys signing adds.
-    ALLOWED='^(com\.apple\.security\.app-sandbox|com\.apple\.security\.smartcard|com\.apple\.application-identifier|com\.apple\.developer\.team-identifier|com\.apple\.security\.get-task-allow)$'
+    #
+    # network.client is the app's alone and exists for one feature: an
+    # archival signature must fetch a qualified timestamp and the
+    # revocation data proving its chain. Neither extension carries it --
+    # a token extension that could reach the network is a token
+    # extension nobody can reason about -- so it is checked per binary
+    # below rather than allowed everywhere.
+    ALLOWED='^(com\.apple\.security\.app-sandbox|com\.apple\.security\.smartcard|com\.apple\.security\.network\.client|com\.apple\.application-identifier|com\.apple\.developer\.team-identifier|com\.apple\.security\.get-task-allow)$'
     REQUIRED="com.apple.security.app-sandbox com.apple.security.smartcard"
 else
     PLATFORM="iOS"
@@ -181,6 +188,19 @@ for BIN in $ALL_BUNDLES; do
     [ -z "$STRAY" ] || fail "$BIN: unreviewed entitlements:
 $STRAY"
 done
+# The network grant belongs to the app and to nothing else. An extension
+# that could open a connection would be a second, unreviewable path off
+# this machine, and neither of ours has any reason to reach one.
+if [ "$PLATFORM" = "macOS" ]; then
+    for BIN in $APPEX_EXEC; do
+        entitlements_json "$BIN" \
+            | plutil -convert json -o - -- - 2>/dev/null \
+            | grep -q "network.client" \
+            && fail "$BIN: extensions must not carry a network entitlement"
+    done
+    note "the network entitlement is the app's alone"
+fi
+
 note "entitlements match the reviewed allowlist"
 
 # --- The app's own keychain group comes first ------------------------------

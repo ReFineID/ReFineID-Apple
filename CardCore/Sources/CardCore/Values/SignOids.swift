@@ -59,6 +59,15 @@ internal enum SignOids {
   /// id-pkix-ocsp-nonce (RFC 8954).
   internal static let ocspNonce = "1.3.6.1.5.5.7.48.1.2"
 
+  /// id-pe-authorityInfoAccess (RFC 5280 §4.2.2.1).
+  internal static let authorityInfoAccess = "1.3.6.1.5.5.7.1.1"
+
+  /// id-ad-caIssuers: where to fetch the issuer's certificate.
+  internal static let caIssuers = "1.3.6.1.5.5.7.48.2"
+
+  /// id-ad-ocsp: where to ask for revocation status.
+  internal static let ocsp = "1.3.6.1.5.5.7.48.1"
+
   /// id-pkix-ocsp-basic (RFC 6960).
   internal static let ocspBasic = "1.3.6.1.5.5.7.48.1.1"
 }

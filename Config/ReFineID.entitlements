@@ -1,11 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<!-- The host application is sandboxed and may talk to smart cards. -->
+<!-- The host application is sandboxed, may talk to smart cards, and
+     may make outbound connections.
+
+     The network grant exists for one feature: an archival signature
+     (PAdES-B-LTA) must fetch a qualified timestamp and the revocation
+     data proving its chain, or it is not archival. What travels is a
+     digest and a certificate identifier - never a key, a PIN, or one
+     byte of the document. There is no server grant: nothing listens. -->
 <dict>
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
 	<key>com.apple.security.smartcard</key>
+	<true/>
+	<key>com.apple.security.network.client</key>
 	<true/>
 </dict>
 </plist>

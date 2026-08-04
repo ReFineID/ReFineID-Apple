@@ -5,7 +5,11 @@
 /// encoded arithmetically, so no encoded OID byte appears anywhere.
 /// No raw hex literal may appear outside this directory
 /// (`.swiftlint.yml` `unexplained_hex`).
-internal enum DerValues {
+public enum DerValues {
+  /// The tag a DER-encoded certificate starts with, which is how a
+  /// DER body is told from a PEM one.
+  public static let sequenceTagByte: UInt8 = 0x30
+
   /// Universal tag: SEQUENCE, constructed.
   internal static let tagSequence: UInt8 = 0x30
 
@@ -24,6 +28,13 @@ internal enum DerValues {
   /// Universal tag: OBJECT IDENTIFIER.
   internal static let tagObjectIdentifier: UInt8 = 0x06
 
+  /// Universal tag: NULL, whose content is always empty.
+  internal static let tagNull: UInt8 = 0x05
+
+  /// Universal tag: BIT STRING, whose first content octet counts the
+  /// unused bits of the last byte.
+  internal static let tagBitString: UInt8 = 0x03
+
   /// BOOLEAN TRUE content octet: DER requires all bits set.
   internal static let booleanTrue: UInt8 = 0xFF
 
@@ -35,6 +46,14 @@ internal enum DerValues {
 
   /// Context-specific constructed tag `[2]`.
   internal static let tagContext2Constructed: UInt8 = 0xA2
+
+  /// Context-specific constructed tag `[3]`: a certificate's
+  /// extensions (RFC 5280 §4.1).
+  internal static let tagContext3Constructed: UInt8 = 0xA3
+
+  /// Context-specific primitive tag `[6]`: a GeneralName's
+  /// uniformResourceIdentifier (RFC 5280 §4.2.1.6).
+  internal static let tagContext6Primitive: UInt8 = 0x86
 
   /// Length byte: long-form marker bit (X.690 §8.1.3.5).
   internal static let longFormMask: UInt8 = 0x80
