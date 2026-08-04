@@ -151,6 +151,7 @@ Everything about *doing* the filing lives here instead. The exact
 pipeline that produced the filed artifact:
 
     pandoc Documentation/anssi-declaration.md --pdf-engine=typst \
+      --pdf-engine-opt=--pdf-standard=a-2b \
       -V papersize=a4 -M lang=fr-FR \
       -M "title=ReFineID — déclaration d'un moyen de cryptologie" \
       -o "ReFineID - ANSSI declaration dossier.pdf"
