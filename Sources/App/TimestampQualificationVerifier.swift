@@ -16,21 +16,47 @@
       /// The signer was found nowhere on the trusted lists.
       case notQualified
 
+      /// The address answered, but not with timestamps: an error
+      /// status, an empty body, or bytes that are not a timestamp
+      /// response. Whatever lives there, it is not this service.
+      case notTimestampService
+
       /// The signer is a granted qualified service on a trusted list.
       case qualified
 
-      /// No token answered, or the trusted lists were not readable;
-      /// the stored mark is left alone rather than turned into a
-      /// wrong answer.
+      /// Nothing conclusive: the host was silent, the request needed
+      /// credentials, a real service declined this request, or the
+      /// trusted lists were not readable. The stored mark is left
+      /// alone rather than turned into a wrong answer.
       case undecided
     }
+
+    /// HTTP 401 Unauthorized.
+    private static let unauthorizedStatus = 401
+
+    /// HTTP 403 Forbidden.
+    private static let forbiddenStatus = 403
+
+    /// HTTP 407 Proxy Authentication Required.
+    private static let proxyAuthenticationStatus = 407
+
+    /// Statuses meaning "who are you", which a commercial timestamp
+    /// service answers without credentials.
+    private static let credentialStatuses: Set<Int> = [
+      Self.unauthorizedStatus,
+      Self.forbiddenStatus,
+      Self.proxyAuthenticationStatus,
+    ]
 
     /// Asks the service to prove itself and the trusted lists to
     /// judge it.
     internal static func verdict(for authority: String) async -> Verdict {
-      guard
-        let token = try? await TimestampClient.probeToken(from: authority)
-      else { return .undecided }
+      let token: Data
+      do {
+        token = try await TimestampClient.probeToken(from: authority)
+      } catch {
+        return Self.classify(error)
+      }
       let chain = CmsCertificates.inside(token)
       guard !chain.isEmpty else { return .undecided }
       guard
@@ -46,6 +72,27 @@
       }
       return keys.contains { identities.publicKeys.contains($0) }
         ? .qualified : .notQualified
+    }
+
+    /// What a failed probe says about the address.
+    ///
+    /// An answer that is not a timestamp - an error status, an empty
+    /// body, bytes that do not parse - condemns the address; silence,
+    /// a credentials refusal, and a proper TSP rejection do not,
+    /// because each is consistent with a real service.
+    private static func classify(_ error: Error) -> Verdict {
+      switch error {
+      case SigningNetwork.Failure.httpStatus(let status):
+        Self.credentialStatuses.contains(status)
+          ? .undecided : .notTimestampService
+      case SigningNetwork.Failure.unusableBody,
+        RfcTimestamp.TokenFailure.malformed,
+        RfcTimestamp.TokenFailure.imprintMismatch,
+        RfcTimestamp.TokenFailure.nonceMismatch:
+        .notTimestampService
+      default:
+        .undecided
+      }
     }
   }
 

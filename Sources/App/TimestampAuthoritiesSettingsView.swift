@@ -92,6 +92,15 @@
           "Not on the EU trusted lists"
         )
         if model.rows.contains(where: { row in
+          row.check == .notTimestampService
+        }) {
+          legendEntry(
+            "xmark.seal.fill",
+            AnyShapeStyle(.red),
+            "Not a time-stamp service"
+          )
+        }
+        if model.rows.contains(where: { row in
           !row.address.isEmpty && !AuthoritySchemeResolver.isUsable(row.address)
         }) {
           legendEntry(
@@ -149,6 +158,12 @@
           .controlSize(.small)
           .frame(width: Self.badgeWidth)
           .accessibilityLabel("testing qualification")
+      } else if row.wrappedValue.check == .notTimestampService {
+        Image(systemName: "xmark.seal.fill")
+          .foregroundStyle(.red)
+          .frame(width: Self.badgeWidth)
+          .help("Answers, but not with timestamps")
+          .accessibilityLabel("not a time-stamp service")
       } else {
         let qualified =
           TimestampAuthorityStore.defaults.contains(address)

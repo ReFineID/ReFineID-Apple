@@ -19,12 +19,25 @@
     /// The identity must not be the address itself - rows are edited
     /// in place, and a row whose identity changed with every
     /// keystroke would lose focus after the first one.
+    /// What a session's probe learned about one address.
+    internal enum ServiceCheck: Equatable {
+      /// The address answered, but not with timestamps.
+      case notTimestampService
+
+      /// The address answered a real timestamp request.
+      case timestampService
+
+      /// Nothing probed yet, or nothing conclusive.
+      case unchecked
+    }
+
     internal struct Row: Identifiable, Equatable {
       internal let id = UUID()
       internal var address = ""
       internal var username = ""
       internal var password = ""
       internal var qualified = false
+      internal var check = ServiceCheck.unchecked
 
       /// Nothing typed in any cell.
       internal var isBlank: Bool {
@@ -174,11 +187,19 @@
       let verdict = await TimestampQualificationVerifier.verdict(for: entry)
       testing.remove(identity)
       guard
-        verdict != .undecided,
         let index = rows.firstIndex(where: { $0.id == identity }),
         rows[index].address == entry
       else { return }
-      rows[index].qualified = verdict == .qualified
+      switch verdict {
+      case .undecided:
+        break
+      case .notTimestampService:
+        rows[index].check = .notTimestampService
+        rows[index].qualified = false
+      case .qualified, .notQualified:
+        rows[index].check = .timestampService
+        rows[index].qualified = verdict == .qualified
+      }
     }
 
     /// An address deleted or renamed away keeps no marks behind.
