@@ -26,6 +26,17 @@ internal enum LimitedDigits {
     Self.digits(text, maximumCount: Pin1.maximumDigitCount)
   }
 
+  /// Any PIN entry: ASCII digits up to the shared PIN maximum, which
+  /// PIN1 and PIN2 both have.
+  internal static func pin(_ text: String) -> String {
+    Self.digits(text, maximumCount: Pin1.maximumDigitCount)
+  }
+
+  /// A PUK or activation entry: ASCII digits up to the PUK maximum.
+  internal static func puk(_ text: String) -> String {
+    Self.digits(text, maximumCount: Puk.maximumDigitCount)
+  }
+
   /// Keeps only ASCII digits, in order, up to `maximumCount`.
   private static func digits(_ text: String, maximumCount: Int) -> String {
     let asciiDigits = UInt8(ascii: "0")...UInt8(ascii: "9")

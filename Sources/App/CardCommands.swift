@@ -16,6 +16,9 @@
         Button("Card Access Number...") {
           openWindow(id: CardAccessNumberManagerView.windowID)
         }
+        Button("Card Management...") {
+          openWindow(id: CardManagementView.windowID)
+        }
       }
     }
   }
