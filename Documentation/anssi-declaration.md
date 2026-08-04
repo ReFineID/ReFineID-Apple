@@ -26,7 +26,7 @@ Le déclarant demande la délivrance de l'attestation de déclaration.
 | Numéro de téléphone | +358 44 956 4098 |
 | Adresse de courrier électronique | petri.koistinen@iki.fi |
 
-## B. Moyen de cryptologie auquel s'appliquent la déclaration et/ou la demande d'autorisation
+## B. Moyen de cryptologie auquel s'applique la déclaration
 
 ### B.1. Informations générales sur le moyen
 
@@ -151,7 +151,7 @@ Aucune autorisation antérieure.
 ## F. Attestation
 
 Je soussigné, Koistinen Petri, agissant en qualité de fournisseur et
-auteur du moyen et pour mon propre compte, certifie que les
+pour mon propre compte, certifie que les
 renseignements figurant dans le présent dossier sont exacts et ont été
 établis de bonne foi, et m'engage à porter à la connaissance de l'Agence
 nationale de la sécurité des systèmes d'information, sans délai, tout
@@ -187,16 +187,15 @@ Fait à Helsinki, le 4 août 2026.
 
 # English version
 
-Declaration of supply and of transfer from a member state of the
-European Union of a means of cryptology, under article 30 of law
-No 2004-575 of 21 June 2004 for confidence in the digital economy and
-chapter II of decree No 2007-663 of 2 May 2007.
+Declaration of the supply of a cryptographic product and its transfer
+from a Member State of the European Union under Article 30 of Law
+No. 2004-575 of 21 June 2004 on confidence in the digital economy and
+Chapter II of Decree No. 2007-663 of 2 May 2007.
 
 ReFineID is middleware that makes the Finnish national identity card
 usable as a digital identity on Apple platforms.
 
-The declarant requests the issue of the corresponding attestation de
-déclaration.
+The declarant requests an attestation confirming this declaration.
 
 ## A. Declarant (individual)
 
@@ -208,7 +207,7 @@ déclaration.
 | Telephone | +358 44 956 4098 |
 | Email | petri.koistinen@iki.fi |
 
-## B. Means of cryptology to which the declaration and/or the authorisation request applies
+## B. Cryptographic product covered by this declaration
 
 ### B.1. General information
 
@@ -223,13 +222,13 @@ déclaration.
 
 ### B.2. Functional description
 
-#### B.2.1. Classification of the means
+#### B.2.1. Classification of the product
 
 **Software.**
 
-#### B.2.2. General description of the means
+#### B.2.2. General description of the product
 
-The means reads the card over the phone's NFC antenna or a contact
+The product reads the card over the phone's NFC antenna or a contact
 smart-card reader, publishes the card's authentication certificate and
 public key to the system keychain through CryptoTokenKit, and passes
 signature requests to the card. Safari and other system consumers then
@@ -251,7 +250,7 @@ and, on macOS, PAdES document signatures with RFC 3161 timestamps.
 
 Authentication, integrity, confidentiality and signature.
 
-#### B.3.3. Secure protocols used by the means
+#### B.3.3. Secure protocols used by the product
 
 Other protocols: PACE as specified in ICAO Doc 9303 part 11 and BSI
 TR-03110-3; secure messaging as specified in ISO/IEC 7816-4.
@@ -259,7 +258,7 @@ TR-03110-3; secure messaging as specified in ISO/IEC 7816-4.
 #### B.3.4. Cryptographic algorithms used and their maximum key lengths
 
 The brainpoolP384r1 curve operations and the CMAC are written in the
-means; AES, SHA-2 and ECDSA and RSA signature verification are called
+product; AES, SHA-2 and ECDSA and RSA signature verification are called
 from the operating system's libraries. All algorithms are
 published by international standards bodies; none is proprietary.
 
@@ -289,13 +288,13 @@ SHA-2, FIPS 180-4; ECDSA, FIPS 186-5 and ANSI X9.62; RSA, RFC 8017.
 - There is no key escrow, no key recovery and no remote key
   management.
 
-## C. Case of a means of cryptology falling within category 3 of annex 2 to decree No 2007-663 of 2 May 2007
+## C. Cryptographic product within category 3 of annex 2 to decree No 2007-663 of 2 May 2007
 
-The declarant declares that the means falls within category 3.
+The declarant declares that the product falls within category 3.
 
-### Present the means of commercialisation and the market it addresses
+### Describe the product's distribution model and target market
 
-The tool will be made available to the public through Apple's App Store.
+The product will be made available to the public through Apple's App Store.
 It is intended for holders of a Finnish national identity card residing
 in France who wish to authenticate to online services.
 
@@ -326,8 +325,8 @@ No prior authorisation.
 
 ## F. Attestation
 
-I, the undersigned, Koistinen Petri, acting as supplier and author of
-the means and on my own behalf, certify that the information in this
+I, the undersigned, Koistinen Petri, acting on my own behalf as the
+supplier, certify that the information in this
 dossier is accurate and has been established in good faith, and
 undertake to inform the Agence nationale de la sécurité des systèmes
 d'information without delay of any new matter of fact or of law liable
