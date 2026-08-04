@@ -1,5 +1,6 @@
 #if os(macOS)
 
+  import AppKit
   import CardCore
   import Foundation
   import Observation
@@ -13,6 +14,14 @@
   @MainActor
   @Observable
   internal final class SignDocumentModel {
+    /// The one model both windows use.
+    ///
+    /// A document dropped on the status window has to reach the
+    /// signing window, and the two are separate scenes with separate
+    /// state; sharing the model is what lets a drop anywhere in the
+    /// app mean the same thing.
+    internal static let shared = SignDocumentModel()
+
     /// The document waiting to be signed.
     internal private(set) var pending: URL?
 
@@ -41,6 +50,41 @@
       return source.deletingLastPathComponent()
         .appendingPathComponent("\(name) - signed at \(stamp)")
         .appendingPathExtension(source.pathExtension)
+    }
+
+    /// Writes the signed document beside the original, asking the
+    /// holder where to put it only if the sandbox refuses.
+    ///
+    /// Dropping a file grants this app that file, not the folder it
+    /// sits in, so creating a sibling can be refused however ordinary
+    /// it looks. Rather than fail, the save panel opens on the same
+    /// folder with the same name already filled in: pressing Save is
+    /// what grants the access, and the result lands exactly where it
+    /// would have.
+    private static func write(_ document: Data, to destination: URL) throws -> URL {
+      do {
+        try document.write(to: destination, options: .atomic)
+        return destination
+      } catch {
+        guard let chosen = Self.chosenDestination(suggesting: destination) else {
+          throw error
+        }
+        try document.write(to: chosen, options: .atomic)
+        return chosen
+      }
+    }
+
+    /// The save panel, opened where the file was going to go.
+    private static func chosenDestination(suggesting destination: URL) -> URL? {
+      let panel = NSSavePanel()
+      panel.allowedContentTypes = [.pdf]
+      panel.nameFieldStringValue = destination.lastPathComponent
+      panel.directoryURL = destination.deletingLastPathComponent()
+      panel.message = String(
+        localized: "Choose where to keep the signed document."
+      )
+      guard panel.runModal() == .OK else { return nil }
+      return panel.url
     }
 
     /// One sentence per failure.
@@ -112,8 +156,7 @@
           document, pin2: pin2, reason: nil, location: nil
         )
         let destination = Self.destination(for: source, at: Date())
-        try result.write(to: destination, options: .atomic)
-        signed = destination
+        signed = try Self.write(result, to: destination)
         pending = nil
       } catch {
         failure = Self.message(for: error)

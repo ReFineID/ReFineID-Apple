@@ -26,11 +26,14 @@
     private static let spacing: CGFloat = 12
     private static let padding: CGFloat = 24
     private static let minimumWidth: CGFloat = 420
+    private static let dropCornerRadius: CGFloat = 12
+    private static let dropBorderWidth: CGFloat = 2
 
     @Environment(\.openWindow)
     private var openWindow
 
     @State private var model = LoginIdentityModel()
+    @State private var isTargeted = false
 
     internal var body: some View {
       VStack(alignment: .leading, spacing: Self.spacing) {
@@ -57,6 +60,18 @@
       }
       .padding(Self.padding)
       .frame(minWidth: Self.minimumWidth, alignment: .leading)
+      .contentShape(.rect)
+      .dropDestination(for: URL.self) { urls, _ in
+        accept(urls)
+      } isTargeted: { targeted in
+        isTargeted = targeted
+      }
+      .overlay {
+        if isTargeted {
+          RoundedRectangle(cornerRadius: Self.dropCornerRadius)
+            .strokeBorder(.tint, lineWidth: Self.dropBorderWidth)
+        }
+      }
       .task { publishStoredNumber() }
       .onAppear { model.refresh() }
     }
@@ -75,6 +90,21 @@
         Text("Insert your card")
           .foregroundStyle(.secondary)
       }
+    }
+
+    /// Takes a document dropped anywhere on the window and opens the
+    /// signing window holding it.
+    ///
+    /// Dropping on the app's own window is what a holder will try
+    /// first, so it has to mean the same as dropping on the signing
+    /// window itself.
+    private func accept(_ urls: [URL]) -> Bool {
+      guard let url = urls.first, url.pathExtension.lowercased() == "pdf" else {
+        return false
+      }
+      SignDocumentModel.shared.accept(url)
+      openWindow(id: SignDocumentView.windowID)
+      return true
     }
 
     /// Hands the stored card access number to the driver, off the launch

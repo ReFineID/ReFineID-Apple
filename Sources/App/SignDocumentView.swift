@@ -15,7 +15,7 @@
     private static let stackSpacing: CGFloat = 8
     private static let noticeSpacing: CGFloat = 4
 
-    @State private var model = SignDocumentModel()
+    private let model = SignDocumentModel.shared
     @State private var pin2 = ""
     @State private var isTargeted = false
     @FocusState private var pinFocused: Bool
@@ -61,8 +61,13 @@
         }
         .frame(maxWidth: .infinity, minHeight: Self.dropHeight)
         .contentShape(.rect)
-        .onDrop(of: [.pdf], isTargeted: $isTargeted) { providers in
-          accept(providers)
+        .dropDestination(for: URL.self) { urls, _ in
+          guard let url = urls.first else { return false }
+          model.accept(url)
+          pin2 = ""
+          return true
+        } isTargeted: { targeted in
+          isTargeted = targeted
         }
         .accessibilityLabel("Document to sign")
         .accessibilityValue(model.pending?.lastPathComponent ?? "none chosen")
@@ -127,19 +132,6 @@
           }
         }
       }
-    }
-
-    /// Takes the first dropped PDF.
-    private func accept(_ providers: [NSItemProvider]) -> Bool {
-      guard let provider = providers.first else { return false }
-      _ = provider.loadObject(ofClass: URL.self) { url, _ in
-        guard let url else { return }
-        Task { @MainActor in
-          model.accept(url)
-          pin2 = ""
-        }
-      }
-      return true
     }
 
     /// Opens the chooser.
