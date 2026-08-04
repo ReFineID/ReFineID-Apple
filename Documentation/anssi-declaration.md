@@ -92,8 +92,11 @@ déchiffrement ni accord de clés.
 
 Le moyen ne chiffre pas les données de l'utilisateur au repos, ne chiffre
 ni fichiers ni supports de stockage, n'offre ni messagerie ni téléphonie
-chiffrées, ne met en œuvre aucun réseau privé virtuel (VPN) ni tunnel de transport, et
-n'établit par lui-même aucune communication réseau.
+chiffrées, et ne met en œuvre aucun réseau privé virtuel (VPN) ni tunnel
+de transport. Ses seules communications réseau sont l'obtention
+d'horodatages qualifiés et de données de révocation publiques, exigées
+par une signature archivable, en HTTPS assuré par le système
+d'exploitation.
 
 #### B.3.2. Indiquez à quelle(s) catégorie(s) se rapporte(nt) la ou les fonctions cryptographiques du moyen
 
@@ -315,8 +318,10 @@ reserved for signature: the means offers its callers neither decryption
 nor key agreement.
 
 The means does not encrypt user data at rest, does not encrypt files or
-storage, provides no encrypted messaging or telephony, implements no VPN
-or transport tunnel, and performs no network communication of its own.
+storage, provides no encrypted messaging or telephony, and implements no
+VPN or transport tunnel. Its only network communications are obtaining
+qualified timestamps and public revocation data, which an archival
+signature requires, over HTTPS provided by the operating system.
 
 #### B.3.2. Categories the cryptographic functions fall under
 
