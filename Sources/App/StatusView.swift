@@ -183,9 +183,9 @@
             // The action row carries the progress too: it is already
             // there and half empty, and a line that appears and
             // disappears steps the window as the card is read.
-            if signing.readingStamp {
+            if let note = Self.progressNote(signing) {
               ProgressView().controlSize(.small)
-              Text("Reading the card…")
+              Text(note)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
             }
@@ -205,13 +205,6 @@
     @ViewBuilder private var outcomeSection: some View {
       if signing.working || signing.failure != nil || signing.signed != nil {
         Section {
-          if signing.working {
-            HStack(spacing: Self.dropSpacing) {
-              ProgressView().controlSize(.small)
-              Text("Signing: card, timestamp, revocation data…")
-                .foregroundStyle(.secondary)
-            }
-          }
           if let failure = signing.failure {
             Text(failure)
               .foregroundStyle(.red)
@@ -235,6 +228,22 @@
           }
         }
       }
+    }
+
+    /// What the card is busy with, or nothing when it is not.
+    ///
+    /// Both notes live on the action row rather than in boxes of
+    /// their own: that row is already there and half empty, and a
+    /// section that appears and disappears steps the window every
+    /// time the card is touched.
+    private static func progressNote(_ signing: SignDocumentModel) -> String? {
+      if signing.working {
+        return String(localized: "Signing: card, timestamp, revocation data…")
+      }
+      if signing.readingStamp {
+        return String(localized: "Reading the card…")
+      }
+      return nil
     }
 
     /// Whether an entry could be a PIN2 at all.
