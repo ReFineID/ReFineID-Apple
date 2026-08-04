@@ -30,9 +30,29 @@ internal struct PdfIncrementalSignerTests {
     return Data(text.utf8)
   }
 
+  /// One claim, for the tests that do not care what it says.
+  private static var claim: PdfIncrementalSigner.SignatureClaim {
+    PdfIncrementalSigner.SignatureClaim(
+      signedAt: Date(timeIntervalSince1970: 0), reason: nil, location: nil
+    )
+  }
+
   /// The document as Latin-1, the way the writer reads it.
   private static func text(_ document: Data) -> String {
     String(bytes: document, encoding: .isoLatin1) ?? ""
+  }
+
+  /// Every form-field name the document carries, in the order written.
+  private static func fieldNames(in document: Data) -> [String] {
+    var found: [String] = []
+    var rest = Substring(Self.text(document))
+    while let opened = rest.range(of: "/T (") {
+      rest = rest[opened.upperBound...]
+      guard let closed = rest.firstIndex(of: ")") else { break }
+      found.append(String(rest[rest.startIndex..<closed]))
+      rest = rest[closed...]
+    }
+    return found
   }
 
   @Test
@@ -120,6 +140,41 @@ internal struct PdfIncrementalSignerTests {
     #expect(text.contains("/SubFilter /ETSI.RFC3161"))
     #expect(!text.contains("/M (D:"))
     #expect(!text.contains("/Reason"))
+  }
+
+  @Test
+  internal func aSecondSignatureGetsItsOwnFieldName() throws {
+    // Two form fields with the same fully qualified name are one field
+    // (ISO 32000-1 §12.7.3.2). Signing a signed document with a
+    // repeated name therefore gives that one name two signature
+    // dictionaries, and a validator resolving it reaches the first -
+    // reporting the second as inconsistent between the signed and the
+    // final revision, which is what a co-signature earned until the
+    // name was made unique.
+    let once = try PdfIncrementalSigner.prepare(
+      Self.minimalPdf, revision: .signature(Self.claim)
+    )
+    let signed = try once.filled(with: WireHex.data("30030101FF"))
+    let twice = try PdfIncrementalSigner.prepare(
+      signed, revision: .signature(Self.claim)
+    )
+    let names = Self.fieldNames(in: twice.document)
+    #expect(names.count == 2)
+    #expect(Set(names).count == 2)
+  }
+
+  @Test
+  internal func aTimestampFieldDoesNotCollideWithAnEarlierOne() throws {
+    // The same rule, for the archive timestamps an LTA signature adds
+    // on every round.
+    let once = try PdfIncrementalSigner.prepare(
+      Self.minimalPdf, revision: .documentTimestamp
+    )
+    let stamped = try once.filled(with: WireHex.data("30030101FF"))
+    let twice = try PdfIncrementalSigner.prepare(
+      stamped, revision: .documentTimestamp
+    )
+    #expect(Set(Self.fieldNames(in: twice.document)).count == 2)
   }
 
   @Test

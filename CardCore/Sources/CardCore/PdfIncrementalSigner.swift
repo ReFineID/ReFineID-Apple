@@ -223,6 +223,16 @@ public enum PdfIncrementalSigner {
   }
 
   /// The invisible signature widget.
+  ///
+  /// Its name is built from the signature's object number, which is
+  /// unique in the document by construction. A fixed name would not
+  /// be: two fields with the same fully qualified name are the same
+  /// field (ISO 32000-1 §12.7.3.2), so signing a signed document
+  /// again would give one name two signature dictionaries. A
+  /// validator resolving that name reaches the first, compares it
+  /// against the second, and reports the signature dictionary as
+  /// inconsistent between the signed and the final revision - which
+  /// is what a second signature was doing until this was fixed.
   private static func widget(
     _ revision: Revision,
     field: Int,
@@ -231,9 +241,9 @@ public enum PdfIncrementalSigner {
     let name: String
     switch revision {
     case .signature:
-      name = "Signature1"
+      name = "Signature\(signature)"
     case .documentTimestamp:
-      name = "Timestamp1"
+      name = "Timestamp\(signature)"
     }
     return "\(field) 0 obj\n<< /Type /Annot /Subtype /Widget /FT /Sig"
       + " /T (\(name)) /V \(signature) 0 R /Rect [0 0 0 0] /F 132 >>\nendobj\n"
