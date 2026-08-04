@@ -150,18 +150,20 @@ extension Token {
   ) throws -> PublishedIdentity {
     TokenLog.info("readIdentity: reading leaf EF.4331")
     let leaf = try operations.readCertificate(.authentication)
-    // Best effort while the PKCS#15 application is still selected: a
-    // card without the slot still publishes its authentication identity.
-    let signLeaf = try? operations.readCertificate(.qualifiedSignature)
-    TokenLog.info(
-      "readIdentity: leaf \(leaf.count) bytes, sign leaf "
-        + "\(signLeaf?.count ?? -1) bytes; reading token serial")
+    TokenLog.info("readIdentity: leaf \(leaf.count) bytes; reading token serial")
     let serial = try operations.readTokenSerial()
     TokenLog.info("readIdentity: token serial read; resolving issuer")
     let issuer =
       BundledIssuerCertificate.der(matching: leaf)
       ?? (try? operations.readCertificate(.issuing))
     TokenLog.info("readIdentity: issuer \(issuer?.count ?? -1) bytes")
+    // The qualified leaf is optional and therefore read LAST. A card
+    // that lacks the slot answers the select with `6A82`, and a
+    // refused select leaves a different file current - so attempting
+    // this any earlier can make the reads that follow it fail, which
+    // is a mint lost for an identity that was never required.
+    let signLeaf = try? operations.readCertificate(.qualifiedSignature)
+    TokenLog.info("readIdentity: sign leaf \(signLeaf?.count ?? -1) bytes")
     return PublishedIdentity(
       leafDER: leaf,
       issuerDER: issuer,
