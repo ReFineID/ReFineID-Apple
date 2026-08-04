@@ -28,15 +28,6 @@
     internal var body: some View {
       LabeledContent("Stamp with CAN (optional)") {
         HStack(spacing: Self.spacing) {
-          // A fixed slot, filled or empty: a spinner that appears
-          // between the label and the field shoves the field sideways
-          // while the card is read.
-          Group {
-            if signing.readingStamp {
-              ProgressView().controlSize(.small)
-            }
-          }
-          .frame(width: Self.spinnerWidth)
           TextField("", text: $accessNumber)
             .frame(width: Self.entryWidth)
             .multilineTextAlignment(.trailing)
@@ -44,6 +35,17 @@
               accessNumber = LimitedDigits.cardAccessNumber(typed)
             }
             .accessibilityIdentifier("signAccessNumber")
+          // After the number, not between the label and it: a slot in
+          // the middle of the row leaves the spinner stranded in open
+          // space, which reads as something gone wrong rather than
+          // something in progress. Fixed width either way, so nothing
+          // moves when it appears.
+          Group {
+            if signing.readingStamp {
+              ProgressView().controlSize(.small)
+            }
+          }
+          .frame(width: Self.spinnerWidth)
         }
       }
       .task(id: accessNumber) {
