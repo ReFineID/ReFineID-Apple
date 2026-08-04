@@ -204,6 +204,11 @@
               .foregroundStyle(.red)
               .textSelection(.enabled)
           }
+          if let note = signing.codeFailure {
+            Text(note)
+              .foregroundStyle(.orange)
+              .textSelection(.enabled)
+          }
           if let signed = signing.signed {
             VStack(alignment: .leading, spacing: Self.noticeSpacing) {
               Text("Signed: \(signed.lastPathComponent)")

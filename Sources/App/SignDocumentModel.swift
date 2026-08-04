@@ -32,6 +32,12 @@
     /// Why the stamp could not be read, as one user-facing sentence.
     internal private(set) var stampFailure: String?
 
+    /// Why the signed document carries no code, kept beside the
+    /// outcome rather than beside the entry field: the field goes
+    /// away with the document, and a message that vanishes with it
+    /// is a message nobody read.
+    internal private(set) var codeFailure: String?
+
     /// Whether the card is being read for the signature right now.
     internal private(set) var readingStamp = false
 
@@ -208,6 +214,7 @@
       working = true
       failure = nil
       signed = nil
+      codeFailure = nil
       defer { working = false }
       do {
         let document = try Data(contentsOf: source)

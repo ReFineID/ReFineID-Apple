@@ -11,6 +11,7 @@
   /// the holder's own card for no reason.
   internal struct StampRow: View {
     private static let entryWidth: CGFloat = 130
+    private static let spinnerWidth: CGFloat = 16
     private static let previewHeight: CGFloat = 44
     private static let spacing: CGFloat = 6
 
@@ -27,9 +28,15 @@
     internal var body: some View {
       LabeledContent("Stamp with CAN (optional)") {
         HStack(spacing: Self.spacing) {
-          if signing.readingStamp {
-            ProgressView().controlSize(.small)
+          // A fixed slot, filled or empty: a spinner that appears
+          // between the label and the field shoves the field sideways
+          // while the card is read.
+          Group {
+            if signing.readingStamp {
+              ProgressView().controlSize(.small)
+            }
           }
+          .frame(width: Self.spinnerWidth)
           TextField("", text: $accessNumber)
             .frame(width: Self.entryWidth)
             .multilineTextAlignment(.trailing)
