@@ -21,6 +21,18 @@ internal struct ReFineIDApp: App {
         CardManagementView()
       }
       .windowResizability(.contentSize)
+
+      // Development builds only: the release configurations exclude the
+      // diagnostics sources at file level, so the scene must not exist
+      // there either.
+      #if DEBUG
+        Window("Diagnostics", id: "diagnostics") {
+          NavigationStack {
+            DiagnosticsView()
+          }
+        }
+        .windowResizability(.contentSize)
+      #endif
     #else
       WindowGroup {
         rootContent

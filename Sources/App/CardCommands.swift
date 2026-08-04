@@ -19,6 +19,12 @@
         Button("Card Management...") {
           openWindow(id: CardManagementView.windowID)
         }
+        #if DEBUG
+          Divider()
+          Button("Diagnostics...") {
+            openWindow(id: "diagnostics")
+          }
+        #endif
       }
     }
   }

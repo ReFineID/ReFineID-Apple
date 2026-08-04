@@ -20,18 +20,14 @@
   /// until the app was quit. This window now reads only what `ctkd` has
   /// already published, so it cannot take the card away from a login.
   ///
-  /// The detailed card probe still exists, in Diagnostics, where it is
-  /// an explicit action in a development build.
+  /// The detailed card probe still exists, in Diagnostics, behind the
+  /// Card menu in a development build - never in this window.
   internal struct StatusView: View {
     private static let spacing: CGFloat = 12
     private static let padding: CGFloat = 24
     private static let minimumWidth: CGFloat = 420
 
     @State private var model = LoginIdentityModel()
-
-    #if DEBUG
-      @State private var showsDiagnostics = false
-    #endif
 
     internal var body: some View {
       VStack(alignment: .leading, spacing: Self.spacing) {
@@ -45,26 +41,11 @@
         }
         .formStyle(.grouped)
         .fixedSize(horizontal: false, vertical: true)
-        #if DEBUG
-          diagnosticsButton
-        #endif
       }
       .padding(Self.padding)
       .frame(minWidth: Self.minimumWidth, alignment: .leading)
       .task { publishStoredNumber() }
       .onAppear { model.refresh() }
-      #if DEBUG
-        .sheet(isPresented: $showsDiagnostics) {
-          NavigationStack {
-            DiagnosticsView()
-            .toolbar {
-              ToolbarItem(placement: .cancellationAction) {
-                Button("Done") { showsDiagnostics = false }
-              }
-            }
-          }
-        }
-      #endif
     }
 
     /// Ready, or what to do about it.
@@ -82,18 +63,6 @@
           .foregroundStyle(.secondary)
       }
     }
-
-    #if DEBUG
-      /// Development-only, and under everything else for that reason.
-      private var diagnosticsButton: some View {
-        Button {
-          showsDiagnostics = true
-        } label: {
-          Label("Diagnostics", systemImage: "stethoscope")
-        }
-        .accessibilityIdentifier("diagnosticsButton")
-      }
-    #endif
 
     /// Hands the stored card access number to the driver, off the launch
     /// path.
