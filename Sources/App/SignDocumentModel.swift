@@ -52,37 +52,24 @@
         .appendingPathExtension(source.pathExtension)
     }
 
-    /// Writes the signed document beside the original, asking the
-    /// holder where to put it only if the sandbox refuses.
+    /// Where the signed document will go: the original's folder, under
+    /// the timestamped name, confirmed by the holder.
     ///
-    /// Dropping a file grants this app that file, not the folder it
-    /// sits in, so creating a sibling can be refused however ordinary
-    /// it looks. Rather than fail, the save panel opens on the same
-    /// folder with the same name already filled in: pressing Save is
-    /// what grants the access, and the result lands exactly where it
-    /// would have.
-    private static func write(_ document: Data, to destination: URL) throws -> URL {
-      do {
-        try document.write(to: destination, options: .atomic)
-        return destination
-      } catch {
-        guard let chosen = Self.chosenDestination(suggesting: destination) else {
-          throw error
-        }
-        try document.write(to: chosen, options: .atomic)
-        return chosen
-      }
-    }
-
-    /// The save panel, opened where the file was going to go.
-    private static func chosenDestination(suggesting destination: URL) -> URL? {
+    /// The panel opens already filled in, so confirming is one key -
+    /// and confirming is also what grants this app permission to create
+    /// the file. The sandbox the App Store requires hands over a
+    /// dropped file, never the folder around it, so a sibling cannot be
+    /// written without being asked for. Asked before signing rather
+    /// than after: a panel shown afterwards could be cancelled with a
+    /// card signature already spent, and this way a cancel is free.
+    private static func chosenDestination(for source: URL) -> URL? {
+      let suggested = Self.destination(for: source, at: Date())
       let panel = NSSavePanel()
       panel.allowedContentTypes = [.pdf]
-      panel.nameFieldStringValue = destination.lastPathComponent
-      panel.directoryURL = destination.deletingLastPathComponent()
-      panel.message = String(
-        localized: "Choose where to keep the signed document."
-      )
+      panel.nameFieldStringValue = suggested.lastPathComponent
+      panel.directoryURL = suggested.deletingLastPathComponent()
+      panel.message = String(localized: "Where to keep the signed document.")
+      panel.prompt = String(localized: "Sign")
       guard panel.runModal() == .OK else { return nil }
       return panel.url
     }
@@ -144,8 +131,24 @@
     }
 
     /// Signs the pending document with the entered PIN2.
+    ///
+    /// Where the result goes is settled before the card is touched, so
+    /// that cancelling costs nothing.
     internal func sign(pin2: String) async {
       guard let source = pending, !working else { return }
+      guard let destination = Self.chosenDestination(for: source) else {
+        return
+      }
+      // Replacing the original is refused rather than confirmed. It
+      // destroys the only unsigned copy, and the signature is taken
+      // over bytes already read into memory - so the file that
+      // vanished would be the one the signature attests.
+      guard destination.standardizedFileURL != source.standardizedFileURL else {
+        failure = String(
+          localized: "The signed document cannot replace the original."
+        )
+        return
+      }
       working = true
       failure = nil
       signed = nil
@@ -155,8 +158,8 @@
         let result = try await DocumentSigner.sign(
           document, pin2: pin2, reason: nil, location: nil
         )
-        let destination = Self.destination(for: source, at: Date())
-        signed = try Self.write(result, to: destination)
+        try result.write(to: destination, options: .atomic)
+        signed = destination
         pending = nil
       } catch {
         failure = Self.message(for: error)
