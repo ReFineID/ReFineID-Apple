@@ -109,6 +109,48 @@
         )
       }
     }
+
+    /// Temporary refusal backs off to one minute and keeps trying.
+    @Test
+    internal func transientFailureRetriesUntilSuccess() async throws {
+      var attempts = 0
+      var delays: [Duration] = []
+
+      let answer = try await TimestampClient.withTransientRetry {
+        attempts += 1
+        if attempts <= 8 {
+          throw SigningNetwork.Failure.httpStatus(429)
+        }
+        return "timestamp"
+      } wait: { delay in
+        delays.append(delay)
+      }
+
+      #expect(answer == "timestamp")
+      #expect(attempts == 9)
+      #expect(
+        delays == [1, 2, 4, 8, 16, 32, 60, 60].map { .seconds($0) }
+      )
+    }
+
+    /// Authentication failure is returned without another attempt or wait.
+    @Test
+    internal func permanentFailureDoesNotRetry() async {
+      var attempts = 0
+      var waited = false
+
+      await #expect(throws: SigningNetwork.Failure.httpStatus(401)) {
+        _ = try await TimestampClient.withTransientRetry {
+          attempts += 1
+          throw SigningNetwork.Failure.httpStatus(401)
+        } wait: { _ in
+          waited = true
+        }
+      }
+
+      #expect(attempts == 1)
+      #expect(!waited)
+    }
   }
 
 #endif

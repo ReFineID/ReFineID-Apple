@@ -179,8 +179,6 @@ Three qualified authorities in two countries, so the proven time
 survives any one of them losing its standing. A refusal is survivable:
 each is asked in turn, one that is down or rate limiting is named on
 stderr and skipped, and only silence from all three stops the signing.
-Sectigo asks for fifteen seconds between requests, which the archive
-timestamp can run into, so it falls through to Greece when it does.
 
 The order matters twice. It decides who carries the archive timestamp,
 which is a single token rather than a set -- the first to answer wins

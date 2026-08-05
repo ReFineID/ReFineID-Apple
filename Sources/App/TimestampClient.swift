@@ -8,10 +8,9 @@
   /// Asks the configured authorities for a qualified timestamp.
   ///
   /// The order in Settings is the order asked, and the first authority
-  /// to answer with a token that binds to the digest wins. Anything
-  /// else about an authority - unreachable, refusing, answering with a
-  /// token for someone else's digest - is a reason to try the next
-  /// one, never a reason to accept less.
+  /// to answer with a token that binds to the digest wins. A sole
+  /// authority is retried after temporary failures. With several,
+  /// refusal is a reason to try the next, never a reason to accept less.
   internal enum TimestampClient {
     /// Why no token could be obtained.
     internal enum Failure: Error, Equatable {
@@ -38,6 +37,15 @@
     /// Entropy carried by each request nonce.
     private static let nonceByteCount = 32
 
+    /// First wait after a temporary authority failure.
+    private static let initialRetrySeconds = 1
+
+    /// Longest wait between repeated attempts.
+    private static let maximumRetrySeconds = 60
+
+    /// Exponent at which the one-second progression reaches its cap.
+    private static let maximumRetryExponent = 6
+
     /// One token over `digest`, from the first authority that answers.
     internal static func token(
       over digest: Data
@@ -47,6 +55,21 @@
         throw Failure.noAuthorityConfigured
       }
       let identities = try await Self.trustedIdentities()
+      if authorities.count == 1, let authority = authorities.first {
+        do {
+          return try await Self.withTransientRetry {
+            try await Self.token(
+              over: digest,
+              from: authority,
+              identities: identities
+            )
+          }
+        } catch is CancellationError {
+          throw CancellationError()
+        } catch {
+          throw Failure.noAuthorityAnswered(["\(authority): \(error)"])
+        }
+      }
       var declined: [String] = []
       for authority in authorities {
         do {
@@ -74,22 +97,28 @@
         throw Failure.noAuthorityConfigured
       }
       let identities = try await Self.trustedIdentities()
+      if authorities.count == 1, let authority = authorities.first {
+        do {
+          return try await Self.withTransientRetry {
+            try await Self.compactToken(
+              over: digest,
+              from: authority,
+              identities: identities
+            )
+          }
+        } catch is CancellationError {
+          throw CancellationError()
+        } catch {
+          throw Failure.noAuthorityAnswered(["\(authority): \(error)"])
+        }
+      }
       var declined: [String] = []
       for authority in authorities {
         do {
-          let nonce = try Self.randomBytes()
-          let response = try await SigningNetwork.post(
-            Self.compactRequest(digest: digest, nonceBytes: nonce),
-            to: authority,
-            contentType: Self.requestContentType,
-            credentials: TimestampAuthorityStore.credentials(for: authority),
-            endpoint: .authority
-          )
-          let token = try RfcTimestamp.token(
-            fromResponse: response, digest: digest, nonceBytes: nonce
-          )
-          return try Self.verifiedCompactEncoding(
-            token, identities: identities
+          return try await Self.compactToken(
+            over: digest,
+            from: authority,
+            identities: identities
           )
         } catch {
           declined.append("\(authority): \(error)")
@@ -158,6 +187,67 @@
         fromResponse: response, digest: digest, nonceBytes: nonce
       )
       return try Self.verifiedToken(token, identities: identities)
+    }
+
+    /// One compact token from one authority, verified before stripping.
+    private static func compactToken(
+      over digest: Data,
+      from authority: String,
+      identities: EuTrustedListDirectory.Identities
+    ) async throws -> Data {
+      let nonce = try Self.randomBytes()
+      let response = try await SigningNetwork.post(
+        Self.compactRequest(digest: digest, nonceBytes: nonce),
+        to: authority,
+        contentType: Self.requestContentType,
+        credentials: TimestampAuthorityStore.credentials(for: authority),
+        endpoint: .authority
+      )
+      let token = try RfcTimestamp.token(
+        fromResponse: response, digest: digest, nonceBytes: nonce
+      )
+      return try Self.verifiedCompactEncoding(token, identities: identities)
+    }
+
+    /// Repeats a sole authority after temporary failures until it answers.
+    private static func withTransientRetry<T>(
+      operation: () async throws -> T
+    ) async throws -> T {
+      try await Self.withTransientRetry(operation: operation) { delay in
+        try await Task.sleep(for: delay)
+      }
+    }
+
+    /// The retry loop with an injectable wait for direct tests.
+    internal static func withTransientRetry<T>(
+      operation: () async throws -> T,
+      wait: (Duration) async throws -> Void
+    ) async throws -> T {
+      var failureCount = 0
+      while true {
+        do {
+          return try await operation()
+        } catch {
+          guard SigningNetwork.isTransientAuthorityFailure(error) else {
+            throw error
+          }
+          failureCount += 1
+          try await wait(Self.retryDelay(after: failureCount))
+        }
+      }
+    }
+
+    /// Capped exponential delay after the given consecutive failure count.
+    internal static func retryDelay(after failureCount: Int) -> Duration {
+      let exponent = min(
+        max(failureCount - 1, 0),
+        Self.maximumRetryExponent
+      )
+      let seconds = min(
+        Self.initialRetrySeconds << exponent,
+        Self.maximumRetrySeconds
+      )
+      return .seconds(seconds)
     }
 
     /// Verifies one token under the same qualified trusted-list identities.

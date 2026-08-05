@@ -56,6 +56,37 @@
     /// HTTP statuses that carry a usable body.
     internal static let successStatuses = 200..<300
 
+    /// HTTP statuses for which repeating an unchanged authority request may
+    /// recover without changing credentials, policy, or payload.
+    private static let requestTimeoutStatus = 408
+    private static let tooEarlyStatus = 425
+    private static let tooManyRequestsStatus = 429
+    private static let internalServerErrorStatus = 500
+    private static let badGatewayStatus = 502
+    private static let serviceUnavailableStatus = 503
+    private static let gatewayTimeoutStatus = 504
+    private static let transientAuthorityStatuses: Set<Int> = [
+      Self.requestTimeoutStatus,
+      Self.tooEarlyStatus,
+      Self.tooManyRequestsStatus,
+      Self.internalServerErrorStatus,
+      Self.badGatewayStatus,
+      Self.serviceUnavailableStatus,
+      Self.gatewayTimeoutStatus,
+    ]
+
+    /// URL loading failures caused by temporary reachability rather than a
+    /// rejected certificate, malformed response, or caller configuration.
+    private static let transientAuthorityUrlErrors: Set<Int> = [
+      NSURLErrorTimedOut,
+      NSURLErrorCannotFindHost,
+      NSURLErrorDNSLookupFailed,
+      NSURLErrorCannotConnectToHost,
+      NSURLErrorNetworkConnectionLost,
+      NSURLErrorNotConnectedToInternet,
+      NSURLErrorResourceUnavailable,
+    ]
+
     /// An ephemeral session whose DNS answers are validated by the
     /// system when `validating`.
     ///
@@ -98,6 +129,19 @@
       ]
       let failure = error as NSError
       return failure.domain == NSURLErrorDomain && codes.contains(failure.code)
+    }
+
+    /// Whether an unchanged timestamp-authority request may succeed later.
+    ///
+    /// Certificate, TLS, redirect, request, response-shape and credential
+    /// failures are deliberately absent: waiting cannot repair them.
+    internal static func isTransientAuthorityFailure(_ error: Error) -> Bool {
+      if case Failure.httpStatus(let status) = error {
+        return Self.transientAuthorityStatuses.contains(status)
+      }
+      let failure = error as NSError
+      return failure.domain == NSURLErrorDomain
+        && Self.transientAuthorityUrlErrors.contains(failure.code)
     }
 
     /// POSTs a DER request and answers the DER response.

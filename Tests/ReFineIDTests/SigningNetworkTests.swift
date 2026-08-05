@@ -52,6 +52,36 @@ internal struct SigningNetworkTests {
     )
   }
 
+  /// Timestamp retries distinguish temporary reachability and busy statuses
+  /// from failures that waiting cannot repair.
+  @Test
+  internal func authorityRetryClassificationIsNarrow() {
+    for status in [408, 425, 429, 500, 502, 503, 504] {
+      #expect(
+        SigningNetwork.isTransientAuthorityFailure(
+          SigningNetwork.Failure.httpStatus(status)
+        )
+      )
+    }
+    for status in [400, 401, 403, 411, 413, 415, 501] {
+      #expect(
+        !SigningNetwork.isTransientAuthorityFailure(
+          SigningNetwork.Failure.httpStatus(status)
+        )
+      )
+    }
+    #expect(
+      SigningNetwork.isTransientAuthorityFailure(
+        NSError(domain: NSURLErrorDomain, code: NSURLErrorTimedOut)
+      )
+    )
+    #expect(
+      !SigningNetwork.isTransientAuthorityFailure(
+        NSError(domain: NSURLErrorDomain, code: NSURLErrorServerCertificateUntrusted)
+      )
+    )
+  }
+
   /// Only exact HTTP-family schemes with a host are accepted.
   @Test
   internal func lookalikeAndNonNetworkAddressesAreRefused() {
