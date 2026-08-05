@@ -61,13 +61,17 @@
     /// page, in that page's own coordinates, or nil when the page has
     /// no room for one at any size.
     ///
-    /// The bottom-right corner is where a signature conventionally
-    /// sits, so the corner is tried first and given up last: a mark
-    /// that will not fit there is shrunk, as far as it can be read,
-    /// before it is moved at all. Only when even the smallest will
-    /// not fit does the search step left along the foot of the page,
-    /// and only when a whole row is occupied does it rise and sweep
-    /// right to left again.
+    /// Size is settled before place. A mark is looked for at its full
+    /// size everywhere it could go, and only when the page has no room
+    /// for one that big is a smaller one looked for - shrinking is the
+    /// last thing given up, not the first, because a mark sitting a
+    /// little further in is worth more than one small enough for the
+    /// very corner.
+    ///
+    /// Within a size, the bottom-right corner is where a signature
+    /// conventionally sits: the search starts there, steps left along
+    /// the foot of the page, and rises a row to sweep right to left
+    /// again only once a whole row is occupied.
     internal static func free(
       inLastPageOf document: Data,
       reach: Double
@@ -84,25 +88,24 @@
       guard !ink.isEmpty else { return nil }
       let rows = max(Int(box.height / Self.searchStep), 1)
       let columns = max(Int(box.width / Self.searchStep), 1)
-      for row in 0..<rows {
-        for column in 0..<columns {
-          // Size is the innermost choice, so every size is tried at
-          // one place before any size is tried at the next.
-          for attempt in 0...Self.shrinkAttempts {
-            let share = Self.fullShare - Double(attempt) * Self.shrinkStep
-            guard share >= Self.smallestShare else { continue }
-            let room = reach * share + Self.clearance
-            // Each size keeps its own margin to the page's edge, so a
-            // shrunken mark sits in the corner rather than floating
-            // where a larger one would have.
+      for attempt in 0...Self.shrinkAttempts {
+        let share = Self.fullShare - Double(attempt) * Self.shrinkStep
+        guard share >= Self.smallestShare else { continue }
+        // Each size keeps its own margin to the page's edge, so a
+        // shrunken mark sits in the corner rather than floating where
+        // a larger one would have.
+        let room = reach * share + Self.clearance
+        rowScan: for row in 0..<rows {
+          for column in 0..<columns {
             let centre = (
               x: box.maxX - room - Double(column) * Self.searchStep,
               y: box.minY + room + Double(row) * Self.searchStep
             )
-            guard
-              centre.x - room >= box.minX,
-              centre.y + room <= box.maxY,
-              Self.isBlank(around: centre, reach: room, ink: ink, box: box)
+            // Columns run left and rows run up, so once either passes
+            // the page's edge nothing further along it can fit.
+            guard centre.x - room >= box.minX else { break }
+            guard centre.y + room <= box.maxY else { break rowScan }
+            guard Self.isBlank(around: centre, reach: room, ink: ink, box: box)
             else {
               continue
             }

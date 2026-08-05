@@ -37,6 +37,13 @@ internal struct StampSpotTests {
   /// Halves, for asking whether the mark stayed on the lower page.
   private static let halves = 2.0
 
+  /// A pocket in the corner, wide enough only for a shrunken mark,
+  /// walled off from the open page by a bar.
+  private static let pocketLeftEdge = 490.0
+  private static let pocketHeight = 95.0
+  private static let barLeftEdge = 400.0
+  private static let barWidth = 90.0
+
   /// A page carrying a content stream.
   private static func pageCarrying(_ content: String) -> Data {
     var text = "%PDF-1.7\n"
@@ -88,12 +95,41 @@ internal struct StampSpotTests {
     #expect(abs(spot.upPage - Self.reach) < Self.cornerTolerance)
   }
 
-  /// A corner too tight for a full-size mark shrinks it rather than
-  /// moving it.
+  /// A full-size mark further in beats a shrunken one in the corner.
+  ///
+  /// The corner holds a pocket only a small mark fits, and the open
+  /// page beyond the bar holds room for a full-size one. Size is
+  /// settled before place, so the mark leaves the corner rather than
+  /// shrink to stay in it - the page has room, and a reader should
+  /// get the larger mark.
+  @Test
+  internal func aFullSizeMarkFurtherInBeatsAShrunkenCorner() throws {
+    var content = Self.ink(
+      fromLeft: Self.barLeftEdge,
+      fromFoot: 0,
+      width: Self.barWidth,
+      height: Self.pageHeight
+    )
+    content += Self.ink(
+      fromLeft: Self.pocketLeftEdge,
+      fromFoot: Self.pocketHeight,
+      width: Self.pageWidth - Self.pocketLeftEdge,
+      height: Self.pageHeight - Self.pocketHeight
+    )
+    let document = Self.pageCarrying(content)
+    let spot = try #require(
+      StampSpot.free(inLastPageOf: document, reach: Self.reach)
+    )
+    #expect(spot.share == 1)
+    #expect(spot.acrossPage < Self.barLeftEdge)
+  }
+
+  /// A page with room for no full-size mark anywhere shrinks it rather
+  /// than give up.
   ///
   /// Every part of the page is covered but a square in the corner, and
-  /// that square is smaller than a full-size mark - the case the rule
-  /// exists for: staying where a signature belongs costs size first.
+  /// that square is smaller than a full-size mark. Shrinking is the
+  /// last thing given up, so it happens here and only here.
   @Test
   internal func aCrowdedCornerShrinksTheMarkBeforeMovingIt() throws {
     var content = Self.ink(
