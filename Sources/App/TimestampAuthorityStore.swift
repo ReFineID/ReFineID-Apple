@@ -6,21 +6,30 @@
   /// The qualified time-stamp authorities, in the order they are asked.
   ///
   /// An archival signature needs a qualified timestamp; these are the
-  /// services asked for one, first answer wins. The defaults are the
-  /// same eu-qualified set the reference implementation ships, in the
-  /// same order. URLs are configuration, not secrets: they name public
+  /// services asked for one, first answer wins. One is shipped, and
+  /// more can be added - each costs every later reader a chain to
+  /// walk. URLs are configuration, not secrets: they name public
   /// services and live in preferences.
   internal enum TimestampAuthorityStore {
     /// The preferences key holding the ordered list.
     private static let key = "timestampAuthorities"
 
-    /// The shipped set: qualified services on the EU trusted lists,
-    /// best first.
+    /// The shipped set: one qualified service on the EU trusted
+    /// lists.
+    ///
+    /// One rather than four. The list is asked in order and the first
+    /// to answer wins, so the others are never reached on a working
+    /// network - but every authority that does answer brings its own
+    /// certificate chain, and an archival signature carries the chain
+    /// and the revocation data proving it for each. A document signed
+    /// twice through four authorities can end up with four chains to
+    /// walk, which is work for every reader that opens it ever after.
+    ///
+    /// Adding more is a decision the holder can make in Settings: a
+    /// second authority is insurance against the first refusing, paid
+    /// for in what every later reader must check.
     internal static let defaults: [String] = [
-      "http://timestamp.sectigo.com/qualified",
-      "https://timestamp.aped.gov.gr/qtss",
-      "http://tss.accv.es:8318/tsa",
-      "http://tsa.belgium.be/connect",
+      "http://timestamp.sectigo.com/qualified"
     ]
 
     /// The preferences key of the per-authority usernames.
