@@ -28,8 +28,20 @@
       /// A network step an archival signature cannot omit failed.
       case network(Error)
 
+      /// A different card was present after the visible stamp was read.
+      case stampSignerChanged
+
       /// Complete, authenticated LT evidence could not be collected.
       case validation(Error)
+    }
+
+    /// A visible mark bound to the certificate identity it states.
+    internal struct VisibleStamp: Sendable {
+      /// What is drawn into the signed revision.
+      internal let mark: StampMark
+
+      /// The exact DER certificate whose subject is drawn in the mark.
+      internal let signerCertificate: Data
     }
 
     /// What one card session produced.
@@ -73,7 +85,7 @@
       pin2: String,
       reason: String?,
       location: String?,
-      stamp: StampMark?
+      stamp: VisibleStamp?
     ) async throws -> Product {
       let claim = PdfIncrementalSigner.SignatureClaim(
         signedAt: Date(), reason: reason, location: location
@@ -125,24 +137,28 @@
       pin2: String,
       document: Data,
       claim: PdfIncrementalSigner.SignatureClaim,
-      stamp: StampMark?
+      stamp: VisibleStamp?
     ) async throws -> CardMaterial {
       let prepared: PdfSignaturePlaceholder
       do {
         prepared = try PdfIncrementalSigner.prepare(
-          document, revision: .signature(claim), appending: stamp
+          document, revision: .signature(claim), appending: stamp?.mark
         )
       } catch let error as PdfSigningError {
         throw Failure.document(error)
       }
       let digest = prepared.digest
-      let answer = await CardMaintenance.qualifiedSignature(pin2: pin2) {
-        certificate in
+      let answer = await CardMaintenance.qualifiedSignature(
+        pin2: pin2,
+        expectedCertificate: stamp?.signerCertificate
+      ) { certificate in
         QualifiedDocumentCms.signedAttributes(
           byteRangeDigest: digest, signerCertificate: certificate
         )
       }
       switch answer {
+      case .signerCertificateMismatch:
+        throw Failure.stampSignerChanged
       case .signed(let product):
         return CardMaterial(
           placeholder: prepared,
@@ -174,8 +190,10 @@
       pin2: String
     ) async -> Data? {
       let digest = Data(SHA384.hash(data: manifest))
-      let answer = await CardMaintenance.qualifiedSignature(pin2: pin2) {
-        certificate in
+      let answer = await CardMaintenance.qualifiedSignature(
+        pin2: pin2,
+        expectedCertificate: nil
+      ) { certificate in
         QualifiedDocumentCms.signedAttributes(
           byteRangeDigest: digest, signerCertificate: certificate
         )

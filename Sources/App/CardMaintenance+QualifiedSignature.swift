@@ -27,6 +27,9 @@
       /// The card refused, at the floor or at the credential.
       case refused(Outcome)
 
+      /// The present card is not the one that supplied the visible stamp.
+      case signerCertificateMismatch
+
       /// The card signed.
       case signed(QualifiedProduct)
     }
@@ -46,10 +49,16 @@
     /// hash the certificate, and the certificate is on the card.
     internal static func qualifiedSignature(
       pin2: String,
+      expectedCertificate: Data?,
       digestBuilder: @escaping @Sendable (Data) -> Data
     ) async -> QualifiedAnswer {
       let result = await onCard { operations in
-        Self.qualifiedInSession(operations, pin2: pin2, builder: digestBuilder)
+        Self.qualifiedInSession(
+          operations,
+          pin2: pin2,
+          expectedCertificate: expectedCertificate,
+          builder: digestBuilder
+        )
       }
       return result ?? .refused(.noCard)
     }
@@ -59,6 +68,7 @@
     private static func qualifiedInSession(
       _ operations: CardOperations,
       pin2: String,
+      expectedCertificate: Data?,
       builder: (Data) -> Data
     ) -> QualifiedAnswer {
       guard let probe = try? operations.probeRetryCounter(role: .pin2) else {
@@ -70,6 +80,13 @@
       }
       guard let identity = Self.qualifiedIdentity(operations) else {
         return .refused(.failed)
+      }
+      guard
+        Self.qualifiedCertificate(
+          identity.certificate, matches: expectedCertificate
+        )
+      else {
+        return .signerCertificateMismatch
       }
       guard let credential = Pin2(digits: pin2) else {
         return .refused(.invalidEntry)
@@ -101,6 +118,16 @@
           profile: identity.profile
         )
       )
+    }
+
+    /// Whether the card certificate is the exact one a visible stamp states.
+    ///
+    /// A nil expectation is the unstamped path and accepts any signer.
+    internal static func qualifiedCertificate(
+      _ certificate: Data,
+      matches expectedCertificate: Data?
+    ) -> Bool {
+      expectedCertificate.map { certificate == $0 } ?? true
     }
 
     /// Reads and classifies the qualified certificate without spending PIN2.

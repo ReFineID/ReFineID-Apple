@@ -55,4 +55,29 @@ internal struct TravelDocumentInventoryTests {
     #expect(inventory.count == 4)
     #expect(!inventory.carriesDisplayedSignature)
   }
+
+  @Test
+  internal func absentDisplayedSignatureDoesNotReadDataGroupSeven() throws {
+    let channel = ScriptedChannel(
+      Self.inventoryScript(file: Self.withoutSignature)
+    )
+    let operations = CardOperations(channel: channel)
+
+    #expect(try operations.readDisplayedSignature() == nil)
+    #expect(channel.isExhausted)
+  }
+
+  @Test
+  internal func listedButUnreadableDisplayedSignatureThrows() {
+    let channel = ScriptedChannel(
+      Self.inventoryScript(file: Self.commonDataFile)
+        + [("00A4020C020107", "6A82")]
+    )
+    let operations = CardOperations(channel: channel)
+
+    #expect(throws: CardOperationError.selectRejected(.fileNotFound)) {
+      try operations.readDisplayedSignature()
+    }
+    #expect(channel.isExhausted)
+  }
 }

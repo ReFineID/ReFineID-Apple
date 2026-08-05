@@ -13,6 +13,12 @@
   @MainActor
   @Observable
   internal final class SignDocumentModel {
+    /// One visible statement and the exact certificate that states it.
+    private struct StampState {
+      let statement: StampRenderer.Statement
+      let signerCertificate: Data
+    }
+
     /// The document waiting to be signed.
     internal private(set) var pending: URL?
 
@@ -25,11 +31,11 @@
     /// Where the signed file landed.
     internal private(set) var signed: URL?
 
-    /// The traced signature read from the card, when a card access
-    /// number was given and the card carried one.
-    internal private(set) var stamp: SignatureArtwork.Artwork?
+    /// The complete visible statement read from the card, with
+    /// handwriting when the card carries it and identity alone otherwise.
+    private var stampState: StampState?
 
-    /// Why the stamp could not be read, as one user-facing sentence.
+    /// A non-fatal note about what the visible stamp could contain.
     internal private(set) var stampFailure: String?
 
     /// A non-fatal fact the holder must see beside the signed output.
@@ -37,13 +43,6 @@
 
     /// Whether the card is being read for the signature right now.
     internal private(set) var readingStamp = false
-
-    /// The common name the card's qualified certificate states, read
-    /// beside the signature image.
-    private var signerName: String?
-
-    /// The identifier that goes under it.
-    private var signerIdentifier = ""
 
     /// The signed file's place: beside the original, stamped with the
     /// UTC instant, colons replaced so the name is safe everywhere.
@@ -127,6 +126,9 @@
       case DocumentSigner.Failure.validation:
         "Complete authenticated certificate and revocation evidence could "
           + "not be collected. No signed file was written."
+      case DocumentSigner.Failure.stampSignerChanged:
+        "The card used for signing is not the card read for the stamp. "
+          + "No PIN2 attempt was spent."
       default:
         "The document could not be signed."
       }
@@ -155,24 +157,17 @@
       pending = url
       failure = nil
       signed = nil
+      stampState = nil
+      stampFailure = nil
       notice = nil
     }
 
-    /// The page the mark goes on, when a signature was read from the
-    /// card, and nothing when none was.
-    private func stampMark() -> StampMark? {
-      guard let stamp, let name = signerName else { return nil }
-      return StampRenderer.mark(
-        StampRenderer.Statement(
-          name: name,
-          identifier: signerIdentifier,
-          signature: stamp
-        )
-      )
+    /// The page mark built from the identity the card supplied.
+    internal func stampMark() -> StampMark? {
+      stampState.map { StampRenderer.mark($0.statement) }
     }
 
-    /// Reads the holder's handwritten signature off the card and
-    /// traces it, so the stamp can be seen before anything is signed.
+    /// Reads the stamp identity and any handwritten signature off the card.
     ///
     /// Only a complete access number is taken to the card. A number
     /// is six digits, so anything shorter is not a wrong number, it
@@ -180,34 +175,67 @@
     /// holder's own card and say so while they were mid-entry.
     internal func readStamp(accessNumber digits: String) async {
       guard digits.count == CardAccessNumber.digitCount else {
-        stamp = nil
+        stampState = nil
         stampFailure = nil
         return
       }
       guard !readingStamp else { return }
       readingStamp = true
+      stampState = nil
       stampFailure = nil
       defer { readingStamp = false }
-      switch await CardMaintenance.displayedSignature(accessNumber: digits) {
-      case .image(let mark):
-        signerName = mark.name
-        signerIdentifier = mark.identifier
-        stamp = SignatureArtwork.traced(mark.bytes)
-        stampFailure =
-          stamp == nil
-          ? String(localized: "The signature image could not be read.") : nil
+      applyStampOutcome(
+        await CardMaintenance.displayedSignature(accessNumber: digits)
+      )
+    }
+
+    /// Applies one card read atomically, so a failure can never retain
+    /// another card holder's visible identity.
+    internal func applyStampOutcome(
+      _ outcome: CardMaintenance.SignatureOutcome
+    ) {
+      stampState = nil
+      stampFailure = nil
+      switch outcome {
+      case .mark(let mark):
+        let artwork: SignatureArtwork.Artwork?
+        if let bytes = mark.bytes {
+          guard let traced = SignatureArtwork.traced(bytes) else {
+            stampFailure = String(
+              localized: "The signature image could not be read."
+            )
+            return
+          }
+          artwork = traced
+        } else {
+          artwork = nil
+          stampFailure = String(
+            localized:
+              "No handwritten signature; the stamp will show the certificate identity."
+          )
+        }
+        stampState = StampState(
+          statement: StampRenderer.Statement(
+            name: mark.name,
+            identifier: mark.identifier,
+            signature: artwork
+          ),
+          signerCertificate: mark.certificate
+        )
       case .absent:
-        stamp = nil
         stampFailure = String(
-          localized: "This card carries no handwritten signature."
+          localized: "The certificate identity could not be read."
+        )
+      case .imageUnreadable:
+        stampFailure = String(
+          localized:
+            "The handwritten signature could not be read; no visible stamp was added."
         )
       case .wrongAccessNumber:
-        stamp = nil
         stampFailure = String(
           localized: "That card access number was refused."
         )
       case .noCard:
-        stamp = nil
         stampFailure = String(localized: "No readable card.")
       }
     }
@@ -217,7 +245,7 @@
       pending = nil
       failure = nil
       signed = nil
-      stamp = nil
+      stampState = nil
       stampFailure = nil
       notice = nil
     }
@@ -257,7 +285,7 @@
       defer { working = false }
       do {
         let document = try Data(contentsOf: source)
-        let page = Self.placed(stampedMark(), on: document)
+        let visibleStamp = self.visibleStamp(on: document)
         #if DEBUG
           let reason =
             DebugRevokedDocumentSigning.isEnabled()
@@ -270,7 +298,7 @@
           pin2: pin2,
           reason: reason,
           location: nil,
-          stamp: page
+          stamp: visibleStamp
         )
         try result.bytes.write(to: destination, options: .atomic)
         #if DEBUG
@@ -278,16 +306,29 @@
             notice = DebugRevokedDocumentSigning.warning
           }
         #endif
-        signed = destination
-        pending = nil
+        complete(with: destination)
       } catch {
         failure = Self.message(for: error)
       }
     }
 
-    /// The mark, when the card gave a signature to stamp with.
-    private func stampedMark() -> StampMark? {
-      stampMark()
+    /// The placed mark and the exact certificate identity it states.
+    internal func visibleStamp(on document: Data) -> DocumentSigner.VisibleStamp? {
+      guard let state = stampState else { return nil }
+      let rendered = StampRenderer.mark(state.statement)
+      guard let placed = Self.placed(rendered, on: document) else { return nil }
+      return DocumentSigner.VisibleStamp(
+        mark: placed,
+        signerCertificate: state.signerCertificate
+      )
+    }
+
+    /// Records a completed write and releases the card identity state.
+    internal func complete(with destination: URL) {
+      signed = destination
+      pending = nil
+      stampState = nil
+      stampFailure = nil
     }
 
     /// Reports a failure raised before the card was reached.

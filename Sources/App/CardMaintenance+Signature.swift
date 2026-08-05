@@ -25,10 +25,14 @@
       }
     }
 
-    /// A signature image and the name that goes with it.
+    /// The certificate identity used by a visible document stamp,
+    /// optionally with the handwritten signature the card carries.
     internal struct Mark: Equatable, Sendable {
-      /// The image, as the card stores it.
-      internal let bytes: Data
+      /// The image, as the card stores it, or nil when this card has none.
+      internal let bytes: Data?
+
+      /// The exact qualified-signature certificate that states the identity.
+      internal let certificate: Data
 
       /// The holder as a person reads it.
       internal let name: String
@@ -39,12 +43,14 @@
 
     /// What reading the signature answered.
     internal enum SignatureOutcome: Equatable {
-      /// The card carries no signature image.
+      /// No certificate identity could be read for a truthful stamp.
       case absent
 
-      /// The image as the card stores it, and the common name its
-      /// qualified certificate states.
-      case image(Mark)
+      /// The card listed a handwritten signature but it could not be read.
+      case imageUnreadable
+
+      /// The certificate identity, optionally with the image the card stores.
+      case mark(Mark)
 
       /// No card was readable.
       case noCard
@@ -63,12 +69,17 @@
       }
       let answer = await Self.onTravelDocument(accessNumber: number) {
         operations -> SignatureOutcome in
-        guard let image = try? operations.readDisplayedSignature() else {
-          return .absent
+        // DG7 must be attempted while the travel-document application
+        // is still selected. Reading the certificate below selects the
+        // FINEID application instead.
+        let image: DisplayedSignature.Image?
+        do {
+          image = try operations.readDisplayedSignature()
+        } catch {
+          return .imageUnreadable
         }
-        // The name is read in the same session, from the certificate
-        // that will verify the signature - so what the mark states
-        // and what signs the document cannot disagree.
+        // Carry the exact certificate beside the visible identity. The
+        // signing session later requires the same DER before spending PIN2.
         guard
           let certificate = try? operations.readCertificate(.qualifiedSignature),
           let facts = CertificateFacts(der: certificate),
@@ -77,9 +88,10 @@
         else {
           return .absent
         }
-        return .image(
+        return .mark(
           Mark(
-            bytes: image.bytes,
+            bytes: image?.bytes,
+            certificate: certificate,
             name: name,
             identifier: DistinguishedName.identifier(inName: facts.subjectName)
               ?? ""

@@ -4,9 +4,9 @@
   import CoreText
   import Foundation
 
-  /// Draws the signature's visible mark: a ring carrying the article
-  /// that gives the signature its effect, the holder's own handwriting
-  /// inside it, and the name the certificate states underneath.
+  /// Draws the signature's visible mark: a ring carrying the identity
+  /// the certificate states and, when available, the holder's own
+  /// handwriting.
   ///
   /// Every part is vector. Nothing here is evidence - the signature is
   /// the evidence, and it is in the file - so the mark says what was
@@ -20,8 +20,8 @@
       /// The identifier stated under it.
       internal let identifier: String
 
-      /// The holder's traced handwriting.
-      internal let signature: SignatureArtwork.Artwork
+      /// The holder's traced handwriting, or nil when the card has none.
+      internal let signature: SignatureArtwork.Artwork?
     }
 
     /// The ring.
@@ -49,6 +49,11 @@
 
     /// How far the identifier sits below the name.
     private static let nameLineGap = 8.0
+
+    /// Identity-only stamps place two lines around the ring's centre.
+    private static let identityNameLift = 5.0
+    private static let identityIdentifierDrop = 10.0
+    private static let identitySingleLineDrop = 4.0
 
     /// The identifier's size, as a share of the name's.
     private static let identifierShare = 0.85
@@ -106,8 +111,14 @@
       body += Self.circle(
         centre: centre, radius: Self.innerRadius, lineWidth: Self.innerLineWidth
       )
-      body += Self.handwriting(statement.signature, centre: (centreX, centreY))
-      body += Self.name(statement, centre: (centreX, centreY))
+      if let signature = statement.signature {
+        body += Self.handwriting(signature, centre: (centreX, centreY))
+        body += Self.identityBelowHandwriting(
+          statement, centre: (centreX, centreY)
+        )
+      } else {
+        body += Self.centredIdentity(statement, centre: (centreX, centreY))
+      }
       body += "Q\nQ\n"
       return StampMark(radius: Self.outerRadius, operators: body)
     }
@@ -177,14 +188,14 @@
     /// the identifier. On one line it reads like a database row and
     /// has to shrink to fit; on two it reads like a signature block,
     /// and each line is short enough to stay legible.
-    private static func name(
+    private static func identityBelowHandwriting(
       _ statement: Statement,
       centre: (x: Double, y: Double)
     ) -> String {
       var body = Self.line(
         statement.name,
         centre: centre,
-        drop: Self.nameDrop,
+        baseline: centre.y - Self.baselineDrop - Self.nameDrop,
         size: Self.nameSize,
         ceiling: Self.nameCeiling
       )
@@ -192,11 +203,42 @@
       body += Self.line(
         statement.identifier,
         centre: centre,
-        drop: Self.nameDrop + Self.nameLineGap,
+        baseline:
+          centre.y - Self.baselineDrop - Self.nameDrop - Self.nameLineGap,
         size: Self.nameSize * Self.identifierShare,
         ceiling: Self.nameCeiling * Self.identifierShare
       )
       return body
+    }
+
+    /// The certificate name and SATU, centred when there is no handwriting.
+    private static func centredIdentity(
+      _ statement: Statement,
+      centre: (x: Double, y: Double)
+    ) -> String {
+      guard !statement.identifier.isEmpty else {
+        return Self.line(
+          statement.name,
+          centre: centre,
+          baseline: centre.y - Self.identitySingleLineDrop,
+          size: Self.nameSize,
+          ceiling: Self.nameCeiling
+        )
+      }
+      return Self.line(
+        statement.name,
+        centre: centre,
+        baseline: centre.y + Self.identityNameLift,
+        size: Self.nameSize,
+        ceiling: Self.nameCeiling
+      )
+        + Self.line(
+          statement.identifier,
+          centre: centre,
+          baseline: centre.y - Self.identityIdentifierDrop,
+          size: Self.nameSize * Self.identifierShare,
+          ceiling: Self.nameCeiling * Self.identifierShare
+        )
     }
 
     /// One line of the name, fitted to the ring's width at its own
@@ -210,11 +252,10 @@
     private static func line(
       _ text: String,
       centre: (x: Double, y: Double),
-      drop: Double,
+      baseline: Double,
       size: Double,
       ceiling: Double
     ) -> String {
-      let baseline = centre.y - Self.baselineDrop - drop
       let height = abs(baseline - centre.y)
       guard height < Self.innerRadius else { return "" }
       let halfChord =
