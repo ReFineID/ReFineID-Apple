@@ -53,6 +53,10 @@
     /// The identifier's size, as a share of the name's.
     private static let identifierShare = 0.85
 
+    /// The largest the name may grow, so a short one does not become
+    /// a headline inside a small ring.
+    private static let nameCeiling = 11.0
+
     /// The circle's Bezier constant: how far a control point sits
     /// along the tangent to approximate a quarter turn.
     private static let arcControl = 0.5523
@@ -178,26 +182,37 @@
       centre: (x: Double, y: Double)
     ) -> String {
       var body = Self.line(
-        statement.name, centre: centre, drop: Self.nameDrop, size: Self.nameSize
+        statement.name,
+        centre: centre,
+        drop: Self.nameDrop,
+        size: Self.nameSize,
+        ceiling: Self.nameCeiling
       )
       guard !statement.identifier.isEmpty else { return body }
       body += Self.line(
         statement.identifier,
         centre: centre,
         drop: Self.nameDrop + Self.nameLineGap,
-        size: Self.nameSize * Self.identifierShare
+        size: Self.nameSize * Self.identifierShare,
+        ceiling: Self.nameCeiling * Self.identifierShare
       )
       return body
     }
 
-    /// One line of the name, shrunk to the ring's width at its own
-    /// height: the chord narrows as the line sits lower, so the room
-    /// is computed for each line rather than shared.
+    /// One line of the name, fitted to the ring's width at its own
+    /// height.
+    ///
+    /// Fitted, not merely capped: a short name at a fixed size leaves
+    /// the ring looking empty, and a long one had to shrink anyway.
+    /// The size is taken from the room, both ways, and the chord
+    /// narrows as a line sits lower - so each line is measured at its
+    /// own height rather than sharing the one above.
     private static func line(
       _ text: String,
       centre: (x: Double, y: Double),
       drop: Double,
-      size: Double
+      size: Double,
+      ceiling: Double
     ) -> String {
       let baseline = centre.y - Self.baselineDrop - drop
       let height = abs(baseline - centre.y)
@@ -205,12 +220,10 @@
       let halfChord =
         (Self.innerRadius * Self.innerRadius - height * height).squareRoot()
       let room = halfChord * Self.halves - Self.nameMargin
-      var chosen = size
-      var drawn = TextOutline.line(text, font: "Helvetica", size: chosen)
-      if drawn.width > room, drawn.width > 0 {
-        chosen *= room / drawn.width
-        drawn = TextOutline.line(text, font: "Helvetica", size: chosen)
-      }
+      let measured = TextOutline.line(text, font: "Helvetica", size: size)
+      guard measured.width > 0 else { return "" }
+      let chosen = min(size * room / measured.width, ceiling)
+      let drawn = TextOutline.line(text, font: "Helvetica", size: chosen)
       // On the ring's own axis: both lines centred under the writing,
       // which is what makes a round stamp look round.
       return "q 1 0 0 1 \(Self.number(centre.x)) \(Self.number(baseline)) cm\n"

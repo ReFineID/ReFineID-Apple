@@ -1,5 +1,6 @@
 #if os(macOS)
 
+  import CardCore
   import SwiftUI
 
   /// The card access number, and what it unlocked.
@@ -32,6 +33,17 @@
             accessNumber = LimitedDigits.cardAccessNumber(typed)
           }
           .accessibilityIdentifier("signAccessNumber")
+      }
+      .task {
+        // The app already holds a card access number for the token's
+        // own use; asking the holder to type it again would be asking
+        // for something we have. Clearing the field is still how the
+        // stamp is declined.
+        if accessNumber.isEmpty,
+          let stored = CardCredentialStore.displayedCardAccessNumber()
+        {
+          accessNumber = LimitedDigits.cardAccessNumber(stored)
+        }
       }
       .task(id: accessNumber) {
         try? await Task.sleep(for: Self.restDelay)
