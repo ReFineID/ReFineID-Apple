@@ -11,9 +11,9 @@ public struct CommandApdu: Equatable, Sendable {
   /// A short case-4 command split for CryptoTokenKit's structured API.
   ///
   /// CTK can keep a T=0 continuation inside one operation when given the
-  /// command this way. That is required for the protected RSA-3072
-  /// PSO:CDS response, whose 384-byte signature cannot fit one short
-  /// response.
+  /// command this way. That is required for protected modulus-wide RSA
+  /// PSO:CDS responses: RSA-3072 cannot fit one short response, and the
+  /// secure-messaging envelope takes a 256-byte RSA-2048 result over it.
   public struct StructuredCase4: Equatable, Sendable {
     /// Command class byte.
     public let cla: UInt8
@@ -279,9 +279,9 @@ public struct CommandApdu: Equatable, Sendable {
   /// Splits only a protected maximum-length PSO:CDS for CTK's structured
   /// send API.
   ///
-  /// The maximum-length form is the RSA-3072 path that needs CTK to keep
-  /// T=0 continuation inside one callback. Exact-length ECDSA and every
-  /// other APDU remain byte-exact on the raw transmit path.
+  /// The maximum-length form is the RSA path that needs CTK to keep T=0
+  /// continuation inside one callback. Exact-length ECDSA and every other
+  /// APDU remain byte-exact on the raw transmit path.
   public static func structuredProtectedSignature(
     _ command: Data
   ) -> StructuredCase4? {

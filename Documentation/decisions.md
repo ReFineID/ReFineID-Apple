@@ -350,6 +350,13 @@ names its issuer, and the intermediate is a public CA certificate valid from
 certificate-authority API, stored as PEM; its SHA-256 fingerprint is
 `AAD1BEAC4696102A88BF9D518D64F8B014F78F9B152579C959998313197924D7`.
 
+The v3.1 identity cards cross DVV's 17 February 2022 citizen-certificate
+hierarchy change. Earlier cards name `VRK Gov. CA for Citizen Certificates -
+G3`, not G4R or G4E. That public intermediate is the exact DER returned by
+`https://dvv.fineid.fi/api/v1/cas/103/certificate`, stored as PEM; its
+official SHA-256 fingerprint is
+`39A835B14B6B6313F778371C79CB434DD518C8FD325B749D9BE669DFF20384E8`.
+
 This is a preference, not an assumption. Unknown future issuers still take
 the existing on-card fallback and are stored with the prime, so every later
 login remains independent of the app bundle and does no certificate read.

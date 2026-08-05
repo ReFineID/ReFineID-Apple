@@ -1,91 +1,11 @@
-import CardCore
-import CryptoKit
+// swiftlint:disable:next attributes
+@_spi(TokenExtension) import CardCore
 import CryptoTokenKit
 import Foundation
 import Security
 
-/// Resolves CryptoTokenKit sign requests to the exact on-card operation.
+/// Maps a live CryptoTokenKit algorithm chain to the pure CardCore resolver.
 internal enum SigningAlgorithmResolver {
-  /// One advertised request shape.
-  private struct Shape {
-    let secKeyAlgorithm: SecKeyAlgorithm
-    let hash: SigningHash
-    let scheme: SigningScheme
-    let hashesMessage: Bool
-  }
-
-  /// ECDSA shapes supported by the P-384 authentication key.
-  private static let ecdsaShapes: [Shape] = [
-    Shape(
-      secKeyAlgorithm: .ecdsaSignatureDigestX962SHA256,
-      hash: .sha256,
-      scheme: .ecdsa,
-      hashesMessage: false),
-    Shape(
-      secKeyAlgorithm: .ecdsaSignatureMessageX962SHA256,
-      hash: .sha256,
-      scheme: .ecdsa,
-      hashesMessage: true),
-    Shape(
-      secKeyAlgorithm: .ecdsaSignatureDigestX962SHA384,
-      hash: .sha384,
-      scheme: .ecdsa,
-      hashesMessage: false),
-    Shape(
-      secKeyAlgorithm: .ecdsaSignatureMessageX962SHA384,
-      hash: .sha384,
-      scheme: .ecdsa,
-      hashesMessage: true),
-    Shape(
-      secKeyAlgorithm: .ecdsaSignatureDigestX962SHA512,
-      hash: .sha512,
-      scheme: .ecdsa,
-      hashesMessage: false),
-    Shape(
-      secKeyAlgorithm: .ecdsaSignatureMessageX962SHA512,
-      hash: .sha512,
-      scheme: .ecdsa,
-      hashesMessage: true),
-    Shape(
-      secKeyAlgorithm: .ecdsaSignatureDigestX962SHA224,
-      hash: .sha224,
-      scheme: .ecdsa,
-      hashesMessage: false),
-    Shape(
-      secKeyAlgorithm: .ecdsaSignatureDigestRFC4754SHA384,
-      hash: .sha384,
-      scheme: .ecdsa,
-      hashesMessage: false),
-  ]
-
-  /// Old-card RSA-3072 client-auth shapes.
-  ///
-  /// TLS 1.3 chooses PSS. PKCS#1 v1.5 remains for TLS 1.2 relying
-  /// parties. Message variants are hashed exactly once here; digest
-  /// variants must already be exactly one SHA-256 digest.
-  private static let rsaShapes: [Shape] = [
-    Shape(
-      secKeyAlgorithm: .rsaSignatureDigestPSSSHA256,
-      hash: .sha256,
-      scheme: .rsaPss,
-      hashesMessage: false),
-    Shape(
-      secKeyAlgorithm: .rsaSignatureMessagePSSSHA256,
-      hash: .sha256,
-      scheme: .rsaPss,
-      hashesMessage: true),
-    Shape(
-      secKeyAlgorithm: .rsaSignatureDigestPKCS1v15SHA256,
-      hash: .sha256,
-      scheme: .rsaPkcs1,
-      hashesMessage: false),
-    Shape(
-      secKeyAlgorithm: .rsaSignatureMessagePKCS1v15SHA256,
-      hash: .sha256,
-      scheme: .rsaPkcs1,
-      hashesMessage: true),
-  ]
-
   /// Known candidates used only to make the live CTK request legible.
   private static let knownAlgorithms: [(String, SecKeyAlgorithm)] = [
     ("ecdsaDigestSHA224", .ecdsaSignatureDigestX962SHA224),
@@ -108,12 +28,7 @@ internal enum SigningAlgorithmResolver {
     _ algorithm: TKTokenKeyAlgorithm,
     profile: CardKeyProfile
   ) -> Bool {
-    if shapes(for: profile).contains(where: { shape in
-      algorithm.isAlgorithm(shape.secKeyAlgorithm)
-    }) {
-      return true
-    }
-    return profile == .rsa3072 && isRawRsaPkcs1Request(algorithm)
+    selectedAlgorithm(algorithm, profile: profile) != nil
   }
 
   /// Names target and associated-chain matches for device traces.
@@ -135,7 +50,7 @@ internal enum SigningAlgorithmResolver {
 
   /// Whether this certificate profile can publish a sign-capable key.
   internal static func supportsSigning(_ profile: CardKeyProfile) -> Bool {
-    !shapes(for: profile).isEmpty
+    !CardSignRequestResolver.exactAlgorithms(for: profile).isEmpty
   }
 
   /// Resolves one live CTK request, including Apple's raw-RSA adapter.
@@ -144,48 +59,35 @@ internal enum SigningAlgorithmResolver {
     input: Data,
     profile: CardKeyProfile
   ) -> SignRequest? {
-    if let shape = shapes(for: profile).first(where: { shape in
-      algorithm.isAlgorithm(shape.secKeyAlgorithm)
-    }) {
-      let digest: Data
-      if shape.hashesMessage {
-        digest = hash(input, with: shape.hash)
-      } else {
-        guard input.count == shape.hash.digestByteCount else { return nil }
-        digest = input
-      }
-      return request(shape: shape, digest: digest, profile: profile)
-    }
-
-    // Security.framework can apply EMSA-PKCS1-v1_5 itself and ask a
-    // smart-card token for the raw private-key primitive. Validate and
-    // invert only the exact RSA-3072/SHA-256 block our card can reproduce.
     guard
-      profile == .rsa3072,
-      isRawRsaPkcs1Request(algorithm),
-      let encoded = Rsa3072Pkcs1Sha256EncodedMessage(encoded: input)
+      let selected = selectedAlgorithm(algorithm, profile: profile)
     else {
       return nil
     }
-    let rawShape = Shape(
-      secKeyAlgorithm: .rsaSignatureRaw,
-      hash: .sha256,
-      scheme: .rsaPkcs1,
-      hashesMessage: false)
-    return request(shape: rawShape, digest: encoded.digest, profile: profile)
+    return CardSignRequestResolver.resolve(
+      algorithm: selected,
+      input: input,
+      profile: profile
+    )
   }
 
-  /// Constructs the shared request after input normalization.
-  private static func request(
-    shape: Shape,
-    digest: Data,
+  /// Selects one testable Security.framework shape from a live CTK chain.
+  private static func selectedAlgorithm(
+    _ algorithm: TKTokenKeyAlgorithm,
     profile: CardKeyProfile
-  ) -> SignRequest? {
-    SignRequest.resolve(
-      profile: profile,
-      algorithm: SigningAlgorithm(hash: shape.hash, scheme: shape.scheme),
-      digest: digest
-    )
+  ) -> SecKeyAlgorithm? {
+    if let exact = CardSignRequestResolver.exactAlgorithms(for: profile)
+      .first(where: { algorithm.isAlgorithm($0) })
+    {
+      return exact
+    }
+    guard
+      Self.isRsa(profile),
+      isRawRsaPkcs1Request(algorithm)
+    else {
+      return nil
+    }
+    return .rsaSignatureRaw
   }
 
   /// Apple's raw target plus a PKCS#1/SHA-256 associated chain.
@@ -194,26 +96,13 @@ internal enum SigningAlgorithmResolver {
       && algorithm.supportsAlgorithm(.rsaSignatureDigestPKCS1v15SHA256)
   }
 
-  private static func shapes(for profile: CardKeyProfile) -> [Shape] {
+  /// Whether the selected certificate carries a supported RSA modulus.
+  private static func isRsa(_ profile: CardKeyProfile) -> Bool {
     switch profile {
     case .ecdsaP384:
-      Self.ecdsaShapes
-    case .rsa3072:
-      Self.rsaShapes
-    }
-  }
-
-  private static func hash(_ input: Data, with hash: SigningHash) -> Data {
-    switch hash {
-    case .sha224:
-      // No SHA-224 message form is advertised.
-      input
-    case .sha256:
-      Data(SHA256.hash(data: input))
-    case .sha384:
-      Data(SHA384.hash(data: input))
-    case .sha512:
-      Data(SHA512.hash(data: input))
+      false
+    case .rsa2048, .rsa3072:
+      true
     }
   }
 }

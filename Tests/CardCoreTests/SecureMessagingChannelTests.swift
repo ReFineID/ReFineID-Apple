@@ -95,6 +95,34 @@ internal struct SecureMessagingChannelTests {
     #expect(card.recoveredCommandData == [WireHex.data("5031")])
   }
 
+  /// RSA-2048's exact 256-byte Le survives secure messaging as DO'97'=00
+  /// and reaches the structured CryptoTokenKit continuation path.
+  @Test
+  internal func rsa2048MaximumLeComposesWithProtectedTransport() throws {
+    let card = Self.card(responses: [(Data(), WireHex.data(Self.successHex))])
+    let channel = try Self.channel(over: card)
+    let exact = try #require(
+      CardKeyProfile.rsa2048.expectedSignatureLength
+    )
+    let command = CommandApdu.computeSignatureOverLoadedHash(
+      exactLength: exact
+    )
+
+    let response = try channel.transmit(command.encoded)
+
+    #expect(response == WireHex.data(Self.successHex))
+    #expect(card.receivedExpectedLengths == [0])
+    #expect(card.receivedCommands.count == 1)
+    let protected = try #require(card.receivedCommands.first)
+    let structured = try #require(
+      CommandApdu.structuredProtectedSignature(protected)
+    )
+    #expect(structured.expectedLength == 0)
+    #expect(structured.ins == 0x2A)
+    #expect(structured.parameter1 == 0x9E)
+    #expect(structured.parameter2 == 0x9A)
+  }
+
   @Test
   internal func sendSequenceCounterAdvancesOnBothDirections() throws {
     let card = Self.card(responses: [

@@ -1,6 +1,6 @@
 /// A certificate the card publishes, and where it lives.
 ///
-/// Directory placement follows FINEID S4-2 §3.
+/// Directory placement follows FINEID S4-1.
 public enum CertificateSlot: Equatable, Sendable, CaseIterable {
   /// EF.4331, directly under the PKCS#15 application: the client
   /// authentication leaf Safari uses.
@@ -9,10 +9,6 @@ public enum CertificateSlot: Equatable, Sendable, CaseIterable {
   /// EF.4336, under the master file: the issuing intermediate CA that
   /// chains the authentication leaf upward.
   case issuing
-
-  /// EF.4335, under the master file: the issuing CA of the
-  /// qualified-signature leaf.
-  case qualifiedIssuing
 
   /// EF.4332, directly under the PKCS#15 application: the
   /// qualified-signature leaf, whose key PIN2 gates.
@@ -30,8 +26,6 @@ public enum CertificateSlot: Equatable, Sendable, CaseIterable {
       .signatureCertificate
     case .issuing:
       .issuingCertificate
-    case .qualifiedIssuing:
-      .signatureIssuingCertificate
     case .root:
       .rootCertificate
     }
@@ -42,7 +36,7 @@ public enum CertificateSlot: Equatable, Sendable, CaseIterable {
     switch self {
     case .authentication, .qualifiedSignature:
       .pkcs15Application
-    case .issuing, .qualifiedIssuing, .root:
+    case .issuing, .root:
       .masterFile
     }
   }

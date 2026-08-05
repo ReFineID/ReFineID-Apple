@@ -175,10 +175,11 @@ internal struct SmartCardChannel: CardChannel {
     semaphore: DispatchSemaphore
   ) {
     if let command = CommandApdu.structuredProtectedSignature(payload) {
-      // RSA-3072 returns more than one short T=0 response. Keeping this
-      // continuation inside CTK's structured operation prevents the
-      // built-in NFC field from ending between a raw 61xx and our next
-      // GET RESPONSE callback.
+      // A protected modulus-wide RSA response needs continuation: RSA-3072
+      // is too wide by itself, and RSA-2048 crosses the short-response limit
+      // once secure messaging wraps it. Keeping continuation inside CTK's
+      // structured operation prevents the built-in NFC field from ending
+      // between a raw 61xx and our next GET RESPONSE callback.
       let previousClass = smartCard.cla
       smartCard.cla = command.cla
       smartCard.send(

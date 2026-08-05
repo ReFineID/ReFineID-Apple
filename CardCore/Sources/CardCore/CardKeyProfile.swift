@@ -11,11 +11,15 @@ public enum CardKeyProfile: Equatable, Sendable {
   /// ECDSA P-384.
   case ecdsaP384
 
+  /// RSA 2048-bit, used by the FINEID S4-1 v3.1 cards.
+  case rsa2048
+
   /// RSA 3072-bit.
   case rsa3072
 
-  /// RSA modulus size for the supported RSA profile.
-  private static let rsaKeySizeInBits = 3_072
+  /// RSA modulus sizes for the supported RSA profiles.
+  private static let rsa2048KeySizeInBits = 2_048
+  private static let rsa3072KeySizeInBits = 3_072
 
   /// EC field size for the supported ECC profile.
   private static let ecKeySizeInBits = 384
@@ -23,13 +27,16 @@ public enum CardKeyProfile: Equatable, Sendable {
   /// Raw P-384 signature length: `r || s`, two 48-byte field elements.
   private static let ecdsaP384SignatureBytes = 96
 
+  /// Raw RSA-2048 signature length: one modulus-wide block.
+  private static let rsa2048SignatureBytes = 256
+
   /// Raw RSA-3072 signature length: one modulus-wide block.
   private static let rsa3072SignatureBytes = 384
 
   /// The Security key type constant for this profile.
   public var keyType: String {
     switch self {
-    case .rsa3072:
+    case .rsa2048, .rsa3072:
       kSecAttrKeyTypeRSA as String
     case .ecdsaP384:
       kSecAttrKeyTypeECSECPrimeRandom as String
@@ -39,8 +46,10 @@ public enum CardKeyProfile: Equatable, Sendable {
   /// The key size in bits.
   public var keySizeInBits: Int {
     switch self {
+    case .rsa2048:
+      Self.rsa2048KeySizeInBits
     case .rsa3072:
-      Self.rsaKeySizeInBits
+      Self.rsa3072KeySizeInBits
     case .ecdsaP384:
       Self.ecKeySizeInBits
     }
@@ -49,6 +58,8 @@ public enum CardKeyProfile: Equatable, Sendable {
   /// The exact byte length of the card's raw signature.
   public var rawSignatureLength: Int {
     switch self {
+    case .rsa2048:
+      Self.rsa2048SignatureBytes
     case .rsa3072:
       Self.rsa3072SignatureBytes
     case .ecdsaP384:
@@ -58,13 +69,15 @@ public enum CardKeyProfile: Equatable, Sendable {
 
   /// The expected length sent with PSO:CDS when it fits a short APDU.
   ///
-  /// P-384 uses its exact 96-byte result. RSA-3072 is 384 bytes, so it
-  /// requests the short maximum and lets the transport join continuation
-  /// responses inside the same operation.
+  /// P-384 and RSA-2048 use their exact short-response lengths. RSA-3072
+  /// is 384 bytes, so it requests the short maximum and lets the transport
+  /// join continuation responses inside the same operation.
   public var expectedSignatureLength: ExpectedResponseLength? {
     switch self {
     case .ecdsaP384:
       ExpectedResponseLength(count: Self.ecdsaP384SignatureBytes)
+    case .rsa2048:
+      ExpectedResponseLength(count: Self.rsa2048SignatureBytes)
     case .rsa3072:
       nil
     }
@@ -85,7 +98,7 @@ public enum CardKeyProfile: Equatable, Sendable {
     else {
       return nil
     }
-    return [Self.ecdsaP384, .rsa3072].first { profile in
+    return [Self.ecdsaP384, .rsa2048, .rsa3072].first { profile in
       profile.keyType == certificateKeyType && profile.keySizeInBits == keySize
     }
   }

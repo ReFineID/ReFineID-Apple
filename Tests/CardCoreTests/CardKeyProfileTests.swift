@@ -28,23 +28,30 @@ internal struct CardKeyProfileTests {
   }
 
   @Test
-  internal func resolvesOnlySupportedCardKeyProfiles() throws {
+  internal func resolvesSupportedCardKeyProfiles() throws {
     let p384 = try Self.key(type: kSecAttrKeyTypeECSECPrimeRandom, bits: 384)
     let rsa3072 = try Self.key(type: kSecAttrKeyTypeRSA, bits: 3_072)
     let rsa2048 = try Self.key(type: kSecAttrKeyTypeRSA, bits: 2_048)
 
     #expect(CardKeyProfile.resolve(fromPublicKey: p384) == .ecdsaP384)
     #expect(CardKeyProfile.resolve(fromPublicKey: rsa3072) == .rsa3072)
-    #expect(CardKeyProfile.resolve(fromPublicKey: rsa2048) == nil)
+    #expect(CardKeyProfile.resolve(fromPublicKey: rsa2048) == .rsa2048)
     #expect(CardKeyProfile.ecdsaP384.rawSignatureLength == 96)
     #expect(CardKeyProfile.ecdsaP384.expectedSignatureLength?.count == 96)
+    #expect(CardKeyProfile.rsa2048.rawSignatureLength == 256)
+    #expect(CardKeyProfile.rsa2048.expectedSignatureLength?.count == 256)
     #expect(CardKeyProfile.rsa3072.rawSignatureLength == 384)
     #expect(CardKeyProfile.rsa3072.expectedSignatureLength == nil)
   }
 
-  @Test
-  internal func rsaRequestPreservesAndLocallyVerifiesTheCardResult() throws {
-    let privateKey = try Self.key(type: kSecAttrKeyTypeRSA, bits: 3_072)
+  @Test(arguments: [CardKeyProfile.rsa2048, .rsa3072])
+  internal func rsaRequestPreservesAndLocallyVerifiesTheCardResult(
+    _ profile: CardKeyProfile
+  ) throws {
+    let privateKey = try Self.key(
+      type: kSecAttrKeyTypeRSA,
+      bits: profile.keySizeInBits
+    )
     let publicKey = try #require(SecKeyCopyPublicKey(privateKey))
     let digest = Data(SHA384.hash(data: Data("old-card-pdf".utf8)))
     var error: Unmanaged<CFError>?
@@ -58,7 +65,7 @@ internal struct CardKeyProfileTests {
     )
     let request = try #require(
       SignRequest.resolve(
-        profile: .rsa3072,
+        profile: profile,
         algorithm: SigningAlgorithm(hash: .sha384, scheme: .rsaPkcs1),
         digest: digest
       )
@@ -100,6 +107,30 @@ internal struct CardKeyProfileTests {
     #expect(imprint == Data(SHA384.hash(data: stored)))
     #expect(imprint != Data(SHA384.hash(data: raw)))
     #expect(imprint != Data(SHA384.hash(data: DerEncoder.octetString(stored))))
+  }
+
+  @Test
+  internal func rsa2048ResolvesTokenSigningSchemes() throws {
+    let digest = Data(repeating: 0xA5, count: 32)
+    let pkcs1 = try #require(
+      SignRequest.resolve(
+        profile: .rsa2048,
+        algorithm: SigningAlgorithm(hash: .sha256, scheme: .rsaPkcs1),
+        digest: digest
+      )
+    )
+    let pss = try #require(
+      SignRequest.resolve(
+        profile: .rsa2048,
+        algorithm: SigningAlgorithm(hash: .sha256, scheme: .rsaPss),
+        digest: digest
+      )
+    )
+
+    #expect(pkcs1.verifyAlgorithm == .rsaSignatureDigestPKCS1v15SHA256)
+    #expect(pss.verifyAlgorithm == .rsaSignatureDigestPSSSHA256)
+    #expect(pkcs1.expectedSignatureLength?.count == 256)
+    #expect(pss.expectedSignatureLength?.count == 256)
   }
 
   @Test

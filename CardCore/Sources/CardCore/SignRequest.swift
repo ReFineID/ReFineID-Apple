@@ -54,11 +54,14 @@ public struct SignRequest {
       verification = .ecdsaSignatureDigestX962SHA384
     case (.ecdsaP384, .ecdsa, .sha512):
       verification = .ecdsaSignatureDigestX962SHA512
-    case (.rsa3072, .rsaPkcs1, .sha256):
+    case (.rsa2048, .rsaPkcs1, .sha256),
+      (.rsa3072, .rsaPkcs1, .sha256):
       verification = .rsaSignatureDigestPKCS1v15SHA256
-    case (.rsa3072, .rsaPkcs1, .sha384):
+    case (.rsa2048, .rsaPkcs1, .sha384),
+      (.rsa3072, .rsaPkcs1, .sha384):
       verification = .rsaSignatureDigestPKCS1v15SHA384
-    case (.rsa3072, .rsaPss, .sha256):
+    case (.rsa2048, .rsaPss, .sha256),
+      (.rsa3072, .rsaPss, .sha256):
       verification = .rsaSignatureDigestPSSSHA256
     default:
       return nil

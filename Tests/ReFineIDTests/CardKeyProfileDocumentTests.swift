@@ -40,6 +40,23 @@
       #expect(request.rawSignatureLength == 384)
       #expect(request.verifyAlgorithm == .rsaSignatureDigestPKCS1v15SHA384)
     }
+
+    @Test
+    internal func rsa2048SelectsPkcs1Sha384() throws {
+      let digest = Data(repeating: 0xA5, count: 48)
+      let request = try #require(
+        CardKeyProfile.rsa2048.qualifiedDocumentRequest(digest: digest)
+      )
+
+      #expect(
+        request.algorithm
+          == SigningAlgorithm(hash: .sha384, scheme: .rsaPkcs1)
+      )
+      #expect(request.digest == digest)
+      #expect(request.expectedSignatureLength?.count == 256)
+      #expect(request.rawSignatureLength == 256)
+      #expect(request.verifyAlgorithm == .rsaSignatureDigestPKCS1v15SHA384)
+    }
   }
 
 #endif

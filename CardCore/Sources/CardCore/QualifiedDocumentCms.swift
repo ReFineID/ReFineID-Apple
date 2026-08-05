@@ -219,7 +219,7 @@ public enum QualifiedDocumentCms {
       DerEncoder.sequence([
         DerEncoder.objectIdentifier(SignOids.ecdsaWithSha384)
       ])
-    case .rsa3072:
+    case .rsa2048, .rsa3072:
       // RFC 5754 section 3.2: RSA parameters are NULL.
       DerEncoder.sequence([
         DerEncoder.objectIdentifier(SignOids.sha384WithRsa),

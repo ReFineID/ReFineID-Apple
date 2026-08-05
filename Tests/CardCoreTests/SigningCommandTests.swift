@@ -93,6 +93,13 @@ internal struct SigningCommandTests {
   }
 
   @Test
+  internal func loadedHashSignatureEncodesTheFullShortResponse() throws {
+    let exact = try #require(ExpectedResponseLength(count: 256))
+    let command = CommandApdu.computeSignatureOverLoadedHash(exactLength: exact)
+    #expect(command.encoded == WireHex.data("002A9E9A00"))
+  }
+
+  @Test
   internal func wrongLengthStatusCarriesTheAvailableLength() {
     let status = WireHex.statusWord("6C60")
     #expect(status == .wrongExpectedLength(availableLength: 96))

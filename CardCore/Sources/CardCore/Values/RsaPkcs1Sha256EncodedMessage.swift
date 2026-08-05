@@ -1,18 +1,15 @@
 import Foundation
 
-/// A validated RSA-3072 EMSA-PKCS1-v1_5 SHA-256 encoded message.
+/// A validated RSA EMSA-PKCS1-v1_5 SHA-256 encoded message.
 ///
 /// CryptoTokenKit can expose a smart-card RSA request as the raw private
 /// key primitive after Security.framework has already built this block.
 /// The FINEID card accepts the original digest, so this type performs the
-/// strict inverse: exact modulus width, complete padding grammar, exact
-/// SHA-256 DigestInfo prefix, then the final 32-byte digest.
-public struct Rsa3072Pkcs1Sha256EncodedMessage: Equatable, Sendable {
-  /// RSA-3072 modulus width in bytes.
-  public static let blockByteCount = 384
-
+/// strict inverse: exact profile-selected modulus width, complete padding
+/// grammar, exact SHA-256 DigestInfo prefix, then the final 32-byte digest.
+public struct RsaPkcs1Sha256EncodedMessage: Equatable, Sendable {
   /// SHA-256 digest width in bytes.
-  public static let digestByteCount = 32
+  private static let digestByteCount = 32
 
   /// PKCS#1 requires at least eight FF padding bytes.
   private static let minimumPaddingByteCount = 8
@@ -31,15 +28,21 @@ public struct Rsa3072Pkcs1Sha256EncodedMessage: Equatable, Sendable {
   /// The SHA-256 digest recovered from the validated block.
   public let digest: Data
 
-  /// Validates and decodes one complete encoded message.
-  public init?(encoded: Data) {
+  /// Validates one complete block against the selected RSA profile.
+  public init?(encoded: Data, profile: CardKeyProfile) {
+    let blockByteCount: Int
+    switch profile {
+    case .ecdsaP384:
+      return nil
+    case .rsa2048, .rsa3072:
+      blockByteCount = profile.rawSignatureLength
+    }
     let bytes = Array(encoded)
-    let digestInfoByteCount =
-      Self.sha256DigestInfoPrefix.count + Self.digestByteCount
-    let digestInfoOffset = Self.blockByteCount - digestInfoByteCount
+    let digestInfoByteCount = Self.sha256DigestInfoPrefix.count + Self.digestByteCount
+    let digestInfoOffset = blockByteCount - digestInfoByteCount
     let separatorOffset = digestInfoOffset - 1
     guard
-      bytes.count == Self.blockByteCount,
+      bytes.count == blockByteCount,
       bytes.starts(with: Self.blockPrefix),
       separatorOffset - Self.blockPrefix.count >= Self.minimumPaddingByteCount,
       bytes[Self.blockPrefix.count..<separatorOffset]

@@ -11,7 +11,7 @@
       switch self {
       case .ecdsaP384:
         scheme = .ecdsa
-      case .rsa3072:
+      case .rsa2048, .rsa3072:
         scheme = .rsaPkcs1
       }
       return SignRequest.resolve(

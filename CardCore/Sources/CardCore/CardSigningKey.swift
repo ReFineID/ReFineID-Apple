@@ -9,6 +9,7 @@ public enum CardSigningKey: Equatable, Sendable {
   case authentication
 
   /// The PIN2-gated qualified-signature key, certificate in EF.4332.
+  /// This is private key #2 on the FINEID S4-1 v3.1 card too.
   case qualifiedSignature
 
   /// The MSE:SET key-reference byte (S1 v4.2 §3.6.3).

@@ -122,7 +122,7 @@ extension QualifiedDocumentCms {
     switch profile {
     case .ecdsaP384:
       Self.isEcdsaSignatureValue(signature)
-    case .rsa3072:
+    case .rsa2048, .rsa3072:
       signature.count == profile.rawSignatureLength
     }
   }

@@ -101,7 +101,7 @@ Legend:
 - [ ] Prove and implement the clean-machine trust/chain strategy without a
   privileged System Keychain installer (iOS trust onboarding is P0 gate 2).
 - [x] Implement supported RSA and ECC key profiles explicitly. ECC P-384 and
-  RSA-3072 are certificate-selected, published, and unit-tested; ECC is
+  RSA-2048/3072 are certificate-selected, published, and unit-tested; ECC is
   hardware-verified, while RSA qualified/PDF signing still needs the live-card
   check below.
 

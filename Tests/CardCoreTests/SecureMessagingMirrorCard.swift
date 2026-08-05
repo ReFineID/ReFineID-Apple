@@ -89,6 +89,13 @@ internal final class SecureMessagingMirrorCard: CardChannel {
   /// The plain command data field recovered from each command, in order.
   internal private(set) var recoveredCommandData: [Data] = []
 
+  /// The complete protected command received from the terminal.
+  ///
+  /// Retained so integration tests can hand the wrapper's actual output to
+  /// transport-specific framing decisions instead of reconstructing a
+  /// synthetic secure-messaging envelope.
+  internal private(set) var receivedCommands: [Data] = []
+
   /// The protected header received with each command, in order.
   internal private(set) var receivedHeaders: [Data] = []
 
@@ -152,6 +159,7 @@ internal final class SecureMessagingMirrorCard: CardChannel {
   /// Verifies and decrypts one protected command, then answers the next
   /// scripted response, protected in turn.
   internal func transmit(_ payload: Data) throws -> Data {
+    receivedCommands.append(payload)
     let recovered = try accept(payload)
     recoveredCommandData.append(recovered)
     guard !scripted.isEmpty else { throw Rejected() }

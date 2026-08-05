@@ -63,7 +63,7 @@ internal struct QualifiedDocumentCmsTests {
     case .ecdsaP384:
       keyType = kSecAttrKeyTypeECSECPrimeRandom
       kind = .ecdsaSha384
-    case .rsa3072:
+    case .rsa2048, .rsa3072:
       keyType = kSecAttrKeyTypeRSA
       kind = .rsaSha384
     }
@@ -201,9 +201,11 @@ internal struct QualifiedDocumentCmsTests {
 
   /// RSA uses its modulus-wide result unchanged and carries the SHA-384 RSA
   /// identifier with the required NULL parameter.
-  @Test
-  internal func rsaSignatureValueAndAlgorithmAreExact() throws {
-    let identity = try Self.identity(.rsa3072)
+  @Test(arguments: [CardKeyProfile.rsa2048, .rsa3072])
+  internal func rsaSignatureValueAndAlgorithmAreExact(
+    _ profile: CardKeyProfile
+  ) throws {
+    let identity = try Self.identity(profile)
     let attributes = QualifiedDocumentCms.signedAttributes(
       byteRangeDigest: Data(repeating: 0xA5, count: 48),
       signerCertificate: identity.certificate

@@ -139,6 +139,22 @@ extension TrustedListXmlSignatureFixtures {
     return Signer(certificate: certificate, key: key)
   }
 
+  /// Generates a test certificate with one exact encoded issuer Name.
+  internal static func makeSigner(
+    for profile: Profile,
+    issuerName: Data
+  ) throws -> Signer {
+    let key = try Self.makeKey(profile.keyKind)
+    let certificate = try Self.certificate(
+      for: profile.keyKind,
+      key: key,
+      profile: .valid,
+      subjectPublicKeyProfile: .rsaEncryption,
+      issuerName: issuerName
+    )
+    return Signer(certificate: certificate, key: key)
+  }
+
   /// Builds raw certificate bytes for negative SPKI parser tests.
   internal static func makeUncheckedSigner(
     for profile: Profile,
@@ -188,7 +204,8 @@ extension TrustedListXmlSignatureFixtures {
     for kind: KeyKind,
     key: SecKey,
     profile: CertificateProfile,
-    subjectPublicKeyProfile: SubjectPublicKeyProfile
+    subjectPublicKeyProfile: SubjectPublicKeyProfile,
+    issuerName: Data? = nil
   ) throws -> Data {
     let algorithm = Self.certificateAlgorithm(for: kind)
     let name = Self.name("ReFineID XMLDSig Test Signer")
@@ -200,7 +217,7 @@ extension TrustedListXmlSignatureFixtures {
       ),
       DerEncoder.integer(1),
       algorithm,
-      name,
+      issuerName ?? name,
       DerEncoder.sequence([
         Self.generalizedTime(validity.notBefore),
         Self.generalizedTime(validity.notAfter),

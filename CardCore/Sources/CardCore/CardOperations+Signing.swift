@@ -49,9 +49,9 @@ extension CardOperations {
   /// signature. The digest is loaded via PSO:HASH, never carried inline
   /// in PSO:CDS - the card rejects the inline shape.
   ///
-  /// P-384 carries its exact 96-byte signature length as `Le` up front.
-  /// The G4E card is T=0-only and a `6Cxx` between PSO:HASH and a re-issued
-  /// PSO:CDS can drop the loaded hash, making the card sign
+  /// P-384 and RSA-2048 carry their exact short-response length as `Le`
+  /// up front. The G4E card is T=0-only and a `6Cxx` between PSO:HASH and
+  /// a re-issued PSO:CDS can drop the loaded hash, making the card sign
   /// silently-meaningless bytes (S1 v4.2 §3.8.1.1), so this path never
   /// retries that operation. RSA-3072 cannot fit an exact short `Le`; it
   /// uses `00` and the transport keeps its continuation within the
@@ -116,9 +116,10 @@ extension CardOperations {
 
   /// Transmits PSO:CDS without applying the short-response parser cap.
   ///
-  /// RSA-3072 returns 384 bytes. A structured CTK send may deliver the
-  /// whole continued result in one callback, while a raw reader path may
-  /// still expose `61xx`; ``ContinuedResponse`` handles both forms.
+  /// RSA-2048 returns the short maximum of 256 bytes, while RSA-3072
+  /// returns 384. A structured CTK send may deliver a continued result
+  /// in one callback, while a raw reader path may still expose `61xx`;
+  /// ``ContinuedResponse`` handles both forms.
   private func transmitSignature(_ command: CommandApdu) throws -> ResponseApdu {
     let response = try ContinuedResponse.transmitting(command.encoded, over: channel)
     return ResponseApdu(payload: response.payload, statusWord: response.statusWord)

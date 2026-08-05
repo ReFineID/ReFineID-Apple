@@ -46,6 +46,26 @@ extension QualifiedDocumentCmsTests {
     }
   }
 
+  /// RSA-2048 signatures must occupy the full 256-byte modulus width.
+  @Test
+  internal func malformedRsa2048SignatureValueIsRefused() throws {
+    let identity = try Self.identity(.rsa2048)
+    let attributes = QualifiedDocumentCms.signedAttributes(
+      byteRangeDigest: Data(repeating: 0xA5, count: 48),
+      signerCertificate: identity.certificate
+    )
+
+    #expect(throws: QualifiedDocumentCms.AssemblyError.signatureMalformed) {
+      _ = try QualifiedDocumentCms.assemble(
+        signedAttributesSet: attributes,
+        signatureValue: Data(repeating: 1, count: 255),
+        signerProfile: identity.profile,
+        signerCertificate: identity.certificate,
+        timestampTokens: []
+      )
+    }
+  }
+
   /// Unparseable certificates and certificate/profile mismatches fail closed.
   @Test
   internal func certificateProfileProblemsAreRefused() throws {
