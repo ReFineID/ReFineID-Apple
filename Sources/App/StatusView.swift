@@ -268,6 +268,9 @@
         model.attemptRecovery()
       case .noCard:
         model.cancelRecovery(cardLeft: true)
+        signing.cardRemoved()
+        pin2 = ""
+        accessNumber = ""
       }
     }
 
@@ -319,17 +322,16 @@
         await signing.sign(pin2: entry, accessNumber: number, to: destination)
       }
     }
+  }
 
-    /// Hands the stored card access number to the driver, off the launch
-    /// path.
-    ///
-    /// Reading the driver configuration is a synchronous call into
-    /// `ctkd`, so it must not run where a slow or restarting `ctkd`
-    /// would block the window before it can appear. It touches no card.
-    private func publishStoredNumber() {
-      Task.detached(priority: .utility) {
-        CardCredentialStore.publishCardAccessNumberToDriver()
-      }
+  /// Hands the stored card access number to the driver, off the launch path.
+  ///
+  /// Reading the driver configuration is a synchronous call into `ctkd`, so
+  /// it must not run where a slow or restarting `ctkd` would block the window
+  /// before it can appear. It touches no card.
+  private func publishStoredNumber() {
+    Task.detached(priority: .utility) {
+      CardCredentialStore.publishCardAccessNumberToDriver()
     }
   }
 

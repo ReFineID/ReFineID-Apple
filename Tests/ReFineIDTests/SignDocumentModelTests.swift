@@ -168,14 +168,39 @@ internal struct SignDocumentModelTests {
     )
 
     model.applyStampOutcome(identity)
-    model.accept(URL(fileURLWithPath: "/tmp/next.pdf"))
+    model.accept(URL.temporaryDirectory.appendingPathComponent("next.pdf"))
     #expect(model.stampMark() == nil)
 
     model.applyStampOutcome(identity)
-    let destination = URL(fileURLWithPath: "/tmp/signed.pdf")
+    let destination = URL.temporaryDirectory.appendingPathComponent("signed.pdf")
     model.complete(with: destination)
     #expect(model.stampMark() == nil)
     #expect(model.signed == destination)
+  }
+
+  @Test
+  @MainActor
+  internal func cardRemovalClearsFailureButKeepsTheChosenDocument() {
+    let model = SignDocumentModel()
+    let source = URL.temporaryDirectory.appendingPathComponent("waiting.pdf")
+    model.accept(source)
+    model.report("A card-bound failure")
+    model.applyStampOutcome(
+      .mark(
+        CardMaintenance.Mark(
+          bytes: nil,
+          certificate: Self.stampCertificate,
+          name: "Example Person",
+          identifier: "TEST-IDENTIFIER"
+        )
+      )
+    )
+
+    model.cardRemoved()
+
+    #expect(model.failure == nil)
+    #expect(model.pending == source)
+    #expect(model.stampMark() == nil)
   }
 
   @Test

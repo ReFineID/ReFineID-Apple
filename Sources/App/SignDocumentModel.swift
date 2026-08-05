@@ -13,13 +13,6 @@
   @MainActor
   @Observable
   internal final class SignDocumentModel {
-    /// One visible statement and the exact certificate that states it.
-    private struct StampState {
-      let statement: StampRenderer.Statement
-      let signerCertificate: Data
-      let portrait: Data?
-    }
-
     /// The document waiting to be signed.
     internal private(set) var pending: URL?
 
@@ -34,7 +27,11 @@
 
     /// The complete visible statement read from the card, with
     /// handwriting when the card carries it and identity alone otherwise.
-    private var stampState: StampState?
+    private var stampState: DocumentStampState?
+
+    /// Changes whenever the card leaves, invalidating card work already
+    /// awaiting an answer without cancelling work that may still complete.
+    @ObservationIgnored private var cardAppearance = 0
 
     /// A non-fatal note about what the visible stamp could contain.
     internal private(set) var stampFailure: String?
@@ -44,21 +41,6 @@
 
     /// Whether the card is being read for the signature right now.
     internal private(set) var readingStamp = false
-
-    /// Reuses the exact certificate names captured with the card portrait.
-    private static func portraitStatement(
-      from state: StampState,
-      qrPortrait: QrPortrait.Artwork
-    ) -> StampRenderer.Statement {
-      StampRenderer.Statement(
-        name: state.statement.name,
-        identifier: state.statement.identifier,
-        signature: state.statement.signature,
-        qrPortrait: qrPortrait,
-        givenName: state.statement.givenName,
-        surname: state.statement.surname
-      )
-    }
 
     /// Accepts a dropped or chosen file.
     internal func accept(_ url: URL) {
@@ -91,10 +73,13 @@
       readingStamp = true
       stampState = nil
       stampFailure = nil
+      let appearance = cardAppearance
       defer { readingStamp = false }
-      applyStampOutcome(
-        await CardMaintenance.displayedSignature(accessNumber: digits)
+      let outcome = await CardMaintenance.displayedSignature(
+        accessNumber: digits
       )
+      guard appearance == cardAppearance else { return }
+      applyStampOutcome(outcome)
     }
 
     /// Applies one card read atomically, so a failure can never retain
@@ -122,7 +107,7 @@
               "No handwritten signature; the stamp will show the certificate identity."
           )
         }
-        stampState = StampState(
+        stampState = DocumentStampState(
           statement: StampRenderer.Statement(
             name: mark.name,
             identifier: mark.identifier,
@@ -161,6 +146,15 @@
       notice = nil
     }
 
+    /// Starts one signing attempt and captures its card appearance.
+    private func beginSigning() -> Int {
+      working = true
+      failure = nil
+      signed = nil
+      notice = nil
+      return cardAppearance
+    }
+
     /// Signs the pending document into `destination`.
     ///
     /// Where it goes is decided by the caller, before this is called
@@ -185,10 +179,7 @@
         )
         return
       }
-      working = true
-      failure = nil
-      signed = nil
-      notice = nil
+      let appearance = beginSigning()
       // The card is read for the mark here, where the holder has
       // asked for a signature - not while they were still typing the
       // number that unlocks it.
@@ -229,7 +220,7 @@
         #endif
         complete(with: destination)
       } catch {
-        failure = Self.message(for: error)
+        report(error, from: appearance)
       }
     }
 
@@ -247,7 +238,7 @@
     }
 
     /// The portrait QR path, falling back to the existing mark when the
-    /// card supplied no portrait or no handwriting.
+    /// card supplied no portrait.
     private func signedVisibleStamp(
       on document: Data,
       source: URL,
@@ -285,10 +276,7 @@
         throw StampPreparationFailure.rendering
       }
       let rendered = StampRenderer.mark(
-        Self.portraitStatement(
-          from: state,
-          qrPortrait: qrPortrait
-        )
+        state.portraitStatement(qrPortrait: qrPortrait)
       )
       guard
         let placed = StampPlacement.placed(
@@ -316,6 +304,22 @@
       failure = message
       signed = nil
       notice = nil
+    }
+
+    /// Removes outcomes and identity tied to a card that is no longer there.
+    ///
+    /// The chosen document remains ready for the next insertion.
+    internal func cardRemoved() {
+      cardAppearance &+= 1
+      failure = nil
+      stampState = nil
+      stampFailure = nil
+    }
+
+    /// Publishes a signing failure only while its card is still present.
+    private func report(_ error: Error, from appearance: Int) {
+      guard appearance == cardAppearance else { return }
+      failure = Self.message(for: error)
     }
   }
 
