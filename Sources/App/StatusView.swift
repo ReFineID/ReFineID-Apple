@@ -179,6 +179,12 @@
             .onSubmit { sign() }
             .accessibilityIdentifier("signPin2")
           StampRow(signing: signing, accessNumber: $accessNumber)
+          #if DEBUG
+            if DebugRevokedDocumentSigning.isEnabled() {
+              Text(DebugRevokedDocumentSigning.armedWarning)
+                .foregroundStyle(.orange)
+            }
+          #endif
           HStack {
             // The action row carries the progress too: it is already
             // there and half empty, and a line that appears and
@@ -210,7 +216,7 @@
               .foregroundStyle(.red)
               .textSelection(.enabled)
           }
-          if let note = signing.codeFailure {
+          if let note = signing.notice {
             Text(note)
               .foregroundStyle(.orange)
               .textSelection(.enabled)

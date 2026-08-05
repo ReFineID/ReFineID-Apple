@@ -68,6 +68,66 @@ internal struct ValidationMaterialCollectorTests {
     Data(base64Encoded: encoded) ?? Data()
   }
 
+  /// Authenticated signer-path revocation retains its document role.
+  @Test
+  internal func authenticatedSignerRevocationIsClassified() async throws {
+    let fixture = try CollectorRevocationFixtures.make()
+
+    do {
+      _ = try await ValidationMaterialCollector.collect(
+        signerCertificate: fixture.documentSignerCertificate,
+        timestampTokens: [],
+        dependencies:
+          CollectorRevocationFixtures
+          .dependencies(for: fixture),
+        signerTrustCertificates: [fixture.issuerCertificate]
+      )
+      Issue.record("Revoked document signer was accepted")
+    } catch let failure as ValidationMaterialCollector.Failure {
+      #expect(failure == .revoked(.documentSigner))
+    } catch {
+      Issue.record("Unexpected failure: \(error)")
+    }
+  }
+
+  /// Authenticated TSA revocation wins before document-signer fallback.
+  @Test
+  internal func authenticatedTimestampRevocationIsClassifiedFirst()
+    async throws
+  {
+    let fixture = try CollectorRevocationFixtures.make()
+    let token = TimestampTokenVerifier.VerifiedToken(
+      token: Data("token".utf8),
+      signerCertificate: fixture.timestampAuthorityCertificate,
+      embeddedCertificates: [
+        fixture.timestampAuthorityCertificate,
+        fixture.issuerCertificate,
+      ],
+      verifiedCertificateChain: [
+        fixture.timestampAuthorityCertificate,
+        fixture.issuerCertificate,
+      ],
+      trustedCertificate: fixture.issuerCertificate,
+      generatedAt: fixture.currentTime
+    )
+
+    do {
+      _ = try await ValidationMaterialCollector.collect(
+        signerCertificate: fixture.documentSignerCertificate,
+        timestampTokens: [token],
+        dependencies:
+          CollectorRevocationFixtures
+          .dependencies(for: fixture),
+        signerTrustCertificates: [fixture.issuerCertificate]
+      )
+      Issue.record("Revoked timestamp authority was accepted")
+    } catch let failure as ValidationMaterialCollector.Failure {
+      #expect(failure == .revoked(.timestampAuthority))
+    } catch {
+      Issue.record("Unexpected failure: \(error)")
+    }
+  }
+
   @Test
   internal func malformedSignerFailsBeforeNetworkIo() async {
     do {

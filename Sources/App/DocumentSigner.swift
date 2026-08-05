@@ -56,7 +56,7 @@
       pin2: String,
       reason: String?,
       location: String?
-    ) async throws -> Data {
+    ) async throws -> Product {
       try await Self.sign(
         document, pin2: pin2, reason: reason, location: location, stamp: nil
       )
@@ -74,7 +74,7 @@
       reason: String?,
       location: String?,
       stamp: StampMark?
-    ) async throws -> Data {
+    ) async throws -> Product {
       let claim = PdfIncrementalSigner.SignatureClaim(
         signedAt: Date(), reason: reason, location: location
       )
@@ -82,15 +82,16 @@
         pin2: pin2, document: document, claim: claim, stamp: stamp
       )
       let verifiedTokens = try await Self.timestamped(material.signature)
-      let tokens = verifiedTokens.map(\.token)
-      let cms = try QualifiedDocumentCms.assemble(
-        signedAttributesSet: material.signedAttributes,
-        signatureValue: material.signature,
-        signerProfile: material.profile,
-        signerCertificate: material.certificate,
-        timestampTokens: tokens
+      let timestamped = try TimestampedSignature.verified(
+        TimestampedSignatureInput(
+          placeholder: material.placeholder,
+          signedAttributes: material.signedAttributes,
+          signatureValue: material.signature,
+          signerProfile: material.profile,
+          signerCertificate: material.certificate
+        ),
+        timestampTokens: verifiedTokens
       )
-      let signed = try material.placeholder.filled(with: cms)
       let evidence: PdfValidationStore.Material
       do {
         evidence = try await ValidationMaterialCollector.collect(
@@ -98,12 +99,24 @@
           timestampTokens: verifiedTokens
         )
       } catch {
+        #if DEBUG
+          if let product = DebugRevokedDocumentSigning.product(
+            timestamped: timestamped,
+            after: error,
+            enabled: DebugRevokedDocumentSigning.isEnabled()
+          ) {
+            return product
+          }
+        #endif
         throw Failure.validation(error)
       }
       let withEvidence = try PdfValidationStore.appended(
-        to: signed, material: evidence
+        to: timestamped.bytes, material: evidence
       )
-      return try await Self.archiveTimestamped(withEvidence)
+      return Product(
+        bytes: try await Self.archiveTimestamped(withEvidence),
+        completion: .archival
+      )
     }
 
     /// Reads the qualified certificate, verifies PIN2 and signs, in

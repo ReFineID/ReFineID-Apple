@@ -32,11 +32,8 @@
     /// Why the stamp could not be read, as one user-facing sentence.
     internal private(set) var stampFailure: String?
 
-    /// Why the signed document carries no code, kept beside the
-    /// outcome rather than beside the entry field: the field goes
-    /// away with the document, and a message that vanishes with it
-    /// is a message nobody read.
-    internal private(set) var codeFailure: String?
+    /// A non-fatal fact the holder must see beside the signed output.
+    internal private(set) var notice: String?
 
     /// Whether the card is being read for the signature right now.
     internal private(set) var readingStamp = false
@@ -158,6 +155,7 @@
       pending = url
       failure = nil
       signed = nil
+      notice = nil
     }
 
     /// The page the mark goes on, when a signature was read from the
@@ -221,6 +219,7 @@
       signed = nil
       stamp = nil
       stampFailure = nil
+      notice = nil
     }
 
     /// Signs the pending document into `destination`.
@@ -250,7 +249,7 @@
       working = true
       failure = nil
       signed = nil
-      codeFailure = nil
+      notice = nil
       // The card is read for the mark here, where the holder has
       // asked for a signature - not while they were still typing the
       // number that unlocks it.
@@ -259,14 +258,26 @@
       do {
         let document = try Data(contentsOf: source)
         let page = Self.placed(stampedMark(), on: document)
+        #if DEBUG
+          let reason =
+            DebugRevokedDocumentSigning.isEnabled()
+            ? DebugRevokedDocumentSigning.reason : nil
+        #else
+          let reason: String? = nil
+        #endif
         let result = try await DocumentSigner.sign(
           document,
           pin2: pin2,
-          reason: nil,
+          reason: reason,
           location: nil,
           stamp: page
         )
-        try result.write(to: destination, options: .atomic)
+        try result.bytes.write(to: destination, options: .atomic)
+        #if DEBUG
+          if result.completion == .revokedSignerTest {
+            notice = DebugRevokedDocumentSigning.warning
+          }
+        #endif
         signed = destination
         pending = nil
       } catch {
@@ -283,6 +294,7 @@
     internal func report(_ message: String) {
       failure = message
       signed = nil
+      notice = nil
     }
   }
 

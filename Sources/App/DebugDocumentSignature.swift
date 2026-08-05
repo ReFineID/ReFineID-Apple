@@ -77,16 +77,16 @@
       Task {
         let started = ContinuousClock.now
         do {
-          let signed = try await DocumentSigner.sign(
+          let product = try await DocumentSigner.sign(
             document, pin2: pin2, reason: nil, location: nil
           )
           let destination = SignDocumentModel.destination(
             for: source, at: Date()
           )
-          try signed.write(to: destination, options: .atomic)
+          try product.bytes.write(to: destination, options: .atomic)
           box.record(
             line: "--sign-document: wrote \(destination.lastPathComponent), "
-              + "\(signed.count) bytes in "
+              + "\(product.bytes.count) bytes in "
               + TraceTiming.milliseconds(started.duration(to: .now)) + " ms",
             succeeded: true
           )

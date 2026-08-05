@@ -16,6 +16,15 @@
   /// collection throws and the document is never labelled or timestamped as
   /// LTA.
   internal enum ValidationMaterialCollector {
+    /// Which authenticated certificate path produced a terminal status.
+    internal enum PathRole: Equatable {
+      /// The certificate whose private key signed the document.
+      case documentSigner
+
+      /// The certificate whose private key signed an RFC 3161 token.
+      case timestampAuthority
+    }
+
     /// Why complete validation material could not be collected.
     internal enum Failure: Error, Equatable {
       /// One certificate did not expose the fields chain building needs.
@@ -36,8 +45,8 @@
       /// No authenticated current status answer was available.
       case revocationUnavailable
 
-      /// An authenticated status answer says the certificate is revoked.
-      case revoked
+      /// An authenticated status answer says a path certificate is revoked.
+      case revoked(PathRole)
 
       /// No policy-approved anchor was supplied for the path.
       case trustAnchorUnavailable
@@ -119,6 +128,9 @@
     internal struct ChainStart {
       /// The leaf certificate.
       internal let certificate: Data
+
+      /// The purpose of this certificate path.
+      internal let role: PathRole
 
       /// The certificate-validation time.
       internal let referenceDate: Date
@@ -232,23 +244,11 @@
       signerTrustCertificates: Set<Data>
     ) async throws -> PdfValidationStore.Material {
       let evidenceTime = dependencies.now()
-      let signingTime = timestampTokens.first?.generatedAt ?? evidenceTime
-      var starts: [ChainStart] = []
-      starts.append(
-        ChainStart(
-          certificate: signerCertificate,
-          referenceDate: signingTime,
-          trustedCertificates: signerTrustCertificates
-        )
-      )
-      starts.append(
-        contentsOf: timestampTokens.map { token in
-          ChainStart(
-            certificate: token.signerCertificate,
-            referenceDate: token.generatedAt,
-            trustedCertificates: [token.trustedCertificate]
-          )
-        }
+      let starts = Self.orderedChainStarts(
+        signerCertificate: signerCertificate,
+        timestampTokens: timestampTokens,
+        signerTrustCertificates: signerTrustCertificates,
+        evidenceTime: evidenceTime
       )
       var collection = Collection()
       collection.addCandidate(signerCertificate)
@@ -267,12 +267,16 @@
         collection.addCertificate(token.signerCertificate)
       }
       for start in starts {
-        try await Self.walk(
-          start,
-          evidenceTime: evidenceTime,
-          collection: &collection,
-          dependencies: dependencies
-        )
+        do {
+          try await Self.walk(
+            start,
+            evidenceTime: evidenceTime,
+            collection: &collection,
+            dependencies: dependencies
+          )
+        } catch is AuthenticatedRevocation {
+          throw Failure.revoked(start.role)
+        }
       }
       return PdfValidationStore.Material(
         certificates: collection.certificates.filter { certificate in

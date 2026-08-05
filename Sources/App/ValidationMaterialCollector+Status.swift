@@ -3,6 +3,9 @@
   import CardCore
   import Foundation
 
+  /// A verified status result mapped to its certificate path by the caller.
+  internal struct AuthenticatedRevocation: Error {}
+
   /// Revocation-evidence authentication for validation-material collection.
   extension ValidationMaterialCollector {
     /// The result of trying every advertised OCSP responder.
@@ -88,7 +91,7 @@
           )
           return OcspAttempt(response: response, randomFailed: false)
         } catch OcspResponse.ValidationFailure.revoked {
-          throw Failure.revoked
+          throw AuthenticatedRevocation()
         } catch {
           continue
         }
@@ -117,7 +120,7 @@
           )
           return validity.encoded
         } catch CertificateRevocationList.ValidationFailure.revoked {
-          throw Failure.revoked
+          throw AuthenticatedRevocation()
         } catch {
           continue
         }
