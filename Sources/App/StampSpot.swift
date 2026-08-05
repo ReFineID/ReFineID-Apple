@@ -15,6 +15,19 @@
   /// annotations too, so a mark left by an earlier signer counts as
   /// occupied without being treated as a special case.
   internal enum StampSpot {
+    /// Somewhere the mark fits, and how large it may be there.
+    internal struct Spot {
+      /// How far across the page the centre sits.
+      internal let acrossPage: Double
+
+      /// How far up the page it sits.
+      internal let upPage: Double
+
+      /// What the mark must be multiplied by to fit here, where one
+      /// is its full size.
+      internal let share: Double
+    }
+
     /// Pixels per point when the page is rendered.
     ///
     /// Coarse on purpose: this looks for empty regions, and does not
@@ -31,15 +44,34 @@
     /// so that a faint rule or a page's own texture does not.
     private static let blankLevel: UInt8 = 250
 
-    /// A free centre for a mark of `radius`, in the last page's own
-    /// coordinates, or nil when the page has no room.
+    /// How small the mark may be shrunk to rather than move, as a
+    /// share of its full size.
     ///
-    /// Searched from the bottom-right corner, the margin a signature
-    /// conventionally occupies, working left and then up.
+    /// It carries a name and an identifier, and below this they stop
+    /// being readable on paper - a mark nobody can read is worse than
+    /// one sitting further from the corner.
+    private static let smallestShare = 0.6
+
+    /// The full size, and how much smaller each attempt is.
+    private static let fullShare = 1.0
+    private static let shrinkStep = 0.1
+    private static let shrinkAttempts = 4
+
+    /// Where a mark reaching `reach` from its centre fits on the last
+    /// page, in that page's own coordinates, or nil when the page has
+    /// no room for one at any size.
+    ///
+    /// The bottom-right corner is where a signature conventionally
+    /// sits, so the corner is tried first and given up last: a mark
+    /// that will not fit there is shrunk, as far as it can be read,
+    /// before it is moved at all. Only when even the smallest will
+    /// not fit does the search step left along the foot of the page,
+    /// and only when a whole row is occupied does it rise and sweep
+    /// right to left again.
     internal static func free(
       inLastPageOf document: Data,
-      radius: Double
-    ) -> (x: Double, y: Double)? {
+      reach: Double
+    ) -> Spot? {
       guard
         let pdf = PDFDocument(data: document),
         pdf.pageCount > 0,
@@ -50,19 +82,37 @@
       let box = page.bounds(for: .mediaBox)
       let ink = Self.coverage(of: page, box: box)
       guard !ink.isEmpty else { return nil }
-      let reach = radius + Self.clearance
-      var centreY = box.minY + reach
-      while centreY + reach <= box.maxY {
-        var centreX = box.maxX - reach
-        while centreX - reach >= box.minX {
-          if Self.isBlank(
-            around: (centreX, centreY), reach: reach, ink: ink, box: box
-          ) {
-            return (centreX - box.minX, centreY - box.minY)
+      let rows = max(Int(box.height / Self.searchStep), 1)
+      let columns = max(Int(box.width / Self.searchStep), 1)
+      for row in 0..<rows {
+        for column in 0..<columns {
+          // Size is the innermost choice, so every size is tried at
+          // one place before any size is tried at the next.
+          for attempt in 0...Self.shrinkAttempts {
+            let share = Self.fullShare - Double(attempt) * Self.shrinkStep
+            guard share >= Self.smallestShare else { continue }
+            let room = reach * share + Self.clearance
+            // Each size keeps its own margin to the page's edge, so a
+            // shrunken mark sits in the corner rather than floating
+            // where a larger one would have.
+            let centre = (
+              x: box.maxX - room - Double(column) * Self.searchStep,
+              y: box.minY + room + Double(row) * Self.searchStep
+            )
+            guard
+              centre.x - room >= box.minX,
+              centre.y + room <= box.maxY,
+              Self.isBlank(around: centre, reach: room, ink: ink, box: box)
+            else {
+              continue
+            }
+            return Spot(
+              acrossPage: centre.x - box.minX,
+              upPage: centre.y - box.minY,
+              share: share
+            )
           }
-          centreX -= Self.searchStep
         }
-        centreY += Self.searchStep
       }
       return nil
     }
@@ -108,15 +158,20 @@
       let height = Int(box.height * Self.renderScale)
       let left = Int((centre.x - reach - box.minX) * Self.renderScale)
       let right = Int((centre.x + reach - box.minX) * Self.renderScale)
-      // The page's own coordinates count up; the rendered rows do too,
-      // because the context was drawn into with its origin at the
-      // bottom left.
+      // The page's coordinates count up from its foot; the rendered
+      // rows count down from its head. A bitmap context draws with its
+      // origin at the bottom left but stores the top row first, so a
+      // region read without turning it over is read from the opposite
+      // end of the page - which is worse than no search at all, since
+      // it calls the crowded foot empty and the empty head crowded.
       let bottom = Int((centre.y - reach - box.minY) * Self.renderScale)
       let top = Int((centre.y + reach - box.minY) * Self.renderScale)
       guard left >= 0, bottom >= 0, right < width, top < height else {
         return false
       }
-      for row in bottom...top {
+      let firstRow = height - 1 - top
+      let lastRow = height - 1 - bottom
+      for row in firstRow...lastRow {
         let start = row * width
         for column in left...right where ink[start + column] < Self.blankLevel {
           return false

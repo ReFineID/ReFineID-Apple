@@ -42,13 +42,13 @@
     private static let nameSize = 5.0
 
     /// How far the name sits below the line the signature stands on.
-    private static let nameDrop = 9.0
+    private static let nameDrop = 13.0
 
     /// Clear space kept between the name's ends and the inner circle.
-    private static let nameMargin = 10.0
+    private static let nameMargin = 16.0
 
     /// How far the identifier sits below the name.
-    private static let nameLineGap = 7.0
+    private static let nameLineGap = 8.0
 
     /// The identifier's size, as a share of the name's.
     private static let identifierShare = 0.85

@@ -47,6 +47,17 @@ internal struct PdfIncrementalSignerTests {
     String(bytes: document, encoding: .isoLatin1) ?? ""
   }
 
+  /// The first number written after `label`, or nil.
+  private static func number(after label: String, in document: Data) -> Double? {
+    let text = Self.text(document)
+    guard let found = text.range(of: label) else { return nil }
+    let rest = text[found.upperBound...]
+    let digits = rest.prefix { "0123456789.-".contains($0) || $0 == " " }
+    return Double(
+      digits.trimmingCharacters(in: .whitespaces).split(separator: " ").first ?? ""
+    )
+  }
+
   /// Every form-field name the document carries, in the order written.
   private static func fieldNames(in document: Data) -> [String] {
     var found: [String] = []
@@ -224,5 +235,25 @@ internal struct PdfIncrementalSignerTests {
         Data("not a document".utf8), revision: .documentTimestamp
       )
     }
+  }
+
+  /// A stroked ring is cut off unless its box is wider than it is.
+  ///
+  /// An appearance is clipped to its bounding box, and a stroke
+  /// straddles the path it follows - so a box measured to the mark's
+  /// radius shaves the outermost ring flat on every side it touches.
+  /// The widget's rectangle must leave the same room, or the reader
+  /// clips what the box allowed.
+  @Test
+  internal func aMarksBoxLeavesRoomForItsOwnStroke() throws {
+    let radius = 64.0
+    let mark = StampMark(radius: radius, operators: "0 0 m 1 1 l S\n")
+    let prepared = try PdfIncrementalSigner.prepare(
+      Self.minimalPdf, revision: .signature(Self.claim), appending: mark
+    )
+    let boxLeft = try #require(Self.number(after: "/BBox [", in: prepared.document))
+    #expect(boxLeft < -radius)
+    #expect(mark.reach > radius)
+    #expect(boxLeft == -mark.reach)
   }
 }

@@ -70,10 +70,11 @@ extension PdfIncrementalSigner {
     let already = Self.stampsAlreadyOn(
       page: page, index: index, document: document
     )
-    let step = stamp.radius * PdfValues.stampDiameters + PdfValues.stampGap
-    let firstX = box.width - stamp.radius - PdfValues.stampMargin
-    let firstY = stamp.radius + PdfValues.stampMargin
-    let perRow = max(Int((firstX - stamp.radius) / step) + 1, 1)
+    let reach = stamp.reach
+    let step = reach * PdfValues.stampDiameters + PdfValues.stampGap
+    let firstX = box.width - reach - PdfValues.stampMargin
+    let firstY = reach + PdfValues.stampMargin
+    let perRow = max(Int((firstX - reach) / step) + 1, 1)
     // A caller that looked at the page and found somewhere clear
     // says so; otherwise the corner, stepping aside from marks
     // already there.
@@ -81,8 +82,8 @@ extension PdfIncrementalSigner {
       stamp.acrossPage ?? (firstX - Double(already % perRow) * step)
     let centreY = stamp.upPage ?? (firstY + Double(already / perRow) * step)
     let corners = [
-      centreX - stamp.radius, centreY - stamp.radius,
-      centreX + stamp.radius, centreY + stamp.radius,
+      centreX - reach, centreY - reach,
+      centreX + reach, centreY + reach,
     ]
     return StampPlacement(
       rectangle: "[" + corners.map(Self.placed).joined(separator: " ") + "]",
@@ -150,9 +151,10 @@ extension PdfIncrementalSigner {
     let body =
       stamp.operators.data(using: .windowsCP1252, allowLossyConversion: true)
       ?? Data(stamp.operators.utf8)
+    let reach = stamp.reach
     let box =
-      "[\(Self.placed(-stamp.radius)) \(Self.placed(-stamp.radius))"
-      + " \(Self.placed(stamp.radius)) \(Self.placed(stamp.radius))]"
+      "[\(Self.placed(-reach)) \(Self.placed(-reach))"
+      + " \(Self.placed(reach)) \(Self.placed(reach))]"
     let header =
       "\(number) 0 obj\n<< /Type /XObject /Subtype /Form /BBox \(box)"
       + " /Resources << >> /Length \(body.count) >>\nstream\n"

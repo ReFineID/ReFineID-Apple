@@ -72,26 +72,40 @@
       Self.destination(for: source, at: Date()).lastPathComponent
     }
 
-    /// The mark, moved to somewhere on the page that is clear.
+    /// The mark, sized and moved to somewhere on the page that is
+    /// clear.
     ///
     /// A mark over the document's own words is a mark a validator
-    /// reports as elements overlapping, and a reader as a smudge.
+    /// reports as elements overlapping, and a reader as a smudge. The
+    /// search may answer with a smaller mark: shrinking is what keeps
+    /// it in the corner when the corner is nearly full.
     private static func placed(
       _ mark: StampMark?,
       on document: Data
     ) -> StampMark? {
       guard let mark else { return nil }
       guard
-        let spot = StampSpot.free(inLastPageOf: document, radius: mark.radius)
+        let spot = StampSpot.free(inLastPageOf: document, reach: mark.reach)
       else {
         return mark
       }
       return StampMark(
-        radius: mark.radius,
-        operators: mark.operators,
-        acrossPage: spot.x,
-        upPage: spot.y
+        radius: mark.radius * spot.share,
+        operators: Self.scaled(mark.operators, by: spot.share),
+        acrossPage: spot.acrossPage,
+        upPage: spot.upPage
       )
+    }
+
+    /// The mark's drawing, made smaller about its own centre.
+    ///
+    /// Everything in it is drawn about the origin, so one transform
+    /// scales the ring, the handwriting and the name together, and
+    /// the proportions the mark was designed with survive.
+    private static func scaled(_ operators: String, by share: Double) -> String {
+      guard share < 1 else { return operators }
+      let factor = String(format: "%.4f", share)
+      return "q \(factor) 0 0 \(factor) 0 0 cm\n\(operators)Q\n"
     }
 
     /// One sentence per failure.

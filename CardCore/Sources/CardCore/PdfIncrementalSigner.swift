@@ -75,12 +75,12 @@ public enum PdfIncrementalSigner {
     try Self.prepare(document, revision: revision, appending: nil)
   }
 
-  /// The same, appending a page to carry the signature's visible mark.
+  /// The same, showing the signature's visible mark.
   ///
-  /// The page is written into this revision, so it is inside what the
-  /// signature covers. The widget goes on it rather than on the
-  /// document's own first page, which is why nothing of the original
-  /// needs reissuing beyond the page tree.
+  /// The mark is the signature widget's own appearance, laid over the
+  /// last page's margin. An appearance is not page content: it adds
+  /// nothing to what an earlier signature covered, so a second signer
+  /// can leave a mark without breaking the first one.
   public static func prepare(
     _ document: Data,
     revision: Revision,

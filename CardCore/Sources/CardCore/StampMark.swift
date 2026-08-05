@@ -25,6 +25,15 @@ public struct StampMark: Sendable {
   /// How far up the page it should sit, on the same terms.
   public let upPage: Double?
 
+  /// How much room the mark needs, from its centre.
+  ///
+  /// Wider than the radius: the outermost ring is stroked, and a
+  /// stroke straddles the line it follows, so half the pen falls
+  /// outside the radius. Anything sizing a box for the mark, or
+  /// looking for somewhere to put it, must use this rather than the
+  /// radius - a box cut to the radius shaves the ring flat.
+  public var reach: Double { self.radius + PdfValues.stampBleed }
+
   /// Composes a mark, optionally placed.
   public init(
     radius: Double,

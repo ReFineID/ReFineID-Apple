@@ -16,6 +16,13 @@ internal enum PdfValues {
   /// Clear space between one stamp and the next.
   internal static let stampGap = 6.0
 
+  /// Room left around the mark inside its own box.
+  ///
+  /// A stroked ring straddles its radius - half the pen falls
+  /// outside - and an appearance is clipped to its box, so a box
+  /// sized to the radius shaves the ring flat wherever the two meet.
+  internal static let stampBleed = 4.0
+
   /// Radii across a stamp, for stepping from one to the next.
   internal static let stampDiameters = 2.0
 
