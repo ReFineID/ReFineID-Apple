@@ -32,8 +32,20 @@
     /// hinting cannot round the answer; the caller scales down.
     private static let traceSize = 1_000.0
 
-    /// Places digits after the decimal point in emitted coordinates.
+    /// Places kept after the decimal point in a coordinate.
+    ///
+    /// The glyphs are traced in a thousand-unit space, so hundredths
+    /// of a unit are already finer than any reader draws.
     private static let decimals = 2
+
+    /// Places kept in a scale factor.
+    ///
+    /// A scale is a small number where a coordinate is a large one:
+    /// text at four points in that thousand-unit space scales by
+    /// 0.004, which two places round to zero - and the line is drawn
+    /// at no size at all, present in the file and invisible on the
+    /// page.
+    private static let scaleDecimals = 6
 
     /// Halves, for centring a line on the origin.
     private static let halves = 2.0
@@ -93,8 +105,9 @@
       // round stamp reads as a stamp when what is inside it shares
       // the ring's axis.
       let centring = -(leftmost + rightmost) / Self.halves * scale
+      let factor = String(format: "%.\(Self.scaleDecimals)f", scale)
       let placed =
-        "q \(Self.number(scale)) 0 0 \(Self.number(scale))"
+        "q \(factor) 0 0 \(factor)"
         + " \(Self.number(centring)) 0 cm\n\(body)Q\n"
       return Line(operators: placed, width: inkWidth)
     }
