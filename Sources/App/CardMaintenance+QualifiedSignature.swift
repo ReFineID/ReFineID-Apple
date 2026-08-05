@@ -12,8 +12,8 @@
       /// The locally verified signature value written to CMS.
       internal let signature: Data
 
-      /// The exact attribute bytes it covers.
-      internal let attributes: Data
+      /// The exact bytes hashed and signed.
+      internal let content: Data
 
       /// The certificate that will verify it.
       internal let certificate: Data
@@ -50,14 +50,14 @@
     internal static func qualifiedSignature(
       pin2: String,
       expectedCertificate: Data?,
-      digestBuilder: @escaping @Sendable (Data) -> Data
+      contentBuilder: @escaping @Sendable (Data) -> Data
     ) async -> QualifiedAnswer {
       let result = await onCard { operations in
         Self.qualifiedInSession(
           operations,
           pin2: pin2,
           expectedCertificate: expectedCertificate,
-          builder: digestBuilder
+          builder: contentBuilder
         )
       }
       return result ?? .refused(.noCard)
@@ -96,8 +96,8 @@
       } catch {
         return .refused(outcome(of: error))
       }
-      let attributes = builder(identity.certificate)
-      let digest = Data(SHA384.hash(data: attributes))
+      let content = builder(identity.certificate)
+      let digest = Data(SHA384.hash(data: content))
       guard
         let request = identity.profile.qualifiedDocumentRequest(digest: digest),
         let rawSignature = try? operations.computeQualifiedSignature(
@@ -113,7 +113,7 @@
       return .signed(
         QualifiedProduct(
           signature: signature,
-          attributes: attributes,
+          content: content,
           certificate: identity.certificate,
           profile: identity.profile
         )

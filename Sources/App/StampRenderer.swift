@@ -22,6 +22,34 @@
 
       /// The holder's traced handwriting, or nil when the card has none.
       internal let signature: SignatureArtwork.Artwork?
+
+      /// A signed QR matrix treated with the holder's portrait.
+      internal let qrPortrait: QrPortrait.Artwork?
+
+      internal init(
+        name: String,
+        identifier: String,
+        signature: SignatureArtwork.Artwork?
+      ) {
+        self.init(
+          name: name,
+          identifier: identifier,
+          signature: signature,
+          qrPortrait: nil
+        )
+      }
+
+      internal init(
+        name: String,
+        identifier: String,
+        signature: SignatureArtwork.Artwork?,
+        qrPortrait: QrPortrait.Artwork?
+      ) {
+        self.name = name
+        self.identifier = identifier
+        self.signature = signature
+        self.qrPortrait = qrPortrait
+      }
     }
 
     /// The ring.
@@ -100,11 +128,20 @@
 
     /// The page carrying the mark.
     internal static func mark(_ statement: Statement) -> StampMark {
+      if let portraitArtwork = statement.qrPortrait,
+        let signature = statement.signature
+      {
+        return Self.portraitMark(
+          portraitArtwork,
+          signature: signature
+        )
+      }
       let centreX = 0.0
       let centreY = 0.0
-      var body = "q\n\(Self.inkColour) RG \(Self.inkColour) rg\n"
+      var body = "q\n"
       body += Self.tilt(about: (centreX, centreY))
       let centre = (x: centreX, y: centreY)
+      body += "\(Self.inkColour) RG \(Self.inkColour) rg\n"
       body += Self.circle(
         centre: centre, radius: Self.outerRadius, lineWidth: Self.outerLineWidth
       )

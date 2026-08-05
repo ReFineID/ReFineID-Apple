@@ -197,12 +197,12 @@ internal struct SignDocumentModelTests {
 
   @Test
   @MainActor
-  internal func signerChangeExplainsThatPin2WasNotSpent() {
+  internal func signerChangeExplainsThatNoFileWasWritten() {
     let message = SignDocumentModel.message(
       for: DocumentSigner.Failure.stampSignerChanged
     )
 
     #expect(message.contains("not the card read for the stamp"))
-    #expect(message.contains("No PIN2 attempt was spent"))
+    #expect(message.contains("No signed file was written"))
   }
 }

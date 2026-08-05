@@ -76,6 +76,19 @@
       inLastPageOf document: Data,
       reach: Double
     ) -> Spot? {
+      Self.free(
+        inLastPageOf: document,
+        reach: reach,
+        minimumShare: Self.smallestShare
+      )
+    }
+
+    /// The same search with a caller-imposed minimum scale.
+    internal static func free(
+      inLastPageOf document: Data,
+      reach: Double,
+      minimumShare: Double
+    ) -> Spot? {
       guard
         let pdf = PDFDocument(data: document),
         pdf.pageCount > 0,
@@ -88,9 +101,10 @@
       guard !ink.isEmpty else { return nil }
       let rows = max(Int(box.height / Self.searchStep), 1)
       let columns = max(Int(box.width / Self.searchStep), 1)
+      let acceptedShare = min(max(minimumShare, Self.smallestShare), 1)
       for attempt in 0...Self.shrinkAttempts {
         let share = Self.fullShare - Double(attempt) * Self.shrinkStep
-        guard share >= Self.smallestShare else { continue }
+        guard share >= acceptedShare else { continue }
         // Each size keeps its own margin to the page's edge, so a
         // shrunken mark sits in the corner rather than floating where
         // a larger one would have.

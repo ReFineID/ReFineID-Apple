@@ -18,6 +18,13 @@
       /// Row-major, true where the module is dark.
       internal let dark: [Bool]
 
+      /// A grid already assembled by a deterministic treatment.
+      internal init?(side: Int, dark: [Bool]) {
+        guard side > 0, dark.count == side * side else { return nil }
+        self.side = side
+        self.dark = dark
+      }
+
       /// Reads the grid out of a rendered code, dropping the
       /// generator's own quiet zone so the page can choose its own
       /// margin.
@@ -40,11 +47,10 @@
 
     /// The error correction the code carries.
     ///
-    /// Medium is the working compromise for a printed page: it
-    /// recovers about fifteen percent of the code, which survives
-    /// folding and photocopying, without the size that higher levels
-    /// cost.
-    private static let correctionLevel = "M"
+    /// High correction carries the portrait-shaped module treatment
+    /// and the red handwriting crossing it. The signed payload stays
+    /// small enough that the stronger level remains printable.
+    private static let correctionLevel = "H"
 
     /// The generator's own quiet zone, in modules, which is stripped
     /// so the page can decide its own margin.

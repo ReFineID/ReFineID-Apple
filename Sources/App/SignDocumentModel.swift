@@ -17,6 +17,7 @@
     private struct StampState {
       let statement: StampRenderer.Statement
       let signerCertificate: Data
+      let portrait: Data?
     }
 
     /// The document waiting to be signed.
@@ -44,114 +45,6 @@
     /// Whether the card is being read for the signature right now.
     internal private(set) var readingStamp = false
 
-    /// The signed file's place: beside the original, stamped with the
-    /// UTC instant, colons replaced so the name is safe everywhere.
-    nonisolated internal static func destination(
-      for source: URL,
-      at instant: Date
-    ) -> URL {
-      let formatter = ISO8601DateFormatter()
-      formatter.timeZone = TimeZone(secondsFromGMT: 0)
-      formatter.formatOptions = [.withInternetDateTime]
-      let instantText = formatter.string(from: instant)
-        .replacingOccurrences(of: ":", with: "-")
-        .replacingOccurrences(of: "+00-00", with: "Z")
-      let name = source.deletingPathExtension().lastPathComponent
-      return source.deletingLastPathComponent()
-        .appendingPathComponent("\(name) - signed at \(instantText)")
-        .appendingPathExtension(source.pathExtension)
-    }
-
-    /// The name a signed document should be offered under: the
-    /// original's, with the instant it was signed.
-    nonisolated internal static func suggestedName(for source: URL) -> String {
-      Self.destination(for: source, at: Date()).lastPathComponent
-    }
-
-    /// The mark, sized and moved to somewhere on the page that is
-    /// clear.
-    ///
-    /// A mark over the document's own words is a mark a validator
-    /// reports as elements overlapping, and a reader as a smudge. The
-    /// search may answer with a smaller mark: shrinking is what keeps
-    /// it in the corner when the corner is nearly full.
-    private static func placed(
-      _ mark: StampMark?,
-      on document: Data
-    ) -> StampMark? {
-      guard let mark else { return nil }
-      guard
-        let spot = StampSpot.free(inLastPageOf: document, reach: mark.reach)
-      else {
-        return mark
-      }
-      return StampMark(
-        radius: mark.radius * spot.share,
-        operators: Self.scaled(mark.operators, by: spot.share),
-        acrossPage: spot.acrossPage,
-        upPage: spot.upPage
-      )
-    }
-
-    /// The mark's drawing, made smaller about its own centre.
-    ///
-    /// Everything in it is drawn about the origin, so one transform
-    /// scales the ring, the handwriting and the name together, and
-    /// the proportions the mark was designed with survive.
-    private static func scaled(_ operators: String, by share: Double) -> String {
-      guard share < 1 else { return operators }
-      let factor = String(format: "%.4f", share)
-      return "q \(factor) 0 0 \(factor) 0 0 cm\n\(operators)Q\n"
-    }
-
-    /// One sentence per failure.
-    internal static func message(for error: Error) -> String {
-      switch error {
-      case DocumentSigner.Failure.card(let outcome):
-        Self.cardMessage(outcome)
-      case DocumentSigner.Failure.document(.notAPdf):
-        "That file is not a PDF."
-      case DocumentSigner.Failure.document(.encrypted):
-        "That PDF is encrypted; ReFineID will not modify it."
-      case DocumentSigner.Failure.document(.crossReferenceStreamUnsupported):
-        "That PDF uses a cross-reference stream, which this version "
-          + "cannot extend yet."
-      case DocumentSigner.Failure.document(.signatureTooLarge):
-        "The signature did not fit the space reserved for it."
-      case DocumentSigner.Failure.document:
-        "That PDF's structure could not be read."
-      case DocumentSigner.Failure.network:
-        "A timestamp or revocation service could not be reached. An "
-          + "archival signature needs both, so nothing was written."
-      case DocumentSigner.Failure.validation:
-        "Complete authenticated certificate and revocation evidence could "
-          + "not be collected. No signed file was written."
-      case DocumentSigner.Failure.stampSignerChanged:
-        "The card used for signing is not the card read for the stamp. "
-          + "No PIN2 attempt was spent."
-      default:
-        "The document could not be signed."
-      }
-    }
-
-    /// What the card said, in the same words the PIN window uses.
-    private static func cardMessage(_ outcome: CardMaintenance.Outcome) -> String {
-      switch outcome {
-      case .rejected(let remaining):
-        "Wrong PIN2: \(remaining.attemptsRemaining) attempts remain."
-      case .pinBlocked, .floorRefused(.refuseBlocked):
-        "PIN2 is blocked; unblock it in PIN Management."
-      case .floorRefused(.refuseLowAttempts):
-        "Only one or two attempts remain on PIN2; ReFineID refuses to "
-          + "spend a near-last attempt."
-      case .invalidated:
-        "The signature slot is not activated; activate the card first."
-      case .noCard:
-        "No readable card. Insert the card and try again."
-      default:
-        "The card refused the signature."
-      }
-    }
     /// Accepts a dropped or chosen file.
     internal func accept(_ url: URL) {
       pending = url
@@ -220,7 +113,8 @@
             identifier: mark.identifier,
             signature: artwork
           ),
-          signerCertificate: mark.certificate
+          signerCertificate: mark.certificate,
+          portrait: mark.portrait
         )
       case .absent:
         stampFailure = String(
@@ -285,7 +179,13 @@
       defer { working = false }
       do {
         let document = try Data(contentsOf: source)
-        let visibleStamp = self.visibleStamp(on: document)
+        let signedAt = Date()
+        let visibleStamp = try await self.signedVisibleStamp(
+          on: document,
+          source: source,
+          pin2: pin2,
+          at: signedAt
+        )
         #if DEBUG
           let reason =
             DebugRevokedDocumentSigning.isEnabled()
@@ -293,11 +193,15 @@
         #else
           let reason: String? = nil
         #endif
+        let pdfClaim = PdfIncrementalSigner.SignatureClaim(
+          signedAt: signedAt,
+          reason: reason,
+          location: nil
+        )
         let result = try await DocumentSigner.sign(
           document,
           pin2: pin2,
-          reason: reason,
-          location: nil,
+          claim: pdfClaim,
           stamp: visibleStamp
         )
         try result.bytes.write(to: destination, options: .atomic)
@@ -316,7 +220,68 @@
     internal func visibleStamp(on document: Data) -> DocumentSigner.VisibleStamp? {
       guard let state = stampState else { return nil }
       let rendered = StampRenderer.mark(state.statement)
-      guard let placed = Self.placed(rendered, on: document) else { return nil }
+      guard let placed = StampPlacement.placed(rendered, on: document) else {
+        return nil
+      }
+      return DocumentSigner.VisibleStamp(
+        mark: placed,
+        signerCertificate: state.signerCertificate
+      )
+    }
+
+    /// The portrait QR path, falling back to the existing mark when the
+    /// card supplied no portrait or no handwriting.
+    private func signedVisibleStamp(
+      on document: Data,
+      source: URL,
+      pin2: String,
+      at instant: Date
+    ) async throws -> DocumentSigner.VisibleStamp? {
+      guard let state = stampState else { return nil }
+      guard
+        let signature = state.statement.signature,
+        let portraitBytes = state.portrait,
+        let claim = StampAttestation.claim(
+          identifier: state.statement.identifier,
+          filename: source.lastPathComponent,
+          at: instant
+        )
+      else {
+        return self.visibleStamp(on: document)
+      }
+      let payload = try await DocumentSigner.attestation(
+        over: claim,
+        pin2: pin2,
+        expectedCertificate: state.signerCertificate
+      )
+      guard
+        let qrCode = QrCode.modules(of: payload),
+        let fieldSide = StampRenderer.portraitFieldSide(
+          forQrSide: qrCode.side
+        ),
+        let portrait = PortraitHalftone.map(
+          imageData: portraitBytes,
+          side: qrCode.side,
+          fieldSide: fieldSide
+        ),
+        let qrPortrait = QrPortrait.artwork(qr: qrCode, portrait: portrait)
+      else {
+        throw StampPreparationFailure.rendering
+      }
+      let statement = StampRenderer.Statement(
+        name: state.statement.name,
+        identifier: state.statement.identifier,
+        signature: signature,
+        qrPortrait: qrPortrait
+      )
+      let rendered = StampRenderer.mark(statement)
+      guard
+        let placed = StampPlacement.placed(
+          rendered,
+          on: document,
+          minimumShare: 1
+        )
+      else { return nil }
       return DocumentSigner.VisibleStamp(
         mark: placed,
         signerCertificate: state.signerCertificate

@@ -1,7 +1,6 @@
 #if os(macOS)
 
   import CardCore
-  import CryptoKit
   import CryptoTokenKit
   import Dispatch
   import Foundation
@@ -90,6 +89,21 @@
       let claim = PdfIncrementalSigner.SignatureClaim(
         signedAt: Date(), reason: reason, location: location
       )
+      return try await Self.sign(
+        document,
+        pin2: pin2,
+        claim: claim,
+        stamp: stamp
+      )
+    }
+
+    /// The same operation with one instant shared by the QR and PDF.
+    internal static func sign(
+      _ document: Data,
+      pin2: String,
+      claim: PdfIncrementalSigner.SignatureClaim,
+      stamp: VisibleStamp?
+    ) async throws -> Product {
       let material = try await Self.cardMaterial(
         pin2: pin2, document: document, claim: claim, stamp: stamp
       )
@@ -162,7 +176,7 @@
       case .signed(let product):
         return CardMaterial(
           placeholder: prepared,
-          signedAttributes: product.attributes,
+          signedAttributes: product.content,
           signature: product.signature,
           certificate: product.certificate,
           profile: product.profile
@@ -172,55 +186,35 @@
       }
     }
 
-    /// A detached signature over the stamp's manifest, timestamped,
-    /// with no certificates in it.
+    /// A detached raw signature over the stamp's compact claim.
     ///
-    /// This is the second card operation of a stamped signing, and it
-    /// comes first: the code carrying it goes on the page that the
-    /// document's own signature then covers. Certificates are left
-    /// out because the holder's own is larger than everything else
-    /// here together, and nothing fits a scannable code with it.
-    ///
-    /// Answers nil rather than failing the signing: a document that
-    /// cannot carry a code is still a properly signed document, and
-    /// refusing to sign one over a decoration would be the wrong
-    /// trade.
+    /// This card operation comes first because its bytes are drawn into
+    /// the revision the document signature covers. The leaf certificate
+    /// stays in the PDF CMS; a twelve-hex key ID selects it without
+    /// making the QR several kilobytes larger.
     internal static func attestation(
-      over manifest: Data,
-      pin2: String
-    ) async -> Data? {
-      let digest = Data(SHA384.hash(data: manifest))
+      over claim: StampAttestation.Claim,
+      pin2: String,
+      expectedCertificate: Data
+    ) async throws -> Data {
       let answer = await CardMaintenance.qualifiedSignature(
         pin2: pin2,
-        expectedCertificate: nil
-      ) { certificate in
-        QualifiedDocumentCms.signedAttributes(
-          byteRangeDigest: digest, signerCertificate: certificate
+        expectedCertificate: expectedCertificate
+      ) { _ in
+        claim.bytes
+      }
+      switch answer {
+      case .signerCertificateMismatch:
+        throw Failure.stampSignerChanged
+      case .refused(let outcome):
+        throw Failure.card(outcome)
+      case .signed(let product):
+        return StampAttestation.payload(
+          claim: claim,
+          signerCertificate: product.certificate,
+          signature: product.signature
         )
       }
-      guard case .signed(let product) = answer else { return nil }
-      // A compact timestamp, without the authority's certificate: with
-      // one the statement is some five kilobytes and fits no code at
-      // all. The document's own timestamps are untouched and still
-      // carry their chains, which is what archival validation needs.
-      guard
-        let imprint = try? QualifiedDocumentCms.signatureTimestampDigest(
-          signatureValue: product.signature
-        ),
-        let token = try? await TimestampClient.compactToken(
-          over: imprint
-        )
-      else {
-        return nil
-      }
-      let tokens = [token]
-      return try? QualifiedDocumentCms.assembleWithoutCertificates(
-        signedAttributesSet: product.attributes,
-        signatureValue: product.signature,
-        signerProfile: product.profile,
-        signerCertificate: product.certificate,
-        timestampTokens: tokens
-      )
     }
 
     /// One signature timestamp; an archival signature cannot skip it.

@@ -155,6 +155,31 @@ internal struct StampSpotTests {
     #expect(abs(Self.pageWidth - spot.acrossPage - room) < Self.cornerTolerance)
   }
 
+  /// A caller may protect machine-readable detail by forbidding shrinkage.
+  @Test
+  internal func aFullSizeMinimumRefusesAShrinkOnlyPocket() {
+    var content = Self.ink(
+      fromLeft: 0,
+      fromFoot: 0,
+      width: Self.pageWidth - Self.clearCorner,
+      height: Self.pageHeight
+    )
+    content += Self.ink(
+      fromLeft: 0,
+      fromFoot: Self.clearCorner,
+      width: Self.pageWidth,
+      height: Self.pageHeight - Self.clearCorner
+    )
+
+    #expect(
+      StampSpot.free(
+        inLastPageOf: Self.pageCarrying(content),
+        reach: Self.reach,
+        minimumShare: 1
+      ) == nil
+    )
+  }
+
   /// Ink too deep to shrink under sends the mark left along the foot.
   @Test
   internal func anOccupiedCornerSendsTheMarkLeftBeforeUp() throws {

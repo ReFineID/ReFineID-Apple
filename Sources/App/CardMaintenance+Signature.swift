@@ -31,6 +31,9 @@
       /// The image, as the card stores it, or nil when this card has none.
       internal let bytes: Data?
 
+      /// The portrait image from DG2, or nil when this card has none.
+      internal let portrait: Data?
+
       /// The exact qualified-signature certificate that states the identity.
       internal let certificate: Data
 
@@ -39,6 +42,35 @@
 
       /// The identifier the certificate states.
       internal let identifier: String
+
+      internal init(
+        bytes: Data?,
+        certificate: Data,
+        name: String,
+        identifier: String
+      ) {
+        self.init(
+          bytes: bytes,
+          portrait: nil,
+          certificate: certificate,
+          name: name,
+          identifier: identifier
+        )
+      }
+
+      internal init(
+        bytes: Data?,
+        portrait: Data?,
+        certificate: Data,
+        name: String,
+        identifier: String
+      ) {
+        self.bytes = bytes
+        self.portrait = portrait
+        self.certificate = certificate
+        self.name = name
+        self.identifier = identifier
+      }
     }
 
     /// What reading the signature answered.
@@ -68,37 +100,54 @@
         return .wrongAccessNumber
       }
       let answer = await Self.onTravelDocument(accessNumber: number) {
-        operations -> SignatureOutcome in
-        // DG7 must be attempted while the travel-document application
-        // is still selected. Reading the certificate below selects the
-        // FINEID application instead.
-        let image: DisplayedSignature.Image?
-        do {
-          image = try operations.readDisplayedSignature()
-        } catch {
-          return .imageUnreadable
-        }
-        // Carry the exact certificate beside the visible identity. The
-        // signing session later requires the same DER before spending PIN2.
-        guard
-          let certificate = try? operations.readCertificate(.qualifiedSignature),
-          let facts = CertificateFacts(der: certificate),
-          let name = DistinguishedName.personalName(inName: facts.subjectName)
-            ?? DistinguishedName.commonName(inName: facts.subjectName)
-        else {
-          return .absent
-        }
-        return .mark(
-          Mark(
-            bytes: image?.bytes,
-            certificate: certificate,
-            name: name,
-            identifier: DistinguishedName.identifier(inName: facts.subjectName)
-              ?? ""
-          )
-        )
+        operations in
+        Self.displayedMark(from: operations)
       }
       return answer ?? .noCard
+    }
+
+    /// Reads both displayed images and the identity in their required order.
+    private static func displayedMark(
+      from operations: CardOperations
+    ) -> SignatureOutcome {
+      // DG2 and DG7 must be attempted while the travel-document
+      // application is still selected. Read EF.COM once: every extra
+      // secure-messaging exchange costs NFC time, and the inventory is
+      // the gate that makes both data-group reads safe. Read the small,
+      // essential DG7 before the larger, optional portrait.
+      guard let inventory = try? operations.readDataGroupInventory() else {
+        return .imageUnreadable
+      }
+      let image: DisplayedSignature.Image?
+      do {
+        image = try operations.readDisplayedSignature(listedBy: inventory)
+      } catch {
+        return .imageUnreadable
+      }
+      // A portrait is decoration. If a future card carries an image
+      // encoding this build cannot read, retain the existing DG7 and
+      // certificate-identity stamp rather than suppressing it.
+      let portrait = try? operations.readDisplayedPortrait(listedBy: inventory)
+      // Carry the exact certificate beside the visible identity. The
+      // signing session later requires the same DER before spending PIN2.
+      guard
+        let certificate = try? operations.readCertificate(.qualifiedSignature),
+        let facts = CertificateFacts(der: certificate),
+        let name = DistinguishedName.personalName(inName: facts.subjectName)
+          ?? DistinguishedName.commonName(inName: facts.subjectName)
+      else {
+        return .absent
+      }
+      return .mark(
+        Mark(
+          bytes: image?.bytes,
+          portrait: portrait?.bytes,
+          certificate: certificate,
+          name: name,
+          identifier: DistinguishedName.identifier(inName: facts.subjectName)
+            ?? ""
+        )
+      )
     }
 
     /// Opens a session, runs PACE, selects the travel-document
