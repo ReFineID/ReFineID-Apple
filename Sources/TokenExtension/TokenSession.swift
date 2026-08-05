@@ -5,14 +5,14 @@ import Security
 
 /// One session against a published token.
 ///
-/// Advertises the ECDSA client-authentication shapes the card can sign,
-/// prompts for PIN1 through the system UI, and performs a signature.
+/// Advertises the certificate-selected client-authentication shapes the card
+/// can sign, prompts for PIN1 through the system UI, and performs a signature.
 ///
 /// The two transports part company at the first line of `sign`, and
 /// deliberately so. The contact path is unchanged: a fresh exclusive
 /// session, a retry-floor check, VERIFY PIN1 (consumed once, rejection
-/// remembered), MSE:SET + PSO:CDS, and the raw card signature re-encoded
-/// as X9.62 DER. The contactless path has none of that room. It runs
+/// remembered), MSE:SET + PSO:CDS, and the raw card signature normalized
+/// for Security.framework. The contactless path has none of that room. It runs
 /// inside a field that lasts about two seconds after the mint, so it
 /// takes the PIN before it touches the card at all, works in the session
 /// the mint held open, reads nothing the prime already knows, and logs

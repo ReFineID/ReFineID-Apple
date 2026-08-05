@@ -4,10 +4,6 @@
 /// form is the named constant, so no encoded OID byte exists outside
 /// the encoder.
 internal enum SignOids {
-  /// An ECDSA signature is the pair (r, s), so the card's raw answer
-  /// splits in two equal halves.
-  internal static let ecdsaSignatureParts: Int = 2
-
   /// CMS SignedData version 1: the version PAdES writes, since it
   /// carries no attribute certificates and no OCSP in the CMS itself
   /// (RFC 5652 §5.1).

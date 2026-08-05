@@ -8,19 +8,33 @@ import Foundation
 /// content-type, message-digest and signing-certificate-v2, and
 /// nothing else - a signing-time attribute downgrades the signature,
 /// because the PDF `/M` entry owns that fact. The attributes are
-/// signed in their SET form and carried retagged, the signature value
-/// is the card's raw pair re-encoded as DER, and the only certificate
-/// embedded is the signer's own: the chain travels in the document
-/// security store, not here.
+/// signed in their SET form and carried retagged, and the only certificate
+/// embedded is the signer's own: the chain travels in the document security
+/// store, not here.
 public enum QualifiedDocumentCms {
+  /// The values shared by the certificate-carrying and compact encodings.
+  private struct AssemblyInput {
+    let signedAttributesSet: Data
+    let signatureValue: Data
+    let signerProfile: CardKeyProfile
+    let signerCertificate: Data
+    let timestampTokens: [Data]
+  }
+
   /// A failure to assemble the structure.
   public enum AssemblyError: Error, Equatable {
+    /// The certificate's public key does not match the selected card profile.
+    case certificateProfileMismatch
+
     /// The signer certificate did not parse far enough to name its
     /// issuer and serial.
     case certificateUnparseable
 
-    /// The card's raw signature was empty or odd-length.
+    /// The signature value was empty or malformed.
     case signatureMalformed
+
+    /// The signed attributes were not the exact canonical PAdES set.
+    case signedAttributesMalformed
   }
 
   /// The signed attributes in their SET form: what the card digests
@@ -51,23 +65,41 @@ public enum QualifiedDocumentCms {
     return DerEncoder.setOf([contentType, messageDigest, signingCertificate])
   }
 
+  /// The RFC 3161 message imprint for a CMS signature-time-stamp attribute.
+  ///
+  /// The timestamp covers exactly the contents of SignerInfo.signature, not
+  /// the OCTET STRING tag and length that carry those contents in CMS.
+  public static func signatureTimestampDigest(
+    signatureValue: Data
+  ) throws -> Data {
+    guard !signatureValue.isEmpty else {
+      throw AssemblyError.signatureMalformed
+    }
+    return Data(SHA384.hash(data: signatureValue))
+  }
+
   /// The complete ContentInfo, ready for the document's hole.
   ///
   /// `signedAttributesSet` must be the exact bytes the card signed;
-  /// they are retagged, never rebuilt. `rawSignature` is the card's
-  /// r-then-s pair. Timestamp tokens become one unsigned-attribute
-  /// instance each, sorted and deduplicated.
+  /// they are retagged, never rebuilt. `signatureValue` is exactly the value
+  /// that was locally verified and timestamped: an X9.62 DER pair for ECDSA,
+  /// or the modulus-wide block for RSA. Timestamp tokens become one unsigned
+  /// attribute instance each, sorted and deduplicated.
   public static func assemble(
     signedAttributesSet: Data,
-    rawSignature: Data,
+    signatureValue: Data,
+    signerProfile: CardKeyProfile,
     signerCertificate: Data,
     timestampTokens: [Data]
   ) throws -> Data {
     try Self.assemble(
-      signedAttributesSet: signedAttributesSet,
-      rawSignature: rawSignature,
-      signerCertificate: signerCertificate,
-      timestampTokens: timestampTokens,
+      AssemblyInput(
+        signedAttributesSet: signedAttributesSet,
+        signatureValue: signatureValue,
+        signerProfile: signerProfile,
+        signerCertificate: signerCertificate,
+        timestampTokens: timestampTokens
+      ),
       carryingCertificate: true
     )
   }
@@ -79,29 +111,40 @@ public enum QualifiedDocumentCms {
   /// fit somewhere small - a printed code, a header beside a file.
   public static func assembleWithoutCertificates(
     signedAttributesSet: Data,
-    rawSignature: Data,
+    signatureValue: Data,
+    signerProfile: CardKeyProfile,
     signerCertificate: Data,
     timestampTokens: [Data]
   ) throws -> Data {
     try Self.assemble(
-      signedAttributesSet: signedAttributesSet,
-      rawSignature: rawSignature,
-      signerCertificate: signerCertificate,
-      timestampTokens: timestampTokens,
+      AssemblyInput(
+        signedAttributesSet: signedAttributesSet,
+        signatureValue: signatureValue,
+        signerProfile: signerProfile,
+        signerCertificate: signerCertificate,
+        timestampTokens: timestampTokens
+      ),
       carryingCertificate: false
     )
   }
 
   /// Shared assembly for both shapes.
   private static func assemble(
-    signedAttributesSet: Data,
-    rawSignature: Data,
-    signerCertificate: Data,
-    timestampTokens: [Data],
+    _ input: AssemblyInput,
     carryingCertificate: Bool
   ) throws -> Data {
+    let signedAttributesSet = input.signedAttributesSet
+    let signatureValue = input.signatureValue
+    let signerProfile = input.signerProfile
+    let signerCertificate = input.signerCertificate
+    let timestampTokens = input.timestampTokens
     let identity = try issuerAndSerial(of: signerCertificate)
-    let signature = try ecdsaSignature(rawSignature)
+    try Self.validate(
+      signedAttributesSet: signedAttributesSet,
+      signatureValue: signatureValue,
+      signerProfile: signerProfile,
+      signerCertificate: signerCertificate
+    )
     var signerInfo: [Data] = [
       DerEncoder.integer(SignOids.signerInfoVersion),
       identity,
@@ -109,22 +152,11 @@ public enum QualifiedDocumentCms {
       DerEncoder.retagged(
         signedAttributesSet, to: DerValues.tagContext0Constructed
       ),
-      ecdsaWithSha384AlgorithmIdentifier(),
-      DerEncoder.octetString(signature),
+      signatureAlgorithmIdentifier(signerProfile),
+      DerEncoder.octetString(signatureValue),
     ]
-    if !timestampTokens.isEmpty {
-      let instances = timestampTokens.map { token in
-        attribute(SignOids.signatureTimestampToken, value: token)
-      }
-      let unique = Array(Set(instances)).sorted { left, right in
-        left.lexicographicallyPrecedes(right)
-      }
-      signerInfo.append(
-        DerEncoder.retagged(
-          DerEncoder.tlv(DerValues.tagSet, unique.reduce(Data(), +)),
-          to: DerValues.tagContext1Constructed
-        )
-      )
+    if let timestamps = Self.timestampAttributes(timestampTokens) {
+      signerInfo.append(timestamps)
     }
     var parts: [Data] = [
       DerEncoder.integer(SignOids.cmsVersion),
@@ -149,12 +181,19 @@ public enum QualifiedDocumentCms {
     ])
   }
 
-  /// The card's raw r-then-s pair as DER.
-  ///
-  /// A signature timestamp is taken over the signature value as it is
-  /// stored in the CMS, which is this form - not the card's raw pair.
-  public static func derSignature(_ raw: Data) throws -> Data {
-    try Self.ecdsaSignature(raw)
+  /// Sorted and deduplicated signature timestamps as unsigned attributes.
+  private static func timestampAttributes(_ tokens: [Data]) -> Data? {
+    guard !tokens.isEmpty else { return nil }
+    let instances = tokens.map { token in
+      attribute(SignOids.signatureTimestampToken, value: token)
+    }
+    let unique = Array(Set(instances)).sorted { left, right in
+      left.lexicographicallyPrecedes(right)
+    }
+    return DerEncoder.retagged(
+      DerEncoder.tlv(DerValues.tagSet, unique.reduce(Data(), +)),
+      to: DerValues.tagContext1Constructed
+    )
   }
 
   /// One attribute: its OID and one value in a SET.
@@ -170,24 +209,23 @@ public enum QualifiedDocumentCms {
     DerEncoder.sequence([DerEncoder.objectIdentifier(SignOids.sha384)])
   }
 
-  /// ecdsa-with-SHA384 with no parameters (RFC 5758).
-  private static func ecdsaWithSha384AlgorithmIdentifier() -> Data {
-    DerEncoder.sequence([DerEncoder.objectIdentifier(SignOids.ecdsaWithSha384)])
-  }
-
-  /// The card's raw r-then-s pair as the DER pair DER demands.
-  private static func ecdsaSignature(_ raw: Data) throws -> Data {
-    guard
-      !raw.isEmpty,
-      raw.count.isMultiple(of: SignOids.ecdsaSignatureParts)
-    else {
-      throw AssemblyError.signatureMalformed
+  /// The SignerInfo signature algorithm and its profile-required parameters.
+  private static func signatureAlgorithmIdentifier(
+    _ profile: CardKeyProfile
+  ) -> Data {
+    switch profile {
+    case .ecdsaP384:
+      // RFC 5758 section 3.2: ECDSA parameters are absent.
+      DerEncoder.sequence([
+        DerEncoder.objectIdentifier(SignOids.ecdsaWithSha384)
+      ])
+    case .rsa3072:
+      // RFC 5754 section 3.2: RSA parameters are NULL.
+      DerEncoder.sequence([
+        DerEncoder.objectIdentifier(SignOids.sha384WithRsa),
+        DerEncoder.null(),
+      ])
     }
-    let half = raw.count / SignOids.ecdsaSignatureParts
-    return DerEncoder.sequence([
-      DerEncoder.unsignedInteger(raw.prefix(half)),
-      DerEncoder.unsignedInteger(raw.suffix(half)),
-    ])
   }
 
   /// IssuerAndSerialNumber from the certificate, byte-identical.

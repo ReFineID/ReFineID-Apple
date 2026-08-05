@@ -58,4 +58,28 @@ internal struct QualifiedSignatureTests {
     }
     #expect(channel.isExhausted)
   }
+
+  @Test
+  internal func rsa3072QualifiedSignatureJoinsTheFullContinuation() throws {
+    let digest = String(repeating: "AB", count: 48)
+    let firstSignaturePart = String(repeating: "11", count: 256)
+    let secondSignaturePart = String(repeating: "22", count: 128)
+    let channel = ScriptedChannel([
+      ("002241B606800152840102", "9000"),
+      ("002A90A0329030" + digest, "9000"),
+      ("002A9E9A00", firstSignaturePart + "6180"),
+      ("00C0000080", secondSignaturePart + "9000"),
+    ])
+
+    let signature = try CardOperations(channel: channel)
+      .computeQualifiedSignature(
+        overDigest: WireHex.data(digest),
+        algorithm: SigningAlgorithm(hash: .sha384, scheme: .rsaPkcs1),
+        expectedSignatureLength: nil
+      )
+
+    #expect(signature == WireHex.data(firstSignaturePart + secondSignaturePart))
+    #expect(signature.count == 384)
+    #expect(channel.isExhausted)
+  }
 }

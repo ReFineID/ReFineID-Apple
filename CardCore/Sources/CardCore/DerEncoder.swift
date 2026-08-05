@@ -65,6 +65,11 @@ public enum DerEncoder {
     tlv(DerValues.tagOctetString, content)
   }
 
+  /// NULL, whose DER value has empty content.
+  public static func null() -> Data {
+    tlv(DerValues.tagNull, Data())
+  }
+
   /// OBJECT IDENTIFIER from dotted notation (X.690 §8.19).
   ///
   /// The dotted strings live beside their names in `SignOids`;

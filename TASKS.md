@@ -100,13 +100,14 @@ Legend:
 
 - [ ] Prove and implement the clean-machine trust/chain strategy without a
   privileged System Keychain installer (iOS trust onboarding is P0 gate 2).
-- [ ] Implement supported RSA and ECC authentication-key profiles explicitly.
-  ECC P-384 is implemented and hardware-verified; RSA-3072 is recognized but
-  deliberately not yet signable (fail-closed, not published).
+- [x] Implement supported RSA and ECC key profiles explicitly. ECC P-384 and
+  RSA-3072 are certificate-selected, published, and unit-tested; ECC is
+  hardware-verified, while RSA qualified/PDF signing still needs the live-card
+  check below.
 
-- [ ] Implement RSA/ECDSA result normalization and local signature verification.
-  ECDSA `r||s`->X9.62 DER (`EcdsaSignature`) with pre-return local verify is done
-  and hardware-verified; RSA normalization is not.
+- [x] Implement RSA/ECDSA result normalization and local signature verification.
+  ECDSA `r||s` becomes X9.62 DER; RSA stays modulus-wide. Both fail closed on
+  length or local-verification failure before a signature is returned.
 
 
 ## 5. Credential-command safety
@@ -195,7 +196,8 @@ Legend:
   check, PIN verification, and signing.
 - [ ] Test wrong-PIN-at-three transitions to two and prevents another CTK
   attempt.
-- [ ] Test RSA and ECC signature inputs, output encodings, and local verification.
+- [x] Test RSA and ECC signature inputs, output encodings, local verification,
+  certificate/profile binding, and exact CMS signature fields.
 - [ ] Test logs and diagnostic exports for PIN, PUK, serial, certificate, and APDU
   leakage.
 - [ ] Add differential tests whose expectations are independent of both Swift and

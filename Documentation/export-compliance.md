@@ -49,7 +49,7 @@ Swift, in `CardCore`, because no Apple framework speaks them:
 | SHA-256 | `PaceKeyDerivation`, via CryptoKit | Deriving the PACE session keys. |
 | SHA-224, SHA-256, SHA-384, SHA-512 | `SigningHash`, `SigningAlgorithmResolver` | Digests for the signatures the card makes; which one is the calling service's choice. |
 | ECDSA P-384 | `EcdsaSignature` | Verifying what the card signed; the card holds the private key. |
-| RSA-3072 PKCS#1 v1.5 | `Rsa3072Pkcs1Sha256EncodedMessage` | The same, for card generations with an RSA authentication key. |
+| RSA-3072 PKCS#1 v1.5 | `CardKeyProfile`, `SignRequest`, `QualifiedDocumentCms`, `Rsa3072Pkcs1Sha256EncodedMessage` | Authentication and SHA-384 qualified document signatures for RSA card generations. |
 | RSA-3072 PSS | `SigningAlgorithmResolver` | The shape TLS 1.3 asks for from an RSA card; the card computes it. |
 
 The suite PACE runs is

@@ -40,11 +40,14 @@
       /// The exact attribute bytes the card signed.
       let signedAttributes: Data
 
-      /// The card's raw signature over them.
+      /// The locally verified signature value over them.
       let signature: Data
 
       /// The qualified certificate, for the CMS and the chain walk.
       let certificate: Data
+
+      /// The certificate-bound card profile written to CMS.
+      let profile: CardKeyProfile
     }
 
     /// Signs `document`, answering the finished bytes.
@@ -82,7 +85,8 @@
       let tokens = verifiedTokens.map(\.token)
       let cms = try QualifiedDocumentCms.assemble(
         signedAttributesSet: material.signedAttributes,
-        rawSignature: material.signature,
+        signatureValue: material.signature,
+        signerProfile: material.profile,
         signerCertificate: material.certificate,
         timestampTokens: tokens
       )
@@ -131,7 +135,8 @@
           placeholder: prepared,
           signedAttributes: product.attributes,
           signature: product.signature,
-          certificate: product.certificate
+          certificate: product.certificate,
+          profile: product.profile
         )
       case .refused(let outcome):
         throw Failure.card(outcome)
@@ -168,9 +173,11 @@
       // all. The document's own timestamps are untouched and still
       // carry their chains, which is what archival validation needs.
       guard
-        let der = try? QualifiedDocumentCms.derSignature(product.signature),
+        let imprint = try? QualifiedDocumentCms.signatureTimestampDigest(
+          signatureValue: product.signature
+        ),
         let token = try? await TimestampClient.compactToken(
-          over: Data(SHA384.hash(data: der))
+          over: imprint
         )
       else {
         return nil
@@ -178,7 +185,8 @@
       let tokens = [token]
       return try? QualifiedDocumentCms.assembleWithoutCertificates(
         signedAttributesSet: product.attributes,
-        rawSignature: product.signature,
+        signatureValue: product.signature,
+        signerProfile: product.profile,
         signerCertificate: product.certificate,
         timestampTokens: tokens
       )
@@ -186,11 +194,15 @@
 
     /// One signature timestamp; an archival signature cannot skip it.
     private static func timestamped(
-      _ signature: Data
+      _ signatureValue: Data
     ) async throws -> [TimestampTokenVerifier.VerifiedToken] {
-      let der = try QualifiedDocumentCms.derSignature(signature)
+      let imprint = try QualifiedDocumentCms.signatureTimestampDigest(
+        signatureValue: signatureValue
+      )
       do {
-        return [try await TimestampClient.token(over: Data(SHA384.hash(data: der)))]
+        return [
+          try await TimestampClient.token(over: imprint)
+        ]
       } catch {
         throw Failure.network(error)
       }

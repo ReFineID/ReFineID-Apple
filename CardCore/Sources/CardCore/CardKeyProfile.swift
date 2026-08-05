@@ -1,0 +1,92 @@
+import Foundation
+import Security
+
+/// The supported FINEID card-key profiles, resolved from a certificate's
+/// public key by Security.framework.
+///
+/// Both the app and the token extension use the same profile. Selecting from
+/// the certificate, rather than the card generation, also fails closed if a
+/// later card carries an unexpected key.
+public enum CardKeyProfile: Equatable, Sendable {
+  /// ECDSA P-384.
+  case ecdsaP384
+
+  /// RSA 3072-bit.
+  case rsa3072
+
+  /// RSA modulus size for the supported RSA profile.
+  private static let rsaKeySizeInBits = 3_072
+
+  /// EC field size for the supported ECC profile.
+  private static let ecKeySizeInBits = 384
+
+  /// Raw P-384 signature length: `r || s`, two 48-byte field elements.
+  private static let ecdsaP384SignatureBytes = 96
+
+  /// Raw RSA-3072 signature length: one modulus-wide block.
+  private static let rsa3072SignatureBytes = 384
+
+  /// The Security key type constant for this profile.
+  public var keyType: String {
+    switch self {
+    case .rsa3072:
+      kSecAttrKeyTypeRSA as String
+    case .ecdsaP384:
+      kSecAttrKeyTypeECSECPrimeRandom as String
+    }
+  }
+
+  /// The key size in bits.
+  public var keySizeInBits: Int {
+    switch self {
+    case .rsa3072:
+      Self.rsaKeySizeInBits
+    case .ecdsaP384:
+      Self.ecKeySizeInBits
+    }
+  }
+
+  /// The exact byte length of the card's raw signature.
+  public var rawSignatureLength: Int {
+    switch self {
+    case .rsa3072:
+      Self.rsa3072SignatureBytes
+    case .ecdsaP384:
+      Self.ecdsaP384SignatureBytes
+    }
+  }
+
+  /// The expected length sent with PSO:CDS when it fits a short APDU.
+  ///
+  /// P-384 uses its exact 96-byte result. RSA-3072 is 384 bytes, so it
+  /// requests the short maximum and lets the transport join continuation
+  /// responses inside the same operation.
+  public var expectedSignatureLength: ExpectedResponseLength? {
+    switch self {
+    case .ecdsaP384:
+      ExpectedResponseLength(count: Self.ecdsaP384SignatureBytes)
+    case .rsa3072:
+      nil
+    }
+  }
+
+  /// Resolves the profile from a leaf certificate's public key facts.
+  public static func resolve(fromCertificate certificate: SecCertificate) -> Self? {
+    guard let key = SecCertificateCopyKey(certificate) else { return nil }
+    return Self.resolve(fromPublicKey: key)
+  }
+
+  /// Resolves the profile from a public or private Security key.
+  public static func resolve(fromPublicKey key: SecKey) -> Self? {
+    guard
+      let attributes = SecKeyCopyAttributes(key) as? [CFString: Any],
+      let certificateKeyType = attributes[kSecAttrKeyType] as? String,
+      let keySize = attributes[kSecAttrKeySizeInBits] as? Int
+    else {
+      return nil
+    }
+    return [Self.ecdsaP384, .rsa3072].first { profile in
+      profile.keyType == certificateKeyType && profile.keySizeInBits == keySize
+    }
+  }
+}

@@ -13,6 +13,7 @@ internal struct SigningCommandTests {
       (SigningAlgorithm(hash: .sha256, scheme: .ecdsa), "44"),
       (SigningAlgorithm(hash: .sha224, scheme: .ecdsa), "34"),
       (SigningAlgorithm(hash: .sha256, scheme: .rsaPkcs1), "42"),
+      (SigningAlgorithm(hash: .sha384, scheme: .rsaPkcs1), "52"),
       (SigningAlgorithm(hash: .sha256, scheme: .rsaPss), "45"),
     ]
     for (algorithm, referenceHex) in vectors {
@@ -34,6 +35,15 @@ internal struct SigningCommandTests {
       key: .qualifiedSignature
     )
     #expect(command.encoded == WireHex.data("002241B606800154840102"))
+  }
+
+  @Test
+  internal func rsaSha384NamesTheQualifiedKey() {
+    let command = CommandApdu.selectSigningEnvironment(
+      algorithm: SigningAlgorithm(hash: .sha384, scheme: .rsaPkcs1),
+      key: .qualifiedSignature
+    )
+    #expect(command.encoded == WireHex.data("002241B606800152840102"))
   }
 
   @Test

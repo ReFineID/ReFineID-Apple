@@ -1,12 +1,32 @@
-import CardCore
 import CryptoKit
 import Foundation
+import Security
 import Testing
+
+@testable import CardCore
 
 /// Direct checks for the PAdES CMS structure built around a card
 /// signature.
 @Suite
 internal struct QualifiedDocumentCmsTests {
+  /// A malformed CMS fixture is a test construction failure.
+  private enum FixtureFailure: Error {
+    case malformedCms
+  }
+
+  /// A transient matching certificate and signing key.
+  internal struct Identity {
+    internal let certificate: Data
+    internal let privateKey: SecKey
+    internal let profile: CardKeyProfile
+  }
+
+  /// The exact signature fields of the sole SignerInfo.
+  private struct SignerFields {
+    let algorithm: Data
+    let signature: Data
+  }
+
   /// A fixed certificate with the fields IssuerAndSerialNumber needs.
   private static let certificate = Self.decode(
     """
@@ -21,9 +41,109 @@ internal struct QualifiedDocumentCmsTests {
     """
   )
 
+  /// Requires one parsed DER element without wrapping a mutating read in a
+  /// testing macro.
+  private static func required(
+    _ element: DerReader.Element?
+  ) throws -> DerReader.Element {
+    guard let element else { throw FixtureFailure.malformedCms }
+    return element
+  }
+
   /// Base64 fixture text with line breaks ignored.
   private static func decode(_ encoded: String) -> Data {
     Data(base64Encoded: encoded, options: .ignoreUnknownCharacters) ?? Data()
+  }
+
+  /// Builds one self-signed certificate with the selected card-key profile.
+  internal static func identity(_ profile: CardKeyProfile) throws -> Identity {
+    let keyType: CFString
+    let kind: CertificateRevocationListFixtures.SignatureKind
+    switch profile {
+    case .ecdsaP384:
+      keyType = kSecAttrKeyTypeECSECPrimeRandom
+      kind = .ecdsaSha384
+    case .rsa3072:
+      keyType = kSecAttrKeyTypeRSA
+      kind = .rsaSha384
+    }
+    let attributes: [CFString: Any] = [
+      kSecAttrKeyType: keyType,
+      kSecAttrKeySizeInBits: profile.keySizeInBits,
+    ]
+    var error: Unmanaged<CFError>?
+    let privateKey = try #require(
+      SecKeyCreateRandomKey(attributes as CFDictionary, &error)
+    )
+    let commonName = "ReFineID Document CMS Test"
+    let name = CertificateRevocationListFixtures.name(commonName)
+    let encodedCertificate = try CertificateRevocationListFixtures.certificate(
+      description: .init(
+        allowsCrlSigning: false,
+        includesKeyUsage: true,
+        malformedKeyUsage: false,
+        commonName: commonName,
+        isCertificateAuthority: false,
+        issuerName: name,
+        serial: CertificateRevocationListFixtures.targetSerial
+      ),
+      publicKey: privateKey,
+      signer: privateKey,
+      kind: kind
+    )
+    return Identity(
+      certificate: encodedCertificate, privateKey: privateKey, profile: profile
+    )
+  }
+
+  /// Signs the SHA-384 digest of CMS signed attributes like the card does.
+  internal static func signature(
+    over attributes: Data,
+    identity: Identity
+  ) throws -> Data {
+    let algorithm: SecKeyAlgorithm =
+      identity.profile == .ecdsaP384
+      ? .ecdsaSignatureDigestX962SHA384
+      : .rsaSignatureDigestPKCS1v15SHA384
+    let digest = Data(SHA384.hash(data: attributes))
+    var error: Unmanaged<CFError>?
+    return try #require(
+      SecKeyCreateSignature(
+        identity.privateKey, algorithm, digest as CFData, &error
+      ) as Data?
+    )
+  }
+
+  /// Parses the exact signature AlgorithmIdentifier and OCTET STRING value.
+  private static func signerFields(in cms: Data) throws -> SignerFields {
+    var outer = DerReader(cms)
+    let contentInfo = try Self.required(outer.next())
+    var contentInfoReader = DerReader(cms, within: contentInfo)
+    _ = try Self.required(contentInfoReader.next())
+    let explicitSignedData = try Self.required(contentInfoReader.next())
+    var explicitReader = DerReader(cms, within: explicitSignedData)
+    let signedData = try Self.required(explicitReader.next())
+    var signedDataReader = DerReader(cms, within: signedData)
+    _ = try Self.required(signedDataReader.next())
+    _ = try Self.required(signedDataReader.next())
+    _ = try Self.required(signedDataReader.next())
+    var candidate = try Self.required(signedDataReader.next())
+    if candidate.tag == DerValues.tagContext0Constructed {
+      candidate = try Self.required(signedDataReader.next())
+    }
+    var signers = DerReader(cms, within: candidate)
+    let signer = try Self.required(signers.next())
+    var fields = DerReader(cms, within: signer)
+    _ = try Self.required(fields.next())
+    _ = try Self.required(fields.next())
+    _ = try Self.required(fields.next())
+    _ = try Self.required(fields.next())
+    let algorithm = try Self.required(fields.next())
+    let signature = try Self.required(fields.next())
+    return SignerFields(
+      algorithm: fields.data(of: algorithm),
+      signature: fields.contentData(of: signature)
+    )
   }
 
   /// The card signs attributes carrying the exact PDF digest and the
@@ -47,63 +167,78 @@ internal struct QualifiedDocumentCmsTests {
     )
   }
 
-  /// The raw P-384 r||s pair is converted to the exact DER pair that a
-  /// signature timestamp covers.
-  @Test
-  internal func rawSignatureIsConvertedToDer() throws {
-    let first = Data(repeating: 0x80, count: 48)
-    let second = Data(repeating: 0x01, count: 48)
-
-    let converted = try QualifiedDocumentCms.derSignature(first + second)
-
-    #expect(
-      converted
-        == DerEncoder.sequence([
-          DerEncoder.unsignedInteger(first),
-          DerEncoder.unsignedInteger(second),
-        ])
-    )
-  }
-
   /// The assembled SignedData carries the signer certificate and the
   /// supplied signature timestamp token.
   @Test
   internal func assembledCmsCarriesCertificateAndTimestamp() throws {
+    let identity = try Self.identity(.ecdsaP384)
     let attributes = QualifiedDocumentCms.signedAttributes(
       byteRangeDigest: Data(repeating: 0xA5, count: 48),
-      signerCertificate: Self.certificate
+      signerCertificate: identity.certificate
     )
-    let rawSignature = Data(repeating: 0x01, count: 96)
+    let signatureValue = try Self.signature(over: attributes, identity: identity)
     let timestamp = DerEncoder.sequence([DerEncoder.integer(7)])
 
     let cms = try QualifiedDocumentCms.assemble(
       signedAttributesSet: attributes,
-      rawSignature: rawSignature,
-      signerCertificate: Self.certificate,
+      signatureValue: signatureValue,
+      signerProfile: identity.profile,
+      signerCertificate: identity.certificate,
       timestampTokens: [timestamp]
     )
 
-    #expect(CmsCertificates.inside(cms) == [Self.certificate])
+    #expect(CmsCertificates.inside(cms) == [identity.certificate])
+    let fields = try Self.signerFields(in: cms)
+    #expect(
+      fields.algorithm
+        == DerEncoder.sequence([
+          DerEncoder.objectIdentifier("1.2.840.10045.4.3.3")
+        ])
+    )
+    #expect(fields.signature == signatureValue)
     #expect(cms.contains(timestamp))
   }
 
-  /// Empty, odd-length, or unparseable inputs fail rather than producing
-  /// a CMS value that a validator must guess about.
+  /// RSA uses its modulus-wide result unchanged and carries the SHA-384 RSA
+  /// identifier with the required NULL parameter.
   @Test
-  internal func malformedInputsAreRefused() {
-    #expect(throws: QualifiedDocumentCms.AssemblyError.signatureMalformed) {
-      _ = try QualifiedDocumentCms.derSignature(Data())
-    }
-    #expect(throws: QualifiedDocumentCms.AssemblyError.signatureMalformed) {
-      _ = try QualifiedDocumentCms.derSignature(Data(repeating: 1, count: 3))
-    }
-    #expect(throws: QualifiedDocumentCms.AssemblyError.certificateUnparseable) {
-      _ = try QualifiedDocumentCms.assemble(
-        signedAttributesSet: DerEncoder.setOf([]),
-        rawSignature: Data(repeating: 1, count: 2),
-        signerCertificate: Data("not a certificate".utf8),
-        timestampTokens: []
+  internal func rsaSignatureValueAndAlgorithmAreExact() throws {
+    let identity = try Self.identity(.rsa3072)
+    let attributes = QualifiedDocumentCms.signedAttributes(
+      byteRangeDigest: Data(repeating: 0xA5, count: 48),
+      signerCertificate: identity.certificate
+    )
+    let signatureValue = try Self.signature(over: attributes, identity: identity)
+
+    let cms = try QualifiedDocumentCms.assemble(
+      signedAttributesSet: attributes,
+      signatureValue: signatureValue,
+      signerProfile: identity.profile,
+      signerCertificate: identity.certificate,
+      timestampTokens: []
+    )
+
+    let rsaIdentifier = DerEncoder.sequence([
+      DerEncoder.objectIdentifier("1.2.840.113549.1.1.12"),
+      DerEncoder.null(),
+    ])
+    let fields = try Self.signerFields(in: cms)
+    #expect(fields.algorithm == rsaIdentifier)
+    #expect(fields.signature == signatureValue)
+    let securityCertificate = try #require(
+      SecCertificateCreateWithData(nil, identity.certificate as CFData)
+    )
+    let publicKey = try #require(SecCertificateCopyKey(securityCertificate))
+    let digest = Data(SHA384.hash(data: attributes))
+    var error: Unmanaged<CFError>?
+    #expect(
+      SecKeyVerifySignature(
+        publicKey,
+        .rsaSignatureDigestPKCS1v15SHA384,
+        digest as CFData,
+        signatureValue as CFData,
+        &error
       )
-    }
+    )
   }
 }

@@ -1,0 +1,126 @@
+#if os(macOS)
+
+  import CardCore
+  import CryptoKit
+  import Foundation
+  import Security
+
+  /// The PIN2-gated qualified-signature operation.
+  extension CardMaintenance {
+    /// What one qualified signing session produced.
+    internal struct QualifiedProduct {
+      /// The locally verified signature value written to CMS.
+      internal let signature: Data
+
+      /// The exact attribute bytes it covers.
+      internal let attributes: Data
+
+      /// The certificate that will verify it.
+      internal let certificate: Data
+
+      /// The certificate-bound card profile written to CMS.
+      internal let profile: CardKeyProfile
+    }
+
+    /// The result of one qualified signing session.
+    internal enum QualifiedAnswer {
+      /// The card refused, at the floor or at the credential.
+      case refused(Outcome)
+
+      /// The card signed.
+      case signed(QualifiedProduct)
+    }
+
+    /// Certificate material selected before a PIN is spent.
+    private struct QualifiedIdentity {
+      let certificate: Data
+      let publicKey: SecKey
+      let profile: CardKeyProfile
+    }
+
+    /// Reads the qualified certificate, verifies PIN2 and signs the
+    /// attributes the caller builds from it - one session, one PIN2,
+    /// one signature.
+    ///
+    /// The attributes cannot be built before the session because they
+    /// hash the certificate, and the certificate is on the card.
+    internal static func qualifiedSignature(
+      pin2: String,
+      digestBuilder: @escaping @Sendable (Data) -> Data
+    ) async -> QualifiedAnswer {
+      let result = await onCard { operations in
+        Self.qualifiedInSession(operations, pin2: pin2, builder: digestBuilder)
+      }
+      return result ?? .refused(.noCard)
+    }
+
+    /// The qualified signature, inside an open session: floor, the
+    /// certificate, PIN2, then the one signature it authorises.
+    private static func qualifiedInSession(
+      _ operations: CardOperations,
+      pin2: String,
+      builder: (Data) -> Data
+    ) -> QualifiedAnswer {
+      guard let probe = try? operations.probeRetryCounter(role: .pin2) else {
+        return .refused(.floorRefused(.refuseUnreadable))
+      }
+      let verdict = RetryFloor.evaluate(probeOutcome: probe)
+      guard verdict == .proceed else {
+        return .refused(.floorRefused(verdict))
+      }
+      guard let identity = Self.qualifiedIdentity(operations) else {
+        return .refused(.failed)
+      }
+      guard let credential = Pin2(digits: pin2) else {
+        return .refused(.invalidEntry)
+      }
+      do {
+        try operations.verifyPin2(credential.consumeForSingleTransmission())
+      } catch {
+        return .refused(outcome(of: error))
+      }
+      let attributes = builder(identity.certificate)
+      let digest = Data(SHA384.hash(data: attributes))
+      guard
+        let request = identity.profile.qualifiedDocumentRequest(digest: digest),
+        let rawSignature = try? operations.computeQualifiedSignature(
+          overDigest: digest,
+          algorithm: request.algorithm,
+          expectedSignatureLength: request.expectedSignatureLength
+        ),
+        let signature = request.wireSignature(from: rawSignature),
+        request.isSatisfied(by: signature, from: identity.publicKey)
+      else {
+        return .refused(.failed)
+      }
+      return .signed(
+        QualifiedProduct(
+          signature: signature,
+          attributes: attributes,
+          certificate: identity.certificate,
+          profile: identity.profile
+        )
+      )
+    }
+
+    /// Reads and classifies the qualified certificate without spending PIN2.
+    private static func qualifiedIdentity(
+      _ operations: CardOperations
+    ) -> QualifiedIdentity? {
+      guard
+        let certificate = try? operations.readCertificate(.qualifiedSignature),
+        let securityCertificate = SecCertificateCreateWithData(
+          nil, certificate as CFData
+        ),
+        let publicKey = SecCertificateCopyKey(securityCertificate),
+        let profile = CardKeyProfile.resolve(fromPublicKey: publicKey)
+      else {
+        return nil
+      }
+      return QualifiedIdentity(
+        certificate: certificate, publicKey: publicKey, profile: profile
+      )
+    }
+  }
+
+#endif

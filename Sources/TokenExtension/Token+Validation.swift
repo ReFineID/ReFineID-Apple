@@ -105,7 +105,7 @@ extension Token {
       throw TokenError.unsupportedKeyProfile
     }
     guard SigningAlgorithmResolver.supportsSigning(profile) else {
-      TokenLog.error("Token.init: \(profile) recognized but signing not yet supported")
+      TokenLog.error("Token.init: \(profile) has no supported signing shape")
       throw TokenError.unsupportedKeyProfile
     }
     guard let publicKey = SecCertificateCopyKey(leaf) else {

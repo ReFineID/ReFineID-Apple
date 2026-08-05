@@ -180,13 +180,11 @@ internal enum SigningAlgorithmResolver {
     shape: Shape,
     digest: Data,
     profile: CardKeyProfile
-  ) -> SignRequest {
-    SignRequest(
+  ) -> SignRequest? {
+    SignRequest.resolve(
+      profile: profile,
       algorithm: SigningAlgorithm(hash: shape.hash, scheme: shape.scheme),
-      digest: digest,
-      expectedSignatureLength: profile.expectedSignatureLength,
-      rawSignatureLength: profile.rawSignatureLength,
-      verifyAlgorithm: verifyAlgorithm(for: shape)
+      digest: digest
     )
   }
 
@@ -194,27 +192,6 @@ internal enum SigningAlgorithmResolver {
   private static func isRawRsaPkcs1Request(_ algorithm: TKTokenKeyAlgorithm) -> Bool {
     algorithm.isAlgorithm(.rsaSignatureRaw)
       && algorithm.supportsAlgorithm(.rsaSignatureDigestPKCS1v15SHA256)
-  }
-
-  /// Digest-form verification corresponding to the card operation.
-  private static func verifyAlgorithm(for shape: Shape) -> SecKeyAlgorithm {
-    switch shape.scheme {
-    case .rsaPss:
-      .rsaSignatureDigestPSSSHA256
-    case .rsaPkcs1:
-      .rsaSignatureDigestPKCS1v15SHA256
-    case .ecdsa:
-      switch shape.hash {
-      case .sha224:
-        .ecdsaSignatureDigestX962SHA224
-      case .sha256:
-        .ecdsaSignatureDigestX962SHA256
-      case .sha384:
-        .ecdsaSignatureDigestX962SHA384
-      case .sha512:
-        .ecdsaSignatureDigestX962SHA512
-      }
-    }
   }
 
   private static func shapes(for profile: CardKeyProfile) -> [Shape] {
