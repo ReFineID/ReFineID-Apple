@@ -106,7 +106,11 @@ internal struct SignDocumentModelTests {
     #expect(model.stampMark() == nil)
 
     model.applyStampOutcome(identity)
-    await model.readStamp(accessNumber: "123")
+    let partiallyTypedAccessNumber = "123"
+    await model.readStamp(
+      accessNumber: partiallyTypedAccessNumber,
+      style: .signatureAndIdentity
+    )
     #expect(model.stampMark() == nil)
 
     model.applyStampOutcome(identity)

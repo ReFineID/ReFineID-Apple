@@ -8,11 +8,8 @@
   /// for what the holder must be able to do with no card readable at
   /// all, which today is managing the stored card access number.
   ///
-  /// The timestamp authorities are settings, and macOS keeps settings
-  /// under the app menu - they are not windows and do not belong in the
-  /// Window menu. But nobody looking for which service stamps their
-  /// signature would think to look in Settings, so the menu that holds
-  /// the rest of the card work offers a way straight to that pane.
+  /// Signing preferences live under the app menu, but the Card menu also
+  /// offers a direct route for someone already looking at signing work.
   internal struct CardCommands: Commands {
     @Environment(\.openWindow)
     private var openWindow
@@ -30,7 +27,7 @@
         .disabled(!CardPresence.shared.isCardPresent)
         Divider()
         SettingsLink {
-          Text("Time-Stamp Authorities…")
+          Text("Signing Settings…")
         }
         #if DEBUG
           Divider()

@@ -63,7 +63,11 @@
     /// is six digits, so anything shorter is not a wrong number, it
     /// is a number still being typed - reading it would refuse the
     /// holder's own card and say so while they were mid-entry.
-    internal func readStamp(accessNumber digits: String) async {
+    /// Reads only the data groups the chosen style needs.
+    internal func readStamp(
+      accessNumber digits: String,
+      style: DocumentStampStyle
+    ) async {
       guard digits.count == CardAccessNumber.digitCount else {
         stampState = nil
         stampFailure = nil
@@ -76,7 +80,8 @@
       let appearance = cardAppearance
       defer { readingStamp = false }
       let outcome = await CardMaintenance.displayedSignature(
-        accessNumber: digits
+        accessNumber: digits,
+        includePortrait: style.readsPortrait
       )
       guard appearance == cardAppearance else { return }
       applyStampOutcome(outcome)
@@ -180,10 +185,11 @@
         return
       }
       let appearance = beginSigning()
+      let stampStyle = DocumentStampStyle.load()
       // The card is read for the mark here, where the holder has
       // asked for a signature - not while they were still typing the
       // number that unlocks it.
-      await readStamp(accessNumber: accessNumber)
+      await readStamp(accessNumber: accessNumber, style: stampStyle)
       defer { working = false }
       do {
         let document = try Data(contentsOf: source)
@@ -192,7 +198,8 @@
           on: document,
           source: source,
           pin2: pin2,
-          at: signedAt
+          at: signedAt,
+          style: stampStyle
         )
         #if DEBUG
           let reason =
@@ -243,8 +250,12 @@
       on document: Data,
       source: URL,
       pin2: String,
-      at instant: Date
+      at instant: Date,
+      style: DocumentStampStyle
     ) async throws -> DocumentSigner.VisibleStamp? {
+      guard style == .portraitQr else {
+        return self.visibleStamp(on: document)
+      }
       guard let state = stampState else { return nil }
       guard
         let portraitBytes = state.portrait,

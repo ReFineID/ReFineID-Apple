@@ -24,10 +24,8 @@ internal struct ReFineIDApp: App {
       }
       .windowResizability(.contentSize)
 
-      // One pane, so no tab bar: a tab bar with a single tab tells the
-      // holder nothing and reads as an unfinished window.
       Settings {
-        TimestampAuthoritiesSettingsView()
+        ReFineIDSettingsView()
           .writingToolsBehavior(.disabled)
       }
 

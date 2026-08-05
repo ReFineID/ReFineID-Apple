@@ -140,23 +140,25 @@
       case wrongAccessNumber
     }
 
-    /// Reads data group 7 behind a PACE channel opened with `digits`.
+    /// Reads the visible identity behind a PACE channel opened with `digits`.
     internal static func displayedSignature(
-      accessNumber digits: String
+      accessNumber digits: String,
+      includePortrait: Bool
     ) async -> SignatureOutcome {
       guard let number = CardAccessNumber(digits: digits) else {
         return .wrongAccessNumber
       }
       let answer = await Self.onTravelDocument(accessNumber: number) {
         operations in
-        Self.displayedMark(from: operations)
+        Self.displayedMark(from: operations, includePortrait: includePortrait)
       }
       return answer ?? .noCard
     }
 
-    /// Reads both displayed images and the identity in their required order.
+    /// Reads the requested displayed images and identity in their required order.
     private static func displayedMark(
-      from operations: CardOperations
+      from operations: CardOperations,
+      includePortrait: Bool
     ) -> SignatureOutcome {
       // DG2 and DG7 must be attempted while the travel-document
       // application is still selected. Read EF.COM once: every extra
@@ -172,10 +174,15 @@
       } catch {
         return .imageUnreadable
       }
-      // A portrait is decoration. If a future card carries an image
-      // encoding this build cannot read, retain the existing DG7 and
-      // certificate-identity stamp rather than suppressing it.
-      let portrait = try? operations.readDisplayedPortrait(listedBy: inventory)
+      let portrait: DisplayedPortrait.Image?
+      if includePortrait {
+        // A portrait is decoration. If a future card carries an image
+        // encoding this build cannot read, retain the existing DG7 and
+        // certificate-identity stamp rather than suppressing it.
+        portrait = try? operations.readDisplayedPortrait(listedBy: inventory)
+      } else {
+        portrait = nil
+      }
       // Carry the exact certificate beside the visible identity. The
       // signing session later requires the same DER before spending PIN2.
       guard
