@@ -72,6 +72,28 @@
       Self.destination(for: source, at: Date()).lastPathComponent
     }
 
+    /// The mark, moved to somewhere on the page that is clear.
+    ///
+    /// A mark over the document's own words is a mark a validator
+    /// reports as elements overlapping, and a reader as a smudge.
+    private static func placed(
+      _ mark: StampMark?,
+      on document: Data
+    ) -> StampMark? {
+      guard let mark else { return nil }
+      guard
+        let spot = StampSpot.free(inLastPageOf: document, radius: mark.radius)
+      else {
+        return mark
+      }
+      return StampMark(
+        radius: mark.radius,
+        operators: mark.operators,
+        acrossPage: spot.x,
+        upPage: spot.y
+      )
+    }
+
     /// One sentence per failure.
     internal static func message(for error: Error) -> String {
       switch error {
@@ -222,7 +244,7 @@
       defer { working = false }
       do {
         let document = try Data(contentsOf: source)
-        let page = stampedMark()
+        let page = Self.placed(stampedMark(), on: document)
         let result = try await DocumentSigner.sign(
           document,
           pin2: pin2,

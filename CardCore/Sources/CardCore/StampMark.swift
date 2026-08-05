@@ -16,9 +16,25 @@ public struct StampMark: Sendable {
   /// The operators drawing it, centred on the origin.
   public let operators: String
 
-  /// Composes a mark.
-  public init(radius: Double, operators: String) {
+  /// How far across the page the mark's centre should sit.
+  ///
+  /// Set when the caller found somewhere clear for it; the writer
+  /// falls back to the page's corner when nothing was found.
+  public let acrossPage: Double?
+
+  /// How far up the page it should sit, on the same terms.
+  public let upPage: Double?
+
+  /// Composes a mark, optionally placed.
+  public init(
+    radius: Double,
+    operators: String,
+    acrossPage: Double? = nil,
+    upPage: Double? = nil
+  ) {
     self.radius = radius
     self.operators = operators
+    self.acrossPage = acrossPage
+    self.upPage = upPage
   }
 }

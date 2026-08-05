@@ -74,8 +74,12 @@ extension PdfIncrementalSigner {
     let firstX = box.width - stamp.radius - PdfValues.stampMargin
     let firstY = stamp.radius + PdfValues.stampMargin
     let perRow = max(Int((firstX - stamp.radius) / step) + 1, 1)
-    let centreX = firstX - Double(already % perRow) * step
-    let centreY = firstY + Double(already / perRow) * step
+    // A caller that looked at the page and found somewhere clear
+    // says so; otherwise the corner, stepping aside from marks
+    // already there.
+    let centreX =
+      stamp.acrossPage ?? (firstX - Double(already % perRow) * step)
+    let centreY = stamp.upPage ?? (firstY + Double(already / perRow) * step)
     let corners = [
       centreX - stamp.radius, centreY - stamp.radius,
       centreX + stamp.radius, centreY + stamp.radius,
