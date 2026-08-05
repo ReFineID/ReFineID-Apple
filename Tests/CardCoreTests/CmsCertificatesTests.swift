@@ -8,6 +8,7 @@ internal struct CmsCertificatesTests {
   /// Tags used only to assemble synthetic CMS fixtures.
   private enum Tag {
     static let context0: UInt8 = 0xA0
+    static let context1: UInt8 = 0xA1
     static let sequence: UInt8 = 0x30
     static let set: UInt8 = 0x31
   }
@@ -17,18 +18,25 @@ internal struct CmsCertificatesTests {
 
   /// A minimal SignedData with one caller-provided CertificateSet body.
   private static func token(
-    certificates: Data,
+    certificates: Data?,
     contentType: String = Self.signedData,
+    revocations: Data? = nil,
     trailingSignedData: Data = Data()
   ) -> Data {
-    let signed = DerEncoder.sequence([
+    var fields = [
       DerEncoder.integer(1),
       DerEncoder.tlv(Tag.set, Data()),
       DerEncoder.sequence([DerEncoder.objectIdentifier("1.2.3")]),
-      DerEncoder.tlv(Tag.context0, certificates),
-      DerEncoder.tlv(Tag.set, Data()),
-      trailingSignedData,
-    ])
+    ]
+    if let certificates {
+      fields.append(DerEncoder.tlv(Tag.context0, certificates))
+    }
+    if let revocations {
+      fields.append(DerEncoder.tlv(Tag.context1, revocations))
+    }
+    fields.append(DerEncoder.tlv(Tag.set, Data()))
+    fields.append(trailingSignedData)
+    let signed = DerEncoder.sequence(fields)
     return DerEncoder.sequence([
       DerEncoder.objectIdentifier(contentType),
       DerEncoder.tlv(Tag.context0, signed),
@@ -72,5 +80,29 @@ internal struct CmsCertificatesTests {
     #expect(CmsCertificates.inside(trailing).isEmpty)
     #expect(CmsCertificates.inside(malformedSignedData).isEmpty)
     #expect(CmsCertificates.inside(Data("not cms".utf8)).isEmpty)
+  }
+
+  /// Compacting a verified token removes only its unsigned CertificateSet.
+  @Test
+  internal func removingCertificatesPreservesEveryOtherSignedDataField() throws {
+    let certificate = DerEncoder.sequence([DerEncoder.integer(1)])
+    let revocations = DerEncoder.sequence([DerEncoder.integer(2)])
+    let token = Self.token(
+      certificates: certificate,
+      revocations: revocations
+    )
+    let expected = Self.token(
+      certificates: nil,
+      revocations: revocations
+    )
+
+    let compact = try #require(
+      CmsCertificates.removingCertificates(from: token)
+    )
+
+    #expect(compact == expected)
+    #expect(compact.count < token.count)
+    #expect(CmsCertificates.inside(compact).isEmpty)
+    #expect(CmsCertificates.removingCertificates(from: compact) == nil)
   }
 }

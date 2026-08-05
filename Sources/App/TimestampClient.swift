@@ -65,34 +65,61 @@
     /// A compact token over `digest`, without the authority's
     /// certificate, for somewhere too small to carry one.
     ///
-    /// The imprint and nonce are still checked, so the token is bound
-    /// to what was asked. What is not done is the trusted-list walk:
-    /// without its certificate the signer cannot be looked up, and
-    /// this token is never the evidence an archival signature rests
-    /// on - the document's own timestamps are, and they are unchanged.
+    /// The authority first returns its certificate, so the same signature,
+    /// certificate profile and trusted-list path as an archival token are
+    /// verified. Only then is the unsigned CertificateSet removed.
     internal static func compactToken(over digest: Data) async throws -> Data {
       let authorities = TimestampAuthorityStore.load()
+      guard !authorities.isEmpty else {
+        throw Failure.noAuthorityConfigured
+      }
+      let identities = try await Self.trustedIdentities()
       var declined: [String] = []
       for authority in authorities {
         do {
           let nonce = try Self.randomBytes()
           let response = try await SigningNetwork.post(
-            RfcTimestamp.request(
-              digest: digest, nonceBytes: nonce, askingForCertificate: false
-            ),
+            Self.compactRequest(digest: digest, nonceBytes: nonce),
             to: authority,
             contentType: Self.requestContentType,
             credentials: TimestampAuthorityStore.credentials(for: authority),
             endpoint: .authority
           )
-          return try RfcTimestamp.token(
+          let token = try RfcTimestamp.token(
             fromResponse: response, digest: digest, nonceBytes: nonce
+          )
+          return try Self.verifiedCompactEncoding(
+            token, identities: identities
           )
         } catch {
           declined.append("\(authority): \(error)")
         }
       }
       throw Failure.noAuthorityAnswered(declined)
+    }
+
+    /// The compact exchange still asks the authority for its certificate.
+    internal static func compactRequest(
+      digest: Data,
+      nonceBytes: Data
+    ) -> Data {
+      RfcTimestamp.request(digest: digest, nonceBytes: nonceBytes)
+    }
+
+    /// Verifies a full token before removing only its CertificateSet.
+    internal static func verifiedCompactEncoding(
+      _ token: Data,
+      identities: EuTrustedListDirectory.Identities
+    ) throws -> Data {
+      let verified = try Self.verifiedToken(token, identities: identities)
+      guard
+        let compact = CmsCertificates.removingCertificates(
+          from: verified.token
+        )
+      else {
+        throw RfcTimestamp.TokenFailure.malformed
+      }
+      return compact
     }
 
     /// One token from one authority over a throwaway digest.
@@ -130,6 +157,14 @@
       let token = try RfcTimestamp.token(
         fromResponse: response, digest: digest, nonceBytes: nonce
       )
+      return try Self.verifiedToken(token, identities: identities)
+    }
+
+    /// Verifies one token under the same qualified trusted-list identities.
+    private static func verifiedToken(
+      _ token: Data,
+      identities: EuTrustedListDirectory.Identities
+    ) throws -> TimestampTokenVerifier.VerifiedToken {
       do {
         return try TimestampTokenVerifier.verify(
           token,
