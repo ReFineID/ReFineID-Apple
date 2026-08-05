@@ -45,11 +45,6 @@
           accessNumber = LimitedDigits.cardAccessNumber(stored)
         }
       }
-      .task(id: accessNumber) {
-        try? await Task.sleep(for: Self.restDelay)
-        guard !Task.isCancelled else { return }
-        await signing.readStamp(accessNumber: accessNumber)
-      }
       if let note = signing.stampFailure {
         Text(note)
           .foregroundStyle(.orange)

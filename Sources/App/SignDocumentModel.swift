@@ -195,7 +195,11 @@
     /// around it, so the write has to be granted through a save panel,
     /// and a panel raised after signing could be cancelled with a PIN2
     /// signature already spent.
-    internal func sign(pin2: String, to destination: URL) async {
+    internal func sign(
+      pin2: String,
+      accessNumber: String,
+      to destination: URL
+    ) async {
       guard let source = pending, !working else { return }
       // Replacing the original is refused rather than confirmed. It
       // destroys the only unsigned copy, and the signature is taken
@@ -211,6 +215,10 @@
       failure = nil
       signed = nil
       codeFailure = nil
+      // The card is read for the mark here, where the holder has
+      // asked for a signature - not while they were still typing the
+      // number that unlocks it.
+      await readStamp(accessNumber: accessNumber)
       defer { working = false }
       do {
         let document = try Data(contentsOf: source)

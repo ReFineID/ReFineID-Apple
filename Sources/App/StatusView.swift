@@ -308,7 +308,10 @@
       }
       let entry = pin2
       pin2 = ""
-      Task { await signing.sign(pin2: entry, to: destination) }
+      let number = accessNumber
+      Task {
+        await signing.sign(pin2: entry, accessNumber: number, to: destination)
+      }
     }
 
     /// Hands the stored card access number to the driver, off the launch
