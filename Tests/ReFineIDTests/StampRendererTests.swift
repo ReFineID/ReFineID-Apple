@@ -15,7 +15,9 @@
         StampRenderer.Statement(
           name: "Example Person",
           identifier: "TEST-IDENTIFIER",
-          signature: nil
+          signature: nil,
+          givenName: "",
+          surname: ""
         )
       )
 
@@ -43,7 +45,9 @@
         StampRenderer.Statement(
           name: "Example Person",
           identifier: "TEST-IDENTIFIER",
-          signature: artwork
+          signature: artwork,
+          givenName: "",
+          surname: ""
         )
       )
 
@@ -83,18 +87,42 @@
           name: "MUST NOT APPEAR",
           identifier: "MUST-NOT-APPEAR",
           signature: artwork,
-          qrPortrait: qrArtwork
+          qrPortrait: qrArtwork,
+          givenName: "Example",
+          surname: "Person"
         )
       )
 
       #expect(mark.radius == 72)
       #expect(mark.operators.contains(Self.handwritingSentinel))
+      #expect(
+        mark.operators.contains(
+          "q 15.0000 0 0 15.0000 -15.0000 -15.0000 cm"
+        )
+      )
       #expect(mark.operators.contains("h W n"))
       #expect(mark.operators.contains("1 1 1 rg"))
       #expect(mark.operators.contains("0 0 0 rg"))
       #expect(mark.operators.components(separatedBy: " re f\n").count == 2)
       #expect(!mark.operators.contains("-45.0000 -6.0000 m"))
       #expect(!mark.operators.contains("0.0000 -19.0000 cm"))
+    }
+
+    @Test
+    internal func portraitNamesAreCurvedVectorOutlines() {
+      let operators = StampRenderer.portraitCurvedNames(
+        givenName: "Given",
+        surname: "Family"
+      )
+
+      #expect(operators.components(separatedBy: " cm\n").count == 12)
+      #expect(operators.contains("\nf\n"))
+      #expect(!operators.contains("GIVEN"))
+      #expect(!operators.contains("FAMILY"))
+      #expect(!operators.contains("Tj"))
+      #expect(
+        StampRenderer.portraitCurvedNames(givenName: "", surname: "").isEmpty
+      )
     }
 
     @Test
@@ -149,7 +177,9 @@
           name: "MUST NOT APPEAR",
           identifier: "MUST-NOT-APPEAR",
           signature: signature,
-          qrPortrait: qrArtwork
+          qrPortrait: qrArtwork,
+          givenName: "",
+          surname: ""
         )
       )
 

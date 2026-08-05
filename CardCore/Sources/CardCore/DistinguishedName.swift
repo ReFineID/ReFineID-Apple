@@ -51,12 +51,21 @@ public enum DistinguishedName {
   /// worse, being transliterated - it writes Ä as AE and Ö as OE, and
   /// nothing records what the original was.
   public static func personalName(inName name: Data) -> String? {
-    let given = Self.attribute(SignOids.givenName, inName: name)
-    let family = Self.attribute(SignOids.surname, inName: name)
+    let given = Self.givenName(inName: name)
+    let family = Self.surname(inName: name)
     let stated = [given, family].compactMap(\.self)
-    let spoken = stated.map(Self.recased)
-    guard !spoken.isEmpty else { return nil }
-    return spoken.joined(separator: " ")
+    guard !stated.isEmpty else { return nil }
+    return stated.joined(separator: " ")
+  }
+
+  /// The separately stated given name, recased for display.
+  public static func givenName(inName name: Data) -> String? {
+    Self.attribute(SignOids.givenName, inName: name).map(Self.recased)
+  }
+
+  /// The separately stated surname, recased for display.
+  public static func surname(inName name: Data) -> String? {
+    Self.attribute(SignOids.surname, inName: name).map(Self.recased)
   }
 
   /// One name recased for reading.

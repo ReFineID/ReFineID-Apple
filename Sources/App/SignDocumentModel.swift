@@ -45,6 +45,22 @@
     /// Whether the card is being read for the signature right now.
     internal private(set) var readingStamp = false
 
+    /// Reuses the exact certificate names captured with the card portrait.
+    private static func portraitStatement(
+      from state: StampState,
+      signature: SignatureArtwork.Artwork,
+      qrPortrait: QrPortrait.Artwork
+    ) -> StampRenderer.Statement {
+      StampRenderer.Statement(
+        name: state.statement.name,
+        identifier: state.statement.identifier,
+        signature: signature,
+        qrPortrait: qrPortrait,
+        givenName: state.statement.givenName,
+        surname: state.statement.surname
+      )
+    }
+
     /// Accepts a dropped or chosen file.
     internal func accept(_ url: URL) {
       pending = url
@@ -111,7 +127,9 @@
           statement: StampRenderer.Statement(
             name: mark.name,
             identifier: mark.identifier,
-            signature: artwork
+            signature: artwork,
+            givenName: mark.givenName,
+            surname: mark.surname
           ),
           signerCertificate: mark.certificate,
           portrait: mark.portrait
@@ -268,13 +286,13 @@
       else {
         throw StampPreparationFailure.rendering
       }
-      let statement = StampRenderer.Statement(
-        name: state.statement.name,
-        identifier: state.statement.identifier,
-        signature: signature,
-        qrPortrait: qrPortrait
+      let rendered = StampRenderer.mark(
+        Self.portraitStatement(
+          from: state,
+          signature: signature,
+          qrPortrait: qrPortrait
+        )
       )
-      let rendered = StampRenderer.mark(statement)
       guard
         let placed = StampPlacement.placed(
           rendered,

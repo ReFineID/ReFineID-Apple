@@ -95,6 +95,10 @@ internal struct DistinguishedNameTests {
     #expect(
       DistinguishedName.personalName(inName: name) == "Maria-Elisabeth Säätilä"
     )
+    #expect(
+      DistinguishedName.givenName(inName: name) == "Maria-Elisabeth"
+    )
+    #expect(DistinguishedName.surname(inName: name) == "Säätilä")
   }
 
   @Test

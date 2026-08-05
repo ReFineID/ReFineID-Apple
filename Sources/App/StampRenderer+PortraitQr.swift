@@ -14,10 +14,9 @@
     /// The portrait QR itself fills this square without a rectangular border.
     private static let portraitSquareSize = 100.0
 
-    /// Where the red handwriting crosses the QR's top centre.
-    private static let portraitSignatureWidth = 48.0
-    private static let portraitSignatureHeight = 14.0
-    private static let portraitSignatureBottom = 23.0
+    /// The red handwriting fills the inner circle across its centre.
+    private static let portraitSignatureWidth = 128.0
+    private static let portraitSignatureHeight = 30.0
 
     /// Dot-size controls that translate tone into hedcut density.
     private static let dataDotBaseRadius = 0.08
@@ -65,7 +64,9 @@
     /// A complete round stamp containing the portrait QR and handwriting.
     internal static func portraitMark(
       _ artwork: QrPortrait.Artwork,
-      signature: SignatureArtwork.Artwork
+      signature: SignatureArtwork.Artwork,
+      givenName: String,
+      surname: String
     ) -> StampMark {
       let centre = (x: 0.0, y: 0.0)
       var body = "q\n"
@@ -82,6 +83,10 @@
         lineWidth: Self.portraitInnerLineWidth
       )
       body += Self.handwritingAcrossPortraitQr(signature)
+      body += Self.portraitCurvedNames(
+        givenName: givenName,
+        surname: surname
+      )
       body += "Q\nQ\n"
       return StampMark(radius: Self.portraitOuterRadius, operators: body)
     }
@@ -289,7 +294,8 @@
         Self.portraitSignatureHeight / inkHeight
       )
       let left = -(inkWidth * scale) / Self.portraitHalves
-      let bottom = Self.portraitSignatureBottom - artwork.inkBottom * scale
+      let bottom =
+        -(artwork.inkBottom + inkHeight / Self.portraitHalves) * scale
       var body = "q \(Self.portraitNumber(scale)) 0 0"
       body += " \(Self.portraitNumber(scale))"
       body += " \(Self.portraitNumber(left - artwork.inkLeft * scale))"

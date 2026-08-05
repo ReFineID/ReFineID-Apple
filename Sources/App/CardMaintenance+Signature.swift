@@ -40,6 +40,12 @@
       /// The holder as a person reads it.
       internal let name: String
 
+      /// The certificate's separately stated given name.
+      internal let givenName: String
+
+      /// The certificate's separately stated surname.
+      internal let surname: String
+
       /// The identifier the certificate states.
       internal let identifier: String
 
@@ -51,10 +57,30 @@
       ) {
         self.init(
           bytes: bytes,
+          certificate: certificate,
+          name: name,
+          identifier: identifier,
+          givenName: "",
+          surname: ""
+        )
+      }
+
+      internal init(
+        bytes: Data?,
+        certificate: Data,
+        name: String,
+        identifier: String,
+        givenName: String,
+        surname: String
+      ) {
+        self.init(
+          bytes: bytes,
           portrait: nil,
           certificate: certificate,
           name: name,
-          identifier: identifier
+          identifier: identifier,
+          givenName: givenName,
+          surname: surname
         )
       }
 
@@ -65,11 +91,33 @@
         name: String,
         identifier: String
       ) {
+        self.init(
+          bytes: bytes,
+          portrait: portrait,
+          certificate: certificate,
+          name: name,
+          identifier: identifier,
+          givenName: "",
+          surname: ""
+        )
+      }
+
+      internal init(
+        bytes: Data?,
+        portrait: Data?,
+        certificate: Data,
+        name: String,
+        identifier: String,
+        givenName: String,
+        surname: String
+      ) {
         self.bytes = bytes
         self.portrait = portrait
         self.certificate = certificate
         self.name = name
         self.identifier = identifier
+        self.givenName = givenName
+        self.surname = surname
       }
     }
 
@@ -145,7 +193,10 @@
           certificate: certificate,
           name: name,
           identifier: DistinguishedName.identifier(inName: facts.subjectName)
-            ?? ""
+            ?? "",
+          givenName: DistinguishedName.givenName(inName: facts.subjectName)
+            ?? "",
+          surname: DistinguishedName.surname(inName: facts.subjectName) ?? ""
         )
       )
     }

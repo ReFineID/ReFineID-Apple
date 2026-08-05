@@ -12,6 +12,15 @@
     private static let portraitPatternBucketCount: UInt64 = 10
     private static let portraitPatternCentralDotBuckets: UInt64 = 4
 
+    /// Certificate names following the upper and lower inner arcs.
+    private static let portraitNameFont = "Helvetica"
+    private static let portraitNameSize = 10.5
+    private static let portraitGivenNameRadius = 58.5
+    private static let portraitGivenNameTracking = 1.1
+    private static let portraitSurnameRadius = 64.0
+    private static let portraitSurnameTracking = 0.6
+    private static let portraitNameMaximumSpan = 1.45
+
     /// A stable choice between one central and four small dots.
     internal static func portraitExtensionUsesCentralDot(
       row: Int,
@@ -28,6 +37,36 @@
       return
         pattern % Self.portraitPatternBucketCount
         < Self.portraitPatternCentralDotBuckets
+    }
+
+    /// Given name above and surname below, both as curved vector outlines.
+    internal static func portraitCurvedNames(
+      givenName: String,
+      surname: String
+    ) -> String {
+      let given = TextOutline.curvedLine(
+        givenName.uppercased(),
+        curve: TextOutline.Curve(
+          font: Self.portraitNameFont,
+          size: Self.portraitNameSize,
+          radius: Self.portraitGivenNameRadius,
+          tracking: Self.portraitGivenNameTracking,
+          maximumSpan: Self.portraitNameMaximumSpan,
+          arc: .top
+        )
+      )
+      let family = TextOutline.curvedLine(
+        surname.uppercased(),
+        curve: TextOutline.Curve(
+          font: Self.portraitNameFont,
+          size: Self.portraitNameSize,
+          radius: Self.portraitSurnameRadius,
+          tracking: Self.portraitSurnameTracking,
+          maximumSpan: Self.portraitNameMaximumSpan,
+          arc: .bottom
+        )
+      )
+      return given + family
     }
   }
 
