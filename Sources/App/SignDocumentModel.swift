@@ -48,13 +48,12 @@
     /// Reuses the exact certificate names captured with the card portrait.
     private static func portraitStatement(
       from state: StampState,
-      signature: SignatureArtwork.Artwork,
       qrPortrait: QrPortrait.Artwork
     ) -> StampRenderer.Statement {
       StampRenderer.Statement(
         name: state.statement.name,
         identifier: state.statement.identifier,
-        signature: signature,
+        signature: state.statement.signature,
         qrPortrait: qrPortrait,
         givenName: state.statement.givenName,
         surname: state.statement.surname
@@ -257,7 +256,6 @@
     ) async throws -> DocumentSigner.VisibleStamp? {
       guard let state = stampState else { return nil }
       guard
-        let signature = state.statement.signature,
         let portraitBytes = state.portrait,
         let claim = StampAttestation.claim(
           identifier: state.statement.identifier,
@@ -289,7 +287,6 @@
       let rendered = StampRenderer.mark(
         Self.portraitStatement(
           from: state,
-          signature: signature,
           qrPortrait: qrPortrait
         )
       )

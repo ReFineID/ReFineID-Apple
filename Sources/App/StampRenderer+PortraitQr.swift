@@ -61,10 +61,11 @@
       return max(qrSide, fieldSide)
     }
 
-    /// A complete round stamp containing the portrait QR and handwriting.
+    /// A complete round stamp containing the portrait QR and, when present,
+    /// the card's handwriting.
     internal static func portraitMark(
       _ artwork: QrPortrait.Artwork,
-      signature: SignatureArtwork.Artwork,
+      signature: SignatureArtwork.Artwork?,
       givenName: String,
       surname: String
     ) -> StampMark {
@@ -82,7 +83,9 @@
         radius: Self.portraitInnerRadius,
         lineWidth: Self.portraitInnerLineWidth
       )
-      body += Self.handwritingAcrossPortraitQr(signature)
+      if let signature {
+        body += Self.handwritingAcrossPortraitQr(signature)
+      }
       body += Self.portraitCurvedNames(
         givenName: givenName,
         surname: surname

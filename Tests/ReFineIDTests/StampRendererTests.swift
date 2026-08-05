@@ -126,6 +126,38 @@
     }
 
     @Test
+    internal func portraitQrDoesNotRequireHandwriting() {
+      let side = 21
+      let count = side * side
+      let qrArtwork = QrPortrait.Artwork(
+        original: [Bool](repeating: true, count: count),
+        treated: [Bool](repeating: true, count: count),
+        functionModules: [Bool](repeating: true, count: count),
+        darkness: [Double](repeating: 0.5, count: count),
+        side: side,
+        flippedCount: 0,
+        fieldSide: side,
+        fieldDarkness: [Double](repeating: 0.5, count: count)
+      )
+      let mark = StampRenderer.mark(
+        StampRenderer.Statement(
+          name: "Example Person",
+          identifier: "TEST-IDENTIFIER",
+          signature: nil,
+          qrPortrait: qrArtwork,
+          givenName: "Given",
+          surname: "Family"
+        )
+      )
+
+      #expect(mark.radius == 72)
+      #expect(mark.operators.contains("h W n"))
+      #expect(!mark.operators.contains(Self.handwritingSentinel))
+      // Eleven outlined name glyphs plus the stamp's outer transform.
+      #expect(mark.operators.components(separatedBy: " cm\n").count == 13)
+    }
+
+    @Test
     internal func portraitFieldReachesTheRingOnTheSameModuleGrid() {
       #expect(StampRenderer.portraitFieldSide(forQrSide: 65) == 91)
       #expect(StampRenderer.portraitFieldSide(forQrSide: 69) == 97)

@@ -142,12 +142,10 @@
 
     /// The page carrying the mark.
     internal static func mark(_ statement: Statement) -> StampMark {
-      if let portraitArtwork = statement.qrPortrait,
-        let signature = statement.signature
-      {
+      if let portraitArtwork = statement.qrPortrait {
         return Self.portraitMark(
           portraitArtwork,
-          signature: signature,
+          signature: statement.signature,
           givenName: statement.givenName,
           surname: statement.surname
         )
