@@ -4,6 +4,9 @@ public struct ReadOffset: Equatable, Sendable {
   /// The highest encodable offset.
   public static let maximum: UInt16 = Iso7816Values.readBinaryOffsetMaximum
 
+  /// Bytes addressable from offset zero through the highest offset.
+  public static let maximumAddressableLength = Int(Self.maximum) + 1
+
   /// The validated offset value.
   public let value: UInt16
 

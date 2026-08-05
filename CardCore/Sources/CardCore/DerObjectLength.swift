@@ -13,8 +13,10 @@ public enum DerObjectLength {
   /// octet.
   private static let tagAndFirstLengthOctet = 2
 
-  /// Most length octets any file this driver reads needs (a 16-bit
-  /// content length covers the 16 KiB aggregate bound with margin).
+  /// Most length octets any file this driver reads needs.
+  ///
+  /// A 16-bit content length covers the largest directly addressable
+  /// card file.
   private static let maximumLengthOctets = 2
 
   /// The total object length (header + content), or nil when `prefix`

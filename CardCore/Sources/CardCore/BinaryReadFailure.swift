@@ -6,6 +6,9 @@ public enum BinaryReadFailure: Equatable, Sendable {
   /// The file produced no bytes at all.
   case emptyFile
 
+  /// The object's own header declares more bytes than this read permits.
+  case objectTooLarge
+
   /// The card returned more bytes than the chunk requested - a protocol
   /// violation; the accumulated data cannot be trusted.
   case oversizedChunk

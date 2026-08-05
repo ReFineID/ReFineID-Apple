@@ -159,6 +159,67 @@ internal struct BinaryReadAssemblerTests {
     #expect(assembler.nextStep == .complete(WireHex.data("3004AABBCCDD")))
   }
 
+  @Test
+  internal func singleDerObjectRejectsADeclarationBeyondItsBound() {
+    let declaredLength = BinaryReadAssembler.maximumTotalLength + 1
+    var assembler = BinaryReadAssembler(mode: .singleDerObject)
+
+    assembler.accept(
+      response(payloadHex: derChunk(declaredLength: declaredLength))
+    )
+
+    #expect(assembler.nextStep == .failed(.objectTooLarge))
+  }
+
+  @Test
+  internal func singleDerObjectReadsPastTheFormerArbitraryBound() {
+    let formerAggregateBound = 16_384
+    let declaredLength = formerAggregateBound + 1
+    let chunkCount = declaredLength / ReadChunkLength.plain.count
+    var assembler = BinaryReadAssembler(mode: .singleDerObject)
+
+    assembler.accept(
+      response(payloadHex: derChunk(declaredLength: declaredLength))
+    )
+    for _ in 1..<chunkCount {
+      assembler.accept(
+        response(
+          payloadHex: String(
+            repeating: "AB",
+            count: ReadChunkLength.plain.count
+          )
+        )
+      )
+    }
+    #expect(
+      assembler.nextStep
+        == .transmit(
+          expectedRead(
+            offset: chunkCount * ReadChunkLength.plain.count,
+            expectedLength: 1
+          )
+        )
+    )
+    assembler.accept(response(payloadHex: "AB"))
+
+    guard case .complete(let content) = assembler.nextStep else {
+      Issue.record("the larger bounded DER object should be complete")
+      return
+    }
+    #expect(content.count == declaredLength)
+  }
+
+  private func derChunk(declaredLength: Int) -> String {
+    let headerLength = 4
+    let contentLength = declaredLength - headerLength
+    let header = String(format: "3082%04X", contentLength)
+    return header
+      + String(
+        repeating: "AB",
+        count: ReadChunkLength.plain.count - headerLength
+      )
+  }
+
   private func response(payloadHex: String) -> ResponseApdu {
     guard let response = ResponseApdu(raw: WireHex.data(payloadHex + "9000")) else {
       preconditionFailure("invalid response vector")

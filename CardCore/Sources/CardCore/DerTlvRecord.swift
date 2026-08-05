@@ -19,7 +19,7 @@ public struct DerTlvRecord: Equatable, Sendable {
   public struct Malformed: Error, Equatable {}
 
   /// Longest long-form length encoding accepted: two length bytes,
-  /// enough for the 16 KiB aggregate bound with margin.
+  /// enough for the largest directly addressable card file.
   private static let maximumLengthByteCount = 2
 
   /// The single-byte tag.

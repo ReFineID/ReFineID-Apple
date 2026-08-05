@@ -31,9 +31,8 @@ public struct BinaryReadAssembler: Equatable, Sendable {
     case singleDerObject
   }
 
-  /// Aggregate cap: no supported file is larger than 16 KiB; a read
-  /// that would exceed this fails rather than trusting the card.
-  public static let maximumTotalLength: Int = 16_384
+  /// The largest complete file direct READ BINARY can address.
+  public static let maximumTotalLength = ReadOffset.maximumAddressableLength
 
   private let mode: Mode
   private let chunkLength: ReadChunkLength
@@ -103,6 +102,7 @@ public struct BinaryReadAssembler: Equatable, Sendable {
     collected.append(response.payload)
     offset += response.payload.count
     tightenCapForDerObject()
+    guard terminal == nil else { return }
 
     if mode == .singleDerObject, offset >= cap {
       terminal = .complete(collected.prefix(cap))
@@ -121,7 +121,11 @@ public struct BinaryReadAssembler: Equatable, Sendable {
       return
     }
     if let total = DerObjectLength.total(of: collected), total >= 1 {
-      cap = min(total, Self.maximumTotalLength)
+      guard total <= Self.maximumTotalLength else {
+        terminal = .failed(.objectTooLarge)
+        return
+      }
+      cap = total
     }
   }
 }
