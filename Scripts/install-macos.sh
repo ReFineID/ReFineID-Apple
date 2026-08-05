@@ -124,6 +124,45 @@ report_registrations() {
     | grep -i refineid | sed 's/^/  /' || note "  (no ReFineID driver listed)"
 }
 
+# A card insertion is CryptoTokenKit's supported discovery boundary.
+# Replacing a live extension leaves ctkd holding the old token and
+# executable; restarting ctkd only strands the reader daemons on dead
+# XPC endpoints. Leave the reader connected and remove only the card.
+card_is_inserted() {
+  system_profiler SPSmartCardsDataType 2>/dev/null | grep -q "ATR:"
+}
+
+refineid_identity_is_live() {
+  sc_auth identities 2>/dev/null | grep -q "fi.refineid"
+}
+
+wait_for_card_release() {
+  card_is_inserted || return 0
+  if [[ ! -t 0 ]]; then
+    fail "a card is inserted. Remove only the card, leave the USB reader connected, and run this again."
+  fi
+  note "remove the card; leave the USB reader connected"
+  while card_is_inserted; do
+    sleep 1
+  done
+  note "card removed; waiting for CryptoTokenKit to withdraw its token"
+  for _ in 1 2 3 4 5; do
+    refineid_identity_is_live || return 0
+    sleep 1
+  done
+  fail "CryptoTokenKit still publishes the removed card. Log out before replacing the extension."
+}
+
+# PlugInKit may retain an idle extension process briefly after its card
+# leaves. Ending our processes is sufficient; the next insertion starts
+# the copy inside the newly installed app.
+stop_refineid_extensions() {
+  pkill -f "/ReFineIDTokenExtension.appex/Contents/MacOS/ReFineIDTokenExtension" \
+    2>/dev/null || true
+  pkill -f "/ReFineIDDiscoveryExtension.appex/Contents/MacOS/ReFineIDDiscoveryExtension" \
+    2>/dev/null || true
+}
+
 if [[ "$check_only" == "yes" ]]; then
   [[ -d "$installed" ]] || fail "nothing installed at ${installed}"
   verify_signature "$installed"
@@ -151,6 +190,8 @@ verify_signature "$built"
 
 pkill -x ReFineID 2>/dev/null || true
 sleep 1
+wait_for_card_release
+stop_refineid_extensions
 
 note "installing to ${installed}"
 rm -rf "$installed"
@@ -177,45 +218,4 @@ pkill -x ReFineID 2>/dev/null || true
 note "app quit so it does not hold the card"
 
 report_registrations
-
-# A replaced driver does not take over a token ctkd already minted: the
-# daemon caches the published identity and re-asks a driver only on a
-# card insertion event. A PC/SC reset, an exclusive unpower disconnect,
-# and the extension process dying were each tried and none re-minted
-# (measured 2026-08-05); restarting ctkd is the one software action that
-# does. Skipping this leaves Safari offering identities whose driver
-# build no longer exists, and the next login hangs on a signature no
-# process will ever answer.
-if system_profiler SPSmartCardsDataType 2>/dev/null | grep -q "ATR:"; then
-  if sudo -n true 2>/dev/null || [[ -t 0 ]]; then
-    note "a card is inserted; restarting the CryptoTokenKit stack so the new driver serves it"
-    # The whole family, not only ctkd: ctkpcscd owns the readers, ctkahp
-    # hosts the PIN sheet, ctkbind the pairing agent. All respawn on
-    # demand from launchd. ctkpcscd shrugs off a plain TERM - observed
-    # 2026-08-05 keeping its PID through killall - so it gets KILL.
-    sudo killall -9 com.apple.ctkpcscd 2>/dev/null || true
-    sudo killall ctkahp ctkbind 2>/dev/null || true
-    if sudo killall ctkd 2>/dev/null; then
-      for _ in 1 2 3 4 5; do
-        sleep 2
-        sc_auth identities 2>/dev/null | grep -q "fi.refineid" && break
-      done
-      if sc_auth identities 2>/dev/null | grep -q "fi.refineid"; then
-        note "token re-minted by the new driver:"
-        sc_auth identities 2>/dev/null | sed 's/^/  /'
-      else
-        # Cutting ctkd out from under an open reader session can wedge
-        # the reader's firmware until it re-enumerates: the ACR39U was
-        # seen dropping off the USB bus entirely (2026-08-05), where no
-        # daemon restart can reach it.
-        note "no token re-appeared. Unplug and replug the reader, card inserted."
-      fi
-      note "done."
-      exit 0
-    fi
-    note "ctkd restart failed"
-  fi
-  note "done. Remove and re-insert the card so ctkd asks the new driver for a token."
-else
-  note "done. No card inserted; the next insertion uses the new driver."
-fi
+note "done. Insert the card; CryptoTokenKit will mint it with the new driver."
