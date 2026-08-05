@@ -1,12 +1,17 @@
 import Foundation
 
-/// Laying the signature's mark over the document's last page
-/// (ISO 32000-1 §7.8.2 content streams, §12.5.6.19 widgets).
+/// The signature's visible mark, as the signature field's own
+/// appearance (ISO 32000-1 §12.5.5 appearance streams, §12.7.5.5
+/// signature fields).
 ///
-/// The page keeps its own content stream untouched: PDF lets a page
-/// name several, so the mark is a second stream drawn after the
-/// first. That matters beyond tidiness - pages often share one
-/// stream, and editing it would stamp every page that shares it.
+/// The mark is the widget's appearance stream, not content drawn on
+/// the page. That distinction is the whole of it. A validator sorts
+/// what changed after a signature into what a signature field is
+/// allowed to add and what modifies the document: an appearance
+/// belongs to the field, while a content stream added to a page is a
+/// modification, and reports as one against every signature already
+/// there. Built this way a second signer's mark costs the first
+/// signature nothing.
 extension PdfIncrementalSigner {
   /// The object numbers this revision writes.
   ///
@@ -16,22 +21,72 @@ extension PdfIncrementalSigner {
     /// The signature's widget.
     internal let field: Int
 
-    /// The stream drawing the mark.
-    internal let content: Int
+    /// The widget's appearance stream.
+    internal let appearance: Int
 
     /// Numbers, counting from the first free one: the signature takes
-    /// it, then the widget and the mark's stream.
+    /// it, then the widget and the appearance.
     internal init(firstFree: Int) {
       var next = firstFree
       next += 1
       self.field = next
       next += 1
-      self.content = next
+      self.appearance = next
     }
   }
 
-  /// Writes what this revision adds besides the signature, answering
-  /// the highest object number used.
+  /// Where a mark goes, and what draws it.
+  internal struct StampPlacement {
+    /// The widget's rectangle on the page.
+    internal let rectangle: String
+
+    /// The page the widget belongs to.
+    internal let page: Int
+  }
+
+  /// Where this mark lands on the document's last page.
+  ///
+  /// A document can be signed by more than one person and each mark
+  /// is placed by the same rule, so a later one would land on an
+  /// earlier one. Ours are marked, counted, and stepped aside from:
+  /// along the foot from the right, then up a row when the next would
+  /// not clear the left edge.
+  internal static func stampPlacement(
+    source: RevisionSource,
+    stamp: StampMark
+  ) throws -> StampPlacement {
+    let index = source.index
+    let document = source.document
+    guard
+      let catalog = index.body(of: source.rootNumber, in: document),
+      let pageNumber = try? Self.lastPage(
+        index: index, document: document, catalog: catalog
+      ),
+      let page = index.body(of: pageNumber, in: document)
+    else {
+      throw PdfSigningError.structureUnreadable
+    }
+    let box = Self.mediaBox(of: page)
+    let already = Self.stampsAlreadyOn(
+      page: page, index: index, document: document
+    )
+    let step = stamp.radius * PdfValues.stampDiameters + PdfValues.stampGap
+    let firstX = box.width - stamp.radius - PdfValues.stampMargin
+    let firstY = stamp.radius + PdfValues.stampMargin
+    let perRow = max(Int((firstX - stamp.radius) / step) + 1, 1)
+    let centreX = firstX - Double(already % perRow) * step
+    let centreY = firstY + Double(already / perRow) * step
+    let corners = [
+      centreX - stamp.radius, centreY - stamp.radius,
+      centreX + stamp.radius, centreY + stamp.radius,
+    ]
+    return StampPlacement(
+      rectangle: "[" + corners.map(Self.placed).joined(separator: " ") + "]",
+      page: pageNumber
+    )
+  }
+
+  /// Writes the appearance and the page that carries the widget.
   internal static func appendRevisionBody(
     into out: inout Data,
     offsets: inout [Int: Int],
@@ -49,12 +104,24 @@ extension PdfIncrementalSigner {
       )
       return numbers.field
     }
-    try Self.appendStampOverlay(
-      into: &out,
-      offsets: &offsets,
-      source: source,
-      numbers: numbers,
-      stamp: stamp
+    let placement = try Self.stampPlacement(source: source, stamp: stamp)
+    offsets[numbers.appearance] = out.count
+    out.append(Self.appearanceStream(numbers.appearance, stamp: stamp))
+
+    guard
+      let page = source.index.body(of: placement.page, in: source.document)
+    else {
+      throw PdfSigningError.structureUnreadable
+    }
+    let carrying =
+      page.contains("/Annots")
+      ? Self.appendingToNamedArray(page, key: "/Annots", entry: numbers.field)
+      : Self.insertingIntoDictionary(
+        page, entry: "/Annots [\(numbers.field) 0 R]"
+      )
+    offsets[placement.page] = out.count
+    out.append(
+      Data("\(placement.page) 0 obj\n\(carrying)\nendobj\n".utf8)
     )
     try Self.appendFormReissue(
       into: &out,
@@ -63,113 +130,47 @@ extension PdfIncrementalSigner {
       rootNumber: source.rootNumber,
       fieldNumber: numbers.field
     )
-    return numbers.content
+    return numbers.appearance
   }
 
-  /// Writes the mark's stream and the reissued last page.
-  internal static func appendStampOverlay(
-    into out: inout Data,
-    offsets: inout [Int: Int],
-    source: RevisionSource,
-    numbers: PageNumbers,
-    stamp: StampMark
-  ) throws {
-    let index = source.index
-    let document = source.document
-    guard
-      let catalog = index.body(of: source.rootNumber, in: document),
-      let pageNumber = try? Self.lastPage(
-        index: index, document: document, catalog: catalog
-      ),
-      let page = index.body(of: pageNumber, in: document)
-    else {
-      throw PdfSigningError.structureUnreadable
-    }
-
-    // A document can be signed by more than one person, and each
-    // stamp is placed by the same rule - so a later one would land
-    // exactly on an earlier one. Ours are marked, so they can be
-    // counted and stepped aside from.
-    let already = Self.stampsAlreadyOn(
-      page: page, index: index, document: document
-    )
-    offsets[numbers.content] = out.count
-    out.append(
-      Self.markStream(
-        numbers.content, stamp: stamp, page: page, standingAside: already
-      )
-    )
-
-    let reissued = Self.pageWithMark(
-      page, content: numbers.content, field: numbers.field
-    )
-    offsets[pageNumber] = out.count
-    out.append(Data("\(pageNumber) 0 obj\n\(reissued)\nendobj\n".utf8))
-  }
-
-  /// The mark's own content stream, placed in the page's margin.
+  /// The appearance stream drawing the mark.
   ///
-  /// Encoded as Latin-1: the page draws with the standard fonts under
-  /// WinAnsi, where an accented letter is one byte. It opens by
-  /// resetting the graphics state, because a page whose own stream
-  /// ends mid-clip would otherwise swallow the mark.
-  private static func markStream(
+  /// Its box is centred on the origin because the mark is drawn about
+  /// its own centre; a reader maps that box onto the widget's
+  /// rectangle, so no placement arithmetic is repeated here. Encoded
+  /// as Latin-1, as a content stream is.
+  private static func appearanceStream(
     _ number: Int,
-    stamp: StampMark,
-    page: String,
-    standingAside: Int
+    stamp: StampMark
   ) -> Data {
-    let box = Self.mediaBox(of: page)
-    let step = stamp.radius * PdfValues.stampDiameters + PdfValues.stampGap
-    let firstX = box.width - stamp.radius - PdfValues.stampMargin
-    let firstY = stamp.radius + PdfValues.stampMargin
-    // Along the foot from the right, then up a row when the next one
-    // would not clear the page's left edge.
-    let perRow = max(Int((firstX - stamp.radius) / step) + 1, 1)
-    let column = standingAside % perRow
-    let row = standingAside / perRow
-    let placedX = firstX - Double(column) * step
-    let placedY = firstY + Double(row) * step
-    let text =
-      "q 1 0 0 1 \(Self.placed(placedX)) \(Self.placed(placedY)) cm\n"
-      + stamp.operators + "Q\n"
     let body =
-      text.data(using: .windowsCP1252, allowLossyConversion: true)
-      ?? Data(text.utf8)
-    // The key names this stream as ours. A reader ignores what it
-    // does not know, and the next signing counts them.
+      stamp.operators.data(using: .windowsCP1252, allowLossyConversion: true)
+      ?? Data(stamp.operators.utf8)
+    let box =
+      "[\(Self.placed(-stamp.radius)) \(Self.placed(-stamp.radius))"
+      + " \(Self.placed(stamp.radius)) \(Self.placed(stamp.radius))]"
     let header =
-      "\(number) 0 obj\n<< /Length \(body.count)"
-      + " \(PdfValues.stampMarker) true >>\nstream\n"
+      "\(number) 0 obj\n<< /Type /XObject /Subtype /Form /BBox \(box)"
+      + " /Resources << >> /Length \(body.count) >>\nstream\n"
     var object = Data(header.utf8)
     object.append(body)
     object.append(Data("\nendstream\nendobj\n\n".utf8))
     return object
   }
 
-  /// One placement number, without an exponent: PDF has no notation
-  /// for one, and a reader meeting it skips the operator or refuses
-  /// the stream.
-  private static func placed(_ value: Double) -> String {
-    String(format: "%.4f", value)
-  }
-
-  /// How many stamps this page already carries.
+  /// How many marks this page already carries.
   ///
-  /// Counted from the streams the page names, by the key each of ours
-  /// is written with - not by looking at what they draw, which would
-  /// mean rendering them.
+  /// Counted from the annotations the page names, by the key each of
+  /// ours is written with - a reader ignores keys it does not know.
   private static func stampsAlreadyOn(
     page: String,
     index: PdfDocumentIndex,
     document: Data
   ) -> Int {
-    guard let range = page.range(of: "/Contents") else { return 0 }
+    guard let range = page.range(of: "/Annots") else { return 0 }
     let rest = page[range.upperBound...].drop(while: \.isWhitespace)
-    let listing =
-      rest.first == "["
-      ? String(rest.dropFirst().prefix { character in character != "]" })
-      : String(rest.prefix { character in character != "/" })
+    guard rest.first == "[" else { return 0 }
+    let listing = rest.dropFirst().prefix { character in character != "]" }
     let numbers = listing.split(separator: "R").compactMap { part in
       Int(part.split(whereSeparator: \.isWhitespace).first ?? "")
     }
@@ -179,39 +180,11 @@ extension PdfIncrementalSigner {
     }
   }
 
-  /// The page reissued to draw the mark, hold the widget, and know
-  /// the fonts the mark uses.
-  private static func pageWithMark(
-    _ page: String,
-    content: Int,
-    field: Int
-  ) -> String {
-    var body = Self.namingSecondContentStream(page, content: content)
-    body =
-      body.contains("/Annots")
-      ? Self.appendingToNamedArray(body, key: "/Annots", entry: field)
-      : Self.insertingIntoDictionary(body, entry: "/Annots [\(field) 0 R]")
-    return body
-  }
-
-  /// The page's `/Contents` turned into an array naming both streams.
-  private static func namingSecondContentStream(
-    _ page: String,
-    content: Int
-  ) -> String {
-    guard let range = page.range(of: "/Contents") else { return page }
-    let rest = page[range.upperBound...].drop(while: \.isWhitespace)
-    if rest.first == "[" {
-      return Self.appendingToNamedArray(page, key: "/Contents", entry: content)
-    }
-    let reference = rest.prefix { character in
-      character.isNumber || character == " " || character == "R"
-    }
-    let existing = reference.trimmingCharacters(in: .whitespaces)
-    return page.replacingOccurrences(
-      of: "/Contents \(existing)",
-      with: "/Contents [\(existing) \(content) 0 R]"
-    )
+  /// One placement number, without an exponent: PDF has no notation
+  /// for one, and a reader meeting it skips the operator or refuses
+  /// the stream.
+  private static func placed(_ value: Double) -> String {
+    String(format: "%.4f", value)
   }
 
   /// The page's box, or A4 when it does not state one.
@@ -229,7 +202,6 @@ extension PdfIncrementalSigner {
     guard numbers.count == PdfValues.boxCorners else {
       return (PdfValues.a4Width, PdfValues.a4Height)
     }
-    // A media box reads lower-left then upper-right.
     let lowerLeftX = numbers[PdfValues.boxLowerLeftX]
     let lowerLeftY = numbers[PdfValues.boxLowerLeftY]
     let upperRightX = numbers[PdfValues.boxUpperRightX]

@@ -97,10 +97,7 @@ public enum PdfIncrementalSigner {
     let numbers = PageNumbers(firstFree: signatureNumber)
     let capacity = Self.capacity(for: revision)
 
-    var out = document
-    if out.last != UInt8(ascii: "\n") {
-      out.append(UInt8(ascii: "\n"))
-    }
+    var out = Self.newlineTerminated(document)
     var offsets: [Int: Int] = [:]
     let holes = Self.appendSignatureObject(
       into: &out,
@@ -109,20 +106,23 @@ public enum PdfIncrementalSigner {
       number: signatureNumber,
       capacity: capacity
     )
+    let source = RevisionSource(
+      document: document, index: index, rootNumber: rootNumber
+    )
     offsets[numbers.field] = out.count
     out.append(
-      Data(
-        Self.widget(
-          revision, field: numbers.field, signature: signatureNumber
-        ).utf8
+      try Self.fieldObject(
+        revision: revision,
+        source: source,
+        numbers: numbers,
+        signature: signatureNumber,
+        stamp: stamp
       )
     )
     let highest = try Self.appendRevisionBody(
       into: &out,
       offsets: &offsets,
-      source: RevisionSource(
-        document: document, index: index, rootNumber: rootNumber
-      ),
+      source: source,
       numbers: numbers,
       stamp: stamp
     )
@@ -135,6 +135,41 @@ public enum PdfIncrementalSigner {
     )
     return Self.patched(
       document: out, holes: holes, capacity: capacity
+    )
+  }
+
+  /// The document, ending in a newline so what follows starts on a
+  /// line of its own.
+  private static func newlineTerminated(_ document: Data) -> Data {
+    guard document.last != UInt8(ascii: "\n") else { return document }
+    var out = document
+    out.append(UInt8(ascii: "\n"))
+    return out
+  }
+
+  /// The signature field, showing its mark when there is one.
+  ///
+  /// The mark is the field's own appearance, so the field has to know
+  /// where it sits before it is written.
+  private static func fieldObject(
+    revision: Revision,
+    source: RevisionSource,
+    numbers: PageNumbers,
+    signature: Int,
+    stamp: StampMark?
+  ) throws -> Data {
+    let placement = try stamp.map { mark in
+      try Self.stampPlacement(source: source, stamp: mark)
+    }
+    return Data(
+      Self.widget(
+        revision,
+        field: numbers.field,
+        signature: signature,
+        showing: placement.map { found in
+          (rectangle: found.rectangle, appearance: numbers.appearance)
+        }
+      ).utf8
     )
   }
 
@@ -250,7 +285,8 @@ public enum PdfIncrementalSigner {
   private static func widget(
     _ revision: Revision,
     field: Int,
-    signature: Int
+    signature: Int,
+    showing: (rectangle: String, appearance: Int)?
   ) -> String {
     let name: String
     switch revision {
@@ -259,8 +295,17 @@ public enum PdfIncrementalSigner {
     case .documentTimestamp:
       name = "Timestamp\(signature)"
     }
+    // A field with no appearance is invisible, which is what a
+    // document timestamp and an unstamped signature want. One with an
+    // appearance names the box it fills and the stream that fills it,
+    // and carries the key that lets a later signing count it.
+    let visible =
+      showing.map { found in
+        " /Rect \(found.rectangle) /AP << /N \(found.appearance) 0 R >>"
+          + " \(PdfValues.stampMarker) true"
+      } ?? " /Rect [0 0 0 0]"
     return "\(field) 0 obj\n<< /Type /Annot /Subtype /Widget /FT /Sig"
-      + " /T (\(name)) /V \(signature) 0 R /Rect [0 0 0 0] /F 132 >>\nendobj\n"
+      + " /T (\(name)) /V \(signature) 0 R\(visible) /F 132 >>\nendobj\n"
   }
 
   /// A literal string's escapes: backslash and both parentheses.
