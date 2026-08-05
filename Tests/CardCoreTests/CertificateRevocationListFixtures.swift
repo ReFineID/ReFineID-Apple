@@ -220,6 +220,9 @@ internal enum CertificateRevocationListFixtures {
     /// Whether KeyUsage asserts cRLSign.
     internal let allowsCrlSigning: Bool
 
+    /// Whether an end entity explicitly encodes BasicConstraints cA FALSE.
+    internal var explicitFalseBasicConstraint = false
+
     /// Whether the certificate carries a KeyUsage extension at all.
     internal let includesKeyUsage: Bool
 
@@ -291,6 +294,23 @@ internal enum CertificateRevocationListFixtures {
     targetSignedByWrongKey: Bool,
     issuerKeyUsage: IssuerKeyUsage
   ) throws -> Material {
+    try Self.make(
+      kind: kind,
+      options: options,
+      targetSignedByWrongKey: targetSignedByWrongKey,
+      issuerKeyUsage: issuerKeyUsage,
+      explicitFalseBasicConstraint: false
+    )
+  }
+
+  /// The same fixture with explicit control over the end-entity default.
+  internal static func make(
+    kind: SignatureKind,
+    options: Options,
+    targetSignedByWrongKey: Bool,
+    issuerKeyUsage: IssuerKeyUsage,
+    explicitFalseBasicConstraint: Bool
+  ) throws -> Material {
     let issuerKey = try Self.makeKey(for: kind)
     let targetKey = try Self.makeKey(for: kind)
     let issuerName = Self.name(Self.issuerCommonName)
@@ -315,6 +335,7 @@ internal enum CertificateRevocationListFixtures {
     let target = try Self.certificate(
       description: CertificateDescription(
         allowsCrlSigning: false,
+        explicitFalseBasicConstraint: explicitFalseBasicConstraint,
         includesKeyUsage: true,
         malformedKeyUsage: false,
         commonName: Self.targetCommonName,

@@ -197,10 +197,15 @@ extension CertificateRevocationListFixtures {
   private static func certificateExtensions(
     description: CertificateDescription
   ) -> Data {
-    let constraints =
-      description.isCertificateAuthority
-      ? DerEncoder.sequence([Self.boolean(true)])
-      : DerEncoder.sequence([])
+    let constraintFields: [Data]
+    if description.isCertificateAuthority {
+      constraintFields = [Self.boolean(true)]
+    } else if description.explicitFalseBasicConstraint {
+      constraintFields = [Self.boolean(false)]
+    } else {
+      constraintFields = []
+    }
+    let constraints = DerEncoder.sequence(constraintFields)
     let usage: Data
     if description.malformedKeyUsage {
       usage = Self.malformedIssuerKeyUsage

@@ -38,6 +38,12 @@ public enum DerValues {
   /// unused bits of the last byte.
   internal static let tagBitString: UInt8 = 0x03
 
+  /// BIT STRING content prefix when every payload bit is used.
+  internal static let bitStringNoUnusedBits: UInt8 = 0x00
+
+  /// Octets occupied by a BIT STRING's unused-bits count.
+  internal static let bitStringPrefixByteCount = 1
+
   /// Universal tag: ENUMERATED, used by OCSPResponseStatus.
   internal static let tagEnumerated: UInt8 = 0x0A
 
@@ -52,6 +58,9 @@ public enum DerValues {
 
   /// BOOLEAN TRUE content octet: DER requires all bits set.
   internal static let booleanTrue: UInt8 = 0xFF
+
+  /// BOOLEAN FALSE content octet.
+  internal static let booleanFalse: UInt8 = 0x00
 
   /// ASCII `0`, the first decimal digit.
   internal static let asciiZero: UInt8 = 0x30
@@ -91,6 +100,18 @@ public enum DerValues {
   /// Context-specific primitive tag `[6]`: a GeneralName's
   /// uniformResourceIdentifier (RFC 5280 §4.2.1.6).
   internal static let tagContext6Primitive: UInt8 = 0x86
+
+  /// Explicit Certificate version value for v2.
+  internal static let certificateVersionTwo: UInt8 = 1
+
+  /// Explicit Certificate version value for v3.
+  internal static let certificateVersionThree: UInt8 = 2
+
+  /// keyCertSign in the first payload octet of an RFC 5280 KeyUsage.
+  internal static let keyUsageCertificateSigningBit: UInt8 = 0x04
+
+  /// cRLSign in the first payload octet of an RFC 5280 KeyUsage.
+  internal static let keyUsageCrlSigningBit: UInt8 = 0x02
 
   /// Length byte: long-form marker bit (X.690 §8.1.3.5).
   internal static let longFormMask: UInt8 = 0x80

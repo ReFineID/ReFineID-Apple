@@ -32,35 +32,17 @@ extension OcspResponse {
     else {
       return .unauthorized
     }
-    guard Self.isDirectlyIssued(signer.certificate, by: issuer.certificate, at: producedAt) else {
+    guard
+      CertificateIssuer.isDirectlyIssuedByPlatform(
+        signer.der, by: issuer.der, at: producedAt
+      )
+    else {
       return .unauthorized
     }
     guard try Self.hasOcspNoCheckExtension(in: signer.der) else {
       return .revocationCheckRequired
     }
     return .authorized
-  }
-
-  /// Checks that a responder certificate was directly signed by the issuer.
-  internal static func isDirectlyIssued(
-    _ responder: SecCertificate,
-    by issuer: SecCertificate,
-    at date: Date
-  ) -> Bool {
-    var trust: SecTrust?
-    guard
-      SecTrustCreateWithCertificates(responder, SecPolicyCreateBasicX509(), &trust)
-        == errSecSuccess,
-      let trust,
-      SecTrustSetAnchorCertificates(trust, [issuer] as CFArray) == errSecSuccess,
-      SecTrustSetAnchorCertificatesOnly(trust, true) == errSecSuccess,
-      SecTrustSetNetworkFetchAllowed(trust, false) == errSecSuccess,
-      SecTrustSetVerifyDate(trust, date as CFDate) == errSecSuccess
-    else {
-      return false
-    }
-    var error: CFError?
-    return SecTrustEvaluateWithError(trust, &error)
   }
 
   /// Reads id-kp-OCSPSigning from a delegated responder certificate.

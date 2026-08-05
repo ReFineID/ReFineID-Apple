@@ -77,9 +77,9 @@ extension OcspResponse {
     at producedAt: Date
   ) throws {
     guard
-      Self.isDirectlyIssued(
-        target.certificate,
-        by: issuer.certificate,
+      CertificateIssuer.isDirectlyIssued(
+        target.der,
+        by: issuer.der,
         at: producedAt
       )
     else {

@@ -189,31 +189,6 @@ extension CertificateRevocationList {
     return valid
   }
 
-  /// Checks that the target certificate was directly signed by the issuer.
-  internal static func isDirectlyIssued(
-    _ target: SecCertificate,
-    by issuer: SecCertificate,
-    at date: Date
-  ) -> Bool {
-    var trust: SecTrust?
-    guard
-      SecTrustCreateWithCertificates(
-        target,
-        SecPolicyCreateBasicX509(),
-        &trust
-      ) == errSecSuccess,
-      let trust,
-      SecTrustSetAnchorCertificates(trust, [issuer] as CFArray) == errSecSuccess,
-      SecTrustSetAnchorCertificatesOnly(trust, true) == errSecSuccess,
-      SecTrustSetNetworkFetchAllowed(trust, false) == errSecSuccess,
-      SecTrustSetVerifyDate(trust, date as CFDate) == errSecSuccess
-    else {
-      return false
-    }
-    var error: CFError?
-    return SecTrustEvaluateWithError(trust, &error)
-  }
-
   /// The issuer Name normalized by Security for relationship checks.
   internal static func issuer(of certificate: SecCertificate) -> Data? {
     SecCertificateCopyNormalizedIssuerSequence(certificate) as Data?

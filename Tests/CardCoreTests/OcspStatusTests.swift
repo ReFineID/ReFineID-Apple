@@ -1,6 +1,7 @@
-import CardCore
 import Foundation
 import Testing
+
+@testable import CardCore
 
 /// Definitive non-good OCSP statuses must be authenticated before use.
 @Suite
@@ -60,6 +61,13 @@ internal struct OcspStatusTests {
 
   @Test
   internal func signedRevocationStatusIsReported() {
+    #expect(
+      CertificateIssuer.cryptographicallyDirectlyIssued(
+        OcspResponseTests.certificate,
+        by: OcspResponseTests.issuerCertificate,
+        at: Self.revokedResponseTime
+      )
+    )
     #expect(throws: OcspResponse.ValidationFailure.revoked) {
       _ = try OcspResponse.validate(
         response: Self.revokedResponse,

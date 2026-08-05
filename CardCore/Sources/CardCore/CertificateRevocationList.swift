@@ -210,9 +210,9 @@ public enum CertificateRevocationList {
     }
     try Self.checkTimes(parsed, against: currentTime)
     guard
-      Self.isDirectlyIssued(
-        target.certificate,
-        by: issuer.certificate,
+      CertificateIssuer.isDirectlyIssued(
+        certificate,
+        by: issuerCertificate,
         at: currentTime
       )
     else {
