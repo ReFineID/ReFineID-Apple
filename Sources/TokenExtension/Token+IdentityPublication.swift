@@ -1,9 +1,31 @@
+import CardCore
 import CryptoTokenKit
 import Foundation
 import Security
 
 /// Publishes one token's signed identity to Safari.
 extension Token {
+  /// Label suffix naming the PIN1 authentication identity.
+  private static let authenticationRole = "tunnistautuminen (PIN1)"
+
+  /// Label suffix naming the PIN2 qualified-signature identity.
+  private static let signatureRole = "allekirjoitus (PIN2)"
+
+  /// Appends the identity's role to the item's label.
+  ///
+  /// Both card certificates carry the identical subject, so every place
+  /// that shows the default label - Safari's certificate chooser,
+  /// Keychain Access - shows two rows that read the same. The label is
+  /// the only publishable field that can tell them apart; the
+  /// certificates are DVV's and cannot change.
+  private static func labelRole(of item: TKTokenKeychainItem, _ role: String) {
+    if let base = item.label, !base.isEmpty {
+      item.label = base + " - " + role
+    } else {
+      item.label = role
+    }
+  }
+
   /// The qualified-signature certificate and key as keychain items.
   ///
   /// The key is sign-only and NOT suitable for login: it is the
@@ -37,6 +59,8 @@ extension Token {
     // swiftlint:disable:next legacy_objc_type
     let signOperationKey = NSNumber(value: TKTokenOperation.signData.rawValue)
     key.constraints = [signOperationKey: Pin2AuthOperation.signDataConstraint]
+    Self.labelRole(of: certificate, Self.signatureRole)
+    Self.labelRole(of: key, Self.signatureRole)
     return [certificate, key]
   }
 
@@ -76,6 +100,8 @@ extension Token {
     // swiftlint:disable:next legacy_objc_type
     let signOperationKey = NSNumber(value: TKTokenOperation.signData.rawValue)
     keychainKey.constraints = [signOperationKey: Pin1AuthOperation.signDataConstraint]
+    Self.labelRole(of: keychainCertificate, Self.authenticationRole)
+    Self.labelRole(of: keychainKey, Self.authenticationRole)
 
     var items: [TKTokenKeychainItem] = [keychainCertificate, keychainKey]
     if let signLeaf, let signProfile {
