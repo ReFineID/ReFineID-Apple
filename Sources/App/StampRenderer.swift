@@ -80,12 +80,14 @@
     /// The mark's colour, #B02020, as the fractions PDF wants.
     private static let inkColour = "0.6902 0.1255 0.1255"
 
-    /// The furthest the ring is turned, in degrees.
+    /// How far the ring is turned, in degrees.
     ///
-    /// A rubber stamp is never put down square, and a mark that lands
-    /// at exactly the same angle every time looks like what it is: a
-    /// drawing.
-    private static let maximumTilt = 15.0
+    /// A rubber stamp is never put down square, and one that lands at
+    /// exactly the same angle every time looks like what it is: a
+    /// drawing. The range starts well away from square, because a
+    /// turn of a degree or two reads as a mistake rather than a hand.
+    private static let leastTilt = 10.0
+    private static let mostTilt = 20.0
 
     /// The page carrying the mark.
     internal static func mark(_ statement: Statement) -> StampMark {
@@ -120,7 +122,7 @@
     /// A turn of up to `maximumTilt` degrees clockwise, about the
     /// ring's own centre, so no two stamps land at the same angle.
     private static func tilt(about centre: (x: Double, y: Double)) -> String {
-      let degrees = Double.random(in: 0...Self.maximumTilt)
+      let degrees = Double.random(in: Self.leastTilt...Self.mostTilt)
       let turn = -degrees * Double.pi / Self.halfTurnDegrees
       let cosine = cos(turn)
       let sine = sin(turn)
