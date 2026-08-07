@@ -445,10 +445,15 @@ liability there.
 
 1. ~~The ANSSI declaration filed~~ -- sent 2026-08-07 by email to
    controle@ssi.gouv.fr, signed the same day the attestation is dated.
-   The acknowledgement is what remains: the declaration is processed
-   within one month of a complete file, the category 3 classification
-   ruled on within two.
-2. That acknowledgement attached to App Encryption Documentation in App
+   Receipt confirmed by the Bureau des controles reglementaires the
+   same day, stamped 14:33:49. The attestation is what remains, due
+   within one month of receipt -- the two-month extension applies only
+   to prestations or export outside the Union, neither of which is
+   declared. Silence works too: after the month, the declared
+   operations may proceed freely and an attestation confirming the
+   obligation was met can be requested. Either path produces the
+   document for step 2 by early September 2026.
+2. That attestation attached to App Encryption Documentation in App
    Store Connect.
 3. The code Apple issues in return, added to
    `Config/ReFineID-Info.plist` as `ITSEncryptionExportComplianceCode`,
