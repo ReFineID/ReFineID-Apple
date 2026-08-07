@@ -79,4 +79,24 @@ internal enum ScsValues {
 
   /// Compact JWE segment index of the authentication tag.
   internal static let jweTagIndex = 4
+
+  /// KeyUsage bits of the localhost server certificate:
+  /// digitalSignature and keyEncipherment (v1.3 §2.3).
+  internal static let serverKeyUsageBits: UInt8 = 0xA0
+
+  /// Unused trailing bits in the KeyUsage BIT STRING above.
+  internal static let serverKeyUsageUnusedBits: UInt8 = 5
+
+  /// High octet of the IPv4 loopback address.
+  private static let loopbackHighOctet: UInt8 = 0x7F
+
+  /// The loopback address named in the certificate's
+  /// subjectAltName (v1.3 §2.3): 127.0.0.1.
+  internal static var loopbackAddress: [UInt8] {
+    [Self.loopbackHighOctet, 0, 0, 1]
+  }
+
+  /// How long a generated localhost certificate stays valid; it is
+  /// persisted and reused, so trust survives restarts.
+  internal static let certificateValidityYears = 10
 }

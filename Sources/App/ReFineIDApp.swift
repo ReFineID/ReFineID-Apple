@@ -121,6 +121,15 @@ internal struct ReFineIDApp: App {
     // restarting the app blocked before it had a window to say so in.
     // It happens off the launch path now, from the status screen.
     //
+    // The localhost SCS: web pages sign through it, so it lives for
+    // as long as the app runs. Binding a loopback socket touches no
+    // other process, so unlike the driver configuration above this
+    // is safe on the launch path; the PIN prompts it may later show
+    // run on their own worker exchanges.
+    #if os(macOS)
+      ScsService.startIfNeeded()
+    #endif
+
     // One entry point for every launch mode, and it lives behind DEBUG.
     // A shipped binary has no business offering to drive a signature,
     // least of all one that takes a PIN on the command line.

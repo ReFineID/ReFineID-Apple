@@ -9,6 +9,10 @@ import Foundation
 /// in an HTTP 200 whose JSON reason triple carries the result (v1.3
 /// §3); only an unknown route answers 404.
 public enum ScsDispatcher {
+  /// The one TCP port the specification names (v1.3 §2.2), for the
+  /// platform listener to bind.
+  public static let port = ScsValues.port
+
   /// Dispatches one request and answers the response bytes.
   public static func dispatch(
     request: ScsHttpRequest,

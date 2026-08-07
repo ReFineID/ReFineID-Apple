@@ -4,17 +4,27 @@
 <!-- The host application is sandboxed, may talk to smart cards, and
      may make outbound connections.
 
-     The network grant exists for one feature: an archival signature
+     The client grant exists for one feature: an archival signature
      (PAdES-B-LTA) must fetch a qualified timestamp and the revocation
      data proving its chain, or it is not archival. What travels is a
      digest and a certificate identifier - never a key, a PIN, or one
-     byte of the document. There is no server grant: nothing listens. -->
+     byte of the document.
+
+     The server grant exists for one feature: the SCS (Signature
+     Creation Service, DVV specification v1.3), the localhost signing
+     interface Finnish web services call at https://127.0.0.1:53952.
+     The listener binds the loopback interface only, serves one
+     request per connection, and every signature it produces passes
+     the same retry floor and PIN prompt as any other sign in this
+     app. -->
 <dict>
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
 	<key>com.apple.security.smartcard</key>
 	<true/>
 	<key>com.apple.security.network.client</key>
+	<true/>
+	<key>com.apple.security.network.server</key>
 	<true/>
 	<!-- The open and save panels. A sandboxed app reaches a file the
 	     holder picked only through Powerbox, and Powerbox declines to

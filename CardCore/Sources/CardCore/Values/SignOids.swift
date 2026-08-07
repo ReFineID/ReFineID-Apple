@@ -121,6 +121,18 @@ internal enum SignOids {
   /// id-ce-keyUsage (RFC 5280 §4.2.1.3).
   internal static let keyUsage = "2.5.29.15"
 
+  /// X.509 subjectAltName extension.
+  internal static let subjectAltName = "2.5.29.17"
+
+  /// Extended key usage: TLS server authentication.
+  internal static let serverAuthentication = "1.3.6.1.5.5.7.3.1"
+
+  /// Elliptic-curve public key (SPKI algorithm).
+  internal static let ecPublicKey = "1.2.840.10045.2.1"
+
+  /// The P-256 named curve.
+  internal static let prime256v1 = "1.2.840.10045.3.1.7"
+
   /// id-ce-cRLDistributionPoints (RFC 5280 section 4.2.1.13).
   internal static let crlDistributionPoints = "2.5.29.31"
 

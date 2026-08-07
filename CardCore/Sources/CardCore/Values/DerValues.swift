@@ -101,6 +101,9 @@ public enum DerValues {
   /// uniformResourceIdentifier (RFC 5280 §4.2.1.6).
   internal static let tagContext6Primitive: UInt8 = 0x86
 
+  /// Context-specific tag [7], primitive: a subjectAltName iPAddress.
+  internal static let tagContext7Primitive: UInt8 = 0x87
+
   /// Explicit Certificate version value for v2.
   internal static let certificateVersionTwo: UInt8 = 1
 
