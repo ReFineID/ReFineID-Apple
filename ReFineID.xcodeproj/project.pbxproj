@@ -24,6 +24,8 @@
 		6D0000000000000000000010 /* fineid-intermediate-01-citizen-g4e.pem in Resources */ = {isa = PBXBuildFile; fileRef = 2D0000000000000000000010 /* fineid-intermediate-01-citizen-g4e.pem */; };
 		6D0000000000000000000011 /* fineid-intermediate-00-citizen-g3.pem in Resources */ = {isa = PBXBuildFile; fileRef = 2D0000000000000000000011 /* fineid-intermediate-00-citizen-g3.pem */; };
 		6D0000000000000000000012 /* fineid-intermediate-00-citizen-g3.pem in Resources */ = {isa = PBXBuildFile; fileRef = 2D0000000000000000000011 /* fineid-intermediate-00-citizen-g3.pem */; };
+		6D0000000000000000000013 /* fineid-intermediate-03-organisation-g4r.pem in Resources */ = {isa = PBXBuildFile; fileRef = 2D0000000000000000000012 /* fineid-intermediate-03-organisation-g4r.pem */; };
+		6D0000000000000000000014 /* fineid-intermediate-03-organisation-g4r.pem in Resources */ = {isa = PBXBuildFile; fileRef = 2D0000000000000000000012 /* fineid-intermediate-03-organisation-g4r.pem */; };
 		BD0000000000000000000008 /* CardCore in Frameworks */ = {isa = PBXBuildFile; productRef = AD0000000000000000000006 /* CardCore */; };
 /* End PBXBuildFile section */
 
@@ -91,6 +93,7 @@
 		2D000000000000000000000F /* fineid-intermediate-02-citizen-g4r.pem */ = {isa = PBXFileReference; lastKnownFileType = text; path = "fineid-intermediate-02-citizen-g4r.pem"; sourceTree = "<group>"; };
 		2D0000000000000000000010 /* fineid-intermediate-01-citizen-g4e.pem */ = {isa = PBXFileReference; lastKnownFileType = text; path = "fineid-intermediate-01-citizen-g4e.pem"; sourceTree = "<group>"; };
 		2D0000000000000000000011 /* fineid-intermediate-00-citizen-g3.pem */ = {isa = PBXFileReference; lastKnownFileType = text; path = "fineid-intermediate-00-citizen-g3.pem"; sourceTree = "<group>"; };
+		2D0000000000000000000012 /* fineid-intermediate-03-organisation-g4r.pem */ = {isa = PBXFileReference; lastKnownFileType = text; path = "fineid-intermediate-03-organisation-g4r.pem"; sourceTree = "<group>"; };
 		BD0000000000000000000001 /* ReFineIDTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ReFineIDTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -231,6 +234,7 @@
 				2D0000000000000000000011 /* fineid-intermediate-00-citizen-g3.pem */,
 				2D0000000000000000000010 /* fineid-intermediate-01-citizen-g4e.pem */,
 				2D000000000000000000000F /* fineid-intermediate-02-citizen-g4r.pem */,
+				2D0000000000000000000012 /* fineid-intermediate-03-organisation-g4r.pem */,
 			);
 			path = Config;
 			sourceTree = "<group>";
@@ -450,6 +454,7 @@
 				6D0000000000000000000011 /* fineid-intermediate-00-citizen-g3.pem in Resources */,
 				6D000000000000000000000F /* fineid-intermediate-01-citizen-g4e.pem in Resources */,
 				6D000000000000000000000D /* fineid-intermediate-02-citizen-g4r.pem in Resources */,
+				6D0000000000000000000013 /* fineid-intermediate-03-organisation-g4r.pem in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -461,6 +466,7 @@
 				6D0000000000000000000012 /* fineid-intermediate-00-citizen-g3.pem in Resources */,
 				6D0000000000000000000010 /* fineid-intermediate-01-citizen-g4e.pem in Resources */,
 				6D000000000000000000000E /* fineid-intermediate-02-citizen-g4r.pem in Resources */,
+				6D0000000000000000000014 /* fineid-intermediate-03-organisation-g4r.pem in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
