@@ -18,8 +18,24 @@ supporting detail.
 and must also carry `ITSEncryptionExportComplianceCode` once Apple
 issues one. Without the code App Store Connect blocks the build at
 submission with error 90592 -- the upload itself completes; it is the
-submission that stops -- and `Scripts/inspect-archive.sh` refuses the
-archive before that, locally, in about a second.
+submission that stops.
+
+A code cannot exist before the French declaration does. Verified
+2026-08-07 against the App Store Connect API: creating App Encryption
+Documentation is refused with
+
+    Cannot create appEncryptionDeclarations unless either
+    containsProprietaryCryptography is True or
+    containsThirdPartyCryptography and availableOnFrenchStore are both
+    True
+
+so a declaration of standard published algorithms outside the French
+store is not a document Apple accepts, and no filing means no code.
+Until the ANSSI attestation puts the app on the French store, the plist
+carries `true` and no code, the upload completes, and export compliance
+is confirmed per build in App Store Connect before TestFlight
+distribution. `Scripts/inspect-archive.sh` checks the declaration is
+present and permits the codeless state for exactly this reason.
 
 ## App Purpose, as submitted
 
@@ -428,5 +444,7 @@ liability there.
    `Config/ReFineID-Info.plist` as `ITSEncryptionExportComplianceCode`.
 
 Until step 3, App Store Connect submission must stop at export
-compliance. An archive may upload for inspection, but it must not be
-submitted for release without the Apple code.
+compliance. An archive may upload, and TestFlight may distribute it
+outside France with compliance confirmed per build, but it must not be
+submitted for App Store release without the Apple code, and no
+TestFlight tester in France before the code exists.

@@ -249,19 +249,24 @@ if [ "$PLATFORM" = "iOS" ]; then
     plutil -extract ITSAppUsesNonExemptEncryption raw "$APP_PLIST" >/dev/null 2>&1 \
         || fail "ITSAppUsesNonExemptEncryption missing from the app Info.plist"
     COMPLIANCE=$(plutil -extract ITSAppUsesNonExemptEncryption raw "$APP_PLIST")
-    # Declaring non-exempt is half a statement. Apple compares the code
-    # in the bundle against the export compliance documentation on file
-    # for the app, and rejects the upload with 90592 when there is none
-    # -- after the archive, the export and several minutes of transfer.
-    # The same answer is available here, in seconds, before any of that.
+    # A code is not required here, because none can exist yet. Apple
+    # issues one only against filed App Encryption Documentation, and
+    # the App Store Connect API refuses to create that "unless either
+    # containsProprietaryCryptography is True or
+    # containsThirdPartyCryptography and availableOnFrenchStore are both
+    # True" (verified 2026-08-07). Standard published algorithms outside
+    # the French store therefore never yield a code; the build uploads,
+    # and export compliance is confirmed per build in App Store Connect
+    # before TestFlight distribution. Once the ANSSI attestation puts
+    # the app on the French store, Apple issues a code and it belongs in
+    # Config/ReFineID-Info.plist. See Documentation/export-compliance.md.
     if [ "$COMPLIANCE" = "true" ]; then
         CODE=$(plutil -extract ITSEncryptionExportComplianceCode raw "$APP_PLIST" 2>/dev/null || true)
-        [ -n "$CODE" ] || fail "ITSAppUsesNonExemptEncryption is true but
-  ITSEncryptionExportComplianceCode is missing. App Store Connect will
-  refuse the upload with error 90592. File the export compliance
-  documentation for the app, take the code Apple issues, and add it to
-  Config/ReFineID-Info.plist."
-        note "export compliance answered (non-exempt, code present)"
+        if [ -n "$CODE" ]; then
+            note "export compliance answered (non-exempt, code present)"
+        else
+            note "export compliance answered (non-exempt; no code exists outside the French store)"
+        fi
     else
         note "export compliance answered (exempt)"
     fi
