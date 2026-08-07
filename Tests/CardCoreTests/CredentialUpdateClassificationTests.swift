@@ -5,12 +5,17 @@ import Testing
 /// Classification of the card's answers to credential updates, driven
 /// through `CardOperations` over a scripted channel: accept, count
 /// down, blocked, invalidated, and the residual case.
+///
+/// Every flow leads with the counter-safe reference-numbering probe
+/// (S1 v4.2 §3.5.1.1); a recognised citizen answer resolves the
+/// session in one exchange.
 @Suite
 internal struct CredentialUpdateClassificationTests {
   @Test
   internal func changeSucceedsOnSuccessStatus() throws {
     let channel = ScriptedChannel([
-      ("0024001118313233340000000000000000343332310000000000000000", "9000")
+      ("0020001100", "63C5"),
+      ("0024001118313233340000000000000000343332310000000000000000", "9000"),
     ])
     let operations = CardOperations(channel: channel)
     guard
@@ -30,7 +35,8 @@ internal struct CredentialUpdateClassificationTests {
   @Test
   internal func changeRejectionCarriesTheRetryCounter() throws {
     let channel = ScriptedChannel([
-      ("0024001118313233340000000000000000343332310000000000000000", "63C2")
+      ("0020001100", "63C5"),
+      ("0024001118313233340000000000000000343332310000000000000000", "63C2"),
     ])
     let operations = CardOperations(channel: channel)
     let two = try #require(RetryCount(attemptsRemaining: 2))
@@ -58,7 +64,8 @@ internal struct CredentialUpdateClassificationTests {
   @Test
   internal func unblockAgainstABlockedPukThrowsBlocked() {
     let channel = ScriptedChannel([
-      ("002C001118313233343536373800000000343332310000000000000000", "6983")
+      ("0020001100", "63C5"),
+      ("002C001118313233343536373800000000343332310000000000000000", "6983"),
     ])
     let operations = CardOperations(channel: channel)
     guard
@@ -85,7 +92,8 @@ internal struct CredentialUpdateClassificationTests {
   @Test
   internal func unblockAgainstAnInvalidatedSlotThrowsInvalidated() {
     let channel = ScriptedChannel([
-      ("002C001118313233343536373800000000343332310000000000000000", "6984")
+      ("0020001100", "63C5"),
+      ("002C001118313233343536373800000000343332310000000000000000", "6984"),
     ])
     let operations = CardOperations(channel: channel)
     guard
@@ -112,7 +120,8 @@ internal struct CredentialUpdateClassificationTests {
   @Test
   internal func changeResidualStatusMapsToUpdateFailed() {
     let channel = ScriptedChannel([
-      ("0024008218313233343536000000000000363534333231000000000000", "6700")
+      ("0020001100", "63C5"),
+      ("0024008218313233343536000000000000363534333231000000000000", "6700"),
     ])
     let operations = CardOperations(channel: channel)
     guard
@@ -142,7 +151,8 @@ internal struct CredentialUpdateClassificationTests {
     // state on the PIN2 path (unlike PIN1, whose floor probe intercepts
     // it before VERIFY).
     let channel = ScriptedChannel([
-      ("002000820C313233343536000000000000", "6984")
+      ("0020001100", "63C5"),
+      ("002000820C313233343536000000000000", "6984"),
     ])
     let operations = CardOperations(channel: channel)
     guard let pin = Pin2(digits: "123456") else {

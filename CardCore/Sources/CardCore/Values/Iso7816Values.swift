@@ -40,6 +40,12 @@ internal enum Iso7816Values {
   /// followed by the new reference data (7816-4 §11.5.10).
   internal static let resetWithPukThenNewP1: UInt8 = 0x00
 
+  /// RESET RETRY COUNTER P1: the data field carries only the new
+  /// reference data; the unblocking credential was verified as its own
+  /// object beforehand (7816-4 §11.5.10; Idemia organizational cards
+  /// specification §4.1.6).
+  internal static let resetNewDataOnlyP1: UInt8 = 0x02
+
   /// GET DATA instruction, odd variant (FINEID S1 v4.2 §3.15.2).
   internal static let insGetData: UInt8 = 0xCB
 

@@ -113,14 +113,19 @@ public struct CommandApdu: Equatable, Sendable {
   /// VERIFY with `Lc=00` and no data: the card answers `63Cx` with the
   /// remaining attempts in the counter nibble and no attempt is
   /// consumed. This is the reading the retry floor requires immediately
-  /// before every PIN-bearing command.
-  public static func readRetryCounter(role: CredentialRole) -> Self {
+  /// before every PIN-bearing command. An absent reference answers
+  /// `referenceDataNotFound`, still without touching any counter, which
+  /// is what makes this probe the reference-numbering resolver too.
+  public static func readRetryCounter(
+    role: CredentialRole,
+    references: CredentialReferenceSet
+  ) -> Self {
     Self(
       encoded: Data([
         Iso7816Values.classInterindustry,
         Iso7816Values.insVerify,
         Iso7816Values.verifyModeP1,
-        FineidValues.reference(for: role),
+        references.reference(for: role),
         0,
       ])
     )

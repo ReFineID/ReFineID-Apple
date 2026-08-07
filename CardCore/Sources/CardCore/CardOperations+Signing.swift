@@ -1,10 +1,14 @@
 import Foundation
 
-/// The signing operations: the MSE / PSO:HASH / PSO:CDS chain for both
-/// card keys.
+/// The signing operations: the MSE / PSO chain for both card keys.
 ///
 /// One shared core drives the chain; the public entry points differ
-/// only in the key they name and the PIN their contracts demand.
+/// only in the key they name and the PIN their contracts demand. The
+/// chain's shape follows the reference numbering the session resolved
+/// when its PIN was verified: the citizen card loads the digest with
+/// PSO:HASH and signs with an empty PSO:CDS, while the organization
+/// card has no external-hash PSO:HASH - the digest rides inline in
+/// PSO:CDS (Idemia organizational cards specification §6.6.2.3).
 extension CardOperations {
   /// Computes an authentication signature over `digest` with the
   /// PIN1-gated key.
@@ -47,7 +51,12 @@ extension CardOperations {
   /// MSE:SET DST pins the key and algorithm; PSO:HASH loads the host
   /// digest as the external hash; an empty PSO:CDS then returns the
   /// signature. The digest is loaded via PSO:HASH, never carried inline
-  /// in PSO:CDS - the card rejects the inline shape.
+  /// in PSO:CDS - the citizen card rejects the inline shape, exactly as
+  /// the organization card rejects this one, which is why the resolved
+  /// numbering picks the chain. Both keys are PIN-gated, so every
+  /// caller verified a PIN in this session first and that verification
+  /// resolved the numbering; a session that never did resolves as
+  /// citizen and keeps the historical chain.
   ///
   /// P-384 and RSA-2048 carry their exact short-response length as `Le`
   /// up front. The G4E card is T=0-only and a `6Cxx` between PSO:HASH and
@@ -70,18 +79,40 @@ extension CardOperations {
     guard selected.statusWord == .success else {
       throw CardOperationError.signRejected(selected.statusWord)
     }
-    let hashed = try transmit(.loadExternalHash(digest))
-    guard hashed.statusWord == .success else {
-      throw CardOperationError.signRejected(hashed.statusWord)
+    if referenceMemo.resolved != .organization {
+      let hashed = try transmit(.loadExternalHash(digest))
+      guard hashed.statusWord == .success else {
+        throw CardOperationError.signRejected(hashed.statusWord)
+      }
     }
-    let signatureCommand =
-      expectedSignatureLength.map(CommandApdu.computeSignatureOverLoadedHash(exactLength:))
-      ?? .computeSignatureOverLoadedHash()
-    let signed = try transmitSignature(signatureCommand)
+    let signed = try transmitSignature(
+      signatureCommand(
+        overDigest: digest,
+        expectedSignatureLength: expectedSignatureLength
+      )
+    )
     guard signed.statusWord == .success else {
       throw CardOperationError.signRejected(signed.statusWord)
     }
     return signed.payload
+  }
+
+  /// The one PSO:CDS this session's chain ends with: empty-bodied over
+  /// the loaded hash on the citizen card, the digest inline on the
+  /// organization card, with the exact `Le` whenever the response fits
+  /// a short APDU.
+  private func signatureCommand(
+    overDigest digest: Data,
+    expectedSignatureLength: ExpectedResponseLength?
+  ) -> CommandApdu {
+    guard referenceMemo.resolved != .organization else {
+      return expectedSignatureLength.map { exact in
+        CommandApdu.computeSignature(overDigest: digest, exactLength: exact)
+      } ?? .computeSignature(overDigest: digest)
+    }
+    return expectedSignatureLength.map(
+      CommandApdu.computeSignatureOverLoadedHash(exactLength:)
+    ) ?? .computeSignatureOverLoadedHash()
   }
 
   /// Diagnostic sibling of `computeAuthenticationSignature` that records
@@ -89,7 +120,9 @@ extension CardOperations {
   /// non-`9000`, so a probe can isolate which step a card rejects.
   ///
   /// Returns the raw signature when the chain completes, plus the
-  /// `(command, statusWord)` of every command sent. Not on the shipping
+  /// `(command, statusWord)` of every command sent. Follows the same
+  /// resolved-numbering chain selection as the throwing variant, so an
+  /// organization card's trace has no PSO:HASH step. Not on the shipping
   /// token path - that uses the throwing variant above.
   public func computeAuthenticationSignatureTraced(
     overDigest digest: Data,
@@ -102,13 +135,17 @@ extension CardOperations {
     )
     steps.append((command: "MSE:SET", statusWord: selected.statusWord.encoded))
     guard selected.statusWord == .success else { return (nil, steps) }
-    let hashed = try transmit(.loadExternalHash(digest))
-    steps.append((command: "PSO:HASH", statusWord: hashed.statusWord.encoded))
-    guard hashed.statusWord == .success else { return (nil, steps) }
-    let signatureCommand =
-      expectedSignatureLength.map(CommandApdu.computeSignatureOverLoadedHash(exactLength:))
-      ?? .computeSignatureOverLoadedHash()
-    let signed = try transmitSignature(signatureCommand)
+    if referenceMemo.resolved != .organization {
+      let hashed = try transmit(.loadExternalHash(digest))
+      steps.append((command: "PSO:HASH", statusWord: hashed.statusWord.encoded))
+      guard hashed.statusWord == .success else { return (nil, steps) }
+    }
+    let signed = try transmitSignature(
+      signatureCommand(
+        overDigest: digest,
+        expectedSignatureLength: expectedSignatureLength
+      )
+    )
     steps.append((command: "PSO:CDS", statusWord: signed.statusWord.encoded))
     guard signed.statusWord == .success else { return (nil, steps) }
     return (signed.payload, steps)

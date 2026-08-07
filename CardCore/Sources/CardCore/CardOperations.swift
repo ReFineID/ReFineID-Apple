@@ -15,26 +15,16 @@ public struct CardOperations {
   /// CardOperations+Credentials.swift drives the same session.
   internal let channel: any CardChannel
 
+  /// Which credential reference numbering this session's card uses.
+  ///
+  /// Filled by the first resolution and read by everything after it.
+  /// Internal, not private: the credential and signing extensions read
+  /// and feed the same memory.
+  internal let referenceMemo = CredentialReferenceMemo()
+
   /// Wraps one exclusive session's transport.
   public init(channel: any CardChannel) {
     self.channel = channel
-  }
-
-  private static func classify(_ statusWord: StatusWord) -> RetryProbeOutcome {
-    switch statusWord {
-    case .success:
-      .verified
-    case .pinIncorrect(let remaining):
-      .remaining(remaining)
-    case .authenticationFailed:
-      .noInformation
-    case .authenticationBlocked:
-      .locked
-    case .referenceDataInvalidated:
-      .invalidated
-    default:
-      .other(statusWord.encoded)
-    }
   }
 
   /// Selects the FINEID eID application; the card's DF becomes current.
@@ -186,45 +176,6 @@ public struct CardOperations {
       lastStatus = response.statusWord
     }
     throw CardOperationError.selectRejected(lastStatus)
-  }
-
-  /// Probes one credential's retry counter without side effects: the
-  /// VERIFY probe form for PIN1/PIN2, the GET DATA PIN-container form
-  /// for the PUK (which has no VERIFY probe).
-  public func probeRetryCounter(role: CredentialRole) throws -> RetryProbeOutcome {
-    switch role {
-    case .pin1, .pin2:
-      let response = try transmit(.readRetryCounter(role: role))
-      return Self.classify(response.statusWord)
-    case .puk:
-      let response = try transmit(
-        .readCredentialAttributes(role: .puk)
-      )
-      guard response.statusWord == .success else {
-        return Self.classify(response.statusWord)
-      }
-      guard
-        let counter = CredentialAttributes.retryCounter(
-          fromResponseBody: response.payload
-        )
-      else {
-        return .noInformation
-      }
-      return .remaining(counter)
-    }
-  }
-
-  /// Probes all three credentials for the explicit status display.
-  ///
-  /// `includingPuk` exists for diagnostics over an interface that refuses
-  /// that one credential. Authentication never calls this method: it
-  /// probes PIN1 alone, before VERIFY PIN1.
-  public func probeCredentials(includingPuk: Bool = true) throws -> CredentialProbeReport {
-    CredentialProbeReport(
-      pin1: try probeRetryCounter(role: .pin1),
-      pin2: try probeRetryCounter(role: .pin2),
-      puk: includingPuk ? try probeRetryCounter(role: .puk) : .noInformation
-    )
   }
 
   /// Reads one credential's usage allowances, counter-safe.

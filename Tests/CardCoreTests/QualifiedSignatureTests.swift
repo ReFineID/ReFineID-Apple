@@ -14,6 +14,7 @@ internal struct QualifiedSignatureTests {
     let digest = String(repeating: "AB", count: 48)
     let signature = String(repeating: "CD", count: 96)
     let channel = ScriptedChannel([
+      ("0020001100", "63C5"),
       ("002000820C363534333231000000000000", "9000"),
       ("002241B606800154840102", "9000"),
       ("002A90A0329030" + digest, "9000"),

@@ -8,16 +8,44 @@ import Foundation
 /// entry can reach the card at most once, and the caller must have
 /// cleared the retry floor for whichever credential the command
 /// presents.
+///
+/// Every flow resolves the card's reference numbering first
+/// (`resolveCredentialReferences()`, counter-safe, remembered for the
+/// session) and only then consumes the credential into its one command,
+/// so a resolution probe can never cost a typed entry.
 extension CardOperations {
+  /// Refuses a credential the resolved card cannot store, before any
+  /// APDU: the organization card compares at the typed length and caps
+  /// it at eight characters (S4-2 v4.0 §4.3), so a longer entry could
+  /// only fail on the wire - and spend a retry doing it.
+  private static func checkTypedLength(
+    of store: ZeroizingDigitStore,
+    under references: CredentialReferenceSet
+  ) throws {
+    guard
+      references == .organization,
+      store.bytes.count > FineidValues.organizationPinMaximumLength
+    else {
+      return
+    }
+    throw CardOperationError.credentialLengthUnsupported
+  }
+
   /// Verifies PIN1, consuming the one-shot credential.
   ///
-  /// Sends VERIFY with the padded PIN block (the noncopyable transport
-  /// value guarantees at most one card command). Returns normally only
-  /// on `9000`; a wrong PIN throws `pinRejected` carrying the remaining
-  /// attempts, and any other answer throws `pinVerifyFailed`. The caller
-  /// must already have cleared the retry floor.
+  /// Sends VERIFY with the numbering's credential block (the
+  /// noncopyable transport value guarantees at most one card command).
+  /// Returns normally only on `9000`; a wrong PIN throws `pinRejected`
+  /// carrying the remaining attempts, and any other answer throws
+  /// `pinVerifyFailed`. The caller must already have cleared the retry
+  /// floor.
   public func verifyPin1(_ transmission: consuming Pin1Transmission) throws {
-    let command = CredentialBearingCommand.verifyPin1(transmission)
+    let references = try resolveCredentialReferences()
+    try Self.checkTypedLength(of: transmission.store, under: references)
+    let command = CredentialBearingCommand.verifyPin1(
+      transmission,
+      references: references
+    )
     let raw = try channel.transmit(command.intoTransportPayload())
     guard let response = ResponseApdu(raw: raw) else {
       throw CardOperationError.malformedResponse
@@ -43,7 +71,12 @@ extension CardOperations {
   /// maps to `credentialInvalidated`. The caller must already have
   /// cleared the retry floor.
   public func verifyPin2(_ transmission: consuming Pin2Transmission) throws {
-    let command = CredentialBearingCommand.verifyPin2(transmission)
+    let references = try resolveCredentialReferences()
+    try Self.checkTypedLength(of: transmission.store, under: references)
+    let command = CredentialBearingCommand.verifyPin2(
+      transmission,
+      references: references
+    )
     let raw = try channel.transmit(command.intoTransportPayload())
     guard let response = ResponseApdu(raw: raw) else {
       throw CardOperationError.malformedResponse
@@ -63,7 +96,8 @@ extension CardOperations {
   }
 
   /// Changes PIN1: the card checks `current` and replaces it with `new`
-  /// in one command (CHANGE REFERENCE DATA, S1 v4.2 §3.5.3).
+  /// in one command (CHANGE REFERENCE DATA, S1 v4.2 §3.5.3; Idemia
+  /// organizational cards specification §4.1.7).
   ///
   /// On success the retry counter is at its maximum and the verified
   /// flag is cleared - the new PIN is set but not presented. A wrong
@@ -73,8 +107,15 @@ extension CardOperations {
     current: consuming Pin1Transmission,
     new: consuming Pin1Transmission
   ) throws {
+    let references = try resolveCredentialReferences()
+    try Self.checkTypedLength(of: current.store, under: references)
+    try Self.checkTypedLength(of: new.store, under: references)
     try performCredentialUpdate(
-      CredentialBearingCommand.changePin1(current: current, new: new)
+      CredentialBearingCommand.changePin1(
+        current: current,
+        new: new,
+        references: references
+      )
     )
   }
 
@@ -87,40 +128,109 @@ extension CardOperations {
     current: consuming Pin2Transmission,
     new: consuming Pin2Transmission
   ) throws {
+    let references = try resolveCredentialReferences()
+    try Self.checkTypedLength(of: current.store, under: references)
+    try Self.checkTypedLength(of: new.store, under: references)
     try performCredentialUpdate(
-      CredentialBearingCommand.changePin2(current: current, new: new)
+      CredentialBearingCommand.changePin2(
+        current: current,
+        new: new,
+        references: references
+      )
     )
   }
 
-  /// Unblocks PIN1: the card checks the PUK, resets PIN1's retry
-  /// counter, and sets `new` as its value (RESET RETRY COUNTER,
-  /// S1 v4.2 §3.5.4).
+  /// Unblocks PIN1: the card checks the unblocking credential, resets
+  /// PIN1's retry counter, and sets `new` as its value.
   ///
-  /// A wrong PUK throws `pinRejected` carrying the PUK's own remaining
-  /// count, and exhausting the PUK is terminal for the card - the
-  /// caller must have cleared the retry floor for the PUK, not the
+  /// The citizen card does all of that in one RESET RETRY COUNTER
+  /// (S1 v4.2 §3.5.4). The organization card takes two commands: the
+  /// unblock credential is verified as its own object first, then the
+  /// reset carries only the new PIN (S4-2 v4.0 §4.3.2; Idemia
+  /// organizational cards specification §4.1.6) - a refused code ends
+  /// the flow before the reset. Either way a wrong code throws
+  /// `pinRejected` carrying the code's own remaining count, and
+  /// exhausting it is terminal for the card - the caller must have
+  /// cleared the retry floor for the unblocking credential, not the
   /// target PIN. On success the new PIN is set but not presented.
   public func unblockPin1(
     puk: consuming PukTransmission,
     new: consuming Pin1Transmission
   ) throws {
-    try performCredentialUpdate(
-      CredentialBearingCommand.unblockPin1(puk: puk, new: new)
-    )
+    let references = try resolveCredentialReferences()
+    try Self.checkTypedLength(of: puk.store, under: references)
+    try Self.checkTypedLength(of: new.store, under: references)
+    switch references {
+    case .citizen:
+      try performCredentialUpdate(
+        CredentialBearingCommand.unblockPin1(
+          puk: puk,
+          new: new,
+          references: references
+        )
+      )
+    case .organization:
+      try performOrganizationUnblock(
+        verify: CredentialBearingCommand.verifyUnblockCredential(
+          puk,
+          references: references
+        ),
+        reset: CredentialBearingCommand.resetPin1AfterVerifiedUnblock(
+          new: new,
+          references: references
+        )
+      )
+    }
   }
 
-  /// Unblocks PIN2: the card checks the PUK, resets PIN2's retry
-  /// counter, and sets `new` as its value (RESET RETRY COUNTER,
-  /// S1 v4.2 §3.5.4).
+  /// Unblocks PIN2: the card checks the unblocking credential, resets
+  /// PIN2's retry counter, and sets `new` as its value.
   ///
   /// Same semantics as `unblockPin1`, against the PIN2 slot.
   public func unblockPin2(
     puk: consuming PukTransmission,
     new: consuming Pin2Transmission
   ) throws {
-    try performCredentialUpdate(
-      CredentialBearingCommand.unblockPin2(puk: puk, new: new)
-    )
+    let references = try resolveCredentialReferences()
+    try Self.checkTypedLength(of: puk.store, under: references)
+    try Self.checkTypedLength(of: new.store, under: references)
+    switch references {
+    case .citizen:
+      try performCredentialUpdate(
+        CredentialBearingCommand.unblockPin2(
+          puk: puk,
+          new: new,
+          references: references
+        )
+      )
+    case .organization:
+      try performOrganizationUnblock(
+        verify: CredentialBearingCommand.verifyUnblockCredential(
+          puk,
+          references: references
+        ),
+        reset: CredentialBearingCommand.resetPin2AfterVerifiedUnblock(
+          new: new,
+          references: references
+        )
+      )
+    }
+  }
+
+  /// Sends the organization card's two-command unblock in order,
+  /// stopping at the first refused answer: only an accepted unblock
+  /// credential lets the reset go out.
+  ///
+  /// Both commands were built - and their transmissions consumed -
+  /// before anything reached the card, keeping the one-entry-one-
+  /// command chain linear; a `verify` refusal simply drops the unsent
+  /// reset command.
+  private func performOrganizationUnblock(
+    verify: consuming CredentialBearingCommand,
+    reset: consuming CredentialBearingCommand
+  ) throws {
+    try performCredentialUpdate(verify)
+    try performCredentialUpdate(reset)
   }
 
   /// Sends one credential update and classifies the card's answer: it

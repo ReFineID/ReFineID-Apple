@@ -21,9 +21,31 @@ internal enum FineidValues {
   /// PUK reference (PKCS#15 numbering, reference implementation).
   internal static let pukReference: UInt8 = 0x83
 
+  /// PIN1 reference on the organization card: the PIN AUTH
+  /// security-data-object identifier (FINEID S4-2 v4.0 §4.2).
+  internal static let organizationPin1Reference: UInt8 = 0x03
+
+  /// PIN2 reference on the organization card: the PIN SIG identifier
+  /// (FINEID S4-2 v4.0 §4.2).
+  internal static let organizationPin2Reference: UInt8 = 0x04
+
+  /// Activation-code reference on the organization card: the PIN PUK
+  /// identifier (S4-2 v4.0 §4.2); its EF.AOD names the credential
+  /// "aktivointitunnusluku".
+  internal static let organizationPukReference: UInt8 = 0x12
+
   /// Stored PIN block length: entered digits are right-padded to this
   /// many bytes (S4-1 v3.1).
   internal static let pinStoredLength: Int = 12
+
+  /// Longest credential the organization card stores: eight characters
+  /// for PIN AUTH, PIN SIG, and PIN PUK alike (FINEID S4-2 v4.0 §4.3).
+  ///
+  /// The organization card compares a credential at its typed length -
+  /// its EF.AOD publishes no padding attribute, and FINEID S1 v3.0
+  /// §3.5.1.1 requires the entered length to equal the stored one - so
+  /// nothing longer can ever be a valid credential there.
+  internal static let organizationPinMaximumLength: Int = 8
 
   /// The padding byte for the PIN block.
   ///
@@ -211,7 +233,7 @@ internal enum FineidValues {
   /// PIN-changed flag value meaning "changed at least once".
   internal static let pinChangedFlagChanged: UInt8 = 0x01
 
-  /// The VERIFY P2 reference for a credential role.
+  /// The VERIFY P2 reference for a credential role (citizen numbering).
   internal static func reference(for role: CredentialRole) -> UInt8 {
     switch role {
     case .pin1:
@@ -220,6 +242,19 @@ internal enum FineidValues {
       pin2Reference
     case .puk:
       pukReference
+    }
+  }
+
+  /// The VERIFY P2 reference for a credential role on the organization
+  /// card (S4-2 v4.0 §4.2 security-data-object identifiers).
+  internal static func organizationReference(for role: CredentialRole) -> UInt8 {
+    switch role {
+    case .pin1:
+      organizationPin1Reference
+    case .pin2:
+      organizationPin2Reference
+    case .puk:
+      organizationPukReference
     }
   }
 }

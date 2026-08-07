@@ -18,16 +18,33 @@ internal struct CommandApduTests {
     // FINEID S1 v4.2 §3.5.1.1: VERIFY with Lc=00 probes the counter
     // without consuming an attempt. P2 selects the credential.
     #expect(
-      CommandApdu.readRetryCounter(role: .pin1).encoded
+      CommandApdu.readRetryCounter(role: .pin1, references: .citizen).encoded
         == WireHex.data("0020001100")
     )
     #expect(
-      CommandApdu.readRetryCounter(role: .pin2).encoded
+      CommandApdu.readRetryCounter(role: .pin2, references: .citizen).encoded
         == WireHex.data("0020008200")
     )
     #expect(
-      CommandApdu.readRetryCounter(role: .puk).encoded
+      CommandApdu.readRetryCounter(role: .puk, references: .citizen).encoded
         == WireHex.data("0020008300")
+    )
+  }
+
+  @Test
+  internal func retryCounterProbesTheOrganizationNumbering() {
+    // FINEID S4-2 v4.0 §4.2: PIN AUTH 03, PIN SIG 04, PIN PUK 12.
+    #expect(
+      CommandApdu.readRetryCounter(role: .pin1, references: .organization).encoded
+        == WireHex.data("0020000300")
+    )
+    #expect(
+      CommandApdu.readRetryCounter(role: .pin2, references: .organization).encoded
+        == WireHex.data("0020000400")
+    )
+    #expect(
+      CommandApdu.readRetryCounter(role: .puk, references: .organization).encoded
+        == WireHex.data("0020001200")
     )
   }
 
@@ -128,7 +145,8 @@ internal struct CommandApduTests {
       return
     }
     let command = CredentialBearingCommand.verifyPin1(
-      pin.consumeForSingleTransmission()
+      pin.consumeForSingleTransmission(),
+      references: .citizen
     )
     #expect(
       command.intoTransportPayload()
