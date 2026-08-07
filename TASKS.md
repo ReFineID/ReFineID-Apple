@@ -135,9 +135,11 @@ Legend:
 
 ## 6b. PKCS#11 bridge (PKCS11Bridge/)
 
-Scaffold in place: dynamic library with the complete v2.40
-CK_FUNCTION_LIST, Swift general-purpose entry points, package tests,
-lint-gate coverage. Ladder milestones, each against real hardware:
+Scaffold in place: dynamic library implementing the full PKCS#11 v3.2
+surface (all 104 entry points; C_GetInterfaceList/C_GetInterface
+publish 3.2, 3.0, and legacy 2.40 interfaces), Swift general-purpose
+entry points, package tests, lint-gate coverage. Ladder milestones,
+each against real hardware:
 
 - [ ] Slot and token enumeration from keychain token items
   (C_GetSlotList, C_GetSlotInfo, C_GetTokenInfo; slot per token,
@@ -157,9 +159,9 @@ lint-gate coverage. Ladder milestones, each against real hardware:
   signature from EU DSS.
 - [ ] Decide install path and packaging (ssh-agent allowlist:
   /usr/lib* and /usr/local/lib* by default).
-- [ ] Expose PKCS#11 3.x C_GetInterface/C_GetInterfaceList over the
-  same function table once a target consumer benefits; that plus
-  CKO_PROFILE completes Baseline Provider conformance (profiles v3.2).
+- [ ] Add the CKO_PROFILE object to the object model to complete
+  Baseline Provider conformance (profiles v3.2); the interface surface
+  it requires is already in place.
 
 ## 7. PIN1 cache
 

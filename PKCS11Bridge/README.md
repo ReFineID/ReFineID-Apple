@@ -14,21 +14,18 @@ card login, OpenSSH -- cannot reach CryptoTokenKit tokens. Apple's own
 current FINEID cards enroll EC P-384 keys by default, for which this
 module is the only CTK-based PKCS#11 path.
 
-Status: scaffold. The module loads, initializes, and reports itself,
-and every entry point is present in `CK_FUNCTION_LIST` (unimplemented
-ones return `CKR_FUNCTION_NOT_SUPPORTED`). Token enumeration, the
-object model, and ECDSA signing are the next milestones; the
-compatibility ladder is `pkcs11-tool`, then `ssh`, then `keytool`
-(`SunPKCS11`), then a PAdES signature from EU DSS.
-
-Why v2.40 and not PKCS#11 3.x: 2.40 is the newest version every target
-consumer speaks -- OpenSSH and NSS discover modules via the 2.x
-`C_GetFunctionList`, and older `SunPKCS11` releases have no 3.0
-support -- while 3.x compliance requires exporting the 2.x entry
-points anyway, and the 3.x additions (message-based cryptography,
-`C_LoginUser`) do not apply to a read-and-sign token. Moving up later
-is additive: export `C_GetInterfaceList`/`C_GetInterface` over the
-same function table.
+Status: scaffold. The module loads, initializes, reports itself, and
+implements the full PKCS#11 v3.2 surface: all 104 entry points exist
+(unimplemented ones return `CKR_FUNCTION_NOT_SUPPORTED`, and the
+legacy parallel-management pair returns `CKR_FUNCTION_NOT_PARALLEL`,
+both as the spec directs). `C_GetInterfaceList`/`C_GetInterface`
+publish three "PKCS 11" interfaces -- 3.2, 3.0, and legacy 2.40 -- and
+`C_GetFunctionList` serves pre-3.0 consumers (OpenSSH, NSS, older
+`SunPKCS11`) with the 2.40 list, whose version field the spec fixes at
+2.40. Token enumeration, the object model, and ECDSA signing are the
+next milestones; the compatibility ladder is `pkcs11-tool`, then
+`ssh`, then `keytool` (`SunPKCS11`), then a PAdES signature from EU
+DSS.
 
 Build and test:
 
@@ -45,13 +42,17 @@ agent with `ssh-agent -P` naming the module's path.
 
 Specifications (https://docs.oasis-open.org/pkcs11/):
 
-- Base v2.40 plus errata01 include files: the implemented ABI,
-  `Cryptoki.h` is verified against them.
+- Spec v3.2 (OASIS Standard, os include files): the implemented ABI.
+  `Cryptoki.h` is verified against the official `pkcs11t.h`,
+  `pkcs11f.h`, and `pkcs11.h` -- constants, structure layouts, all
+  three function-list member orders, and all 104 prototype signatures.
+  The legacy 2.40 surface is additionally verified against the v2.40
+  errata01/os includes.
 - Profiles v3.2: conformance targets. The object model follows the
   Public Certificates Token behavior (certificates readable without
   login, key pairs discoverable through matching `CKA_ID`); Baseline
-  Provider conformance additionally needs the 3.x
-  `C_GetInterfaceList`/`C_GetInterface`, tracked in TASKS.md.
+  Provider conformance additionally needs a `CKO_PROFILE` object,
+  tracked in TASKS.md.
 - Current Mechanisms v3.0 (pkcs11-curr): normative mechanism
   definitions for the advertised set (CKM_ECDSA family first, RSA
   PKCS#1/PSS after). Note the signature format: CKM_ECDSA returns raw
@@ -59,5 +60,4 @@ Specifications (https://docs.oasis-open.org/pkcs11/):
   SecKeyCreateSignature produces.
 - Historical Mechanisms and Functions v3.0: the do-not-implement
   register; nothing listed there ships in this module.
-- Spec v3.2 and Usage Guide v3.2: reference for the eventual 3.x
-  interface surface.
+- Usage Guide v3.2: non-normative companion.
