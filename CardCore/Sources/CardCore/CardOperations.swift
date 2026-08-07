@@ -90,6 +90,17 @@ public struct CardOperations {
     throw CardOperationError.selectRejected(lastRejection)
   }
 
+  /// Makes the organization card's signature directory current.
+  ///
+  /// The card's qualified-signature service lives in DF.ESIGN
+  /// (FINEID S4-2 v4.0 §4.6.21): its certificate is filed there, and
+  /// the signature ceremony runs there. Public so a qualified sign
+  /// can enter the directory before verifying PIN2; the citizen card
+  /// has no such directory and never needs this.
+  public func selectEsignDirectory() throws {
+    try navigate(to: .esignApplication)
+  }
+
   /// Makes a certificate location's directory current.
   private func navigate(to directory: CertificateDirectory) throws {
     switch directory {

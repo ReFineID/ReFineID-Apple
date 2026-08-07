@@ -33,6 +33,9 @@
       algorithm: SigningAlgorithm,
       expectedSignatureLength: ExpectedResponseLength?
     ) -> Result<Data, ScsBackendFailure> {
+      if let refused = contextRefusal(operations, purpose: purpose) {
+        return .failure(refused)
+      }
       let role: CredentialRole = purpose == .authentication ? .pin1 : .pin2
       guard
         let probe = try? operations.probeRetryCounter(role: role),
@@ -70,15 +73,51 @@
             )
           )
         }
-      } catch CardOperationError.pinRejected(let remaining) {
-        return .failure(
-          .credentialRefused("PIN rejected; \(remaining.attemptsRemaining) attempts left"))
-      } catch CardOperationError.pinBlocked {
-        return .failure(.credentialRefused("credential blocked"))
-      } catch CardOperationError.credentialInvalidated {
-        return .failure(.credentialRefused("credential invalidated"))
       } catch {
-        return .failure(.signingUnavailable("sign chain failed"))
+        return .failure(refusal(from: error))
+      }
+    }
+
+    /// Enters the directory the sign must run in, when the card has
+    /// one.
+    ///
+    /// The organization card's qualified-signature service lives in
+    /// DF.ESIGN (S4-2 v4.0 §4.6.21): the ceremony enters it before
+    /// the floor probe so PIN SIG is verified and spent in the
+    /// context the signature runs in.
+    private static func contextRefusal(
+      _ operations: CardOperations,
+      purpose: ScsSignPurpose
+    ) -> ScsBackendFailure? {
+      guard
+        purpose == .qualified,
+        (try? operations.resolveCredentialReferences()) == .organization
+      else {
+        return nil
+      }
+      do {
+        try operations.selectEsignDirectory()
+        return nil
+      } catch {
+        ScsLog.error("backend: signature directory unavailable (\(error))")
+        return .signingUnavailable("signature directory unavailable")
+      }
+    }
+
+    /// Maps a refused verify or sign to the backend's failure pair,
+    /// logging the card's own answer for the unexpected class.
+    private static func refusal(from error: any Error) -> ScsBackendFailure {
+      switch error {
+      case CardOperationError.pinRejected(let remaining):
+        return .credentialRefused(
+          "PIN rejected; \(remaining.attemptsRemaining) attempts left")
+      case CardOperationError.pinBlocked:
+        return .credentialRefused("credential blocked")
+      case CardOperationError.credentialInvalidated:
+        return .credentialRefused("credential invalidated")
+      default:
+        ScsLog.error("backend: sign chain failed (\(error))")
+        return .signingUnavailable("sign chain failed")
       }
     }
 
