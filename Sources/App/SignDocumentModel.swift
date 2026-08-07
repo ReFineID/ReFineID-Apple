@@ -27,7 +27,7 @@
 
     /// The complete visible statement read from the card, with
     /// handwriting when the card carries it and identity alone otherwise.
-    private var stampState: DocumentStampState?
+    internal private(set) var stampState: DocumentStampState?
 
     /// Changes whenever the card leaves, invalidating card work already
     /// awaiting an answer without cancelling work that may still complete.
@@ -171,6 +171,7 @@
     internal func sign(
       pin2: String,
       accessNumber: String,
+      format: SignatureFormat,
       to destination: URL
     ) async {
       guard let source = pending, !working else { return }
@@ -185,121 +186,84 @@
         return
       }
       let appearance = beginSigning()
-      let stampStyle = DocumentStampStyle.load()
-      // The card is read for the mark here, where the holder has
-      // asked for a signature - not while they were still typing the
-      // number that unlocks it.
-      await readStamp(accessNumber: accessNumber, style: stampStyle)
       defer { working = false }
       do {
-        let document = try Data(contentsOf: source)
-        let signedAt = Date()
-        let visibleStamp = try await self.signedVisibleStamp(
-          on: document,
-          source: source,
-          pin2: pin2,
-          at: signedAt,
-          style: stampStyle
-        )
-        #if DEBUG
-          let reason =
-            DebugRevokedDocumentSigning.isEnabled()
-            ? DebugRevokedDocumentSigning.reason : nil
-        #else
-          let reason: String? = nil
-        #endif
-        let pdfClaim = PdfIncrementalSigner.SignatureClaim(
-          signedAt: signedAt,
-          reason: reason,
-          location: nil
-        )
-        let result = try await DocumentSigner.sign(
-          document,
-          pin2: pin2,
-          claim: pdfClaim,
-          stamp: visibleStamp
-        )
-        try result.bytes.write(to: destination, options: .atomic)
-        #if DEBUG
-          if result.completion == .revokedSignerTest {
-            notice = DebugRevokedDocumentSigning.warning
-          }
-        #endif
+        switch format {
+        case .asice:
+          try await signContainer(source, pin2: pin2, to: destination)
+        case .pades:
+          try await signPdf(
+            source, pin2: pin2, accessNumber: accessNumber, to: destination
+          )
+        }
         complete(with: destination)
       } catch {
         report(error, from: appearance)
       }
     }
 
-    /// The placed mark and the exact certificate identity it states.
-    internal func visibleStamp(on document: Data) -> DocumentSigner.VisibleStamp? {
-      guard let state = stampState else { return nil }
-      let rendered = StampRenderer.mark(state.statement)
-      guard let placed = StampPlacement.placed(rendered, on: document) else {
-        return nil
-      }
-      return DocumentSigner.VisibleStamp(
-        mark: placed,
-        signerCertificate: state.signerCertificate
+    /// One ASiC-E signature: the file as it is, no visible stamp -
+    /// the container carries the file unchanged, so there is no signed
+    /// revision to draw a mark into.
+    private func signContainer(
+      _ source: URL,
+      pin2: String,
+      to destination: URL
+    ) async throws {
+      let document = try Data(contentsOf: source)
+      let container = try await AsicSigner.sign(
+        document,
+        named: source.lastPathComponent,
+        pin2: pin2
       )
+      try container.write(to: destination, options: .atomic)
     }
 
-    /// The portrait QR path, falling back to the existing mark when the
-    /// card supplied no portrait.
-    private func signedVisibleStamp(
-      on document: Data,
-      source: URL,
+    /// One PAdES signature, with the optional visible stamp.
+    private func signPdf(
+      _ source: URL,
       pin2: String,
-      at instant: Date,
-      style: DocumentStampStyle
-    ) async throws -> DocumentSigner.VisibleStamp? {
-      guard style == .portraitQr else {
-        return self.visibleStamp(on: document)
-      }
-      guard let state = stampState else { return nil }
-      guard
-        let portraitBytes = state.portrait,
-        let claim = StampAttestation.claim(
-          identifier: state.statement.identifier,
-          filename: source.lastPathComponent,
-          at: instant
-        )
-      else {
-        return self.visibleStamp(on: document)
-      }
-      let payload = try await DocumentSigner.attestation(
-        over: claim,
+      accessNumber: String,
+      to destination: URL
+    ) async throws {
+      let stampStyle = DocumentStampStyle.load()
+      // The card is read for the mark here, where the holder has
+      // asked for a signature - not while they were still typing the
+      // number that unlocks it.
+      await readStamp(accessNumber: accessNumber, style: stampStyle)
+      let document = try Data(contentsOf: source)
+      let signedAt = Date()
+      let visibleStamp = try await self.signedVisibleStamp(
+        on: document,
+        source: source,
         pin2: pin2,
-        expectedCertificate: state.signerCertificate
+        at: signedAt,
+        style: stampStyle
       )
-      guard
-        let qrCode = QrCode.modules(of: payload),
-        let fieldSide = StampRenderer.portraitFieldSide(
-          forQrSide: qrCode.side
-        ),
-        let portrait = PortraitHalftone.map(
-          imageData: portraitBytes,
-          side: qrCode.side,
-          fieldSide: fieldSide
-        ),
-        let qrPortrait = QrPortrait.artwork(qr: qrCode, portrait: portrait)
-      else {
-        throw StampPreparationFailure.rendering
-      }
-      let rendered = StampRenderer.mark(
-        state.portraitStatement(qrPortrait: qrPortrait)
+      #if DEBUG
+        let reason =
+          DebugRevokedDocumentSigning.isEnabled()
+          ? DebugRevokedDocumentSigning.reason : nil
+      #else
+        let reason: String? = nil
+      #endif
+      let pdfClaim = PdfIncrementalSigner.SignatureClaim(
+        signedAt: signedAt,
+        reason: reason,
+        location: nil
       )
-      guard
-        let placed = StampPlacement.placed(
-          rendered,
-          on: document,
-          minimumShare: 1
-        )
-      else { return nil }
-      return DocumentSigner.VisibleStamp(
-        mark: placed,
-        signerCertificate: state.signerCertificate
+      let result = try await DocumentSigner.sign(
+        document,
+        pin2: pin2,
+        claim: pdfClaim,
+        stamp: visibleStamp
       )
+      try result.bytes.write(to: destination, options: .atomic)
+      #if DEBUG
+        if result.completion == .revokedSignerTest {
+          notice = DebugRevokedDocumentSigning.warning
+        }
+      #endif
     }
 
     /// Records a completed write and releases the card identity state.

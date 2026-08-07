@@ -27,6 +27,10 @@
           + "No signed file was written."
       case StampPreparationFailure.rendering:
         "The signed portrait QR could not be rendered. No signed file was written."
+      case AsicSigner.Failure.container:
+        "The signed container could not be written."
+      case AsicSigner.Failure.signedOctetsChanged:
+        "The card signed unexpected bytes. No signed file was written."
       default:
         "The document could not be signed."
       }

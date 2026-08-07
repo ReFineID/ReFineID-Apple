@@ -34,6 +34,7 @@
     @State private var pin2 = ""
     @State private var accessNumber = ""
     @State private var isTargeted = false
+    @State private var format = SignatureFormat.pades
     @FocusState private var pinFocused: Bool
 
     /// Ready when a document is waiting and the entry could be a PIN2.
@@ -66,7 +67,7 @@
           .font(.largeTitle.bold())
         Form {
           LabeledContent("Identity") {
-            identityState
+            IdentityStateView(availability: availability)
           }
           .accessibilityIdentifier("loginIdentityStatus")
           // No card, no card work: a drop target that cannot sign
@@ -96,24 +97,6 @@
       }
       .onChange(of: availability) { _, now in
         react(to: now)
-      }
-    }
-
-    /// Ready, or what to do about it - and the one state between,
-    /// named honestly instead of asking for a card that is already
-    /// in the reader.
-    @ViewBuilder private var identityState: some View {
-      switch availability {
-      case .ready:
-        Image(systemName: "checkmark")
-          .foregroundStyle(.green)
-          .accessibilityLabel("Ready")
-      case .cardWithoutIdentity:
-        Text("Card detected, not ready - if this lasts, re-insert it")
-          .foregroundStyle(.orange)
-      case .noCard:
-        Text("Insert your card")
-          .foregroundStyle(.secondary)
       }
     }
 
@@ -157,7 +140,7 @@
           Button("Choose a different document…") { choose() }
             .buttonStyle(.link)
         } else {
-          Text("Drop a PDF here to sign it")
+          Text("Drop a document here to sign it")
             .foregroundStyle(.secondary)
           Button("Choose…") { choose() }
             .buttonStyle(.link)
@@ -169,8 +152,9 @@
     /// PIN2, the optional stamp, and the action - shown once a
     /// document is waiting.
     @ViewBuilder private var signatureSection: some View {
-      if signing.pending != nil {
+      if let pending = signing.pending {
         Section {
+          SignatureFormatRow(pending: pending, format: $format)
           SecureField("PIN2", text: $pin2)
             .onChange(of: pin2) { _, typed in
               pin2 = LimitedDigits.pin(typed)
@@ -178,32 +162,41 @@
             .focused($pinFocused)
             .onSubmit { sign() }
             .accessibilityIdentifier("signPin2")
-          StampRow(signing: signing, accessNumber: $accessNumber)
+          // The visible stamp is drawn into the PDF's signed revision;
+          // a container carries the file unchanged, so there is
+          // nothing to draw it into.
+          if format == .pades {
+            StampRow(signing: signing, accessNumber: $accessNumber)
+          }
           #if DEBUG
             if DebugRevokedDocumentSigning.isEnabled() {
               Text(DebugRevokedDocumentSigning.armedWarning)
                 .foregroundStyle(.orange)
             }
           #endif
-          HStack {
-            // The action row carries the progress too: it is already
-            // there and half empty, and a line that appears and
-            // disappears steps the window as the card is read.
-            if let note = Self.progressNote(signing) {
-              ProgressView().controlSize(.small)
-              Text(note)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-            }
-            Spacer()
-            Button("Sign…") { sign() }
-              .buttonStyle(.borderedProminent)
-              .keyboardShortcut(.defaultAction)
-              .disabled(!canSign)
-              .accessibilityIdentifier("signDocument")
-          }
+          actionRow
         }
         .onAppear { pinFocused = true }
+      }
+    }
+
+    /// The action row, carrying the progress too: it is already there
+    /// and half empty, and a line that appears and disappears steps
+    /// the window as the card is read.
+    @ViewBuilder private var actionRow: some View {
+      HStack {
+        if let note = Self.progressNote(signing) {
+          ProgressView().controlSize(.small)
+          Text(note)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+        }
+        Spacer()
+        Button("Sign…") { sign() }
+          .buttonStyle(.borderedProminent)
+          .keyboardShortcut(.defaultAction)
+          .disabled(!canSign)
+          .accessibilityIdentifier("signDocument")
       }
     }
 
@@ -274,14 +267,12 @@
       }
     }
 
-    /// Takes a dropped document, refusing anything that is not a PDF.
+    /// Takes a dropped document of any type: a PDF is signed in place
+    /// by default, anything else travels in an ASiC-E container.
     private func accept(_ urls: [URL]) -> Bool {
       guard let url = urls.first else { return false }
-      guard url.pathExtension.lowercased() == "pdf" else {
-        signing.report(String(localized: "Only PDF documents can be signed."))
-        return false
-      }
       signing.accept(url)
+      format = SignatureFormat.available(for: url).first ?? .asice
       pin2 = ""
       pinFocused = true
       return true
@@ -290,12 +281,9 @@
     /// Opens the chooser.
     private func choose() {
       let panel = NSOpenPanel()
-      panel.allowedContentTypes = [.pdf]
       panel.allowsMultipleSelection = false
       guard panel.runModal() == .OK, let url = panel.url else { return }
-      signing.accept(url)
-      pin2 = ""
-      pinFocused = true
+      _ = accept([url])
     }
 
     /// Asks where the signature goes, then signs.
@@ -307,8 +295,10 @@
     private func sign() {
       guard canSign, let source = signing.pending else { return }
       let panel = NSSavePanel()
-      panel.allowedContentTypes = [.pdf]
-      panel.nameFieldStringValue = SignDocumentModel.suggestedName(for: source)
+      panel.allowedContentTypes = format.allowedContentTypes
+      panel.nameFieldStringValue = SignDocumentModel.suggestedName(
+        for: source, format: format
+      )
       panel.directoryURL = source.deletingLastPathComponent()
       panel.message = String(localized: "Where to keep the signed document.")
       panel.prompt = String(localized: "Sign")
@@ -318,8 +308,14 @@
       let entry = pin2
       pin2 = ""
       let number = accessNumber
+      let chosenFormat = format
       Task {
-        await signing.sign(pin2: entry, accessNumber: number, to: destination)
+        await signing.sign(
+          pin2: entry,
+          accessNumber: number,
+          format: chosenFormat,
+          to: destination
+        )
       }
     }
   }

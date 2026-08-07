@@ -1,0 +1,201 @@
+import Foundation
+import Testing
+
+@testable import CardCore
+
+/// The ASiC-E archive writer: entry order, the mimetype rule, and the
+/// unsigned inventory.
+@Suite
+internal struct AsicContainerTests {
+  /// One placeholder file to carry.
+  private static func sample() -> [AsicContainer.DataObject] {
+    let object = AsicContainer.DataObject(
+      name: "dossier.pdf",
+      mimeType: "application/pdf",
+      content: Data("a set of statements worth signing".utf8)
+    )
+    return [object]
+  }
+
+  /// Decoded UTF-8, failing the test on undecodable bytes.
+  private static func text(_ data: Data) throws -> String {
+    try #require(String(bytes: data, encoding: .utf8))
+  }
+
+  /// One `unzip` run against the scratch directory.
+  private static func unzip(_ arguments: [String]) throws -> String {
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/unzip")
+    process.arguments = arguments
+    let pipe = Pipe()
+    process.standardOutput = pipe
+    try process.run()
+    process.waitUntilExit()
+    let report = try Self.text(
+      pipe.fileHandleForReading.readDataToEndOfFile()
+    )
+    try #require(process.terminationStatus == 0, "unzip failed: \(report)")
+    return report
+  }
+
+  @Test
+  internal func crc32MatchesTheKnownCheckValue() {
+    // The standard CRC-32 check value for "123456789".
+    #expect(
+      AsicContainer.ZipWriter.crc32(Data("123456789".utf8)) == 0xCBF4_3926
+    )
+    #expect(AsicContainer.ZipWriter.crc32(Data()) == 0)
+  }
+
+  @Test
+  internal func mimetypeIsFirstAndStoredAtAFixedOffset() throws {
+    let archive = try #require(
+      AsicContainer.container(
+        objects: Self.sample(),
+        signatureXml: Data("not really a signature".utf8)
+      )
+    )
+    // A reader identifies the container by the bytes right after the
+    // first local header: the entry name, then the media type.
+    let nameStart = ZipValues.localHeaderLength
+    let nameEnd = nameStart + AsicContainer.mimetypeEntryName.utf8.count
+    #expect(
+      archive[nameStart..<nameEnd]
+        == Data(AsicContainer.mimetypeEntryName.utf8)
+    )
+    let mediaEnd = nameEnd + AsicContainer.mimeType.utf8.count
+    #expect(archive[nameEnd..<mediaEnd] == Data(AsicContainer.mimeType.utf8))
+  }
+
+  @Test
+  internal func everyExpectedEntryIsPresent() throws {
+    let archive = try #require(
+      AsicContainer.container(
+        objects: Self.sample(),
+        signatureXml: Data("signature".utf8)
+      )
+    )
+    for entry in [
+      AsicContainer.mimetypeEntryName,
+      "dossier.pdf",
+      AsicContainer.manifestEntryName,
+      AsicContainer.signatureEntryName,
+    ] {
+      #expect(
+        archive.firstRange(of: Data(entry.utf8)) != nil,
+        "missing entry \(entry)"
+      )
+    }
+  }
+
+  @Test
+  internal func tooManyEntriesAreRefusedBeforeTheCountWraps() {
+    var writer = AsicContainer.ZipWriter()
+    for index in 0...Int(UInt16.max) {
+      writer.add(name: "entry-\(index)", content: Data())
+    }
+    // The 65536th entry overflowed the 16-bit count; the writer must
+    // refuse to produce an archive that misdescribes itself.
+    #expect(writer.finish() == nil)
+  }
+
+  @Test
+  internal func theInventoryNamesTheContainerFirstAndEveryFile() throws {
+    let manifest = try Self.text(AsicContainer.manifest(Self.sample()))
+    #expect(
+      manifest.contains(
+        #"manifest:full-path="/" "#
+          + #"manifest:media-type="\#(AsicContainer.mimeType)""#
+      )
+    )
+    #expect(manifest.contains(#"manifest:full-path="dossier.pdf""#))
+    #expect(manifest.contains(#"manifest:media-type="application/pdf""#))
+  }
+
+  /// A name reaches the inventory as a URI, not as text.
+  ///
+  /// It is percent-encoded first (RFC 3986) and XML-escaped after.
+  /// The order matters - a raw `#` would truncate the reference to
+  /// everything before it.
+  @Test
+  internal func namesArePercentEncodedBeforeXmlEscaping() throws {
+    let object = AsicContainer.DataObject(
+      name: "a&b\"c#d e.pdf",
+      mimeType: "application/pdf",
+      content: Data("x".utf8)
+    )
+    let manifest = try Self.text(AsicContainer.manifest([object]))
+    #expect(
+      manifest.contains(#"manifest:full-path="a%26b%22c%23d%20e.pdf""#),
+      "name must be percent-encoded: \(manifest)"
+    )
+    #expect(!manifest.contains("c#d"), "a bare # would truncate the URI")
+  }
+
+  /// A media type is not a URI: it is XML-escaped and not encoded.
+  @Test
+  internal func mediaTypesAreEscapedButNotEncoded() throws {
+    let object = AsicContainer.DataObject(
+      name: "a.bin",
+      mimeType: "text/plain; x=\"1&2\"",
+      content: Data("x".utf8)
+    )
+    let manifest = try Self.text(AsicContainer.manifest([object]))
+    #expect(
+      manifest.contains(
+        #"manifest:media-type="text/plain; x=&quot;1&amp;2&quot;""#
+      ),
+      "\(manifest)"
+    )
+  }
+
+  /// The archive read back by a tool that is not ours.
+  ///
+  /// `unzip` walks the central directory, checks every CRC, and
+  /// extracts. If it agrees, the offsets and checksums are right.
+  @Test
+  internal func unzipReadsAndVerifiesTheContainer() throws {
+    let directory = FileManager.default.temporaryDirectory
+      .appendingPathComponent("asic-container-tests-\(UUID().uuidString)")
+    try FileManager.default.createDirectory(
+      at: directory, withIntermediateDirectories: true
+    )
+    defer { try? FileManager.default.removeItem(at: directory) }
+
+    let dossier = Data("ReFineID ASiC interoperability dossier".utf8)
+    let objects = [
+      AsicContainer.DataObject(
+        name: "dossier.pdf", mimeType: "application/pdf", content: dossier
+      ),
+      AsicContainer.DataObject(
+        name: "annex.txt",
+        mimeType: "text/plain",
+        content: Data("annex one, completed and signed".utf8)
+      ),
+    ]
+    let archive = try #require(
+      AsicContainer.container(
+        objects: objects, signatureXml: Data("placeholder".utf8)
+      )
+    )
+    let container = directory.appendingPathComponent("out.asice")
+    try archive.write(to: container)
+
+    // Every CRC and every offset, checked by an outside reader.
+    let report = try Self.unzip(["-t", container.path])
+    #expect(report.contains("No errors detected"), "\(report)")
+
+    // The entries come back byte-identical.
+    _ = try Self.unzip(["-o", "-q", container.path, "-d", directory.path])
+    let extracted = try Data(
+      contentsOf: directory.appendingPathComponent("dossier.pdf")
+    )
+    #expect(extracted == dossier)
+    let mimetype = try Data(
+      contentsOf: directory.appendingPathComponent(
+        AsicContainer.mimetypeEntryName
+      )
+    )
+    #expect(mimetype == Data(AsicContainer.mimeType.utf8))
+  }
+}

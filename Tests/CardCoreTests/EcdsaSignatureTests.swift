@@ -41,4 +41,37 @@ internal struct EcdsaSignatureTests {
     // point is a well-formed structure that re-parses.
     #expect(der.count > 96)
   }
+
+  @Test
+  internal func derBecomesAPaddedCoordinatePair() {
+    // SEQUENCE { INTEGER 0x00AABB, INTEGER 0x01 } - the first with a
+    // DER sign byte that is padding, not magnitude.
+    let der = WireHex.data("30080203" + "00AABB" + "020101")
+    let pair = EcdsaSignature.rawConcatenation(fromDer: der, coordinateOctets: 4)
+    #expect(pair == WireHex.data("0000AABB" + "00000001"))
+    // A coordinate wider than the field is a curve mismatch.
+    #expect(
+      EcdsaSignature.rawConcatenation(fromDer: der, coordinateOctets: 1) == nil
+    )
+    // Not a SEQUENCE of exactly two INTEGERs.
+    #expect(
+      EcdsaSignature.rawConcatenation(
+        fromDer: WireHex.data("3000"), coordinateOctets: 4
+      ) == nil
+    )
+    // Trailing bytes after the SEQUENCE are refused.
+    #expect(
+      EcdsaSignature.rawConcatenation(
+        fromDer: der + WireHex.data("00"), coordinateOctets: 4
+      ) == nil
+    )
+  }
+
+  @Test
+  internal func rawSurvivesTheDerRoundTrip() throws {
+    let raw = Data((1..<97).map { UInt8($0) })
+    let der = try #require(EcdsaSignature.derFromRawConcatenation(raw))
+    let back = EcdsaSignature.rawConcatenation(fromDer: der, coordinateOctets: 48)
+    #expect(back == raw)
+  }
 }

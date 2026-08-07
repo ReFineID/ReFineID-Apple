@@ -81,7 +81,7 @@
             document, pin2: pin2, reason: nil, location: nil
           )
           let destination = SignDocumentModel.destination(
-            for: source, at: Date()
+            for: source, at: Date(), format: .pades
           )
           try product.bytes.write(to: destination, options: .atomic)
           box.record(
