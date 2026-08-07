@@ -10,13 +10,22 @@ import Foundation
 /// serverAuth. Signing stays a caller-supplied closure so the key
 /// can live wherever the platform keeps it.
 public enum ScsLocalhostCertificate {
+  /// The certificate's common name, which the specification fixes at
+  /// the loopback address (v1.3 §2.3).
+  ///
+  /// Public because it is also how the certificate is found again:
+  /// the keychain derives a certificate's label from its subject, so
+  /// this name - not a label chosen at store time - is the reliable
+  /// handle on it.
+  public static let commonName = "127.0.0.1"
+
   /// The certificate's one subject and issuer name.
   private static var name: Data {
-    let commonName = DerEncoder.sequence([
+    let attribute = DerEncoder.sequence([
       DerEncoder.objectIdentifier(SignOids.commonName),
-      DerEncoder.tlv(DerValues.tagUtf8String, Data("127.0.0.1".utf8)),
+      DerEncoder.tlv(DerValues.tagUtf8String, Data(Self.commonName.utf8)),
     ])
-    return DerEncoder.sequence([DerEncoder.setOf([commonName])])
+    return DerEncoder.sequence([DerEncoder.setOf([attribute])])
   }
 
   /// ecdsa-with-SHA256, the signature this builder expects from its

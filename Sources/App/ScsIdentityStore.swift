@@ -30,23 +30,52 @@
     }
 
     /// The identity already in the keychain, when there is one.
+    ///
+    /// Every identity is enumerated and matched on its certificate's
+    /// common name, because neither narrowing attribute is
+    /// trustworthy here: an identity search does not filter on the
+    /// label at all - it answers whichever identity the keychain
+    /// lists first, on a developer's machine the code-signing one -
+    /// and a certificate's stored label comes from its subject
+    /// rather than from what the caller passed at store time. The
+    /// subject is the one handle the keychain cannot rewrite.
     private static func existingIdentity() -> SecIdentity? {
       let query: [String: Any] = [
         kSecClass as String: kSecClassIdentity,
-        kSecAttrLabel as String: label,
+        kSecMatchLimit as String: kSecMatchLimitAll,
         kSecReturnRef as String: true,
       ]
-      var item: CFTypeRef?
+      var items: CFTypeRef?
       guard
-        SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
-        let found = item,
-        CFGetTypeID(found) == SecIdentityGetTypeID()
+        SecItemCopyMatching(query as CFDictionary, &items) == errSecSuccess,
+        let candidates = items as? [Any]
       else {
         return nil
       }
-      // The type identifier was checked above; the bit pattern is an
-      // identity reference.
-      return unsafeDowncast(found, to: SecIdentity.self)
+      for candidate in candidates {
+        guard CFGetTypeID(candidate as CFTypeRef) == SecIdentityGetTypeID() else {
+          continue
+        }
+        // The type identifier was checked above; the bit pattern is
+        // an identity reference.
+        let identity = unsafeDowncast(candidate as AnyObject, to: SecIdentity.self)
+        var certificate: SecCertificate?
+        guard
+          SecIdentityCopyCertificate(identity, &certificate) == errSecSuccess,
+          let certificate
+        else {
+          continue
+        }
+        var commonName: CFString?
+        guard
+          SecCertificateCopyCommonName(certificate, &commonName) == errSecSuccess,
+          commonName as String? == ScsLocalhostCertificate.commonName
+        else {
+          continue
+        }
+        return identity
+      }
+      return nil
     }
 
     /// Generates the key, builds the certificate, stores both, and
