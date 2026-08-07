@@ -1,10 +1,11 @@
 /// The dedicated home for FINEID-specific wire values.
 ///
 /// Sources: FINEID S1 v4.2 (VERIFY, PIN references), FINEID S4-1 v3.1
-/// (stored PIN length), and the DVV application note "iOS NFC" v1.0
-/// (application identifiers). Values are cross-checked against the Rust
-/// reference implementation. No raw hex literal may appear outside this
-/// directory (`.swiftlint.yml` `unexplained_hex`).
+/// (stored PIN length), FINEID S4-2 v4.0 (organization-card files), and
+/// the DVV application note "iOS NFC" v1.0 (application identifiers).
+/// Values are cross-checked against the Rust reference implementation.
+/// No raw hex literal may appear outside this directory (`.swiftlint.yml`
+/// `unexplained_hex`).
 internal enum FineidValues {
   /// IAS application AID, "PKCS-15" - the eID application on every
   /// supported card (DVV iOS NFC note; ASCII `A0 00 00 00 63` prefix
@@ -103,6 +104,19 @@ internal enum FineidValues {
   /// Certificates G4E), under the master file - the certificate that
   /// chains the auth leaf toward the root.
   internal static let fileIdIssuingCertificate: UInt16 = 0x4336
+
+  /// EF.4333: the organization card's on-card issuing intermediate CA,
+  /// under the master file (FINEID S4-2 v4.0 §4.6.6).
+  internal static let fileIdOrganizationIssuingCertificate: UInt16 = 0x4333
+
+  /// DF.ESIGN: the organization card's signature directory, under the
+  /// master file; EF.4332 lives inside it there (FINEID S4-2 v4.0
+  /// §4.6.21-4.6.22).
+  internal static let fileIdEsignDirectory: UInt16 = 0x5016
+
+  /// DF.ESIGN's name, ASCII "E.SIGN", for selection by name where the
+  /// file-identifier variant is refused (FINEID S4-2 v4.0 §4.6.21).
+  internal static let esignAidHexDigits = "452E5349474E"
 
   /// CRDO tag for the algorithm reference inside MSE:SET data
   /// (S1 v4.2 §3.6.3).

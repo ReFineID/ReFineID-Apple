@@ -1,43 +1,58 @@
-/// A certificate the card publishes, and where it lives.
+/// A certificate the card publishes, and everywhere it may live.
 ///
-/// Directory placement follows FINEID S4-1.
+/// Directory placement follows FINEID S4-1 (citizen cards) and FINEID
+/// S4-2 v4.0 (organization cards). Where the generations differ, a slot
+/// lists both homes, citizen first, and the reader tries them in order:
+/// the card is asked, not assumed, because nothing before the SELECT
+/// answer distinguishes the layouts.
 public enum CertificateSlot: Equatable, Sendable, CaseIterable {
-  /// EF.4331, directly under the PKCS#15 application: the client
-  /// authentication leaf Safari uses.
+  /// The client authentication leaf Safari uses: EF.4331, directly
+  /// under the PKCS#15 application on both generations (S4-1;
+  /// S4-2 v4.0 §4.6.5).
   case authentication
 
-  /// EF.4336, under the master file: the issuing intermediate CA that
-  /// chains the authentication leaf upward.
+  /// The issuing intermediate CA that chains the authentication leaf
+  /// upward, under the master file: EF.4336 on the citizen card,
+  /// EF.4333 on the organization card (S4-2 v4.0 §4.6.6).
   case issuing
 
-  /// EF.4332, directly under the PKCS#15 application: the
-  /// qualified-signature leaf, whose key PIN2 gates.
+  /// The qualified-signature leaf, whose key PIN2 gates: EF.4332,
+  /// directly under the PKCS#15 application on the citizen card, under
+  /// DF.ESIGN on the organization card (S4-2 v4.0 §4.6.22).
   case qualifiedSignature
 
-  /// EF.4334, under the master file: the on-card root CA.
+  /// The on-card root CA: EF.4334, under the master file on both
+  /// generations (S4-2 v4.0 §4.6.7).
   case root
 
-  /// The elementary file holding this certificate.
-  public var file: FileIdentifier {
-    switch self {
-    case .authentication:
-      .authCertificate
-    case .qualifiedSignature:
-      .signatureCertificate
-    case .issuing:
-      .issuingCertificate
-    case .root:
-      .rootCertificate
-    }
+  /// One place a certificate can live: the directory to make current,
+  /// then the elementary file to read there.
+  public struct Location: Equatable, Sendable {
+    /// The directory the reader navigates to first.
+    public let directory: CertificateDirectory
+
+    /// The elementary file holding the certificate.
+    public let file: FileIdentifier
   }
 
-  /// Where the file lives, which decides the SELECT navigation.
-  public var directory: CertificateDirectory {
+  /// Everywhere this slot's certificate is documented to live, in the
+  /// order to try.
+  public var locations: [Location] {
     switch self {
-    case .authentication, .qualifiedSignature:
-      .pkcs15Application
-    case .issuing, .root:
-      .masterFile
+    case .authentication:
+      [Location(directory: .pkcs15Application, file: .authCertificate)]
+    case .qualifiedSignature:
+      [
+        Location(directory: .pkcs15Application, file: .signatureCertificate),
+        Location(directory: .esignApplication, file: .signatureCertificate),
+      ]
+    case .issuing:
+      [
+        Location(directory: .masterFile, file: .issuingCertificate),
+        Location(directory: .masterFile, file: .organizationIssuingCertificate),
+      ]
+    case .root:
+      [Location(directory: .masterFile, file: .rootCertificate)]
     }
   }
 }

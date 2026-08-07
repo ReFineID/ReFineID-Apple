@@ -30,6 +30,16 @@ public enum ActivationScheme: Equatable, Sendable {
   /// Common-name generation markers DVV's issuing CAs carry.
   private static let issuerGenerationMarkers = ["G3", "G4", "G5"]
 
+  /// Common-name marker of DVV's organisational issuing CAs
+  /// ("DVV Organisational Certificates - G4R").
+  ///
+  /// Refused outright: S4-1 §4.6 covers citizen cards alone, and an
+  /// organization card's activation is its issuer's own process. The
+  /// marker-and-suffix match below would otherwise classify it as a
+  /// citizen card by accident and lend it a digit count nobody
+  /// verified - the exact guess this classifier exists to refuse.
+  private static let organisationalIssuerMarker = "Organisational"
+
   /// Common-name suffix of DVV's RSA issuing CAs.
   private static let issuerRsaSuffix = "R"
 
@@ -69,6 +79,9 @@ public enum ActivationScheme: Equatable, Sendable {
   /// protocol-guaranteed, so anything unfamiliar answers nil and the
   /// caller refuses to make activation decisions from it.
   public static func classify(issuerCommonName: String) -> Self? {
+    guard !issuerCommonName.contains(Self.organisationalIssuerMarker) else {
+      return nil
+    }
     guard
       Self.issuerGenerationMarkers.contains(where: issuerCommonName.contains)
     else {

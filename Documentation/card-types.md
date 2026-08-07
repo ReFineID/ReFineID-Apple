@@ -35,6 +35,19 @@ Contactless: Cosmo X answers `3B 89 80 01 00 31 B8 64 04 29 EC C1 73 94
 01 80 83`, ID.me answers `3B 89 80 01 80 57 43 49 54 49 5A 32 31 91`,
 and the other two have no contactless interface.
 
+A Cosmo X organization card read here on 2026-08-07 confirmed the row:
+the PC/SC-synthesized contactless answer was
+
+    contactless   3B 8D 80 01 00 31 B8 64 04 29 EC C1 73 94 01 80 83 04
+
+whose historical bytes are exactly the ones the note documents, so the
+exact-match path names it. The certificate layout these cards publish is
+FINEID S4-2 v4.0: the same EF.4331 authentication leaf and EF.4334 root
+as S4-1, the issuing CA in EF.4333 rather than EF.4336, and the
+signature leaf under DF.ESIGN (5016) rather than flat under the
+application. The certificate slots list both homes and the card's
+SELECT answer decides, so no table lookup gates the read.
+
 ## The card measured here does not appear above
 
 Read on 2026-07-27 from an ACS ACR1581U, both interfaces of the same

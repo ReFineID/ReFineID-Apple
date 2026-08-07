@@ -71,14 +71,82 @@ internal struct CertificateReadTests {
 
   @Test
   internal func absentSlotSurfacesAsSelectRejected() {
+    // Both documented homes of the issuing CA - citizen EF.4336, then
+    // organization EF.4333 (S4-2 v4.0 §4.6.6) - are tried before the
+    // slot reports itself unprovisioned.
     let channel = ScriptedChannel([
       ("00A4000C023F00", "9000"),
       ("00A4020C024336", "6A82"),
       ("00A4000C024336", "6A82"),
+      ("00A4000C023F00", "9000"),
+      ("00A4020C024333", "6A82"),
+      ("00A4000C024333", "6A82"),
     ])
     #expect(throws: CardOperationError.selectRejected(.fileNotFound)) {
       _ = try CardOperations(channel: channel).readCertificate(.issuing)
     }
+  }
+
+  @Test
+  internal func organizationIssuingCertificateReadsFromEf4333() throws {
+    // The organization card keeps its issuing CA in EF.4333 under the
+    // master file (S4-2 v4.0 §4.6.6): the citizen home EF.4336 is
+    // refused, the organization home answers.
+    let der = String(repeating: "4A", count: 8)
+    let channel = ScriptedChannel([
+      ("00A4000C023F00", "9000"),
+      ("00A4020C024336", "6A82"),
+      ("00A4000C024336", "6A82"),
+      ("00A4000C023F00", "9000"),
+      ("00A4020C024333", "9000"),
+      ("00B0000080", der + "9000"),
+    ])
+    let read = try CardOperations(channel: channel)
+      .readCertificate(.issuing)
+    #expect(read == WireHex.data(der))
+    #expect(channel.isExhausted)
+  }
+
+  @Test
+  internal func organizationSignatureLeafReadsUnderEsign() throws {
+    // The organization card keeps the signature leaf under DF.ESIGN
+    // (S4-2 v4.0 §4.6.22): the citizen home under the application is
+    // refused, then MF -> DF.5016 -> EF.4332 answers.
+    let der = String(repeating: "5B", count: 10)
+    let channel = ScriptedChannel([
+      ("00A4040C0CA000000063504B43532D3135", "9000"),
+      ("00A4020C024332", "6A82"),
+      ("00A4000C024332", "6A82"),
+      ("00A4000C023F00", "9000"),
+      ("00A4000C025016", "9000"),
+      ("00A4020C024332", "9000"),
+      ("00B0000080", der + "9000"),
+    ])
+    let read = try CardOperations(channel: channel)
+      .readCertificate(.qualifiedSignature)
+    #expect(read == WireHex.data(der))
+    #expect(channel.isExhausted)
+  }
+
+  @Test
+  internal func esignDirectorySelectFallsBackToSelectByName() throws {
+    // DF.ESIGN by file identifier is refused; its name "E.SIGN"
+    // (S4-2 v4.0 §4.6.21) is tried and succeeds.
+    let der = "6C6D"
+    let channel = ScriptedChannel([
+      ("00A4040C0CA000000063504B43532D3135", "9000"),
+      ("00A4020C024332", "6A82"),
+      ("00A4000C024332", "6A82"),
+      ("00A4000C023F00", "9000"),
+      ("00A4000C025016", "6A82"),
+      ("00A4040C06452E5349474E", "9000"),
+      ("00A4020C024332", "9000"),
+      ("00B0000080", der + "9000"),
+    ])
+    let read = try CardOperations(channel: channel)
+      .readCertificate(.qualifiedSignature)
+    #expect(read == WireHex.data(der))
+    #expect(channel.isExhausted)
   }
 
   @Test

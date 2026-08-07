@@ -46,6 +46,13 @@ internal struct ActivationTests {
         issuerCommonName: "DVV Citizen Certificates - G5E"
       ) == .presetActivationPin
     )
+    // An organisational issuer refuses even though its marker and
+    // suffix would match: S4-1 §4.6 covers citizen cards alone.
+    #expect(
+      ActivationScheme.classify(
+        issuerCommonName: "DVV Organisational Certificates - G4R"
+      ) == nil
+    )
     // No generation marker, wrong suffix, or nothing at all: refuse.
     #expect(
       ActivationScheme.classify(issuerCommonName: "DVV Citizen Certificates")

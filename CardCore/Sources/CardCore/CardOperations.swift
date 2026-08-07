@@ -69,19 +69,42 @@ public struct CardOperations {
 
   /// Reads one certificate's DER bytes from its slot.
   ///
-  /// Navigates to the slot's directory, selects the certificate EF, and
-  /// reads it to the end. Returns the raw DER: CardCore never parses
-  /// X.509 - the platform does (`SecCertificateCreateWithData`). An
-  /// absent slot answers `fileNotFound` at selection, surfaced as
+  /// Tries each of the slot's documented locations in order: navigates
+  /// to its directory, selects the certificate EF, and reads it to the
+  /// end. A refused SELECT moves on to the next location - that answer
+  /// is what distinguishes the citizen layout from the organization
+  /// one - while any other failure is a card that was mid-read and
+  /// aborts. Returns the raw DER: CardCore never parses X.509 - the
+  /// platform does (`SecCertificateCreateWithData`). A slot absent
+  /// everywhere answers its last selection status, surfaced as
   /// `selectRejected` so callers can treat it as "not provisioned".
   public func readCertificate(_ slot: CertificateSlot) throws -> Data {
-    switch slot.directory {
+    var lastRejection = StatusWord.other(0)
+    for location in slot.locations {
+      do {
+        try navigate(to: location.directory)
+        return try readSelectedFile(location.file)
+      } catch CardOperationError.selectRejected(let status) {
+        lastRejection = status
+      }
+    }
+    throw CardOperationError.selectRejected(lastRejection)
+  }
+
+  /// Makes a certificate location's directory current.
+  private func navigate(to directory: CertificateDirectory) throws {
+    switch directory {
     case .pkcs15Application:
       try selectFineidApplication()
     case .masterFile:
       try selectMasterFile()
+    case .esignApplication:
+      try selectMasterFile()
+      try selectFirstThatSucceeds([
+        .selectFile(.esignDirectory, selectionP1: Iso7816Values.selectByFileIdP1),
+        .selectApplication(.esignDirectory),
+      ])
     }
-    return try readSelectedFile(slot.file)
   }
 
   /// Reads and parses EF.CardAccess: what PACE variants and domain

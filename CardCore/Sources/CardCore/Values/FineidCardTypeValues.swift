@@ -38,9 +38,10 @@ internal enum FineidCardTypeValues {
 
   /// Every card the note names, most recent first.
   ///
-  /// The organizational cards are here for recognition only: this driver
-  /// serves the citizen cards, and naming a card it cannot use is more
-  /// helpful than saying nothing about it.
+  /// Citizen and organizational cards alike read through the same
+  /// operations: where the S4-2 organization layout differs from S4-1,
+  /// the certificate slots list both homes and the card's SELECT answer
+  /// decides. This table only names what is in the reader.
   internal static let exact: [Exact] = [
     Exact(
       historicalBytes: [

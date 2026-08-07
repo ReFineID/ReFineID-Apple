@@ -18,6 +18,12 @@ public struct ApplicationIdentifier: Equatable, Sendable {
     FineidValues.travelDocumentAidHexDigits
   )
 
+  /// DF.ESIGN on the organization card, by its name "E.SIGN"
+  /// (FINEID S4-2 v4.0 §4.6.21).
+  public static let esignDirectory: Self = constant(
+    FineidValues.esignAidHexDigits
+  )
+
   /// The validated AID bytes, read by the command encoder.
   internal let bytes: [UInt8]
 

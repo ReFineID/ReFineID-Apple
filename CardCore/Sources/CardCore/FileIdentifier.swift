@@ -49,6 +49,16 @@ public struct FileIdentifier: Equatable, Sendable {
     value: FineidValues.fileIdIssuingCertificate
   )
 
+  /// EF.4333: the organization card's on-card issuing intermediate CA.
+  public static let organizationIssuingCertificate = Self(
+    value: FineidValues.fileIdOrganizationIssuingCertificate
+  )
+
+  /// DF.ESIGN: the organization card's signature directory.
+  public static let esignDirectory = Self(
+    value: FineidValues.fileIdEsignDirectory
+  )
+
   /// The identifier as a 16-bit value.
   public let value: UInt16
 
