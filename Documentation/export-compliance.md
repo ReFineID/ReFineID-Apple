@@ -13,29 +13,35 @@ supporting detail.
 
 `Config/ReFineID-Info.plist` carries:
 
-    ITSAppUsesNonExemptEncryption = true
+    ITSAppUsesNonExemptEncryption = false
 
-and must also carry `ITSEncryptionExportComplianceCode` once Apple
-issues one. Without the code App Store Connect blocks the build at
-submission with error 90592 -- the upload itself completes; it is the
-submission that stops.
+until the ANSSI attestation exists, and then `true` together with the
+`ITSEncryptionExportComplianceCode` Apple issues against the filed
+documentation.
 
-A code cannot exist before the French declaration does. Verified
-2026-08-07 against the App Store Connect API: creating App Encryption
-Documentation is refused with
+The key does not record the EAR analysis; it records whether Apple
+holds export compliance documentation for the app. Apple's definition
+(Information Property List > ITSAppUsesNonExemptEncryption) makes
+`false` the statement that the app "only uses forms of encryption
+that are exempt from export compliance documentation requirements",
+and both halves of this app's position were verified against App Store
+Connect itself on 2026-08-07:
 
-    Cannot create appEncryptionDeclarations unless either
+  - Creating App Encryption Documentation is refused: "Cannot create
+    appEncryptionDeclarations unless either
     containsProprietaryCryptography is True or
     containsThirdPartyCryptography and availableOnFrenchStore are both
-    True
+    True". Standard published algorithms outside the French store are
+    not a document Apple accepts, so no filing and no code can exist
+    today.
+  - Uploading with `true` and no code is rejected during upload with
+    error 90592, "Invalid Export Compliance Code" -- at upload, not at
+    submission as an earlier revision of this file said.
 
-so a declaration of standard published algorithms outside the French
-store is not a document Apple accepts, and no filing means no code.
-Until the ANSSI attestation puts the app on the French store, the plist
-carries `true` and no code, the upload completes, and export compliance
-is confirmed per build in App Store Connect before TestFlight
-distribution. `Scripts/inspect-archive.sh` checks the declaration is
-present and permits the codeless state for exactly this reason.
+So `false` is the accurate answer for now, and it is a statement about
+documentation, not the EAR claim the next section weighs. The EAR
+obligation that accompanies it is the year-end self-classification
+report to BIS, which Apple's guidance names for exactly this case.
 
 ## App Purpose, as submitted
 
@@ -441,10 +447,13 @@ liability there.
 2. That acknowledgement attached to App Encryption Documentation in App
    Store Connect.
 3. The code Apple issues in return, added to
-   `Config/ReFineID-Info.plist` as `ITSEncryptionExportComplianceCode`.
+   `Config/ReFineID-Info.plist` as `ITSEncryptionExportComplianceCode`,
+   with `ITSAppUsesNonExemptEncryption` flipped to `true` in the same
+   commit.
+4. The year-end self-classification report to BIS for the exempt
+   period, unless the ANSSI-backed filing lands first and replaces it.
 
-Until step 3, App Store Connect submission must stop at export
-compliance. An archive may upload, and TestFlight may distribute it
-outside France with compliance confirmed per build, but it must not be
-submitted for App Store release without the Apple code, and no
-TestFlight tester in France before the code exists.
+Until step 3 the app does not go to France: the French App Store
+territory stays off, and no TestFlight tester is in France. TestFlight
+and App Store distribution everywhere else proceed on the exempt
+declaration.

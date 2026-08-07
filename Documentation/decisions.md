@@ -674,3 +674,21 @@ archive if any other entitlement appears.
   hand-maintained scheme. Tests exercise the package's public API only.
 - The Xcode project is hand-maintained (`objectVersion 77`, folder-
   synchronized groups). No project generator is used at any point.
+
+## 2026-08-07 The plist answers Apple's question, not the EAR's
+
+`ITSAppUsesNonExemptEncryption` is `false` until the ANSSI attestation
+exists, then `true` together with the code Apple issues.
+
+Amends the 2026-08-03 entry above. Apple's key does not record the EAR
+analysis: by its definition, `false` states the app "only uses forms of
+encryption that are exempt from export compliance documentation
+requirements". App Store Connect proved that is this app's position
+twice on one day -- its API refuses App Encryption Documentation for
+standard published algorithms outside the French store, and it rejects
+an upload declaring `true` without a code, mid-transfer, with 90592. A
+`true` nobody is allowed to document is not credibility; it is a failed
+upload.
+
+The reviewed-source point stands: the answer stays in the bundle, and
+`inspect-archive.sh` still refuses `true` without a code.

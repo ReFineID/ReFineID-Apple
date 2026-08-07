@@ -249,26 +249,25 @@ if [ "$PLATFORM" = "iOS" ]; then
     plutil -extract ITSAppUsesNonExemptEncryption raw "$APP_PLIST" >/dev/null 2>&1 \
         || fail "ITSAppUsesNonExemptEncryption missing from the app Info.plist"
     COMPLIANCE=$(plutil -extract ITSAppUsesNonExemptEncryption raw "$APP_PLIST")
-    # A code is not required here, because none can exist yet. Apple
-    # issues one only against filed App Encryption Documentation, and
-    # the App Store Connect API refuses to create that "unless either
-    # containsProprietaryCryptography is True or
-    # containsThirdPartyCryptography and availableOnFrenchStore are both
-    # True" (verified 2026-08-07). Standard published algorithms outside
-    # the French store therefore never yield a code; the build uploads,
-    # and export compliance is confirmed per build in App Store Connect
-    # before TestFlight distribution. Once the ANSSI attestation puts
-    # the app on the French store, Apple issues a code and it belongs in
-    # Config/ReFineID-Info.plist. See Documentation/export-compliance.md.
+    # Declaring non-exempt is a claim that Apple holds export
+    # compliance documentation for the app and issued a code against
+    # it. Both halves were verified against App Store Connect on
+    # 2026-08-07: an upload declaring true without a code is rejected
+    # mid-transfer with 90592, and Apple refuses to accept
+    # documentation at all for standard published algorithms outside
+    # the French store. Until the ANSSI attestation the honest pair is
+    # therefore false with no code -- exempt from documentation
+    # requirements, which is what the key means by exempt. See
+    # Documentation/export-compliance.md.
     if [ "$COMPLIANCE" = "true" ]; then
         CODE=$(plutil -extract ITSEncryptionExportComplianceCode raw "$APP_PLIST" 2>/dev/null || true)
-        if [ -n "$CODE" ]; then
-            note "export compliance answered (non-exempt, code present)"
-        else
-            note "export compliance answered (non-exempt; no code exists outside the French store)"
-        fi
+        [ -n "$CODE" ] || fail "ITSAppUsesNonExemptEncryption is true but
+  ITSEncryptionExportComplianceCode is missing. App Store Connect
+  rejects that upload with 90592. Either add the code Apple issued
+  against filed documentation, or declare false until one exists."
+        note "export compliance answered (non-exempt, code present)"
     else
-        note "export compliance answered (exempt)"
+        note "export compliance answered (exempt from documentation)"
     fi
 fi
 
