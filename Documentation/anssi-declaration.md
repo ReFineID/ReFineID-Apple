@@ -155,7 +155,7 @@ nationale de la sécurité des systèmes d'information, sans délai, tout
 élément nouveau de fait ou de droit de nature à modifier la présente
 déclaration.
 
-Fait à Helsinki, le 5 août 2026.
+Fait à Helsinki, le 7 août 2026.
 
 ```{=typst}
 #v(1fr)
