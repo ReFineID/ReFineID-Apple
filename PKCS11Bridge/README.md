@@ -42,3 +42,22 @@ The dynamic library lands in `.build/debug/libPKCS11Bridge.dylib`
 `ssh-agent` only loads PKCS#11 providers from an allowlist (by default
 `/usr/lib*` and `/usr/local/lib*`); install accordingly or start the
 agent with `ssh-agent -P` naming the module's path.
+
+Specifications (https://docs.oasis-open.org/pkcs11/):
+
+- Base v2.40 plus errata01 include files: the implemented ABI,
+  `Cryptoki.h` is verified against them.
+- Profiles v3.2: conformance targets. The object model follows the
+  Public Certificates Token behavior (certificates readable without
+  login, key pairs discoverable through matching `CKA_ID`); Baseline
+  Provider conformance additionally needs the 3.x
+  `C_GetInterfaceList`/`C_GetInterface`, tracked in TASKS.md.
+- Current Mechanisms v3.0 (pkcs11-curr): normative mechanism
+  definitions for the advertised set (CKM_ECDSA family first, RSA
+  PKCS#1/PSS after). Note the signature format: CKM_ECDSA returns raw
+  r||s, so the bridge converts the X9.62 DER that
+  SecKeyCreateSignature produces.
+- Historical Mechanisms and Functions v3.0: the do-not-implement
+  register; nothing listed there ships in this module.
+- Spec v3.2 and Usage Guide v3.2: reference for the eventual 3.x
+  interface surface.

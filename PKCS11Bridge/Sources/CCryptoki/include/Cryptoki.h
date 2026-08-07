@@ -3,7 +3,11 @@
 // Hand-written against the OASIS standard "PKCS #11 Cryptographic Token
 // Interface Base Specification Version 2.40" and the header material it
 // normatively defines (pkcs11t.h types and constants, pkcs11f.h function
-// prototypes). Unix ABI: CK_ULONG is unsigned long and structures use
+// prototypes). Verified 2026-08-07 against the official include files at
+// https://docs.oasis-open.org/pkcs11/pkcs11-base/v2.40/errata01/os/include/pkcs11-v2.40/
+// -- every constant value, every structure member list, the
+// CK_FUNCTION_LIST member order, and all 68 prototype signatures compare
+// identical. Unix ABI: CK_ULONG is unsigned long and structures use
 // default alignment (the 1-byte packing requirement applies to Windows
 // only). Only what the bridge implements or must carry in
 // CK_FUNCTION_LIST is declared here.

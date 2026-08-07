@@ -144,15 +144,22 @@ lint-gate coverage. Ladder milestones, each against real hardware:
   CKF_PROTECTED_AUTHENTICATION_PATH advertised).
 - [ ] Session plumbing and the read-only object model: certificate,
   public-key, and private-key objects with consistent CKA_ID pairing
-  (C_OpenSession, C_FindObjects*, C_GetAttributeValue).
+  (C_OpenSession, C_FindObjects*, C_GetAttributeValue). Follow the
+  Public Certificates Token behavior from OASIS profiles v3.2:
+  certificates readable without login.
+- [ ] Mechanism list stays clear of everything in the OASIS Historical
+  Mechanisms and Functions register (pkcs11-hist v3.0).
 - [ ] C_Sign via SecKeyCreateSignature, ECDSA P-384 first, RSA after.
+  Mechanisms per pkcs11-curr v3.0; CKM_ECDSA output is raw r||s, the
+  inverse of CardCore's EcdsaSignature DER conversion.
 - [ ] Milestone gates: OpenSC pkcs11-tool listing and raw sign; ssh
   login via `ssh-agent -P`; `keytool -list` through SunPKCS11; PAdES
   signature from EU DSS.
 - [ ] Decide install path and packaging (ssh-agent allowlist:
   /usr/lib* and /usr/local/lib* by default).
 - [ ] Expose PKCS#11 3.x C_GetInterface/C_GetInterfaceList over the
-  same function table once a target consumer benefits.
+  same function table once a target consumer benefits; that plus
+  CKO_PROFILE completes Baseline Provider conformance (profiles v3.2).
 
 ## 7. PIN1 cache
 
