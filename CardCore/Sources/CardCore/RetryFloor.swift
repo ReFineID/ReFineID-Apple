@@ -25,13 +25,24 @@ public enum RetryFloor {
   ///
   /// A terminal lock is distinct from an unreadable response so the
   /// caller can diagnose it without consulting unrelated credentials.
+  ///
+  /// A verified answer proceeds: a successful VERIFY resets the
+  /// credential's retry counter to its maximum (S1 v4.2 §3.5), so the
+  /// probe's `9000` proves a full counter even though it carries no
+  /// count. The state is routine on the organization card, whose
+  /// credentials are global security data objects (S4-2 v4.0 §4.2):
+  /// their verified flag survives re-selecting the application, so
+  /// every signature after the first in one session probes as
+  /// verified.
   public static func evaluate(probeOutcome: RetryProbeOutcome) -> RetryFloorVerdict {
     switch probeOutcome {
     case .remaining(let reading):
       return evaluate(freshReading: reading)
+    case .verified:
+      return .proceed
     case .locked:
       return .refuseBlocked
-    case .invalidated, .noInformation, .other, .verified:
+    case .invalidated, .noInformation, .other:
       return .refuseUnreadable
     }
   }

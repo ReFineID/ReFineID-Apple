@@ -45,6 +45,6 @@ internal struct RetryFloorTests {
     #expect(RetryFloor.evaluate(probeOutcome: .locked) == .refuseBlocked)
     #expect(RetryFloor.evaluate(probeOutcome: .noInformation) == .refuseUnreadable)
     #expect(RetryFloor.evaluate(probeOutcome: .other(0x6A88)) == .refuseUnreadable)
-    #expect(RetryFloor.evaluate(probeOutcome: .verified) == .refuseUnreadable)
+    #expect(RetryFloor.evaluate(probeOutcome: .verified) == .proceed)
   }
 }

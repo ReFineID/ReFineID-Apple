@@ -4,7 +4,9 @@
 /// over all of them, and no case converts an unknown reading into
 /// permission.
 public enum RetryFloorVerdict: Equatable, Sendable {
-  /// Three or more attempts remain; the operation may proceed.
+  /// Three or more attempts remain - or the credential is already
+  /// verified in this session, which proves a counter reset to its
+  /// maximum (S1 v4.2 §3.5); the operation may proceed.
   case proceed
 
   /// Zero attempts remain: the credential is blocked; direct the user to

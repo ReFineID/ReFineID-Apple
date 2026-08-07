@@ -36,9 +36,17 @@ internal struct RetryFloorPolicyTests {
     #expect(RetryFloor.evaluate(probeOutcome: .noInformation) == .refuseUnreadable)
     #expect(RetryFloor.evaluate(probeOutcome: .other(0)) == .refuseUnreadable)
     #expect(RetryFloor.evaluate(probeOutcome: .invalidated) == .refuseUnreadable)
-    // A verified credential reports no count at all, so it is no
-    // licence either.
-    #expect(RetryFloor.evaluate(probeOutcome: .verified) == .refuseUnreadable)
+  }
+
+  @Test
+  internal func aVerifiedCredentialProceeds() {
+    // A successful VERIFY resets the retry counter to its maximum
+    // (S1 v4.2 §3.5), so the probe's 9000 proves a full counter even
+    // though it carries no count. The organization card's global
+    // credentials (S4-2 v4.0 §4.2) stay verified across re-selecting
+    // the application, so every signature after the first in one
+    // session sees exactly this answer.
+    #expect(RetryFloor.evaluate(probeOutcome: .verified) == .proceed)
   }
 
   @Test
