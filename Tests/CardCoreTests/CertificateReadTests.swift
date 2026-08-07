@@ -110,13 +110,17 @@ internal struct CertificateReadTests {
   @Test
   internal func organizationSignatureLeafReadsUnderEsign() throws {
     // The organization card keeps the signature leaf under DF.ESIGN
-    // (S4-2 v4.0 §4.6.22): the citizen home under the application is
-    // refused, then MF -> DF.ESIGN by its name -> EF.4332 answers.
+    // (S4-2 v4.0 §4.6.22). Under the application the EF select is
+    // refused honestly, but the select-by-identifier form answers
+    // success for the absent file and the read then refuses with no
+    // current file - the location loop must treat that as "not
+    // here" and carry on to MF -> DF.ESIGN by name -> EF.4332.
     let der = String(repeating: "5B", count: 10)
     let channel = ScriptedChannel([
       ("00A4040C0CA000000063504B43532D3135", "9000"),
       ("00A4020C024332", "6A82"),
-      ("00A4000C024332", "6A82"),
+      ("00A4000C024332", "9000"),
+      ("00B0000080", "6986"),
       ("00A4000C023F00", "9000"),
       ("00A4040C06452E5349474E", "9000"),
       ("00A4020C024332", "9000"),

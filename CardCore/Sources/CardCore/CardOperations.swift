@@ -63,20 +63,29 @@ public struct CardOperations {
   /// to its directory, selects the certificate EF, and reads it to the
   /// end. A refused SELECT moves on to the next location - that answer
   /// is what distinguishes the citizen layout from the organization
-  /// one - while any other failure is a card that was mid-read and
-  /// aborts. Returns the raw DER: CardCore never parses X.509 - the
-  /// platform does (`SecCertificateCreateWithData`). A slot absent
-  /// everywhere answers its last selection status, surfaced as
-  /// `selectRejected` so callers can treat it as "not provisioned".
+  /// one - and so does a refused read: the organization card answers
+  /// success to a select-by-identifier of a file it does not have,
+  /// then refuses READ BINARY with no current file, which is the same
+  /// "not here" answer wearing a select that lied. Returns the raw
+  /// DER: CardCore never parses X.509 - the platform does
+  /// (`SecCertificateCreateWithData`). A slot absent everywhere
+  /// answers its last failure, so callers can treat it as "not
+  /// provisioned".
   public func readCertificate(_ slot: CertificateSlot) throws -> Data {
     var lastRejection = StatusWord.other(0)
+    var lastReadFailure: BinaryReadFailure?
     for location in slot.locations {
       do {
         try navigate(to: location.directory)
         return try readSelectedFile(location.file)
       } catch CardOperationError.selectRejected(let status) {
         lastRejection = status
+      } catch CardOperationError.readFailed(let failure) {
+        lastReadFailure = failure
       }
+    }
+    if let lastReadFailure {
+      throw CardOperationError.readFailed(lastReadFailure)
     }
     throw CardOperationError.selectRejected(lastRejection)
   }
