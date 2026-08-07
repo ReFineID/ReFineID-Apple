@@ -15,6 +15,7 @@ cd "$(dirname "$0")/.."
 echo "swift format lint..."
 swift format lint --strict --recursive \
   Sources Tests CardCore/Sources CardCore/Package.swift \
+  PKCS11Bridge/Sources PKCS11Bridge/Tests PKCS11Bridge/Package.swift \
   Scripts/BrainpoolBenchmark.swift
 
 echo "swiftlint..."

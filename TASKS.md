@@ -133,6 +133,27 @@ Legend:
   extension reuse, and extension termination (cache resets on a fresh token and
   the OS reaps the process; full matrix still to test).
 
+## 6b. PKCS#11 bridge (PKCS11Bridge/)
+
+Scaffold in place: dynamic library with the complete v2.40
+CK_FUNCTION_LIST, Swift general-purpose entry points, package tests,
+lint-gate coverage. Ladder milestones, each against real hardware:
+
+- [ ] Slot and token enumeration from keychain token items
+  (C_GetSlotList, C_GetSlotInfo, C_GetTokenInfo; slot per token,
+  CKF_PROTECTED_AUTHENTICATION_PATH advertised).
+- [ ] Session plumbing and the read-only object model: certificate,
+  public-key, and private-key objects with consistent CKA_ID pairing
+  (C_OpenSession, C_FindObjects*, C_GetAttributeValue).
+- [ ] C_Sign via SecKeyCreateSignature, ECDSA P-384 first, RSA after.
+- [ ] Milestone gates: OpenSC pkcs11-tool listing and raw sign; ssh
+  login via `ssh-agent -P`; `keytool -list` through SunPKCS11; PAdES
+  signature from EU DSS.
+- [ ] Decide install path and packaging (ssh-agent allowlist:
+  /usr/lib* and /usr/local/lib* by default).
+- [ ] Expose PKCS#11 3.x C_GetInterface/C_GetInterfaceList over the
+  same function table once a target consumer benefits.
+
 ## 7. PIN1 cache
 
 - [ ] Clear on removal, card change, wrong PIN, management notification,
