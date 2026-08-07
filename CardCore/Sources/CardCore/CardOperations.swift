@@ -89,10 +89,17 @@ public struct CardOperations {
     case .masterFile:
       try selectMasterFile()
     case .esignApplication:
+      // By name first: the file-identifier variant can answer
+      // success without making the directory current, after which
+      // the certificate select misses and the read fails on a card
+      // that serves the same bytes happily under the named
+      // directory. The name is the S4-2 v4.0 §4.6.21 selector; the
+      // file-identifier form stays as the fallback for cards that
+      // refuse selection by name.
       try selectMasterFile()
       try selectFirstThatSucceeds([
-        .selectFile(.esignDirectory, selectionP1: Iso7816Values.selectByFileIdP1),
         .selectApplication(.esignDirectory),
+        .selectFile(.esignDirectory, selectionP1: Iso7816Values.selectByFileIdP1),
       ])
     }
   }

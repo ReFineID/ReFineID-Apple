@@ -111,14 +111,14 @@ internal struct CertificateReadTests {
   internal func organizationSignatureLeafReadsUnderEsign() throws {
     // The organization card keeps the signature leaf under DF.ESIGN
     // (S4-2 v4.0 §4.6.22): the citizen home under the application is
-    // refused, then MF -> DF.5016 -> EF.4332 answers.
+    // refused, then MF -> DF.ESIGN by its name -> EF.4332 answers.
     let der = String(repeating: "5B", count: 10)
     let channel = ScriptedChannel([
       ("00A4040C0CA000000063504B43532D3135", "9000"),
       ("00A4020C024332", "6A82"),
       ("00A4000C024332", "6A82"),
       ("00A4000C023F00", "9000"),
-      ("00A4000C025016", "9000"),
+      ("00A4040C06452E5349474E", "9000"),
       ("00A4020C024332", "9000"),
       ("00B0000080", der + "9000"),
     ])
@@ -129,17 +129,19 @@ internal struct CertificateReadTests {
   }
 
   @Test
-  internal func esignDirectorySelectFallsBackToSelectByName() throws {
-    // DF.ESIGN by file identifier is refused; its name "E.SIGN"
-    // (S4-2 v4.0 §4.6.21) is tried and succeeds.
+  internal func esignDirectorySelectFallsBackToFileIdentifier() throws {
+    // DF.ESIGN by its S4-2 v4.0 §4.6.21 name comes first - the
+    // file-identifier variant can answer success without making the
+    // directory current - and the identifier stays as the fallback
+    // for a card that refuses selection by name.
     let der = "6C6D"
     let channel = ScriptedChannel([
       ("00A4040C0CA000000063504B43532D3135", "9000"),
       ("00A4020C024332", "6A82"),
       ("00A4000C024332", "6A82"),
       ("00A4000C023F00", "9000"),
-      ("00A4000C025016", "6A82"),
-      ("00A4040C06452E5349474E", "9000"),
+      ("00A4040C06452E5349474E", "6A82"),
+      ("00A4000C025016", "9000"),
       ("00A4020C024332", "9000"),
       ("00B0000080", der + "9000"),
     ])
