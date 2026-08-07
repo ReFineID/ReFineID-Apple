@@ -185,26 +185,38 @@
     /// eID application (unsealing with the stored number when the card
     /// asks), and hands typed operations to `work` on the background
     /// queue.
+    ///
+    /// Every occupied slot is tried until one yields a selected
+    /// application: a dual-interface reader can present the same card
+    /// on its contact and contactless slots at once, and only the
+    /// contact one is usable without PACE - stopping at whichever
+    /// slot enumerates first made the card unreachable whenever the
+    /// antenna's slot came up before the contact one.
     internal static func onCard<Answer: Sendable>(
       _ work: @escaping @Sendable (CardOperations) -> Answer?
     ) async -> Answer? {
-      guard let manager = TKSmartCardSlotManager.default,
-        let found = await CardSlotSearch.occupied(in: manager),
-        let smartCard = found.slot.makeSmartCard()
-      else {
-        return nil
+      guard let manager = TKSmartCardSlotManager.default else { return nil }
+      let occupied = await CardSlotSearch.allOccupied(in: manager)
+      let carried = occupied.compactMap { candidate in
+        candidate.slot.makeSmartCard().map(UncheckedCard.init)
       }
-      let carried = UncheckedCard(smartCard)
+      guard !carried.isEmpty else { return nil }
       return await withCheckedContinuation { continuation in
         DispatchQueue.global(qos: .userInitiated).async {
-          let answer = try? SmartCardChannel(carried.card).withSession {
-            channel -> Answer? in
-            guard let operations = Self.selectedOperations(over: channel) else {
-              return nil
+          for candidate in carried {
+            let answer = try? SmartCardChannel(candidate.card).withSession {
+              channel -> Answer? in
+              guard let operations = Self.selectedOperations(over: channel) else {
+                return nil
+              }
+              return work(operations)
             }
-            return work(operations)
+            if let unwrapped = answer.flatMap(\.self) {
+              continuation.resume(returning: unwrapped)
+              return
+            }
           }
-          continuation.resume(returning: answer.flatMap(\.self))
+          continuation.resume(returning: nil)
         }
       }
     }

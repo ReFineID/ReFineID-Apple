@@ -14,12 +14,26 @@ internal enum CardSlotSearch {
   internal static func occupied(
     in manager: TKSmartCardSlotManager
   ) async -> (name: String, slot: TKSmartCardSlot)? {
+    await allOccupied(in: manager).first
+  }
+
+  /// Every slot holding a card, in the system's naming order.
+  ///
+  /// A dual-interface reader can present one physical card on both
+  /// its contact and contactless slots at once - the antenna reads
+  /// through the housing. Which of the two enumerates first is not
+  /// stable, and only one of them is usable without PACE, so a
+  /// caller that needs a working session must be free to try each.
+  internal static func allOccupied(
+    in manager: TKSmartCardSlotManager
+  ) async -> [(name: String, slot: TKSmartCardSlot)] {
+    var found: [(name: String, slot: TKSmartCardSlot)] = []
     for name in manager.slotNames {
       if let slot = await manager.getSlot(withName: name), slot.state == .validCard {
-        return (name, slot)
+        found.append((name, slot))
       }
     }
-    return nil
+    return found
   }
 
   /// The slot worth naming on screen: the one holding a card, else the
