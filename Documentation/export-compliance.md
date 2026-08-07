@@ -443,7 +443,11 @@ liability there.
 
 ## What is still needed
 
-1. The ANSSI declaration filed, and its acknowledgement received.
+1. ~~The ANSSI declaration filed~~ -- sent 2026-08-07 by email to
+   controle@ssi.gouv.fr, signed the same day the attestation is dated.
+   The acknowledgement is what remains: the declaration is processed
+   within one month of a complete file, the category 3 classification
+   ruled on within two.
 2. That acknowledgement attached to App Encryption Documentation in App
    Store Connect.
 3. The code Apple issues in return, added to
