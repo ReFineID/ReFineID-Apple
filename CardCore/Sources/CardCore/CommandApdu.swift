@@ -163,13 +163,25 @@ public struct CommandApdu: Equatable, Sendable {
     algorithm: SigningAlgorithm,
     key: CardSigningKey
   ) -> Self {
+    selectSigningEnvironment(algorithm: algorithm, keyReference: key.reference)
+  }
+
+  /// `selectSigningEnvironment(algorithm:key:)` with an explicit key
+  /// reference byte, for a numbering where the byte is not the key's
+  /// own: a key local to the current DF carries bit 8 over its number
+  /// (IAS-ECC v1.0.1 §4.4), which is how the organization card's
+  /// qualified key is named inside DF.ESIGN.
+  public static func selectSigningEnvironment(
+    algorithm: SigningAlgorithm,
+    keyReference: UInt8
+  ) -> Self {
     let crdo: [UInt8] = [
       FineidValues.crdoAlgorithmReferenceTag,
       FineidValues.crdoValueLength,
       algorithm.reference,
       FineidValues.crdoKeyReferenceTag,
       FineidValues.crdoValueLength,
-      key.reference,
+      keyReference,
     ]
     var bytes: [UInt8] = [
       Iso7816Values.classInterindustry,

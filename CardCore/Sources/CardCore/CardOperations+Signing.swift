@@ -74,7 +74,8 @@ extension CardOperations {
     expectedSignatureLength: ExpectedResponseLength?
   ) throws -> Data {
     let selected = try transmit(
-      .selectSigningEnvironment(algorithm: algorithm, key: key)
+      .selectSigningEnvironment(
+        algorithm: algorithm, keyReference: keyReference(for: key))
     )
     guard selected.statusWord == .success else {
       throw CardOperationError.signRejected(selected.statusWord)
@@ -95,6 +96,23 @@ extension CardOperations {
       throw CardOperationError.signRejected(signed.statusWord)
     }
     return signed.payload
+  }
+
+  /// The key reference the session's numbering names `key` by.
+  ///
+  /// The organization card's qualified key is local to DF.ESIGN, and
+  /// a local security-data-object reference carries bit 8 over the
+  /// object number (IAS-ECC v1.0.1 §4.4); its global form names no
+  /// key and the signature answers `6A88`. Every other key keeps its
+  /// own reference.
+  private func keyReference(for key: CardSigningKey) -> UInt8 {
+    guard
+      referenceMemo.resolved == .organization,
+      key == .qualifiedSignature
+    else {
+      return key.reference
+    }
+    return FineidValues.organizationQualifiedKeyReference
   }
 
   /// The one PSO:CDS this session's chain ends with: empty-bodied over

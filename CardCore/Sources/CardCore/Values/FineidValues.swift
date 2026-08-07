@@ -158,6 +158,15 @@ internal enum FineidValues {
   /// key #2 on the FINEID S4-1 v3.1 card (S1 v4.2).
   internal static let keyReferenceQualifiedSignature: UInt8 = 0x02
 
+  /// The organization card's qualified-signature key reference.
+  ///
+  /// The key is local to DF.ESIGN - its private-key directory names
+  /// the path MF/DF.ESIGN (FINEID S4-2 v4.0 §5.5) - and a local
+  /// security-data-object reference carries bit 8 set over the object
+  /// number (IAS-ECC v1.0.1 §4.4): local key 2 is `82`. The global
+  /// form finds no key and the signature answers `6A88`.
+  internal static let organizationQualifiedKeyReference: UInt8 = 0x82
+
   /// Algorithm-reference hash high-nibble values (S1 v4.2 §3.6.3
   /// Table 6): SHA-224/256/384/512.
   internal static let hashNibbleSha224: UInt8 = 0x3

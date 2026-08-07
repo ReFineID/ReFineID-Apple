@@ -14,13 +14,15 @@ internal struct OrganizationSigningTests {
     let firstSignaturePart = String(repeating: "11", count: 256)
     let secondSignaturePart = String(repeating: "22", count: 128)
     // PIN2 verification resolves the numbering; the sign chain then
-    // reuses it without a probe of its own. RSA-3072 answers 384 bytes
+    // reuses it without a probe of its own. The qualified key is
+    // local to DF.ESIGN, so its reference carries the local bit
+    // (IAS-ECC v1.0.1 §4.4): 84 01 82. RSA-3072 answers 384 bytes
     // through the usual GET RESPONSE continuation.
     let channel = ScriptedChannel([
       ("0020001100", "6A88"),
       ("0020000300", "63C5"),
       ("0020000406363534333231", "9000"),
-      ("002241B606800142840102", "9000"),
+      ("002241B606800142840182", "9000"),
       ("002A9E9A20" + digest + "00", firstSignaturePart + "6180"),
       ("00C0000080", secondSignaturePart + "9000"),
     ])
