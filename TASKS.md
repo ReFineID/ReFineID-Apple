@@ -160,6 +160,16 @@ card keys as ecdsa-sha2-nistp384. Remaining:
 - [ ] Add the CKO_PROFILE object to the object model to complete
   Baseline Provider conformance (profiles v3.2); the interface surface
   it requires is already in place.
+- [ ] Ship both modules inside the app bundle
+  (`Contents/Frameworks/`), built and signed with the app, so they
+  update with it and stay matched to the token extension. That serves
+  every consumer that takes a module path -- ssh `PKCS11Provider`,
+  Firefox, SunPKCS11 -- and needs no installation. Only `ssh-agent`
+  restricts paths, and its allowlist rejects a symlink by its resolved
+  target (measured), so agent users start an agent with
+  `ssh-agent -P '/Applications/ReFineID.app/Contents/Frameworks/*'`
+  rather than a copy that an app update would leave stale.
+  `/usr/local/lib` stays the source-checkout install path.
 
 ## 7. PIN1 cache
 
