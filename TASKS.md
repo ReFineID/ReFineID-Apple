@@ -160,6 +160,18 @@ card keys as ecdsa-sha2-nistp384. Remaining:
 - [ ] Add the CKO_PROFILE object to the object model to complete
   Baseline Provider conformance (profiles v3.2); the interface surface
   it requires is already in place.
+- [ ] Publish the issuer certificates the token carries as
+  certificate objects without a paired key, so consumers that build
+  chains -- Firefox, and DSS when it validates -- find them in the
+  same place as the leaf.
+
+Consumers need no smartcard entitlement to use this module: it reads
+keychain token items and signs through SecKeyCreateSignature rather
+than driving TKSmartCardSlot, which is what
+`com.apple.security.smartcard` gates. Measured: none of OpenSSH's
+PKCS#11 loaders carry that entitlement and all of them work. This is
+what lets a hardened-runtime consumer such as the Java signing
+application use the card without one.
 - [ ] Ship both modules inside the app bundle
   (`Contents/Frameworks/`), built and signed with the app, so the App
   Store updates them and they stay matched to the token extension.
