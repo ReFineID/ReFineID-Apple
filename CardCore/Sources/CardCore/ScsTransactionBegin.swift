@@ -116,14 +116,30 @@ internal enum ScsTransactionBegin {
   }
 
   /// Signs the response JWT with the card.
+  ///
+  /// The JWS algorithm follows the card key: RS256 over SHA-256 for
+  /// an RSA key, ES384 over SHA-384 for the P-384 key - the digest
+  /// each card's qualified key actually serves (RFC 7518 section
+  /// 3.1; the raw `r || s` card signature is already the ES384 JWS
+  /// form).
   private static func signed(
     response: ScsBeginResponseDocument,
     purpose: ScsSignPurpose,
     backend: any ScsSigningBackend,
     state: ScsAgreedTransaction
   ) -> Result<Outcome, ScsTransactionError> {
+    let algorithm: String
+    let hash: SigningHash
+    switch backend.keyAlgorithm(for: purpose) {
+    case .ecdsa:
+      algorithm = "ES384"
+      hash = .sha384
+    case .rsa:
+      algorithm = "RS256"
+      hash = .sha256
+    }
     let header = ScsResponseHeaderDocument(
-      alg: "RS256",
+      alg: algorithm,
       kid: ScsTransactionCodec.keyIdentifier(chain: response.chain),
       typ: "JWT"
     )
@@ -144,7 +160,7 @@ internal enum ScsTransactionBegin {
     let signingInput = encodedHeader + "." + encodedPayload
     do {
       let signature = try backend.sign(
-        purpose: purpose, hash: .sha256, data: Data(signingInput.utf8))
+        purpose: purpose, hash: hash, data: Data(signingInput.utf8))
       return .success(
         Outcome(
           response: signingInput + "." + Base64Url.encode(signature),

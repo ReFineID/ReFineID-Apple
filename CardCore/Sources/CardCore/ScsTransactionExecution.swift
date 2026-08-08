@@ -70,7 +70,9 @@ internal enum ScsTransactionExecution {
     guard ScsKeyAlgorithm.hash(named: payload.hashAlgorithm) != nil else {
       return .notImplemented("unsupported hash algorithm \(payload.hashAlgorithm)")
     }
-    guard payload.signatureAlgorithm == "RSA" else {
+    guard
+      payload.signatureAlgorithm == "RSA" || payload.signatureAlgorithm == "ECDSA"
+    else {
       return .notImplemented(
         "unsupported signature algorithm \(payload.signatureAlgorithm)")
     }
