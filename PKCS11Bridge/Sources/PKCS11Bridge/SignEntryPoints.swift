@@ -11,8 +11,35 @@ import Security
 /// system token daemon; the signature call runs outside the registry
 /// lock because it can block on the PIN dialog.
 internal enum SignEntryPoints {
+  /// The result of signing one digest: the raw signature, or the
+  /// Cryptoki code describing why there is none.
+  private enum SignOutcome {
+    case failed(CK_RV)
+    case signed(Data)
+  }
+
   /// A raw ECDSA signature concatenates two field-width halves.
   private static let signatureHalves = 2
+
+  /// Standard hash output lengths in bytes.
+  private static let sha224DigestLength = 28
+  private static let sha256DigestLength = 32
+  private static let sha384DigestLength = 48
+  private static let sha512DigestLength = 64
+
+  /// Digest algorithms keyed by digest length in bytes.
+  ///
+  /// CKM_ECDSA takes a pre-computed digest, and the token extension
+  /// advertises the fixed-length X9.62 digest algorithms rather than
+  /// the generic one, so the algorithm is chosen by the digest length
+  /// the caller supplies.
+  private static let digestAlgorithmsByLength: [Int: SecKeyAlgorithm] = [
+    sha224DigestLength: .ecdsaSignatureDigestX962SHA224,
+    sha256DigestLength: .ecdsaSignatureDigestX962SHA256,
+    sha384DigestLength: .ecdsaSignatureDigestX962SHA384,
+    sha512DigestLength: .ecdsaSignatureDigestX962SHA512,
+  ]
+
   /// C_SignInit: validates mechanism and key, then arms the session.
   internal static func signInit(
     handle: CK_SESSION_HANDLE, mechanism: CK_MECHANISM_PTR?, key: CK_OBJECT_HANDLE
@@ -49,18 +76,8 @@ internal enum SignEntryPoints {
   ) -> CK_RV {
     guard CryptokiEntryPoints.isLive else { return CKR_CRYPTOKI_NOT_INITIALIZED }
     guard let signatureLength else { return CKR_ARGUMENTS_BAD }
-    // Read the armed operation; only the length query leaves it armed.
-    let armed: (key: SecKey, width: Int)? = ModuleRegistry.shared.withLock { registry in
-      guard let session = registry.sessions[handle], let key = session.signKey else {
-        return nil
-      }
-      return (key, session.signWidth)
-    }
-    guard let armed else {
-      return ModuleRegistry.shared.withLock { registry in
-        registry.sessions[handle] == nil
-          ? CKR_SESSION_HANDLE_INVALID : CKR_OPERATION_NOT_INITIALIZED
-      }
+    guard let armed = armedOperation(handle: handle) else {
+      return notArmedError(handle: handle)
     }
     let expected = CK_ULONG(signatureHalves * armed.width)
     guard let signature else {
@@ -74,24 +91,93 @@ internal enum SignEntryPoints {
     defer { disarm(handle: handle) }
     guard let data, dataLength > 0 else { return CKR_DATA_LEN_RANGE }
     let digest = Data(bytes: data, count: Int(dataLength))
-    var errorReference: Unmanaged<CFError>?
-    let derSignature = SecKeyCreateSignature(
-      armed.key, .ecdsaSignatureDigestX962, digest as CFData, &errorReference)
-    guard let derSignature else {
-      errorReference?.release()
-      return CKR_FUNCTION_CANCELED
-    }
-    guard
-      let raw = EcEncoding.rawSignature(
-        fromDer: derSignature as Data, fieldWidth: armed.width)
-    else { return CKR_GENERAL_ERROR }
-    raw.withUnsafeBytes { bytes in
-      if let base = bytes.baseAddress {
+    switch rawSignature(digest: digest, key: armed.key, width: armed.width) {
+    case .signed(let raw):
+      raw.withUnsafeBytes { bytes in
+        guard let base = bytes.baseAddress else { return }
         UnsafeMutableRawPointer(signature).copyMemory(from: base, byteCount: bytes.count)
       }
+      signatureLength.pointee = expected
+      return CKR_OK
+    case .failed(let code):
+      return code
     }
-    signatureLength.pointee = expected
-    return CKR_OK
+  }
+
+  /// The signing operation armed on this session, if any.
+  ///
+  /// Only the length query leaves it armed; producing a signature
+  /// consumes it.
+  private static func armedOperation(
+    handle: CK_SESSION_HANDLE
+  ) -> (key: SecKey, width: Int)? {
+    ModuleRegistry.shared.withLock { registry in
+      guard let session = registry.sessions[handle], let key = session.signKey else {
+        return nil
+      }
+      return (key, session.signWidth)
+    }
+  }
+
+  /// Why no operation was armed: an unknown session, or a live one
+  /// that never saw C_SignInit.
+  private static func notArmedError(handle: CK_SESSION_HANDLE) -> CK_RV {
+    ModuleRegistry.shared.withLock { registry in
+      registry.sessions[handle] == nil
+        ? CKR_SESSION_HANDLE_INVALID : CKR_OPERATION_NOT_INITIALIZED
+    }
+  }
+
+  /// Signs one digest and returns the raw r||s form CKM_ECDSA wants,
+  /// or the Cryptoki code describing the failure.
+  ///
+  /// Runs outside the registry lock: the system PIN dialog can block
+  /// here for as long as the holder takes to answer it.
+  private static func rawSignature(
+    digest: Data, key: SecKey, width: Int
+  ) -> SignOutcome {
+    guard let algorithm = signatureAlgorithm(key: key, digestLength: digest.count) else {
+      return .failed(CKR_DATA_LEN_RANGE)
+    }
+    var errorReference: Unmanaged<CFError>?
+    let derSignature = SecKeyCreateSignature(
+      key, algorithm, digest as CFData, &errorReference)
+    guard let derSignature else {
+      let status = errorReference.map { CFErrorGetCode($0.takeRetainedValue()) }
+      return .failed(signError(status: status))
+    }
+    guard
+      let raw = EcEncoding.rawSignature(fromDer: derSignature as Data, fieldWidth: width)
+    else { return .failed(CKR_GENERAL_ERROR) }
+    return .signed(raw)
+  }
+
+  /// The X9.62 digest algorithm the key supports for a digest of the
+  /// given length: the length-specific one first, then the generic
+  /// one, nil if neither is supported.
+  private static func signatureAlgorithm(
+    key: SecKey, digestLength: Int
+  ) -> SecKeyAlgorithm? {
+    var candidates: [SecKeyAlgorithm] = []
+    if let specific = digestAlgorithmsByLength[digestLength] {
+      candidates.append(specific)
+    }
+    candidates.append(.ecdsaSignatureDigestX962)
+    return candidates.first { SecKeyIsAlgorithmSupported(key, .sign, $0) }
+  }
+
+  /// Maps a SecKeyCreateSignature failure to a Cryptoki return value:
+  /// a cancelled PIN dialog to CKR_FUNCTION_CANCELED, a rejected PIN
+  /// to CKR_PIN_INCORRECT, anything else to CKR_FUNCTION_FAILED.
+  private static func signError(status: CFIndex?) -> CK_RV {
+    switch status {
+    case CFIndex(errSecUserCanceled):
+      return CKR_FUNCTION_CANCELED
+    case CFIndex(errSecAuthFailed):
+      return CKR_PIN_INCORRECT
+    default:
+      return CKR_FUNCTION_FAILED
+    }
   }
 
   /// Picks the PIN-bound key when C_Login supplied a PIN, otherwise
