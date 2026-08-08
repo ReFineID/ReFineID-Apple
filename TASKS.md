@@ -144,11 +144,11 @@ pkcs11-hist register. Hardware-proven: ssh-keygen -D lists both FINEID
 card keys as ecdsa-sha2-nistp384. Remaining:
 
 - [ ] Re-prove the ssh-agent path after the digest-algorithm fix
-  (`ssh-add -s`, then a login); the agentless path
-  (`PKCS11Provider`, system PIN dialog) is proven against a real
-  server. Note when testing: `ssh-pkcs11-helper` keeps the module
-  mapped for the agent's lifetime, so a reinstalled module needs
-  `ssh-add -e` before `ssh-add -s`.
+  (`ssh-add -s`, then a login). The `PKCS11Provider` path is proven
+  against a real server, including an interactive login shell. Note
+  when testing: `ssh-pkcs11-helper` keeps the module mapped for the
+  agent's lifetime, so a reinstalled module needs `ssh-add -e` before
+  `ssh-add -s`.
 - [ ] RSA object model and signing for RSA-enrolled cards.
 - [ ] Slot events: C_WaitForSlotEvent and token insertion/removal
   beyond per-call refresh.
