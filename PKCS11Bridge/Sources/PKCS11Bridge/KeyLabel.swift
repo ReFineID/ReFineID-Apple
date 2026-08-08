@@ -4,52 +4,40 @@ import Security
 
 /// Composes the CKA_LABEL for a token identity's objects.
 ///
-/// The label reads "Given name Surname - card number - PIN
-/// designation": unique because the keys are bound to the card,
-/// holder-readable, and shown verbatim by OpenSSH as the public key
-/// comment. The name comes from the certificate subject's givenName
-/// and surname RDNs (not parsed out of the CN), title-cased for
-/// readability; the card number from the ReFineID token instance
-/// identifier; and the PIN designation from the token's key name,
-/// whose text outside parentheses is localized while the parenthesized
-/// designation is stable.
+/// One rule, every field verbatim: the base is "CN (card number)",
+/// e.g. "SURNAME GIVENNAME 99999999A (AB1234567)", and the signing
+/// profile appends the key name -- " - Signature (PIN 2)" -- so a
+/// key picker states which key it is; the authentication profile
+/// exposes a single key and needs no suffix. Surname-first CN scans
+/// and sorts in long certificate lists and matches how the platform
+/// itself presents certificates; parentheses consistently carry
+/// supplementary data. The localized key name is passed through
+/// unmodified, so renaming in the token extension propagates
+/// everywhere; labels are display text, not stable identifiers, and
+/// consumers select by CKA_ID.
 internal enum KeyLabel {
   /// X.500 attribute OIDs used to compose the label.
-  private static let surnameOid = "2.5.4.4"
-  private static let givenNameOid = "2.5.4.42"
+  private static let commonNameOid = "2.5.4.3"
 
   /// The token-ID marker preceding the card number in ReFineID token
   /// instance identifiers.
   private static let cardNumberMarker = "refineid-card-"
 
-  /// The designation of the card's default key.
-  ///
-  /// The default key is the one ssh and browser login use. In the
-  /// authentication profile its designation is left off the label,
-  /// since that profile shows no other keys; the signing profile
-  /// labels every key with its designation so a signing application's
-  /// key picker reads unambiguously.
-  private static let defaultDesignation = "PIN 1"
-
   /// The composed label; falls back to the certificate summary plus
-  /// the key name when the subject lacks the person attributes.
+  /// the key name when the subject or token lacks the needed fields.
   internal static func compose(
     keyName: String, certificate: SecCertificate, tokenID: String
   ) -> String {
-    let subject = subjectAttributes(certificate)
-    guard let surname = subject[surnameOid],
-      let givenName = subject[givenNameOid],
-      let cardNumber = cardNumber(tokenID: tokenID)
-    else {
+    let commonName =
+      subjectAttributes(certificate)[commonNameOid]
+      ?? SecCertificateCopySubjectSummary(certificate) as String?
+    guard let commonName, let cardNumber = cardNumber(tokenID: tokenID) else {
       guard let summary = SecCertificateCopySubjectSummary(certificate) as String?
       else { return keyName }
       return "\(summary) - \(keyName)"
     }
-    let base = "\(givenName.capitalized) \(surname.capitalized) - \(cardNumber)"
-    let designation = pinName(keyName)
-    let omitDesignation =
-      designation == defaultDesignation && !IdentityPolicy.isSigningProfile
-    return omitDesignation ? base : "\(base) - \(designation)"
+    let base = "\(commonName) (\(cardNumber))"
+    return IdentityPolicy.isSigningProfile ? "\(base) - \(keyName)" : base
   }
 
   /// Subject RDN values keyed by attribute OID.
@@ -80,20 +68,5 @@ internal enum KeyLabel {
     let number = tokenID[range.upperBound...]
     guard !number.isEmpty else { return nil }
     return number.uppercased()
-  }
-
-  /// Extracts the token key name's PIN designation.
-  ///
-  /// The designation is the text the key name carries in parentheses:
-  /// "Perus (PIN 1)" becomes "PIN 1". Names without parentheses pass
-  /// through unchanged, since only the text outside the parentheses is
-  /// localized.
-  private static func pinName(_ label: String) -> String {
-    guard let open = label.firstIndex(of: "("),
-      let close = label.lastIndex(of: ")"),
-      open < close
-    else { return label }
-    let designation = String(label[label.index(after: open)..<close])
-    return designation.isEmpty ? label : designation
   }
 }
