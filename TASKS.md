@@ -135,6 +135,27 @@ Legend:
 
 ## 6b. PKCS#11 bridge (PKCS11Bridge/)
 
+- [ ] Publish every certificate the card carries, not the two the
+  reader knows. `CardOperations` navigates to EF.4331 and EF.4332 and
+  takes the key profile from whichever public key it finds, so one
+  identity per PIN is published by construction. Identity cards issued
+  between 11 January 2021 and 12 March 2023 carry two signature
+  certificates, RSA and ECC
+  (<https://dvv.fi/en/-/ecc-signature-certificates-on-identity-cards-issued-before-13-march-2023-will-be-centrally-revoked-the-revocation-does-not-affect-the-use-of-identity-cards>),
+  and the same question stands for the later generation, whose cards
+  may carry an RSA certificate beside the ECC one now published. Walk
+  the PKCS#15 CIA object directory instead, which lists every
+  certificate with a pointer to its key, rather than reading known
+  locations.
+- [ ] Withhold the ECC signature certificate on cards issued in that
+  window: DVV revoked it centrally, so a signature made with it does
+  not validate. The authentication certificate and the RSA signature
+  certificate remain valid.
+- [ ] Distinguish identities by algorithm once a card publishes more
+  than one per PIN. The token names a key for the PIN it asks for, so
+  two signature identities would carry the same name and the PKCS#11
+  labels would collide.
+
 Working read-and-sign module over CryptoTokenKit: full v3.2 surface,
 slot/token enumeration, sessions, EC object model with CKA_ID pairing
 and login-free certificates (Public Certificates Token behavior,
