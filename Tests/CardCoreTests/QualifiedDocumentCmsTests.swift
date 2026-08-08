@@ -60,7 +60,7 @@ internal struct QualifiedDocumentCmsTests {
     let keyType: CFString
     let kind: CertificateRevocationListFixtures.SignatureKind
     switch profile {
-    case .ecdsaP384:
+    case .ecdsaP256, .ecdsaP384:
       keyType = kSecAttrKeyTypeECSECPrimeRandom
       kind = .ecdsaSha384
     case .rsa2048, .rsa3072:

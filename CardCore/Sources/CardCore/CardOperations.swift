@@ -57,6 +57,26 @@ public struct CardOperations {
     return try drive(&assembler)
   }
 
+  /// Reads what the card's PKCS#15 directories say it carries.
+  ///
+  /// The application must already be selected. Each certificate is
+  /// paired with the key sharing its identifier, which is where the
+  /// key reference comes from; a certificate with no key is an
+  /// authority certificate the card files alongside the leaves.
+  public func readPkcs15Inventory() throws -> [Pkcs15Inventory.Entry] {
+    let directory = try readElementaryFile(.objectDirectory, expectedLength: nil)
+    let locations = Pkcs15Directory.locations(fromObjectDirectory: directory)
+    let certificates = try locations.certificates.map { file in
+      Pkcs15Directory.certificates(
+        fromDirectory: try readElementaryFile(file, expectedLength: nil))
+    }
+    let keys = try locations.privateKeys.map { file in
+      Pkcs15Directory.privateKeys(
+        fromDirectory: try readElementaryFile(file, expectedLength: nil))
+    }
+    return Pkcs15Inventory.pair(certificates: certificates ?? [], keys: keys ?? [])
+  }
+
   /// Reads one certificate's DER bytes from its slot.
   ///
   /// Tries each of the slot's documented locations in order: navigates

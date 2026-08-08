@@ -163,6 +163,7 @@ extension Token {
     // this any earlier can make the reads that follow it fail, which
     // is a mint lost for an identity that was never required.
     let signLeaf = try? operations.readCertificate(.qualifiedSignature)
+    reportInventory(read: operations)
     TokenLog.info("readIdentity: sign leaf \(signLeaf?.count ?? -1) bytes")
     return PublishedIdentity(
       leafDER: leaf,
@@ -170,6 +171,28 @@ extension Token {
       signLeafDER: signLeaf,
       tokenSerial: serial
     )
+  }
+
+  /// Records what the card's own directories say it carries.
+  ///
+  /// Nothing is published from this yet: it is the inventory the fixed
+  /// slots cannot see, read to learn each key's reference before any
+  /// identity is built from it.
+  private static func reportInventory(read operations: CardOperations) {
+    guard let entries = try? operations.readPkcs15Inventory() else {
+      TokenLog.info("readIdentity: PKCS#15 inventory unreadable")
+      return
+    }
+    TokenLog.info("readIdentity: PKCS#15 inventory lists \(entries.count) certificates")
+    for entry in entries {
+      let reference = entry.key?.keyReference
+      TokenLog.info(
+        "readIdentity: inventory entry file=\(entry.certificate.file) "
+          + "id=\(entry.certificate.identifier.map { String(format: "%02X", $0) }.joined()) "
+          + "key=\(entry.key != nil) "
+          + "keyReference=\(reference.map { String(format: "%02X", $0) } ?? "none")"
+      )
+    }
   }
 
   /// How long something started at `instant` has taken, in milliseconds.
