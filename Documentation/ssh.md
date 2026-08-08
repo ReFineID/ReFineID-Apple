@@ -91,7 +91,8 @@ further prompt while the card stays in the reader.
 
 `ssh-agent` loads modules only from `/usr/lib*` and `/usr/local/lib*`
 unless started with `-P`, which is why the module lives in
-`/usr/local/lib`.
+`/usr/local/lib`. It checks the resolved path, so a symlink from an
+allowed directory to a module outside one is refused.
 
 ## Troubleshooting
 
