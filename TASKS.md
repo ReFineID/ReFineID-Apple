@@ -161,15 +161,57 @@ card keys as ecdsa-sha2-nistp384. Remaining:
   Baseline Provider conformance (profiles v3.2); the interface surface
   it requires is already in place.
 - [ ] Ship both modules inside the app bundle
-  (`Contents/Frameworks/`), built and signed with the app, so they
-  update with it and stay matched to the token extension. That serves
-  every consumer that takes a module path -- ssh `PKCS11Provider`,
-  Firefox, SunPKCS11 -- and needs no installation. Only `ssh-agent`
-  restricts paths, and its allowlist rejects a symlink by its resolved
-  target (measured), so agent users start an agent with
-  `ssh-agent -P '/Applications/ReFineID.app/Contents/Frameworks/*'`
-  rather than a copy that an app update would leave stale.
-  `/usr/local/lib` stays the source-checkout install path.
+  (`Contents/Frameworks/`), built and signed with the app, so the App
+  Store updates them and they stay matched to the token extension.
+  That serves every consumer that takes a module path -- ssh
+  `PKCS11Provider`, Firefox, SunPKCS11 -- with no installation at all.
+- [ ] Ship a trampoline for `ssh-agent`, the one consumer that
+  restricts module paths. Two measured obstacles rule out the simple
+  answers. The agent resolves a path before matching its allowlist, so
+  a symlink from `/usr/local/lib` into the app bundle is refused by
+  its target. OpenSSH then reads the module file and requires
+  `C_GetFunctionList` in that file's own symbol table before loading
+  it, so a stub that re-exports the symbol from another library --
+  where the linker records the delegation and the stub exports
+  nothing -- is refused as "not a PKCS11 library". A stub that instead
+  defines the discovery entry points as real functions, each calling
+  `dlopen` and `dlsym` on the bundle module and forwarding, satisfies
+  both: enumeration, agent loading, and a card-signed login are proven
+  with the module in an `/Applications` bundle.
+
+  The division of labour: the App Store delivers and updates the
+  module inside the app, and the holder installs the stub once with
+  admin rights, which a sandboxed app cannot do for them. App updates
+  replace the implementation behind the stub, so there are no stale
+  copies to support, and the stub itself changes only if the discovery
+  entry points or the bundle path do.
+
+  Forward all three discovery entry points, probe both `/Applications`
+  and `~/Applications`, and fail with a legible message. Have the
+  installer report the installed stub and the module it resolves to,
+  so a mismatch is visible rather than mysterious.
+
+  Signing does not block the load: both loaders disable library
+  validation by entitlement -- `ssh-pkcs11-helper` holds
+  `com.apple.security.cs.disable-library-validation` and
+  `ssh-apple-pkcs11` holds
+  `com.apple.private.security.clear-library-validation` -- because a
+  PKCS#11 consumer must be able to load third-party modules at all.
+  The ad-hoc signatures measured here have no team identity and would
+  be the first thing library validation rejected, so an App Store
+  signature cannot fail where they succeeded.
+
+  That is also why the stub must check the signature itself. With
+  validation off, the agent's path allowlist is the control, and it
+  holds because `/usr/local/lib` is root-owned -- which is why the
+  agent resolves symlinks before matching, so a root-owned name cannot
+  point at a user-writable file. A stub loading from
+  `/Applications` widens that boundary, the directory being
+  admin-writable rather than root-owned. Before `dlopen`, verify the
+  target with `SecStaticCodeCheckValidity` against a requirement
+  pinning the team identifier and bundle identifier, so the stub
+  enforces what library validation would have.
+- [ ] `/usr/local/lib` stays the source-checkout install path.
 
 ## 7. PIN1 cache
 
