@@ -128,7 +128,7 @@ internal enum TokenCatalog {
       CKA_TOKEN: flag(true),
       CKA_PRIVATE: flag(false),
       CKA_MODIFIABLE: flag(false),
-      CKA_LABEL: Data(item.label.utf8),
+      CKA_LABEL: Data(displayLabel(item: item, certificate: certificate).utf8),
       CKA_ID: item.keyID,
     ]
     let blueprints = [
@@ -161,6 +161,19 @@ internal enum TokenCatalog {
         fieldWidth: blueprint.fieldWidth,
         privateKey: blueprint.privateKey)
     }
+  }
+
+  /// CKA_LABEL for one identity's objects.
+  ///
+  /// The certificate holder from the subject, then the token's own key
+  /// name. OpenSSH shows this verbatim as the public key comment.
+  private static func displayLabel(
+    item: IdentityItem, certificate: SecCertificate
+  ) -> String {
+    guard let subject = SecCertificateCopySubjectSummary(certificate) as String? else {
+      return item.label
+    }
+    return "\(subject) - \(item.label)"
   }
 
   /// Certificate-object attributes.
