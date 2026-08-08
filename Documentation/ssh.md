@@ -60,6 +60,40 @@ authentication path, so no PIN is typed into the terminal). The dialog
 appears per connection; `ControlMaster` connection reuse avoids
 repeats.
 
+### Per host, or per host and user
+
+`Host *` applies the card everywhere. To use it for one destination,
+name that destination -- and to select on the username as well, use a
+`Match` block, since `Host` patterns match only the hostname:
+
+```
+Match host server.example.com user cardlogin
+    PKCS11Provider /usr/local/lib/librefineid_pkcs11.dylib
+    IdentityFile ~/.ssh/refineid.pub
+    IdentitiesOnly yes
+```
+
+`IdentitiesOnly yes` keeps ssh from also offering every other key you
+have, but it restricts ssh to *configured* identities -- and a
+PKCS#11-provided key does not count as configured unless a matching
+public key file is named. Without the `IdentityFile` line the card is
+enumerated and then silently dropped, and the login fails with
+`Permission denied (publickey)`. Write the file once:
+
+```sh
+ssh-keygen -D /usr/local/lib/librefineid_pkcs11.dylib > ~/.ssh/refineid.pub
+```
+
+Omitting both lines also works; then the card is offered alongside the
+other keys.
+
+Existing `Host` blocks for the same machine do not conflict: ssh reads
+the configuration top to bottom and keeps the first value it finds for
+each keyword, so a `Match` block placed after them adds the card
+without disturbing the username or hostname they set. A username given
+on the command line (`ssh cardlogin@server`) overrides the one in a
+`Host` block, which is what lets the `Match user` criterion fire.
+
 ### With ssh-agent
 
 ```sh
