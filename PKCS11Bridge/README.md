@@ -14,18 +14,22 @@ card login, OpenSSH -- cannot reach CryptoTokenKit tokens. Apple's own
 current FINEID cards enroll EC P-384 keys by default, for which this
 module is the only CTK-based PKCS#11 path.
 
-Status: scaffold. The module loads, initializes, reports itself, and
-implements the full PKCS#11 v3.2 surface: all 104 entry points exist
+Status: working read-and-sign module, EC identities first. The full
+PKCS#11 v3.2 surface is present: all 104 entry points exist
 (unimplemented ones return `CKR_FUNCTION_NOT_SUPPORTED`, and the
 legacy parallel-management pair returns `CKR_FUNCTION_NOT_PARALLEL`,
 both as the spec directs). `C_GetInterfaceList`/`C_GetInterface`
 publish three "PKCS 11" interfaces -- 3.2, 3.0, and legacy 2.40 -- and
 `C_GetFunctionList` serves pre-3.0 consumers (OpenSSH, NSS, older
 `SunPKCS11`) with the 2.40 list, whose version field the spec fixes at
-2.40. Token enumeration, the object model, and ECDSA signing are the
-next milestones; the compatibility ladder is `pkcs11-tool`, then
-`ssh`, then `keytool` (`SunPKCS11`), then a PAdES signature from EU
-DSS.
+2.40. Wired to CryptoTokenKit: slots enumerate present tokens
+(Secure Enclave tokens excluded), each identity surfaces as a
+certificate, public-key, and private-key object sharing one `CKA_ID`,
+and `C_Sign` performs CKM_ECDSA through `SecKeyCreateSignature` with
+DER-to-r||s conversion. Verified against a real FINEID card:
+`ssh-keygen -D` lists both card keys as `ecdsa-sha2-nistp384`.
+Remaining ladder: authenticated `ssh` login, `keytool` (`SunPKCS11`),
+then a PAdES signature from EU DSS.
 
 Build and test:
 

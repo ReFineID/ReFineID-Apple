@@ -20,6 +20,10 @@ internal enum CryptokiEntryPoints {
   /// Whether C_Initialize has completed without a matching C_Finalize.
   private static let initialized = Mutex(false)
 
+  /// Whether the module is between C_Initialize and C_Finalize; the
+  /// other entry-point families gate on this.
+  internal static var isLive: Bool { initialized.withLock { $0 } }
+
   /// C_Initialize: validates threading arguments and marks the module live.
   ///
   /// Native locking is always used, which satisfies every caller threading
@@ -75,22 +79,9 @@ internal enum CryptokiEntryPoints {
     return CKR_OK
   }
 
-  /// C_GetSlotList: token enumeration from CryptoTokenKit is the next
-  /// milestone; until then the module truthfully reports zero slots.
-  internal static func slotList(
-    tokenPresent _: CK_BBOOL,
-    slots _: CK_SLOT_ID_PTR?,
-    count: CK_ULONG_PTR?
-  ) -> CK_RV {
-    guard initialized.withLock({ $0 }) else { return CKR_CRYPTOKI_NOT_INITIALIZED }
-    guard let count else { return CKR_ARGUMENTS_BAD }
-    count.pointee = 0
-    return CKR_OK
-  }
-
   /// Fills a fixed-width PKCS#11 text field: UTF-8 content, space padded,
   /// never NUL terminated, truncated to the field width.
-  private static func write(padded text: String, into buffer: UnsafeMutableRawBufferPointer) {
+  internal static func write(padded text: String, into buffer: UnsafeMutableRawBufferPointer) {
     let pad = UInt8(ascii: " ")
     var index = 0
     for byte in text.utf8.prefix(buffer.count) {
@@ -122,12 +113,12 @@ internal func cryptokiGetInfo(_ pointer: CK_INFO_PTR?) -> CK_RV {
   CryptokiEntryPoints.info(into: pointer)
 }
 
-/// Exported C_GetSlotList; see CryptokiEntryPoints.slotList.
+/// Exported C_GetSlotList; see SlotTokenEntryPoints.slotList.
 @_cdecl("C_GetSlotList")
 internal func cryptokiGetSlotList(
   _ tokenPresent: CK_BBOOL,
   _ slots: CK_SLOT_ID_PTR?,
   _ count: CK_ULONG_PTR?
 ) -> CK_RV {
-  CryptokiEntryPoints.slotList(tokenPresent: tokenPresent, slots: slots, count: count)
+  SlotTokenEntryPoints.slotList(tokenPresent: tokenPresent, slots: slots, count: count)
 }

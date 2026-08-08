@@ -3,8 +3,8 @@
 // Hand-written against the OASIS standard "PKCS #11 Specification
 // Version 3.2" and the header material it normatively defines
 // (pkcs11t.h types and constants, pkcs11f.h function prototypes,
-// pkcs11.h function-list structures). Verified 2026-08-07 against the
-// official include files at
+// pkcs11.h function-list structures). Verified against the official
+// include files at
 // https://docs.oasis-open.org/pkcs11/pkcs11-spec/v3.2/os/include/pkcs11-v3.2/
 // (and the v2.40 errata01/os includes for the legacy surface) -- every
 // constant value, every structure member list, the function-list member
@@ -48,6 +48,9 @@ typedef CK_ULONG CK_NOTIFICATION;
 typedef CK_ULONG CK_MECHANISM_TYPE;
 typedef CK_ULONG CK_ATTRIBUTE_TYPE;
 typedef CK_ULONG CK_SESSION_VALIDATION_FLAGS_TYPE;
+typedef CK_ULONG CK_OBJECT_CLASS;
+typedef CK_ULONG CK_CERTIFICATE_TYPE;
+typedef CK_ULONG CK_KEY_TYPE;
 
 typedef void *CK_VOID_PTR;
 typedef CK_VOID_PTR *CK_VOID_PTR_PTR;
@@ -65,6 +68,62 @@ typedef CK_FLAGS *CK_FLAGS_PTR;
 static const CK_BBOOL CK_FALSE = 0;
 static const CK_BBOOL CK_TRUE = 1;
 
+// -- Special values --
+
+static const CK_ULONG CK_INVALID_HANDLE = 0;
+static const CK_ULONG CK_EFFECTIVELY_INFINITE = 0;
+static const CK_ULONG CK_UNAVAILABLE_INFORMATION = ~(CK_ULONG)0;
+
+// -- Object classes, certificate types, key types --
+
+static const CK_OBJECT_CLASS CKO_CERTIFICATE = 0x00000001;
+static const CK_OBJECT_CLASS CKO_PUBLIC_KEY = 0x00000002;
+static const CK_OBJECT_CLASS CKO_PRIVATE_KEY = 0x00000003;
+
+static const CK_CERTIFICATE_TYPE CKC_X_509 = 0x00000000;
+
+static const CK_KEY_TYPE CKK_RSA = 0x00000000;
+static const CK_KEY_TYPE CKK_EC = 0x00000003;
+
+// -- Attribute types used by the bridge (pkcs11t.h CKA_*) --
+
+static const CK_ATTRIBUTE_TYPE CKA_CLASS = 0x00000000;
+static const CK_ATTRIBUTE_TYPE CKA_TOKEN = 0x00000001;
+static const CK_ATTRIBUTE_TYPE CKA_PRIVATE = 0x00000002;
+static const CK_ATTRIBUTE_TYPE CKA_LABEL = 0x00000003;
+static const CK_ATTRIBUTE_TYPE CKA_VALUE = 0x00000011;
+static const CK_ATTRIBUTE_TYPE CKA_CERTIFICATE_TYPE = 0x00000080;
+static const CK_ATTRIBUTE_TYPE CKA_ISSUER = 0x00000081;
+static const CK_ATTRIBUTE_TYPE CKA_SERIAL_NUMBER = 0x00000082;
+static const CK_ATTRIBUTE_TYPE CKA_KEY_TYPE = 0x00000100;
+static const CK_ATTRIBUTE_TYPE CKA_SUBJECT = 0x00000101;
+static const CK_ATTRIBUTE_TYPE CKA_ID = 0x00000102;
+static const CK_ATTRIBUTE_TYPE CKA_SENSITIVE = 0x00000103;
+static const CK_ATTRIBUTE_TYPE CKA_SIGN = 0x00000108;
+static const CK_ATTRIBUTE_TYPE CKA_VERIFY = 0x0000010A;
+static const CK_ATTRIBUTE_TYPE CKA_MODIFIABLE = 0x00000170;
+static const CK_ATTRIBUTE_TYPE CKA_EC_PARAMS = 0x00000180;
+static const CK_ATTRIBUTE_TYPE CKA_EC_POINT = 0x00000181;
+static const CK_ATTRIBUTE_TYPE CKA_ALWAYS_AUTHENTICATE = 0x00000202;
+
+// -- Mechanisms and mechanism-info flags used by the bridge --
+
+static const CK_MECHANISM_TYPE CKM_ECDSA = 0x00001041;
+
+static const CK_FLAGS CKF_HW = 0x00000001;
+static const CK_FLAGS CKF_SIGN = 0x00000800;
+
+// -- Session flags, states, and user types --
+
+static const CK_FLAGS CKF_RW_SESSION = 0x00000002;
+static const CK_FLAGS CKF_SERIAL_SESSION = 0x00000004;
+
+static const CK_STATE CKS_RO_PUBLIC_SESSION = 0;
+static const CK_STATE CKS_RO_USER_FUNCTIONS = 1;
+
+static const CK_USER_TYPE CKU_SO = 0;
+static const CK_USER_TYPE CKU_USER = 1;
+
 // -- Return values used by the bridge (pkcs11t.h CKR_*) --
 
 static const CK_RV CKR_OK = 0x00000000;
@@ -72,8 +131,24 @@ static const CK_RV CKR_SLOT_ID_INVALID = 0x00000003;
 static const CK_RV CKR_GENERAL_ERROR = 0x00000005;
 static const CK_RV CKR_FUNCTION_FAILED = 0x00000006;
 static const CK_RV CKR_ARGUMENTS_BAD = 0x00000007;
+static const CK_RV CKR_ATTRIBUTE_TYPE_INVALID = 0x00000012;
+static const CK_RV CKR_DATA_LEN_RANGE = 0x00000021;
+static const CK_RV CKR_DEVICE_ERROR = 0x00000030;
+static const CK_RV CKR_FUNCTION_CANCELED = 0x00000050;
 static const CK_RV CKR_FUNCTION_NOT_PARALLEL = 0x00000051;
 static const CK_RV CKR_FUNCTION_NOT_SUPPORTED = 0x00000054;
+static const CK_RV CKR_KEY_HANDLE_INVALID = 0x00000060;
+static const CK_RV CKR_MECHANISM_INVALID = 0x00000070;
+static const CK_RV CKR_OBJECT_HANDLE_INVALID = 0x00000082;
+static const CK_RV CKR_OPERATION_ACTIVE = 0x00000090;
+static const CK_RV CKR_OPERATION_NOT_INITIALIZED = 0x00000091;
+static const CK_RV CKR_PIN_INCORRECT = 0x000000A0;
+static const CK_RV CKR_SESSION_PARALLEL_NOT_SUPPORTED = 0x000000B4;
+static const CK_RV CKR_SESSION_HANDLE_INVALID = 0x000000B3;
+static const CK_RV CKR_TOKEN_NOT_PRESENT = 0x000000E0;
+static const CK_RV CKR_USER_ALREADY_LOGGED_IN = 0x00000100;
+static const CK_RV CKR_USER_NOT_LOGGED_IN = 0x00000101;
+static const CK_RV CKR_USER_TYPE_INVALID = 0x00000103;
 static const CK_RV CKR_BUFFER_TOO_SMALL = 0x00000150;
 static const CK_RV CKR_CRYPTOKI_NOT_INITIALIZED = 0x00000190;
 static const CK_RV CKR_CRYPTOKI_ALREADY_INITIALIZED = 0x00000191;

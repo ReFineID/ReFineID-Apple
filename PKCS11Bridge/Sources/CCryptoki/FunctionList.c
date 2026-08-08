@@ -12,29 +12,13 @@
 // spec fixes at 2.40). C_Initialize, C_Finalize, C_GetInfo, and
 // C_GetSlotList are implemented in Swift (PKCS11Bridge target) and
 // referenced here by their prototypes; the linker binds them when the
-// dynamic library or a test bundle is produced.
+// dynamic library or a test bundle is produced. The slot, token,
+// session, object, and single-part signing entry points are implemented
+// in Swift as well.
 
 #include <string.h>
 
 #include "include/Cryptoki.h"
-
-CK_RV C_GetSlotInfo(CK_SLOT_ID slotID, CK_SLOT_INFO_PTR pInfo) {
-  return CKR_FUNCTION_NOT_SUPPORTED;
-}
-
-CK_RV C_GetTokenInfo(CK_SLOT_ID slotID, CK_TOKEN_INFO_PTR pInfo) {
-  return CKR_FUNCTION_NOT_SUPPORTED;
-}
-
-CK_RV C_GetMechanismList(
-  CK_SLOT_ID slotID, CK_MECHANISM_TYPE_PTR pMechanismList, CK_ULONG_PTR pulCount) {
-  return CKR_FUNCTION_NOT_SUPPORTED;
-}
-
-CK_RV C_GetMechanismInfo(
-  CK_SLOT_ID slotID, CK_MECHANISM_TYPE type, CK_MECHANISM_INFO_PTR pInfo) {
-  return CKR_FUNCTION_NOT_SUPPORTED;
-}
 
 CK_RV C_InitToken(
   CK_SLOT_ID slotID, CK_UTF8CHAR_PTR pPin, CK_ULONG ulPinLen, CK_UTF8CHAR_PTR pLabel) {
@@ -51,24 +35,6 @@ CK_RV C_SetPIN(
   return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
-CK_RV C_OpenSession(
-  CK_SLOT_ID slotID, CK_FLAGS flags, CK_VOID_PTR pApplication, CK_NOTIFY Notify,
-  CK_SESSION_HANDLE_PTR phSession) {
-  return CKR_FUNCTION_NOT_SUPPORTED;
-}
-
-CK_RV C_CloseSession(CK_SESSION_HANDLE hSession) {
-  return CKR_FUNCTION_NOT_SUPPORTED;
-}
-
-CK_RV C_CloseAllSessions(CK_SLOT_ID slotID) {
-  return CKR_FUNCTION_NOT_SUPPORTED;
-}
-
-CK_RV C_GetSessionInfo(CK_SESSION_HANDLE hSession, CK_SESSION_INFO_PTR pInfo) {
-  return CKR_FUNCTION_NOT_SUPPORTED;
-}
-
 CK_RV C_GetOperationState(
   CK_SESSION_HANDLE hSession, CK_BYTE_PTR pOperationState,
   CK_ULONG_PTR pulOperationStateLen) {
@@ -79,16 +45,6 @@ CK_RV C_SetOperationState(
   CK_SESSION_HANDLE hSession, CK_BYTE_PTR pOperationState,
   CK_ULONG ulOperationStateLen, CK_OBJECT_HANDLE hEncryptionKey,
   CK_OBJECT_HANDLE hAuthenticationKey) {
-  return CKR_FUNCTION_NOT_SUPPORTED;
-}
-
-CK_RV C_Login(
-  CK_SESSION_HANDLE hSession, CK_USER_TYPE userType, CK_UTF8CHAR_PTR pPin,
-  CK_ULONG ulPinLen) {
-  return CKR_FUNCTION_NOT_SUPPORTED;
-}
-
-CK_RV C_Logout(CK_SESSION_HANDLE hSession) {
   return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -113,30 +69,9 @@ CK_RV C_GetObjectSize(
   return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
-CK_RV C_GetAttributeValue(
-  CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject, CK_ATTRIBUTE_PTR pTemplate,
-  CK_ULONG ulCount) {
-  return CKR_FUNCTION_NOT_SUPPORTED;
-}
-
 CK_RV C_SetAttributeValue(
   CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject, CK_ATTRIBUTE_PTR pTemplate,
   CK_ULONG ulCount) {
-  return CKR_FUNCTION_NOT_SUPPORTED;
-}
-
-CK_RV C_FindObjectsInit(
-  CK_SESSION_HANDLE hSession, CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulCount) {
-  return CKR_FUNCTION_NOT_SUPPORTED;
-}
-
-CK_RV C_FindObjects(
-  CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR phObject,
-  CK_ULONG ulMaxObjectCount, CK_ULONG_PTR pulObjectCount) {
-  return CKR_FUNCTION_NOT_SUPPORTED;
-}
-
-CK_RV C_FindObjectsFinal(CK_SESSION_HANDLE hSession) {
   return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -205,17 +140,6 @@ CK_RV C_DigestKey(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hKey) {
 
 CK_RV C_DigestFinal(
   CK_SESSION_HANDLE hSession, CK_BYTE_PTR pDigest, CK_ULONG_PTR pulDigestLen) {
-  return CKR_FUNCTION_NOT_SUPPORTED;
-}
-
-CK_RV C_SignInit(
-  CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism, CK_OBJECT_HANDLE hKey) {
-  return CKR_FUNCTION_NOT_SUPPORTED;
-}
-
-CK_RV C_Sign(
-  CK_SESSION_HANDLE hSession, CK_BYTE_PTR pData, CK_ULONG ulDataLen,
-  CK_BYTE_PTR pSignature, CK_ULONG_PTR pulSignatureLen) {
   return CKR_FUNCTION_NOT_SUPPORTED;
 }
 

@@ -135,28 +135,22 @@ Legend:
 
 ## 6b. PKCS#11 bridge (PKCS11Bridge/)
 
-Scaffold in place: dynamic library implementing the full PKCS#11 v3.2
-surface (all 104 entry points; C_GetInterfaceList/C_GetInterface
-publish 3.2, 3.0, and legacy 2.40 interfaces), Swift general-purpose
-entry points, package tests, lint-gate coverage. Ladder milestones,
-each against real hardware:
+Working read-and-sign module over CryptoTokenKit: full v3.2 surface,
+slot/token enumeration, sessions, EC object model with CKA_ID pairing
+and login-free certificates (Public Certificates Token behavior,
+profiles v3.2), CKM_ECDSA signing via SecKeyCreateSignature with
+DER-to-r||s conversion (pkcs11-curr v3.0), mechanisms clear of the
+pkcs11-hist register. Hardware-proven: ssh-keygen -D lists both FINEID
+card keys as ecdsa-sha2-nistp384. Remaining:
 
-- [ ] Slot and token enumeration from keychain token items
-  (C_GetSlotList, C_GetSlotInfo, C_GetTokenInfo; slot per token,
-  CKF_PROTECTED_AUTHENTICATION_PATH advertised).
-- [ ] Session plumbing and the read-only object model: certificate,
-  public-key, and private-key objects with consistent CKA_ID pairing
-  (C_OpenSession, C_FindObjects*, C_GetAttributeValue). Follow the
-  Public Certificates Token behavior from OASIS profiles v3.2:
-  certificates readable without login.
-- [ ] Mechanism list stays clear of everything in the OASIS Historical
-  Mechanisms and Functions register (pkcs11-hist v3.0).
-- [ ] C_Sign via SecKeyCreateSignature, ECDSA P-384 first, RSA after.
-  Mechanisms per pkcs11-curr v3.0; CKM_ECDSA output is raw r||s, the
-  inverse of CardCore's EcdsaSignature DER conversion.
-- [ ] Milestone gates: OpenSC pkcs11-tool listing and raw sign; ssh
-  login via `ssh-agent -P`; `keytool -list` through SunPKCS11; PAdES
-  signature from EU DSS.
+- [ ] Prove an authenticated signature on real hardware: ssh login via
+  `ssh-agent -P` (protected-authentication-path PIN dialog), or OpenSC
+  pkcs11-tool --sign.
+- [ ] RSA object model and signing for RSA-enrolled cards.
+- [ ] Slot events: C_WaitForSlotEvent and token insertion/removal
+  beyond per-call refresh.
+- [ ] `keytool -list` through SunPKCS11 (CKA_ID strictness gate), then
+  a PAdES signature from EU DSS.
 - [ ] Decide install path and packaging (ssh-agent allowlist:
   /usr/lib* and /usr/local/lib* by default).
 - [ ] Add the CKO_PROFILE object to the object model to complete

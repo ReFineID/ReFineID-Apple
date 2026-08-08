@@ -128,14 +128,17 @@ internal struct CryptokiModuleTests {
     #expect(manufacturer.hasPrefix("ReFineID"))
     #expect(manufacturer.hasSuffix(" "))
 
-    var slotCount = CK_ULONG(1)
+    var slotCount = CK_ULONG(0)
     #expect(C_GetSlotList(CK_FALSE, nil, &slotCount) == CKR_OK)
-    #expect(slotCount == 0)
     #expect(C_GetSlotList(CK_FALSE, nil, nil) == CKR_ARGUMENTS_BAD)
 
-    #expect(C_OpenSession(0, 0, nil, nil, nil) == CKR_FUNCTION_NOT_SUPPORTED)
-    #expect(C_Login(0, 0, nil, 0) == CKR_FUNCTION_NOT_SUPPORTED)
-    #expect(C_Sign(0, nil, 0, nil, nil) == CKR_FUNCTION_NOT_SUPPORTED)
+    #expect(C_OpenSession(0, 0, nil, nil, nil) == CKR_ARGUMENTS_BAD)
+    #expect(C_Login(0, 0, nil, 0) == CKR_SESSION_HANDLE_INVALID)
+    #expect(C_Sign(0, nil, 0, nil, nil) == CKR_ARGUMENTS_BAD)
+    #expect(C_SignInit(0, nil, 0) == CKR_ARGUMENTS_BAD)
+    #expect(C_FindObjectsFinal(0) == CKR_SESSION_HANDLE_INVALID)
+    #expect(C_GetSessionInfo(0, nil) == CKR_ARGUMENTS_BAD)
+    #expect(C_GetSlotInfo(CK_UNAVAILABLE_INFORMATION, nil) == CKR_ARGUMENTS_BAD)
     #expect(C_LoginUser(0, 0, nil, 0, nil, 0) == CKR_FUNCTION_NOT_SUPPORTED)
     #expect(
       C_EncapsulateKey(0, nil, 0, nil, 0, nil, nil, nil) == CKR_FUNCTION_NOT_SUPPORTED
