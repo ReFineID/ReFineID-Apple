@@ -143,16 +143,15 @@ DER-to-r||s conversion (pkcs11-curr v3.0), mechanisms clear of the
 pkcs11-hist register. Hardware-proven: ssh-keygen -D lists both FINEID
 card keys as ecdsa-sha2-nistp384. Remaining:
 
-- [ ] Prove an authenticated signature on real hardware: ssh login via
-  `ssh-agent -P` (protected-authentication-path PIN dialog), or OpenSC
-  pkcs11-tool --sign.
+- [ ] Prove an authenticated signature on real hardware:
+  `ssh-add -s /usr/local/lib/librefineid_pkcs11.dylib` with the card
+  PIN, then an ssh login (or OpenSC pkcs11-tool --sign). Requires the
+  card holder at the PIN prompt.
 - [ ] RSA object model and signing for RSA-enrolled cards.
 - [ ] Slot events: C_WaitForSlotEvent and token insertion/removal
   beyond per-call refresh.
 - [ ] `keytool -list` through SunPKCS11 (CKA_ID strictness gate), then
   a PAdES signature from EU DSS.
-- [ ] Decide install path and packaging (ssh-agent allowlist:
-  /usr/lib* and /usr/local/lib* by default).
 - [ ] Add the CKO_PROFILE object to the object model to complete
   Baseline Provider conformance (profiles v3.2); the interface surface
   it requires is already in place.

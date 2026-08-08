@@ -38,11 +38,29 @@ swift build
 swift test
 ```
 
-The dynamic library lands in `.build/debug/libPKCS11Bridge.dylib`
-(`--configuration release` for `.build/release/`). Note for ssh use:
-`ssh-agent` only loads PKCS#11 providers from an allowlist (by default
-`/usr/lib*` and `/usr/local/lib*`); install accordingly or start the
-agent with `ssh-agent -P` naming the module's path.
+Install (from the repository root):
+
+```sh
+Scripts/install-pkcs11-macos.sh
+```
+
+This builds the release configuration and installs
+`/usr/local/lib/librefineid_pkcs11.dylib` -- named like the Linux
+module, and located inside `ssh-agent`'s default PKCS#11 provider
+allowlist (`/usr/lib*`, `/usr/local/lib*`; a module under `$HOME` is
+refused). Use it:
+
+```sh
+ssh-keygen -D /usr/local/lib/librefineid_pkcs11.dylib   # list keys
+ssh-add -s /usr/local/lib/librefineid_pkcs11.dylib      # add to agent
+ssh -o PKCS11Provider=/usr/local/lib/librefineid_pkcs11.dylib user@host
+```
+
+At the `ssh-add` PIN prompt, enter the card PIN; OpenSSH refuses an
+empty PIN for login-required tokens before ever calling the module.
+When no PIN is supplied at all (as with `ssh-keygen -D` or the ssh
+`PKCS11Provider` flow), the token's protected authentication path
+applies and the system PIN dialog appears at signing time.
 
 Specifications (https://docs.oasis-open.org/pkcs11/):
 
