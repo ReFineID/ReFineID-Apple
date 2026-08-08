@@ -151,7 +151,10 @@ card keys as ecdsa-sha2-nistp384. Remaining:
 - [ ] Slot events: C_WaitForSlotEvent and token insertion/removal
   beyond per-call refresh.
 - [ ] `keytool -list` through SunPKCS11 (CKA_ID strictness gate), then
-  a PAdES signature from EU DSS.
+  a PAdES signature from EU DSS via librefineid_pkcs11_sign.dylib,
+  the name that exposes only the qualified-signature identity; the
+  default name exposes only authentication identities
+  (contentCommitment filter, disjoint profiles).
 - [ ] Add the CKO_PROFILE object to the object model to complete
   Baseline Provider conformance (profiles v3.2); the interface surface
   it requires is already in place.

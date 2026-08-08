@@ -118,6 +118,7 @@ internal enum TokenCatalog {
   ) -> [ModuleRegistry.ObjectRecord] {
     guard let identity = item.identity,
       let certificate = copyCertificate(identity),
+      IdentityPolicy.exposes(certificate),
       let publicKey = SecCertificateCopyKey(certificate),
       let point = SecKeyCopyExternalRepresentation(publicKey, nil) as Data?,
       let width = EcEncoding.fieldWidth(uncompressedPoint: point),

@@ -14,6 +14,20 @@ card login, OpenSSH -- cannot reach CryptoTokenKit tokens. Apple's own
 current FINEID cards enroll EC P-384 keys by default, for which this
 module is the only CTK-based PKCS#11 path.
 
+Scope: one binary, two installed names, two disjoint profiles -- and
+no name that exposes everything. The default name
+(`librefineid_pkcs11.dylib`) serves authentication consumers (ssh,
+browser login) and exposes only identities without the
+contentCommitment (nonRepudiation) key usage: the qualified signature
+key is legally weighty and belongs to a dedicated signing
+application, not to every process that loads a PKCS#11 module or to
+an ssh-agent's PIN cache. The signing name
+(`librefineid_pkcs11_sign.dylib`) serves document-signing
+applications (SunPKCS11/DSS) and exposes only the contentCommitment
+identities, so a signing key picker cannot offer the wrong key. The
+profile is decided by the file name the module is loaded under, so
+the choice is always explicit in the consumer's configuration.
+
 Status: working read-and-sign module, EC identities first. The full
 PKCS#11 v3.2 surface is present: all 104 entry points exist
 (unimplemented ones return `CKR_FUNCTION_NOT_SUPPORTED`, and the

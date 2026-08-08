@@ -22,9 +22,13 @@ internal enum KeyLabel {
   /// instance identifiers.
   private static let cardNumberMarker = "refineid-card-"
 
-  /// The designation of the card's default key, the one ssh and
-  /// browser login use; it is left off the label, so only the other
-  /// keys carry a designation suffix.
+  /// The designation of the card's default key.
+  ///
+  /// The default key is the one ssh and browser login use. In the
+  /// authentication profile its designation is left off the label,
+  /// since that profile shows no other keys; the signing profile
+  /// labels every key with its designation so a signing application's
+  /// key picker reads unambiguously.
   private static let defaultDesignation = "PIN 1"
 
   /// The composed label; falls back to the certificate summary plus
@@ -43,7 +47,9 @@ internal enum KeyLabel {
     }
     let base = "\(givenName.capitalized) \(surname.capitalized) - \(cardNumber)"
     let designation = pinName(keyName)
-    return designation == defaultDesignation ? base : "\(base) - \(designation)"
+    let omitDesignation =
+      designation == defaultDesignation && !IdentityPolicy.isSigningProfile
+    return omitDesignation ? base : "\(base) - \(designation)"
   }
 
   /// Subject RDN values keyed by attribute OID.

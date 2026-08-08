@@ -23,11 +23,16 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 library_name="librefineid_pkcs11.dylib"
+sign_library_name="librefineid_pkcs11_sign.dylib"
 install_dir="/usr/local/lib"
 installed="${install_dir}/${library_name}"
+installed_sign="${install_dir}/${sign_library_name}"
 package_dir="PKCS11Bridge"
 built="${package_dir}/.build/release/libPKCS11Bridge.dylib"
-staged="${package_dir}/.build/release/${library_name}"
+
+# Names from earlier revisions that no longer exist; removed on
+# install so no stale profile lingers.
+superseded_names=("librefineid_pkcs11_signing.dylib")
 
 fail() { echo "install-pkcs11-macos: $*" >&2; exit 1; }
 note() { echo "install-pkcs11-macos: $*"; }
@@ -44,10 +49,49 @@ smoke_test() {
   fi
 }
 
+# Stages one name from the shared binary and installs it: the same
+# module behaves as authentication-only or full depending on the file
+# name it is loaded under (see IdentityPolicy in the package).
+install_variant() {
+  local name="$1"
+  local target="${install_dir}/${name}"
+  local staged="${package_dir}/.build/release/${name}"
+  note "staging ${name} with production install name"
+  cp "$built" "$staged"
+  install_name_tool -id "$target" "$staged"
+  codesign --force --sign - "$staged"
+  codesign --verify "$staged" || fail "staged ${name} failed signature verification"
+  note "installing to ${target}"
+  if [[ -w "$install_dir" ]]; then
+    install -m 0755 "$staged" "$target"
+  else
+    sudo install -d -m 0755 "$install_dir"
+    sudo install -m 0755 "$staged" "$target"
+  fi
+  note "installed: $(ls -l "$target")"
+}
+
+# Removes library names from earlier revisions.
+remove_superseded() {
+  local name
+  for name in "${superseded_names[@]}"; do
+    local target="${install_dir}/${name}"
+    [[ -e "$target" ]] || continue
+    note "removing superseded ${target}"
+    if [[ -w "$install_dir" ]]; then
+      rm -f "$target"
+    else
+      sudo rm -f "$target"
+    fi
+  done
+}
+
 if [[ "${1:-}" == "--check" ]]; then
-  [[ -f "$installed" ]] || fail "nothing installed at ${installed}"
-  codesign --verify "$installed" || fail "signature verification failed"
-  note "installed: $(ls -l "$installed")"
+  for target in "$installed" "$installed_sign"; do
+    [[ -f "$target" ]] || fail "nothing installed at ${target}"
+    codesign --verify "$target" || fail "signature verification failed: ${target}"
+    note "installed: $(ls -l "$target")"
+  done
   smoke_test
   exit 0
 fi
@@ -56,20 +100,9 @@ note "building release"
 (cd "$package_dir" && swift build -c release)
 [[ -f "$built" ]] || fail "build produced no ${built}"
 
-note "staging ${library_name} with production install name"
-cp "$built" "$staged"
-install_name_tool -id "$installed" "$staged"
-codesign --force --sign - "$staged"
-codesign --verify "$staged" || fail "staged library failed signature verification"
-
-note "installing to ${installed}"
-if [[ -w "$install_dir" ]]; then
-  install -m 0755 "$staged" "$installed"
-else
-  sudo install -d -m 0755 "$install_dir"
-  sudo install -m 0755 "$staged" "$installed"
-fi
-
-note "installed: $(ls -l "$installed")"
+install_variant "$library_name"
+install_variant "$sign_library_name"
+remove_superseded
 smoke_test
 note "done. ssh usage: ssh -o PKCS11Provider=${installed} user@host"
+note "signing consumers (SunPKCS11/DSS) load: ${installed_sign}"
