@@ -40,8 +40,9 @@ publish three "PKCS 11" interfaces -- 3.2, 3.0, and legacy 2.40 -- and
 (Secure Enclave tokens excluded), each identity surfaces as a
 certificate, public-key, and private-key object sharing one `CKA_ID`,
 and `C_Sign` performs CKM_ECDSA through `SecKeyCreateSignature` with
-DER-to-r||s conversion. Verified against a real FINEID card:
-`ssh-keygen -D` lists both card keys as `ecdsa-sha2-nistp384`.
+DER-to-r||s conversion. Verified against a real FINEID card and a real server: the card signs
+an ssh login end to end (`C_Sign` through `SecKeyCreateSignature`,
+X9.62 DER converted to raw r||s).
 Remaining ladder: authenticated `ssh` login, `keytool` (`SunPKCS11`),
 then a PAdES signature from EU DSS.
 

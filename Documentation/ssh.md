@@ -94,3 +94,8 @@ explicit `-P` override.
 - **After reinserting the card**: an agent that held the keys before
   removal may need the module removed and added again
   (`ssh-add -e` then `ssh-add -s`).
+- **After the module is reinstalled**: `ssh-pkcs11-helper` keeps the
+  module mapped for as long as the agent holds it, so a rebuilt module
+  only takes effect after `ssh-add -e` followed by `ssh-add -s`. The
+  agentless path loads the module fresh for every connection and needs
+  no such step.
