@@ -49,6 +49,12 @@ The system PIN dialog appears when the connection is signed -- the
 token uses the protected authentication path, so no PIN is typed into
 the terminal. `ControlMaster` reuse avoids a dialog per connection.
 
+That dialog cannot be answered over a remote or headless session.
+`REFINEID_PKCS11_PIN_ENTRY=textual` withdraws the protected
+authentication path, so ssh prompts for the PIN itself and it passes
+through the ssh process instead of the system dialog. The default is
+`graphical`.
+
 ### Offering only the card
 
 Where a server counts authentication attempts, add both lines, never

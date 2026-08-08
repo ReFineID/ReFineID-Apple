@@ -108,9 +108,13 @@ internal enum SlotTokenEntryPoints {
     withUnsafeMutableBytes(of: &value.serialNumber) { buffer in
       CryptokiEntryPoints.write(padded: serial, into: buffer)
     }
-    value.flags =
+    var flags =
       CKF_TOKEN_INITIALIZED | CKF_USER_PIN_INITIALIZED | CKF_LOGIN_REQUIRED
-      | CKF_PROTECTED_AUTHENTICATION_PATH | CKF_WRITE_PROTECTED
+      | CKF_WRITE_PROTECTED
+    if PinEntry.current == .graphical {
+      flags |= CKF_PROTECTED_AUTHENTICATION_PATH
+    }
+    value.flags = flags
     value.ulMaxSessionCount = CK_EFFECTIVELY_INFINITE
     value.ulSessionCount = CK_ULONG(sessionCount)
     value.ulMaxRwSessionCount = CK_EFFECTIVELY_INFINITE

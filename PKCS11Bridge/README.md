@@ -6,7 +6,9 @@ identities come from the keychain's token items and signatures from
 `SecKeyCreateSignature`, so the system token daemon and the ReFineID
 token extension do all card communication and PIN handling. The module
 advertises the protected authentication path, so PIN entry uses the
-system dialog.
+system dialog; `REFINEID_PKCS11_PIN_ENTRY=textual` withdraws that flag
+so the consumer prompts instead, for remote and headless sessions
+where no dialog can be answered.
 
 Why it exists: macOS PKCS#11 consumers -- Java `SunPKCS11`, Firefox/NSS
 card login, OpenSSH -- cannot reach CryptoTokenKit tokens. Apple's own
