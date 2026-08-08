@@ -119,8 +119,25 @@ internal enum FineidValues {
   /// the PKCS#15 application (FINEID S4-1).
   internal static let fileIdSignatureCertificate: UInt16 = 0x4332
 
+  /// EF.4333: the second authentication certificate, directly under
+  /// the PKCS#15 application.
+  ///
+  /// Dual-algorithm cards carry a second key pair per PIN, and this
+  /// slot holds the counterpart to EF.4331. The slot does not fix the
+  /// algorithm: read the certificate and let its public key say.
+  ///
+  /// The same two bytes name the organization card's issuing CA under
+  /// the master file, which is a different file; identifiers are
+  /// unique only within a directory.
+  internal static let fileIdSecondAuthCertificate: UInt16 = 0x4333
+
   /// EF.4334: the on-card issuing root CA, under the master file.
   internal static let fileIdRootCertificate: UInt16 = 0x4334
+
+  /// EF.4335: the second qualified-signature certificate
+  /// ("allekirjoitusvarmenne 2"), directly under the PKCS#15
+  /// application, the counterpart to EF.4332 on dual-algorithm cards.
+  internal static let fileIdSecondSignatureCertificate: UInt16 = 0x4335
 
   /// EF.4336: the on-card issuing intermediate CA (DVV Citizen
   /// Certificates G4E), under the master file - the certificate that

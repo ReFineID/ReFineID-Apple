@@ -135,6 +135,14 @@ Legend:
 
 ## 6b. PKCS#11 bridge (PKCS11Bridge/)
 
+Measured on an RSA-generation citizen card (EF.4331 and EF.4332 hold
+RSA-3072 leaves): EF.4333 holds an RSA-4096 certificate whose subject
+is not the holder's, so it is an authority certificate rather than a
+second authentication leaf, and EF.4335 holds the holder's EC P-256
+signature certificate -- the ECC signature DVV revoked centrally. The
+card therefore has no second authentication key, and its ECC identity
+is the revoked one.
+
 - [ ] Publish every certificate the card carries, not the two the
   reader knows. `CardOperations` navigates to EF.4331 and EF.4332 and
   takes the key profile from whichever public key it finds, so one
@@ -151,6 +159,9 @@ Legend:
   window: DVV revoked it centrally, so a signature made with it does
   not validate. The authentication certificate and the RSA signature
   certificate remain valid.
+- [ ] Model EC P-256 in `CardKeyProfile` before publishing anything
+  from EF.4335: the profile set covers ecdsaP384, rsa2048 and rsa3072,
+  so a P-256 certificate reads as unsupported today.
 - [ ] Distinguish identities by algorithm once a card publishes more
   than one per PIN. The token names a key for the PIN it asks for, so
   two signature identities would carry the same name and the PKCS#11

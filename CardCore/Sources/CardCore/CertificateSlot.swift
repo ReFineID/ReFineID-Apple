@@ -25,6 +25,18 @@ public enum CertificateSlot: Equatable, Sendable, CaseIterable {
   /// generations (S4-2 v4.0 §4.6.7).
   case root
 
+  /// The second authentication leaf: EF.4333, directly under the
+  /// PKCS#15 application.
+  ///
+  /// Dual-algorithm cards carry a second key pair per PIN. Which
+  /// algorithm sits in which slot is not fixed, so the caller reads the
+  /// certificate and takes the algorithm from its public key.
+  case secondAuthentication
+
+  /// The second qualified-signature leaf: EF.4335, directly under the
+  /// PKCS#15 application, the counterpart to EF.4332.
+  case secondQualifiedSignature
+
   /// One place a certificate can live: the directory to make current,
   /// then the elementary file to read there.
   public struct Location: Equatable, Sendable {
@@ -46,6 +58,10 @@ public enum CertificateSlot: Equatable, Sendable, CaseIterable {
         Location(directory: .pkcs15Application, file: .signatureCertificate),
         Location(directory: .esignApplication, file: .signatureCertificate),
       ]
+    case .secondAuthentication:
+      [Location(directory: .pkcs15Application, file: .secondAuthCertificate)]
+    case .secondQualifiedSignature:
+      [Location(directory: .pkcs15Application, file: .secondSignatureCertificate)]
     case .issuing:
       [
         Location(directory: .masterFile, file: .issuingCertificate),

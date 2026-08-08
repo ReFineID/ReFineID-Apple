@@ -39,6 +39,17 @@ public struct FileIdentifier: Equatable, Sendable {
     value: FineidValues.fileIdSignatureCertificate
   )
 
+  /// EF.4333: the second authentication certificate leaf, under the
+  /// PKCS#15 application.
+  public static let secondAuthCertificate = Self(
+    value: FineidValues.fileIdSecondAuthCertificate
+  )
+
+  /// EF.4335: the second qualified-signature certificate leaf.
+  public static let secondSignatureCertificate = Self(
+    value: FineidValues.fileIdSecondSignatureCertificate
+  )
+
   /// EF.4334: the on-card issuing root CA.
   public static let rootCertificate = Self(
     value: FineidValues.fileIdRootCertificate
