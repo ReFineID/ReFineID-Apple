@@ -142,7 +142,7 @@ public enum CardSignRequestResolver {
   /// Shapes behind one concrete certificate profile.
   private static func shapes(for profile: CardKeyProfile) -> [Shape] {
     switch profile {
-    case .ecdsaP384:
+    case .ecdsaP256, .ecdsaP384:
       Self.ecdsaShapes
     case .rsa2048, .rsa3072:
       Self.rsaShapes

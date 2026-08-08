@@ -129,7 +129,7 @@
     internal func keyAlgorithm(for purpose: ScsSignPurpose) -> ScsKeyAlgorithm {
       guard let profile = profile(for: purpose) else { return .rsa }
       switch profile {
-      case .ecdsaP384:
+      case .ecdsaP256, .ecdsaP384:
         return .ecdsa
       case .rsa2048, .rsa3072:
         return .rsa

@@ -159,9 +159,21 @@ is the revoked one.
   window: DVV revoked it centrally, so a signature made with it does
   not validate. The authentication certificate and the RSA signature
   certificate remain valid.
-- [ ] Model EC P-256 in `CardKeyProfile` before publishing anything
-  from EF.4335: the profile set covers ecdsaP384, rsa2048 and rsa3072,
-  so a P-256 certificate reads as unsupported today.
+- [ ] Read the private-key directory to learn the second key pair's
+  key reference, which is what publishing EF.4335 waits on. The card
+  selects a key by the reference its `PrivateKeyAttributes.keyReference`
+  carries (S1 v4.2), and this implementation knows only 0x01 for
+  authentication and 0x02 for the qualified signature, as does the Unix
+  one. Publishing the certificate without its reference would select
+  the RSA key and return an RSA signature under an ECC certificate.
+- [ ] Once the reference is known, publish EF.4335 as a third
+  identity. Its certificate is revoked, so it is worthless for
+  qualified signing, but ssh authenticates with the raw public key and
+  never consults a certificate: a P-256 key signs
+  `ecdsa-sha2-nistp256` under the SHA-256 the card already offers,
+  closing the RSA SHA-512 gap from the other side. Weigh the PIN2 cost
+  first: `Pin2AuthOperation` never caches, so this would prompt on
+  every login.
 - [ ] Distinguish identities by algorithm once a card publishes more
   than one per PIN. The token names a key for the PIN it asks for, so
   two signature identities would carry the same name and the PKCS#11

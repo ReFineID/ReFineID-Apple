@@ -99,7 +99,7 @@ internal enum SigningAlgorithmResolver {
   /// Whether the selected certificate carries a supported RSA modulus.
   private static func isRsa(_ profile: CardKeyProfile) -> Bool {
     switch profile {
-    case .ecdsaP384:
+    case .ecdsaP256, .ecdsaP384:
       false
     case .rsa2048, .rsa3072:
       true

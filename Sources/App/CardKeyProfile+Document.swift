@@ -5,14 +5,15 @@
 
   /// The qualified document-signing shape for each supported card key.
   extension CardKeyProfile {
-    /// EC coordinate width for P-384: half the raw `r || s` signature.
-    private static let ecdsaP384CoordinateOctets = 48
+    /// An EC signature carries two coordinates, so each is half the
+    /// raw `r || s` signature of the curve in hand.
+    private static let ecdsaCoordinateCount = 2
 
     /// The exact card request for a SHA-384 digest of CMS signed attributes.
     internal func qualifiedDocumentRequest(digest: Data) -> SignRequest? {
       let scheme: SigningScheme
       switch self {
-      case .ecdsaP384:
+      case .ecdsaP256, .ecdsaP384:
         scheme = .ecdsa
       case .rsa2048, .rsa3072:
         scheme = .rsaPkcs1
@@ -33,10 +34,10 @@
     /// two coordinates of this key's curve.
     internal func xmlSignature(fromWire signature: Data) -> Data? {
       switch self {
-      case .ecdsaP384:
+      case .ecdsaP256, .ecdsaP384:
         EcdsaSignature.rawConcatenation(
           fromDer: signature,
-          coordinateOctets: Self.ecdsaP384CoordinateOctets
+          coordinateOctets: rawSignatureLength / Self.ecdsaCoordinateCount
         )
       case .rsa2048, .rsa3072:
         signature

@@ -6,7 +6,7 @@ extension XadesSignature {
   /// (RFC 4051 section 2.3), under the SHA-384 digest the card signs.
   internal static func signatureMethod(_ profile: CardKeyProfile) -> String {
     switch profile {
-    case .ecdsaP384:
+    case .ecdsaP256, .ecdsaP384:
       "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha384"
     case .rsa2048, .rsa3072:
       "http://www.w3.org/2001/04/xmldsig-more#rsa-sha384"

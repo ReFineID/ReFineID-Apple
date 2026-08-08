@@ -214,7 +214,7 @@ public enum QualifiedDocumentCms {
     _ profile: CardKeyProfile
   ) -> Data {
     switch profile {
-    case .ecdsaP384:
+    case .ecdsaP256, .ecdsaP384:
       // RFC 5758 section 3.2: ECDSA parameters are absent.
       DerEncoder.sequence([
         DerEncoder.objectIdentifier(SignOids.ecdsaWithSha384)

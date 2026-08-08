@@ -120,7 +120,7 @@ extension QualifiedDocumentCms {
     profile: CardKeyProfile
   ) -> Bool {
     switch profile {
-    case .ecdsaP384:
+    case .ecdsaP256, .ecdsaP384:
       Self.isEcdsaSignatureValue(signature)
     case .rsa2048, .rsa3072:
       signature.count == profile.rawSignatureLength

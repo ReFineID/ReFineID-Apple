@@ -32,7 +32,7 @@ public struct RsaPkcs1Sha256EncodedMessage: Equatable, Sendable {
   public init?(encoded: Data, profile: CardKeyProfile) {
     let blockByteCount: Int
     switch profile {
-    case .ecdsaP384:
+    case .ecdsaP256, .ecdsaP384:
       return nil
     case .rsa2048, .rsa3072:
       blockByteCount = profile.rawSignatureLength

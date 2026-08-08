@@ -8,6 +8,10 @@ import Security
 /// the certificate, rather than the card generation, also fails closed if a
 /// later card carries an unexpected key.
 public enum CardKeyProfile: Equatable, Sendable {
+  /// ECDSA P-256, the curve of the second signature certificate on
+  /// cards that carry one.
+  case ecdsaP256
+
   /// ECDSA P-384.
   case ecdsaP384
 
@@ -21,8 +25,12 @@ public enum CardKeyProfile: Equatable, Sendable {
   private static let rsa2048KeySizeInBits = 2_048
   private static let rsa3072KeySizeInBits = 3_072
 
-  /// EC field size for the supported ECC profile.
-  private static let ecKeySizeInBits = 384
+  /// EC field sizes for the supported ECC profiles.
+  private static let ecdsaP256KeySizeInBits = 256
+  private static let ecdsaP384KeySizeInBits = 384
+
+  /// Raw P-256 signature length: `r || s`, two 32-byte field elements.
+  private static let ecdsaP256SignatureBytes = 64
 
   /// Raw P-384 signature length: `r || s`, two 48-byte field elements.
   private static let ecdsaP384SignatureBytes = 96
@@ -38,7 +46,7 @@ public enum CardKeyProfile: Equatable, Sendable {
     switch self {
     case .rsa2048, .rsa3072:
       kSecAttrKeyTypeRSA as String
-    case .ecdsaP384:
+    case .ecdsaP256, .ecdsaP384:
       kSecAttrKeyTypeECSECPrimeRandom as String
     }
   }
@@ -50,8 +58,10 @@ public enum CardKeyProfile: Equatable, Sendable {
       Self.rsa2048KeySizeInBits
     case .rsa3072:
       Self.rsa3072KeySizeInBits
+    case .ecdsaP256:
+      Self.ecdsaP256KeySizeInBits
     case .ecdsaP384:
-      Self.ecKeySizeInBits
+      Self.ecdsaP384KeySizeInBits
     }
   }
 
@@ -62,6 +72,8 @@ public enum CardKeyProfile: Equatable, Sendable {
       Self.rsa2048SignatureBytes
     case .rsa3072:
       Self.rsa3072SignatureBytes
+    case .ecdsaP256:
+      Self.ecdsaP256SignatureBytes
     case .ecdsaP384:
       Self.ecdsaP384SignatureBytes
     }
@@ -74,6 +86,8 @@ public enum CardKeyProfile: Equatable, Sendable {
   /// join continuation responses inside the same operation.
   public var expectedSignatureLength: ExpectedResponseLength? {
     switch self {
+    case .ecdsaP256:
+      ExpectedResponseLength(count: Self.ecdsaP256SignatureBytes)
     case .ecdsaP384:
       ExpectedResponseLength(count: Self.ecdsaP384SignatureBytes)
     case .rsa2048:
@@ -98,7 +112,7 @@ public enum CardKeyProfile: Equatable, Sendable {
     else {
       return nil
     }
-    return [Self.ecdsaP384, .rsa2048, .rsa3072].first { profile in
+    return [Self.ecdsaP256, .ecdsaP384, .rsa2048, .rsa3072].first { profile in
       profile.keyType == certificateKeyType && profile.keySizeInBits == keySize
     }
   }
