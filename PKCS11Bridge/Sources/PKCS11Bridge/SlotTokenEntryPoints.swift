@@ -19,9 +19,11 @@ internal enum SlotTokenEntryPoints {
   private static let minimumPinLength: CK_ULONG = 4
   private static let maximumPinLength: CK_ULONG = 12
 
-  /// ECDSA key-size bounds in bits for CK_MECHANISM_INFO.
+  /// Key-size bounds in bits for CK_MECHANISM_INFO.
   private static let minimumEcBits: CK_ULONG = 256
   private static let maximumEcBits: CK_ULONG = 521
+  private static let minimumRsaBits: CK_ULONG = 2_048
+  private static let maximumRsaBits: CK_ULONG = 4_096
 
   /// Width of the CK_TOKEN_INFO serial number field.
   private static let serialNumberWidth = 16
@@ -138,8 +140,10 @@ internal enum SlotTokenEntryPoints {
     guard CryptokiEntryPoints.isLive else { return CKR_CRYPTOKI_NOT_INITIALIZED }
     guard let count else { return CKR_ARGUMENTS_BAD }
     return ModuleRegistry.shared.withLock { registry in
-      guard registry.token(slotID: slotID) != nil else { return CKR_SLOT_ID_INVALID }
-      let supported = [CKM_ECDSA]
+      guard let token = registry.token(slotID: slotID) else {
+        return CKR_SLOT_ID_INVALID
+      }
+      let supported = signingMechanisms(of: token)
       guard let mechanisms else {
         count.pointee = CK_ULONG(supported.count)
         return CKR_OK
@@ -163,15 +167,32 @@ internal enum SlotTokenEntryPoints {
     guard CryptokiEntryPoints.isLive else { return CKR_CRYPTOKI_NOT_INITIALIZED }
     guard let pointer else { return CKR_ARGUMENTS_BAD }
     return ModuleRegistry.shared.withLock { registry in
-      guard registry.token(slotID: slotID) != nil else { return CKR_SLOT_ID_INVALID }
-      guard mechanism == CKM_ECDSA else { return CKR_MECHANISM_INVALID }
+      guard let token = registry.token(slotID: slotID) else {
+        return CKR_SLOT_ID_INVALID
+      }
+      guard signingMechanisms(of: token).contains(mechanism) else {
+        return CKR_MECHANISM_INVALID
+      }
       var value = CK_MECHANISM_INFO()
-      value.ulMinKeySize = minimumEcBits
-      value.ulMaxKeySize = maximumEcBits
+      value.ulMinKeySize = mechanism == CKM_ECDSA ? minimumEcBits : minimumRsaBits
+      value.ulMaxKeySize = mechanism == CKM_ECDSA ? maximumEcBits : maximumRsaBits
       value.flags = CKF_HW | CKF_SIGN
       pointer.pointee = value
       return CKR_OK
     }
+  }
+
+  /// The signing mechanisms a token's identities use, in the order
+  /// C_GetMechanismList reports them.
+  private static func signingMechanisms(
+    of token: ModuleRegistry.TokenRecord
+  ) -> [CK_MECHANISM_TYPE] {
+    var found: [CK_MECHANISM_TYPE] = []
+    for object in token.objects where object.objectClass == CKO_PRIVATE_KEY {
+      let mechanism = SignEntryPoints.signingMechanism(for: object.keyKind)
+      if !found.contains(mechanism) { found.append(mechanism) }
+    }
+    return found
   }
 }
 

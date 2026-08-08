@@ -18,6 +18,22 @@ internal enum SignEntryPoints {
     case signed(Data)
   }
 
+  /// The signing operation a session has been armed with.
+  internal struct ArmedOperation {
+    /// The key C_SignInit selected.
+    internal let key: SecKey
+
+    /// The key's cryptosystem, which decides how the caller's input
+    /// and the resulting signature are encoded.
+    internal let kind: ModuleRegistry.KeyKind
+
+    /// EC field width in bytes; zero for RSA.
+    internal let width: Int
+
+    /// The signature length this key produces, in bytes.
+    internal let signatureLength: Int
+  }
+
   /// A raw ECDSA signature concatenates two field-width halves.
   private static let signatureHalves = 2
 
@@ -46,9 +62,7 @@ internal enum SignEntryPoints {
   ) -> CK_RV {
     guard CryptokiEntryPoints.isLive else { return CKR_CRYPTOKI_NOT_INITIALIZED }
     guard let mechanism else { return CKR_ARGUMENTS_BAD }
-    guard mechanism.pointee.mechanism == CKM_ECDSA else {
-      return CKR_MECHANISM_INVALID
-    }
+    let requested = mechanism.pointee.mechanism
     return ModuleRegistry.shared.withLock { registry in
       guard let session = registry.sessions[handle] else {
         return CKR_SESSION_HANDLE_INVALID
@@ -58,11 +72,26 @@ internal enum SignEntryPoints {
         record.objectClass == CKO_PRIVATE_KEY,
         let privateKey = record.privateKey
       else { return CKR_KEY_HANDLE_INVALID }
+      guard requested == signingMechanism(for: record.keyKind) else {
+        return CKR_MECHANISM_INVALID
+      }
       let chosen = boundKey(
         registry: registry, session: session, record: record, fallback: privateKey)
       registry.sessions[handle]?.signKey = chosen
+      registry.sessions[handle]?.signKind = record.keyKind
       registry.sessions[handle]?.signWidth = record.fieldWidth
+      registry.sessions[handle]?.signatureLength = record.signatureLength
       return CKR_OK
+    }
+  }
+
+  /// The mechanism a key of this kind signs with.
+  internal static func signingMechanism(for kind: ModuleRegistry.KeyKind) -> CK_MECHANISM_TYPE {
+    switch kind {
+    case .elliptic:
+      return CKM_ECDSA
+    case .rsa:
+      return CKM_RSA_PKCS
     }
   }
 
@@ -79,7 +108,7 @@ internal enum SignEntryPoints {
     guard let armed = armedOperation(handle: handle) else {
       return notArmedError(handle: handle)
     }
-    let expected = CK_ULONG(signatureHalves * armed.width)
+    let expected = CK_ULONG(armed.signatureLength)
     guard let signature else {
       signatureLength.pointee = expected
       return CKR_OK
@@ -91,7 +120,7 @@ internal enum SignEntryPoints {
     defer { disarm(handle: handle) }
     guard let data, dataLength > 0 else { return CKR_DATA_LEN_RANGE }
     let digest = Data(bytes: data, count: Int(dataLength))
-    switch rawSignature(digest: digest, key: armed.key, width: armed.width) {
+    switch rawSignature(digest: digest, armed: armed) {
     case .signed(let raw):
       raw.withUnsafeBytes { bytes in
         guard let base = bytes.baseAddress else { return }
@@ -108,14 +137,16 @@ internal enum SignEntryPoints {
   ///
   /// Only the length query leaves it armed; producing a signature
   /// consumes it.
-  private static func armedOperation(
-    handle: CK_SESSION_HANDLE
-  ) -> (key: SecKey, width: Int)? {
+  private static func armedOperation(handle: CK_SESSION_HANDLE) -> ArmedOperation? {
     ModuleRegistry.shared.withLock { registry in
       guard let session = registry.sessions[handle], let key = session.signKey else {
         return nil
       }
-      return (key, session.signWidth)
+      return ArmedOperation(
+        key: key,
+        kind: session.signKind,
+        width: session.signWidth,
+        signatureLength: session.signatureLength)
     }
   }
 
@@ -133,21 +164,35 @@ internal enum SignEntryPoints {
   ///
   /// Runs outside the registry lock: the system PIN dialog can block
   /// here for as long as the holder takes to answer it.
-  private static func rawSignature(
-    digest: Data, key: SecKey, width: Int
-  ) -> SignOutcome {
-    guard let algorithm = signatureAlgorithm(key: key, digestLength: digest.count) else {
-      return .failed(CKR_DATA_LEN_RANGE)
+  private static func rawSignature(digest: Data, armed: ArmedOperation) -> SignOutcome {
+    let plan: (input: Data, algorithm: SecKeyAlgorithm)?
+    switch armed.kind {
+    case .elliptic:
+      plan = signatureAlgorithm(key: armed.key, digestLength: digest.count)
+        .map { (digest, $0) }
+    case .rsa:
+      // CKM_RSA_PKCS carries a DigestInfo the caller built; the key
+      // signs a bare digest under the algorithm that DigestInfo names.
+      plan = RsaEncoding.digest(fromDigestInfo: digest)
+        .flatMap { parsed in
+          SecKeyIsAlgorithmSupported(armed.key, .sign, parsed.algorithm)
+            ? (parsed.value, parsed.algorithm) : nil
+        }
+    }
+    guard let plan else {
+      return .failed(armed.kind == .rsa ? CKR_DATA_INVALID : CKR_DATA_LEN_RANGE)
     }
     var errorReference: Unmanaged<CFError>?
-    let derSignature = SecKeyCreateSignature(
-      key, algorithm, digest as CFData, &errorReference)
-    guard let derSignature else {
+    let signature = SecKeyCreateSignature(
+      armed.key, plan.algorithm, plan.input as CFData, &errorReference)
+    guard let signature else {
       let status = errorReference.map { CFErrorGetCode($0.takeRetainedValue()) }
       return .failed(signError(status: status))
     }
+    guard armed.kind == .elliptic else { return .signed(signature as Data) }
     guard
-      let raw = EcEncoding.rawSignature(fromDer: derSignature as Data, fieldWidth: width)
+      let raw = EcEncoding.rawSignature(
+        fromDer: signature as Data, fieldWidth: armed.width)
     else { return .failed(CKR_GENERAL_ERROR) }
     return .signed(raw)
   }

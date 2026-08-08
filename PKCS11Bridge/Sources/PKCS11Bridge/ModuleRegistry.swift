@@ -11,6 +11,13 @@ import Synchronization
 /// only route to an instance and the stored Security references are
 /// never handed out without it.
 internal struct ModuleRegistry: @unchecked Sendable {
+  /// The cryptosystem a token identity uses, which decides its
+  /// mechanism, its attributes, and how its signature is encoded.
+  internal enum KeyKind {
+    case elliptic
+    case rsa
+  }
+
   /// One PKCS#11 object backed by a keychain token item.
   internal struct ObjectRecord {
     /// The object's handle, stable across snapshot refreshes.
@@ -23,8 +30,17 @@ internal struct ModuleRegistry: @unchecked Sendable {
     /// C_FindObjects, fully precomputed at snapshot time.
     internal let attributes: [CK_ATTRIBUTE_TYPE: Data]
 
-    /// EC field width in bytes; zero on certificate objects.
+    /// The identity's cryptosystem.
+    internal let keyKind: KeyKind
+
+    /// EC field width in bytes; zero on RSA and certificate objects.
     internal let fieldWidth: Int
+
+    /// The signature this key produces, in bytes.
+    ///
+    /// Both halves of an EC signature, or one modulus for RSA. Zero
+    /// on certificate objects.
+    internal let signatureLength: Int
 
     /// The signing key, present on private-key objects only.
     internal let privateKey: SecKey?
@@ -72,8 +88,14 @@ internal struct ModuleRegistry: @unchecked Sendable {
     /// The key of the active signing operation, nil when none.
     internal var signKey: SecKey?
 
+    /// The cryptosystem of the active signing operation.
+    internal var signKind = KeyKind.elliptic
+
     /// EC field width in bytes for the active signing operation.
     internal var signWidth = 0
+
+    /// Signature length in bytes for the active signing operation.
+    internal var signatureLength = 0
   }
 
   /// The single registry instance, guarded by its lock.

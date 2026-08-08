@@ -9,8 +9,8 @@ import Security
 /// Identities published by CryptoTokenKit token extensions surface as
 /// keychain items carrying a token ID; each yields a certificate, a
 /// public-key, and a private-key object sharing one CKA_ID (the public
-/// key hash the system stores as the application label). Only EC
-/// identities are exposed; RSA follows later.
+/// key hash the system stores as the application label). EC and RSA
+/// identities are both published.
 internal enum TokenCatalog {
   /// One keychain identity item: reference plus the attributes the
   /// bridge needs.
@@ -24,21 +24,6 @@ internal enum TokenCatalog {
     /// The public key hash the system stores as the application label;
     /// serves as CKA_ID across the identity's three objects.
     internal let keyID: Data
-  }
-
-  /// One object record before handle assignment.
-  internal struct Blueprint {
-    /// CKO_CERTIFICATE, CKO_PUBLIC_KEY, or CKO_PRIVATE_KEY.
-    internal let objectClass: CK_OBJECT_CLASS
-
-    /// Precomputed attribute values.
-    internal let attributes: [CK_ATTRIBUTE_TYPE: Data]
-
-    /// EC field width in bytes; zero on the certificate.
-    internal let fieldWidth: Int
-
-    /// The signing key on the private-key object.
-    internal let privateKey: SecKey?
   }
 
   /// Apple's Secure Enclave tokens carry this prefix; they are not
@@ -111,8 +96,8 @@ internal enum TokenCatalog {
     return records
   }
 
-  /// Builds the three object records for one identity, or none when it
-  /// is not a supported EC identity.
+  /// Builds the three object records for one identity, or none when
+  /// its cryptosystem is not supported.
   private static func identityRecords(
     item: IdentityItem, tokenID: String, registry: inout ModuleRegistry
   ) -> [ModuleRegistry.ObjectRecord] {
@@ -120,40 +105,23 @@ internal enum TokenCatalog {
       let certificate = copyCertificate(identity),
       IdentityPolicy.exposes(certificate),
       let publicKey = SecCertificateCopyKey(certificate),
-      let point = SecKeyCopyExternalRepresentation(publicKey, nil) as Data?,
-      let width = EcEncoding.fieldWidth(uncompressedPoint: point),
-      let parameters = EcEncoding.parameters(fieldWidth: width),
-      let privateKey = copyPrivateKey(identity)
+      let shape = IdentityObjects.keyShape(publicKey),
+      let privateKey = promptingKey(tokenID: tokenID, item: item)
+        ?? copyPrivateKey(identity)
     else { return [] }
     let common: [CK_ATTRIBUTE_TYPE: Data] = [
-      CKA_TOKEN: flag(true),
-      CKA_PRIVATE: flag(false),
-      CKA_MODIFIABLE: flag(false),
+      CKA_TOKEN: IdentityObjects.flag(true),
+      CKA_PRIVATE: IdentityObjects.flag(false),
+      CKA_MODIFIABLE: IdentityObjects.flag(false),
       CKA_LABEL: Data(
         KeyLabel.compose(
           keyName: item.label, certificate: certificate, tokenID: tokenID
         ).utf8),
       CKA_ID: item.keyID,
     ]
-    let blueprints = [
-      Blueprint(
-        objectClass: CKO_CERTIFICATE,
-        attributes: certificateAttributes(common: common, certificate: certificate),
-        fieldWidth: 0,
-        privateKey: nil),
-      Blueprint(
-        objectClass: CKO_PUBLIC_KEY,
-        attributes: publicKeyAttributes(
-          common: common, parameters: parameters, point: point),
-        fieldWidth: width,
-        privateKey: nil),
-      Blueprint(
-        objectClass: CKO_PRIVATE_KEY,
-        attributes: privateKeyAttributes(common: common, parameters: parameters),
-        fieldWidth: width,
-        privateKey: privateKey),
-    ]
-    return blueprints.map { blueprint in
+    let plans = IdentityObjects.blueprints(
+      common: common, certificate: certificate, shape: shape, privateKey: privateKey)
+    return plans.map { blueprint in
       ModuleRegistry.ObjectRecord(
         handle: stableHandle(
           tokenID: tokenID,
@@ -162,57 +130,12 @@ internal enum TokenCatalog {
           registry: &registry),
         objectClass: blueprint.objectClass,
         attributes: blueprint.attributes,
+        keyKind: shape.kind,
         fieldWidth: blueprint.fieldWidth,
+        signatureLength: blueprint.objectClass == CKO_CERTIFICATE
+          ? 0 : shape.signatureLength,
         privateKey: blueprint.privateKey)
     }
-  }
-
-  /// Certificate-object attributes.
-  private static func certificateAttributes(
-    common: [CK_ATTRIBUTE_TYPE: Data], certificate: SecCertificate
-  ) -> [CK_ATTRIBUTE_TYPE: Data] {
-    var values = common.merging([
-      CKA_CLASS: word(CKO_CERTIFICATE),
-      CKA_CERTIFICATE_TYPE: word(CKC_X_509),
-      CKA_VALUE: SecCertificateCopyData(certificate) as Data,
-    ]) { _, new in new }
-    if let subject = SecCertificateCopyNormalizedSubjectSequence(certificate) {
-      values[CKA_SUBJECT] = subject as Data
-    }
-    if let issuer = SecCertificateCopyNormalizedIssuerSequence(certificate) {
-      values[CKA_ISSUER] = issuer as Data
-    }
-    if let serial = SecCertificateCopySerialNumberData(certificate, nil) {
-      values[CKA_SERIAL_NUMBER] = serial as Data
-    }
-    return values
-  }
-
-  /// Public-key-object attributes.
-  private static func publicKeyAttributes(
-    common: [CK_ATTRIBUTE_TYPE: Data], parameters: Data, point: Data
-  ) -> [CK_ATTRIBUTE_TYPE: Data] {
-    common.merging([
-      CKA_CLASS: word(CKO_PUBLIC_KEY),
-      CKA_KEY_TYPE: word(CKK_EC),
-      CKA_EC_PARAMS: parameters,
-      CKA_EC_POINT: EcEncoding.wrappedPoint(point),
-      CKA_VERIFY: flag(true),
-    ]) { _, new in new }
-  }
-
-  /// Private-key-object attributes.
-  private static func privateKeyAttributes(
-    common: [CK_ATTRIBUTE_TYPE: Data], parameters: Data
-  ) -> [CK_ATTRIBUTE_TYPE: Data] {
-    common.merging([
-      CKA_CLASS: word(CKO_PRIVATE_KEY),
-      CKA_KEY_TYPE: word(CKK_EC),
-      CKA_EC_PARAMS: parameters,
-      CKA_SIGN: flag(true),
-      CKA_SENSITIVE: flag(true),
-      CKA_ALWAYS_AUTHENTICATE: flag(false),
-    ]) { _, new in new }
   }
 
   /// Lists the keychain identities carried by one token.
@@ -275,20 +198,33 @@ internal enum TokenCatalog {
     return certificate
   }
 
+  /// The identity's signing key, carrying the prompt the system PIN
+  /// dialog shows.
+  ///
+  /// Without one the dialog asks for "PIN" and leaves the holder to
+  /// guess which of the card's two PINs it means; the token's own key
+  /// name says so, in the language the token was minted in.
+  private static func promptingKey(tokenID: String, item: IdentityItem) -> SecKey? {
+    let query: [String: Any] = [
+      kSecClass as String: kSecClassKey,
+      kSecAttrTokenID as String: tokenID,
+      kSecAttrApplicationLabel as String: item.keyID,
+      kSecMatchLimit as String: kSecMatchLimitOne,
+      kSecReturnRef as String: true,
+      kSecUseDataProtectionKeychain as String: true,
+      kSecUseOperationPrompt as String: item.label,
+    ]
+    var result: CFTypeRef?
+    guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
+      let result, CFGetTypeID(result) == SecKeyGetTypeID()
+    else { return nil }
+    return unsafeDowncast(result, to: SecKey.self)
+  }
+
   /// SecIdentityCopyPrivateKey as an optional-returning call.
   private static func copyPrivateKey(_ identity: SecIdentity) -> SecKey? {
     var key: SecKey?
     guard SecIdentityCopyPrivateKey(identity, &key) == errSecSuccess else { return nil }
     return key
-  }
-
-  /// A CK_ULONG attribute value in the process's native layout.
-  private static func word(_ value: CK_ULONG) -> Data {
-    withUnsafeBytes(of: value) { Data($0) }
-  }
-
-  /// A CK_BBOOL attribute value.
-  private static func flag(_ value: Bool) -> Data {
-    Data([value ? CK_TRUE : CK_FALSE])
   }
 }

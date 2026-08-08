@@ -141,7 +141,8 @@ and login-free certificates (Public Certificates Token behavior,
 profiles v3.2), CKM_ECDSA signing via SecKeyCreateSignature with
 DER-to-r||s conversion (pkcs11-curr v3.0), mechanisms clear of the
 pkcs11-hist register. Hardware-proven: ssh-keygen -D lists both FINEID
-card keys as ecdsa-sha2-nistp384. Remaining:
+card keys as ecdsa-sha2-nistp384, and an RSA-enrolled card through
+CKM_RSA_PKCS with a signature openssl verifies. Remaining:
 
 - [ ] Re-prove the ssh-agent path after the digest-algorithm fix
   (`ssh-add -s`, then a login). The `PKCS11Provider` path is proven
@@ -149,7 +150,12 @@ card keys as ecdsa-sha2-nistp384. Remaining:
   when testing: `ssh-pkcs11-helper` keeps the module mapped for the
   agent's lifetime, so a reinstalled module needs `ssh-add -e` before
   `ssh-add -s`.
-- [ ] RSA object model and signing for RSA-enrolled cards.
+- [ ] Advertise the SHA-384 and SHA-512 PKCS#1 signing algorithms in
+  the token extension. It offers only the SHA-256 and PSS variants, so
+  an RSA card cannot serve the rsa-sha2-512 signature OpenSSH prefers
+  and the bridge returns CKR_DATA_INVALID rather than a wrong
+  signature; a per-host `PubkeyAcceptedAlgorithms rsa-sha2-256` is the
+  workaround until then.
 - [ ] Slot events: C_WaitForSlotEvent and token insertion/removal
   beyond per-call refresh.
 - [ ] `keytool -list` through SunPKCS11 (CKA_ID strictness gate), then

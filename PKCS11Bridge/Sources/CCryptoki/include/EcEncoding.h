@@ -16,6 +16,7 @@
 // DER universal tags and length encoding.
 static const CK_BYTE Asn1IntegerTag = 0x02;
 static const CK_BYTE Asn1OctetStringTag = 0x04;
+static const CK_BYTE Asn1ObjectIdentifierTag = 0x06;
 static const CK_BYTE Asn1SequenceTag = 0x30;
 // Length octets with this bit set carry the count of following length
 // octets (DER long form); without it they carry the length itself.
