@@ -151,7 +151,10 @@
     internal func body(content: Content) -> some View {
       content
         .confirmationDialog(
-          pending.map(Self.title) ?? "",
+          // Verbatim: the title is already a translated sentence, and
+          // handing it over as a key would put the English one, and an
+          // empty string, into the catalogue as things to translate.
+          Text(verbatim: pending.map(Self.title) ?? ""),
           isPresented: Binding(
             get: { pending != nil },
             set: { shown in
