@@ -10,15 +10,14 @@ import XCTest
 /// show.
 @MainActor
 internal final class LocalizationUITests: XCTestCase {
-  /// Clipped text and insufficient contrast, by the values the audit
-  /// header assigns them.
+  /// Clipped text, by the value the audit header assigns it.
   ///
-  /// Swift does not surface either as a named member on macOS, so the
-  /// option set is built from the documented bit positions rather than
-  /// left out of the run.
-  private static let clippingAndContrast = XCUIAccessibilityAuditType(
-    rawValue: (1 << 17) | (1 << 0)
-  )
+  /// Swift does not surface it as a named member on macOS, so the
+  /// option set is built from the documented bit position rather than
+  /// left out of the run. Contrast is not asked for: see
+  /// `AccessibilityAuditUITests` for what that check was measured
+  /// doing.
+  private static let clipping = XCUIAccessibilityAuditType(rawValue: 1 << 17)
 
   /// Finnish, and what the Card menu is called in it.
   internal func testTheAppSpeaksFinnish() {
@@ -30,7 +29,7 @@ internal final class LocalizationUITests: XCTestCase {
     check(language: "sv", cardMenu: "Kort", management: "Hantering av PIN-koder…")
   }
 
-  /// Finnish does not clip or dim anything the English run sized.
+  /// Finnish does not clip anything the English run sized.
   ///
   /// A Finnish or Swedish sentence is routinely longer than the English
   /// it was written from, and a control sized around the English one
@@ -39,14 +38,19 @@ internal final class LocalizationUITests: XCTestCase {
   internal func testFinnishDoesNotClipTheWindow() throws {
     let app = UITestApp.launch(language: "fi")
     var clipped: [String] = []
-    try app.performAccessibilityAudit(for: Self.clippingAndContrast) { issue in
+    try app.performAccessibilityAudit(for: Self.clipping) { issue in
+      // Asking for one check does not get one check: the run came back
+      // with a parent/child mismatch, which is scaffolding and not a
+      // translation that outgrew its control. What is kept is what was
+      // asked for.
+      guard issue.auditType == Self.clipping else { return true }
       clipped.append("\(issue.auditType): \(issue.compactDescription)")
       return true
     }
     attachText(clipped.joined(separator: "\n"), named: "clipping-fi")
     XCTAssertTrue(
       clipped.isEmpty,
-      "Finnish clips or dims the window:\n" + clipped.joined(separator: "\n")
+      "Finnish clips the window:\n" + clipped.joined(separator: "\n")
     )
   }
 

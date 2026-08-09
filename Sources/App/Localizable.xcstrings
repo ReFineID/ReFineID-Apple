@@ -1976,13 +1976,13 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ota suomalainen henkilökortti käyttöön"
+            "value": "Ota henkilökortti käyttöön"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Konfigurera finländskt identitetskort"
+            "value": "Ta identitetskortet i bruk"
           }
         }
       }
