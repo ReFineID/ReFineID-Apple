@@ -105,6 +105,12 @@ internal struct DiagnosticsView: View {
           reportCopied ? "Report copied" : "Report actions",
           systemImage: reportCopied ? "checkmark" : "square.and.arrow.up")
       }
+      // Measured through the accessibility API: the menu was announced
+      // as "Share", a name the system took from the share symbol and
+      // the ShareLink inside it. The menu offers copying as well, and a
+      // control that names one of the two things it does sends anyone
+      // looking for the other one past it.
+      .accessibilityLabel("Report actions")
       .disabled(snapshot == nil)
     }
   }

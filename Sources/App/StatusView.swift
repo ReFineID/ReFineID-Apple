@@ -51,6 +51,13 @@
         && !signing.readingStamp
     }
 
+    /// The success as a sentence, so what is spoken is what is shown
+    /// rather than a bare file name.
+    private var signedOutcome: String? {
+      guard let signed = signing.signed else { return nil }
+      return String(localized: "Signed: \(signed.lastPathComponent)")
+    }
+
     /// What the identity row and the offered features key on.
     ///
     /// Reads two observed facts - the token's publication and the
@@ -103,6 +110,11 @@
       .onChange(of: availability) { _, now in
         react(to: now)
       }
+      // Signing is what this window is for, and its answer arrived in
+      // silence: focus stays on Sign, and the outcome is drawn below it.
+      .announcesOutcome(signing.failure)
+      .announcesOutcome(signing.notice)
+      .announcesOutcome(signedOutcome)
     }
 
     /// The document to sign: dropped, or chosen.
@@ -239,27 +251,6 @@
           }
         }
       }
-    }
-
-    /// What the card is busy with, or nothing when it is not.
-    ///
-    /// Both notes live on the action row rather than in boxes of
-    /// their own: that row is already there and half empty, and a
-    /// section that appears and disappears steps the window every
-    /// time the card is touched.
-    private static func progressNote(_ signing: SignDocumentModel) -> String? {
-      if signing.working {
-        return String(localized: "Signing: card, timestamp, revocation data…")
-      }
-      if signing.readingStamp {
-        return String(localized: "Reading the card…")
-      }
-      return nil
-    }
-
-    /// Whether an entry could be a PIN2 at all.
-    private static func isEntryComplete(_ entry: String) -> Bool {
-      (Pin2.minimumDigitCount...Pin2.maximumDigitCount).contains(entry.count)
     }
 
     /// Recovery follows the state: the unready state schedules one

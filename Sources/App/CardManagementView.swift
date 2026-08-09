@@ -83,12 +83,8 @@
       .onChange(of: model.report) { _, report in
         suggestTask(from: report)
       }
-      .onChange(of: model.failure) { _, failure in
-        announce(failure)
-      }
-      .onChange(of: model.notice) { _, notice in
-        announce(notice)
-      }
+      .announcesOutcome(model.failure)
+      .announcesOutcome(model.notice)
     }
 
     /// The counters, pinned along the foot of the window.
@@ -195,12 +191,6 @@
         return !count.isBlocked
           && count.attemptsRemaining < RetryFloor.minimumAttemptsToProceed
       }
-    }
-
-    /// whose focus is not on the outcome row.
-    private func announce(_ message: String?) {
-      guard let message else { return }
-      AccessibilityNotification.Announcement(message).post()
     }
 
     /// Opens on what the card needs, until the holder chooses.

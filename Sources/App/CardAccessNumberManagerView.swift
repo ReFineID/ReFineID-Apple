@@ -42,6 +42,9 @@
       .formStyle(.grouped)
       .frame(width: windowWidth)
       .onAppear { credentials.refresh() }
+      // A refused card access number is the whole answer to what was
+      // just typed, and it was shown without being spoken.
+      .announcesOutcome(credentials.failure)
     }
 
     /// Every known card: model, serial, CAN, and a Delete.
