@@ -62,9 +62,6 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
     return token.keyProfile
   }
 
-  // The @objc requirement is throwing; the ObjC bridge rejects a
-  // non-throwing override, so `throws` stays though the body cannot fail.
-  // swiftlint:disable unneeded_throws_rethrows
   internal func tokenSession(
     _: TKTokenSession,
     beginAuthFor operation: TKTokenOperation,
@@ -73,17 +70,29 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
     // The constraint names the credential: each published key carries
     // its own, so the qualified key can never be satisfied by a PIN1
     // flow or vice versa.
-    if (constraint as? String) == Pin2AuthOperation.signDataConstraint {
+    switch constraint as? String {
+    case Pin2AuthOperation.signDataConstraint:
       TokenLog.notice(
         "beginAuth: op=\(operation.rawValue) - presenting PIN2 sheet "
           + "session=\(UInt(bitPattern: ObjectIdentifier(self).hashValue))"
       )
       return Pin2AuthOperation { [weak self] pin in self?.collectedPin2 = pin }
+    case Pin1AuthOperation.signDataConstraint:
+      TokenLog.notice("beginAuth: op=\(operation.rawValue) - presenting PIN sheet")
+      return Pin1AuthOperation { [weak self] pin in self?.collectedPin = pin }
+    default:
+      // Each key names the credential it spends, and a constraint that
+      // names neither must not be answered by guessing. Falling through
+      // to PIN1 would collect whatever the holder typed for another
+      // credential and spend PIN1's attempts on it, which is how a
+      // sheet for one PIN blocks the other.
+      TokenLog.error(
+        "beginAuth: op=\(operation.rawValue) - unknown constraint "
+          + "\(String(describing: constraint)); refusing"
+      )
+      throw TKError(.authenticationFailed)
     }
-    TokenLog.notice("beginAuth: op=\(operation.rawValue) - presenting PIN sheet")
-    return Pin1AuthOperation { [weak self] pin in self?.collectedPin = pin }
   }
-  // swiftlint:enable unneeded_throws_rethrows
 
   internal func tokenSession(
     _: TKTokenSession,
