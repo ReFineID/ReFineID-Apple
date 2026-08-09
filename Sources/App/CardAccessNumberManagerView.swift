@@ -17,8 +17,13 @@
     /// Window identity, for the menu command that opens it.
     internal static let windowID = "card-access-number"
 
-    private static let entryWidth: CGFloat = 120
-    private static let windowWidth: CGFloat = 440
+    /// The entry field's width, which grows with the text inside it.
+    @ScaledMetric(relativeTo: .body)
+    private var entryWidth: CGFloat = 120
+
+    /// The window's own width, which grows with it.
+    @ScaledMetric(relativeTo: .body)
+    private var windowWidth: CGFloat = 440
 
     @State private var credentials = CardCredentialsModel()
     @State private var entry = ""
@@ -35,7 +40,7 @@
         addSection
       }
       .formStyle(.grouped)
-      .frame(width: Self.windowWidth)
+      .frame(width: windowWidth)
       .onAppear { credentials.refresh() }
     }
 
@@ -66,7 +71,7 @@
               }
               .labelsHidden()
               .monospacedDigit()
-              .frame(width: Self.entryWidth)
+              .frame(width: entryWidth)
               .onSubmit { add() }
               .accessibilityIdentifier("managerCardAccessNumberField")
             Button("Add") { add() }

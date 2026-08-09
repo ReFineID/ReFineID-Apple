@@ -12,8 +12,11 @@
   /// unlocks reading the card, so storing it would be keeping a key to
   /// the holder's own card for no reason.
   internal struct StampRow: View {
-    private static let entryWidth: CGFloat = 130
     private static let spacing: CGFloat = 6
+
+    /// The entry field's width, which grows with the text inside it.
+    @ScaledMetric(relativeTo: .body)
+    private var entryWidth: CGFloat = 130
 
     /// The signing state the number reads into.
     internal let signing: SignDocumentModel
@@ -24,7 +27,7 @@
     internal var body: some View {
       LabeledContent("Stamp with CAN (optional)") {
         TextField("", text: $accessNumber)
-          .frame(width: Self.entryWidth)
+          .frame(width: entryWidth)
           .multilineTextAlignment(.trailing)
           .onChange(of: accessNumber) { _, typed in
             accessNumber = LimitedDigits.cardAccessNumber(typed)

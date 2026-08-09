@@ -49,8 +49,6 @@
     /// Window identity, for the menu command that opens it.
     internal static let windowID = "pin-management"
 
-    private static let windowWidth: CGFloat = 460
-
     /// Internal, not private: the counter presentation lives in
     /// CardManagementView+Attempts.swift and lays out the same row.
     internal static let rowSymbolSpacing: CGFloat = 4
@@ -63,6 +61,10 @@
 
     private static let barLineSpacing: CGFloat = 4
 
+    /// The window's own width, which grows with the text inside it.
+    @ScaledMetric(relativeTo: .body)
+    private var windowWidth: CGFloat = 460
+
     @State private var model = CardManagementModel()
     @State private var task: ManagementTask = .changePin1
     @State private var hasChosenTask = false
@@ -73,7 +75,7 @@
         outcomeSection
       }
       .formStyle(.grouped)
-      .frame(minWidth: Self.windowWidth)
+      .frame(minWidth: windowWidth)
       .safeAreaInset(edge: .bottom, spacing: 0) {
         attemptsBar
       }

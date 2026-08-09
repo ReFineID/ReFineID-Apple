@@ -19,12 +19,17 @@
   internal struct StatusView: View {
     private static let spacing: CGFloat = 12
     private static let padding: CGFloat = 24
-    private static let minimumWidth: CGFloat = 420
     private static let dropHeight: CGFloat = 96
     private static let dropSpacing: CGFloat = 6
     private static let noticeSpacing: CGFloat = 4
     private static let dropCornerRadius: CGFloat = 10
     private static let dropBorderWidth: CGFloat = 2
+
+    /// The narrowest the window may be, which grows with the text
+    /// inside it so a larger size widens the window instead of
+    /// wrapping every label in it.
+    @ScaledMetric(relativeTo: .body)
+    private var minimumWidth: CGFloat = 420
 
     @Environment(\.openWindow)
     private var openWindow
@@ -89,7 +94,7 @@
         }
       }
       .padding(Self.padding)
-      .frame(minWidth: Self.minimumWidth, alignment: .leading)
+      .frame(minWidth: minimumWidth, alignment: .leading)
       .task { publishStoredNumber() }
       .onAppear {
         model.refresh()
@@ -134,9 +139,16 @@
           )
           .accessibilityHidden(true)
         if let pending = signing.pending {
+          // The name is shortened in the middle so both ends stay
+          // readable, and at larger text sizes it shortens further.
+          // What is dropped is dropped from the drawing only: the whole
+          // name is still what VoiceOver reads and what the pointer
+          // uncovers, so no size loses the document being signed.
           Text(pending.lastPathComponent)
             .lineLimit(1)
             .truncationMode(.middle)
+            .help(pending.lastPathComponent)
+            .accessibilityLabel(pending.lastPathComponent)
           Button("Choose a different document…") { choose() }
             .buttonStyle(.link)
         } else {

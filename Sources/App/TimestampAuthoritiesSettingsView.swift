@@ -16,10 +16,17 @@
     private static let paneWidth: CGFloat = 640
     private static let listHeight: CGFloat = 170
     private static let cellSpacing: CGFloat = 8
-    private static let badgeWidth: CGFloat = 16
-    private static let credentialWidth: CGFloat = 110
     private static let legendSpacing: CGFloat = 14
     private static let legendSymbolSpacing: CGFloat = 4
+
+    /// The status column's width, which grows with the text beside it.
+    @ScaledMetric(relativeTo: .body)
+    private var badgeWidth: CGFloat = 16
+
+    /// The width of the two credential columns, which grow with the
+    /// text in them rather than clipping it.
+    @ScaledMetric(relativeTo: .body)
+    private var credentialWidth: CGFloat = 110
 
     @State private var model = TimestampAuthoritiesModel()
     @FocusState private var focusedRow: UUID?
@@ -68,11 +75,11 @@
     /// The column names, aligned over their cells.
     @ViewBuilder private var columnHeader: some View {
       HStack(spacing: Self.cellSpacing) {
-        Spacer().frame(width: Self.badgeWidth)
+        Spacer().frame(width: badgeWidth)
         Text("Address").frame(maxWidth: .infinity, alignment: .leading)
-        Text("Username").frame(width: Self.credentialWidth, alignment: .leading)
-        Text("Password").frame(width: Self.credentialWidth, alignment: .leading)
-        Spacer().frame(width: Self.badgeWidth)
+        Text("Username").frame(width: credentialWidth, alignment: .leading)
+        Text("Password").frame(width: credentialWidth, alignment: .leading)
+        Spacer().frame(width: badgeWidth)
       }
       .font(.footnote)
       .foregroundStyle(.secondary)
@@ -134,11 +141,11 @@
         .focused($focusedRow, equals: row.wrappedValue.id)
         TextField("Username", text: row.username)
           .textFieldStyle(.plain)
-          .frame(width: Self.credentialWidth)
+          .frame(width: credentialWidth)
           .focused($focusedRow, equals: row.wrappedValue.id)
         SecureField("Password", text: row.password)
           .textFieldStyle(.plain)
-          .frame(width: Self.credentialWidth)
+          .frame(width: credentialWidth)
           .focused($focusedRow, equals: row.wrappedValue.id)
         deleteControl(row.wrappedValue)
       }
@@ -155,27 +162,27 @@
     private func badge(_ row: Binding<Row>) -> some View {
       let address = row.wrappedValue.address
       if address.isEmpty {
-        Spacer().frame(width: Self.badgeWidth)
+        Spacer().frame(width: badgeWidth)
       } else if !AuthoritySchemeResolver.isUsable(address) {
         Image(systemName: "exclamationmark.triangle.fill")
           .foregroundStyle(.orange)
-          .frame(width: Self.badgeWidth)
+          .frame(width: badgeWidth)
           .accessibilityLabel("not a usable address")
       } else if model.testing.contains(row.wrappedValue.id) {
         ProgressView()
           .controlSize(.small)
-          .frame(width: Self.badgeWidth)
+          .frame(width: badgeWidth)
           .accessibilityLabel("testing qualification")
       } else if row.wrappedValue.check == .busy {
         Image(systemName: "hourglass")
           .foregroundStyle(.yellow)
-          .frame(width: Self.badgeWidth)
+          .frame(width: badgeWidth)
           .help("Answers, but busy right now - edit the address to ask again")
           .accessibilityLabel("busy right now")
       } else if row.wrappedValue.check == .notTimestampService {
         Image(systemName: "xmark.seal.fill")
           .foregroundStyle(.red)
-          .frame(width: Self.badgeWidth)
+          .frame(width: badgeWidth)
           .help("Answers, but not with timestamps")
           .accessibilityLabel("not a time-stamp service")
       } else {
@@ -186,7 +193,7 @@
           .foregroundStyle(
             qualified ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary)
           )
-          .frame(width: Self.badgeWidth)
+          .frame(width: badgeWidth)
           .help(
             qualified
               ? "Qualified for eIDAS use" : "Not on the EU trusted lists"
@@ -202,7 +209,7 @@
     @ViewBuilder
     private func deleteControl(_ row: Row) -> some View {
       if model.isOpenLine(row) {
-        Spacer().frame(width: Self.badgeWidth)
+        Spacer().frame(width: badgeWidth)
       } else {
         Button {
           model.rows.removeAll { $0.id == row.id }
@@ -211,7 +218,7 @@
             .foregroundStyle(.secondary)
         }
         .buttonStyle(.borderless)
-        .frame(width: Self.badgeWidth)
+        .frame(width: badgeWidth)
         .help("Remove this authority")
         .accessibilityLabel("Remove \(row.address)")
       }
