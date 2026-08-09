@@ -13,9 +13,11 @@
   /// powered, PACE finishes however long it takes, and the timings are of
   /// the protocol rather than of a deadline.
   ///
-  /// Finishing matters for its own sake too. A card counts an abandoned
-  /// PACE against the card access number and answers more slowly each
-  /// time, so a run that completes is also how that count is cleared.
+  /// Finishing matters for its own sake too. MultiApp v5 deliberately
+  /// delays CAN-PACE after unsuccessful attempts, and an interrupted run
+  /// may be counted as another presentation. The public security target
+  /// does not disclose the counter's reset rule; see
+  /// `doc/bugs/2026-08-09-thales-can-pace-delay.md`.
   internal enum DebugPaceCheck {
     /// Carries a slot out of the manager's callback.
     ///
