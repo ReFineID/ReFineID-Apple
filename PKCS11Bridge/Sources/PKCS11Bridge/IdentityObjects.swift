@@ -77,6 +77,16 @@ internal enum IdentityObjects {
           CKA_CLASS: word(CKO_PRIVATE_KEY),
           CKA_SIGN: flag(true),
           CKA_SENSITIVE: flag(true),
+          // What the card is: a key that was generated on it and can
+          // never come off it. Spec section 5.7.5 lets a module answer
+          // CKR_ATTRIBUTE_TYPE_INVALID for an attribute it does not
+          // keep, and this one did, but SunPKCS11 reads CKA_EXTRACTABLE
+          // for every private key it opens and treats that answer as
+          // fatal -- so Java could list the key and never use it.
+          CKA_EXTRACTABLE: flag(false),
+          CKA_NEVER_EXTRACTABLE: flag(true),
+          CKA_ALWAYS_SENSITIVE: flag(true),
+          CKA_LOCAL: flag(true),
           CKA_ALWAYS_AUTHENTICATE: flag(false),
         ]) { _, new in new },
         fieldWidth: shape.fieldWidth,
