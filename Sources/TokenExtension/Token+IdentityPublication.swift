@@ -87,7 +87,15 @@ extension Token {
     keychainKey.canSign = true
     keychainKey.canDecrypt = false
     keychainKey.canPerformKeyExchange = false
-    keychainKey.isSuitableForLogin = true
+    // Apple's flag means login to the system, not TLS client authentication.
+    // macOS uses it for native smart-card pairing. The iPhone product does
+    // not provide system login; Safari selects this identity from its signed
+    // certificate and sign-capable key instead.
+    #if os(macOS)
+      keychainKey.isSuitableForLogin = true
+    #else
+      keychainKey.isSuitableForLogin = false
+    #endif
     // The signature is gated behind PIN1: this constraint is what makes
     // CryptoTokenKit call beginAuth (the PIN sheet) before signing. Absent
     // it, the system signs without asking, our sign has no PIN, and Safari
