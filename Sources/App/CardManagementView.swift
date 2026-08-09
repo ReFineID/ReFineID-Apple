@@ -145,7 +145,6 @@
         .labelsHidden()
         .disabled(model.working)
         .accessibilityIdentifier("managementTask")
-        .accessibilityLabel("Task")
         .onChange(of: task) { _, _ in
           hasChosenTask = true
         }

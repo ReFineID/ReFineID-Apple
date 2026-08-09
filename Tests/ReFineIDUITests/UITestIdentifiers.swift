@@ -38,6 +38,9 @@ internal enum UITestIdentifiers {
   /// The button that temporarily reveals or conceals unsaved PIN1.
   internal static let pin1Visibility = "pin1Visibility"
 
+  /// The main window's route into credential management.
+  internal static let pinManagementButton = "pinManagementButton"
+
   /// The management window's task picker.
   internal static let managementTask = "managementTask"
 

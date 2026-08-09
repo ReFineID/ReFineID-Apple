@@ -20,4 +20,4 @@
 // command line, which wins over this file, so a release never edits it.
 
 MARKETING_VERSION = 26.8.9
-CURRENT_PROJECT_VERSION = 105
+CURRENT_PROJECT_VERSION = 132
