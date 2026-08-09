@@ -117,7 +117,12 @@
           slot.state == .validCard,
           let card = slot.makeSmartCard()
         else { continue }
-        _ = try? await card.beginSession()
+        // Ending a session that never began trips an assertion inside
+        // TKSmartCard, which raises an exception nothing catches and
+        // takes the process with it. The card can leave between the
+        // state read above and this call, so the session is ended only
+        // when the card says it opened one.
+        guard let opened = try? await card.beginSession(), opened else { continue }
         card.endSession()
       }
     }

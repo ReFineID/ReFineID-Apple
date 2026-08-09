@@ -7,6 +7,10 @@
 - Commit often when compiles and lint is clean.
 - Push when feature is ready.
 - Verify from specifications, don't wild guess.
+  `doc/references.md` indexes which one governs what.
+  Cite what a source proves, and say what it does not.
+  Where observation contradicts Apple's docs, the recorded
+  exchange wins and is cited as observation, not spec.
 - Less is more. Terse is better.
 - Do not leak personal or private information in commits.
 - When stuck, research with fellow AI available.
