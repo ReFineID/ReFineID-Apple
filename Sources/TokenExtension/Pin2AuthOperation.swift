@@ -33,8 +33,10 @@ internal final class Pin2AuthOperation: TKTokenPasswordAuthOperation {
 
   override internal func finish() throws {
     guard let pin = password, !pin.isEmpty else {
+      TokenLog.error("PIN2 sheet finished with nothing entered")
       throw TKError(.authenticationFailed)
     }
+    TokenLog.info("PIN2 sheet finished with \(pin.count) digits")
     capture(pin)
   }
 }

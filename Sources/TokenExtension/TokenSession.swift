@@ -74,7 +74,10 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
     // its own, so the qualified key can never be satisfied by a PIN1
     // flow or vice versa.
     if (constraint as? String) == Pin2AuthOperation.signDataConstraint {
-      TokenLog.notice("beginAuth: op=\(operation.rawValue) - presenting PIN2 sheet")
+      TokenLog.notice(
+        "beginAuth: op=\(operation.rawValue) - presenting PIN2 sheet "
+          + "session=\(UInt(bitPattern: ObjectIdentifier(self).hashValue))"
+      )
       return Pin2AuthOperation { [weak self] pin in self?.collectedPin2 = pin }
     }
     TokenLog.notice("beginAuth: op=\(operation.rawValue) - presenting PIN sheet")

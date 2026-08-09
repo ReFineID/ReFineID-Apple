@@ -133,6 +133,37 @@ Legend:
   extension reuse, and extension termination (cache resets on a fresh token and
   the OS reaps the process; full matrix still to test).
 
+## 6c. Qualified signature in Safari loops on the PIN sheet
+
+Selecting the signature certificate for TLS client authentication asks
+for PIN2 forever and never signs. Measured 2026-08-09 with an
+RSA-generation card against a TLS 1.3 site that requests a client
+certificate:
+
+- Every sign arrives with no PIN (`pin2Collected=false`), so the
+  qualified path throws `authenticationRequired` and the system
+  presents the sheet again, about every 2.5 seconds.
+- `Pin2AuthOperation.finish()` is never called, so the sheet the
+  extension hands back is abandoned rather than answered. No PIN the
+  holder types reaches it.
+- The session object is the same across `beginAuth` and `sign`, so the
+  collected PIN has somewhere to live; nothing collects it.
+- Safari runs its own LocalAuthentication evaluation against the key's
+  access control (`osgn`) in the same window, and those contexts are
+  invalidated around each retry. Two authentication routes exist for
+  one key: the keychain constraint, which the PKCS#11 path uses
+  successfully, and the CryptoTokenKit auth operation.
+- No VERIFY reaches the card, so the PIN2 retry counter is untouched.
+
+PIN1 never shows this because its accepted-PIN memory satisfies the
+first signature, so the loop never starts. PIN2 caches nothing by
+design, which is why it is the credential that exposes the fault.
+
+- [ ] Find which route is meant to collect PIN2 for a CryptoTokenKit
+  signature, and stop the other from cancelling it.
+- [ ] Note for testing: Safari remembers the chosen certificate per
+  site; clearing its caches restores the chooser.
+
 ## 6b. PKCS#11 bridge (PKCS11Bridge/)
 
 Measured on an RSA-generation citizen card (EF.4331 and EF.4332 hold

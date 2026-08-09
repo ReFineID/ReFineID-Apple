@@ -34,6 +34,10 @@ extension TokenSession {
       throw TKError(.badParameter)
     }
     let entered = collectedPin2.flatMap { $0.isEmpty ? nil : $0 }
+    TokenLog.info(
+      "sign: qualified entry pin2Collected=\(entered != nil) "
+        + "session=\(UInt(bitPattern: ObjectIdentifier(self).hashValue))"
+    )
     collectedPin2 = nil
     let smartCard = try getSmartCard()
     do {
