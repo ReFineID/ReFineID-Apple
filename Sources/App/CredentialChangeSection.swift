@@ -99,7 +99,21 @@
           .accessibilityIdentifier("managementChange\(credential.identifierName)")
         }
       }
-      .onAppear { focus = .current }
+      // Focus is placed after the window has settled, not as the form
+      // appears. Measured: assigning it in `onAppear`, and declaring it
+      // with `defaultFocus`, both left every field empty -- typing a
+      // PIN a second and a half after the window opened put the digits
+      // nowhere, so a keyboard user had to find the first field with a
+      // pointer before the keyboard did anything at all.
+      .task {
+        // A yield past the window becoming key: assigning focus as the
+        // form appears, and declaring it with `defaultFocus`, were both
+        // measured leaving every field empty, so a PIN typed a second
+        // after the window opened went nowhere and the keyboard could
+        // not start the operation at all.
+        await InitialFieldFocus.settle()
+        focus = .current
+      }
       .confirmCredentialOperation($pending, report: model.report) { _ in
         change()
       }

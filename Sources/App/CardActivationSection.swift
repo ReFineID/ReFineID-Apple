@@ -62,6 +62,13 @@
           .accessibilityIdentifier("managementActivate")
         }
       }
+      .task {
+        // This form never placed focus at all, so its first field had
+        // to be found with a pointer. See InitialFieldFocus for why the
+        // window is allowed to settle first.
+        await InitialFieldFocus.settle()
+        focus = .entry
+      }
       .confirmCredentialOperation($pending, report: model.report) { _ in
         activate()
       }

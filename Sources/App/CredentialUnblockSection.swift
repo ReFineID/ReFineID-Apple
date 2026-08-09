@@ -75,7 +75,12 @@
           .accessibilityIdentifier("managementUnblock\(identifierName)")
         }
       }
-      .onAppear { focus = .puk }
+      .task {
+        // See InitialFieldFocus: the window must settle first, or the
+        // PUK typed into a freshly opened window goes nowhere.
+        await InitialFieldFocus.settle()
+        focus = .puk
+      }
       .confirmCredentialOperation($pending, report: model.report) { _ in
         unblock()
       }
