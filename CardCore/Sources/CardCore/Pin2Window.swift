@@ -2,12 +2,12 @@ import Foundation
 
 /// PIN2, held for a few seconds so a batch is one prompt.
 ///
-/// The card's rule is unchanged and cannot be changed: it verifies PIN2
-/// immediately before every qualified signature. What this decides is
-/// only where the value comes from each time -- from the holder, or
-/// from the entry the holder just made. Signing twelve documents meant
-/// twelve identical prompts, which is not security, it is a person
-/// typing the same digits twelve times and reading none of them.
+/// The card verifies PIN2 immediately before every qualified signature
+/// and that cannot be changed. What this decides is where the value
+/// comes from each time: from the holder, or from the entry the holder
+/// just made. A batch of documents therefore costs one prompt, and a
+/// prompt a person actually reads is worth more than twelve they
+/// answer by reflex.
 ///
 /// The window is deliberately short. It is measured from the entry, not
 /// extended by use, so a batch that runs long asks again rather than
