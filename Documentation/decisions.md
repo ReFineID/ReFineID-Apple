@@ -1,7 +1,30 @@
 # Recorded decisions
 
-Decisions with dates and rationale. `Documentation/release-plan.md` controls scope and
-security behavior; this file records the concrete values chosen under it.
+Decisions with dates and rationale. `Documentation/ios-product-plan.md`
+controls iPhone scope. `Documentation/release-plan.md` controls
+macOS scope and shared security behavior. This file records the concrete
+values chosen under them.
+
+## 2026-08-09 Built-in NFC ships in production on iPhone
+
+The built-in NFC transport is a required production iPhone feature. Its
+TestFlight and App Store builds ship the complete priming, registration,
+discovery, and signing path. It is not debug-only and it is not future
+work.
+
+An observed unsolicited system "Ready to Scan" sheet while an unrelated
+app was in the foreground is a ReFineID bug to diagnose. A valid fix may
+narrow when the registered identity is requested or activated, but it must
+preserve deliberate NFC setup and client-certificate authentication end to
+end. Removing NFC, excluding it from a shipping configuration, or treating
+the macOS-only NFC exclusion as an iOS product decision is not a fix.
+
+The 2026-07-25 device exchange, recorded in the 2026-07-28 transport
+decision below, proves native CryptoTokenKit mTLS over NFC through the TLS
+`CertificateVerify` and HTTP 200. `Documentation/card-transports.md`
+records the architecture. Apple's CryptoTokenKit and CoreNFC references in
+`doc/references.md` prove the platform API surface; they do not decide this
+product's shipping scope. This entry does.
 
 ## 2026-08-04 Card management and PIN2 signing enter scope, macOS first
 

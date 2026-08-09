@@ -11,6 +11,11 @@ client-certificate identity.
 | Contact / PC-SC reader | macOS, iPadOS, iOS (USB-C) | contact | PIN1 |
 | Phone antenna (NFC) | iOS 26+, iPadOS 26+ | contactless | CAN, then PIN1 |
 
+Both transports are production features on iPhone. Its TestFlight and App
+Store builds must include the built-in NFC path. NFC is not a diagnostic
+facility or future roadmap item, and a bug in automatic activation must be
+fixed without disabling that path.
+
 macOS has no NFC smart-card slot at all: `TKSmartCardSlotManager`'s NFC
 surface is `API_UNAVAILABLE(macos)`. Every NFC path in this repository is
 therefore behind `#if canImport(CoreNFC)` plus an iOS 26 availability

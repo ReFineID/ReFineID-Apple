@@ -1,11 +1,17 @@
-# Apple App Store release plan
+# macOS App Store release plan
 
 Last reviewed: 2026-07-23
 
 This document defines the product, security, validation, and distribution gates
-for the Swift ReFineID release. [TASKS.md](../TASKS.md) is the
+for the Swift macOS ReFineID release. [TASKS.md](../TASKS.md) is the
 checkable execution list. If the two documents disagree, this plan controls until
 the disagreement is resolved in a reviewed change.
+
+This document's iOS and NFC exclusions apply only to the macOS artifact. They
+must not be applied to iPhone: built-in NFC is a required production transport
+in its TestFlight and App Store builds. Its scope is controlled by
+`Documentation/ios-product-plan.md` and
+`Documentation/card-transports.md`.
 
 ## Release objective
 

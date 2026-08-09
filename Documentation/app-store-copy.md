@@ -30,9 +30,9 @@ ReFineID (all languages)
 
 ReFineID brings the Finnish identity card to iPhone.
 
-Attach a USB-C smart-card reader, insert your identity card, and sign
-in to e-services directly in Safari with the certificate on
-your card.
+Read your identity card with the iPhone's NFC antenna or a USB-C
+smart-card reader, then sign in to e-services directly in Safari with
+the certificate on your card.
 
 ReFineID is open source.
 
@@ -40,8 +40,8 @@ ReFineID is open source.
 
 ReFineID tuo suomalaisen henkilökortin iPhoneen.
 
-Liitä USB-C-kortinlukija, aseta henkilökortti lukijaan ja kirjaudu 
-sähköisiin palveluihin suoraan Safarissa kortillasi.
+Lue henkilökorttisi iPhonen NFC-antennilla tai USB-C-kortinlukijalla ja
+kirjaudu sähköisiin palveluihin suoraan Safarissa kortin varmenteella.
 
 ReFineID on avointa lähdekoodia.
 
@@ -49,8 +49,8 @@ ReFineID on avointa lähdekoodia.
 
 ReFineID tar det finländska identitetskortet till iPhone.
 
-Anslut en USB-C-kortläsare, sätt i ditt identitetskort och logga in på
-e-tjänster direkt i Safari med certifikatet på ditt kort.
+Läs identitetskortet med iPhones NFC-antenn eller en USB-C-kortläsare och
+logga in på e-tjänster direkt i Safari med kortets certifikat.
 
 ReFineID är öppen källkod.
 

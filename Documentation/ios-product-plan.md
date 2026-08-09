@@ -6,12 +6,15 @@ Status: accepted direction, 2026-07-23
 
 An iOS app that makes a Finnish identity card usable.
 
-1. Attach a USB-C smart-card reader, insert the card.
+1. Use the iPhone's built-in NFC antenna, or attach a USB-C smart-card
+   reader and insert the card.
 2. See card, reader, and PIN1/PIN2/PUK retry status, side-effect-free.
 3. Log into Finnish services **in Safari** with the card's
    authentication certificate through the system client-cert flow.
 
-v1 is exactly that and nothing more.
+Both card transports are production v1 features. Built-in NFC ships in
+TestFlight and App Store builds; it is not a development-only or future
+feature.
 
 ## 2. Minimal pure-Swift Safari driver
 
@@ -47,14 +50,21 @@ The Rust core remains the reference oracle.
   deadline cannot carry that extra APDU; it uses the explicitly stored PIN1
   and revokes the identity on a confirmed rejection.
 
-## 6. Future
+## 6. Production NFC
 
-- **NFC-for-Safari is proven on iPhone.** iOS 26 provides the full path:
-  `createNFCSlot`, `TKSmartCardTokenRegistrationManager`, and
-  system-summoned NFC on demand. The app first reads and stages the public
-  identity metadata in a Core NFC field, then opens a CryptoTokenKit field
-  that mints and registers `refineid-card-<printed-card-serial>`. Later
-  Safari client-certificate requests summon a fresh CryptoTokenKit NFC
-  field; the extension retains that card session, establishes PACE, checks
-  PIN1, and signs. This two-field setup avoids the app and extension racing
-  separate PACE exchanges against one card.
+NFC-for-Safari is proven on iPhone and is required in production. iOS 26
+provides `createNFCSlot`, `TKSmartCardTokenRegistrationManager`, and
+system-summoned NFC on demand. The measured implementation primes and
+registers the card in one CryptoTokenKit field. Later client-certificate
+requests summon a fresh field; the extension retains that card session,
+establishes PACE, checks PIN1, and signs.
+
+TestFlight and App Store configurations must retain the complete NFC
+priming, registration, discovery, and signing path. An unsolicited system
+NFC sheet is a defect in when that path is requested, not a reason to remove
+or configuration-gate NFC. Fix the trigger while preserving deliberate NFC
+setup and authentication end to end.
+
+`Documentation/card-transports.md` records the architecture and measured
+constraints. The 2026-07-28 entry in `Documentation/decisions.md` records
+the end-to-end device result and the decision to stop deferring NFC.
