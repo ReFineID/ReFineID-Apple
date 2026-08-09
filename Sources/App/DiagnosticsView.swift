@@ -47,6 +47,10 @@ internal struct DiagnosticsView: View {
       }
       clearLogsSection
     }
+    // The list is the window's whole content and takes keyboard focus
+    // on open, so without a name of its own VoiceOver announces the
+    // focused element as an unnamed outline.
+    .accessibilityLabel("Diagnostic report")
     .navigationTitle("Diagnostics")
     #if os(iOS)
       .navigationBarTitleDisplayMode(.inline)

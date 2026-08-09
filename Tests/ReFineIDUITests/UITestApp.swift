@@ -9,9 +9,22 @@ import XCTest
 /// device nobody is watching.
 @MainActor
 internal enum UITestApp {
-  /// Launches the app under test and waits for it to be in front.
+  /// Launches the app under test in a stated language.
+  ///
+  /// The language is pinned rather than inherited. A run on a Mac set
+  /// to Finnish draws a Card menu titled "Kortti", and a test that
+  /// matched the English title found no menu at all and blamed the
+  /// menu bar. Naming the language keeps a matched title a fact about
+  /// the app rather than about the machine, and lets a test ask for a
+  /// translation deliberately.
   internal static func launch() -> XCUIApplication {
+    Self.launch(language: "en")
+  }
+
+  /// Launches the app under test in the named language.
+  internal static func launch(language: String) -> XCUIApplication {
     let app = XCUIApplication()
+    app.launchArguments += ["-AppleLanguages", "(\(language))"]
     app.launch()
     return app
   }
