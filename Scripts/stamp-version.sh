@@ -1,17 +1,23 @@
 #!/usr/bin/env bash
 #
-# Stamp the calendar release version onto the Xcode project.
+# Stamp the calendar release version onto Version.xcconfig.
 #
 # Run manually when cutting a release; install-macos.sh also runs it,
 # so every installed build carries the bucket it was built in.
 #
-# Sets, across every target's build settings:
+# Sets the two settings the project's build configurations inherit from
+# Version.xcconfig, and touches no other file:
 #
 #   MARKETING_VERSION (CFBundleShortVersionString) = YY.M.D
 #       Release date, no zero padding.
 #
 #   CURRENT_PROJECT_VERSION (CFBundleVersion)      = H * 10 + M / 10
 #       The ten-minute bucket the build is cut in.
+#
+# A stamp is therefore a two-line diff. It used to be a forty-eight line
+# one, because both settings were written into every target's build
+# settings in every configuration; Version.xcconfig exists to keep the
+# project file still.
 #
 # Usage:
 #
@@ -54,16 +60,22 @@ case "${1:-}" in
     ;;
 esac
 
-pbxproj="ReFineID.xcodeproj/project.pbxproj"
-sed -i '' -E "s/(MARKETING_VERSION = )[^;]+;/\1${version};/g" "$pbxproj"
-sed -i '' -E "s/(CURRENT_PROJECT_VERSION = )[^;]+;/\1${bucket};/g" "$pbxproj"
+config="Version.xcconfig"
+sed -i '' -E "s/^(MARKETING_VERSION = ).*/\1${version}/" "$config"
+sed -i '' -E "s/^(CURRENT_PROJECT_VERSION = ).*/\1${bucket}/" "$config"
+
+# sed reports nothing when a pattern matches nothing, and a stamp that
+# silently changed no version would be found at the next release.
+grep -q "^MARKETING_VERSION = ${version}$" "$config" &&
+  grep -q "^CURRENT_PROJECT_VERSION = ${bucket}$" "$config" ||
+  { echo "stamp did not take in ${config}; check its two settings" >&2; exit 1; }
 
 if [[ -n "$channel" ]]; then
   tag="ios-v${version}-${channel}.${bucket}"
   # The stamp itself is left uncommitted deliberately: the tag names the
-  # commit that is already reviewed, and quietly committing a project
-  # file on the way to tagging would hide a change nobody read.
-  if ! git diff --quiet -- "$pbxproj"; then
+  # commit that is already reviewed, and quietly committing a version
+  # on the way to tagging would hide a change nobody read.
+  if ! git diff --quiet -- "$config"; then
     echo "stamped ${version} (${bucket}), NOT tagged: commit the stamp first, then re-run" >&2
     exit 1
   fi
