@@ -27,7 +27,7 @@ internal struct Pin1VisibilityButton: View {
       focusField()
     } label: {
       Label(
-        isRevealed ? "Hide PIN1" : "Show PIN1",
+        isRevealed ? "Hide PIN 1" : "Show PIN 1",
         systemImage: isRevealed ? "eye.slash" : "eye"
       )
       .labelStyle(.iconOnly)

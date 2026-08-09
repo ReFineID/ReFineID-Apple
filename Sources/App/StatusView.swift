@@ -155,7 +155,7 @@
       if let pending = signing.pending {
         Section {
           SignatureFormatRow(pending: pending, format: $format)
-          SecureField("PIN2", text: $pin2)
+          SecureField("PIN 2", text: $pin2)
             .onChange(of: pin2) { _, typed in
               pin2 = LimitedDigits.pin(typed)
             }

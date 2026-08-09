@@ -156,7 +156,7 @@ internal struct DiagnosticsSnapshot: Sendable {
       title: "Contactless signing credential",
       lines: [
         "CAN stored: " + Self.yesNo(contents.hasCardAccessNumber),
-        "PIN1 stored: " + Self.yesNo(contents.hasPin1),
+        "PIN 1 stored: " + Self.yesNo(contents.hasPin1),
         "policy: direct use, no software expiry",
       ])
   }

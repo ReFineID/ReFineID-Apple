@@ -57,11 +57,11 @@
     private static func cardMessage(_ outcome: CardMaintenance.Outcome) -> String {
       switch outcome {
       case .rejected(let remaining):
-        "Wrong PIN2: \(remaining.attemptsRemaining) attempts remain."
+        "Wrong PIN 2: \(remaining.attemptsRemaining) attempts remain."
       case .pinBlocked, .floorRefused(.refuseBlocked):
-        "PIN2 is blocked; unblock it in PIN Management."
+        "PIN 2 is blocked; unblock it in PIN Management."
       case .floorRefused(.refuseLowAttempts):
-        "Only one or two attempts remain on PIN2; ReFineID refuses to "
+        "Only one or two attempts remain on PIN 2; ReFineID refuses to "
           + "spend a near-last attempt."
       case .invalidated:
         "The signature slot is not activated; activate the card first."
