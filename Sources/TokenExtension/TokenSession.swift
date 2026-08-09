@@ -29,12 +29,13 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
   /// one PIN use).
   private var collectedPin: String?
 
-  /// PIN2 collected by the most recent qualified `beginAuth`.
+  /// PIN2 collected by a qualified `beginAuth`, held for a minute.
   ///
-  /// Consumed by the next qualified `sign` and cleared immediately
-  /// after; never cached anywhere. One prompt, one VERIFY, one
-  /// signature.
-  internal var collectedPin2: String?
+  /// The card still verifies PIN2 immediately before every qualified
+  /// signature; what this holds is the entry, so a batch of documents
+  /// is one prompt rather than one prompt per document. See
+  /// ``Pin2Window`` for what that window does and does not do.
+  internal var pin2Window = Pin2Window()
 
   /// Installs this session as CryptoTokenKit's operation delegate.
   ///
@@ -76,7 +77,7 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
         "beginAuth: op=\(operation.rawValue) - presenting PIN2 sheet "
           + "session=\(UInt(bitPattern: ObjectIdentifier(self).hashValue))"
       )
-      return Pin2AuthOperation { [weak self] pin in self?.collectedPin2 = pin }
+      return Pin2AuthOperation { [weak self] pin in self?.pin2Window.hold(pin) }
     case Pin1AuthOperation.signDataConstraint:
       TokenLog.notice("beginAuth: op=\(operation.rawValue) - presenting PIN sheet")
       return Pin1AuthOperation { [weak self] pin in self?.collectedPin = pin }

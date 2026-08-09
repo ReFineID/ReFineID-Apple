@@ -33,12 +33,11 @@ extension TokenSession {
       TokenLog.error("sign: no matching qualified algorithm - returning badParameter")
       throw TKError(.badParameter)
     }
-    let entered = collectedPin2.flatMap { $0.isEmpty ? nil : $0 }
+    let entered = pin2Window.current()
     TokenLog.info(
       "sign: qualified entry pin2Collected=\(entered != nil) "
         + "session=\(UInt(bitPattern: ObjectIdentifier(self).hashValue))"
     )
-    collectedPin2 = nil
     let smartCard = try getSmartCard()
     do {
       let signature = try SmartCardChannel(smartCard, waits: .reader).withSession { channel in
@@ -53,6 +52,10 @@ extension TokenSession {
       TokenLog.trace("sign: qualified path produced \(signature.count) DER bytes")
       return signature
     } catch let error as TokenError {
+      // A refusal ends the window. The entry the holder made is not
+      // the one the card wants, and repeating it for a minute would
+      // spend the counter without anyone being asked again.
+      pin2Window.forget()
       TokenLog.error("sign: qualified failed \(error)")
       throw error.asTKError
     } catch let error as CardOperationError {
