@@ -6,10 +6,6 @@
 - No Magic Codes - define everything.   
 - Commit often when compiles and lint is clean.
 - Push when feature is ready.
-- Built-in NFC is a production iPhone feature. TestFlight and
-  App Store builds must ship it. Never remove, disable, build-gate, or
-  reclassify NFC as future work to fix a bug; preserve NFC and fix the
-  trigger or path that is wrong.
 - Verify from specifications, don't wild guess.
   `doc/references.md` indexes which one governs what.
   Cite what a source proves, and say what it does not.
