@@ -64,17 +64,35 @@ public struct CardOperations {
   /// key reference comes from; a certificate with no key is an
   /// authority certificate the card files alongside the leaves.
   public func readPkcs15Inventory() throws -> [Pkcs15Inventory.Entry] {
-    let directory = try readElementaryFile(.objectDirectory, expectedLength: nil)
+    let directory = try readDirectoryFile(.objectDirectory)
     let locations = Pkcs15Directory.locations(fromObjectDirectory: directory)
     let certificates = try locations.certificates.map { file in
-      Pkcs15Directory.certificates(
-        fromDirectory: try readElementaryFile(file, expectedLength: nil))
+      Pkcs15Directory.certificates(fromDirectory: try readDirectoryFile(file))
     }
     let keys = try locations.privateKeys.map { file in
-      Pkcs15Directory.privateKeys(
-        fromDirectory: try readElementaryFile(file, expectedLength: nil))
+      Pkcs15Directory.privateKeys(fromDirectory: try readDirectoryFile(file))
     }
     return Pkcs15Inventory.pair(certificates: certificates ?? [], keys: keys ?? [])
+  }
+
+  /// Reads one directory file from wherever the card keeps it.
+  ///
+  /// The application directory reached by name is one home; the
+  /// signature directory is the other, which is where the certificate
+  /// leaves live on the cards that file them there. A directory read
+  /// after a certificate read cannot assume which is current, so each
+  /// attempt navigates first.
+  private func readDirectoryFile(_ file: FileIdentifier) throws -> Data {
+    var lastFailure: (any Error)?
+    for directory in [CertificateDirectory.pkcs15Application, .esignApplication] {
+      do {
+        try navigate(to: directory)
+        return try readElementaryFile(file, expectedLength: nil)
+      } catch {
+        lastFailure = error
+      }
+    }
+    throw lastFailure ?? CardOperationError.readFailed(.emptyFile)
   }
 
   /// Reads one certificate's DER bytes from its slot.

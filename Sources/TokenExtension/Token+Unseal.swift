@@ -179,8 +179,11 @@ extension Token {
   /// slots cannot see, read to learn each key's reference before any
   /// identity is built from it.
   private static func reportInventory(read operations: CardOperations) {
-    guard let entries = try? operations.readPkcs15Inventory() else {
-      TokenLog.info("readIdentity: PKCS#15 inventory unreadable")
+    let entries: [Pkcs15Inventory.Entry]
+    do {
+      entries = try operations.readPkcs15Inventory()
+    } catch {
+      TokenLog.info("readIdentity: PKCS#15 inventory unreadable (\(error))")
       return
     }
     TokenLog.info("readIdentity: PKCS#15 inventory lists \(entries.count) certificates")

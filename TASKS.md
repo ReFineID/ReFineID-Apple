@@ -159,17 +159,22 @@ is the revoked one.
   window: DVV revoked it centrally, so a signature made with it does
   not validate. The authentication certificate and the RSA signature
   certificate remain valid.
-- [ ] Publish every key the card carries, driven by the card's own
-  PKCS#15 directories rather than by known file identifiers. Read the
-  object directory, then the certificate and private-key directories,
-  and pair each certificate with the key its attributes name. That one
-  change answers what the fixed slots cannot: which certificates a
-  card holds, which key each belongs to, and the key reference the
-  card selects it by -- `PrivateKeyAttributes.keyReference` (S1 v4.2),
-  where this implementation knows only 0x01 for authentication and
-  0x02 for the qualified signature, as does the Unix one. A dual
-  algorithm card then publishes all of its identities instead of the
-  two the reader happened to look for.
+Measured 2026-08-09 on the RSA-generation citizen card: EF.5031, the
+PKCS#15 object directory, selects under the application but reads
+empty, and is not found under DF.5016. This card therefore offers no
+directory to enumerate, which is why neither this reader nor the Unix
+one ever read one: both address certificates by fixed file identifier.
+The directory parser and its tests stay -- they cost nothing and a
+later generation may populate the file -- but discovery cannot be
+built on it today. One thing left untried: whether the file is
+record-structured, where a binary read would report exactly this.
+
+- [ ] Find the second key pair's key reference another way, since the
+  card offers no directory to read it from. The specification derives
+  it from `PrivateKeyAttributes.keyReference`, so the private-key
+  directory would answer it if a card publishes one; failing that it
+  is a documented value or an empirically probed one, the way the
+  organization card's qualified reference was settled.
 - [ ] Distinguish identities by algorithm once a card publishes more
   than one per PIN. The token names a key for the PIN it asks for, so
   two signature identities would carry the same name and the PKCS#11
