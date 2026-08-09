@@ -159,8 +159,20 @@ PIN1 never shows this because its accepted-PIN memory satisfies the
 first signature, so the loop never starts. PIN2 caches nothing by
 design, which is why it is the credential that exposes the fault.
 
-- [ ] Find which route is meant to collect PIN2 for a CryptoTokenKit
-  signature, and stop the other from cancelling it.
+  A later run showed the retries arriving with no `beginAuth` between
+  them at all: the system stops asking the extension for a sheet and
+  simply re-requests the signature, while the holder's PIN goes into
+  Safari's own LocalAuthentication dialog for the key's access
+  control. The PIN satisfies the keychain and never reaches the card.
+
+- [ ] Try `TKTokenSmartCardPINAuthOperation` in place of the generic
+  password operation. It is the variant CryptoTokenKit defines for card
+  PINs, carrying a PIN format and a VERIFY template, and if the system
+  routes a PIN collected through LocalAuthentication only into that
+  variant, a password operation would sit unfinished exactly as
+  observed. Changing it moves the VERIFY into the system's hands,
+  which is a real change to the qualified flow and wants its own
+  hardware proof.
 - [ ] Note for testing: Safari remembers the chosen certificate per
   site; clearing its caches restores the chooser.
 
