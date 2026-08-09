@@ -28,6 +28,7 @@
     @State private var newPin2 = ""
     @State private var newPin2Repeated = ""
     @State private var allowReactivation = false
+    @State private var pending: CredentialOperationConfirmation.Operation?
     @FocusState private var focus: Field?
 
     /// Ready when every entry can possibly be right; the exact
@@ -54,12 +55,15 @@
         HStack {
           Spacer()
           Button("Activate") {
-            activate()
+            pending = .activate
           }
           .buttonStyle(.borderedProminent)
           .disabled(!isComplete || model.working)
           .accessibilityIdentifier("managementActivate")
         }
+      }
+      .confirmCredentialOperation($pending, report: model.report) { _ in
+        activate()
       }
     }
 
@@ -114,8 +118,10 @@
       case .pin2:
         focus = .pin2Repeat
       case .pin2Repeat:
+        // Return on the last field asks the same question the button
+        // asks; the entry from the letter works once.
         if isComplete {
-          activate()
+          pending = .activate
         }
       }
     }

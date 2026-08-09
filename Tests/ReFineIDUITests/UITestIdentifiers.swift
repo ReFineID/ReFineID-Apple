@@ -41,6 +41,13 @@ internal enum UITestIdentifiers {
   /// The main window's route into credential management.
   internal static let pinManagementButton = "pinManagementButton"
 
+  /// The button that commits an irreversible card operation, inside
+  /// the confirmation put to the holder first.
+  internal static let managementConfirm = "managementConfirm"
+
+  /// The button that abandons that operation without sending it.
+  internal static let managementCancel = "managementCancel"
+
   /// The management window's task picker.
   internal static let managementTask = "managementTask"
 

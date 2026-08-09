@@ -59,7 +59,18 @@
     @State private var current = ""
     @State private var new = ""
     @State private var repeated = ""
+    @State private var pending: CredentialOperationConfirmation.Operation?
     @FocusState private var focus: Field?
+
+    /// The role this section changes, as the card names it.
+    private var role: CredentialRole {
+      switch credential {
+      case .pin1:
+        .pin1
+      case .pin2:
+        .pin2
+      }
+    }
 
     /// Ready when every entry is inside its bounds and the new value
     /// is typed identically twice.
@@ -80,7 +91,7 @@
         HStack {
           Spacer()
           Button("Change \(credential.name)") {
-            change()
+            pending = .change(role)
           }
           .buttonStyle(.borderedProminent)
           .keyboardShortcut(.defaultAction)
@@ -89,6 +100,9 @@
         }
       }
       .onAppear { focus = .current }
+      .confirmCredentialOperation($pending, report: model.report) { _ in
+        change()
+      }
     }
 
     /// The three secret fields, threaded for Return.
@@ -124,8 +138,11 @@
       case .new:
         focus = .repeated
       case .repeated:
+        // Return on the last field asks the same question the button
+        // asks; a keyboard path that skipped it would be the fastest
+        // way to spend the wrong counter.
         if isComplete {
-          change()
+          pending = .change(role)
         }
       }
     }

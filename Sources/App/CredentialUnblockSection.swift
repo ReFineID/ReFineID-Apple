@@ -39,6 +39,7 @@
     @State private var puk = ""
     @State private var new = ""
     @State private var repeated = ""
+    @State private var pending: CredentialOperationConfirmation.Operation?
     @FocusState private var focus: Field?
 
     /// The entry bounds of the targeted PIN.
@@ -66,7 +67,7 @@
         HStack {
           Spacer()
           Button("Unblock \(targetName)") {
-            unblock()
+            pending = .unblock(target)
           }
           .buttonStyle(.borderedProminent)
           .keyboardShortcut(.defaultAction)
@@ -75,6 +76,9 @@
         }
       }
       .onAppear { focus = .puk }
+      .confirmCredentialOperation($pending, report: model.report) { _ in
+        unblock()
+      }
     }
 
     /// The target picker and the three secret fields, threaded for
@@ -111,8 +115,10 @@
       case .new:
         focus = .repeated
       case .repeated:
+        // Return on the last field asks the same question the button
+        // asks; the PUK is the one counter that cannot be restored.
         if isComplete {
-          unblock()
+          pending = .unblock(target)
         }
       }
     }
