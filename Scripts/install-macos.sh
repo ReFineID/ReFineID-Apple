@@ -87,6 +87,32 @@ is_macos_bundle() {
   [[ -d "$1/Contents/MacOS" ]]
 }
 
+lsregister="/System/Library/Frameworks/CoreServices.framework/Frameworks"
+lsregister="${lsregister}/LaunchServices.framework/Support/lsregister"
+
+# Deleting a bundle does not withdraw what Launch Services recorded
+# about it, and an iOS bundle that is rightly left on disk still claims
+# our identifier. Launch Services answers identifier lookups with one
+# winner among the claimants, so a stray decides what the Dock and the
+# switcher draw for the running app, and a build product that carries no
+# macOS icon draws nothing at all. Withdrawing the claim costs a device
+# build nothing: rebuilding it registers the bundle again.
+unregister_copy() {
+  [[ -x "$lsregister" ]] || return 0
+  "$lsregister" -u "$1" 2>/dev/null || true
+}
+
+# Build products are not documents. Left indexed, every configuration of
+# every checkout answers a search for the app by name, and the one copy
+# that may be launched is buried among them.
+# The marker is placed before the build runs, because a tree is indexed
+# as it is written and a marker added afterwards only stops the next
+# pass.
+hide_from_spotlight() {
+  mkdir -p "$1" 2>/dev/null || return 0
+  touch "$1/.metadata_never_index" 2>/dev/null || true
+}
+
 remove_stray_copies() {
   local found=0
   local candidates
@@ -96,7 +122,10 @@ remove_stray_copies() {
       # Deep enough to reach a build nested inside a scratch directory:
       # /private/tmp/<agent>/<session>/scratchpad/<build>/Build/Products/
       # <configuration>/ReFineID.app is already nine levels down.
-      for root in /tmp /private/tmp "$HOME/Library/Developer/Xcode/DerivedData"; do
+      # The build/ directory in this checkout holds the archives a
+      # release is cut from, which mdfind stops reporting once the tree
+      # is hidden from the index.
+      for root in /tmp /private/tmp "$HOME/Library/Developer/Xcode/DerivedData" build; do
         find "$root" -maxdepth 12 -name "$app_name" -type d 2>/dev/null || true
       done
     } | sort -u
@@ -104,7 +133,11 @@ remove_stray_copies() {
   while IFS= read -r stray; do
     [[ -z "$stray" ]] && continue
     [[ "$stray" == "$installed" ]] && continue
-    is_macos_bundle "$stray" || continue
+    unregister_copy "$stray"
+    if ! is_macos_bundle "$stray"; then
+      note "unregistered non-macOS copy: $stray"
+      continue
+    fi
     note "removing stray macOS copy: $stray"
     rm -rf "$stray"
     found=$((found + 1))
@@ -169,6 +202,10 @@ if [[ "$check_only" == "yes" ]]; then
   report_registrations
   exit 0
 fi
+
+hide_from_spotlight "$derived_data"
+hide_from_spotlight "$HOME/Library/Developer/Xcode/DerivedData"
+hide_from_spotlight build
 
 note "building ${configuration} for macOS"
 xcodebuild \
