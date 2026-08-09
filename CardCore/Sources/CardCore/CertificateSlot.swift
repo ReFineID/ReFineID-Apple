@@ -25,16 +25,19 @@ public enum CertificateSlot: Equatable, Sendable, CaseIterable {
   /// generations (S4-2 v4.0 §4.6.7).
   case root
 
-  /// The second authentication leaf: EF.4333, directly under the
-  /// PKCS#15 application.
+  /// The second authentication leaf: EF.4333.
+  ///
+  /// Filed beside its first, so it is looked for in the same two homes
+  /// the qualified leaf has: under the PKCS#15 application, and under
+  /// the signature directory where a card keeps it there instead.
   ///
   /// Dual-algorithm cards carry a second key pair per PIN. Which
   /// algorithm sits in which slot is not fixed, so the caller reads the
   /// certificate and takes the algorithm from its public key.
   case secondAuthentication
 
-  /// The second qualified-signature leaf: EF.4335, directly under the
-  /// PKCS#15 application, the counterpart to EF.4332.
+  /// The second qualified-signature leaf: EF.4335, the counterpart to
+  /// EF.4332 and looked for in the same two homes.
   case secondQualifiedSignature
 
   /// One place a certificate can live: the directory to make current,
@@ -59,9 +62,15 @@ public enum CertificateSlot: Equatable, Sendable, CaseIterable {
         Location(directory: .esignApplication, file: .signatureCertificate),
       ]
     case .secondAuthentication:
-      [Location(directory: .pkcs15Application, file: .secondAuthCertificate)]
+      [
+        Location(directory: .pkcs15Application, file: .secondAuthCertificate),
+        Location(directory: .esignApplication, file: .secondAuthCertificate),
+      ]
     case .secondQualifiedSignature:
-      [Location(directory: .pkcs15Application, file: .secondSignatureCertificate)]
+      [
+        Location(directory: .pkcs15Application, file: .secondSignatureCertificate),
+        Location(directory: .esignApplication, file: .secondSignatureCertificate),
+      ]
     case .issuing:
       [
         Location(directory: .masterFile, file: .issuingCertificate),
