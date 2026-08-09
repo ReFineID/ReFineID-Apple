@@ -256,9 +256,9 @@ internal struct CardCredentialsView: View {
     HStack {
       Group {
         if isPin1Revealed {
-          TextField("PIN1", text: $pin1Entry)
+          TextField("PIN 1", text: $pin1Entry)
         } else {
-          SecureField("PIN1", text: $pin1Entry)
+          SecureField("PIN 1", text: $pin1Entry)
         }
       }
       #if os(iOS)

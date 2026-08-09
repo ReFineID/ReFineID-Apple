@@ -21,7 +21,21 @@
 
     internal let model: CardManagementModel
 
-    @State private var target: CredentialRole = .pin1
+    /// The credential this form unblocks, chosen before the form is
+    /// shown rather than inside it.
+    internal let target: CredentialRole
+
+    /// The on-screen name of that credential, so the button and the
+    /// fields say which one they mean.
+    private var targetName: String {
+      target == .pin2 ? "PIN 2" : "PIN 1"
+    }
+
+    /// The same name without its space, for accessibility identifiers
+    /// that tests match exactly.
+    private var identifierName: String {
+      targetName.replacingOccurrences(of: " ", with: "")
+    }
     @State private var puk = ""
     @State private var new = ""
     @State private var repeated = ""
@@ -51,13 +65,13 @@
         }
         HStack {
           Spacer()
-          Button("Unblock") {
+          Button("Unblock \(targetName)") {
             unblock()
           }
           .buttonStyle(.borderedProminent)
           .keyboardShortcut(.defaultAction)
           .disabled(!isComplete || model.working)
-          .accessibilityIdentifier("managementUnblock")
+          .accessibilityIdentifier("managementUnblock\(identifierName)")
         }
       }
       .onAppear { focus = .puk }
@@ -66,33 +80,27 @@
     /// The target picker and the three secret fields, threaded for
     /// Return.
     @ViewBuilder private var entryRows: some View {
-      Picker("PIN", selection: $target) {
-        Text("PIN1").tag(CredentialRole.pin1)
-        Text("PIN2").tag(CredentialRole.pin2)
-      }
-      .pickerStyle(.segmented)
-      .accessibilityIdentifier("managementUnblockTarget")
       SecureField("PUK", text: $puk)
         .onChange(of: puk) { _, typed in
           puk = LimitedDigits.puk(typed)
         }
         .focused($focus, equals: .puk)
         .onSubmit { advance(from: .puk) }
-        .accessibilityIdentifier("managementUnblockPuk")
-      SecureField("New PIN", text: $new)
+        .accessibilityIdentifier("managementUnblock\(identifierName)Puk")
+      SecureField("New \(targetName)", text: $new)
         .onChange(of: new) { _, typed in
           new = LimitedDigits.pin(typed)
         }
         .focused($focus, equals: .new)
         .onSubmit { advance(from: .new) }
-        .accessibilityIdentifier("managementUnblockNew")
-      SecureField("New PIN again", text: $repeated)
+        .accessibilityIdentifier("managementUnblock\(identifierName)New")
+      SecureField("New \(targetName) again", text: $repeated)
         .onChange(of: repeated) { _, typed in
           repeated = LimitedDigits.pin(typed)
         }
         .focused($focus, equals: .repeated)
         .onSubmit { advance(from: .repeated) }
-        .accessibilityIdentifier("managementUnblockRepeat")
+        .accessibilityIdentifier("managementUnblock\(identifierName)Repeat")
     }
 
     /// Return advances; on the last field it submits when complete.

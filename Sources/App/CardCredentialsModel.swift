@@ -104,7 +104,7 @@ internal final class CardCredentialsModel {
     failure = nil
     let status = CardCredentialStore.save(pin1: digits)
     if status != errSecSuccess {
-      failure = String(localized: "Could not store PIN1 (\(status)).")
+      failure = String(localized: "Could not store PIN 1 (\(status)).")
     }
     refresh()
   }

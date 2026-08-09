@@ -18,21 +18,28 @@
     internal enum ManagementTask: CaseIterable, Identifiable {
       case changePin1
       case changePin2
-      case unblock
+      case unblockPin1
+      case unblockPin2
       case activate
 
       internal var id: Self { self }
 
-      /// The tab's label: short, because a segmented control shows
-      /// every option at once and the fields beneath say the rest.
+      /// The tab's label, which names the credential it spends.
+      ///
+      /// Two tasks that differ only in which PIN they touch must not
+      /// share a label, and neither may hide that choice one level
+      /// down: a holder who means PIN 2 must not be able to change
+      /// PIN 1 by missing a control inside the page.
       internal var name: String {
         switch self {
         case .changePin1:
-          String(localized: "PIN1")
+          String(localized: "Change PIN 1")
         case .changePin2:
-          String(localized: "PIN2")
-        case .unblock:
-          String(localized: "Unblock")
+          String(localized: "Change PIN 2")
+        case .unblockPin1:
+          String(localized: "Unblock PIN 1")
+        case .unblockPin2:
+          String(localized: "Unblock PIN 2")
         case .activate:
           String(localized: "Activate")
         }
@@ -94,8 +101,8 @@
         HStack(spacing: Self.attemptsSpacing) {
           Text("Attempts left:")
             .foregroundStyle(.secondary)
-          attemptsEntry("PIN1", model.report?.pin1)
-          attemptsEntry("PIN2", model.report?.pin2)
+          attemptsEntry("PIN 1", model.report?.pin1)
+          attemptsEntry("PIN 2", model.report?.pin2)
           attemptsEntry("PUK", model.report?.puk)
           Spacer()
         }
@@ -134,7 +141,7 @@
             Text(candidate.name).tag(candidate)
           }
         }
-        .pickerStyle(.segmented)
+        .pickerStyle(.menu)
         .labelsHidden()
         .disabled(model.working)
         .accessibilityIdentifier("managementTask")
@@ -148,8 +155,10 @@
         CredentialChangeSection(model: model, credential: .pin1)
       case .changePin2:
         CredentialChangeSection(model: model, credential: .pin2)
-      case .unblock:
-        CredentialUnblockSection(model: model)
+      case .unblockPin1:
+        CredentialUnblockSection(model: model, target: .pin1)
+      case .unblockPin2:
+        CredentialUnblockSection(model: model, target: .pin2)
       case .activate:
         CardActivationSection(model: model)
       }
@@ -206,8 +215,14 @@
       }
       guard let report else { return }
       let blocked: [RetryProbeOutcome] = [.locked, .invalidated]
-      if blocked.contains(report.pin1) || blocked.contains(report.pin2) {
-        task = .unblock
+      // Land on the page for the credential that is actually blocked,
+      // so the form in front of the holder spends the one they came
+      // for. PIN 1 first when both are: it is the one a card needs to
+      // be usable at all.
+      if blocked.contains(report.pin1) {
+        task = .unblockPin1
+      } else if blocked.contains(report.pin2) {
+        task = .unblockPin2
       }
     }
   }

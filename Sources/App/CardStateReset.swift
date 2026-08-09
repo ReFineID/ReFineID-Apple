@@ -53,7 +53,7 @@ internal enum CardStateReset {
       traceCleared
         ? "ReFineID extension trace: cleared"
         : "ReFineID extension trace: clear failed (\(traceStatus))")
-    lines.append("Stored CAN and PIN1: preserved")
+    lines.append("Stored CAN and PIN 1: preserved")
     lines.append("=== end ===")
     return Outcome(
       lines: lines,

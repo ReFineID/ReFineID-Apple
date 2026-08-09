@@ -43,14 +43,14 @@
 
     /// Changes PIN1; true when the card accepted.
     internal func changePin1(current: String, new: String) async -> Bool {
-      await perform(presenting: "PIN1", accepted: "PIN1 changed.") {
+      await perform(presenting: "PIN 1", accepted: "PIN 1 changed.") {
         await CardMaintenance.changePin1(current: current, new: new)
       }
     }
 
     /// Changes PIN2; true when the card accepted.
     internal func changePin2(current: String, new: String) async -> Bool {
-      await perform(presenting: "PIN2", accepted: "PIN2 changed.") {
+      await perform(presenting: "PIN 2", accepted: "PIN 2 changed.") {
         await CardMaintenance.changePin2(current: current, new: new)
       }
     }
@@ -59,8 +59,8 @@
     internal func unblock(target: CredentialRole, puk: String, new: String) async -> Bool {
       let accepted =
         target == .pin2
-        ? "PIN2 unblocked and set to the new value."
-        : "PIN1 unblocked and set to the new value."
+        ? "PIN 2 unblocked and set to the new value."
+        : "PIN 1 unblocked and set to the new value."
       return await perform(presenting: "PUK", accepted: accepted) {
         target == .pin2
           ? await CardMaintenance.unblockPin2(puk: puk, new: new)
@@ -102,11 +102,11 @@
       let entry = activationEntryName(activation.scheme)
       switch (activation.pin1, activation.pin2) {
       case (.success, .success):
-        notice = "Card activated: PIN1 and PIN2 are set."
+        notice = "Card activated: PIN 1 and PIN 2 are set."
         return true
       case (.success, .some(let second)):
         failure = message(for: second, presenting: entry)
-          .map { "PIN1 was set, but PIN2 was not: \($0)" }
+          .map { "PIN 1 was set, but PIN 2 was not: \($0)" }
         return false
       case (.alreadyActivated, _):
         failure =

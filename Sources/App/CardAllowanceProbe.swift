@@ -47,8 +47,8 @@
         let operations = CardOperations(channel: channel)
         try operations.selectFineidApplication()
         return [
-          ("PIN1", CredentialRole.pin1),
-          ("PIN2", CredentialRole.pin2),
+          ("PIN 1", CredentialRole.pin1),
+          ("PIN 2", CredentialRole.pin2),
           ("PUK", CredentialRole.puk),
         ].compactMap { entry in
           (try? operations.readAllowances(role: entry.1))

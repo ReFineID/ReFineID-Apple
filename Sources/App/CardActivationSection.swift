@@ -72,28 +72,28 @@
         .focused($focus, equals: .entry)
         .onSubmit { advance(from: .entry) }
         .accessibilityIdentifier("managementActivationEntry")
-      SecureField("New PIN1", text: $newPin1)
+      SecureField("New PIN 1", text: $newPin1)
         .onChange(of: newPin1) { _, typed in
           newPin1 = LimitedDigits.pin(typed)
         }
         .focused($focus, equals: .pin1)
         .onSubmit { advance(from: .pin1) }
         .accessibilityIdentifier("managementActivationPin1")
-      SecureField("New PIN1 again", text: $newPin1Repeated)
+      SecureField("New PIN 1 again", text: $newPin1Repeated)
         .onChange(of: newPin1Repeated) { _, typed in
           newPin1Repeated = LimitedDigits.pin(typed)
         }
         .focused($focus, equals: .pin1Repeat)
         .onSubmit { advance(from: .pin1Repeat) }
         .accessibilityIdentifier("managementActivationPin1Repeat")
-      SecureField("New PIN2", text: $newPin2)
+      SecureField("New PIN 2", text: $newPin2)
         .onChange(of: newPin2) { _, typed in
           newPin2 = LimitedDigits.pin(typed)
         }
         .focused($focus, equals: .pin2)
         .onSubmit { advance(from: .pin2) }
         .accessibilityIdentifier("managementActivationPin2")
-      SecureField("New PIN2 again", text: $newPin2Repeated)
+      SecureField("New PIN 2 again", text: $newPin2Repeated)
         .onChange(of: newPin2Repeated) { _, typed in
           newPin2Repeated = LimitedDigits.pin(typed)
         }

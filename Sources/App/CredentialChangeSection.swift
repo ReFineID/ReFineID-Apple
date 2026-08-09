@@ -16,13 +16,23 @@
       case pin2
 
       /// The on-screen name.
+      ///
+      /// Written the way the holder's own card documentation writes
+      /// it, with the space, and used wherever a field or a button
+      /// names the credential it spends.
       internal var name: String {
         switch self {
         case .pin1:
-          "PIN1"
+          "PIN 1"
         case .pin2:
-          "PIN2"
+          "PIN 2"
         }
+      }
+
+      /// The name used in accessibility identifiers, which tests match
+      /// exactly and which therefore carries no space.
+      internal var identifierName: String {
+        name.replacingOccurrences(of: " ", with: "")
       }
 
       /// The entry bounds of this PIN.
@@ -75,7 +85,7 @@
           .buttonStyle(.borderedProminent)
           .keyboardShortcut(.defaultAction)
           .disabled(!isComplete || model.working)
-          .accessibilityIdentifier("managementChange\(credential.name)")
+          .accessibilityIdentifier("managementChange\(credential.identifierName)")
         }
       }
       .onAppear { focus = .current }
@@ -89,21 +99,21 @@
         }
         .focused($focus, equals: .current)
         .onSubmit { advance(from: .current) }
-        .accessibilityIdentifier("managementChange\(credential.name)Current")
+        .accessibilityIdentifier("managementChange\(credential.identifierName)Current")
       SecureField("New \(credential.name)", text: $new)
         .onChange(of: new) { _, typed in
           new = LimitedDigits.pin(typed)
         }
         .focused($focus, equals: .new)
         .onSubmit { advance(from: .new) }
-        .accessibilityIdentifier("managementChange\(credential.name)New")
+        .accessibilityIdentifier("managementChange\(credential.identifierName)New")
       SecureField("New \(credential.name) again", text: $repeated)
         .onChange(of: repeated) { _, typed in
           repeated = LimitedDigits.pin(typed)
         }
         .focused($focus, equals: .repeated)
         .onSubmit { advance(from: .repeated) }
-        .accessibilityIdentifier("managementChange\(credential.name)Repeat")
+        .accessibilityIdentifier("managementChange\(credential.identifierName)Repeat")
     }
 
     /// Return advances; on the last field it submits when complete.

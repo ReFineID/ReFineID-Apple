@@ -50,8 +50,11 @@ internal enum UITestIdentifiers {
   /// The PIN2 change action; fields are Current/New/Repeat suffixed.
   internal static let managementChangePin2 = "managementChangePIN2"
 
-  /// The unblock action; Target/Puk/New/Repeat sit beside it.
-  internal static let managementUnblock = "managementUnblock"
+  /// The PIN 1 unblock action; Puk/New/Repeat sit beside it.
+  internal static let managementUnblockPin1 = "managementUnblockPIN1"
+
+  /// The PIN 2 unblock action; Puk/New/Repeat sit beside it.
+  internal static let managementUnblockPin2 = "managementUnblockPIN2"
 
   /// The activation action; Entry/Pin1/Pin2 fields sit beside it.
   internal static let managementActivate = "managementActivate"
