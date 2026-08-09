@@ -21,6 +21,10 @@ internal enum SigningAlgorithmResolver {
     ("rsaMessagePSSSHA256", .rsaSignatureMessagePSSSHA256),
     ("rsaDigestPKCS1SHA256", .rsaSignatureDigestPKCS1v15SHA256),
     ("rsaMessagePKCS1SHA256", .rsaSignatureMessagePKCS1v15SHA256),
+    ("rsaDigestPKCS1SHA384", .rsaSignatureDigestPKCS1v15SHA384),
+    ("rsaMessagePKCS1SHA384", .rsaSignatureMessagePKCS1v15SHA384),
+    ("rsaDigestPKCS1SHA512", .rsaSignatureDigestPKCS1v15SHA512),
+    ("rsaMessagePKCS1SHA512", .rsaSignatureMessagePKCS1v15SHA512),
   ]
 
   /// Whether the token should advertise this live CTK algorithm.

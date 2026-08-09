@@ -84,6 +84,26 @@ public enum CardSignRequestResolver {
       hash: .sha256,
       scheme: .rsaPkcs1,
       hashesMessage: true),
+    Shape(
+      secKeyAlgorithm: .rsaSignatureDigestPKCS1v15SHA384,
+      hash: .sha384,
+      scheme: .rsaPkcs1,
+      hashesMessage: false),
+    Shape(
+      secKeyAlgorithm: .rsaSignatureMessagePKCS1v15SHA384,
+      hash: .sha384,
+      scheme: .rsaPkcs1,
+      hashesMessage: true),
+    Shape(
+      secKeyAlgorithm: .rsaSignatureDigestPKCS1v15SHA512,
+      hash: .sha512,
+      scheme: .rsaPkcs1,
+      hashesMessage: false),
+    Shape(
+      secKeyAlgorithm: .rsaSignatureMessagePKCS1v15SHA512,
+      hash: .sha512,
+      scheme: .rsaPkcs1,
+      hashesMessage: true),
   ]
 
   /// Exact Security.framework targets supported by one certificate profile.

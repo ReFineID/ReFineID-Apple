@@ -60,6 +60,9 @@ public struct SignRequest {
     case (.rsa2048, .rsaPkcs1, .sha384),
       (.rsa3072, .rsaPkcs1, .sha384):
       verification = .rsaSignatureDigestPKCS1v15SHA384
+    case (.rsa2048, .rsaPkcs1, .sha512),
+      (.rsa3072, .rsaPkcs1, .sha512):
+      verification = .rsaSignatureDigestPKCS1v15SHA512
     case (.rsa2048, .rsaPss, .sha256),
       (.rsa3072, .rsaPss, .sha256):
       verification = .rsaSignatureDigestPSSSHA256
