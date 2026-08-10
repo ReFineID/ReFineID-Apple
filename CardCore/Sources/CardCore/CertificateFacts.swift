@@ -50,6 +50,14 @@ public struct CertificateFacts {
     issuerName == subjectName
   }
 
+  /// Whether the certificate asserts it is an authority.
+  ///
+  /// The status window uses this to pass over the issuer published
+  /// beside the card's own leaves when naming the holder.
+  public var isCertificateAuthority: Bool {
+    basicConstraints == .certificateAuthority
+  }
+
   /// Whether this certificate has the non-trust profile required of an
   /// RFC 3161 signer.
   ///
