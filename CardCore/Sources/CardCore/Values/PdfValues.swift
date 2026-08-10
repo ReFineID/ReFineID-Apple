@@ -69,13 +69,80 @@ internal enum PdfValues {
   /// The end-of-file marker.
   internal static let endOfFileMarker = "%%EOF"
 
-  /// The marker of a cross-reference stream, which this writer does
-  /// not modify.
+  /// The type name of a cross-reference stream (ISO 32000-1 §7.5.8).
   internal static let xrefStreamMarker = "/XRef"
 
-  /// How far past a failed `xref` keyword to look for the stream
-  /// marker, to tell one unsupported shape from a broken file.
-  internal static let streamProbeWindow: Int = 512
+  /// The object keyword opening an indirect object's body.
+  internal static let objectKeyword = "obj"
+
+  /// The keyword opening a stream's payload (ISO 32000-1 §7.3.8.1).
+  internal static let streamKeyword = "stream"
+
+  /// The keyword closing a stream's payload.
+  internal static let endStreamKeyword = "endstream"
+
+  /// The stream-dictionary key naming the payload's filter chain.
+  internal static let filterKey = "/Filter"
+
+  /// The one filter this reader decodes (ISO 32000-1 §7.4.4).
+  internal static let flateFilterName = "FlateDecode"
+
+  /// The hybrid trailer key naming the revision's cross-reference
+  /// stream, whose entries are the authoritative copy
+  /// (ISO 32000-1 §7.5.8.4).
+  internal static let hybridStreamKey = "/XRefStm"
+
+  /// Fields in one cross-reference stream entry: /W is three wide
+  /// (ISO 32000-1 §7.5.8.2).
+  internal static let xrefStreamFieldCount = 3
+
+  /// The entry field holding the type code.
+  internal static let entryTypeField = 0
+
+  /// The entry field holding the offset or container number.
+  internal static let entryFirstField = 1
+
+  /// The entry field holding the generation or in-stream position.
+  internal static let entrySecondField = 2
+
+  /// Type code of a free entry (ISO 32000-1 Table 18).
+  internal static let freeEntryType = 0
+
+  /// Type code of an entry at a byte offset in the file.
+  internal static let directEntryType = 1
+
+  /// Type code of an entry inside an object stream.
+  internal static let compressedEntryType = 2
+
+  /// Width of the type field this writer emits.
+  internal static let xrefStreamTypeWidth = 1
+
+  /// Width of the offset field this writer emits.
+  internal static let xrefStreamOffsetWidth = 4
+
+  /// Width of the generation field this writer emits.
+  internal static let xrefStreamGenerationWidth = 2
+
+  /// The largest offset a four-byte field can address.
+  internal static let xrefStreamOffsetLimit = 0xFFFF_FFFF
+
+  /// Mask selecting one byte of a wider offset.
+  internal static let byteMask = 0xFF
+
+  /// The object-stream key naming where its first object begins
+  /// (ISO 32000-1 §7.5.7).
+  internal static let objectStreamFirstKey = "/First"
+
+  /// The object-stream key counting the objects it carries.
+  internal static let objectStreamCountKey = "/N"
+
+  /// Tokens per pair in an object stream's leading table: an object
+  /// number and its offset relative to /First.
+  internal static let objectStreamPairTokens = 2
+
+  /// The most bytes any one decoded stream may inflate to, bounding
+  /// what a hostile document can make this reader allocate.
+  internal static let inflatedStreamLimit = 67_108_864
 
   /// Characters in `<<` and `>>`.
   internal static let dictionaryMarkerLength: Int = 2
@@ -114,6 +181,10 @@ internal enum PdfValues {
 
   /// The flag marking an in-use entry.
   internal static let inUseFlag = "n"
+
+  /// The flag marking a free entry, which shadows older sections'
+  /// copies of the same object.
+  internal static let freeFlag = "f"
 
   /// The bytes PDF counts as whitespace (ISO 32000-1 §7.2.2).
   internal static let whitespaceBytes: Set<UInt8> = [

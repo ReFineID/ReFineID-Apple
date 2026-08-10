@@ -153,7 +153,7 @@ public enum PdfValidationStore {
         size: next,
         rootNumber: context.rootNumber,
         xrefOffset: xrefOffset,
-        trailer: (context.index.trailer, context.index.previousStartXref)
+        index: context.index
       )
     )
     return out

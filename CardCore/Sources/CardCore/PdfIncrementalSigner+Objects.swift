@@ -160,36 +160,136 @@ extension PdfIncrementalSigner {
   /// One subsection per object, because the numbers a revision
   /// touches are not contiguous. `/Prev` chains to the section this
   /// revision supersedes; `/ID` and `/Info` are carried forward
-  /// because a reader expects them to survive.
+  /// because a reader expects them to survive. A document whose
+  /// newest section is a table is extended with a table; one whose
+  /// newest section is a stream is extended with a stream, the shape
+  /// its readers already committed to following (ISO 32000-1 §7.5.8).
   internal static func crossReferenceSection(
     offsets: [Int: Int],
     size: Int,
     rootNumber: Int,
     xrefOffset: Int,
-    trailer: (text: String, previousStartXref: Int)
+    index: PdfDocumentIndex
   ) throws -> Data {
-    let previousStartXref = trailer.previousStartXref
-    let trailerText = trailer.text
+    guard index.newestSectionIsStream else {
+      return try Self.crossReferenceTable(
+        offsets: offsets,
+        size: size,
+        rootNumber: rootNumber,
+        xrefOffset: xrefOffset,
+        index: index
+      )
+    }
+    return try Self.crossReferenceStream(
+      offsets: offsets,
+      size: size,
+      rootNumber: rootNumber,
+      xrefOffset: xrefOffset,
+      index: index
+    )
+  }
+
+  /// The closing section as a classic table with its trailer.
+  private static func crossReferenceTable(
+    offsets: [Int: Int],
+    size: Int,
+    rootNumber: Int,
+    xrefOffset: Int,
+    index: PdfDocumentIndex
+  ) throws -> Data {
     var text = "xref\n"
     for number in offsets.keys.sorted() {
       guard let offset = offsets[number] else { continue }
       text += "\(number) 1\n"
       text += String(format: "%010d 00000 n \n", offset)
     }
-    var carried = ""
-    if let identifier = try Self.trailerIdentifier(in: trailerText) {
-      carried += " /ID \(identifier)"
-    }
-    if let info = PdfDocumentIndex.reference(named: "/Info", in: trailerText) {
-      carried += " /Info \(info) 0 R"
-    }
+    let carried = try Self.carriedTrailerEntries(from: index.trailer)
     text += "trailer\n<< /Size \(size) /Root \(rootNumber) 0 R"
-    text += " /Prev \(previousStartXref)\(carried) >>\n"
+    text += " /Prev \(index.previousStartXref)\(carried) >>\n"
     text += "startxref\n\(xrefOffset)\n\(PdfValues.endOfFileMarker)\n"
     guard let encoded = text.data(using: .isoLatin1) else {
       throw PdfSigningError.structureUnreadable
     }
     return encoded
+  }
+
+  /// The closing section as a cross-reference stream: one subsection
+  /// per object, unfiltered rows, the stream object taking the number
+  /// just past the revision's other additions.
+  private static func crossReferenceStream(
+    offsets: [Int: Int],
+    size: Int,
+    rootNumber: Int,
+    xrefOffset: Int,
+    index: PdfDocumentIndex
+  ) throws -> Data {
+    let streamNumber = size
+    var entries = offsets.map { entry in
+      (number: entry.key, offset: entry.value)
+    }
+    entries.append((number: streamNumber, offset: xrefOffset))
+    entries.sort { left, right in left.number < right.number }
+    var subsections = ""
+    var rows = Data()
+    for entry in entries {
+      guard entry.offset <= PdfValues.xrefStreamOffsetLimit else {
+        throw PdfSigningError.structureUnreadable
+      }
+      subsections += "\(entry.number) 1 "
+      rows.append(Self.entryRow(offset: entry.offset))
+    }
+    let carried = try Self.carriedTrailerEntries(from: index.trailer)
+    var text = "\(streamNumber) 0 obj\n"
+    text += "<< /Type /XRef /Size \(streamNumber + 1)"
+    text += " /Root \(rootNumber) 0 R /Prev \(index.previousStartXref)"
+    text += carried
+    text += " /Index [ \(subsections)]"
+    text += " /W [\(PdfValues.xrefStreamTypeWidth)"
+    text += " \(PdfValues.xrefStreamOffsetWidth)"
+    text += " \(PdfValues.xrefStreamGenerationWidth)]"
+    text += " /Length \(rows.count) >>\nstream\n"
+    guard var out = text.data(using: .isoLatin1) else {
+      throw PdfSigningError.structureUnreadable
+    }
+    out.append(rows)
+    out.append(
+      Data(
+        "\nendstream\nendobj\nstartxref\n\(xrefOffset)\n\(PdfValues.endOfFileMarker)\n"
+          .utf8
+      )
+    )
+    return out
+  }
+
+  /// One in-use row: the type byte, the offset, a zero generation.
+  private static func entryRow(offset: Int) -> Data {
+    var row = Data()
+    row.append(UInt8(PdfValues.directEntryType))
+    var shift = (PdfValues.xrefStreamOffsetWidth - 1) * UInt8.bitWidth
+    while shift >= 0 {
+      row.append(UInt8((offset >> shift) & PdfValues.byteMask))
+      shift -= UInt8.bitWidth
+    }
+    row.append(
+      contentsOf: [UInt8](
+        repeating: 0, count: PdfValues.xrefStreamGenerationWidth
+      )
+    )
+    return row
+  }
+
+  /// What the closing dictionary carries forward: /ID and /Info.
+  private static func carriedTrailerEntries(
+    from trailer: String
+  ) throws -> String {
+    var carried = ""
+    if let identifier = try Self.trailerIdentifier(in: trailer) {
+      carried += " /ID \(identifier)"
+    }
+    if let info = PdfDocumentIndex.reference(named: "/Info", in: trailer) {
+      carried += " /Info \(info) 0 R"
+    }
+    return carried
   }
 
   /// The first page object: descend the tree's first kid.

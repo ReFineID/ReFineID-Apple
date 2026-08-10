@@ -188,7 +188,7 @@ public enum PdfIncrementalSigner {
         size: size,
         rootNumber: rootNumber,
         xrefOffset: xrefOffset,
-        trailer: (index.trailer, index.previousStartXref)
+        index: index
       )
     )
   }

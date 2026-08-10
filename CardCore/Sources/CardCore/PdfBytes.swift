@@ -78,6 +78,12 @@ internal struct PdfBytes {
   /// The decimal number starting at `position`, or nil when there is
   /// no digit there.
   internal func decimal(at position: Int) -> Int? {
+    decimalToken(at: position)?.value
+  }
+
+  /// The decimal number starting at `position` and the position just
+  /// past its digits, or nil when there is no digit there.
+  internal func decimalToken(at position: Int) -> (value: Int, end: Int)? {
     var cursor = position
     var value = 0
     var sawDigit = false
@@ -91,7 +97,8 @@ internal struct PdfBytes {
       cursor += 1
       sawDigit = true
     }
-    return sawDigit ? value : nil
+    guard sawDigit else { return nil }
+    return (value, cursor)
   }
 
   /// A range of bytes as text.
@@ -101,5 +108,41 @@ internal struct PdfBytes {
   internal func text(in range: Range<Int>) -> String {
     let clamped = range.clamped(to: 0..<bytes.count)
     return String(bytes: bytes[clamped], encoding: .isoLatin1) ?? ""
+  }
+
+  /// A range of bytes as raw data, for stream payloads that must not
+  /// pass through any text encoding.
+  internal func data(in range: Range<Int>) -> Data {
+    let clamped = range.clamped(to: 0..<bytes.count)
+    return Data(bytes[clamped])
+  }
+
+  /// The balanced `<< >>` dictionary starting at or after `offset`,
+  /// and the position just past its closing marker.
+  internal func balancedDictionary(
+    from offset: Int
+  ) -> (text: String, end: Int)? {
+    guard let start = firstRange(of: "<<", from: offset) else {
+      return nil
+    }
+    var depth = 0
+    var cursor = start.lowerBound
+    while cursor < count {
+      if hasKeyword("<<", at: cursor) {
+        depth += 1
+        cursor += PdfValues.dictionaryMarkerLength
+        continue
+      }
+      if hasKeyword(">>", at: cursor) {
+        depth -= 1
+        cursor += PdfValues.dictionaryMarkerLength
+        if depth == 0 {
+          return (text(in: start.lowerBound..<cursor), cursor)
+        }
+        continue
+      }
+      cursor += 1
+    }
+    return nil
   }
 }

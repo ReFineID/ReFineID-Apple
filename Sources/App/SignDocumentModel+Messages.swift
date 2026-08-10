@@ -44,8 +44,8 @@
       case .encrypted:
         "That PDF is encrypted; ReFineID will not modify it."
       case .crossReferenceStreamUnsupported:
-        "That PDF uses a cross-reference stream, which this version "
-          + "cannot extend yet."
+        "That PDF's cross-reference data uses an encoding this "
+          + "version cannot read."
       case .signatureTooLarge:
         "The signature did not fit the space reserved for it."
       default:

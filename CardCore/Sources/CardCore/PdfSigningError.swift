@@ -1,7 +1,7 @@
 /// Why a PDF could not be prepared or signed.
 public enum PdfSigningError: Error, Equatable {
-  /// The newest cross-reference section is a stream, which this
-  /// writer does not rewrite.
+  /// A cross-reference or object stream uses a filter or predictor
+  /// this reader does not decode.
   case crossReferenceStreamUnsupported
 
   /// The document is encrypted; this writer will not touch it.
