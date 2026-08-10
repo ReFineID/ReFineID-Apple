@@ -21,7 +21,7 @@
 // Flags are space-separated. To ship one again:
 //   REFINEID_FEATURES = FEATURE_PDF_STAMP FEATURE_CONTACTLESS
 
-REFINEID_FEATURES =
+REFINEID_FEATURES = FEATURE_CONTACTLESS
 
 // A developer's own flags, out of the repository: the file is
 // optional, ignored by git, and an assignment there replaces the
