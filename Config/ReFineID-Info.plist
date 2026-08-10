@@ -2,15 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- The Edit menu keeps what a text field genuinely needs and loses
-	     the rest. Dictation sends what is typed to a speech service and
-	     the character palette is for composing prose; neither belongs
-	     beside a PIN, a PUK or a card access number, and a menu item
-	     that must never be used is better absent than present. -->
-	<key>NSDisabledDictationMenuItem</key>
-	<true/>
-	<key>NSDisabledCharacterPaletteMenuItem</key>
-	<true/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<!-- Public-key infrastructure is fetched over plain HTTP, by

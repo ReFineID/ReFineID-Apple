@@ -11,15 +11,6 @@ internal struct ReFineIDApp: App {
           .windowFullScreenBehavior(.disabled)
       }
       .windowResizability(.contentSize)
-      // No app menus beyond the standard ones: management windows
-      // open from the status window, and the rest is in Settings.
-      // An empty toolbar group keeps the View menu from appearing.
-      .commands {
-        CommandGroup(replacing: .toolbar) {
-          // Deliberately empty: no toolbar or sidebar items, so the
-          // View menu never appears.
-        }
-      }
 
       Window("PIN Management", id: CardManagementView.windowID) {
         CardManagementView()
@@ -31,6 +22,7 @@ internal struct ReFineIDApp: App {
       Settings {
         ReFineIDSettingsView()
           .writingToolsBehavior(.disabled)
+          .windowFullScreenBehavior(.disabled)
       }
 
       // Development builds only: the release configurations exclude the
@@ -105,12 +97,30 @@ internal struct ReFineIDApp: App {
     #if os(macOS)
       SingleInstance.enforce()
 
-      // Every text field here holds digits or a service address, so
-      // the Edit menu's character palette is dead weight; AppKit
-      // honours this default by leaving the item out.
+      // Every text field here holds digits or a service address:
+      // the character palette composes prose and dictation sends what
+      // is spoken to a speech service, so neither belongs in the Edit
+      // menu here. AppKit honours these as user defaults - not as
+      // Info.plist keys - by leaving the items out.
       UserDefaults.standard.set(
         true, forKey: "NSDisabledCharacterPaletteMenuItem"
       )
+      UserDefaults.standard.set(
+        true, forKey: "NSDisabledDictationMenuItem"
+      )
+
+      // AppKit inserts "Enter Full Screen" into a View menu on its
+      // own; windowFullScreenBehavior only stops the window itself.
+      // This default keeps the item - and with it the whole View
+      // menu - from being created for fixed-size windows.
+      UserDefaults.standard.set(
+        false, forKey: "NSFullScreenMenuItemEverywhere"
+      )
+
+      // What that leaves behind is an empty View menu shell, which
+      // SwiftUI offers no way to decline; it is pruned as AppKit
+      // rebuilds the menu.
+      MainMenuPruner.start()
     #endif
 
     // Builds with the retired fifteen-minute policy wrote a second PIN1
