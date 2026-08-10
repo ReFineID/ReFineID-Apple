@@ -20,14 +20,30 @@ internal enum OfferedAccessNumber {
   /// The file the digits travel in.
   private static let filename = "offered-access-number"
 
+  /// The marker the driver leaves when the card refused the offer.
+  ///
+  /// The refusal happens in the token extension, which has no window
+  /// to say so in; the app watches for this file and shows the
+  /// refusal where the number was typed.
+  private static let refusalFilename = "offered-access-number-refused"
+
   /// Owner read and write, nobody else.
   private static let ownerOnly = 0o600
 
   /// Where the file lives, or nil without the entitlement.
   private static var url: URL? {
+    container?.appendingPathComponent(filename, isDirectory: false)
+  }
+
+  /// Where the refusal marker lives.
+  private static var refusalUrl: URL? {
+    container?.appendingPathComponent(refusalFilename, isDirectory: false)
+  }
+
+  /// The group container, or nil without the entitlement.
+  private static var container: URL? {
     FileManager.default
-      .containerURL(forSecurityApplicationGroupIdentifier: group)?
-      .appendingPathComponent(filename, isDirectory: false)
+      .containerURL(forSecurityApplicationGroupIdentifier: group)
   }
 
   /// The offered digits, or nil when nothing is offered.
@@ -36,10 +52,12 @@ internal enum OfferedAccessNumber {
     return String(data: data, encoding: .utf8)
   }
 
-  /// Offers `digits`, replacing any previous offer.
+  /// Offers `digits`, replacing any previous offer and clearing the
+  /// previous offer's fate.
   @discardableResult
   internal static func publish(digits: String) -> Bool {
     guard let url else { return false }
+    clearRefusal()
     do {
       try Data(digits.utf8).write(to: url, options: [.atomic])
       try FileManager.default.setAttributes(
@@ -50,9 +68,28 @@ internal enum OfferedAccessNumber {
     }
   }
 
-  /// Withdraws the offer.
+  /// Withdraws the offer, marker included.
   internal static func withdraw() {
+    clearRefusal()
     guard let url else { return }
     try? FileManager.default.removeItem(at: url)
+  }
+
+  /// Records that the card refused the offered number.
+  internal static func recordRefusal() {
+    guard let refusalUrl else { return }
+    try? Data().write(to: refusalUrl, options: [.atomic])
+  }
+
+  /// Whether the offered number stands refused.
+  internal static func refusalRecorded() -> Bool {
+    guard let refusalUrl else { return false }
+    return FileManager.default.fileExists(atPath: refusalUrl.path)
+  }
+
+  /// Clears the refusal, for an offer that succeeded after all.
+  internal static func clearRefusal() {
+    guard let refusalUrl else { return }
+    try? FileManager.default.removeItem(at: refusalUrl)
   }
 }

@@ -199,23 +199,6 @@
       }
     }
 
-    /// Runs the software reinsertion now, for a number the holder just
-    /// confirmed.
-    ///
-    /// User-initiated, so the once-per-appearance budget does not gate
-    /// it: each confirmation is one deliberate attempt, and the
-    /// driver's own refusal memo is what keeps a refused number from
-    /// being tried at the card again.
-    internal func retryWithConfirmedNumber() {
-      recovery?.cancel()
-      recovery = Task { @MainActor [weak self] in
-        await Self.touchPresentCard()
-        guard let self, !Task.isCancelled else { return }
-        recovery = nil
-        refresh()
-      }
-    }
-
     /// Stops any scheduled recovery; a card that left resets the
     /// once-per-appearance budget.
     internal func cancelRecovery(cardLeft: Bool) {

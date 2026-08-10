@@ -18,9 +18,16 @@ private let package = Package(
     // Tests live in the Xcode project's Tests/CardCoreTests bundle target
     // so one scheme runs them locally and in Xcode Cloud.
     // They exercise the public API only.
-    .target(name: "CardCore", dependencies: ["ObjCExceptionGuard"]),
+    .target(name: "CardCore", dependencies: ["ObjCExceptionGuard", "PcscCardReset"]),
     // Objective-C, because catching an Objective-C exception is a
     // thing only Objective-C can do.
     .target(name: "ObjCExceptionGuard"),
+    // C, because the PCSC module is marked unimportable from Swift
+    // while its C interface remains fully supported.
+    .target(
+      name: "PcscCardReset",
+      linkerSettings: [
+        .linkedFramework("PCSC", .when(platforms: [.macOS]))
+      ]),
   ]
 )

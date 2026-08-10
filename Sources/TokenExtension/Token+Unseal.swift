@@ -82,6 +82,7 @@ extension Token {
       RefusedUnseal.shared.isRefused(fingerprint: fingerprint, answerToReset: answerToReset)
     {
       TokenLog.info("readIdentity: these numbers were just refused by this card; not retrying yet")
+      CardCredentialStore.recordOfferedNumberRefusal()
       throw TokenError.unsealAlreadyRefused
     }
     let started = ContinuousClock.now
@@ -94,6 +95,7 @@ extension Token {
       do {
         let keys = try PaceEstablishment(channel: channel).establish(with: accessNumber)
         RefusedUnseal.shared.clear()
+        CardCredentialStore.clearOfferedNumberRefusal()
         let secure = SecureMessagingChannel(wrapping: channel, sessionKeys: keys)
         TokenLog.info(
           "readIdentity: PACE ok, candidate \(index + 1)/\(candidates.count) "
@@ -119,6 +121,7 @@ extension Token {
     if let fingerprint {
       RefusedUnseal.shared.record(fingerprint: fingerprint, answerToReset: answerToReset)
     }
+    CardCredentialStore.recordOfferedNumberRefusal()
     TokenLog.error("readIdentity: every number refused; latched against immediate retry")
     throw lastFailure
   }

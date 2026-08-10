@@ -141,14 +141,37 @@ public enum CardCredentialStore {
     return publishToDriver(digits: digits)
   }
 
-  /// Withdraws the published number once it has served its mint.
-  ///
-  /// The configuration-store entry is withdrawn too: earlier versions
-  /// published there, and an entry they left must not outlive them.
+  /// Withdraws the published number, and the configuration-store
+  /// entry earlier versions published, which must not outlive them.
   public static func withdrawCardAccessNumberFromDriver() {
     #if os(macOS)
       OfferedAccessNumber.withdraw()
       DriverConfiguredCredentials.withdraw()
+    #endif
+  }
+
+  /// Records that the card refused the offered number, where the
+  /// window that offered it can see - the token driver has no window
+  /// of its own to say so in.
+  public static func recordOfferedNumberRefusal() {
+    #if os(macOS)
+      OfferedAccessNumber.recordRefusal()
+    #endif
+  }
+
+  /// Whether the offered number stands refused by the card.
+  public static func offeredNumberWasRefused() -> Bool {
+    #if os(macOS)
+      return OfferedAccessNumber.refusalRecorded()
+    #else
+      return false
+    #endif
+  }
+
+  /// Clears a recorded refusal, for the offer that succeeded.
+  public static func clearOfferedNumberRefusal() {
+    #if os(macOS)
+      OfferedAccessNumber.clearRefusal()
     #endif
   }
 
