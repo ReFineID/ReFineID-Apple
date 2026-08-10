@@ -198,16 +198,27 @@ report_registrations() {
 # Whether the built extension would run the same code as the installed
 # one.
 #
-# The executable alone, not the bundle: every install stamps a fresh
+# The binaries alone, not the bundle: every install stamps a fresh
 # build number into Info.plist, so comparing bundles would find a
 # difference every time and ask for the card back for a change ctkd
 # never executes.
+#
+# Every executable in the appex, not just the named one: a Debug
+# build carries its code in ReFineIDTokenExtension.debug.dylib and
+# leaves the executable a loader stub, so the stub matches across any
+# code change and answered "unchanged" for builds that were not.
 extension_is_unchanged() {
   local name="ReFineIDTokenExtension"
-  local built_binary="${built}/Contents/PlugIns/${name}.appex/Contents/MacOS/${name}"
-  local live_binary="${installed}/Contents/PlugIns/${name}.appex/Contents/MacOS/${name}"
-  [[ -f "$built_binary" && -f "$live_binary" ]] || return 1
-  [[ "$(unsigned_hash "$built_binary")" == "$(unsigned_hash "$live_binary")" ]]
+  local built_dir="${built}/Contents/PlugIns/${name}.appex/Contents/MacOS"
+  local live_dir="${installed}/Contents/PlugIns/${name}.appex/Contents/MacOS"
+  [[ -d "$built_dir" && -d "$live_dir" ]] || return 1
+  local binary
+  for binary in "$built_dir"/*; do
+    [[ -f "$binary" ]] || continue
+    local live_binary="${live_dir}/$(basename "$binary")"
+    [[ -f "$live_binary" ]] || return 1
+    [[ "$(unsigned_hash "$binary")" == "$(unsigned_hash "$live_binary")" ]] || return 1
+  done
 }
 
 # A binary's hash with its signature removed.
