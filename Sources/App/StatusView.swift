@@ -85,6 +85,9 @@
           // No card, no card work: a drop target that cannot sign
           // and a PIN window over nothing are not features, they are
           // questions.
+          if availability == .cardWithoutIdentity {
+            SealedCardSection()
+          }
           if availability != .noCard {
             documentSection
             signatureSection
@@ -102,7 +105,10 @@
       }
       .padding(Self.padding)
       .frame(minWidth: minimumWidth, alignment: .leading)
-      .task { publishStoredNumber() }
+      // Nothing entered in an earlier run may serve this one: a number
+      // left in the driver configuration is withdrawn before the card
+      // could use it, so every launch starts with no saved number.
+      .task { SealedCardSection.withdrawOfferedNumber() }
       .onAppear {
         model.refresh()
         react(to: availability)
@@ -267,6 +273,7 @@
         signing.cardRemoved()
         pin2 = ""
         accessNumber = ""
+        SealedCardSection.withdrawOfferedNumber()
       }
     }
 
@@ -323,17 +330,6 @@
           to: destination
         )
       }
-    }
-  }
-
-  /// Hands the stored card access number to the driver, off the launch path.
-  ///
-  /// Reading the driver configuration is a synchronous call into `ctkd`, so
-  /// it must not run where a slow or restarting `ctkd` would block the window
-  /// before it can appear. It touches no card.
-  private func publishStoredNumber() {
-    Task.detached(priority: .utility) {
-      CardCredentialStore.publishCardAccessNumberToDriver()
     }
   }
 

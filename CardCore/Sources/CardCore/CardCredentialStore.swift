@@ -127,6 +127,27 @@ public enum CardCredentialStore {
     #endif
   }
 
+  /// Publishes a just-typed card access number for the driver's next
+  /// unseal, keeping it nowhere else.
+  ///
+  /// This is the macOS route for a sealed contactless card: the holder
+  /// types the number where the card appeared, the driver reads it for
+  /// the mint, and `withdrawCardAccessNumberFromDriver` takes it back
+  /// once the card is published or gone. Nothing is written to the
+  /// keychain, so nothing survives to be a previously saved number.
+  @discardableResult
+  public static func publishCardAccessNumberToDriver(digits: String) -> Bool {
+    guard CardAccessNumber(digits: digits) != nil else { return false }
+    return publishToDriver(digits: digits)
+  }
+
+  /// Withdraws the published number once it has served its mint.
+  public static func withdrawCardAccessNumberFromDriver() {
+    #if os(macOS)
+      DriverConfiguredCredentials.withdraw()
+    #endif
+  }
+
   /// The stored card access number, for the holder to see.
   ///
   /// The number is printed on the card face; hiding it from its holder
@@ -255,7 +276,6 @@ public enum CardCredentialStore {
   public static func forgetAll() {
     delete(account: cardAccessNumberAccount)
     delete(account: pin1Account)
-    CardDirectory.removeAll()
     #if os(macOS)
       DriverConfiguredCredentials.withdraw()
     #endif

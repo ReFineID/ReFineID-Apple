@@ -9,10 +9,9 @@
   /// exclusive session: the retry-floor probe first, then the
   /// operation, and never a credential spent below the floor.
   ///
-  /// The same session rules as `CardSerialProbe`: a contact insertion
-  /// answers freely, a card on the antenna is unsealed with the stored
-  /// card access number, and the blocking card I/O stays off the
-  /// cooperative pool. Entries cross into the blocking closure as
+  /// Session rules: a contact insertion answers freely, a card on the
+  /// antenna is unsealed with the access number the holder entered for
+  /// it, and the blocking card I/O stays off the cooperative pool. Entries cross into the blocking closure as
   /// strings and become their typed, consume-once forms there - a
   /// noncopyable value cannot be captured by the escaping hop.
   internal enum CardMaintenance {

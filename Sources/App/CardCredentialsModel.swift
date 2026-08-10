@@ -19,9 +19,6 @@ internal final class CardCredentialsModel {
   internal private(set) var storedCardAccessNumber =
     CardCredentialStore.displayedCardAccessNumber()
 
-  /// Every card the directory knows, newest first.
-  internal private(set) var cards = CardDirectory.entries()
-
   /// Whether there is anything behind the destructive forget action.
   internal private(set) var hasForgettableState =
     CardStateReset.hasForgettableState()
@@ -33,48 +30,7 @@ internal final class CardCredentialsModel {
   internal func refresh() {
     contents = CardCredentialStore.contents()
     storedCardAccessNumber = CardCredentialStore.displayedCardAccessNumber()
-    cards = CardDirectory.entries()
     hasForgettableState = CardStateReset.hasForgettableState()
-  }
-
-  #if os(macOS)
-    /// Proves `digits` against the present card and records the pair.
-    ///
-    /// The number is stored only bound: the probe reads the card's
-    /// serial -- the contact slot directly, the antenna through PACE
-    /// with these digits -- so a wrong number is refused, not kept. A
-    /// matching unbound number from older builds is retired by the
-    /// successful add.
-    internal func addCard(proving digits: String) async -> Bool {
-      failure = nil
-      guard let answer = await CardSerialProbe.read(unsealingWith: digits) else {
-        failure = String(
-          localized: """
-            No card answered. The contact slot reads directly; a card on \
-            the antenna answers only its own CAN.
-            """)
-        refresh()
-        return false
-      }
-      CardDirectory.upsert(
-        CardDirectory.Entry(
-          serial: answer.serial.value,
-          modelKey: answer.modelKey,
-          model: answer.model,
-          can: digits))
-      if CardCredentialStore.displayedCardAccessNumber() == digits {
-        CardCredentialStore.forgetCardAccessNumber()
-      }
-      refresh()
-      return true
-    }
-  #endif
-
-  /// Drops one card from the directory.
-  internal func removeCard(serial: String) {
-    failure = nil
-    CardDirectory.remove(serial: serial)
-    refresh()
   }
 
   /// Stores the card access number, with no gate in front.

@@ -1,5 +1,4 @@
 import CardCore
-import CryptoKit
 import CryptoTokenKit
 import Foundation
 
@@ -60,15 +59,10 @@ extension Token {
     over channel: SmartCardChannel,
     answerToReset: Data?
   ) throws -> (identity: PublishedIdentity, accessNumber: CardAccessNumber?) {
-    // The directory's model-matched numbers first, newest first; the
-    // single unbound number last. A sealed card is anonymous before
-    // PACE, so the model is the only filter there is -- and between
-    // card models it is a complete one.
-    let modelKey = answerToReset.flatMap { AnswerToReset(bytes: $0)?.modelKey }
-    var candidates = modelKey.map(CardDirectory.candidates(forModelKey:)) ?? []
-    if let single = CardCredentialStore.cardAccessNumber() {
-      candidates.append(single)
-    }
+    // One number, entered where the card appeared: on macOS the app
+    // publishes what the holder just typed, on iOS the shared keychain
+    // holds what setup stored. Nothing else is remembered to try.
+    let candidates = CardCredentialStore.cardAccessNumber().map { [$0] } ?? []
     guard !candidates.isEmpty else {
       // The status separates the two faults that look identical here:
       // nothing stored is setup not done, while a refusal is this
@@ -81,9 +75,9 @@ extension Token {
     }
     // The latch, before any card time is spent: a failed PACE tears the
     // field, the card re-arrives, and the system asks again with
-    // nothing changed. Editing the directory changes the fingerprint,
-    // which is what earns the card a fresh attempt.
-    let fingerprint = Self.candidateFingerprint(modelKey: modelKey)
+    // nothing changed. Entering a different number changes the
+    // fingerprint, which is what earns the card a fresh attempt.
+    let fingerprint = CardCredentialStore.cardAccessNumberFingerprint()
     if let fingerprint,
       RefusedUnseal.shared.isRefused(fingerprint: fingerprint, answerToReset: answerToReset)
     {
@@ -127,17 +121,6 @@ extension Token {
     }
     TokenLog.error("readIdentity: every number refused; latched against immediate retry")
     throw lastFailure
-  }
-
-  /// One digest over everything the loop would try, or nil when there
-  /// is nothing to try.
-  private static func candidateFingerprint(modelKey: String?) -> Data? {
-    let directory = modelKey.flatMap(CardDirectory.candidatesFingerprint(forModelKey:))
-    let single = CardCredentialStore.cardAccessNumberFingerprint()
-    if let directory, let single {
-      return Data(SHA256.hash(data: directory + single))
-    }
-    return directory ?? single
   }
 
   /// Reads the leaf, serial, and the issuer if the card offers one.
