@@ -37,11 +37,12 @@
       }
     }
 
-    /// Takes the offered number back: at launch, and when the card leaves.
+    /// Takes the offered number back: at launch, and at quit.
     ///
-    /// It stays published while its card is present, because every
-    /// contactless session - PIN management included - runs PACE again
-    /// and needs it.
+    /// Not when the card leaves. A contactless card leaves the field
+    /// between taps, the offer exists to serve the next tap, and
+    /// every contactless session - PIN management included - runs
+    /// PACE again and needs it. The app run is the offer's lifetime.
     internal static func withdrawOfferedNumber() {
       Task.detached(priority: .utility) {
         CardCredentialStore.withdrawCardAccessNumberFromDriver()

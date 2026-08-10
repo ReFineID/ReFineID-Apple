@@ -266,9 +266,12 @@
         signing.cardRemoved()
         pin2 = ""
         accessNumber = ""
-        #if FEATURE_CONTACTLESS
-          SealedCardSection.withdrawOfferedNumber()
-        #endif
+      // The offered access number deliberately survives this state:
+      // a contactless card leaves the field between taps, and the
+      // offer exists to serve the next tap. Withdrawing it here once
+      // deleted the number in the moment between lifting the card
+      // and laying it back, so the mint it was typed for read
+      // nothing. Launch and quit are where it is withdrawn.
       }
     }
 

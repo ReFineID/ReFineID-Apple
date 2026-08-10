@@ -1,9 +1,24 @@
 import CardCore
 import SwiftUI
 
+#if os(macOS)
+  import AppKit
+#endif
+
 /// Application entry point: one small status surface on every platform.
 @main
 internal struct ReFineIDApp: App {
+  #if os(macOS) && FEATURE_CONTACTLESS
+    /// Keeps the quit-time observer alive for the process's lifetime.
+    ///
+    /// Registration hands an observer back, and it is never removed:
+    /// quitting is the moment it exists for.
+    @MainActor
+    private enum QuitWithdrawal {
+      static var observer: NSObjectProtocol?
+    }
+  #endif
+
   internal var body: some Scene {
     #if os(macOS)
       Window("ReFineID", id: "status") {
@@ -150,6 +165,21 @@ internal struct ReFineIDApp: App {
     // run on their own worker exchanges.
     #if os(macOS)
       ScsService.startIfNeeded()
+
+      // The offered access number lives for the app run: the status
+      // screen withdraws a stale one at launch, and this withdraws
+      // the current one at quit. Synchronous on purpose - a detached
+      // task would race the exiting process. Registering the observer
+      // touches no other process, so it is safe on the launch path.
+      #if FEATURE_CONTACTLESS
+        QuitWithdrawal.observer = NotificationCenter.default.addObserver(
+          forName: NSApplication.willTerminateNotification,
+          object: nil,
+          queue: nil
+        ) { _ in
+          CardCredentialStore.withdrawCardAccessNumberFromDriver()
+        }
+      #endif
     #endif
 
     // One entry point for every launch mode, and it lives behind DEBUG.
