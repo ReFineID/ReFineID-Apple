@@ -19,9 +19,8 @@
       case DocumentSigner.Failure.network:
         "A timestamp or revocation service could not be reached. An "
           + "archival signature needs both, so nothing was written."
-      case DocumentSigner.Failure.validation:
-        "Complete authenticated certificate and revocation evidence could "
-          + "not be collected. No signed file was written."
+      case DocumentSigner.Failure.validation(let evidence):
+        Self.validationMessage(evidence)
       case DocumentSigner.Failure.stampSignerChanged:
         "The card used for signing is not the card read for the stamp. "
           + "No signed file was written."
@@ -33,6 +32,25 @@
         "The card signed unexpected bytes. No signed file was written."
       default:
         "The document could not be signed."
+      }
+    }
+
+    /// Evidence failures: the revoked verdicts by name, the rest as
+    /// what they are.
+    ///
+    /// "Revoked" is an authenticated answer, not a collection
+    /// problem, and the message says the fact instead of describing
+    /// the machinery that learned it.
+    private static func validationMessage(_ failure: Error) -> String {
+      switch failure {
+      case ValidationMaterialCollector.Failure.revoked(.documentSigner):
+        "The card is revoked and cannot sign. No signed file was written."
+      case ValidationMaterialCollector.Failure.revoked(.timestampAuthority):
+        "The timestamp service's certificate is revoked. "
+          + "No signed file was written."
+      default:
+        "Complete authenticated certificate and revocation evidence could "
+          + "not be collected. No signed file was written."
       }
     }
 
