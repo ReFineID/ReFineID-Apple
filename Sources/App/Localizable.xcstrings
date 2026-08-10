@@ -153,6 +153,22 @@
         }
       }
     },
+    "Activate Card": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivoi kortti"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivera kortet"
+          }
+        }
+      }
+    },
     "Activate this card?": {
       "localizations": {
         "fi": {

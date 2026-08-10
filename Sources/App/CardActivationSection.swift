@@ -54,7 +54,7 @@
           .accessibilityIdentifier("managementActivationOverride")
         HStack {
           Spacer()
-          Button("Activate") {
+          Button("Activate Card") {
             pending = .activate
           }
           .buttonStyle(.borderedProminent)
