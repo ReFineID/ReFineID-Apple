@@ -242,7 +242,7 @@
       case .ready:
         model.cancelRecovery(cardLeft: false)
       case .cardWithoutIdentity:
-        model.attemptRecovery()
+        model.attemptRecovery(unresolvedIdentity: false)
       case .noCard:
         model.cancelRecovery(cardLeft: true)
         signing.cardRemoved()

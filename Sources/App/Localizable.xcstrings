@@ -1599,23 +1599,6 @@
         }
       }
     },
-    "Ready": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Valmis"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Klar"
-          }
-        }
-      }
-    },
     "Ready for Safari": {
       "localizations": {
         "fi": {

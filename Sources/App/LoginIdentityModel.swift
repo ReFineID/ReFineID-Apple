@@ -2,6 +2,7 @@
 
   import CardCore
   import CryptoTokenKit
+  import os.log
   import SwiftUI
 
   /// Whether the system has a ReFineID login identity to offer right now.
@@ -36,6 +37,13 @@
       case ready
     }
 
+    /// Watcher outcomes, visible in the unified log for field reports.
+    ///
+    /// Counts and booleans only; never an identifier.
+    private static let log = Logger(
+      subsystem: "fi.refineid.ReFineID", category: "login-identity"
+    )
+
     /// The one instance, built once for the process.
     ///
     /// Not a `@State` default. SwiftUI evaluates a `@State` default
@@ -57,6 +65,11 @@
 
     /// The same, as the sleep wants it.
     private static let recoveryDelay: Duration = .seconds(recoveryDelaySeconds)
+    /// The credential entry the app itself publishes, which the
+    /// system lists as a token without it ever being a card.
+    private static let credentialEntryPrefix =
+      CardTokenNamespace.tokenPrefix
+      + DriverConfiguredCredentials.configurationInstanceID
 
     /// Watches publication and removal.
     ///
@@ -74,6 +87,12 @@
 
     /// Whether Safari can be offered an identity from this card.
     internal private(set) var isReady = false
+
+    /// Counts the refreshes, so a row that keys on it re-reads what
+    /// it shows whenever the token listing moves - a re-mint after a
+    /// driver update changes what a name read answers without ever
+    /// changing `isReady`.
+    internal private(set) var generation = 0
 
     internal init() {
       watcher.setInsertionHandler(Self.insertionHandler(for: self))
@@ -128,8 +147,22 @@
     }
 
     /// Re-reads what is published and keeps watching what is there.
+    ///
+    /// The model's own watcher is the source: it is connected and
+    /// event-fed, so its listing is current at every call. A watcher
+    /// built fresh for the question answers empty until its connection
+    /// comes up - which at launch, with the card already in the
+    /// reader, is exactly when the question is asked.
     internal func refresh() {
-      isReady = CardStatusSnapshot.publishesAnIdentity()
+      generation += 1
+      let listed = watcher.tokenIDs
+      isReady = listed.contains { identifier in
+        CardTokenNamespace.owns(tokenIdentifier: identifier)
+          && !identifier.hasPrefix(Self.credentialEntryPrefix)
+      }
+      Self.log.info(
+        "refresh: \(listed.count) listed, ready \(self.isReady)"
+      )
       for identifier in watcher.tokenIDs
       where CardTokenNamespace.owns(tokenIdentifier: identifier) {
         guard observed.insert(identifier).inserted else { continue }
@@ -149,11 +182,22 @@
     /// whose signature could be made to wait, and once per
     /// appearance, so a card the driver genuinely cannot serve is
     /// not prodded forever.
-    internal func attemptRecovery() {
+    internal func attemptRecovery(unresolvedIdentity: Bool) {
       guard !attempted, recovery == nil else { return }
       recovery = Task { @MainActor [weak self] in
         try? await Task.sleep(for: Self.recoveryDelay)
-        guard let self, !Task.isCancelled, !isReady else { return }
+        guard let self, !Task.isCancelled else { return }
+        // Ready with a resolvable identity needs nothing. Ready with
+        // an identity the keychain cannot resolve is the shape a
+        // driver update leaves behind - a listed token whose items
+        // return with the next card appearance - and the same
+        // software reinsertion recovers it. The row reports that
+        // shape rather than this task re-asking the keychain: in the
+        // phantom state the asking itself is what hangs.
+        guard !isReady || unresolvedIdentity else {
+          recovery = nil
+          return
+        }
         attempted = true
         await Self.touchPresentCard()
         recovery = nil

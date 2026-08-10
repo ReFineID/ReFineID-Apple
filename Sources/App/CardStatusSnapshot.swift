@@ -78,6 +78,24 @@ internal struct CardStatusSnapshot: Equatable, Sendable {
   /// because this status screen appeared.
   internal let safariIdentityPresent: Bool
 
+  /// Whether ctkd lists an identity token owned by this app.
+  ///
+  /// Advisory: read through a watcher built for the question, whose
+  /// listing can lag its connection. The login row does not use this
+  /// - it reads the long-lived watcher the login model owns.
+  internal static func publishesAnIdentity() -> Bool {
+    // Every token configuration is listed as a token, so the credential
+    // entry the app itself writes must be excluded by name -- counting
+    // it reported "Ready" with no card present, from nothing but a
+    // stored card access number.
+    let credentialEntries =
+      CardTokenNamespace.tokenPrefix + DriverConfiguredCredentials.configurationInstanceID
+    return TKTokenWatcher().tokenIDs.contains { identifier in
+      CardTokenNamespace.owns(tokenIdentifier: identifier)
+        && !identifier.hasPrefix(credentialEntries)
+    }
+  }
+
   /// Captures a fresh snapshot: discovers the first slot, then runs one
   /// exclusive card session on a background queue (the card I/O is
   /// synchronous and blocking, so it must not stall Swift concurrency).
@@ -114,26 +132,6 @@ internal struct CardStatusSnapshot: Equatable, Sendable {
       cardType: answerToReset.flatMap(CardTypeIdentification.identify(answerToReset:)),
       safariIdentityPresent: tokenPresent
     )
-  }
-
-  /// Whether this driver currently publishes a token.
-  ///
-  /// `TKTokenWatcher` observes ctkd's already-published state and does not
-  /// enumerate keychain identities. A direct `SecItemCopyMatching`
-  /// identity query looked more exact, but on iOS it was measured
-  /// opening a "Ready to Scan" sheet from this screen. Status must remain
-  /// an observer, never become another login attempt.
-  internal static func publishesAnIdentity() -> Bool {
-    // Every token configuration is listed as a token, so the credential
-    // entry the app itself writes must be excluded by name -- counting
-    // it reported "Ready" with no card present, from nothing but a
-    // stored card access number.
-    let credentialEntries =
-      CardTokenNamespace.tokenPrefix + DriverConfiguredCredentials.configurationInstanceID
-    return TKTokenWatcher().tokenIDs.contains { identifier in
-      CardTokenNamespace.owns(tokenIdentifier: identifier)
-        && !identifier.hasPrefix(credentialEntries)
-    }
   }
 
   /// Runs the synchronous, blocking card session on a background GCD

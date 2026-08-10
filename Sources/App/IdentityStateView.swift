@@ -1,8 +1,10 @@
 #if os(macOS)
 
+  import os.log
   import SwiftUI
 
-  /// Ready and who, what to do about it, or the settling state between.
+  /// Who the card says they are, what to do about it, or the settling
+  /// state between.
   ///
   /// A card mints in well under a second, and for that moment it is
   /// present without an identity yet published. That is not a fault and
@@ -10,6 +12,13 @@
   /// settles and only warns once the state has lasted long enough to
   /// mean something.
   internal struct IdentityStateView: View {
+    /// One tracked moment: the availability and the token listing's
+    /// generation, either of whose movement re-reads the row.
+    private struct TrackKey: Equatable {
+      let availability: LoginIdentityModel.Availability
+      let generation: Int
+    }
+
     /// How long a card may be present without a published identity
     /// before the row says to re-insert it.
     ///
@@ -22,9 +31,19 @@
 
     /// The same, as the sleep wants it.
     private static let settleDelay: Duration = .seconds(settleDelaySeconds)
+    /// Row outcomes, visible in the unified log for field reports.
+    ///
+    /// States only; never a name.
+    private static let log = Logger(
+      subsystem: "fi.refineid.ReFineID", category: "identity-row"
+    )
 
     /// What the login row keys on.
     internal let availability: LoginIdentityModel.Availability
+
+    /// The model, watched so a token event re-reads the name even
+    /// when the availability itself did not move.
+    private let model = LoginIdentityModel.shared
 
     /// Who the card says they are, read when a card is ready.
     ///
@@ -38,16 +57,21 @@
 
     internal var body: some View {
       content
-        .task(id: availability) { await track() }
+        .task(id: TrackKey(availability: availability, generation: model.generation)) {
+          await track()
+        }
     }
 
     @ViewBuilder private var content: some View {
       switch availability {
       case .ready:
         // Who is about to sign: someone with two cards can see which
-        // one is in the reader before spending a PIN on it.
-        Text(holder ?? "Ready")
-          .foregroundStyle(holder == nil ? AnyShapeStyle(.green) : AnyShapeStyle(.primary))
+        // one is in the reader before spending a PIN on it. Until the
+        // name is read the row shows nothing - a claim without the
+        // name behind it is not worth showing. The empty text is
+        // still a rendered view: a structurally absent one would
+        // never run the task that reads the name.
+        Text(holder ?? "")
           .textSelection(.enabled)
       case .cardWithoutIdentity:
         if settled {
@@ -71,18 +95,31 @@
     /// would otherwise have shown. The name is read off the main actor
     /// and never blocks the row.
     private func track() async {
-      holder =
-        availability == .ready
-        ? await Task.detached(priority: .utility) { PublishedIdentityName.current() }.value
-        : nil
-      guard availability == .cardWithoutIdentity else {
-        settled = false
-        return
-      }
+      Self.log.info("track: \(String(describing: self.availability))")
       settled = false
-      try? await Task.sleep(for: Self.settleDelay)
-      if !Task.isCancelled {
-        settled = true
+      switch availability {
+      case .ready:
+        // Armed before the read, because in the after-driver-update
+        // shape the read itself is what hangs: a listed token whose
+        // keychain items return only with the next card appearance.
+        // A read that answers in time stands the recovery down; one
+        // that hangs or answers nothing lets the model's one-shot
+        // software reinsertion re-mint the card.
+        model.attemptRecovery(unresolvedIdentity: true)
+        holder = await Task.detached(priority: .utility) {
+          PublishedIdentityName.current()
+        }.value
+        if holder != nil {
+          model.cancelRecovery(cardLeft: false)
+        }
+      case .cardWithoutIdentity:
+        holder = nil
+        try? await Task.sleep(for: Self.settleDelay)
+        if !Task.isCancelled {
+          settled = true
+        }
+      case .noCard:
+        holder = nil
       }
     }
   }
