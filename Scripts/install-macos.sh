@@ -146,6 +146,38 @@ remove_stray_copies() {
   return 0
 }
 
+# Build trees from earlier sessions, which are scratch and not history.
+#
+# Each debugging session leaves a derived-data tree or an archive in the
+# temporary directory, and they are hundreds of megabytes each. Three
+# things are spared: the tree this run is using, anything a build might
+# still be writing to, and any directory git knows as a worktree --
+# removing one of those behind git's back leaves metadata pointing at
+# nothing.
+remove_stale_build_trees() {
+  local minimum_age_minutes=120
+  local worktrees
+  worktrees="$(git worktree list --porcelain 2>/dev/null | sed -n 's/^worktree //p')"
+  local freed=0
+  local tree
+  while IFS= read -r tree; do
+    [[ -z "$tree" ]] && continue
+    [[ "$tree" == "$derived_data" ]] && continue
+    grep -qxF "$tree" <<<"$worktrees" && continue
+    local size
+    size="$(du -sh "$tree" 2>/dev/null | cut -f1)"
+    note "removing stale build tree (${size}): $tree"
+    rm -rf "$tree"
+    freed=$((freed + 1))
+  done < <(
+    find /private/tmp -maxdepth 1 -mindepth 1 \
+      \( -iname 'refineid*' -o -iname 'ReFineID*' \) \
+      -mmin "+${minimum_age_minutes}" 2>/dev/null | sort
+  )
+  [[ "$freed" -eq 0 ]] && note "no stale build trees found"
+  return 0
+}
+
 # What the system currently believes about our driver.
 report_registrations() {
   note "registered CryptoTokenKit drivers for this app:"
@@ -294,6 +326,7 @@ cp -R "$built" "$installed"
 verify_signature "$installed"
 
 remove_stray_copies
+remove_stale_build_trees
 rm -rf "$derived_data"
 
 # The extension is registered directly. Launching the app to make the

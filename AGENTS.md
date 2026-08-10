@@ -11,6 +11,9 @@
   Cite what a source proves, and say what it does not.
   Where observation contradicts Apple's docs, the recorded
   exchange wins and is cited as observation, not spec.
+- Never put a git worktree under `/tmp`. It is cleared on reboot and
+  takes the branch's only checkout with it. Keep worktrees beside the
+  repository.
 - Less is more. Terse is better.
 - Do not leak personal or private information in commits.
 - When stuck, research with fellow AI available.
