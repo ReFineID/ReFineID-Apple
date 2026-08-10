@@ -16,14 +16,20 @@
     /// Records ordinary control flow.
     internal static func info(_ message: @autoclosure () -> String) {
       #if DEBUG
-        Self.logger.info("\(message(), privacy: .public)")
+        // Evaluated once into a local: os.Logger's own interpolation
+        // is an escaping autoclosure, and a non-escaping one cannot
+        // be called inside it.
+        let text = message()
+        Self.logger.info("\(text, privacy: .public)")
       #endif
     }
 
     /// Records a failure worth investigating.
     internal static func error(_ message: @autoclosure () -> String) {
       #if DEBUG
-        Self.logger.error("\(message(), privacy: .public)")
+        // Same evaluation rule as above.
+        let text = message()
+        Self.logger.error("\(text, privacy: .public)")
       #endif
     }
   }
