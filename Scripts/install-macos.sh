@@ -186,6 +186,23 @@ unsigned_hash() {
   rm -f "$scratch"
 }
 
+# Asks the app to quit the way a person would, and waits for it.
+#
+# A signal is not how a Mac application is closed: it gets no chance to
+# finish what it holds. The app is asked, given a moment, and only then
+# insisted upon -- and an install should not be the reason someone's
+# unsaved work disappears.
+quit_app() {
+  pgrep -x "ReFineID" >/dev/null 2>&1 || return 0
+  osascript -e 'tell application id "fi.refineid.ReFineID" to quit' >/dev/null 2>&1 || true
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    pgrep -x "ReFineID" >/dev/null 2>&1 || return 0
+    sleep 0.5
+  done
+  note "the app did not quit when asked; ending it"
+  pkill -x ReFineID 2>/dev/null || true
+}
+
 # A card insertion is CryptoTokenKit's supported discovery boundary.
 # Replacing a live extension leaves ctkd holding the old token and
 # executable; restarting ctkd only strands the reader daemons on dead
@@ -254,8 +271,7 @@ built="${derived_data}/Build/Products/${configuration}/${app_name}"
 # working copy in place rather than a broken one.
 verify_signature "$built"
 
-pkill -x ReFineID 2>/dev/null || true
-sleep 1
+quit_app
 # The card boundary belongs to the token extension, not to the window.
 # Replacing a live extension leaves ctkd holding the old executable, so
 # that replacement waits for the card to leave; a build whose extension
@@ -280,21 +296,19 @@ verify_signature "$installed"
 remove_stray_copies
 rm -rf "$derived_data"
 
-# The system registers the extension when the containing app is seen,
-# and the app is quit again afterwards so a fresh install leaves nothing
-# running that the holder did not open themselves.
-#
-# The window no longer reads the card at all, so it can no longer hold
-# it while the extension signs -- that fault is fixed at the source. The
-# quit stays because Diagnostics and the Card manager still do card I/O
-# on request, and an installer should not leave either of them up.
+# The extension is registered directly. Launching the app to make the
+# system notice it, then quitting it again, put a window on screen and
+# took it away on every install, which is the installer helping itself
+# to someone's screen.
 note "registering the extension"
-open -a "$installed"
-sleep 3
-osascript -e 'tell application "ReFineID" to quit' 2>/dev/null || true
-sleep 1
-pkill -x ReFineID 2>/dev/null || true
-note "app quit so it does not hold the card"
+if pluginkit -a "${installed}/Contents/PlugIns/ReFineIDTokenExtension.appex" 2>/dev/null; then
+  note "extension registered"
+else
+  note "pluginkit refused; launching the app once so the system sees it"
+  open -g -a "$installed"
+  sleep 3
+  quit_app
+fi
 
 report_registrations
 note "done. Insert the card; CryptoTokenKit will mint it with the new driver."
