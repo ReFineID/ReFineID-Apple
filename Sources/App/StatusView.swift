@@ -98,18 +98,19 @@
             // appears only when the slot's answer proves the card is
             // on the antenna - a contact card is never asked.
             SealedCardSection(offering: $offeringNumber)
+          } else if availability == .noCard {
+            // With no card there is exactly one thing to say, and a
+            // labeled row saying it twice is not it.
+            Text("Present your identity card to the reader")
+              .foregroundStyle(.secondary)
+              .accessibilityIdentifier("loginIdentityStatus")
           } else {
             LabeledContent("Identity") {
               IdentityStateView(availability: availability)
             }
             .accessibilityIdentifier("loginIdentityStatus")
-            // No card, no card work: a drop target that cannot sign
-            // and a PIN window over nothing are not features, they
-            // are questions.
-            if availability != .noCard {
-              documentSection
-              signatureSection
-            }
+            documentSection
+            signatureSection
             outcomeSection
           }
         }

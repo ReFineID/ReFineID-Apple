@@ -1518,6 +1518,22 @@
         }
       }
     },
+    "Present your identity card to the reader": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esitä henkilökorttisi lukijalle"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visa ditt identitetskort för läsaren"
+          }
+        }
+      }
+    },
     "Put the card back": {
       "localizations": {
         "fi": {
