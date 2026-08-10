@@ -70,10 +70,12 @@ this one. Same rules: 4000 characters, en/fi/sv.
 
 ReFineID brings the Finnish identity card to the Mac.
 
-Insert your identity card into a USB smart-card reader and sign in to
-e-services directly in Safari with the certificate on your card. Drop
-a PDF on ReFineID to sign it with a qualified signature, carrying a
-qualified timestamp and the evidence for long-term validation.
+Present your identity card on a USB smart-card reader, contact or
+contactless, and sign in to e-services directly in Safari with the
+certificate on your card. A contactless card is opened with the CAN
+printed on its face. Drop a PDF on ReFineID to sign it with a
+qualified signature, carrying a qualified timestamp and the evidence
+for long-term validation.
 
 ReFineID is open source: github.com/ReFineID/ReFineID-Apple
 
@@ -81,9 +83,10 @@ ReFineID is open source: github.com/ReFineID/ReFineID-Apple
 
 ReFineID tuo suomalaisen henkilökortin Maciin.
 
-Aseta henkilökortti USB-kortinlukijaan ja kirjaudu sähköisiin
-palveluihin suoraan Safarissa kortin varmenteella. Pudota PDF
-ReFineID:hen ja allekirjoita se hyväksytyllä sähköisellä
+Esitä henkilökortti USB-kortinlukijalle, kosketuksella tai ilman, ja
+kirjaudu sähköisiin palveluihin suoraan Safarissa kortin varmenteella.
+Etäluettava kortti avataan korttiin painetulla CAN-numerolla. Pudota
+PDF ReFineID:hen ja allekirjoita se hyväksytyllä sähköisellä
 allekirjoituksella, jossa on hyväksytty aikaleima ja
 pitkäaikaisvalidoinnin todisteet.
 
@@ -93,9 +96,11 @@ ReFineID on avointa lähdekoodia: github.com/ReFineID/ReFineID-Apple
 
 ReFineID tar det finländska identitetskortet till Macen.
 
-Sätt identitetskortet i en USB-kortläsare och logga in på e-tjänster
-direkt i Safari med kortets certifikat. Släpp en PDF på ReFineID för
-att underteckna den med en kvalificerad elektronisk underskrift, med
-kvalificerad tidsstämpel och underlag för långtidsvalidering.
+Visa identitetskortet för en USB-kortläsare, med kontakt eller
+kontaktlöst, och logga in på e-tjänster direkt i Safari med kortets
+certifikat. Ett kontaktlöst kort öppnas med CAN-numret tryckt på
+kortet. Släpp en PDF på ReFineID för att underteckna den med en
+kvalificerad elektronisk underskrift, med kvalificerad tidsstämpel
+och underlag för långtidsvalidering.
 
 ReFineID är öppen källkod: github.com/ReFineID/ReFineID-Apple

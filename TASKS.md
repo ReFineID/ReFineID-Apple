@@ -1,6 +1,6 @@
 # Apple release task list
 
-Last reviewed: 2026-08-01
+Last reviewed: 2026-08-11
 
 
 
@@ -17,7 +17,10 @@ Legend:
 - [ ] Confirm ownership of the intended app and extension bundle identifiers on
   the current Apple Developer team; historical projects used multiple teams.
 - [ ] Prove the required smart-card APIs work from a sandboxed pure-Swift host and
-  CTK extension on a clean supported Mac.
+  CTK extension on a clean supported Mac. Proven on a developer Mac
+  2026-08-11: Safari TLS login, SCS signing, and contactless PACE
+  mint plus signing all through the sandboxed app and extension. The
+  clean-Mac run is what remains (fresh macOS virtual machine).
 - [ ] Prove a clean-Mac trust-chain solution without `sudo`, a package installer,
   or silent System Keychain modification.
 - [ ] Verify whether publishing the complete required issuer chain through CTK is
@@ -94,6 +97,8 @@ Legend:
   exported private keys in the repository.
 - [ ] Record the App Store SKU, bundle identifiers, team identifier, category,
   free pricing, regions, and release owner in a non-secret release record.
+- [ ] Verify at archive validation that the app-group entitlement
+  (`4ZJC3SFJR2.fi.refineid`, both targets) passes App Store submission checks.
 - [ ] Configure App Store Connect roles using least privilege.
 
 ## 4. Refined Swift card core
@@ -101,9 +106,9 @@ Legend:
 - [ ] Prove and implement the clean-machine trust/chain strategy without a
   privileged System Keychain installer (iOS trust onboarding is P0 gate 2).
 - [x] Implement supported RSA and ECC key profiles explicitly. ECC P-384 and
-  RSA-2048/3072 are certificate-selected, published, and unit-tested; ECC is
-  hardware-verified, while RSA qualified/PDF signing still needs the live-card
-  check below.
+  RSA-2048/3072 are certificate-selected, published, and unit-tested; both are
+  hardware-verified, RSA qualified PDF signing included (2026-08-11, contact
+  and contactless).
 
 - [x] Implement RSA/ECDSA result normalization and local signature verification.
   ECDSA `r||s` becomes X9.62 DER; RSA stays modulus-wide. Both fail closed on
@@ -127,8 +132,9 @@ Legend:
 
 ## 6. CTK extension
 
-- [ ] Let the status screen say a stored number was refused, instead of
-  the refusal being visible only in the log and the latch.
+- [x] Let the status screen say a stored number was refused, instead of
+  the refusal being visible only in the log and the latch. The entry
+  shakes and turns red from the driver's refusal marker (2026-08-11).
 - [ ] Handle card removal, reinsertion, fast same-reader swap, reader contention,
   extension reuse, and extension termination (cache resets on a fresh token and
   the OS reaps the process; full matrix still to test).

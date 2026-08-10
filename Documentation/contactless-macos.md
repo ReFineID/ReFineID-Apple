@@ -1,8 +1,9 @@
 # Contactless cards on macOS
 
 How a sealed contactless card becomes a published identity on a Mac,
-and the platform facts the design rests on. The flow ships behind the
-`FEATURE_CONTACTLESS` flag (`Config/Features.xcconfig`).
+and the platform facts the design rests on. The flow is on by
+default; `FEATURE_CONTACTLESS` in `Config/Features.xcconfig` remains
+its off switch.
 
 ## The flow
 
