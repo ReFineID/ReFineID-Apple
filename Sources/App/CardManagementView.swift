@@ -14,34 +14,46 @@
   /// access control, and this window never spends a near-last attempt.
   /// Entries are never stored and never echoed anywhere.
   internal struct CardManagementView: View {
-    /// The one management task shown at a time.
-    internal enum ManagementTask: CaseIterable, Identifiable {
-      case changePin1
-      case changePin2
-      case unblockPin1
-      case unblockPin2
-      case activate
+    /// What is being done to a credential.
+    ///
+    /// Reset rather than unblock: the card resets the retry counter and
+    /// takes a new value whether or not the credential was blocked, so
+    /// a holder who wants a PIN they can remember does not have to
+    /// exhaust the old one first.
+    internal enum ManagementAction: CaseIterable, Identifiable {
+      case change
+      case reset
 
       internal var id: Self { self }
 
-      /// The tab's label, which names the credential it spends.
-      ///
-      /// Two tasks that differ only in which PIN they touch must not
-      /// share a label, and neither may hide that choice one level
-      /// down: a holder who means PIN 2 must not be able to change
-      /// PIN 1 by missing a control inside the page.
+      /// The segment's label.
       internal var name: String {
         switch self {
-        case .changePin1:
-          String(localized: "Change PIN 1")
-        case .changePin2:
-          String(localized: "Change PIN 2")
-        case .unblockPin1:
-          String(localized: "Unblock PIN 1")
-        case .unblockPin2:
-          String(localized: "Unblock PIN 2")
-        case .activate:
-          String(localized: "Activate")
+        case .change:
+          String(localized: "Change")
+        case .reset:
+          String(localized: "Reset")
+        }
+      }
+    }
+
+    /// Which credential the action is done to.
+    ///
+    /// Its own control, always visible: a holder who means PIN 2 must
+    /// not reach PIN 1 by missing one entry in a list of five similar
+    /// phrases.
+    internal enum ManagedCredential: CaseIterable, Identifiable {
+      case pin1
+      case pin2
+
+      internal var id: Self { self }
+
+      internal var name: String {
+        switch self {
+        case .pin1:
+          "PIN 1"
+        case .pin2:
+          "PIN 2"
         }
       }
     }
@@ -66,7 +78,8 @@
     private var windowWidth: CGFloat = 460
 
     @State private var model = CardManagementModel()
-    @State private var task: ManagementTask = .changePin1
+    @State private var action: ManagementAction = .change
+    @State private var credential: ManagedCredential = .pin1
     @State private var hasChosenTask = false
 
     internal var body: some View {
@@ -125,39 +138,56 @@
     /// Activation is offered only while the card is still in its
     /// factory state; for a card in use there is no such operation,
     /// and showing it would invite a retry spent for nothing.
-    private var offeredTasks: [ManagementTask] {
-      ManagementTask.allCases.filter { candidate in
-        candidate != .activate || model.offersActivation
-      }
+    /// Whether this card is still waiting to be taken into use.
+    ///
+    /// Activation sets both PINs from the code in the issuance letter,
+    /// so while it is available there is nothing else to offer: a PIN
+    /// that has never been set cannot be changed, and resetting one
+    /// would be a second door to the same operation with a retry spent
+    /// on getting there.
+    private var awaitsActivation: Bool {
+      model.offersActivation
     }
 
     /// The chosen task, and only it.
     @ViewBuilder private var taskSection: some View {
-      Section {
-        Picker("Task", selection: $task) {
-          ForEach(offeredTasks) { candidate in
-            Text(candidate.name).tag(candidate)
+      if awaitsActivation {
+        CardActivationSection(model: model)
+      } else {
+        Section {
+          Picker("Action", selection: $action) {
+            ForEach(ManagementAction.allCases) { candidate in
+              Text(candidate.name).tag(candidate)
+            }
+          }
+          .pickerStyle(.segmented)
+          .disabled(model.working)
+          .accessibilityIdentifier("managementAction")
+          .onChange(of: action) { _, _ in
+            hasChosenTask = true
+          }
+          Picker("Credential", selection: $credential) {
+            ForEach(ManagedCredential.allCases) { candidate in
+              Text(candidate.name).tag(candidate)
+            }
+          }
+          .pickerStyle(.segmented)
+          .disabled(model.working)
+          .accessibilityIdentifier("managementCredential")
+          .onChange(of: credential) { _, _ in
+            hasChosenTask = true
           }
         }
-        .pickerStyle(.menu)
-        .labelsHidden()
-        .disabled(model.working)
-        .accessibilityIdentifier("managementTask")
-        .onChange(of: task) { _, _ in
-          hasChosenTask = true
+        switch (action, credential) {
+        case (.change, .pin1):
+          CredentialChangeSection(model: model, credential: .pin1)
+        case (.change, .pin2):
+          CredentialChangeSection(model: model, credential: .pin2)
+        case (.reset, .pin1):
+          CredentialUnblockSection(model: model, target: .pin1)
+        case (.reset, .pin2):
+          CredentialUnblockSection(model: model, target: .pin2)
         }
-      }
-      switch task {
-      case .changePin1:
-        CredentialChangeSection(model: model, credential: .pin1)
-      case .changePin2:
-        CredentialChangeSection(model: model, credential: .pin2)
-      case .unblockPin1:
-        CredentialUnblockSection(model: model, target: .pin1)
-      case .unblockPin2:
-        CredentialUnblockSection(model: model, target: .pin2)
-      case .activate:
-        CardActivationSection(model: model)
       }
     }
 
@@ -195,25 +225,17 @@
 
     /// Opens on what the card needs, until the holder chooses.
     private func suggestTask(from report: CredentialProbeReport?) {
-      // A task that stopped being offered cannot stay selected.
-      if !offeredTasks.contains(task) {
-        task = .changePin1
-      }
-      guard !hasChosenTask else { return }
-      if model.offersActivation {
-        task = .activate
-        return
-      }
-      guard let report else { return }
+      guard !hasChosenTask, !awaitsActivation, let report else { return }
       let blocked: [RetryProbeOutcome] = [.locked, .invalidated]
-      // Land on the page for the credential that is actually blocked,
-      // so the form in front of the holder spends the one they came
-      // for. PIN 1 first when both are: it is the one a card needs to
-      // be usable at all.
+      // Land on the credential that is actually blocked, so the form in
+      // front of the holder spends the one they came for. PIN 1 first
+      // when both are: it is the one a card needs to be usable at all.
       if blocked.contains(report.pin1) {
-        task = .unblockPin1
+        action = .reset
+        credential = .pin1
       } else if blocked.contains(report.pin2) {
-        task = .unblockPin2
+        action = .reset
+        credential = .pin2
       }
     }
   }

@@ -3,8 +3,10 @@
   import CardCore
   import SwiftUI
 
-  /// The unblock form: which PIN to unblock, the PUK, and the new
-  /// value twice.
+  /// The reset form: the PUK, and the new value twice.
+  ///
+  /// The card resets the retry counter and takes the new value whether
+  /// or not the credential was blocked.
   ///
   /// A wrong PUK spends the PUK itself and exhausting it is terminal
   /// for the card, which is why the driver holds the retry floor
@@ -66,13 +68,13 @@
         }
         HStack {
           Spacer()
-          Button("Unblock \(targetName)") {
+          Button("Reset \(targetName)") {
             pending = .unblock(target)
           }
           .buttonStyle(.borderedProminent)
           .keyboardShortcut(.defaultAction)
           .disabled(!isComplete || model.working)
-          .accessibilityIdentifier("managementUnblock\(identifierName)")
+          .accessibilityIdentifier("managementReset\(identifierName)")
         }
       }
       .task {
@@ -95,21 +97,21 @@
         }
         .focused($focus, equals: .puk)
         .onSubmit { advance(from: .puk) }
-        .accessibilityIdentifier("managementUnblock\(identifierName)Puk")
+        .accessibilityIdentifier("managementReset\(identifierName)Puk")
       SecureField("New \(targetName)", text: $new)
         .onChange(of: new) { _, typed in
           new = LimitedDigits.pin(typed)
         }
         .focused($focus, equals: .new)
         .onSubmit { advance(from: .new) }
-        .accessibilityIdentifier("managementUnblock\(identifierName)New")
+        .accessibilityIdentifier("managementReset\(identifierName)New")
       SecureField("New \(targetName) again", text: $repeated)
         .onChange(of: repeated) { _, typed in
           repeated = LimitedDigits.pin(typed)
         }
         .focused($focus, equals: .repeated)
         .onSubmit { advance(from: .repeated) }
-        .accessibilityIdentifier("managementUnblock\(identifierName)Repeat")
+        .accessibilityIdentifier("managementReset\(identifierName)Repeat")
     }
 
     /// Return advances; on the last field it submits when complete.

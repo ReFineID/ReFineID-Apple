@@ -68,7 +68,7 @@
       case .change(let role):
         String(localized: "Change \(Self.name(of: role))?")
       case .unblock(let role):
-        String(localized: "Unblock \(Self.name(of: role))?")
+        String(localized: "Reset \(Self.name(of: role))?")
       case .activate:
         String(localized: "Activate this card?")
       }

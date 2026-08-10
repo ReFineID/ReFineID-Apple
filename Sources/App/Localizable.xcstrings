@@ -23,6 +23,22 @@
         }
       }
     },
+    "%@ signed": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ allekirjoitettu"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ signerat"
+          }
+        }
+      }
+    },
     "%@, variant not in DVV's table": {
       "extractionState": "manual",
       "localizations": {
@@ -101,6 +117,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "%u försök kvar - få"
+          }
+        }
+      }
+    },
+    "Action": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toiminto"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åtgärd"
           }
         }
       }
@@ -542,6 +574,22 @@
         }
       }
     },
+    "Change": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vaihda"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Byt"
+          }
+        }
+      }
+    },
     "Change %@": {
       "localizations": {
         "fi": {
@@ -575,6 +623,7 @@
       }
     },
     "Change PIN 1": {
+      "extractionState": "stale",
       "localizations": {
         "fi": {
           "stringUnit": {
@@ -591,6 +640,7 @@
       }
     },
     "Change PIN 2": {
+      "extractionState": "stale",
       "localizations": {
         "fi": {
           "stringUnit": {
@@ -846,6 +896,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kortets åtkomstnummer kunde inte sparas (%d)."
+          }
+        }
+      }
+    },
+    "Credential": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tunnus"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kod"
           }
         }
       }
@@ -1873,6 +1939,54 @@
         }
       }
     },
+    "Reset": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Palauta"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återställ"
+          }
+        }
+      }
+    },
+    "Reset %@": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Palauta %@"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återställ %@"
+          }
+        }
+      }
+    },
+    "Reset %@?": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Palautetaanko %@?"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vill du återställa %@?"
+          }
+        }
+      }
+    },
     "Restore Defaults": {
       "localizations": {
         "fi": {
@@ -2281,6 +2395,7 @@
       }
     },
     "Task": {
+      "extractionState": "stale",
       "localizations": {
         "fi": {
           "stringUnit": {
@@ -2576,6 +2691,7 @@
       }
     },
     "Unblock %@": {
+      "extractionState": "stale",
       "localizations": {
         "fi": {
           "stringUnit": {
@@ -2592,6 +2708,7 @@
       }
     },
     "Unblock %@?": {
+      "extractionState": "stale",
       "localizations": {
         "fi": {
           "stringUnit": {
@@ -2608,6 +2725,7 @@
       }
     },
     "Unblock PIN 1": {
+      "extractionState": "stale",
       "localizations": {
         "fi": {
           "stringUnit": {
@@ -2624,6 +2742,7 @@
       }
     },
     "Unblock PIN 2": {
+      "extractionState": "stale",
       "localizations": {
         "fi": {
           "stringUnit": {
@@ -2767,6 +2886,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Var det signerade dokumentet ska sparas."
+          }
+        }
+      }
+    },
+    "Where to keep the signed documents.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mihin allekirjoitetut asiakirjat tallennetaan."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Var de signerade dokumenten ska sparas."
           }
         }
       }

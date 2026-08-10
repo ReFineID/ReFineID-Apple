@@ -48,8 +48,11 @@ internal enum UITestIdentifiers {
   /// The button that abandons that operation without sending it.
   internal static let managementCancel = "managementCancel"
 
-  /// The management window's task picker.
-  internal static let managementTask = "managementTask"
+  /// The management window's action control: change, or reset.
+  internal static let managementAction = "managementAction"
+
+  /// The management window's credential control: PIN 1, or PIN 2.
+  internal static let managementCredential = "managementCredential"
 
   /// The management window's toolbar refresh.
   internal static let managementRefresh = "managementRefresh"
@@ -60,11 +63,11 @@ internal enum UITestIdentifiers {
   /// The PIN2 change action; fields are Current/New/Repeat suffixed.
   internal static let managementChangePin2 = "managementChangePIN2"
 
-  /// The PIN 1 unblock action; Puk/New/Repeat sit beside it.
-  internal static let managementUnblockPin1 = "managementUnblockPIN1"
+  /// The PIN 1 reset action; Puk/New/Repeat sit beside it.
+  internal static let managementResetPin1 = "managementResetPIN1"
 
-  /// The PIN 2 unblock action; Puk/New/Repeat sit beside it.
-  internal static let managementUnblockPin2 = "managementUnblockPIN2"
+  /// The PIN 2 reset action; Puk/New/Repeat sit beside it.
+  internal static let managementResetPin2 = "managementResetPIN2"
 
   /// The activation action; Entry/Pin1/Pin2 fields sit beside it.
   internal static let managementActivate = "managementActivate"
