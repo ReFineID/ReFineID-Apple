@@ -18,6 +18,9 @@ private let package = Package(
     // Tests live in the Xcode project's Tests/CardCoreTests bundle target
     // so one scheme runs them locally and in Xcode Cloud.
     // They exercise the public API only.
-    .target(name: "CardCore")
+    .target(name: "CardCore", dependencies: ["ObjCExceptionGuard"]),
+    // Objective-C, because catching an Objective-C exception is a
+    // thing only Objective-C can do.
+    .target(name: "ObjCExceptionGuard"),
   ]
 )

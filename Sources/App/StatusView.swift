@@ -109,9 +109,7 @@
       // left in the driver configuration is withdrawn before the card
       // could use it, so every launch starts with no saved number.
       // Compiled with the entry that publishes numbers, and not
-      // without it: the configuration read is an XPC call into ctkd
-      // that can raise an Objective-C exception no Swift task can
-      // catch, and a build that never publishes has nothing there to
+      // without it: a build that never publishes has nothing there to
       // withdraw.
       #if FEATURE_CONTACTLESS
         .task { SealedCardSection.withdrawOfferedNumber() }

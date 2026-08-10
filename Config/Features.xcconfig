@@ -23,4 +23,9 @@
 
 REFINEID_FEATURES =
 
+// A developer's own flags, out of the repository: the file is
+// optional, ignored by git, and an assignment there replaces the
+// default above on that machine only.
+#include? "LocalFeatures.xcconfig"
+
 SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) $(REFINEID_FEATURES)

@@ -1,5 +1,6 @@
 import CryptoTokenKit
 import Foundation
+import ObjCExceptionGuard
 
 /// The card access number as the app hands it to its own token driver,
 /// through CryptoTokenKit's configuration store.
@@ -50,8 +51,18 @@ public enum DriverConfiguredCredentials {
 
   /// The configuration store, or nil in a process that is not the
   /// driver's hosting application.
+  ///
+  /// Read through the exception guard: the store is an XPC call into
+  /// `ctkd`, and a daemon mid-restart can answer it with an
+  /// Objective-C exception instead of a value. Caught, that answer
+  /// becomes what it means here - no store readable right now.
   private static var configuration: TKTokenDriver.Configuration? {
-    TKTokenDriver.Configuration.driverConfigurations[Self.classID]
+    var stores: [String: TKTokenDriver.Configuration] = [:]
+    let raised = CardCoreCatchException {
+      stores = TKTokenDriver.Configuration.driverConfigurations
+    }
+    guard raised == nil else { return nil }
+    return stores[Self.classID]
   }
 
   /// The published digits as raw bytes, for fingerprinting only.
