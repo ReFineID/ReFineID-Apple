@@ -35,6 +35,7 @@
 
     private let model = LoginIdentityModel.shared
     @State private var signing = SignDocumentModel()
+    @State private var offeringNumber = false
     @State private var pin2 = ""
     @State private var accessNumber = ""
     @State private var isTargeted = false
@@ -85,31 +86,40 @@
         Text(verbatim: "ReFineID")
           .font(.largeTitle.bold())
         Form {
-          LabeledContent("Identity") {
-            IdentityStateView(
-              availability: availability,
-              awaitingAccessNumber: awaitingAccessNumber)
+          // While an entered number awaits the card's verdict, the
+          // window is the instruction and nothing else: the steps to
+          // take are the only thing to say, and a drop target or a
+          // PIN window cannot be used before the card can.
+          if offeringNumber {
+            SealedCardSection(offering: $offeringNumber)
+          } else {
+            LabeledContent("Identity") {
+              IdentityStateView(
+                availability: availability,
+                awaitingAccessNumber: awaitingAccessNumber)
+            }
+            .accessibilityIdentifier("loginIdentityStatus")
+            // No card, no card work: a drop target that cannot sign
+            // and a PIN window over nothing are not features, they
+            // are questions.
+            // The entry for a sealed contactless card compiles in
+            // with its feature, and appears only when the slot's
+            // answer proves the card is on the antenna - a contact
+            // card never needs an access number and is never asked
+            // for one.
+            if awaitingAccessNumber {
+              SealedCardSection(offering: $offeringNumber)
+            }
+            if availability != .noCard, !awaitingAccessNumber {
+              documentSection
+              signatureSection
+            }
+            outcomeSection
           }
-          .accessibilityIdentifier("loginIdentityStatus")
-          // No card, no card work: a drop target that cannot sign
-          // and a PIN window over nothing are not features, they are
-          // questions.
-          // The entry for a sealed contactless card compiles in with
-          // its feature, and appears only when the slot's answer
-          // proves the card is on the antenna - a contact card never
-          // needs an access number and is never asked for one.
-          if awaitingAccessNumber {
-            SealedCardSection()
-          }
-          if availability != .noCard {
-            documentSection
-            signatureSection
-          }
-          outcomeSection
         }
         .formStyle(.grouped)
         .fixedSize(horizontal: false, vertical: true)
-        if availability != .noCard {
+        if availability != .noCard, !offeringNumber, !awaitingAccessNumber {
           Button("PIN Management…") {
             openWindow(id: CardManagementView.windowID)
           }
@@ -259,6 +269,7 @@
       switch availability {
       case .ready:
         model.cancelRecovery(cardLeft: false)
+        offeringNumber = false
       case .cardWithoutIdentity:
         model.attemptRecovery()
       case .noCard:

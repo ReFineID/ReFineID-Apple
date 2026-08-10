@@ -1518,6 +1518,22 @@
         }
       }
     },
+    "Put the card back": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laita kortti takaisin"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg tillbaka kortet"
+          }
+        }
+      }
+    },
     "ReFineID": {
       "localizations": {
         "fi": {
@@ -2181,6 +2197,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Stil"
+          }
+        }
+      }
+    },
+    "Take the card off the reader": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ota kortti lukijasta"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta kortet från läsaren"
           }
         }
       }

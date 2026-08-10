@@ -52,33 +52,49 @@
     /// How long a submitted number is watched for its verdict.
     ///
     /// Nonisolated: the watching runs off the main actor. Long,
-    /// because the verdict may wait for the holder to present the
-    /// card again; the watch ends early with the verdict, and with
-    /// this section when the identity publishes.
-    nonisolated private static let refusalPolls = 120
-
-    /// Polls after which the row asks for the card again.
-    ///
-    /// A mint that is going to happen has happened well within this;
-    /// past it, the system is not going to look at the card where it
-    /// lies, and presenting the card again is what makes it look.
-    nonisolated private static let retapPolls = 6
+    /// because the verdict waits for the holder to take the card off
+    /// and put it back; the watch ends early with the verdict.
+    nonisolated private static let verdictPolls = 120
 
     /// The pause between looks, in milliseconds.
     nonisolated private static let refusalPollMilliseconds = 500
 
+    /// Whether a submitted number is awaiting the card's verdict.
+    ///
+    /// Owned by the status window: while this stands, the window
+    /// shows only the card instruction, and it must survive the card
+    /// leaving the reader - which is a step of the flow, not its end.
+    @Binding internal var offering: Bool
+
     @State private var number = ""
     @State private var refused = false
-    @State private var trying = false
-    @State private var retapNeeded = false
     @State private var shakes: CGFloat = 0
     @FocusState private var focused: Bool
 
     internal var body: some View {
       Section {
-        entry
-          .modifier(Shake(animatableData: shakes))
+        if offering {
+          instruction
+        } else {
+          entry
+            .modifier(Shake(animatableData: shakes))
+        }
       }
+    }
+
+    /// The step the flow is on.
+    ///
+    /// The system looks at a card when it arrives, so the entered
+    /// number is served by taking the card off and putting it back;
+    /// the line follows the reader so each step is named as it
+    /// becomes the one to take.
+    @ViewBuilder private var instruction: some View {
+      Text(
+        CardPresence.shared.isContactlessCardPresent
+          ? "Take the card off the reader"
+          : "Put the card back"
+      )
+      .foregroundStyle(.secondary)
     }
 
     /// The label, the boxes, and the invisible field beneath them.
@@ -100,12 +116,6 @@
           Text(verbatim: "CAN")
             .foregroundStyle(.secondary)
           Spacer()
-          // The number is being tried against the card. Leading of
-          // the boxes, so their right edge never moves.
-          if trying {
-            ProgressView()
-              .controlSize(.small)
-          }
           ForEach(0..<Self.boxCount, id: \.self) { index in
             box(at: index)
           }
@@ -114,14 +124,6 @@
       .contentShape(.rect)
       .onTapGesture { focused = true }
       .onAppear { focused = true }
-      if retapNeeded {
-        // The one thing that makes the system look at the card
-        // again: a warm reset is invisible to it, so the number
-        // waits until the card arrives.
-        Text("Lift the card and lay it back")
-          .font(.footnote)
-          .foregroundStyle(.secondary)
-      }
     }
 
     /// Takes the offered number back: at launch, and at quit.
@@ -198,48 +200,43 @@
       }
       if digits.count == Self.boxCount, previous.count < Self.boxCount {
         submit(digits)
-      } else if digits != previous {
-        trying = false
-        retapNeeded = false
       }
     }
 
-    /// Offers the number, resets the card so the system asks again,
-    /// and watches for the driver's refusal marker.
+    /// Offers the number and watches for the card's verdict while
+    /// the instruction walks the holder through serving it.
     ///
-    /// The reset is what makes typing enough: without it the system
-    /// remembers giving up on the card and nothing re-reads the offer
-    /// until the card is physically lifted and laid back. The driver
-    /// tries the number once; a refusal shakes this row, and a mint
-    /// that succeeds removes the whole section by publishing the
-    /// identity.
+    /// The system looks at a card when it arrives - a warm reset
+    /// proved invisible to it - so the offer is served by the card
+    /// leaving and returning. The driver then tries the number once:
+    /// a refusal brings the boxes back red and shaking, and a mint
+    /// that succeeds publishes the identity, which ends the flow and
+    /// this section with it.
     ///
     /// Off the main actor: the offer, the reset and the marker are
     /// file and PC/SC calls, which must not block the window.
     private func submit(_ digits: String) {
-      trying = true
-      retapNeeded = false
+      offering = true
       Task.detached(priority: .utility) {
         CardCredentialStore.publishCardAccessNumberToDriver(digits: digits)
         _ = SlotCardReset.resetContactlessCards()
-        for poll in 0..<Self.refusalPolls {
+        for _ in 0..<Self.verdictPolls {
           try? await Task.sleep(for: .milliseconds(Self.refusalPollMilliseconds))
           if CardCredentialStore.offeredNumberWasRefused() {
             await MainActor.run {
-              trying = false
-              retapNeeded = false
+              offering = false
               refused = true
               withAnimation { shakes += 1 }
             }
             return
           }
-          if poll == Self.retapPolls {
-            await MainActor.run {
-              trying = false
-              retapNeeded = true
-            }
+          let published = await MainActor.run { LoginIdentityModel.shared.isReady }
+          if published {
+            await MainActor.run { offering = false }
+            return
           }
         }
+        await MainActor.run { offering = false }
       }
     }
   }
