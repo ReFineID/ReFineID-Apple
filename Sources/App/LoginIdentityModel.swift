@@ -199,6 +199,15 @@
           return
         }
         attempted = true
+        if unresolvedIdentity {
+          // A token ctkd lists whose keychain items resolve to
+          // nothing is a registration the driver update orphaned.
+          // ctkd re-acquires an orphan by its instance identifier
+          // and gets nowhere; dropped, the card appearance below
+          // mints afresh by reader instead.
+          let dropped = DriverConfiguredCredentials.dropIdentityTokenConfigurations()
+          Self.log.info("recovery: dropped \(dropped) orphaned registration(s)")
+        }
         await Self.touchPresentCard()
         recovery = nil
         refresh()
