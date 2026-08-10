@@ -273,9 +273,9 @@
     /// Takes a dropped document of any type: a PDF is signed in place
     /// by default, anything else travels in an ASiC-E container.
     private func accept(_ urls: [URL]) -> Bool {
-      guard let url = urls.first else { return false }
-      signing.accept(url)
-      format = SignatureFormat.available(for: url).first ?? .asice
+      guard !urls.isEmpty else { return false }
+      signing.accept(urls)
+      format = Self.sharedFormat(for: urls)
       pin2 = ""
       pinFocused = true
       return true
@@ -297,22 +297,25 @@
     /// looks exactly like a button that does nothing.
     private func sign() {
       guard canSign, let source = signing.pending else { return }
-      let panel = NSSavePanel()
-      panel.allowedContentTypes = format.allowedContentTypes
-      panel.nameFieldStringValue = SignDocumentModel.suggestedName(
-        for: source, format: format
-      )
-      panel.directoryURL = source.deletingLastPathComponent()
-      panel.message = String(localized: "Where to keep the signed document.")
-      panel.prompt = String(localized: "Sign")
-      guard panel.runModal() == .OK, let destination = panel.url else {
-        return
-      }
+      let batch = signing.queued.count > 1
+      let folder =
+        batch
+        ? SignedOutput.chooseFolder(startingAt: source.deletingLastPathComponent())
+        : nil
+      let destination = batch ? nil : SignedOutput.chooseFile(for: source, format: format)
+      guard batch ? folder != nil : destination != nil else { return }
       let entry = pin2
       pin2 = ""
       let number = accessNumber
       let chosenFormat = format
       Task {
+        if let folder {
+          await signing.signAll(
+            pin2: entry, accessNumber: number, format: chosenFormat, intoDirectory: folder
+          )
+          return
+        }
+        guard let destination else { return }
         await signing.sign(
           pin2: entry,
           accessNumber: number,

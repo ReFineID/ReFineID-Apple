@@ -60,6 +60,17 @@ case "${1:-}" in
     ;;
 esac
 
+# The PKCS#11 module reports its own version through C_GetInfo and
+# C_GetTokenInfo, and a module claiming a different build from the app
+# it ships with is a support report that starts with a wrong fact.
+module_version="PKCS11Bridge/Sources/PKCS11Bridge/ModuleVersion.swift"
+sed -i '' -E "s/(internal static let text = \").*(\")/\1${version}.${bucket}\2/" "$module_version"
+grep -q "internal static let text = \"${version}.${bucket}\"" "$module_version" ||
+  {
+    echo "stamping changed nothing in ${module_version}" >&2
+    exit 1
+  }
+
 config="Version.xcconfig"
 sed -i '' -E "s/^(MARKETING_VERSION = ).*/\1${version}/" "$config"
 sed -i '' -E "s/^(CURRENT_PROJECT_VERSION = ).*/\1${bucket}/" "$config"

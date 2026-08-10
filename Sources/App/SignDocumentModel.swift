@@ -16,6 +16,15 @@
     /// The document waiting to be signed.
     internal private(set) var pending: URL?
 
+    /// Everything dropped in one go, in the order it will be signed.
+    ///
+    /// A day's work arrives together, and signing it one file at a
+    /// time means one drop, one panel and one PIN for each.
+    internal private(set) var queued: [URL] = []
+
+    /// What became of each document of a batch, as sentences.
+    internal private(set) var batchOutcomes: [String] = []
+
     /// Whether a signature is in flight.
     internal private(set) var working = false
 
@@ -42,8 +51,32 @@
     /// Whether the card is being read for the signature right now.
     internal private(set) var readingStamp = false
 
+    /// Takes several documents at once.
+    ///
+    /// The first is kept as the one whose options are shown; the rest
+    /// are signed with the same choices.
+    internal func accept(_ urls: [URL]) {
+      queued = urls
+      batchOutcomes = []
+      guard let first = urls.first else { return }
+      accept(first)
+    }
+
+    /// Points the model at one document of a batch.
+    internal func focus(on url: URL) {
+      pending = url
+    }
+
+    /// Records what became of each document of a batch.
+    internal func record(batch outcomes: [String]) {
+      batchOutcomes = outcomes
+    }
+
     /// Accepts a dropped or chosen file.
     internal func accept(_ url: URL) {
+      if queued.isEmpty {
+        queued = [url]
+      }
       pending = url
       failure = nil
       signed = nil
@@ -144,6 +177,8 @@
     /// Forgets the pending file and any outcome.
     internal func clear() {
       pending = nil
+      queued = []
+      batchOutcomes = []
       failure = nil
       signed = nil
       stampState = nil

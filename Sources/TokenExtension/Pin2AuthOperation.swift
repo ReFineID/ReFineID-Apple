@@ -5,8 +5,10 @@ import Foundation
 ///
 /// The same capture-then-verify shape as `Pin1AuthOperation`, against
 /// the qualified key's own constraint. What it deliberately does not
-/// share is any memory: PIN2 is never cached, so every qualified
-/// signature is one prompt, one VERIFY, one signature.
+/// share is any memory with PIN1: the two credentials are never
+/// interchangeable, and no PIN1 flow can satisfy a qualified
+/// signature. The entry it captures is held by ``Pin2Window`` for a
+/// minute, so a batch of documents costs one prompt.
 internal final class Pin2AuthOperation: TKTokenPasswordAuthOperation {
   /// The constraint marker the published qualified key carries.
   ///
