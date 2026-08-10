@@ -14,6 +14,10 @@
   /// Read from the certificate the token publishes, never stored: the
   /// name belongs to the card, and the moment the card leaves there is
   /// nothing to show.
+  ///
+  /// Never called from the main actor. Reaching the certificate reaches
+  /// the token, and a card that is slow to answer would otherwise be a
+  /// window that will not open.
   internal enum PublishedIdentityName {
     /// The holder's name from the card, or nil when none is published.
     internal static func current() -> String? {

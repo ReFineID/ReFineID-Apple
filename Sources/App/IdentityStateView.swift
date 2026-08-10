@@ -24,7 +24,16 @@
         Text(holder ?? "Ready")
           .foregroundStyle(holder == nil ? AnyShapeStyle(.green) : AnyShapeStyle(.primary))
           .textSelection(.enabled)
-          .task { holder = PublishedIdentityName.current() }
+          .task {
+            // Off the main actor and never awaited by the window: the
+            // name comes from the token, the token comes from the
+            // card, and a card is entitled to take its time. The row
+            // reads Ready until the name arrives, and the window opens
+            // either way.
+            holder = await Task.detached(priority: .utility) {
+              PublishedIdentityName.current()
+            }.value
+          }
       case .cardWithoutIdentity:
         Text("Card detected, not ready - if this lasts, re-insert it")
           .foregroundStyle(.orange)
