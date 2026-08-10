@@ -48,11 +48,8 @@ internal enum UITestIdentifiers {
   /// The button that abandons that operation without sending it.
   internal static let managementCancel = "managementCancel"
 
-  /// The management window's action control: change, or reset.
-  internal static let managementAction = "managementAction"
-
-  /// The management window's credential control: PIN 1, or PIN 2.
-  internal static let managementCredential = "managementCredential"
+  /// The management window's task tabs: change or reset, PIN 1 or PIN 2.
+  internal static let managementTask = "managementTask"
 
   /// The management window's toolbar refresh.
   internal static let managementRefresh = "managementRefresh"

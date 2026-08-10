@@ -163,7 +163,7 @@ internal final class AccessibilityAuditUITests: XCTestCase {
     )
     button.click()
     XCTAssertTrue(
-      app.descendants(matching: .any)[UITestIdentifiers.managementAction]
+      app.descendants(matching: .any)[UITestIdentifiers.managementTask]
         .waitForExistence(timeout: 10),
       "management window did not open"
     )

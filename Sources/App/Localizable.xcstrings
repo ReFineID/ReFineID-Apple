@@ -1987,6 +1987,38 @@
         }
       }
     },
+    "Reset PIN 1": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Palauta PIN 1"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återställ PIN 1"
+          }
+        }
+      }
+    },
+    "Reset PIN 2": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Palauta PIN 2"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återställ PIN 2"
+          }
+        }
+      }
+    },
     "Restore Defaults": {
       "localizations": {
         "fi": {

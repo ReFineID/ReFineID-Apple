@@ -14,46 +14,36 @@
   /// access control, and this window never spends a near-last attempt.
   /// Entries are never stored and never echoed anywhere.
   internal struct CardManagementView: View {
-    /// What is being done to a credential.
+    /// The four things this window does to a credential in use.
+    ///
+    /// Each is one tab, named in full. The action and the credential
+    /// are read together or not at all: a holder who means PIN 2 must
+    /// not reach PIN 1, and must not have to make two choices to say
+    /// one thing.
     ///
     /// Reset rather than unblock: the card resets the retry counter and
     /// takes a new value whether or not the credential was blocked, so
-    /// a holder who wants a PIN they can remember does not have to
-    /// exhaust the old one first.
-    internal enum ManagementAction: CaseIterable, Identifiable {
-      case change
-      case reset
+    /// someone who has forgotten a PIN does not have to exhaust it
+    /// first to be allowed a new one.
+    internal enum ManagementTask: CaseIterable, Identifiable {
+      case changePin1
+      case changePin2
+      case resetPin1
+      case resetPin2
 
       internal var id: Self { self }
 
-      /// The segment's label.
+      /// The tab's label, naming the action and the credential.
       internal var name: String {
         switch self {
-        case .change:
-          String(localized: "Change")
-        case .reset:
-          String(localized: "Reset")
-        }
-      }
-    }
-
-    /// Which credential the action is done to.
-    ///
-    /// Its own control, always visible: a holder who means PIN 2 must
-    /// not reach PIN 1 by missing one entry in a list of five similar
-    /// phrases.
-    internal enum ManagedCredential: CaseIterable, Identifiable {
-      case pin1
-      case pin2
-
-      internal var id: Self { self }
-
-      internal var name: String {
-        switch self {
-        case .pin1:
-          "PIN 1"
-        case .pin2:
-          "PIN 2"
+        case .changePin1:
+          String(localized: "Change PIN 1")
+        case .changePin2:
+          String(localized: "Change PIN 2")
+        case .resetPin1:
+          String(localized: "Reset PIN 1")
+        case .resetPin2:
+          String(localized: "Reset PIN 2")
         }
       }
     }
@@ -75,29 +65,24 @@
 
     /// The window's own width, which grows with the text inside it.
     @ScaledMetric(relativeTo: .body)
-    private var windowWidth: CGFloat = 460
+    private var windowWidth: CGFloat = 560
 
     @State private var model = CardManagementModel()
-    @State private var action: ManagementAction = .change
-    @State private var credential: ManagedCredential = .pin1
+    @State private var task: ManagementTask = .changePin1
     @State private var hasChosenTask = false
 
     internal var body: some View {
-      Form {
-        taskSection
-        outcomeSection
-      }
-      .formStyle(.grouped)
-      .frame(minWidth: windowWidth)
-      .safeAreaInset(edge: .bottom, spacing: 0) {
-        attemptsBar
-      }
-      .task { await model.refresh() }
-      .onChange(of: model.report) { _, report in
-        suggestTask(from: report)
-      }
-      .announcesOutcome(model.failure)
-      .announcesOutcome(model.notice)
+      taskSection
+        .frame(minWidth: windowWidth)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+          attemptsBar
+        }
+        .task { await model.refresh() }
+        .onChange(of: model.report) { _, report in
+          suggestTask(from: report)
+        }
+        .announcesOutcome(model.failure)
+        .announcesOutcome(model.notice)
     }
 
     /// The counters, pinned along the foot of the window.
@@ -149,44 +134,34 @@
       model.offersActivation
     }
 
-    /// The chosen task, and only it.
+    /// One tab per task, and only the chosen one on screen.
+    ///
+    /// Tabs rather than a list: every task the card allows is named in
+    /// full and visible at once, so the credential is chosen with the
+    /// action in a single act.
     @ViewBuilder private var taskSection: some View {
       if awaitsActivation {
-        CardActivationSection(model: model)
+        Form {
+          CardActivationSection(model: model)
+          outcomeSection
+        }
+        .formStyle(.grouped)
       } else {
-        Section {
-          Picker("Action", selection: $action) {
-            ForEach(ManagementAction.allCases) { candidate in
-              Text(candidate.name).tag(candidate)
+        TabView(selection: $task) {
+          ForEach(ManagementTask.allCases) { candidate in
+            Form {
+              page(for: candidate)
+              outcomeSection
             }
-          }
-          .pickerStyle(.segmented)
-          .disabled(model.working)
-          .accessibilityIdentifier("managementAction")
-          .onChange(of: action) { _, _ in
-            hasChosenTask = true
-          }
-          Picker("Credential", selection: $credential) {
-            ForEach(ManagedCredential.allCases) { candidate in
-              Text(candidate.name).tag(candidate)
-            }
-          }
-          .pickerStyle(.segmented)
-          .disabled(model.working)
-          .accessibilityIdentifier("managementCredential")
-          .onChange(of: credential) { _, _ in
-            hasChosenTask = true
+            .formStyle(.grouped)
+            .tabItem { Text(candidate.name) }
+            .tag(candidate)
           }
         }
-        switch (action, credential) {
-        case (.change, .pin1):
-          CredentialChangeSection(model: model, credential: .pin1)
-        case (.change, .pin2):
-          CredentialChangeSection(model: model, credential: .pin2)
-        case (.reset, .pin1):
-          CredentialUnblockSection(model: model, target: .pin1)
-        case (.reset, .pin2):
-          CredentialUnblockSection(model: model, target: .pin2)
+        .disabled(model.working)
+        .accessibilityIdentifier("managementTask")
+        .onChange(of: task) { _, _ in
+          hasChosenTask = true
         }
       }
     }
@@ -223,6 +198,21 @@
       }
     }
 
+    /// The form one tab shows.
+    @ViewBuilder
+    private func page(for task: ManagementTask) -> some View {
+      switch task {
+      case .changePin1:
+        CredentialChangeSection(model: model, credential: .pin1)
+      case .changePin2:
+        CredentialChangeSection(model: model, credential: .pin2)
+      case .resetPin1:
+        CredentialUnblockSection(model: model, target: .pin1)
+      case .resetPin2:
+        CredentialUnblockSection(model: model, target: .pin2)
+      }
+    }
+
     /// Opens on what the card needs, until the holder chooses.
     private func suggestTask(from report: CredentialProbeReport?) {
       guard !hasChosenTask, !awaitsActivation, let report else { return }
@@ -231,11 +221,9 @@
       // front of the holder spends the one they came for. PIN 1 first
       // when both are: it is the one a card needs to be usable at all.
       if blocked.contains(report.pin1) {
-        action = .reset
-        credential = .pin1
+        task = .resetPin1
       } else if blocked.contains(report.pin2) {
-        action = .reset
-        credential = .pin2
+        task = .resetPin2
       }
     }
   }

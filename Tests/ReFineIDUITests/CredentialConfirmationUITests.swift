@@ -65,7 +65,7 @@ internal final class CredentialConfirmationUITests: XCTestCase {
       "no card present; management window unavailable"
     )
     button.click()
-    let action = app.descendants(matching: .any)[UITestIdentifiers.managementAction]
+    let action = app.descendants(matching: .any)[UITestIdentifiers.managementTask]
     XCTAssertTrue(action.waitForExistence(timeout: 10), "management window did not open")
     return app
   }
