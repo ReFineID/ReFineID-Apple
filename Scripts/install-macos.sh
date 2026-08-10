@@ -149,13 +149,19 @@ remove_stray_copies() {
 # Build trees from earlier sessions, which are scratch and not history.
 #
 # Each debugging session leaves a derived-data tree or an archive in the
-# temporary directory, and they are hundreds of megabytes each. Three
-# things are spared: the tree this run is using, anything a build might
-# still be writing to, and any directory git knows as a worktree --
-# removing one of those behind git's back leaves metadata pointing at
-# nothing.
+# temporary directory, and they are hundreds of megabytes each.
+#
+# A week, because the age is the only evidence this has that a tree is
+# nobody's. Hours do not cover a single session, let alone the baseline
+# someone kept from yesterday to compare against; anything younger is
+# assumed to belong to work still in progress, possibly another
+# worker's. Three things are spared outright: the tree this run uses,
+# anything git knows as a worktree -- removing one of those behind
+# git's back leaves metadata pointing at nothing -- and everything
+# newer than the cut-off. What is removed is named, with its size.
 remove_stale_build_trees() {
-  local minimum_age_minutes=120
+  local minimum_age_days=7
+  local minimum_age_minutes=$((minimum_age_days * 24 * 60))
   local worktrees
   worktrees="$(git worktree list --porcelain 2>/dev/null | sed -n 's/^worktree //p')"
   local freed=0
