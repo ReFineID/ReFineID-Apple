@@ -22,8 +22,26 @@ running leaves PlugInKit holding the previous copy. `ctkd` says so:
 **Why `killall ctkd` does not fix it.** macOS runs more than one `ctkd`,
 and the instance holding the slot watcher may belong to another user
 account -- `afwd` on the development Mac, running since the previous
-login. A kill from your own shell cannot touch it. Only a reboot or a
-logout clears the state.
+login. A kill from your own shell cannot touch it. Worse, killing
+`ctkd` alone strands the reader daemons on dead XPC endpoints: the
+reader stays enumerated on USB while the card stops reporting at the
+PC/SC layer entirely, zero ATRs.
+
+**What does fix it without a logout.** Take the whole family down in
+one command and let the stack respawn coherently:
+
+    sudo killall -9 ctkd ctkbind ctkahp com.apple.ctkpcscd
+
+The four together include the PC/SC daemon, so the reader daemons
+restart with the token daemons instead of being orphaned by them. The
+next card insertion rebuilds everything. A reboot or logout still
+clears every case, including the cross-account one above.
+
+**Confirmed 2026-08-10.** After a day of extension replacements and
+one stranding `killall ctkd`, the card had vanished at the PC/SC
+layer while the reader sat enumerated on USB. The four-process kill
+restored the card, the published identity and Safari logins on the
+next insertion, with no logout.
 
 **Confirmed 2026-07-27.** After an evening of the appex being replaced
 about fifteen times, four sites -- card.refineid.fi, admin.iki.fi,
