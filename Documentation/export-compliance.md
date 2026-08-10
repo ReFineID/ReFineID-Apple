@@ -11,7 +11,8 @@ supporting detail.
 
 ## What is declared
 
-`Config/ReFineID-Info.plist` carries:
+`Config/ReFineID-Info.plist` (macOS) and
+`Config/ReFineID-iOS-Info.plist` (iOS) both carry:
 
     ITSAppUsesNonExemptEncryption = false
 
@@ -455,10 +456,11 @@ liability there.
    document for step 2 by early September 2026.
 2. That attestation attached to App Encryption Documentation in App
    Store Connect.
-3. The code Apple issues in return, added to
-   `Config/ReFineID-Info.plist` as `ITSEncryptionExportComplianceCode`,
-   with `ITSAppUsesNonExemptEncryption` flipped to `true` in the same
-   commit.
+3. The code Apple issues in return, added to both
+   `Config/ReFineID-Info.plist` and `Config/ReFineID-iOS-Info.plist`
+   as `ITSEncryptionExportComplianceCode`, with
+   `ITSAppUsesNonExemptEncryption` flipped to `true` in both files in
+   the same commit.
 4. The year-end self-classification report to BIS for the exempt
    period, unless the ANSSI-backed filing lands first and replaces it.
 

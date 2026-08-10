@@ -5,6 +5,35 @@ controls iPhone scope. `Documentation/release-plan.md` controls
 macOS scope and shared security behavior. This file records the concrete
 values chosen under them.
 
+## 2026-08-10 The ATS exception is macOS-only
+
+The app's Info.plist is split per SDK, the same way its entitlements
+already were: `Config/ReFineID-iOS-Info.plist` is the base
+`INFOPLIST_FILE` and `Config/ReFineID-Info.plist` is the
+`[sdk=macosx*]` override.
+
+`NSAllowsArbitraryLoads` stays in the macOS plist, with its rationale
+in the plist comment: RFC 3161 timestamping and RFC 6960 OCSP are
+specified over HTTP, and the addresses come from Settings or from
+inside certificates being validated, so no exception-domain list can
+enumerate them. The iOS plist carries no `NSAppTransportSecurity` key
+at all, because every network request in this app is compiled under
+`#if os(macOS)` - the iOS binary makes none, and shipping a global ATS
+bypass it never uses was unnecessary surface and a standing App Review
+question. If iOS ever gains a network path, the exception must be
+argued again rather than inherited.
+
+The iOS-only keys move with the split: the NFC reader usage
+description, the camera usage description, and the ISO 7816
+select-identifier list live only in the iOS plist, since Core NFC and
+the card-scanner camera code are `#if os(iOS)`.
+
+One consequence to not forget: `ITSAppUsesNonExemptEncryption` now
+lives in both files, so the flip to `true` with Apple's compliance
+code (the 2026-08-07 entry below) must land in both in the same
+commit. `inspect-archive.sh` checks the built product's plist, so
+either platform's archive still fails if its copy is wrong.
+
 ## 2026-08-09 Built-in NFC ships in production on iPhone
 
 The built-in NFC transport is a required production iPhone feature. Its

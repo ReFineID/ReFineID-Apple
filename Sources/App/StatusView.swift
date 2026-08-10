@@ -108,7 +108,14 @@
       // Nothing entered in an earlier run may serve this one: a number
       // left in the driver configuration is withdrawn before the card
       // could use it, so every launch starts with no saved number.
-      .task { SealedCardSection.withdrawOfferedNumber() }
+      // Compiled with the entry that publishes numbers, and not
+      // without it: the configuration read is an XPC call into ctkd
+      // that can raise an Objective-C exception no Swift task can
+      // catch, and a build that never publishes has nothing there to
+      // withdraw.
+      #if FEATURE_CONTACTLESS
+        .task { SealedCardSection.withdrawOfferedNumber() }
+      #endif
       .onAppear {
         model.refresh()
         react(to: availability)
@@ -248,7 +255,9 @@
         signing.cardRemoved()
         pin2 = ""
         accessNumber = ""
-        SealedCardSection.withdrawOfferedNumber()
+        #if FEATURE_CONTACTLESS
+          SealedCardSection.withdrawOfferedNumber()
+        #endif
       }
     }
 

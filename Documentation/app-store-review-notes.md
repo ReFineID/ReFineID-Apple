@@ -53,7 +53,10 @@ Technical notes for review:
 - Export compliance rationale: `Documentation/export-compliance.md`.
 - Sandbox and entitlement rationale: comments in
   `Config/ReFineID.entitlements`.
-- ATS rationale: comment in `Config/ReFineID-Info.plist`.
+- ATS rationale: comment in `Config/ReFineID-Info.plist` (the macOS
+  plist; the iOS build uses `Config/ReFineID-iOS-Info.plist`, which
+  declares no ATS exception because the iOS binary makes no network
+  request).
 
 ## Open decisions
 

@@ -95,6 +95,7 @@
 		2D0000000000000000000011 /* fineid-intermediate-00-citizen-g3.pem */ = {isa = PBXFileReference; lastKnownFileType = text; path = "fineid-intermediate-00-citizen-g3.pem"; sourceTree = "<group>"; };
 		2D0000000000000000000012 /* fineid-intermediate-03-organisation-g4r.pem */ = {isa = PBXFileReference; lastKnownFileType = text; path = "fineid-intermediate-03-organisation-g4r.pem"; sourceTree = "<group>"; };
 		2D0000000000000000000013 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
+		2D0000000000000000000014 /* ReFineID-iOS-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "ReFineID-iOS-Info.plist"; sourceTree = "<group>"; };
 		BD0000000000000000000001 /* ReFineIDTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ReFineIDTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -227,6 +228,7 @@
 			children = (
 				2D0000000000000000000004 /* ReFineID.entitlements */,
 				2D0000000000000000000006 /* ReFineID-Info.plist */,
+				2D0000000000000000000014 /* ReFineID-iOS-Info.plist */,
 				2D0000000000000000000005 /* TokenExtension.entitlements */,
 				2D0000000000000000000007 /* TokenExtension-Info.plist */,
 				2D000000000000000000000B /* DiscoveryExtension-Info.plist */,
@@ -820,7 +822,8 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Config/ReFineID-Info.plist";
+				INFOPLIST_FILE = "Config/ReFineID-iOS-Info.plist";
+				"INFOPLIST_FILE[sdk=macosx*]" = "Config/ReFineID-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -859,7 +862,8 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Config/ReFineID-Info.plist";
+				INFOPLIST_FILE = "Config/ReFineID-iOS-Info.plist";
+				"INFOPLIST_FILE[sdk=macosx*]" = "Config/ReFineID-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -898,7 +902,8 @@
 				ENABLE_PREVIEWS = YES;
 				EXCLUDED_SOURCE_FILE_NAMES = "CardCapabilityProbe.swift DiagnosticsClipboard.swift DiagnosticsSnapshot.swift DiagnosticsView.swift";
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Config/ReFineID-Info.plist";
+				INFOPLIST_FILE = "Config/ReFineID-iOS-Info.plist";
+				"INFOPLIST_FILE[sdk=macosx*]" = "Config/ReFineID-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -937,7 +942,8 @@
 				ENABLE_PREVIEWS = YES;
 				EXCLUDED_SOURCE_FILE_NAMES = "CardCapabilityProbe.swift DiagnosticsClipboard.swift DiagnosticsSnapshot.swift DiagnosticsView.swift";
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Config/ReFineID-Info.plist";
+				INFOPLIST_FILE = "Config/ReFineID-iOS-Info.plist";
+				"INFOPLIST_FILE[sdk=macosx*]" = "Config/ReFineID-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
