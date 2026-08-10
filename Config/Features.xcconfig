@@ -1,0 +1,20 @@
+// Build-time feature flags: one place to turn a feature on or off.
+//
+// REFINEID_FEATURES feeds SWIFT_ACTIVE_COMPILATION_CONDITIONS through
+// Version.xcconfig, which every configuration inherits. A flag absent
+// here compiles its UI entry points away; the code beneath them stays
+// built and tested either way, so turning a feature back on is this
+// one line and nothing else.
+//
+//   FEATURE_PDF_STAMP
+//       The visible PDF stamp: the CAN-gated mark carrying the
+//       holder's name, SATU and card ink. Off, every signature stays
+//       invisible - the non-rendering signature structures only - and
+//       no stamp UI is offered.
+//
+// To ship the stamp again:
+//   REFINEID_FEATURES = FEATURE_PDF_STAMP
+
+REFINEID_FEATURES =
+
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) $(REFINEID_FEATURES)

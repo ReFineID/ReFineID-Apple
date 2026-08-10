@@ -9,10 +9,12 @@
 
     internal var body: some View {
       TabView {
-        DocumentStampSettingsView()
-          .tabItem {
-            Label("PDF Stamp", systemImage: "signature")
-          }
+        #if FEATURE_PDF_STAMP
+          DocumentStampSettingsView()
+            .tabItem {
+              Label("PDF Stamp", systemImage: "signature")
+            }
+        #endif
         TimestampAuthoritiesSettingsView()
           .tabItem {
             Label("Time Stamps", systemImage: "clock.badge.checkmark")

@@ -194,10 +194,14 @@
             .accessibilityIdentifier("signPin2")
           // The visible stamp is drawn into the PDF's signed revision;
           // a container carries the file unchanged, so there is
-          // nothing to draw it into.
-          if format == .pades {
-            StampRow(signing: signing, accessNumber: $accessNumber)
-          }
+          // nothing to draw it into. The whole feature is compiled in
+          // only when Config/Features.xcconfig says so - without it,
+          // no stamp is ever offered or requested.
+          #if FEATURE_PDF_STAMP
+            if format == .pades {
+              StampRow(signing: signing, accessNumber: $accessNumber)
+            }
+          #endif
           #if DEBUG
             if DebugRevokedDocumentSigning.isEnabled() {
               Text(DebugRevokedDocumentSigning.armedWarning)

@@ -19,5 +19,7 @@
 // else. Scripts/release-testflight.sh overrides both on the xcodebuild
 // command line, which wins over this file, so a release never edits it.
 
+#include "Config/Features.xcconfig"
+
 MARKETING_VERSION = 26.8.10
-CURRENT_PROJECT_VERSION = 133
+CURRENT_PROJECT_VERSION = 135
