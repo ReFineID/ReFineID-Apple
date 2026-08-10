@@ -46,6 +46,9 @@
     private static let boxCorner: CGFloat = 6
     private static let boxBorder: CGFloat = 1
 
+    /// The heavier border on the box the next digit lands in.
+    private static let activeBoxBorder: CGFloat = 2
+
     /// How long a submitted number is watched for its verdict.
     ///
     /// Nonisolated: the watching runs off the main actor. Long,
@@ -134,13 +137,17 @@
     }
 
     /// One digit's box: its frame, and the digit once typed.
+    ///
+    /// The box the next digit lands in carries the accent color -
+    /// focus is shown in the accent, never in a verdict color, so
+    /// where to type and how it went stay two different signals.
     @ViewBuilder
     private func box(at index: Int) -> some View {
       ZStack {
         RoundedRectangle(cornerRadius: Self.boxCorner)
           .strokeBorder(
-            refused ? AnyShapeStyle(.red) : AnyShapeStyle(.quaternary),
-            lineWidth: Self.boxBorder
+            borderStyle(at: index),
+            lineWidth: borderWidth(at: index)
           )
           .frame(width: Self.boxWidth, height: Self.boxHeight)
         if let digit = digit(at: index) {
@@ -149,6 +156,27 @@
             .foregroundStyle(
               refused ? AnyShapeStyle(.red) : AnyShapeStyle(.primary))
         }
+      }
+    }
+
+    /// The border for `index`: red when refused, the accent where
+    /// the next digit lands, and quiet otherwise.
+    private func borderStyle(at index: Int) -> AnyShapeStyle {
+      if refused {
+        AnyShapeStyle(.red)
+      } else if focused, index == number.count {
+        AnyShapeStyle(.tint)
+      } else {
+        AnyShapeStyle(.quaternary)
+      }
+    }
+
+    /// The border weight for `index`, heavier where the accent is.
+    private func borderWidth(at index: Int) -> CGFloat {
+      if focused, !refused, index == number.count {
+        Self.activeBoxBorder
+      } else {
+        Self.boxBorder
       }
     }
 
