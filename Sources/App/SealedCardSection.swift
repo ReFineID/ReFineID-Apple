@@ -39,6 +39,18 @@
       }
     }
 
+    /// The step a submitted number's service is on.
+    ///
+    /// One direction only: the card leaves, the card returns, the
+    /// verdict arrives. Deriving the line from card presence alone
+    /// flashed "take the card off" again the moment the card came
+    /// back, which is the opposite of what the holder just did.
+    private enum Step {
+      case liftCard
+      case layCard
+      case verdict
+    }
+
     private static let boxCount = CardAccessNumber.digitCount
     private static let boxSpacing: CGFloat = 6
     private static let boxWidth: CGFloat = 32
@@ -68,6 +80,7 @@
 
     @State private var number = ""
     @State private var refused = false
+    @State private var step: Step?
     @State private var shakes: CGFloat = 0
     @FocusState private var focused: Bool
 
@@ -80,21 +93,29 @@
             .modifier(Shake(animatableData: shakes))
         }
       }
+      .onChange(of: CardPresence.shared.isContactlessCardPresent) { _, present in
+        advance(cardPresent: present)
+      }
     }
 
-    /// The step the flow is on.
+    /// The step the flow is on, forward only.
     ///
     /// The system looks at a card when it arrives, so the entered
-    /// number is served by taking the card off and putting it back;
-    /// the line follows the reader so each step is named as it
-    /// becomes the one to take.
+    /// number is served by taking the card off and putting it back.
+    /// Once the card is back the line does not return; the quiet
+    /// indicator stands for the verdict being fetched.
     @ViewBuilder private var instruction: some View {
-      Text(
-        CardPresence.shared.isContactlessCardPresent
-          ? "Take the card off the reader"
-          : "Put the card back"
-      )
-      .foregroundStyle(.secondary)
+      switch step {
+      case .liftCard:
+        Text("Take the card off the reader")
+          .foregroundStyle(.secondary)
+      case .layCard:
+        Text("Put the card back")
+          .foregroundStyle(.secondary)
+      case .verdict, nil:
+        ProgressView()
+          .controlSize(.small)
+      }
     }
 
     /// The label, the boxes, and the invisible field beneath them.
@@ -182,6 +203,16 @@
       }
     }
 
+    /// Moves the flow forward on the reader's answer, never back.
+    private func advance(cardPresent: Bool) {
+      guard offering else { return }
+      if step == .liftCard, !cardPresent {
+        step = .layCard
+      } else if step == .layCard, cardPresent {
+        step = .verdict
+      }
+    }
+
     /// The typed digit for `index`, once there is one.
     private func digit(at index: Int) -> String? {
       guard index < number.count else { return nil }
@@ -217,6 +248,7 @@
     /// file and PC/SC calls, which must not block the window.
     private func submit(_ digits: String) {
       offering = true
+      step = CardPresence.shared.isContactlessCardPresent ? .liftCard : .layCard
       Task.detached(priority: .utility) {
         CardCredentialStore.publishCardAccessNumberToDriver(digits: digits)
         _ = SlotCardReset.resetContactlessCards()
@@ -225,6 +257,7 @@
           if CardCredentialStore.offeredNumberWasRefused() {
             await MainActor.run {
               offering = false
+              step = nil
               refused = true
               withAnimation { shakes += 1 }
             }
@@ -232,11 +265,17 @@
           }
           let published = await MainActor.run { LoginIdentityModel.shared.isReady }
           if published {
-            await MainActor.run { offering = false }
+            await MainActor.run {
+              offering = false
+              step = nil
+            }
             return
           }
         }
-        await MainActor.run { offering = false }
+        await MainActor.run {
+          offering = false
+          step = nil
+        }
       }
     }
   }
