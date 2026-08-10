@@ -157,6 +157,35 @@ report_registrations() {
     | grep -i refineid | sed 's/^/  /' || note "  (no ReFineID driver listed)"
 }
 
+# Whether the built extension would run the same code as the installed
+# one.
+#
+# The executable alone, not the bundle: every install stamps a fresh
+# build number into Info.plist, so comparing bundles would find a
+# difference every time and ask for the card back for a change ctkd
+# never executes.
+extension_is_unchanged() {
+  local name="ReFineIDTokenExtension"
+  local built_binary="${built}/Contents/PlugIns/${name}.appex/Contents/MacOS/${name}"
+  local live_binary="${installed}/Contents/PlugIns/${name}.appex/Contents/MacOS/${name}"
+  [[ -f "$built_binary" && -f "$live_binary" ]] || return 1
+  [[ "$(unsigned_hash "$built_binary")" == "$(unsigned_hash "$live_binary")" ]]
+}
+
+# A binary's hash with its signature removed.
+#
+# Signing embeds a fresh signature on every build, so two binaries
+# compiled from identical sources never match byte for byte. What has
+# to match is the code.
+unsigned_hash() {
+  local scratch
+  scratch="$(mktemp -t refineid-appex)" || return 1
+  cp "$1" "$scratch"
+  codesign --remove-signature "$scratch" >/dev/null 2>&1 || true
+  shasum -a 256 "$scratch" | cut -d' ' -f1
+  rm -f "$scratch"
+}
+
 # A card insertion is CryptoTokenKit's supported discovery boundary.
 # Replacing a live extension leaves ctkd holding the old token and
 # executable; restarting ctkd only strands the reader daemons on dead
@@ -227,7 +256,20 @@ verify_signature "$built"
 
 pkill -x ReFineID 2>/dev/null || true
 sleep 1
-wait_for_card_release
+# The card boundary belongs to the token extension, not to the window.
+# Replacing a live extension leaves ctkd holding the old executable, so
+# that replacement waits for the card to leave; a build whose extension
+# is byte for byte the one already installed replaces nothing the card
+# is using, and asking for the card back would be a ritual.
+if extension_is_unchanged; then
+  note "extension unchanged; installing without asking for the card"
+else
+  wait_for_card_release
+fi
+# Always: the bundle underneath a running extension is about to be
+# replaced, and a process left running on a replaced bundle answers
+# nothing. ctkd then waits ten seconds per request and the app hangs
+# at launch with its icon bouncing. Ending it needs no card.
 stop_refineid_extensions
 
 note "installing to ${installed}"
