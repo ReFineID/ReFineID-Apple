@@ -6,29 +6,30 @@
 
 #include <PCSC/winscard.h>
 
-bool CardCoreResetCard(const char *readerName) {
+int32_t CardCoreResetCard(const char *readerName) {
   SCARDCONTEXT context = 0;
-  if (SCardEstablishContext(SCARD_SCOPE_SYSTEM, NULL, NULL, &context) !=
-      SCARD_S_SUCCESS) {
-    return false;
+  int32_t result =
+      SCardEstablishContext(SCARD_SCOPE_SYSTEM, NULL, NULL, &context);
+  if (result != SCARD_S_SUCCESS) {
+    return result;
   }
   SCARDHANDLE card = 0;
   uint32_t activeProtocol = 0;
-  bool reset = false;
-  if (SCardConnect(context, readerName, SCARD_SHARE_SHARED,
-                   SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1, &card,
-                   &activeProtocol) == SCARD_S_SUCCESS) {
-    reset = SCardDisconnect(card, SCARD_RESET_CARD) == SCARD_S_SUCCESS;
+  result = SCardConnect(context, readerName, SCARD_SHARE_SHARED,
+                        SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1, &card,
+                        &activeProtocol);
+  if (result == SCARD_S_SUCCESS) {
+    result = SCardDisconnect(card, SCARD_RESET_CARD);
   }
   SCardReleaseContext(context);
-  return reset;
+  return result;
 }
 
 #else
 
-bool CardCoreResetCard(const char *readerName) {
+int32_t CardCoreResetCard(const char *readerName) {
   (void)readerName;
-  return false;
+  return INT32_MIN;
 }
 
 #endif

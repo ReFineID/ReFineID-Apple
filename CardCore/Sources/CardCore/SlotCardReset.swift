@@ -2,6 +2,7 @@
 
   import CryptoTokenKit
   import Foundation
+  import os.log
   import PcscCardReset
 
   /// Resets a present card at PC/SC level, which makes the system
@@ -14,6 +15,16 @@
   /// reset is the same state change in software, and the
   /// re-evaluation that follows is what reads the fresh offer.
   public enum SlotCardReset {
+    #if DEBUG
+      /// Reset outcomes, in development builds only.
+      ///
+      /// Reader names and PC/SC statuses, never a digit. A
+      /// production build writes no diagnostics.
+      private static let log = Logger(
+        subsystem: "fi.refineid.ReFineID", category: "card-reset"
+      )
+    #endif
+
     /// Resets every present card on a contactless interface, and
     /// answers whether at least one reset went through.
     ///
@@ -30,7 +41,13 @@
           let answer = slot.atr?.bytes,
           AnswerToReset.indicatesContactlessInterface(bytes: answer)
         else { continue }
-        if CardCoreResetCard(name) {
+        let status = CardCoreResetCard(name)
+        #if DEBUG
+          Self.log.error(
+            "reset \(name, privacy: .public): status \(String(format: "0x%08X", status), privacy: .public)"
+          )
+        #endif
+        if status == 0 {
           anyReset = true
         }
       }

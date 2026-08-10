@@ -56,6 +56,7 @@
 
     @State private var number = ""
     @State private var refused = false
+    @State private var trying = false
     @State private var shakes: CGFloat = 0
     @FocusState private var focused: Bool
 
@@ -84,10 +85,16 @@
         HStack(spacing: Self.boxSpacing) {
           Text(verbatim: "CAN")
             .foregroundStyle(.secondary)
+          Spacer()
+          // The number is being tried against the card. Leading of
+          // the boxes, so their right edge never moves.
+          if trying {
+            ProgressView()
+              .controlSize(.small)
+          }
           ForEach(0..<Self.boxCount, id: \.self) { index in
             box(at: index)
           }
-          Spacer()
         }
       }
       .contentShape(.rect)
@@ -144,6 +151,8 @@
       }
       if digits.count == Self.boxCount, previous.count < Self.boxCount {
         submit(digits)
+      } else if trying, digits != previous {
+        trying = false
       }
     }
 
@@ -160,6 +169,7 @@
     /// Off the main actor: the offer, the reset and the marker are
     /// file and PC/SC calls, which must not block the window.
     private func submit(_ digits: String) {
+      trying = true
       Task.detached(priority: .utility) {
         CardCredentialStore.publishCardAccessNumberToDriver(digits: digits)
         _ = SlotCardReset.resetContactlessCards()
@@ -167,12 +177,16 @@
           try? await Task.sleep(for: .milliseconds(Self.refusalPollMilliseconds))
           if CardCredentialStore.offeredNumberWasRefused() {
             await MainActor.run {
+              trying = false
               refused = true
               withAnimation { shakes += 1 }
             }
             return
           }
         }
+        // Neither refused nor published within the watch: stop
+        // claiming progress rather than spin forever.
+        await MainActor.run { trying = false }
       }
     }
   }
