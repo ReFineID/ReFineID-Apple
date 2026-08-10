@@ -32,7 +32,12 @@ internal struct CardSignRequestResolverTests {
     return Data(bytes)
   }
 
-  /// RSA-2048 publishes exactly the four native SHA-256 target shapes.
+  /// RSA publishes every native shape the card can make: PSS and
+  /// PKCS#1 over SHA-256, and PKCS#1 over the two longer digests.
+  ///
+  /// Order is part of the contract. A consumer offered several shapes
+  /// takes the first it supports, so the strongest available scheme
+  /// must come before the weaker one for the same digest.
   @Test
   internal func rsa2048ExactAlgorithmsAreComplete() {
     #expect(
@@ -41,6 +46,10 @@ internal struct CardSignRequestResolverTests {
         .rsaSignatureMessagePSSSHA256,
         .rsaSignatureDigestPKCS1v15SHA256,
         .rsaSignatureMessagePKCS1v15SHA256,
+        .rsaSignatureDigestPKCS1v15SHA384,
+        .rsaSignatureMessagePKCS1v15SHA384,
+        .rsaSignatureDigestPKCS1v15SHA512,
+        .rsaSignatureMessagePKCS1v15SHA512,
       ]
     )
   }
