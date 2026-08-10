@@ -15,7 +15,10 @@ internal enum CryptokiEntryPoints {
   private static let libraryName = "PKCS#11 over CryptoTokenKit"
 
   /// The bridge's own version, distinct from the Cryptoki spec version.
-  private static let libraryVersion = CK_VERSION(major: 0, minor: 1)
+  ///
+  /// The year and month this build was cut in; see ``ModuleVersion``
+  /// for where the day and bucket are reported.
+  private static var libraryVersion: CK_VERSION { ModuleVersion.library }
 
   /// Whether C_Initialize has completed without a matching C_Finalize.
   private static let initialized = Mutex(false)

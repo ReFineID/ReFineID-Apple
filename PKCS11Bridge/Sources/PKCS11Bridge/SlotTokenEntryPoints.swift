@@ -106,6 +106,11 @@ internal enum SlotTokenEntryPoints {
     withUnsafeMutableBytes(of: &value.model) { buffer in
       CryptokiEntryPoints.write(padded: modelName, into: buffer)
     }
+    // This token is published by this module rather than by anyone's
+    // silicon, so its firmware version is this build: the day and the
+    // ten-minute bucket, which is the half of the stamp the library
+    // version has no room for.
+    value.firmwareVersion = ModuleVersion.firmware
     let serial = String(token.tokenID.suffix(serialNumberWidth))
     withUnsafeMutableBytes(of: &value.serialNumber) { buffer in
       CryptokiEntryPoints.write(padded: serial, into: buffer)
