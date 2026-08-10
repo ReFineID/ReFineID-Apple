@@ -177,6 +177,17 @@ internal struct PdfCrossReferenceStreamTests {
     String(bytes: document, encoding: .isoLatin1) ?? ""
   }
 
+  /// The offset the fixture's `startxref` names.
+  private static func startXref(of document: Data) -> Int {
+    let text = Self.text(document)
+    guard let found = text.range(of: "startxref\n", options: .backwards)
+    else {
+      return -1
+    }
+    let digits = text[found.upperBound...].prefix(while: \.isNumber)
+    return Int(digits) ?? -1
+  }
+
   @Test
   internal func signsBehindCrossReferenceStream() throws {
     let document = Self.streamPdf()
@@ -244,16 +255,5 @@ internal struct PdfCrossReferenceStreamTests {
     #expect(update.contains("/Type /DSS"))
     #expect(update.contains("trailer") == false)
     #expect(update.contains("/Type /XRef"))
-  }
-
-  /// The offset the fixture's `startxref` names.
-  private static func startXref(of document: Data) -> Int {
-    let text = Self.text(document)
-    guard let found = text.range(of: "startxref\n", options: .backwards)
-    else {
-      return -1
-    }
-    let digits = text[found.upperBound...].prefix(while: \.isNumber)
-    return Int(digits) ?? -1
   }
 }
