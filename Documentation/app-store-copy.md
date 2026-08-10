@@ -75,7 +75,7 @@ e-services directly in Safari with the certificate on your card. Drop
 a PDF on ReFineID to sign it with a qualified signature, carrying a
 qualified timestamp and the evidence for long-term validation.
 
-ReFineID is open source.
+ReFineID is open source: github.com/ReFineID/ReFineID-Apple
 
 ### Suomi
 
@@ -87,7 +87,7 @@ ReFineID:hen ja allekirjoita se hyväksytyllä sähköisellä
 allekirjoituksella, jossa on hyväksytty aikaleima ja
 pitkäaikaisvalidoinnin todisteet.
 
-ReFineID on avointa lähdekoodia.
+ReFineID on avointa lähdekoodia: github.com/ReFineID/ReFineID-Apple
 
 ### Svenska
 
@@ -98,4 +98,4 @@ direkt i Safari med kortets certifikat. Släpp en PDF på ReFineID för
 att underteckna den med en kvalificerad elektronisk underskrift, med
 kvalificerad tidsstämpel och underlag för långtidsvalidering.
 
-ReFineID är öppen källkod.
+ReFineID är öppen källkod: github.com/ReFineID/ReFineID-Apple
