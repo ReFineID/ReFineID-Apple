@@ -31,12 +31,16 @@
 
     /// The same, as the sleep wants it.
     private static let settleDelay: Duration = .seconds(settleDelaySeconds)
-    /// Row outcomes, visible in the unified log for field reports.
-    ///
-    /// States only; never a name.
-    private static let log = Logger(
-      subsystem: "fi.refineid.ReFineID", category: "identity-row"
-    )
+
+    #if DEBUG
+      /// Row outcomes, in development builds only.
+      ///
+      /// States, never a name. A production build writes no
+      /// diagnostics.
+      private static let log = Logger(
+        subsystem: "fi.refineid.ReFineID", category: "identity-row"
+      )
+    #endif
 
     /// What the login row keys on.
     internal let availability: LoginIdentityModel.Availability
@@ -95,7 +99,9 @@
     /// would otherwise have shown. The name is read off the main actor
     /// and never blocks the row.
     private func track() async {
-      Self.log.info("track: \(String(describing: self.availability))")
+      #if DEBUG
+        Self.log.info("track: \(String(describing: self.availability))")
+      #endif
       settled = false
       switch availability {
       case .ready:

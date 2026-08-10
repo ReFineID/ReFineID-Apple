@@ -37,12 +37,15 @@
       case ready
     }
 
-    /// Watcher outcomes, visible in the unified log for field reports.
-    ///
-    /// Counts and booleans only; never an identifier.
-    private static let log = Logger(
-      subsystem: "fi.refineid.ReFineID", category: "login-identity"
-    )
+    #if DEBUG
+      /// Watcher outcomes, in development builds only.
+      ///
+      /// Counts and booleans, never an identifier. A production
+      /// build writes no diagnostics.
+      private static let log = Logger(
+        subsystem: "fi.refineid.ReFineID", category: "login-identity"
+      )
+    #endif
 
     /// The one instance, built once for the process.
     ///
@@ -160,9 +163,11 @@
         CardTokenNamespace.owns(tokenIdentifier: identifier)
           && !identifier.hasPrefix(Self.credentialEntryPrefix)
       }
-      Self.log.info(
-        "refresh: \(listed.count) listed, ready \(self.isReady)"
-      )
+      #if DEBUG
+        Self.log.info(
+          "refresh: \(listed.count) listed, ready \(self.isReady)"
+        )
+      #endif
       for identifier in watcher.tokenIDs
       where CardTokenNamespace.owns(tokenIdentifier: identifier) {
         guard observed.insert(identifier).inserted else { continue }

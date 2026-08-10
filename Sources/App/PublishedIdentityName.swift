@@ -19,12 +19,15 @@
   /// observed hanging for tens of seconds and answering empty while
   /// Safari was using the very same identity.
   internal enum PublishedIdentityName {
-    /// Query outcomes, visible in the unified log for field reports.
-    ///
-    /// Status codes and counts only; never a name or an identifier.
-    private static let log = Logger(
-      subsystem: "fi.refineid.ReFineID", category: "identity-name"
-    )
+    #if DEBUG
+      /// Query outcomes, in development builds only.
+      ///
+      /// Status codes and counts, never a name or an identifier. A
+      /// production build writes no diagnostics.
+      private static let log = Logger(
+        subsystem: "fi.refineid.ReFineID", category: "identity-name"
+      )
+    #endif
 
     /// The holder's name from the card, or nil when none is published.
     internal static func current() -> String? {
@@ -38,10 +41,14 @@
       var found: CFTypeRef?
       let status = SecItemCopyMatching(query as CFDictionary, &found)
       guard status == errSecSuccess, let matches = found as? [[CFString: Any]] else {
-        Self.log.error("certificate query answered \(status)")
+        #if DEBUG
+          Self.log.error("certificate query answered \(status)")
+        #endif
         return nil
       }
-      Self.log.info("certificate query matched \(matches.count)")
+      #if DEBUG
+        Self.log.info("certificate query matched \(matches.count)")
+      #endif
       for match in matches {
         guard
           let tokenID = match[kSecAttrTokenID] as? String,
