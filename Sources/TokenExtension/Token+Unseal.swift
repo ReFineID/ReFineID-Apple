@@ -69,7 +69,8 @@ extension Token {
       // process being unable to read what the app wrote.
       TokenLog.error(
         "readIdentity: card is sealed and no card access number is readable "
-          + "(status=\(CardCredentialStore.cardAccessNumberReadStatus()))"
+          + "(status=\(CardCredentialStore.cardAccessNumberReadStatus()); "
+          + "offer: \(OfferedAccessNumber.missDescription()))"
       )
       throw TokenError.primeMissing
     }

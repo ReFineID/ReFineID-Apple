@@ -13,7 +13,7 @@ import Foundation
 /// The number is a proximity proof printed on the card face, offered
 /// while its card is present and withdrawn with it; the file holds the
 /// digits for that long and no longer.
-internal enum OfferedAccessNumber {
+public enum OfferedAccessNumber {
   /// The app group named in both processes' entitlements.
   private static let group = "4ZJC3SFJR2.fi.refineid"
 
@@ -91,5 +91,27 @@ internal enum OfferedAccessNumber {
   internal static func clearRefusal() {
     guard let refusalUrl else { return }
     try? FileManager.default.removeItem(at: refusalUrl)
+  }
+
+  /// Where a read that found nothing actually failed: each step of
+  /// the path, never any digits.
+  ///
+  /// For the driver's log. The app and the driver resolve the
+  /// container independently, and a miss on one side of a file the
+  /// other side wrote can only be told apart by asking the failing
+  /// process itself.
+  public static func missDescription() -> String {
+    guard let container else { return "container unresolved" }
+    guard let url else { return "path unresolved" }
+    let directoryExists = FileManager.default.fileExists(atPath: container.path)
+    let fileExists = FileManager.default.fileExists(atPath: url.path)
+    var readOutcome = "ok"
+    do {
+      _ = try Data(contentsOf: url)
+    } catch {
+      readOutcome = String(describing: error)
+    }
+    return "container=\(container.path) directory=\(directoryExists) "
+      + "file=\(fileExists) read=\(readOutcome)"
   }
 }
