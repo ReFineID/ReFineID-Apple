@@ -59,3 +59,43 @@ ReFineID är öppen källkod.
 - en: `identity card`
 - fi: `henkilökortti`
 - sv: `identitetskort`
+
+## macOS description (draft, 2026-08-10)
+
+Platform versions carry their own description in App Store Connect;
+the iOS text above names the iPhone and NFC, so the Mac release needs
+this one. Same rules: 4000 characters, en/fi/sv.
+
+### English
+
+ReFineID brings the Finnish identity card to the Mac.
+
+Insert your identity card into a USB smart-card reader and sign in to
+e-services directly in Safari with the certificate on your card. Drop
+a PDF on ReFineID to sign it with a qualified signature, carrying a
+qualified timestamp and the evidence for long-term validation.
+
+ReFineID is open source.
+
+### Suomi
+
+ReFineID tuo suomalaisen henkilökortin Maciin.
+
+Aseta henkilökortti USB-kortinlukijaan ja kirjaudu sähköisiin
+palveluihin suoraan Safarissa kortin varmenteella. Pudota PDF
+ReFineID:hen ja allekirjoita se hyväksytyllä sähköisellä
+allekirjoituksella, jossa on hyväksytty aikaleima ja
+pitkäaikaisvalidoinnin todisteet.
+
+ReFineID on avointa lähdekoodia.
+
+### Svenska
+
+ReFineID tar det finländska identitetskortet till Macen.
+
+Sätt identitetskortet i en USB-kortläsare och logga in på e-tjänster
+direkt i Safari med kortets certifikat. Släpp en PDF på ReFineID för
+att underteckna den med en kvalificerad elektronisk underskrift, med
+kvalificerad tidsstämpel och underlag för långtidsvalidering.
+
+ReFineID är öppen källkod.
