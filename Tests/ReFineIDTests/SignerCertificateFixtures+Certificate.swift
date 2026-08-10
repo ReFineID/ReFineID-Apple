@@ -4,7 +4,8 @@ import Security
 
 @testable import ReFineID
 
-extension TrustedListXmlSignatureFixtures {
+/// The X.509 certificate factory for the generated signers.
+extension SignerCertificateFixtures {
   /// ASN.1 BIT STRING.
   private static let bitStringTag: UInt8 = 0x03
 

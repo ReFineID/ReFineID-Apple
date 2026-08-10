@@ -11,8 +11,8 @@
   /// in the card signer and verified TSA signer paths must have a proven
   /// issuer and one current, signed status answer. The card path must cross
   /// a shipped FINEID issuing certificate, the TSA path must cross the
-  /// trusted-list certificate authenticated during timestamp verification,
-  /// and only that explicit anchor may terminate the walk. Otherwise
+  /// anchor authenticated during timestamp verification, and only that
+  /// explicit anchor may terminate the walk. Otherwise
   /// collection throws and the document is never labelled or timestamped as
   /// LTA.
   internal enum ValidationMaterialCollector {

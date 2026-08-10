@@ -8,8 +8,9 @@
   /// the Basic-auth username and password beside it - empty for a
   /// public service - and an open line at the bottom waiting for the
   /// next authority. Each row carries its own delete control, so
-  /// nothing depends on a selection, and the badges are explained
-  /// once, in the legend underneath.
+  /// nothing depends on a selection. Whoever configures an authority
+  /// answers for it; the only badge is a warning on an address this
+  /// app could not even ask.
   internal struct TimestampAuthoritiesSettingsView: View {
     private typealias Row = TimestampAuthoritiesModel.Row
 
@@ -85,47 +86,20 @@
       .foregroundStyle(.secondary)
     }
 
-    /// What each badge means, said once.
+    /// The legend line that appears only while some row earns it.
     @ViewBuilder private var legend: some View {
       HStack(spacing: Self.legendSpacing) {
-        legendEntry(
-          "checkmark.seal.fill",
-          AnyShapeStyle(.green),
-          "Qualified for eIDAS use"
-        )
-        legendEntry(
-          "seal",
-          AnyShapeStyle(.secondary),
-          "Not on the EU trusted lists"
-        )
-        conditionalLegendEntries
+        if model.rows.contains(where: { row in
+          !row.address.isEmpty && !AuthoritySchemeResolver.isUsable(row.address)
+        }) {
+          legendEntry(
+            "exclamationmark.triangle.fill",
+            AnyShapeStyle(.orange),
+            "Not a usable address"
+          )
+        }
       }
       .font(.footnote)
-    }
-
-    /// The legend lines that appear only while some row earns them.
-    @ViewBuilder private var conditionalLegendEntries: some View {
-      if model.rows.contains(where: { row in row.check == .busy }) {
-        legendEntry("hourglass", AnyShapeStyle(.yellow), "Busy right now")
-      }
-      if model.rows.contains(where: { row in
-        row.check == .notTimestampService
-      }) {
-        legendEntry(
-          "xmark.seal.fill",
-          AnyShapeStyle(.red),
-          "Not a time-stamp service"
-        )
-      }
-      if model.rows.contains(where: { row in
-        !row.address.isEmpty && !AuthoritySchemeResolver.isUsable(row.address)
-      }) {
-        legendEntry(
-          "exclamationmark.triangle.fill",
-          AnyShapeStyle(.orange),
-          "Not a usable address"
-        )
-      }
     }
 
     /// One row: badge, three cells, delete.
@@ -151,56 +125,18 @@
       }
     }
 
-    /// The row's badge.
-    ///
-    /// The warning for an unusable address, a spinner while the
-    /// qualification test runs, the seal once it has spoken. The
-    /// seal is a tested fact, not a control: the service proves who
-    /// it is by answering a real timestamp request, and the EU
-    /// trusted lists say whether that identity is qualified.
+    /// The row's badge: a warning on an address this app could not
+    /// even ask, and otherwise nothing.
     @ViewBuilder
     private func badge(_ row: Binding<Row>) -> some View {
       let address = row.wrappedValue.address
-      if address.isEmpty {
-        Spacer().frame(width: badgeWidth)
-      } else if !AuthoritySchemeResolver.isUsable(address) {
+      if !address.isEmpty, !AuthoritySchemeResolver.isUsable(address) {
         Image(systemName: "exclamationmark.triangle.fill")
           .foregroundStyle(.orange)
           .frame(width: badgeWidth)
           .accessibilityLabel("not a usable address")
-      } else if model.testing.contains(row.wrappedValue.id) {
-        ProgressView()
-          .controlSize(.small)
-          .frame(width: badgeWidth)
-          .accessibilityLabel("testing qualification")
-      } else if row.wrappedValue.check == .busy {
-        Image(systemName: "hourglass")
-          .foregroundStyle(.yellow)
-          .frame(width: badgeWidth)
-          .help("Answers, but busy right now - edit the address to ask again")
-          .accessibilityLabel("busy right now")
-      } else if row.wrappedValue.check == .notTimestampService {
-        Image(systemName: "xmark.seal.fill")
-          .foregroundStyle(.red)
-          .frame(width: badgeWidth)
-          .help("Answers, but not with timestamps")
-          .accessibilityLabel("not a time-stamp service")
       } else {
-        let qualified =
-          TimestampAuthorityStore.defaults.contains(address)
-          || row.wrappedValue.qualified
-        Image(systemName: qualified ? "checkmark.seal.fill" : "seal")
-          .foregroundStyle(
-            qualified ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary)
-          )
-          .frame(width: badgeWidth)
-          .help(
-            qualified
-              ? "Qualified for eIDAS use" : "Not on the EU trusted lists"
-          )
-          .accessibilityLabel(
-            qualified ? "qualified for eIDAS use" : "not qualified"
-          )
+        Spacer().frame(width: badgeWidth)
       }
     }
 

@@ -17,8 +17,7 @@
     ///
     /// Both schemes are accepted: timestamping is specified over
     /// plain HTTP and several qualified authorities publish exactly
-    /// that, so insisting on one scheme would refuse half the
-    /// trusted list.
+    /// that, so insisting on one scheme would refuse real services.
     internal static func isUsable(_ address: String) -> Bool {
       guard
         let url = URL(string: address),

@@ -3,19 +3,18 @@
   import Foundation
   import Security
 
-  /// The qualified time-stamp authorities, in the order they are asked.
+  /// The time-stamp authorities, in the order they are asked.
   ///
-  /// An archival signature needs a qualified timestamp; these are the
-  /// services asked for one, first answer wins. One is shipped, and
-  /// more can be added - each costs every later reader a chain to
-  /// walk. URLs are configuration, not secrets: they name public
-  /// services and live in preferences.
+  /// These are the services an archival signature asks for its
+  /// timestamp, first answer wins. One is shipped, and more can be
+  /// added - each costs every later reader a chain to walk, and
+  /// whoever configures one answers for it. URLs are configuration,
+  /// not secrets: they name public services and live in preferences.
   internal enum TimestampAuthorityStore {
     /// The preferences key holding the ordered list.
     private static let key = "timestampAuthorities"
 
-    /// The shipped set: one qualified service on the EU trusted
-    /// lists.
+    /// The shipped set: one qualified service.
     ///
     /// One rather than four. The list is asked in order and the first
     /// to answer wins, so the others are never reached on a working
@@ -37,9 +36,6 @@
 
     /// The keychain service holding per-authority passwords.
     private static let passwordService = "fi.refineid.tsa-basic-auth"
-
-    /// The preferences key of the authorities marked eIDAS-qualified.
-    private static let qualifiedKey = "timestampAuthorityQualified"
 
     /// The configured list, or the defaults when nothing was changed.
     internal static func load() -> [String] {
@@ -63,32 +59,6 @@
     /// Forgets every edit; `load` answers the defaults again.
     internal static func restoreDefaults() {
       UserDefaults.standard.removeObject(forKey: Self.key)
-    }
-
-    /// Whether an authority is qualified for eIDAS use.
-    ///
-    /// The shipped set is on the EU trusted lists. A user-added service
-    /// is qualified only if the user marks it so: qualification is a
-    /// trusted-list fact the app cannot verify offline, so it is
-    /// attested by the person who chose the service, never assumed.
-    internal static func isQualified(_ authority: String) -> Bool {
-      if Self.defaults.contains(authority) {
-        return true
-      }
-      let marked = UserDefaults.standard.dictionary(forKey: Self.qualifiedKey)
-      return marked?[authority] as? Bool ?? false
-    }
-
-    /// Records the user's qualification mark for an added authority.
-    internal static func setQualified(_ qualified: Bool, for authority: String) {
-      var marked =
-        UserDefaults.standard.dictionary(forKey: Self.qualifiedKey) ?? [:]
-      if qualified {
-        marked[authority] = true
-      } else {
-        marked.removeValue(forKey: authority)
-      }
-      UserDefaults.standard.set(marked, forKey: Self.qualifiedKey)
     }
 
     /// The Basic-auth credentials for one authority, or nil when it

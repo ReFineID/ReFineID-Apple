@@ -84,7 +84,7 @@
     internal func legacyIssuerNameSelectsLegacyResource() throws {
       let issuer = try Self.issuer(resource: Self.legacyResource)
       let facts = try #require(CertificateFacts(der: issuer))
-      let leaf = try TrustedListXmlSignatureFixtures.makeSigner(
+      let leaf = try SignerCertificateFixtures.makeSigner(
         for: .rsaSha256,
         issuerName: facts.subjectName
       )
@@ -102,7 +102,7 @@
     internal func organisationalIssuerNameSelectsOrganisationalResource() throws {
       let issuer = try Self.issuer(resource: Self.organisationalResource)
       let facts = try #require(CertificateFacts(der: issuer))
-      let leaf = try TrustedListXmlSignatureFixtures.makeSigner(
+      let leaf = try SignerCertificateFixtures.makeSigner(
         for: .rsaSha256,
         issuerName: facts.subjectName
       )

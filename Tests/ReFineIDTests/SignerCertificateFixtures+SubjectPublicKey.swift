@@ -1,7 +1,7 @@
 import CardCore
 import Foundation
 
-extension TrustedListXmlSignatureFixtures {
+extension SignerCertificateFixtures {
   /// ASN.1 NULL.
   private static let spkiNullTag: UInt8 = 0x05
 

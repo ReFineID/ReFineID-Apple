@@ -92,20 +92,17 @@
     ///
     /// DNSSEC is asked for first on every exchange, and is worth
     /// asking for - but it is not what makes any of this safe. Every
-    /// payload here proves itself: trusted lists carry an XMLDSig
-    /// signature checked against a pinned signer, timestamp tokens
-    /// are verified against those lists, OCSP responses and CRLs are
+    /// payload here proves itself: timestamp tokens are verified
+    /// against the chain they carry, OCSP responses and CRLs are
     /// signed by the issuer they speak for. A forged DNS answer
     /// cannot produce any of them, so DNS validation is depth, not
     /// the foundation.
     ///
     /// That is why a validation failure is not the end of the
-    /// exchange. Measured on 2026-08-04, requiring it made
-    /// `ec.europa.eu` unreachable - the list of lists, the root of
-    /// the whole qualification walk - along with two of the four
-    /// shipped authorities, while plain HTTPS answered the same URLs
-    /// in half a second. A requirement that turns correct, live EU
-    /// infrastructure into "cannot sign" is not defending anything.
+    /// exchange: requiring it has made live, correct services
+    /// unreachable while plain HTTPS answered the same URLs in half
+    /// a second. A requirement that turns correct infrastructure
+    /// into "cannot sign" is not defending anything.
     internal static func validatedSessionConfiguration(
       validating: Bool
     ) -> URLSessionConfiguration {

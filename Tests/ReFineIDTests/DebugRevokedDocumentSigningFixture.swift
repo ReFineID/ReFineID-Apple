@@ -183,7 +183,7 @@
 
     /// Creates the card-bound PDF attributes and a valid RSA signature.
     private static func cardStage() throws -> CardStage {
-      let card = try TrustedListXmlSignatureFixtures.makeSigner(
+      let card = try SignerCertificateFixtures.makeSigner(
         for: .rsaSha256
       )
       let placeholder = try PdfIncrementalSigner.prepare(

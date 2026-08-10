@@ -41,7 +41,7 @@
       """
     )
 
-    /// The token's exact signer, used as the sole trusted-list identity.
+    /// The token's exact signer, as embedded in the token itself.
     private static let signer = Self.decode(
       """
       MIIBszCCAVigAwIBAgIUMHfE/GmdSvG3+CQRxHSnFzfP2IwwCgYIKoZIzj0EAwIwHDEaMBgGA1UE
@@ -75,13 +75,7 @@
     /// A full token is authenticated before only its certificates are removed.
     @Test
     internal func verifiedTokenBecomesCertificateFree() throws {
-      let identities = EuTrustedListDirectory.Identities(
-        certificates: Set([Self.signer]), isComplete: true
-      )
-
-      let compact = try TimestampClient.verifiedCompactEncoding(
-        Self.token, identities: identities
-      )
+      let compact = try TimestampClient.verifiedCompactEncoding(Self.token)
 
       #expect(CmsCertificates.inside(Self.token).contains(Self.signer))
       #expect(CmsCertificates.inside(compact).isEmpty)
@@ -95,18 +89,13 @@
     /// A token with a changed CMS signature is rejected before compaction.
     @Test
     internal func tamperedTokenIsNeverCompacted() {
-      let identities = EuTrustedListDirectory.Identities(
-        certificates: Set([Self.signer]), isComplete: true
-      )
       var changed = Self.token
       if let last = changed.indices.last {
         changed[last] ^= 1
       }
 
       #expect(throws: TimestampTokenVerifier.Failure.invalidSignature) {
-        _ = try TimestampClient.verifiedCompactEncoding(
-          changed, identities: identities
-        )
+        _ = try TimestampClient.verifiedCompactEncoding(changed)
       }
     }
 

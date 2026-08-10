@@ -115,7 +115,7 @@
       hints.ai_family = AF_UNSPEC
       // One entry per address, not one per socket type. Without this
       // getaddrinfo answers each address once per stream, datagram and
-      // raw type, so a CDN-hosted CA or trusted list - three addresses,
+      // raw type, so a CDN-hosted CA - three addresses,
       // nine entries - was refused for a cap it never reached.
       hints.ai_socktype = SOCK_STREAM
       var result: UnsafeMutablePointer<addrinfo>?

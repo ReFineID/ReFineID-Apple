@@ -30,11 +30,10 @@
       public let embeddedCertificates: [Data]
 
       /// The exact certificate path Security authenticated under the
-      /// caller's exclusive trusted-list anchors.
+      /// exclusive anchors in force for the verification.
       public let verifiedCertificateChain: [Data]
 
-      /// The caller-supplied trusted-list certificate that terminated the
-      /// authenticated path.
+      /// The anchor certificate that terminated the authenticated path.
       public let trustedCertificate: Data
 
       /// The signed TSTInfo generation time.
@@ -65,12 +64,22 @@
       case untrustedSigner
     }
 
-    /// Verifies `token` under the supplied trusted-list certificates.
+    /// Verifies `token` against the certificate chain it itself
+    /// carries.
+    ///
+    /// The authority is trusted as configured: the caller decided whom
+    /// to ask, so the token's own certificate set is the anchor set.
+    /// Self-issued embedded certificates are preferred as anchors, so
+    /// the verified path runs as deep as the token allows.
+    public static func verify(_ token: Data) throws -> VerifiedToken {
+      try Self.verify(token, trustedCertificates: Self.selfAnchors(in: token))
+    }
+
+    /// Verifies `token` under the supplied certificates.
     ///
     /// The trusted certificates are exclusive anchors. Passing an
-    /// empty array fails closed; it never falls back to the system root
-    /// store, because operating-system trust is not an eIDAS
-    /// qualification decision.
+    /// empty array fails closed; it never falls back to the system
+    /// root store.
     public static func verify(
       _ token: Data,
       trustedCertificates: [Data]
@@ -114,6 +123,24 @@
         trustedCertificate: trustedCertificate,
         generatedAt: contents.generatedAt
       )
+    }
+
+    /// The token's own anchor candidates: its self-issued embedded
+    /// certificates, or every embedded certificate when none is.
+    private static func selfAnchors(in token: Data) throws -> [Data] {
+      let embedded = try Self.certificates(from: Self.decoder(for: token))
+      let selfIssued = embedded.filter(Self.isSelfIssued)
+      return selfIssued.isEmpty ? embedded : selfIssued
+    }
+
+    /// Whether a certificate names itself as its issuer.
+    private static func isSelfIssued(_ certificate: Data) -> Bool {
+      guard
+        let parsed = SecCertificateCreateWithData(nil, certificate as CFData),
+        let subject = SecCertificateCopyNormalizedSubjectSequence(parsed),
+        let issuer = SecCertificateCopyNormalizedIssuerSequence(parsed)
+      else { return false }
+      return (subject as Data) == (issuer as Data)
     }
 
     /// A CMS whose content and sole signature are authenticated.
