@@ -91,7 +91,7 @@ public enum CardCredentialStore {
     var digits = read(account: cardAccessNumberAccount).map { Data($0.utf8) }
     #if os(macOS)
       if digits == nil {
-        digits = DriverConfiguredCredentials.digitsData()
+        digits = OfferedAccessNumber.digits().map { Data($0.utf8) }
       }
     #endif
     guard let digits else { return nil }
@@ -121,7 +121,7 @@ public enum CardCredentialStore {
   @discardableResult
   private static func publishToDriver(digits: String) -> Bool {
     #if os(macOS)
-      return DriverConfiguredCredentials.publish(digits: digits)
+      return OfferedAccessNumber.publish(digits: digits)
     #else
       return false
     #endif
@@ -142,8 +142,12 @@ public enum CardCredentialStore {
   }
 
   /// Withdraws the published number once it has served its mint.
+  ///
+  /// The configuration-store entry is withdrawn too: earlier versions
+  /// published there, and an entry they left must not outlive them.
   public static func withdrawCardAccessNumberFromDriver() {
     #if os(macOS)
+      OfferedAccessNumber.withdraw()
       DriverConfiguredCredentials.withdraw()
     #endif
   }
@@ -181,11 +185,11 @@ public enum CardCredentialStore {
     {
       return stored
     }
-    // The token driver's own copy, which on macOS is the only one it can
-    // read. Second rather than first, so the keychain stays the source of
-    // truth wherever it is readable.
+    // The app's offer in the group container, which on macOS is the
+    // only copy the driver can read. Second rather than first, so the
+    // keychain stays the source of truth wherever it is readable.
     #if os(macOS)
-      return DriverConfiguredCredentials.cardAccessNumber()
+      return OfferedAccessNumber.digits().flatMap(CardAccessNumber.init(digits:))
     #else
       return nil
     #endif
@@ -263,6 +267,7 @@ public enum CardCredentialStore {
   public static func forgetCardAccessNumber() {
     delete(account: cardAccessNumberAccount)
     #if os(macOS)
+      OfferedAccessNumber.withdraw()
       DriverConfiguredCredentials.withdraw()
     #endif
   }
@@ -277,6 +282,7 @@ public enum CardCredentialStore {
     delete(account: cardAccessNumberAccount)
     delete(account: pin1Account)
     #if os(macOS)
+      OfferedAccessNumber.withdraw()
       DriverConfiguredCredentials.withdraw()
     #endif
   }

@@ -2,29 +2,19 @@ import CryptoTokenKit
 import Foundation
 import ObjCExceptionGuard
 
-/// The card access number as the app hands it to its own token driver,
-/// through CryptoTokenKit's configuration store.
+/// The app's view of CryptoTokenKit's configuration store for its own
+/// token driver.
 ///
-/// macOS leaves the two processes no keychain to share. An item created
-/// there carries an access list naming the application that created it,
-/// and a token extension is a different application: it finds the item
-/// and is refused the value with `errSecInteractionNotAllowed`, which it
-/// cannot resolve, because a driver hosted by `ctkd` has no interface to
-/// authorize with. A shared keychain access group is the usual answer
-/// and is what iOS uses here, but it is a restricted entitlement that
-/// the signing profile has to carry.
+/// The store no longer carries the card access number.
+/// `driverConfigurations` is populated for the hosting application
+/// only - every other caller, the token driver itself included, is
+/// handed an empty store - so a number written here was unreadable
+/// exactly where it was needed. `OfferedAccessNumber` carries it now,
+/// through the app group container both processes can read.
 ///
-/// CryptoTokenKit provides a channel for this and documents it for
-/// exactly this purpose: a token configuration carries data that the
-/// token implementation and its hosting application both use, that the
-/// system does not interpret, and whose documented example is access
-/// credentials. Only the hosting application can write it -- every other
-/// caller is handed an empty store -- so the driver's own app bundle is
-/// the boundary, without an entitlement.
-///
-/// The digits never pass through a caller. They are read from the
-/// keychain and written here inside `CardCredentialStore`, which is the
-/// same reason that type assembles primes itself.
+/// What remains here is the store as the system lists it: the named
+/// entry earlier versions published, withdrawn so it does not outlive
+/// them, and the identity configurations the debug reset drops.
 public enum DriverConfiguredCredentials {
   /// The driver whose configuration this is: `com.apple.ctk.class-id`
   /// in the token extension's Info.plist.
@@ -63,38 +53,6 @@ public enum DriverConfiguredCredentials {
     }
     guard raised == nil else { return nil }
     return stores[Self.classID]
-  }
-
-  /// The published digits as raw bytes, for fingerprinting only.
-  ///
-  /// `CardCredentialStore.cardAccessNumberFingerprint` digests these so
-  /// the driver can remember "this number was refused" without holding
-  /// digits; nothing else may read this.
-  internal static func digitsData() -> Data? {
-    configuration?.tokenConfigurations[Self.configurationInstanceID]?.configurationData
-  }
-
-  /// The card access number the app published, if any.
-  internal static func cardAccessNumber() -> CardAccessNumber? {
-    guard
-      let entry = configuration?.tokenConfigurations[Self.configurationInstanceID],
-      let data = entry.configurationData,
-      let digits = String(data: data, encoding: .utf8)
-    else {
-      return nil
-    }
-    return CardAccessNumber(digits: digits)
-  }
-
-  /// Publishes `digits` for the driver to read, replacing what was there.
-  ///
-  /// Answers whether the store took it, which is false in any process
-  /// that does not host the driver.
-  internal static func publish(digits: String) -> Bool {
-    guard let configuration else { return false }
-    let token = configuration.addTokenConfiguration(for: Self.configurationInstanceID)
-    token.configurationData = Data(digits.utf8)
-    return true
   }
 
   /// Drops every token configuration except this app's own credential

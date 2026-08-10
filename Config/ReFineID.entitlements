@@ -37,5 +37,14 @@
 	     that document; this is what lets the signed one be written. -->
 	<key>com.apple.security.files.user-selected.read-write</key>
 	<true/>
+	<!-- The group container carries one file: the access number the
+	     holder offers for a sealed contactless card. The token driver
+	     must read it and the configuration store is unreadable outside
+	     the hosting application, so this shared container is the
+	     channel. The offer is withdrawn when the card leaves. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>4ZJC3SFJR2.fi.refineid</string>
+	</array>
 </dict>
 </plist>

@@ -1,5 +1,6 @@
 #if os(macOS)
 
+  import CardCore
   import CryptoTokenKit
   import Observation
 
@@ -19,6 +20,14 @@
 
     /// Whether any slot reports a card, responsive or not.
     internal private(set) var isCardPresent = false
+
+    /// Whether any of those cards is on a contactless interface.
+    ///
+    /// Read from the slot's synthesized answer to reset, so it costs
+    /// no card I/O and is known the moment the card lands on the
+    /// antenna. Only this certainty makes the access-number entry
+    /// appear: a contact card never needs one.
+    internal private(set) var isContactlessCardPresent = false
 
     /// The slots being watched, by name.
     @ObservationIgnored private var slots: [String: TKSmartCardSlot] = [:]
@@ -72,7 +81,7 @@
       // Assigned only when it differs. Observation notifies on
       // every write, unchanged or not, and each notification
       // re-renders the window that reads this.
-      let present = slots.values.contains { slot in
+      let occupied = slots.values.filter { slot in
         switch slot.state {
         case .validCard, .muteCard, .probing:
           true
@@ -80,8 +89,15 @@
           false
         }
       }
+      let present = !occupied.isEmpty
+      let contactless = occupied.contains { slot in
+        slot.atr.map { AnswerToReset.indicatesContactlessInterface(bytes: $0.bytes) } ?? false
+      }
       if present != isCardPresent {
         isCardPresent = present
+      }
+      if contactless != isContactlessCardPresent {
+        isContactlessCardPresent = contactless
       }
     }
   }

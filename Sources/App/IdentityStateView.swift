@@ -16,6 +16,7 @@
     /// generation, either of whose movement re-reads the row.
     private struct TrackKey: Equatable {
       let availability: LoginIdentityModel.Availability
+      let awaiting: Bool
       let generation: Int
     }
 
@@ -45,6 +46,14 @@
     /// What the login row keys on.
     internal let availability: LoginIdentityModel.Availability
 
+    /// Whether the card is a sealed contactless one waiting for its
+    /// access number.
+    ///
+    /// Waiting for input is not a fault: the row says what is asked
+    /// for and never warns about it, and re-inserting - the advice
+    /// for a stuck contact card - would change nothing here.
+    internal let awaitingAccessNumber: Bool
+
     /// The model, watched so a token event re-reads the name even
     /// when the availability itself did not move.
     private let model = LoginIdentityModel.shared
@@ -61,7 +70,12 @@
 
     internal var body: some View {
       content
-        .task(id: TrackKey(availability: availability, generation: model.generation)) {
+        .task(
+          id: TrackKey(
+            availability: availability,
+            awaiting: awaitingAccessNumber,
+            generation: model.generation)
+        ) {
           await track()
         }
     }
@@ -78,7 +92,10 @@
         Text(holder ?? "")
           .textSelection(.enabled)
       case .cardWithoutIdentity:
-        if settled {
+        if awaitingAccessNumber {
+          Text("Enter the card access number")
+            .foregroundStyle(.secondary)
+        } else if settled {
           Text("Card detected, not ready - if this lasts, re-insert it")
             .foregroundStyle(.orange)
         } else {
@@ -115,6 +132,7 @@
         }.value
       case .cardWithoutIdentity:
         holder = nil
+        guard !awaitingAccessNumber else { return }
         try? await Task.sleep(for: Self.settleDelay)
         if !Task.isCancelled {
           settled = true

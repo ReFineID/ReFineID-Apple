@@ -68,26 +68,39 @@
       }
     }
 
+    /// Whether an unready card is provably on a contactless
+    /// interface, which is the one state that asks for an access
+    /// number.
+    private var awaitingAccessNumber: Bool {
+      #if FEATURE_CONTACTLESS
+        availability == .cardWithoutIdentity
+          && CardPresence.shared.isContactlessCardPresent
+      #else
+        false
+      #endif
+    }
+
     internal var body: some View {
       VStack(alignment: .leading, spacing: Self.spacing) {
         Text(verbatim: "ReFineID")
           .font(.largeTitle.bold())
         Form {
           LabeledContent("Identity") {
-            IdentityStateView(availability: availability)
+            IdentityStateView(
+              availability: availability,
+              awaitingAccessNumber: awaitingAccessNumber)
           }
           .accessibilityIdentifier("loginIdentityStatus")
           // No card, no card work: a drop target that cannot sign
           // and a PIN window over nothing are not features, they are
           // questions.
           // The entry for a sealed contactless card compiles in with
-          // its feature; without it no card access number is asked
-          // for and a sealed card stays "not ready".
-          #if FEATURE_CONTACTLESS
-            if availability == .cardWithoutIdentity {
-              SealedCardSection()
-            }
-          #endif
+          // its feature, and appears only when the slot's answer
+          // proves the card is on the antenna - a contact card never
+          // needs an access number and is never asked for one.
+          if awaitingAccessNumber {
+            SealedCardSection()
+          }
           if availability != .noCard {
             documentSection
             signatureSection

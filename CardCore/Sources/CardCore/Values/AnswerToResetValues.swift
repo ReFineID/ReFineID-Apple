@@ -23,4 +23,25 @@ internal enum AnswerToResetValues {
 
   /// Bit 4 of it announces a further `TD`, and a further group after.
   internal static let protocolByteBit: UInt8 = 0x08
+
+  /// The answer a PC/SC reader synthesizes for a card reached over its
+  /// contactless interface (PC/SC part 3, section 3.1.3.2.3).
+  ///
+  /// A contactless card has no answer to reset of its own, so the
+  /// reader builds one: `TS` direct convention, `T0` announcing only a
+  /// `TD1` beside the historical count, and the fixed `TD1 TD2` pair
+  /// `80 01`. The historical count varies with the card; everything
+  /// else in the prefix does not, which is what makes the prefix
+  /// answer "which interface is this card on" without any card I/O.
+  internal static let synthesizedContactlessPrefix: [UInt8] = [
+    // swiftlint:disable:next no_magic_numbers
+    0x3B, 0x80, 0x80, 0x01,
+  ]
+
+  /// The historical-count nibble, masked away when comparing the
+  /// prefix above.
+  internal static let synthesizedContactlessMasks: [UInt8] = [
+    // swiftlint:disable:next no_magic_numbers
+    0xFF, 0xF0, 0xFF, 0xFF,
+  ]
 }

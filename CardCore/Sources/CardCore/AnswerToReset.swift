@@ -71,4 +71,22 @@ public struct AnswerToReset: Equatable, Sendable {
     guard index + count <= raw.count else { return nil }
     self.historicalBytes = Array(raw[index..<(index + count)])
   }
+
+  /// Whether `bytes` is the answer a PC/SC reader synthesizes for a
+  /// card on its contactless interface.
+  ///
+  /// A contactless card has no answer to reset of its own; the reader
+  /// constructs one with a fixed prefix (PC/SC part 3), and that
+  /// prefix says which interface the card is on without opening a
+  /// session or sending the card anything. A reader's slot answer is
+  /// enough to ask this of.
+  public static func indicatesContactlessInterface(bytes: Data) -> Bool {
+    let prefix = AnswerToResetValues.synthesizedContactlessPrefix
+    let masks = AnswerToResetValues.synthesizedContactlessMasks
+    guard bytes.count > prefix.count else { return false }
+    return zip(Array(bytes.prefix(prefix.count)), zip(prefix, masks))
+      .allSatisfy { byte, expectation in
+        byte & expectation.1 == expectation.0
+      }
+  }
 }
