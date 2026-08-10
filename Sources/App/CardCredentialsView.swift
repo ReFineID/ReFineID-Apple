@@ -26,7 +26,6 @@ internal struct CardCredentialsView: View {
   @State private var pin1Entry = ""
   @State private var isScanning = false
   @State private var scannerTorchEnabled = false
-  @State private var isPin1Revealed = false
   @State private var showsForgetConfirmation = false
   @State private var registrationReset = false
   @State private var isRegistered = false
@@ -216,7 +215,7 @@ internal struct CardCredentialsView: View {
   @ViewBuilder private var cardAccessNumberRow: some View {
     #if os(iOS)
       HStack {
-        TextField("Card Access Number (CAN)", text: $cardAccessNumberEntry)
+        SecureField("Card Access Number (CAN)", text: $cardAccessNumberEntry)
           .keyboardType(.numberPad)
           .accessibilityIdentifier("cardAccessNumberField")
           .onChange(of: cardAccessNumberEntry) { _, typed in
@@ -234,7 +233,7 @@ internal struct CardCredentialsView: View {
         }
       }
     #else
-      TextField("Card Access Number (CAN)", text: $cardAccessNumberEntry)
+      SecureField("Card Access Number (CAN)", text: $cardAccessNumberEntry)
         .accessibilityIdentifier("cardAccessNumberField")
         .onChange(of: cardAccessNumberEntry) { _, typed in
           cardAccessNumberEntry = LimitedDigits.cardAccessNumber(typed)
@@ -253,14 +252,7 @@ internal struct CardCredentialsView: View {
   /// claims the box is filled. A stored PIN is never read back, so the
   /// box is empty whether or not one is kept.
   @ViewBuilder private var pin1Row: some View {
-    HStack {
-      Group {
-        if isPin1Revealed {
-          TextField("PIN 1", text: $pin1Entry)
-        } else {
-          SecureField("PIN 1", text: $pin1Entry)
-        }
-      }
+    SecureField("PIN 1", text: $pin1Entry)
       #if os(iOS)
         .keyboardType(.numberPad)
         .textInputAutocapitalization(.never)
@@ -271,14 +263,6 @@ internal struct CardCredentialsView: View {
       .onChange(of: pin1Entry) { _, typed in
         pin1Entry = LimitedDigits.pin1(typed)
       }
-
-      Pin1VisibilityButton(
-        isRevealed: $isPin1Revealed,
-        hasEntry: !pin1Entry.isEmpty
-      ) {
-        isPin1FieldFocused = true
-      }
-    }
   }
 
   #if DEBUG
@@ -359,7 +343,6 @@ internal struct CardCredentialsView: View {
     // failed -- the one moment both are worth looking at. They are
     // cleared when the identity is set and when the card is forgotten,
     // which is when there is nothing left for them to be about.
-    isPin1Revealed = false
     isPin1FieldFocused = false
 
     return model.prepareIdentity(
@@ -371,7 +354,6 @@ internal struct CardCredentialsView: View {
   private func clearEntries() {
     cardAccessNumberEntry = ""
     pin1Entry = ""
-    isPin1Revealed = false
     isPin1FieldFocused = false
   }
 }

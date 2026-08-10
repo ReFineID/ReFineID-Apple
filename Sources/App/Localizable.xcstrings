@@ -1079,22 +1079,6 @@
         }
       }
     },
-    "Hide PIN 1": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Piilota PIN 1"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dölj PIN 1"
-          }
-        }
-      }
-    },
     "Identity": {
       "localizations": {
         "fi": {
@@ -1303,22 +1287,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ny PIN 2 igen"
-          }
-        }
-      }
-    },
-    "No card answered. The contact slot reads directly; a card on the antenna answers only its own CAN.": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Yksikään kortti ei vastannut. Kosketuspaikka lukee suoraan; antennilla oleva kortti vastaa vain omalla CAN-numerollaan."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Inget kort svarade. Kontaktplatsen läser direkt; ett kort på antennen svarar bara med sitt eget CAN."
           }
         }
       }
@@ -2018,22 +1986,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dela rapporten"
-          }
-        }
-      }
-    },
-    "Show PIN 1": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Näytä PIN 1"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Visa PIN 1"
           }
         }
       }

@@ -26,7 +26,7 @@
 
     internal var body: some View {
       LabeledContent("Stamp with CAN (optional)") {
-        TextField("", text: $accessNumber)
+        SecureField("", text: $accessNumber)
           .frame(width: entryWidth)
           .multilineTextAlignment(.trailing)
           .onChange(of: accessNumber) { _, typed in
