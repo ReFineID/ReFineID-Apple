@@ -101,26 +101,6 @@ internal final class KeyboardOperationUITests: XCTestCase {
     )
   }
 
-  /// Every window opens from the keyboard, which is the only route
-  /// when the pointer is not available at all.
-  internal func testTheCardWindowsOpenFromTheMenuByKeyboard() {
-    let app = launchWithFullKeyboardAccess()
-    app.activate()
-    let card = app.menuBars.menuBarItems["Card"]
-    XCTAssertTrue(card.waitForExistence(timeout: 10), "no Card menu")
-    card.click()
-    let entry = app.menuBars.menuItems["Card Access Number…"]
-    XCTAssertTrue(entry.waitForExistence(timeout: 5), "no Card Access Number item")
-    // Arrow and Return, rather than a click on the item: this is the
-    // path a keyboard user takes once the menu is open.
-    app.typeKey(.downArrow, modifierFlags: [])
-    app.typeKey(.return, modifierFlags: [])
-    XCTAssertTrue(
-      app.textFields["managerCardAccessNumberField"].waitForExistence(timeout: 10),
-      "the Card Access Number window did not open from the keyboard"
-    )
-  }
-
   /// Launches the app in a stated language, as every test here does.
   private func launchWithFullKeyboardAccess() -> XCUIApplication {
     UITestApp.launch()

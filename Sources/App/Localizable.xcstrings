@@ -233,22 +233,6 @@
         }
       }
     },
-    "Add card": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lisää kortti"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lägg till kort"
-          }
-        }
-      }
-    },
     "Address": {
       "localizations": {
         "fi": {
@@ -277,38 +261,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tillåt omaktivering"
-          }
-        }
-      }
-    },
-    "Answers, but busy right now - edit the address to ask again": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vastaa, mutta on juuri nyt varattu - muokkaa osoitetta ja kysy uudelleen"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Svarar, men är upptagen just nu - redigera adressen och fråga igen"
-          }
-        }
-      }
-    },
-    "Answers, but not with timestamps": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vastaa, mutta ei aikaleimoilla"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Svarar, men inte med tidsstämplar"
           }
         }
       }
@@ -342,22 +294,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Försök kvar:"
-          }
-        }
-      }
-    },
-    "Busy right now": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Varattu juuri nyt"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Upptagen just nu"
           }
         }
       }
@@ -438,22 +374,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kortets åtkomstnummer (CAN)"
-          }
-        }
-      }
-    },
-    "Card Access Number…": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kortin käyttönumero…"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kortets åtkomstnummer…"
           }
         }
       }
@@ -1012,22 +932,6 @@
         }
       }
     },
-    "Diagnostics…": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Diagnostiikka…"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Diagnostik…"
-          }
-        }
-      }
-    },
     "Document to sign": {
       "localizations": {
         "fi": {
@@ -1419,22 +1323,6 @@
         }
       }
     },
-    "No cards yet. Put a card on the reader, enter its CAN below, and press Add.": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ei vielä kortteja. Aseta kortti lukijaan, kirjoita sen CAN alle ja paina Lisää."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Inga kort ännu. Lägg ett kort i läsaren, ange dess CAN nedan och tryck på Lägg till."
-          }
-        }
-      }
-    },
     "No handwritten signature; the stamp will show the certificate identity.": {
       "localizations": {
         "fi": {
@@ -1480,22 +1368,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kortet är inte ett identitetskort som stöds"
-          }
-        }
-      }
-    },
-    "Not a time-stamp service": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ei ole aikaleimapalvelu"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Inte en tidsstämplingstjänst"
           }
         }
       }
@@ -1546,22 +1418,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ingår inte"
-          }
-        }
-      }
-    },
-    "Not on the EU trusted lists": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ei EU:n luottamuslistoilla"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Finns inte på EU:s förtroendelistor"
           }
         }
       }
@@ -1690,22 +1546,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Porträtt-QR"
-          }
-        }
-      }
-    },
-    "Qualified for eIDAS use": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hyväksytty eIDAS-käyttöön"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kvalificerad för eIDAS-användning"
           }
         }
       }
@@ -2258,22 +2098,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Signerat: %@"
-          }
-        }
-      }
-    },
-    "Signing Settings…": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Allekirjoitusasetukset…"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Signeringsinställningar…"
           }
         }
       }
@@ -2986,22 +2810,6 @@
         }
       }
     },
-    "busy right now": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "varattu juuri nyt"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "upptagen just nu"
-          }
-        }
-      }
-    },
     "invalidated": {
       "localizations": {
         "fi": {
@@ -3066,22 +2874,6 @@
         }
       }
     },
-    "not a time-stamp service": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ei ole aikaleimapalvelu"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "inte en tidsstämplingstjänst"
-          }
-        }
-      }
-    },
     "not a usable address": {
       "localizations": {
         "fi": {
@@ -3098,54 +2890,6 @@
         }
       }
     },
-    "not bound; tried after the cards above": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ei sidottu; kokeillaan yllä olevien korttien jälkeen"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "inte bunden; prövas efter korten ovan"
-          }
-        }
-      }
-    },
-    "not qualified": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ei hyväksytty"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "inte kvalificerad"
-          }
-        }
-      }
-    },
-    "qualified for eIDAS use": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "hyväksytty eIDAS-käyttöön"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "kvalificerad för eIDAS-användning"
-          }
-        }
-      }
-    },
     "state unknown": {
       "localizations": {
         "fi": {
@@ -3158,22 +2902,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "okänt tillstånd"
-          }
-        }
-      }
-    },
-    "testing qualification": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "testataan hyväksyntää"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "testar kvalificeringen"
           }
         }
       }

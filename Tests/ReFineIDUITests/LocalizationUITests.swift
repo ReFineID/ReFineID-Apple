@@ -19,14 +19,14 @@ internal final class LocalizationUITests: XCTestCase {
   /// doing.
   private static let clipping = XCUIAccessibilityAuditType(rawValue: 1 << 17)
 
-  /// Finnish, and what the Card menu is called in it.
+  /// Finnish, and what PIN Management is called in it.
   internal func testTheAppSpeaksFinnish() {
-    check(language: "fi", cardMenu: "Kortti", management: "PIN-koodien hallinta…")
+    check(language: "fi", management: "PIN-koodien hallinta…")
   }
 
   /// Swedish, likewise.
   internal func testTheAppSpeaksSwedish() {
-    check(language: "sv", cardMenu: "Kort", management: "Hantering av PIN-koder…")
+    check(language: "sv", management: "Hantering av PIN-koder…")
   }
 
   /// Finnish does not clip anything the English run sized.
@@ -54,18 +54,12 @@ internal final class LocalizationUITests: XCTestCase {
     )
   }
 
-  /// Launches in one language and reads the menu back.
-  private func check(language: String, cardMenu: String, management: String) {
+  /// Launches in one language and reads the status window back.
+  private func check(language: String, management: String) {
     let app = UITestApp.launch(language: language)
     app.activate()
-    let card = app.menuBars.menuBarItems[cardMenu]
     XCTAssertTrue(
-      card.waitForExistence(timeout: 10),
-      "no Card menu titled \(cardMenu) in \(language)"
-    )
-    card.click()
-    XCTAssertTrue(
-      app.menuBars.menuItems[management].waitForExistence(timeout: 5),
+      app.buttons[management].waitForExistence(timeout: 10),
       "PIN Management is not translated in \(language)"
     )
     attachScreenshot(app.screenshot(), named: "menu-\(language)")

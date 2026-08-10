@@ -87,31 +87,6 @@ internal final class AccessibilityAuditUITests: XCTestCase {
     try audit(app, window: "status")
   }
 
-  /// Audits the window that stores the number printed on the card.
-  internal func testCardAccessNumberWindowPassesTheAudit() throws {
-    let app = try openFromCardMenu(named: "Card Access Number…")
-    attachScreenshot(app.screenshot(), named: "03-card-access-number")
-    try audit(app, window: "card-access-number")
-  }
-
-  /// Opens one Card-menu window by its English title.
-  ///
-  /// The app is launched in English by `UITestApp`, so the titles
-  /// matched here are the ones in the source rather than whatever
-  /// language this Mac happens to be set to.
-  private func openFromCardMenu(named item: String) throws -> XCUIApplication {
-    let app = UITestApp.launch()
-    app.activate()
-    let card = app.menuBars.menuBarItems["Card"]
-    XCTAssertTrue(card.waitForExistence(timeout: 10), "no Card menu")
-    card.click()
-    let entry = app.menuBars.menuItems[item]
-    XCTAssertTrue(entry.waitForExistence(timeout: 5), "no \(item) item")
-    try XCTSkipUnless(entry.isEnabled, "\(item) is unavailable in this state")
-    entry.click()
-    return app
-  }
-
   /// Runs the audit and reports what it found.
   ///
   /// The default failure names the rule and nothing else, which is not
@@ -149,10 +124,9 @@ internal final class AccessibilityAuditUITests: XCTestCase {
   /// Audits the credential management window, where every task spends
   /// something the holder cannot get back by pressing undo.
   ///
-  /// The window opens from the main window's own button rather than the
-  /// Card menu: the menu bar belongs to whichever app is frontmost, so
-  /// a test that reaches for it fails for a reason that has nothing to
-  /// do with accessibility. The button appears only while a card is
+  /// The window opens from the main window's own button: the menu bar
+  /// belongs to whichever app is frontmost, so a test that reaches for
+  /// it fails for a reason that has nothing to do with accessibility. The button appears only while a card is
   /// present, and without one there is nothing here to audit.
   internal func testManagementWindowPassesTheAudit() throws {
     let app = UITestApp.launch()

@@ -8,19 +8,23 @@ internal struct ReFineIDApp: App {
     #if os(macOS)
       Window("ReFineID", id: "status") {
         rootContent
+          .windowFullScreenBehavior(.disabled)
       }
       .windowResizability(.contentSize)
-      .commands { CardCommands() }
-
-      Window("Card Access Number", id: CardAccessNumberManagerView.windowID) {
-        CardAccessNumberManagerView()
-          .writingToolsBehavior(.disabled)
+      // No app menus beyond the standard ones: management windows
+      // open from the status window, and the rest is in Settings.
+      // An empty toolbar group keeps the View menu from appearing.
+      .commands {
+        CommandGroup(replacing: .toolbar) {
+          // Deliberately empty: no toolbar or sidebar items, so the
+          // View menu never appears.
+        }
       }
-      .windowResizability(.contentSize)
 
       Window("PIN Management", id: CardManagementView.windowID) {
         CardManagementView()
           .writingToolsBehavior(.disabled)
+          .windowFullScreenBehavior(.disabled)
       }
       .windowResizability(.contentSize)
 
@@ -37,6 +41,7 @@ internal struct ReFineIDApp: App {
           NavigationStack {
             DiagnosticsView()
           }
+          .windowFullScreenBehavior(.disabled)
         }
         .windowResizability(.contentSize)
       #endif
@@ -99,6 +104,13 @@ internal struct ReFineIDApp: App {
     // else enforces it.
     #if os(macOS)
       SingleInstance.enforce()
+
+      // Every text field here holds digits or a service address, so
+      // the Edit menu's character palette is dead weight; AppKit
+      // honours this default by leaving the item out.
+      UserDefaults.standard.set(
+        true, forKey: "NSDisabledCharacterPaletteMenuItem"
+      )
     #endif
 
     // Builds with the retired fifteen-minute policy wrote a second PIN1
