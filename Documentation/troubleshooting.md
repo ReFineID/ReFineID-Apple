@@ -47,6 +47,21 @@ A reader that was powered through the stranding may need the replug
 before it reports cards again; swap readers before concluding
 anything about the card.
 
+**Convicting a failing reader.** The kernel says so directly. Watch
+the USB host log while replugging the suspect:
+
+    /usr/bin/log show --last 10m --style compact \
+      --predicate 'subsystem == "com.apple.iokit.IOUSBHostFamily"'
+
+A healthy reader enumerates and stays. A failing one enumerates,
+stalls an endpoint ("pipe stalled" on endpoint 0x00), and minutes or
+seconds later the port logs "terminateDevice: destroying ... hardware
+connection lost" with no unplug. That is the device dropping the bus
+on its own. A reader doing this intermittently reproduces the whole
+vanished-card pattern: reader listed, zero cards, everything above
+this line innocent. The same card minting promptly in another reader
+completes the conviction.
+
 **Confirmed 2026-07-27.** After an evening of the appex being replaced
 about fifteen times, four sites -- card.refineid.fi, admin.iki.fi,
 suomi.fi and posti.fi -- all failed in different ways. A reboot restored
