@@ -46,10 +46,20 @@
     private static let boxCorner: CGFloat = 6
     private static let boxBorder: CGFloat = 1
 
-    /// How long a submitted number is watched for a refusal marker.
+    /// How long a submitted number is watched for its verdict.
     ///
-    /// Nonisolated: the watching runs off the main actor.
-    nonisolated private static let refusalPolls = 16
+    /// Nonisolated: the watching runs off the main actor. Long,
+    /// because the verdict may wait for the holder to present the
+    /// card again; the watch ends early with the verdict, and with
+    /// this section when the identity publishes.
+    nonisolated private static let refusalPolls = 120
+
+    /// Polls after which the row asks for the card again.
+    ///
+    /// A mint that is going to happen has happened well within this;
+    /// past it, the system is not going to look at the card where it
+    /// lies, and presenting the card again is what makes it look.
+    nonisolated private static let retapPolls = 6
 
     /// The pause between looks, in milliseconds.
     nonisolated private static let refusalPollMilliseconds = 500
@@ -57,6 +67,7 @@
     @State private var number = ""
     @State private var refused = false
     @State private var trying = false
+    @State private var retapNeeded = false
     @State private var shakes: CGFloat = 0
     @FocusState private var focused: Bool
 
@@ -100,6 +111,14 @@
       .contentShape(.rect)
       .onTapGesture { focused = true }
       .onAppear { focused = true }
+      if retapNeeded {
+        // The one thing that makes the system look at the card
+        // again: a warm reset is invisible to it, so the number
+        // waits until the card arrives.
+        Text("Lift the card and lay it back")
+          .font(.footnote)
+          .foregroundStyle(.secondary)
+      }
     }
 
     /// Takes the offered number back: at launch, and at quit.
@@ -151,8 +170,9 @@
       }
       if digits.count == Self.boxCount, previous.count < Self.boxCount {
         submit(digits)
-      } else if trying, digits != previous {
+      } else if digits != previous {
         trying = false
+        retapNeeded = false
       }
     }
 
@@ -170,23 +190,28 @@
     /// file and PC/SC calls, which must not block the window.
     private func submit(_ digits: String) {
       trying = true
+      retapNeeded = false
       Task.detached(priority: .utility) {
         CardCredentialStore.publishCardAccessNumberToDriver(digits: digits)
         _ = SlotCardReset.resetContactlessCards()
-        for _ in 0..<Self.refusalPolls {
+        for poll in 0..<Self.refusalPolls {
           try? await Task.sleep(for: .milliseconds(Self.refusalPollMilliseconds))
           if CardCredentialStore.offeredNumberWasRefused() {
             await MainActor.run {
               trying = false
+              retapNeeded = false
               refused = true
               withAnimation { shakes += 1 }
             }
             return
           }
+          if poll == Self.retapPolls {
+            await MainActor.run {
+              trying = false
+              retapNeeded = true
+            }
+          }
         }
-        // Neither refused nor published within the watch: stop
-        // claiming progress rather than spin forever.
-        await MainActor.run { trying = false }
       }
     }
   }
