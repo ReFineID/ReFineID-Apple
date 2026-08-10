@@ -52,7 +52,7 @@
       guard digits.count == CardAccessNumber.digitCount else { return }
       Task.detached(priority: .utility) {
         CardCredentialStore.publishCardAccessNumberToDriver(digits: digits)
-        await MainActor.run { LoginIdentityModel.shared.attemptRecovery(unresolvedIdentity: false) }
+        await MainActor.run { LoginIdentityModel.shared.attemptRecovery() }
       }
     }
   }

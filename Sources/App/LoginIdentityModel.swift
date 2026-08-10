@@ -182,32 +182,12 @@
     /// whose signature could be made to wait, and once per
     /// appearance, so a card the driver genuinely cannot serve is
     /// not prodded forever.
-    internal func attemptRecovery(unresolvedIdentity: Bool) {
+    internal func attemptRecovery() {
       guard !attempted, recovery == nil else { return }
       recovery = Task { @MainActor [weak self] in
         try? await Task.sleep(for: Self.recoveryDelay)
-        guard let self, !Task.isCancelled else { return }
-        // Ready with a resolvable identity needs nothing. Ready with
-        // an identity the keychain cannot resolve is the shape a
-        // driver update leaves behind - a listed token whose items
-        // return with the next card appearance - and the same
-        // software reinsertion recovers it. The row reports that
-        // shape rather than this task re-asking the keychain: in the
-        // phantom state the asking itself is what hangs.
-        guard !isReady || unresolvedIdentity else {
-          recovery = nil
-          return
-        }
+        guard let self, !Task.isCancelled, !isReady else { return }
         attempted = true
-        if unresolvedIdentity {
-          // A token ctkd lists whose keychain items resolve to
-          // nothing is a registration the driver update orphaned.
-          // ctkd re-acquires an orphan by its instance identifier
-          // and gets nowhere; dropped, the card appearance below
-          // mints afresh by reader instead.
-          let dropped = DriverConfiguredCredentials.dropIdentityTokenConfigurations()
-          Self.log.info("recovery: dropped \(dropped) orphaned registration(s)")
-        }
         await Self.touchPresentCard()
         recovery = nil
         refresh()

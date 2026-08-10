@@ -99,19 +99,14 @@
       settled = false
       switch availability {
       case .ready:
-        // Armed before the read, because in the after-driver-update
-        // shape the read itself is what hangs: a listed token whose
-        // keychain items return only with the next card appearance.
-        // A read that answers in time stands the recovery down; one
-        // that hangs or answers nothing lets the model's one-shot
-        // software reinsertion re-mint the card.
-        model.attemptRecovery(unresolvedIdentity: true)
+        // A read that answers nothing while the token is listed is
+        // left alone: this process's view of the token items has been
+        // observed answering empty against an identity Safari was
+        // using at that same moment, so an empty answer proves
+        // nothing and must never cost a registration anything.
         holder = await Task.detached(priority: .utility) {
           PublishedIdentityName.current()
         }.value
-        if holder != nil {
-          model.cancelRecovery(cardLeft: false)
-        }
       case .cardWithoutIdentity:
         holder = nil
         try? await Task.sleep(for: Self.settleDelay)
