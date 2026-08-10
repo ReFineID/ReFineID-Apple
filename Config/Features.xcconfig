@@ -12,8 +12,14 @@
 //       invisible - the non-rendering signature structures only - and
 //       no stamp UI is offered.
 //
-// To ship the stamp again:
-//   REFINEID_FEATURES = FEATURE_PDF_STAMP
+//   FEATURE_CONTACTLESS
+//       Contactless cards on a local USB-C reader: the status
+//       window's CAN entry that unseals a card on the antenna. Off,
+//       only contact readers are served, no CAN is asked for, and a
+//       contactless card shows "not ready".
+//
+// Flags are space-separated. To ship one again:
+//   REFINEID_FEATURES = FEATURE_PDF_STAMP FEATURE_CONTACTLESS
 
 REFINEID_FEATURES =
 

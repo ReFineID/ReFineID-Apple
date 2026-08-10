@@ -21,7 +21,6 @@
     private static let padding: CGFloat = 24
     private static let dropHeight: CGFloat = 96
     private static let dropSpacing: CGFloat = 6
-    private static let noticeSpacing: CGFloat = 4
     private static let dropCornerRadius: CGFloat = 10
     private static let dropBorderWidth: CGFloat = 2
 
@@ -42,6 +41,9 @@
     @State private var format = SignatureFormat.pades
     @FocusState private var pinFocused: Bool
 
+    /// The signing state, readable by the split-out outcome section.
+    internal var signingModel: SignDocumentModel { signing }
+
     /// Ready when a document is waiting and the entry could be a PIN2.
     private var canSign: Bool {
       signing.pending != nil && Self.isEntryComplete(pin2) && !signing.working
@@ -49,13 +51,6 @@
         // card, and asking it to sign mid-read is asking it to be in
         // two places.
         && !signing.readingStamp
-    }
-
-    /// The success as a sentence, so what is spoken is what is shown
-    /// rather than a bare file name.
-    private var signedOutcome: String? {
-      guard let signed = signing.signed else { return nil }
-      return String(localized: "Signed: \(signed.lastPathComponent)")
     }
 
     /// What the identity row and the offered features key on.
@@ -85,9 +80,14 @@
           // No card, no card work: a drop target that cannot sign
           // and a PIN window over nothing are not features, they are
           // questions.
-          if availability == .cardWithoutIdentity {
-            SealedCardSection()
-          }
+          // The entry for a sealed contactless card compiles in with
+          // its feature; without it no card access number is asked
+          // for and a sealed card stays "not ready".
+          #if FEATURE_CONTACTLESS
+            if availability == .cardWithoutIdentity {
+              SealedCardSection()
+            }
+          #endif
           if availability != .noCard {
             documentSection
             signatureSection
@@ -231,35 +231,6 @@
           .keyboardShortcut(.defaultAction)
           .disabled(!canSign)
           .accessibilityIdentifier("signDocument")
-      }
-    }
-
-    /// Progress, failure, or where the file went.
-    @ViewBuilder private var outcomeSection: some View {
-      if signing.working || signing.failure != nil || signing.signed != nil {
-        Section {
-          if let failure = signing.failure {
-            Text(failure)
-              .foregroundStyle(.red)
-              .textSelection(.enabled)
-          }
-          if let note = signing.notice {
-            Text(note)
-              .foregroundStyle(.orange)
-              .textSelection(.enabled)
-          }
-          if let signed = signing.signed {
-            VStack(alignment: .leading, spacing: Self.noticeSpacing) {
-              Text("Signed: \(signed.lastPathComponent)")
-                .foregroundStyle(.green)
-                .textSelection(.enabled)
-              Button("Show in Finder") {
-                NSWorkspace.shared.activateFileViewerSelecting([signed])
-              }
-              .buttonStyle(.link)
-            }
-          }
-        }
       }
     }
 
