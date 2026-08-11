@@ -35,6 +35,7 @@
 
     private let model = LoginIdentityModel.shared
     @State private var signing = SignDocumentModel()
+    @State private var pin2Cache = Pin2Cache()
     @State private var offeringNumber = false
     @AppStorage(AppSettings.contactlessEnabled)
     private var contactlessEnabled = false
@@ -47,9 +48,13 @@
     /// The signing state, readable by the split-out outcome section.
     internal var signingModel: SignDocumentModel { signing }
 
-    /// Ready when a document is waiting and the entry could be a PIN2.
+    /// Ready when a document is waiting and a PIN 2 is available -
+    /// either freshly entered, or remembered from a signature within
+    /// the last minute.
     private var canSign: Bool {
-      signing.pending != nil && Self.isEntryComplete(pin2) && !signing.working
+      signing.pending != nil
+        && (Self.isEntryComplete(pin2) || pin2Cache.isWarm)
+        && !signing.working
         // Not while the card is being read for the stamp: it is one
         // card, and asking it to sign mid-read is asking it to be in
         // two places.
@@ -190,10 +195,20 @@
             .truncationMode(.middle)
             .help(pending.lastPathComponent)
             .accessibilityLabel(pending.lastPathComponent)
-          Button("Choose a different document…") { choose() }
-            .buttonStyle(.link)
+          // A pile says how many, so a whole stack signed at once is
+          // not mistaken for the one document whose name shows. Drag
+          // more onto the area to add; this clears it.
+          if signing.queued.count > 1 {
+            Text("\(signing.queued.count) documents to sign")
+              .font(.footnote)
+              .foregroundStyle(.secondary)
+          }
+          Button(signing.queued.count > 1 ? "Clear" : "Choose a different document…") {
+            signing.queued.count > 1 ? signing.clearQueue() : choose()
+          }
+          .buttonStyle(.link)
         } else {
-          Text("Drop a document here to sign it")
+          Text("Drop documents here to sign them")
             .foregroundStyle(.secondary)
           Button("Choose…") { choose() }
             .buttonStyle(.link)
@@ -208,13 +223,18 @@
       if let pending = signing.pending {
         Section {
           SignatureFormatRow(pending: pending, format: $format)
-          SecureField("PIN 2", text: $pin2)
+          SecureField(pin2Cache.isWarm ? "PIN 2 (remembered)" : "PIN 2", text: $pin2)
             .onChange(of: pin2) { _, typed in
               pin2 = LimitedDigits.pin(typed)
             }
             .focused($pinFocused)
             .onSubmit { sign() }
             .accessibilityIdentifier("signPin2")
+          if pin2Cache.isWarm {
+            Text("PIN 2 is remembered for a minute so a pile signs at once.")
+              .font(.footnote)
+              .foregroundStyle(.secondary)
+          }
           // The visible stamp is drawn into the PDF's signed revision;
           // a container carries the file unchanged, so there is
           // nothing to draw it into. The whole feature is compiled in
@@ -272,6 +292,9 @@
         signing.cardRemoved()
         pin2 = ""
         accessNumber = ""
+        // A card that left takes the remembered PIN with it: the next
+        // card, even the same one re-inserted, re-earns the memory.
+        pin2Cache.clear()
       // The offered access number deliberately survives this state:
       // a contactless card leaves the field between taps, and the
       // offer exists to serve the next tap. Withdrawing it here once
@@ -292,12 +315,12 @@
       return true
     }
 
-    /// Opens the chooser.
+    /// Opens the chooser, which may pick several documents to pile.
     private func choose() {
       let panel = NSOpenPanel()
-      panel.allowsMultipleSelection = false
-      guard panel.runModal() == .OK, let url = panel.url else { return }
-      _ = accept([url])
+      panel.allowsMultipleSelection = true
+      guard panel.runModal() == .OK, !panel.urls.isEmpty else { return }
+      _ = accept(panel.urls)
     }
 
     /// Asks where the signature goes, then signs.
@@ -315,24 +338,33 @@
         : nil
       let destination = batch ? nil : SignedOutput.chooseFile(for: source, format: format)
       guard batch ? folder != nil : destination != nil else { return }
-      let entry = pin2
+      // The freshly typed PIN wins; an empty field falls back to the
+      // one a signature accepted within the last minute.
+      let entry = Self.isEntryComplete(pin2) ? pin2 : (pin2Cache.current() ?? "")
+      guard !entry.isEmpty else { return }
       pin2 = ""
       let number = accessNumber
       let chosenFormat = format
+      signing.beginAction()
       Task {
         if let folder {
           await signing.signAll(
             pin2: entry, accessNumber: number, format: chosenFormat, intoDirectory: folder
           )
-          return
+        } else if let destination {
+          await signing.sign(
+            pin2: entry, accessNumber: number, format: chosenFormat, to: destination
+          )
         }
-        guard let destination else { return }
-        await signing.sign(
-          pin2: entry,
-          accessNumber: number,
-          format: chosenFormat,
-          to: destination
-        )
+        // Remember only a PIN a signature accepted, so a remembered
+        // value is always known good and never spends an attempt; any
+        // failure forgets it and asks for the PIN again.
+        if signing.lastActionSignedSomething {
+          pin2Cache.remember(entry)
+          signing.clearQueue()
+        } else {
+          pin2Cache.clear()
+        }
       }
     }
   }

@@ -72,6 +72,22 @@
         }
       }
     },
+    "%lld documents to sign": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld dokumenttia allekirjoitettavana"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld dokument att underteckna"
+          }
+        }
+      }
+    },
     "%lld/%lld": {
       "extractionState": "manual",
       "localizations": {
@@ -229,6 +245,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lägg till en tidsstämplingstjänst"
+          }
+        }
+      }
+    },
+    "Add more…": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lisää…"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till…"
           }
         }
       }
@@ -1014,6 +1046,22 @@
         }
       }
     },
+    "Drop documents here to sign them": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pudota dokumentit tähän allekirjoitettavaksi"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Släpp dokument här för att underteckna dem"
+          }
+        }
+      }
+    },
     "Finnish identity card middleware": {
       "extractionState": "manual",
       "localizations": {
@@ -1466,6 +1514,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "PIN 2"
+          }
+        }
+      }
+    },
+    "PIN 2 (remembered)": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 2 (muistissa)"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 2 (ihågkommen)"
+          }
+        }
+      }
+    },
+    "PIN 2 is remembered for a minute so a pile signs at once.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 2 muistetaan minuutin ajan, jotta pino allekirjoitetaan kerralla."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 2 kommer ihåg i en minut så att en hög undertecknas på en gång."
           }
         }
       }

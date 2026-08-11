@@ -51,15 +51,39 @@
     /// Whether the card is being read for the signature right now.
     internal private(set) var readingStamp = false
 
-    /// Takes several documents at once.
+    /// Whether the last sign action produced at least one signature.
     ///
-    /// The first is kept as the one whose options are shown; the rest
-    /// are signed with the same choices.
+    /// The one thing the PIN 2 cache needs to know: a PIN it should
+    /// remember is one a signature accepted. Reset when an action
+    /// begins, set as each document completes.
+    internal private(set) var lastActionSignedSomething = false
+
+    /// Adds documents to the pile, ignoring ones already in it.
+    ///
+    /// Dropping again piles onto what is there rather than replacing
+    /// it, so a stack of documents is built up and signed in one pass.
+    /// The newest addition is the one whose options are shown; the
+    /// rest are signed with the same choices.
     internal func accept(_ urls: [URL]) {
-      queued = urls
+      let present = Set(queued.map(\.standardizedFileURL))
+      let additions = urls.filter { !present.contains($0.standardizedFileURL) }
+      queued.append(contentsOf: additions)
       batchOutcomes = []
-      guard let first = urls.first else { return }
-      accept(first)
+      guard let focus = additions.first ?? urls.first else { return }
+      accept(focus)
+    }
+
+    /// Marks the start of one sign action, so acceptance is judged
+    /// over the whole action rather than the last document alone.
+    internal func beginAction() {
+      lastActionSignedSomething = false
+    }
+
+    /// Empties the pile once its documents are signed, keeping the
+    /// outcome on screen.
+    internal func clearQueue() {
+      queued = []
+      pending = nil
     }
 
     /// Points the model at one document of a batch.
@@ -307,6 +331,7 @@
       pending = nil
       stampState = nil
       stampFailure = nil
+      lastActionSignedSomething = true
     }
 
     /// Reports a failure raised before the card was reached.

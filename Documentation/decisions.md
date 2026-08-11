@@ -5,6 +5,28 @@ controls iPhone scope. `Documentation/release-plan.md` controls
 macOS scope and shared security behavior. This file records the concrete
 values chosen under them.
 
+## 2026-08-11 PIN 2 is briefly remembered for a pile of documents
+
+Signing several documents in one pass remembers the PIN 2 for one
+minute, so a pile of dropped documents signs with one entry. This
+relaxes the standing "one signature, one PIN entry" rule, and does so
+deliberately and narrowly.
+
+The safety rests on one property: only a PIN a signature has just
+accepted is ever remembered (`SignDocumentModel.lastActionSignedSomething`
+gates `Pin2Cache.remember`). A remembered PIN is therefore always
+known good and can never spend a wrong-PIN attempt against the card's
+counter. The memory is dropped the moment the card leaves the reader,
+the app steps to the background, any signature fails, or the minute is
+up, whichever comes first, and the digits it holds are overwritten on
+release.
+
+One minute, not the retired fifteen-minute PIN 1 window: long enough
+to sign a stack, short enough that a Mac left unattended does not hold
+a signing PIN. The digits reach the cache as the `String` the field
+delivered, so the zeroization covers the cache's own copy, not every
+copy the PIN ever had.
+
 ## 2026-08-11 The SCS is out of the first App Store release
 
 The Signature Creation Service (the loopback HTTPS server web pages
