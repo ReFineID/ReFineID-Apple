@@ -34,6 +34,13 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# The App Store Connect key id and issuer id, if they have been left in
+# the standard place beside the .p8 rather than exported by hand. The
+# file is the machine owner's, outside the repository; it is sourced
+# only when present, so a machine without it just needs the two
+# variables in the environment as before.
+[ -f "$HOME/.appstoreconnect/env" ] && . "$HOME/.appstoreconnect/env"
+
 platforms="ios macos"
 upload="yes"
 out="build/testflight"
