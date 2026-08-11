@@ -152,24 +152,34 @@ CryptoTokenKit driver with it: once the bundle is gone the smart-card
 system no longer lists the extension, so the card stops being offered
 system-wide. That much a trash is enough for.
 
-It is not a complete removal. Per-application data lives outside the
-bundle and stays:
+It is not a complete removal. macOS provisions two kinds of sandbox
+directory per app and per extension, outside the bundle, and they
+stay:
 
 - `~/Library/Containers/fi.refineid.ReFineID`
 - `~/Library/Containers/fi.refineid.ReFineID.token`
+- `~/Library/Application Scripts/fi.refineid.ReFineID`
+- `~/Library/Application Scripts/fi.refineid.ReFineID.token`
 
-These sandbox containers hold preferences and the extension's working
-area. Neither is a stored secret, but a complete removal deletes both:
+The containers hold preferences and the extension's working area; the
+Application Scripts directories are where a sandboxed app may keep
+user automation scripts, and stay empty because this app ships none.
+None is a stored secret, but a complete removal deletes all four:
 
     rm -rf ~/Library/Containers/fi.refineid.ReFineID \
-           ~/Library/Containers/fi.refineid.ReFineID.token
+           ~/Library/Containers/fi.refineid.ReFineID.token \
+           ~/Library/Application\ Scripts/fi.refineid.ReFineID \
+           ~/Library/Application\ Scripts/fi.refineid.ReFineID.token
 
-The shipped MVP creates no `~/Library/Group Containers` folder: that
-folder is the contactless access-number channel, and contactless
-reading (`FEATURE_CONTACTLESS`) is out of the first release, its
-`application-groups` entitlement removed, so macOS never creates it. A
-build with contactless enabled would also leave
-`~/Library/Group Containers/4ZJC3SFJR2.fi.refineid` to delete.
+The shipped MVP creates nothing under `~/Library/Group Containers` or
+a `4ZJC3SFJR2.fi.refineid` group directory: those belong to the
+contactless access-number channel, and contactless reading
+(`FEATURE_CONTACTLESS`) is out of the first release with its
+`application-groups` entitlement removed, so macOS creates neither the
+group container nor its Application Scripts directory. A build with
+contactless enabled would also leave
+`~/Library/Group Containers/4ZJC3SFJR2.fi.refineid` and
+`~/Library/Application Scripts/4ZJC3SFJR2.fi.refineid` to delete.
 
 To confirm the driver is gone, either of these should name nothing:
 
