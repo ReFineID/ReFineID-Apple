@@ -1,5 +1,0 @@
-ReFineID tar det finländska identitetskortet till iPhone och iPad.
-
-Läs kortet med en USB-C-kortläsare, eller på iPhone med den inbyggda NFC-antennen, och logga in på e-tjänster direkt i Safari med kortets certifikat.
-
-ReFineID är öppen källkod: github.com/ReFineID/ReFineID-Apple

@@ -1,0 +1,42 @@
+{
+  "supportUrl": "https://www.refineid.fi/",
+  "marketingUrl": "https://www.refineid.fi/",
+  "copyright": "2026 Petri Koistinen",
+  "primaryCategory": "UTILITIES",
+  "review": {
+    "firstName": "Petri",
+    "lastName": "Koistinen",
+    "email": "petri.koistinen@refineid.fi",
+    "phone": "+358449564098",
+    "notes": "ReFineID is a driver and signing app for the Finnish national identity card (FINEID). It requires physical hardware the review team is unlikely to have: a FINEID smart card and a USB CCID smart-card reader. On iPhone the card can also be read over NFC.\n\nWithout the card, the app launches to its status window and shows \"Present your identity card to the reader\". That is the intended no-hardware state, not an error. A short video of the full flow on real hardware can be provided on request.\n\nThe bundled CryptoTokenKit token extension is the card driver; it makes the card's certificates available system-wide (Safari, Mail), which is the product's purpose. No accounts, no login, no data collection. Privacy policy: https://www.refineid.fi/privacy-policy/"
+  },
+  "localizations": {
+    "en-US": {
+      "subtitle": "Your ID card, in Safari",
+      "keywords": "identity card",
+      "promotionalText": "Log in to services with your Finnish identity card.",
+      "description": {
+        "macos": "ReFineID brings the Finnish identity card to the Mac.\n\nInsert your identity card into a USB smart-card reader and sign in to e-services directly in Safari with the certificate on your card. Drop a PDF on ReFineID to sign it with a qualified signature, carrying a qualified timestamp and the evidence for long-term validation.\n\nReFineID is open source: github.com/ReFineID/ReFineID-Apple",
+        "ios": "ReFineID brings the Finnish identity card to iPhone and iPad.\n\nRead your card with a USB-C smart-card reader, or on iPhone with the built-in NFC antenna, then sign in to e-services directly in Safari with the certificate on your card.\n\nReFineID is open source: github.com/ReFineID/ReFineID-Apple"
+      }
+    },
+    "fi": {
+      "subtitle": "Henkilökortti Safarissa",
+      "keywords": "henkilökortti",
+      "promotionalText": "Kirjaudu palveluihin henkilökortilla.",
+      "description": {
+        "macos": "ReFineID tuo suomalaisen henkilökortin Maciin.\n\nAseta henkilökortti USB-kortinlukijaan ja kirjaudu sähköisiin palveluihin suoraan Safarissa kortin varmenteella. Pudota PDF ReFineID:hen ja allekirjoita se hyväksytyllä sähköisellä allekirjoituksella, jossa on hyväksytty aikaleima ja pitkäaikaisvalidoinnin todisteet.\n\nReFineID on avointa lähdekoodia: github.com/ReFineID/ReFineID-Apple",
+        "ios": "ReFineID tuo suomalaisen henkilökortin iPhoneen ja iPadiin.\n\nLue korttisi USB-C-kortinlukijalla, tai iPhonessa sisäänrakennetulla NFC-antennilla, ja kirjaudu sähköisiin palveluihin suoraan Safarissa kortin varmenteella.\n\nReFineID on avointa lähdekoodia: github.com/ReFineID/ReFineID-Apple"
+      }
+    },
+    "sv": {
+      "subtitle": "Identitetskort i Safari",
+      "keywords": "identitetskort",
+      "promotionalText": "Logga in på tjänster med ditt identitetskort.",
+      "description": {
+        "macos": "ReFineID tar det finländska identitetskortet till Macen.\n\nSätt identitetskortet i en USB-kortläsare och logga in på e-tjänster direkt i Safari med kortets certifikat. Släpp en PDF på ReFineID för att underteckna den med en kvalificerad elektronisk underskrift, med kvalificerad tidsstämpel och underlag för långtidsvalidering.\n\nReFineID är öppen källkod: github.com/ReFineID/ReFineID-Apple",
+        "ios": "ReFineID tar det finländska identitetskortet till iPhone och iPad.\n\nLäs kortet med en USB-C-kortläsare, eller på iPhone med den inbyggda NFC-antennen, och logga in på e-tjänster direkt i Safari med kortets certifikat.\n\nReFineID är öppen källkod: github.com/ReFineID/ReFineID-Apple"
+      }
+    }
+  }
+}

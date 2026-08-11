@@ -1,5 +1,0 @@
-ReFineID tuo suomalaisen henkilökortin iPhoneen ja iPadiin.
-
-Lue korttisi USB-C-kortinlukijalla, tai iPhonessa sisäänrakennetulla NFC-antennilla, ja kirjaudu sähköisiin palveluihin suoraan Safarissa kortin varmenteella.
-
-ReFineID on avointa lähdekoodia: github.com/ReFineID/ReFineID-Apple

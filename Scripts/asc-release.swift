@@ -23,6 +23,9 @@
 //   asc-release.swift ensure-version <ios|macos> <versionString>
 //   asc-release.swift attach-build <ios|macos> <versionString> <build>
 //   asc-release.swift metadata <ios|macos> <versionString>
+//   asc-release.swift app-info
+//   asc-release.swift review-contact <ios|macos> <versionString>
+//   asc-release.swift screenshots <ios|macos> <versionString>
 
 import CryptoKit
 import Foundation
@@ -195,65 +198,225 @@ func attachBuild(_ platformName: String, _ version: String, _ number: String) {
 let repository = URL(fileURLWithPath: #filePath)
     .resolvingSymlinksInPath().deletingLastPathComponent().deletingLastPathComponent()
 
-func readText(_ url: URL) -> String? {
-    guard let text = try? String(contentsOf: url, encoding: .utf8) else { return nil }
-    let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-    return trimmed.isEmpty ? nil : trimmed
-}
+// The submission details, defined in one place - Metadata/appstore.json
+// - and the locale map inside it, locale to its fields.
+let metadata: [String: Any] = {
+    let url = repository.appendingPathComponent("Metadata/appstore.json")
+    guard let data = try? Data(contentsOf: url),
+        let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+    else { die("could not read Metadata/appstore.json") }
+    return json
+}()
+let localizations = metadata["localizations"] as? [String: Any] ?? [:]
 
-func metadataConfig() -> [String: String] {
-    var config: [String: String] = [:]
-    let url = repository.appendingPathComponent("Metadata/config")
-    for line in (try? String(contentsOf: url, encoding: .utf8))?.split(separator: "\n") ?? [] {
-        guard !line.hasPrefix("#"), let equals = line.firstIndex(of: "=") else { continue }
-        config[String(line[..<equals])] = String(line[line.index(after: equals)...])
+// The existing localizations of a resource, locale to its id, so a
+// push updates what is present and creates what is not.
+func existingLocalizations(_ path: String) -> [String: String] {
+    var map: [String: String] = [:]
+    for entry in dataArray(api("GET", path)) {
+        if let attributes = entry["attributes"] as? [String: Any],
+            let locale = attributes["locale"] as? String, let id = entry["id"] as? String {
+            map[locale] = id
+        }
     }
-    return config
+    return map
 }
 
-// Create or update each locale's version localization from Metadata/.
+// Create or update each locale's version localization from the JSON.
 // The description is the platform's own; the rest is shared.
 func pushMetadata(_ platformName: String, _ version: String) {
     _ = apiPlatform(platformName)
     let versionID = ensureVersion(platformName, version)
-    var existing: [String: String] = [:]
-    let localizations = api(
-        "GET", "/v1/appStoreVersions/\(versionID)/appStoreVersionLocalizations?limit=50")
-    for entry in dataArray(localizations) {
-        if let attributes = entry["attributes"] as? [String: Any],
-            let locale = attributes["locale"] as? String, let id = entry["id"] as? String {
-            existing[locale] = id
-        }
-    }
-    let config = metadataConfig()
-    let metadata = repository.appendingPathComponent("Metadata")
-    let localeDirs = (try? FileManager.default.contentsOfDirectory(
-        at: metadata, includingPropertiesForKeys: nil)) ?? []
-    for localeDir in localeDirs.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
-        let description = localeDir.appendingPathComponent("description-\(platformName).txt")
-        guard readText(description) != nil else { continue }
-        let locale = localeDir.lastPathComponent
-        var attributes: [String: Any] = [:]
-        attributes["description"] = readText(description)
-        attributes["keywords"] = readText(localeDir.appendingPathComponent("keywords.txt"))
-        attributes["promotionalText"] = readText(
-            localeDir.appendingPathComponent("promotional_text.txt"))
-        if let support = config["support_url"] { attributes["supportUrl"] = support }
-        if let marketing = config["marketing_url"] { attributes["marketingUrl"] = marketing }
+    let existing = existingLocalizations(
+        "/v1/appStoreVersions/\(versionID)/appStoreVersionLocalizations?limit=50")
+    for locale in localizations.keys.sorted() {
+        let entry = localizations[locale] as? [String: Any] ?? [:]
+        guard let description = (entry["description"] as? [String: Any])?[platformName] as? String
+        else { continue }
+        var attributes: [String: Any] = ["description": description]
+        if let keywords = entry["keywords"] as? String { attributes["keywords"] = keywords }
+        if let promo = entry["promotionalText"] as? String { attributes["promotionalText"] = promo }
+        if let support = metadata["supportUrl"] as? String { attributes["supportUrl"] = support }
+        if let marketing = metadata["marketingUrl"] as? String { attributes["marketingUrl"] = marketing }
         if let id = existing[locale] {
             api("PATCH", "/v1/appStoreVersionLocalizations/\(id)", body: [
                 "data": ["type": "appStoreVersionLocalizations", "id": id,
-                         "attributes": attributes],
-            ])
+                         "attributes": attributes]])
             print("  \(locale): updated")
         } else {
             attributes["locale"] = locale
             api("POST", "/v1/appStoreVersionLocalizations", body: [
                 "data": ["type": "appStoreVersionLocalizations", "attributes": attributes,
                          "relationships": ["appStoreVersion": [
-                             "data": ["type": "appStoreVersions", "id": versionID]]]],
-            ])
+                             "data": ["type": "appStoreVersions", "id": versionID]]]]])
             print("  \(locale): created")
+        }
+    }
+}
+
+// The app-level info record that carries name, subtitle and category.
+func appInfoID() -> String {
+    let infos = dataArray(api("GET", "/v1/apps/\(appID())/appInfos"))
+    for info in infos {
+        let state = (info["attributes"] as? [String: Any])?["state"] as? String
+        if state == "PREPARE_FOR_SUBMISSION", let id = info["id"] as? String { return id }
+    }
+    guard let id = infos.first?["id"] as? String else { die("no app info record") }
+    return id
+}
+
+// Sets the primary category and each locale's subtitle from the JSON.
+// Both live on the app info record, not on a version.
+func pushAppInfo() {
+    let infoID = appInfoID()
+    let category = metadata["primaryCategory"] as? String ?? "UTILITIES"
+    api("PATCH", "/v1/appInfos/\(infoID)", body: [
+        "data": ["type": "appInfos", "id": infoID,
+                 "relationships": ["primaryCategory": [
+                     "data": ["type": "appCategories", "id": category]]]]])
+    print("primary category: \(category)")
+    let existing = existingLocalizations("/v1/appInfos/\(infoID)/appInfoLocalizations?limit=50")
+    for locale in localizations.keys.sorted() {
+        guard let subtitle = (localizations[locale] as? [String: Any])?["subtitle"] as? String
+        else { continue }
+        if let id = existing[locale] {
+            api("PATCH", "/v1/appInfoLocalizations/\(id)", body: [
+                "data": ["type": "appInfoLocalizations", "id": id,
+                         "attributes": ["subtitle": subtitle]]])
+            print("  \(locale): subtitle updated")
+        } else {
+            api("POST", "/v1/appInfoLocalizations", body: [
+                "data": ["type": "appInfoLocalizations",
+                         "attributes": ["locale": locale, "subtitle": subtitle],
+                         "relationships": ["appInfo": [
+                             "data": ["type": "appInfos", "id": infoID]]]]])
+            print("  \(locale): subtitle created")
+        }
+    }
+}
+
+// Sets the App Review contact and notes on a platform's version, from
+// the JSON. No demo account: the app has no login.
+func reviewContact(_ platformName: String, _ version: String) {
+    let versionID = ensureVersion(platformName, version)
+    let review = metadata["review"] as? [String: Any] ?? [:]
+    var attributes: [String: Any] = [
+        "contactFirstName": review["firstName"] ?? "",
+        "contactLastName": review["lastName"] ?? "",
+        "contactPhone": review["phone"] ?? "",
+        "contactEmail": review["email"] ?? "",
+        "demoAccountRequired": false,
+    ]
+    if let notes = review["notes"] as? String { attributes["notes"] = notes }
+    let existing = api(
+        "GET", "/v1/appStoreVersions/\(versionID)/appStoreReviewDetail")["data"] as? [String: Any]
+    if let id = existing?["id"] as? String {
+        api("PATCH", "/v1/appStoreReviewDetails/\(id)", body: [
+            "data": ["type": "appStoreReviewDetails", "id": id, "attributes": attributes]])
+    } else {
+        api("POST", "/v1/appStoreReviewDetails", body: [
+            "data": ["type": "appStoreReviewDetails", "attributes": attributes,
+                     "relationships": ["appStoreVersion": [
+                         "data": ["type": "appStoreVersions", "id": versionID]]]]])
+    }
+    print("review contact set for \(platformName) \(version)")
+}
+
+// PUTs one chunk to a reserved upload URL. These are presigned, so they
+// carry their own auth in the headers the reservation handed back and
+// must not get the API bearer token.
+func putChunk(_ operation: [String: Any], _ data: Data) {
+    guard let urlString = operation["url"] as? String, let url = URL(string: urlString),
+        let offset = operation["offset"] as? Int, let length = operation["length"] as? Int
+    else { die("malformed upload operation") }
+    var request = URLRequest(url: url)
+    request.httpMethod = operation["method"] as? String ?? "PUT"
+    for header in operation["requestHeaders"] as? [[String: Any]] ?? [] {
+        if let name = header["name"] as? String, let value = header["value"] as? String {
+            request.setValue(value, forHTTPHeaderField: name)
+        }
+    }
+    request.httpBody = data.subdata(in: offset..<(offset + length))
+    let semaphore = DispatchSemaphore(value: 0)
+    var status = 0
+    URLSession.shared.dataTask(with: request) { _, response, _ in
+        status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        semaphore.signal()
+    }.resume()
+    semaphore.wait()
+    guard (200..<300).contains(status) else { die("HTTP \(status) uploading a screenshot chunk") }
+}
+
+// The screenshot set for a version localization and display type, its
+// existing shots cleared so a re-run replaces rather than appends.
+func screenshotSet(localizationID: String, displayType: String) -> String {
+    let sets = dataArray(api(
+        "GET", "/v1/appStoreVersionLocalizations/\(localizationID)/appScreenshotSets"))
+    let setID: String
+    if let match = sets.first(where: {
+        ($0["attributes"] as? [String: Any])?["screenshotDisplayType"] as? String == displayType
+    }), let id = match["id"] as? String {
+        setID = id
+        for shot in dataArray(api("GET", "/v1/appScreenshotSets/\(setID)/appScreenshots")) {
+            if let id = shot["id"] as? String { api("DELETE", "/v1/appScreenshots/\(id)") }
+        }
+    } else {
+        let created = api("POST", "/v1/appScreenshotSets", body: [
+            "data": ["type": "appScreenshotSets",
+                     "attributes": ["screenshotDisplayType": displayType],
+                     "relationships": ["appStoreVersionLocalization": [
+                         "data": ["type": "appStoreVersionLocalizations",
+                                  "id": localizationID]]]]])
+        guard let id = (created["data"] as? [String: Any])?["id"] as? String
+        else { die("no screenshot set id") }
+        setID = id
+    }
+    return setID
+}
+
+// Reserves, uploads and commits one screenshot into a set.
+func uploadScreenshot(setID: String, file: URL) {
+    guard let data = try? Data(contentsOf: file) else { die("cannot read \(file.path)") }
+    let reservation = api("POST", "/v1/appScreenshots", body: [
+        "data": ["type": "appScreenshots",
+                 "attributes": ["fileName": file.lastPathComponent, "fileSize": data.count],
+                 "relationships": ["appScreenshotSet": [
+                     "data": ["type": "appScreenshotSets", "id": setID]]]]])
+    guard let reserved = reservation["data"] as? [String: Any], let id = reserved["id"] as? String,
+        let operations = (reserved["attributes"] as? [String: Any])?["uploadOperations"]
+            as? [[String: Any]]
+    else { die("no upload operations for \(file.lastPathComponent)") }
+    for operation in operations { putChunk(operation, data) }
+    let checksum = Insecure.MD5.hash(data: data).map { String(format: "%02x", $0) }.joined()
+    api("PATCH", "/v1/appScreenshots/\(id)", body: [
+        "data": ["type": "appScreenshots", "id": id,
+                 "attributes": ["uploaded": true, "sourceFileChecksum": checksum]]])
+    print("    \(file.lastPathComponent)")
+}
+
+// Uploads every PNG under Metadata/screenshots/<locale>/<DISPLAY_TYPE>/
+// for a platform's version, one screenshot set per display type.
+func pushScreenshots(_ platformName: String, _ version: String) {
+    let versionID = ensureVersion(platformName, version)
+    let versionLocalizations = existingLocalizations(
+        "/v1/appStoreVersions/\(versionID)/appStoreVersionLocalizations?limit=50")
+    let root = repository.appendingPathComponent("Metadata/screenshots")
+    let fileManager = FileManager.default
+    for (locale, localizationID) in versionLocalizations.sorted(by: { $0.key < $1.key }) {
+        let localeDir = root.appendingPathComponent(locale)
+        guard let displayDirs = try? fileManager.contentsOfDirectory(
+            at: localeDir, includingPropertiesForKeys: nil) else { continue }
+        print("  \(locale):")
+        for displayDir in displayDirs.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
+            let displayType = displayDir.lastPathComponent
+            let shots = ((try? fileManager.contentsOfDirectory(
+                at: displayDir, includingPropertiesForKeys: nil)) ?? [])
+                .filter { $0.pathExtension.lowercased() == "png" }
+                .sorted(by: { $0.lastPathComponent < $1.lastPathComponent })
+            guard !shots.isEmpty else { continue }
+            print("    [\(displayType)]")
+            let setID = screenshotSet(localizationID: localizationID, displayType: displayType)
+            for shot in shots { uploadScreenshot(setID: setID, file: shot) }
         }
     }
 }
@@ -293,5 +456,8 @@ case ("state", 0): state()
 case ("ensure-version", 2): print(ensureVersion(rest[0], rest[1]))
 case ("attach-build", 3): attachBuild(rest[0], rest[1], rest[2])
 case ("metadata", 2): pushMetadata(rest[0], rest[1])
+case ("app-info", 0): pushAppInfo()
+case ("review-contact", 2): reviewContact(rest[0], rest[1])
+case ("screenshots", 2): pushScreenshots(rest[0], rest[1])
 default: die("unknown command or wrong arguments: '\(command)'; see the header")
 }

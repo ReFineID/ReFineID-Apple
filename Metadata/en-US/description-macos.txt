@@ -1,5 +1,0 @@
-ReFineID brings the Finnish identity card to the Mac.
-
-Insert your identity card into a USB smart-card reader and sign in to e-services directly in Safari with the certificate on your card. Drop a PDF on ReFineID to sign it with a qualified signature, carrying a qualified timestamp and the evidence for long-term validation.
-
-ReFineID is open source: github.com/ReFineID/ReFineID-Apple
