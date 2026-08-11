@@ -9,10 +9,12 @@
 
     internal var body: some View {
       TabView {
-        CardReadingSettingsView()
-          .tabItem {
-            Label("Cards", systemImage: "creditcard")
-          }
+        #if FEATURE_CONTACTLESS
+          CardReadingSettingsView()
+            .tabItem {
+              Label("Cards", systemImage: "creditcard")
+            }
+        #endif
         #if FEATURE_PDF_STAMP
           DocumentStampSettingsView()
             .tabItem {

@@ -11,7 +11,7 @@ for hardware.
 ReFineID is a driver and signing app for the Finnish national
 identity card (FINEID). It requires physical hardware the review
 team is unlikely to have: a FINEID smart card and a USB CCID
-smart-card reader, contact or contactless (dual-interface).
+smart-card reader (contact).
 
 What works without the card:
 
@@ -30,14 +30,6 @@ Technical notes for review:
   card driver. It is what makes the card's certificates available
   system-wide (Safari, Mail, other apps), which is the product's
   purpose; the app itself is the status and signing surface.
-- A card presented contactlessly asks for its card access number
-  (CAN), the six digits printed on the card face - a proximity
-  proof required by the card's PACE protocol (FINEID S1), not a
-  secret. The app tries an entered number once, then walks the
-  holder through presenting the card again; a wrong number shakes
-  the entry red. The number is held only while the app runs and
-  is never written to disk outside the app group container it
-  travels through, where it is deleted at quit.
 - The app makes outbound connections for one purpose: an archival
   signature (PAdES-B-LTA) fetches a qualified timestamp and the
   revocation data proving its chain. It binds no listening socket

@@ -5,6 +5,33 @@ controls iPhone scope. `Documentation/release-plan.md` controls
 macOS scope and shared security behavior. This file records the concrete
 values chosen under them.
 
+## 2026-08-11 Contactless card reading is out of the first macOS release
+
+macOS is contact-reader only in the first App Store release.
+Contactless reading is compile-gated behind `FEATURE_CONTACTLESS`,
+absent from the default feature set, and the `application-groups`
+entitlement it needs is removed from both the app and the token
+extension.
+
+The reason is the group container. A contactless card's access number
+reaches the token driver through a shared app-group container, because
+the driver cannot read the app's keychain and the configuration store
+is unreadable outside the hosting application. macOS creates a
+`~/Library/Group Containers` folder the moment that group is touched,
+and it survives a trashed app. Without the entitlement macOS creates
+no such folder at all, so removing the feature removes a piece of
+state the uninstall would otherwise leave behind. Less shipped, less
+to remove.
+
+This is macOS only. On iPhone, built-in NFC is a required production
+transport (2026-08-09 decision, above), served through a shared
+keychain access group rather than a group-container file, and it is
+not gated by this flag.
+
+When contactless returns to macOS it ships as the holder's Settings
+toggle, off by default, with the entitlement restored on both
+targets. Roadmap: TASKS.md section 15.
+
 ## 2026-08-11 PIN 2 is briefly remembered for a pile of documents
 
 Signing several documents in one pass remembers the PIN 2 for one

@@ -157,17 +157,19 @@ bundle and stays:
 
 - `~/Library/Containers/fi.refineid.ReFineID`
 - `~/Library/Containers/fi.refineid.ReFineID.token`
-- `~/Library/Group Containers/4ZJC3SFJR2.fi.refineid`
 
-The containers hold preferences and the extension's working area; the
-group container is where the app hands the extension a contactless
-card's access number, and that file is deleted at quit in any case.
-None of it is a stored secret, but a complete removal deletes all
-three:
+These sandbox containers hold preferences and the extension's working
+area. Neither is a stored secret, but a complete removal deletes both:
 
     rm -rf ~/Library/Containers/fi.refineid.ReFineID \
-           ~/Library/Containers/fi.refineid.ReFineID.token \
-           "~/Library/Group Containers/4ZJC3SFJR2.fi.refineid"
+           ~/Library/Containers/fi.refineid.ReFineID.token
+
+The shipped MVP creates no `~/Library/Group Containers` folder: that
+folder is the contactless access-number channel, and contactless
+reading (`FEATURE_CONTACTLESS`) is out of the first release, its
+`application-groups` entitlement removed, so macOS never creates it. A
+build with contactless enabled would also leave
+`~/Library/Group Containers/4ZJC3SFJR2.fi.refineid` to delete.
 
 To confirm the driver is gone, either of these should name nothing:
 

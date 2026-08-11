@@ -37,13 +37,17 @@
     @State private var signing = SignDocumentModel()
     @State private var pin2Cache = Pin2Cache()
     @State private var offeringNumber = false
-    @AppStorage(AppSettings.contactlessEnabled)
-    private var contactlessEnabled = false
     @State private var pin2 = ""
     @State private var accessNumber = ""
     @State private var isTargeted = false
     @State private var format = SignatureFormat.pades
     @FocusState private var pinFocused: Bool
+
+    #if FEATURE_CONTACTLESS
+      /// Whether the holder has enabled contactless card reading.
+      @AppStorage(AppSettings.contactlessEnabled)
+      private var contactlessEnabled = false
+    #endif
 
     /// The signing state, readable by the split-out outcome section.
     internal var signingModel: SignDocumentModel { signing }
@@ -61,28 +65,17 @@
         && !signing.readingStamp
     }
 
-    /// What the identity row and the offered features key on.
-    ///
-    /// Reads two observed facts - the token's publication and the
-    /// slot's physical answer - so the row moves the moment either
-    /// does.
-    private var availability: LoginIdentityModel.Availability {
-      if model.isReady {
-        .ready
-      } else if CardPresence.shared.isCardPresent {
-        .cardWithoutIdentity
-      } else {
-        .noCard
-      }
-    }
-
     /// Whether an unready card is provably on a contactless
     /// interface, which is the one state that asks for an access
     /// number.
     private var awaitingAccessNumber: Bool {
-      contactlessEnabled
-        && availability == .cardWithoutIdentity
-        && CardPresence.shared.isContactlessCardPresent
+      #if FEATURE_CONTACTLESS
+        contactlessEnabled
+          && availability == .cardWithoutIdentity
+          && CardPresence.shared.isContactlessCardPresent
+      #else
+        false
+      #endif
     }
 
     internal var body: some View {
@@ -130,13 +123,13 @@
       .padding(Self.padding)
       .frame(minWidth: minimumWidth, alignment: .leading)
       // Nothing entered in an earlier run may serve this one: a number
-      // left in the driver configuration is withdrawn before the card
-      // could use it, so every launch starts with no saved number.
-      // Always, not only when contactless is enabled: a number left
-      // by an earlier run that had it enabled must not survive into a
-      // run that does not, and the withdraw is harmless with nothing
-      // to withdraw.
-      .task { SealedCardSection.withdrawOfferedNumber() }
+      // left behind is withdrawn before the card could use it, so
+      // every launch starts with none. Only with the feature: without
+      // it no number is ever offered, and touching the group container
+      // to clean up would be the one thing that creates it.
+      #if FEATURE_CONTACTLESS
+        .task { SealedCardSection.withdrawOfferedNumber() }
+      #endif
       .onAppear {
         model.refresh()
         react(to: availability)

@@ -10,6 +10,22 @@
   /// Neither reads the window's own state, so both live here and leave
   /// the view itself to the parts that do.
   extension StatusView {
+    /// What the identity row and the offered features key on.
+    ///
+    /// Reads two observed facts - the token's publication and the
+    /// slot's physical answer - so the row moves the moment either
+    /// does. Here rather than in the view body only for the view
+    /// type's length; it reads shared state, no private field.
+    internal var availability: LoginIdentityModel.Availability {
+      if LoginIdentityModel.shared.isReady {
+        .ready
+      } else if CardPresence.shared.isCardPresent {
+        .cardWithoutIdentity
+      } else {
+        .noCard
+      }
+    }
+
     /// The signature style every dropped document can take.
     ///
     /// A container suits any file; a PAdES signature suits only a PDF.
