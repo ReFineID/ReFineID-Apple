@@ -15,9 +15,11 @@ import Security
 /// while its card is present and withdrawn with it; the file holds the
 /// digits for that long and no longer.
 public enum OfferedAccessNumber {
-  /// The entitlement whose value names the app group to use.
-  private static let appGroupEntitlement =
-    "com.apple.security.application-groups"
+  #if os(macOS)
+    /// The entitlement whose value names the app group to use.
+    private static let appGroupEntitlement =
+      "com.apple.security.application-groups"
+  #endif
 
   /// The file the digits travel in.
   private static let filename = "offered-access-number"
@@ -42,25 +44,37 @@ public enum OfferedAccessNumber {
     container?.appendingPathComponent(refusalFilename, isDirectory: false)
   }
 
-  /// The app group this binary is entitled to, read from its own
-  /// entitlements so no team identifier is written in source.
-  ///
-  /// Nil when the binary carries no application-group entitlement,
-  /// which is the shipped macOS release - contactless is gated out
-  /// there, so the whole channel is absent. Self-consistent by
-  /// construction: it uses whatever group the binary actually holds.
-  private static var appGroup: String? {
-    guard let task = SecTaskCreateFromSelf(nil) else { return nil }
-    let value = SecTaskCopyValueForEntitlement(
-      task, appGroupEntitlement as CFString, nil)
-    return (value as? [String])?.first
-  }
+  #if os(macOS)
+    /// The app group this binary is entitled to, read from its own
+    /// entitlements so no team identifier is written in source.
+    ///
+    /// Nil when the binary carries no application-group entitlement,
+    /// which is the shipped macOS release - contactless is gated out
+    /// there, so the whole channel is absent. Self-consistent by
+    /// construction: it uses whatever group the binary actually holds.
+    ///
+    /// `SecTaskCopyValueForEntitlement` is macOS-only; the channel is
+    /// too, so this whole path is guarded. iOS carries the access
+    /// number in the shared keychain access group instead.
+    private static var appGroup: String? {
+      guard let task = SecTaskCreateFromSelf(nil) else { return nil }
+      var error: Unmanaged<CFError>?
+      let value = SecTaskCopyValueForEntitlement(
+        task, appGroupEntitlement as CFString, &error)
+      return (value as? [String])?.first
+    }
+  #endif
 
-  /// The group container, or nil without the entitlement.
+  /// The group container, or nil where there is none - which is iOS
+  /// entirely, and macOS without the entitlement.
   private static var container: URL? {
-    guard let appGroup else { return nil }
-    return FileManager.default
-      .containerURL(forSecurityApplicationGroupIdentifier: appGroup)
+    #if os(macOS)
+      guard let appGroup else { return nil }
+      return FileManager.default
+        .containerURL(forSecurityApplicationGroupIdentifier: appGroup)
+    #else
+      return nil
+    #endif
   }
 
   /// The offered digits, or nil when nothing is offered.
