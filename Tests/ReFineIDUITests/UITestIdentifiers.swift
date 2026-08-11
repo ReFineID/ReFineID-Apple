@@ -28,6 +28,7 @@
 /// sections under `Sources/App/`.
 /// A UI test drives a separate process and cannot share a constant with
 /// it, so this is the register that keeps the two sides honest.
+
 internal enum UITestIdentifiers {
   /// The six-digit entry field, present until an identity is set.
   internal static let cardAccessNumberField = "cardAccessNumberField"
