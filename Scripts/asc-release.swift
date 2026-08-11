@@ -20,6 +20,7 @@
 // Usage:
 //   asc-release.swift app-id
 //   asc-release.swift state
+//   asc-release.swift builds <ios|macos>
 //   asc-release.swift ensure-version <ios|macos> <versionString>
 //   asc-release.swift attach-build <ios|macos> <versionString> <build>
 //   asc-release.swift metadata <ios|macos> <versionString>
@@ -550,6 +551,42 @@ func pushScreenshots(_ platformName: String, _ version: String) {
     }
 }
 
+// The platform's recent builds with their TestFlight readiness: a build
+// is testable once it processes to VALID, and reaches external testers
+// once its beta review is APPROVED. Internal testers need only VALID.
+func builds(_ platformName: String) {
+    let platform = apiPlatform(platformName)
+    let path = "/v1/builds?filter[app]=\(appID())&filter[preReleaseVersion.platform]=\(platform)"
+        + "&sort=-uploadedDate&limit=10&include=preReleaseVersion,betaAppReviewSubmission"
+        + "&fields[builds]=version,processingState,expired,preReleaseVersion,betaAppReviewSubmission"
+        + "&fields[preReleaseVersions]=version&fields[betaAppReviewSubmissions]=betaReviewState"
+    let response = api("GET", path)
+    var included: [String: [String: Any]] = [:]
+    for entry in response["included"] as? [[String: Any]] ?? [] {
+        if let type = entry["type"] as? String, let id = entry["id"] as? String {
+            included["\(type)/\(id)"] = entry["attributes"] as? [String: Any]
+        }
+    }
+    func related(_ build: [String: Any], _ name: String, _ type: String) -> [String: Any]? {
+        let relationship = (build["relationships"] as? [String: Any])?[name] as? [String: Any]
+        guard let id = (relationship?["data"] as? [String: Any])?["id"] as? String else { return nil }
+        return included["\(type)/\(id)"]
+    }
+    for build in dataArray(response) {
+        let attributes = build["attributes"] as? [String: Any] ?? [:]
+        let marketing = related(build, "preReleaseVersion", "preReleaseVersions")?["version"]
+            as? String ?? "-"
+        let review = related(build, "betaAppReviewSubmission", "betaAppReviewSubmissions")?[
+            "betaReviewState"] as? String ?? "none"
+        let expired = (attributes["expired"] as? Bool ?? false) ? " expired" : ""
+        print(String(format: "  %@ build %@ %@ beta=%@%@",
+                     marketing.padding(toLength: 10, withPad: " ", startingAt: 0),
+                     (attributes["version"] as? String ?? "").padding(toLength: 5, withPad: " ", startingAt: 0),
+                     (attributes["processingState"] as? String ?? "").padding(toLength: 10, withPad: " ", startingAt: 0),
+                     review, expired))
+    }
+}
+
 func state() {
     let path = "/v1/apps/\(appID())/appStoreVersions?fields[appStoreVersions]="
         + "versionString,platform,appStoreState,build&include=build"
@@ -586,6 +623,7 @@ case ("get", 1):
     print(String(data: pretty, encoding: .utf8) ?? "")
 case ("app-id", 0): print(appID())
 case ("state", 0): state()
+case ("builds", 1): builds(rest[0])
 case ("ensure-version", 2): print(ensureVersion(rest[0], rest[1]))
 case ("attach-build", 3): attachBuild(rest[0], rest[1], rest[2])
 case ("metadata", 2): pushMetadata(rest[0], rest[1])
