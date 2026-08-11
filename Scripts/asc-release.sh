@@ -50,9 +50,11 @@ json() {
 d=json.load(sys.stdin)
 cur=d
 for k in sys.argv[1:]:
-    if isinstance(cur,list): cur=cur[int(k)]
+    if isinstance(cur,list):
+        i=int(k); cur=cur[i] if 0<=i<len(cur) else None
     elif isinstance(cur,dict): cur=cur.get(k)
     else: cur=None
+    if cur is None: break
 print("" if cur is None else cur)' "$@"
 }
 
