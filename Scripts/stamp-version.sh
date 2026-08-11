@@ -14,7 +14,9 @@
 #     MARKETING_VERSION (CFBundleShortVersionString) = YY.M.D
 #         Release date, no zero padding.
 #     CURRENT_PROJECT_VERSION (CFBundleVersion)      = H * 10 + M / 10
-#         The ten-minute bucket the build is cut in.
+#         The ten-minute bucket of UTC the build is cut in. UTC, so it
+#         is monotonic across machines and does not repeat an hour at
+#         the daylight-saving fall-back.
 #
 #   PKCS11Bridge/Sources/PKCS11Bridge/ModuleVersion.swift
 #     A separate deliverable, the PKCS#11 module, reports its version
@@ -41,7 +43,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-read -r yy mm dd hh mn <<<"$(date '+%y %m %d %H %M')"
+read -r yy mm dd hh mn <<<"$(date -u '+%y %m %d %H %M')"
 version="${yy}.$((10#$mm)).$((10#$dd))"
 bucket=$((10#$hh * 10 + 10#$mn / 10))
 

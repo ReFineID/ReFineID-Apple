@@ -15,8 +15,8 @@
 #
 # Version and build come from the clock, not from the project file:
 # marketing version is the calendar date and build is the ten-minute
-# bucket of Helsinki local time it was cut in, so two builds on one day
-# always increase and the project is never dirtied by a release.
+# bucket of UTC it was cut in, so two builds on one day always increase
+# regardless of the build machine's zone or daylight saving and the project is never dirtied by a release.
 #
 # Usage:
 #
@@ -53,7 +53,7 @@ note() { echo "release: $*"; }
 # describes nothing anybody can go back to.
 [ -z "$(git status --porcelain)" ] || fail "working tree is dirty; commit or stash first."
 
-read -r yy mm dd hh mn <<<"$(date '+%y %m %d %H %M')"
+read -r yy mm dd hh mn <<<"$(date -u '+%y %m %d %H %M')"
 version="${yy}.$((10#$mm)).$((10#$dd))"
 build=$((10#$hh * 10 + 10#$mn / 10))
 commit="$(git rev-parse --short HEAD)"

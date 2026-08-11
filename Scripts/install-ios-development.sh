@@ -23,7 +23,7 @@ if [[ -z "$device" ]]; then
   exit 2
 fi
 
-read -r yy mm dd hh mn <<<"$(date '+%y %m %d %H %M')"
+read -r yy mm dd hh mn <<<"$(date -u '+%y %m %d %H %M')"
 version="${yy}.$((10#$mm)).$((10#$dd))"
 build=$((10#$hh * 10 + 10#$mn / 10))
 derived_data="/tmp/refineid-apple-development"
