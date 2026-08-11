@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// The dedicated home for the brainpoolP384r1 domain parameters.
 ///
 /// RFC 5639 section 3.6 publishes these as big-endian hex strings. They are

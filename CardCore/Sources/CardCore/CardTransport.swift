@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// A physical way of reaching the card.
 ///
 /// The two transports differ in cost rather than capability. A reader is

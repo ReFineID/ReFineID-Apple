@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// A certificate the card publishes, and everywhere it may live.
 ///
 /// Directory placement follows FINEID S4-1 (citizen cards) and FINEID

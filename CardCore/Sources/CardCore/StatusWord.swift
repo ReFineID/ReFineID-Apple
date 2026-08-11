@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// Decoded ISO 7816-4 status word, typed after the Rust reference
 /// implementation's classification.
 ///

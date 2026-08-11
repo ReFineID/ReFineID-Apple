@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// The brainpoolP384r1 elliptic curve, RFC 5639 section 3.6.
 ///
 /// The domain parameters live in `BrainpoolP384r1Values` as limb literals;

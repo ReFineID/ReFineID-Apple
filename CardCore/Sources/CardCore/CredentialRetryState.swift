@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// One side-effect-free reading of all three retry counters.
 public struct CredentialRetryState: Equatable, Sendable {
   /// Attempts remaining for PIN1.

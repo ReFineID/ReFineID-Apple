@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 import Foundation
 
 /// Turns a bilevel image into closed outlines, and those into PDF path

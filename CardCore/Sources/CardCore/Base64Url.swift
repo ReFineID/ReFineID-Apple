@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 import Foundation
 
 /// Base64url without padding, the JOSE segment encoding (RFC 7515

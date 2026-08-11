@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 import Foundation
 
 /// A compact JWS protected header, as far as this service reads it

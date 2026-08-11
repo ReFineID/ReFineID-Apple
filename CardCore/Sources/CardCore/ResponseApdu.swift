@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 import Foundation
 
 /// A parsed response APDU: bounded payload plus classified status word.

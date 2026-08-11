@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// A validated PIN1 value with single-use ownership.
 ///
 /// PIN1 and PIN2 are distinct, non-interchangeable types; this type can

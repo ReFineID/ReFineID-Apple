@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// Backing storage for credential digits, overwritten with zeros when the
 /// last owner releases it.
 ///

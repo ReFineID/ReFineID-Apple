@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 import Foundation
 
 /// A card response joined across its `61xx` GET RESPONSE continuations,

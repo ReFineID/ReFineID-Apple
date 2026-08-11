@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// Why a PDF could not be prepared or signed.
 public enum PdfSigningError: Error, Equatable {
   /// A cross-reference or object stream uses a filter or predictor

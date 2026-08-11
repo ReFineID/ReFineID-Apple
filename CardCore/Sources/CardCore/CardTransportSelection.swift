@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// The transports a holder currently allows, guaranteed never empty.
 ///
 /// The mistake this type makes impossible is a selection that permits

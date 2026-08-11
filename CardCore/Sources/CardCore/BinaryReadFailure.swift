@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// Why a binary read failed.
 ///
 /// Unknown card behavior stays typed instead of degrading into a

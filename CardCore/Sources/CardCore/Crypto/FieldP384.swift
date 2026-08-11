@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// An element of GF(p) for the brainpoolP384r1 prime, held in Montgomery
 /// form.
 ///

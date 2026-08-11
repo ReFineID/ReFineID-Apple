@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// The complete hardware serial of a card, as read from the card itself.
 ///
 /// This is the identity every security binding uses: accepted-PIN and

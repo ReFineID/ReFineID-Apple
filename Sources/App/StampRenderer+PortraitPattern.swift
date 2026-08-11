@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #if os(macOS)
 
   /// Extends the QR's mixed dot resolution beyond its encoded cells.

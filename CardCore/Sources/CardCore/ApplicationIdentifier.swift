@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// An ISO 7816-4 application identifier (AID), validated at construction.
 public struct ApplicationIdentifier: Equatable, Sendable {
   /// Shortest AID the standard permits (the 5-byte RID alone).

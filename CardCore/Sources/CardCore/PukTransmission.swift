@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// A PUK in transit to the card, usable for one command only.
 ///
 /// The only way to obtain this value is consuming a `Puk`; the only code

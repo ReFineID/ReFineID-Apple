@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// A refused SCS transaction step, as the specification's reason pair.
 ///
 /// The code follows the same classes as the JSON `/sign` path:

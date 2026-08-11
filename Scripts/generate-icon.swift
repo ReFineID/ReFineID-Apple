@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 // The ReFineID app-icon source artwork, as code - SVG only.
 //
 // Design: an identity card and its gold chip, over the Finnish flag blue.

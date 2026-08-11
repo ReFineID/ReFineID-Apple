@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 // This file is a byte table, and that is the exemption's justification:
 // every literal below is one byte of a card's answer to reset, quoted
 // from the document named below. Naming each byte individually would

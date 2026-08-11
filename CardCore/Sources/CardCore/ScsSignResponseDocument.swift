@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 import Foundation
 
 /// The `/sign` response document (DVV SCS specification v1.3 §2.6.3).

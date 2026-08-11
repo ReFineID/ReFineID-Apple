@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// How the card this token was made from is reached.
 ///
 /// Two of these are contactless, and the difference between them decides

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 import Foundation
 
 /// The historical bytes of an answer to reset, parsed as ISO 7816-3

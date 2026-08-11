@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// Structure of an answer to reset, as ISO 7816-3 section 8 defines it.
 ///
 /// Named here rather than written into the parser, so the parser reads

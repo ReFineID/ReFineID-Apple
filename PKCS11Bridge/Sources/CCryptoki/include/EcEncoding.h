@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 // EcEncoding.h -- named protocol values for the EC encodings the bridge
 // translates between Security.framework and PKCS#11.
 //

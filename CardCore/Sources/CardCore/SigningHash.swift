@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// The hash function of a FINEID signing algorithm reference.
 ///
 /// Carried as the high nibble of the MSE:SET algorithm-reference byte

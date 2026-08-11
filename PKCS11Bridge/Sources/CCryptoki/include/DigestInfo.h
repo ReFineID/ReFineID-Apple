@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 // DigestInfo.h -- named hash algorithm identifiers for CKM_RSA_PKCS.
 //
 // A CKM_RSA_PKCS caller signs a DigestInfo, SEQUENCE {

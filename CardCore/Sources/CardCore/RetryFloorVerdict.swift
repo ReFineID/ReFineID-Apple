@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// The retry floor's decision for one PIN-bearing operation.
 ///
 /// The cases are closed and exhaustive on purpose: a caller must switch

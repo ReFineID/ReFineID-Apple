@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// The dedicated home for SEC1 elliptic-curve point encoding values.
 ///
 /// Source: SEC 1 v2.0 section 2.3.3, "Elliptic-Curve-Point-to-Octet-String

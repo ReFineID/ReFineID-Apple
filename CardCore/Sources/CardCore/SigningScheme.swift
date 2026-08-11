@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// The signature scheme of a FINEID signing algorithm reference.
 ///
 /// Carried as the low nibble of the MSE:SET algorithm-reference byte.

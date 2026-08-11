@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// One counter-safe reading of all three credentials.
 public struct CredentialProbeReport: Equatable, Sendable {
   /// PIN1 probe outcome (VERIFY probe form).

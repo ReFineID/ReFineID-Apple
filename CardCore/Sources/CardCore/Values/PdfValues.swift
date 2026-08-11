@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// The dedicated home for PDF syntax constants used by signing.
 ///
 /// Sources: ISO 32000-1 (PDF 1.7) for file structure and the

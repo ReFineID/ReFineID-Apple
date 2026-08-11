@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// A validated PUK value with single-use ownership.
 ///
 /// The PUK is not a PIN: it never authorises an operation on the user's

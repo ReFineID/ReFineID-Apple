@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// Byte values that identify an image encoding.
 internal enum ImageValues {
   /// JP2 signature-box length.

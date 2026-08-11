@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// Session-scoped memory of the credential reference numbering the card
 /// answered to, so one resolution serves every later command.
 ///

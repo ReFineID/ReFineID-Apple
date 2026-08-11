@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 // swift-tools-version: 6.3
 
 // CardCore: the refined FINEID protocol model and card operations.

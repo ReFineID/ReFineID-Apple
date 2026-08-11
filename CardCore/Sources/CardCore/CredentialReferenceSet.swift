@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// Which credential reference numbering the card in session uses.
 ///
 /// The citizen card numbers its credentials as FINEID S1 v4.2 §3.5.2

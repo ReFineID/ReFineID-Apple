@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// The encoding rules a travel document's files are written under.
 internal enum BerValues {
   /// The byte that introduces a two-byte tag, rather than being one

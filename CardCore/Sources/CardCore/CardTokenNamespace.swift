@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// The CryptoTokenKit namespace owned by ReFineID.
 ///
 /// The driver class identifier is fixed by the extension manifest. Keeping

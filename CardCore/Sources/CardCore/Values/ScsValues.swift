@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// The dedicated home for SCS wire values.
 ///
 /// Source: the DVV SCS specification v1.3 (Signature Creation Service),

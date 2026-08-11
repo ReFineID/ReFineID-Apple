@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 import Foundation
 
 /// AES-CMAC, the message authentication code of RFC 4493 and NIST SP 800-38B.

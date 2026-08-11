@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// The credential a retry counter or PIN command refers to.
 ///
 /// Distinct roles are never interchangeable: PIN2 has its own rules (never

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 import Foundation
 
 /// The certificates carried inside a CMS SignedData (RFC 5652 §5.1).

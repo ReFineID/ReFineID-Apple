@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// A two-byte ISO 7816-4 file identifier.
 public struct FileIdentifier: Equatable, Sendable {
   /// EF.ODF: the PKCS#15 object directory under the eID application.

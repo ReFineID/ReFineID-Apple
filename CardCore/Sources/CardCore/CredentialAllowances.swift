@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// One credential's two allowances, as the card reports them.
 public struct CredentialAllowances: Equatable, Sendable {
   /// How many times the credential itself may still be presented

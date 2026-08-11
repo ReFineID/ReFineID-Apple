@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 import Foundation
 
 /// How the card PIN is collected, selected by REFINEID_PKCS11_PIN_ENTRY.

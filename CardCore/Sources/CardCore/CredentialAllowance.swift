@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// How many times a credential may still be used before the card
 /// stops honouring it at all (FINEID S1 v4.2 §3.15.3 Table 19).
 ///

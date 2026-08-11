@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// The expected response length (Le) of a short APDU: 1-256 bytes,
 /// where 256 encodes as the byte `00` on the wire.
 public struct ExpectedResponseLength: Equatable, Sendable {

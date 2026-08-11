@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// A READ BINARY direct offset: 15 bits, encoded in P1-P2 with the top
 /// bit of P1 clear.
 public struct ReadOffset: Equatable, Sendable {

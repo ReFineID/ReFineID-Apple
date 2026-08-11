@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// A validated PIN2 value with single-use ownership.
 ///
 /// PIN2 authorises the qualified-signature key and nothing else. PIN1

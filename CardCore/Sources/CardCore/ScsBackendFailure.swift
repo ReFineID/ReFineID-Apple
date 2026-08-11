@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// Why the signing backend refused an SCS sign.
 ///
 /// The protocol maps these to the specification's reason codes: a

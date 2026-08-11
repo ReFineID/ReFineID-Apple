@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 // swiftlint:disable:next attributes
 @_spi(TokenExtension) import CardCore
 import CryptoKit

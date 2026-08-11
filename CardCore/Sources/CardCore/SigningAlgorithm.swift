@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// A FINEID signing algorithm, as the MSE:SET algorithm-reference byte.
 public struct SigningAlgorithm: Equatable, Sendable {
   /// Number of bits in one nibble, for composing the reference byte.

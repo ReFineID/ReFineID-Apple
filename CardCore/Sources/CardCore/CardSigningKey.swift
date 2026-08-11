@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// A signing key on the card, as the MSE:SET key-reference byte.
 ///
 /// The two keys are gated by different credentials and are never

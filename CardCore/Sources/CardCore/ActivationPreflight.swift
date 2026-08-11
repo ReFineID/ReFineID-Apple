@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// The side-effect-free check before activation (FINEID S4-1 §4.6).
 public enum ActivationPreflight {
   /// Evaluates readiness from counter-safe probes alone.

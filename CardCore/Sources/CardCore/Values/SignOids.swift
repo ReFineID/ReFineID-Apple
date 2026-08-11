@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 /// The object identifiers document signing speaks, in dotted notation.
 ///
 /// Encoded arithmetically by `DerEncoder.objectIdentifier`; the dotted
