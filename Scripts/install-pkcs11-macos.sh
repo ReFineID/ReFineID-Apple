@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright 2026 Petri Koistinen
-# Licensed under the Apache License, Version 2.0.
+# Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 #
 # Build and install the PKCS#11 bridge to /usr/local/lib on this Mac.
 #

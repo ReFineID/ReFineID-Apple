@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright 2026 Petri Koistinen
-# Licensed under the Apache License, Version 2.0.
+# Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 #
 # Call the App Store Connect API with a freshly minted token.
 #
