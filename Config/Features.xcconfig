@@ -6,17 +6,14 @@
 // built and tested either way, so turning a feature back on is this
 // one line and nothing else.
 //
+// Contactless card reading is not here: it is a runtime setting the
+// holder turns on in Settings (off by default), not a build flag.
+//
 //   FEATURE_PDF_STAMP
 //       The visible PDF stamp: the CAN-gated mark carrying the
 //       holder's name, SATU and card ink. Off, every signature stays
 //       invisible - the non-rendering signature structures only - and
 //       no stamp UI is offered.
-//
-//   FEATURE_CONTACTLESS
-//       Contactless cards on a local USB-C reader: the status
-//       window's CAN entry that unseals a card on the antenna. Off,
-//       only contact readers are served, no CAN is asked for, and a
-//       contactless card shows "not ready".
 //
 //   FEATURE_SCS
 //       The Signature Creation Service: the loopback HTTPS server
@@ -32,9 +29,9 @@
 //       entitlement then.
 //
 // Flags are space-separated. To ship one again:
-//   REFINEID_FEATURES = FEATURE_PDF_STAMP FEATURE_CONTACTLESS FEATURE_SCS
+//   REFINEID_FEATURES = FEATURE_PDF_STAMP FEATURE_SCS
 
-REFINEID_FEATURES = FEATURE_CONTACTLESS
+REFINEID_FEATURES =
 
 // A developer's own flags, out of the repository: the file is
 // optional, ignored by git, and an assignment there replaces the

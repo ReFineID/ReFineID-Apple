@@ -36,6 +36,8 @@
     private let model = LoginIdentityModel.shared
     @State private var signing = SignDocumentModel()
     @State private var offeringNumber = false
+    @AppStorage(AppSettings.contactlessEnabled)
+    private var contactlessEnabled = false
     @State private var pin2 = ""
     @State private var accessNumber = ""
     @State private var isTargeted = false
@@ -73,12 +75,9 @@
     /// interface, which is the one state that asks for an access
     /// number.
     private var awaitingAccessNumber: Bool {
-      #if FEATURE_CONTACTLESS
-        availability == .cardWithoutIdentity
-          && CardPresence.shared.isContactlessCardPresent
-      #else
-        false
-      #endif
+      contactlessEnabled
+        && availability == .cardWithoutIdentity
+        && CardPresence.shared.isContactlessCardPresent
     }
 
     internal var body: some View {
@@ -128,12 +127,11 @@
       // Nothing entered in an earlier run may serve this one: a number
       // left in the driver configuration is withdrawn before the card
       // could use it, so every launch starts with no saved number.
-      // Compiled with the entry that publishes numbers, and not
-      // without it: a build that never publishes has nothing there to
-      // withdraw.
-      #if FEATURE_CONTACTLESS
-        .task { SealedCardSection.withdrawOfferedNumber() }
-      #endif
+      // Always, not only when contactless is enabled: a number left
+      // by an earlier run that had it enabled must not survive into a
+      // run that does not, and the withdraw is harmless with nothing
+      // to withdraw.
+      .task { SealedCardSection.withdrawOfferedNumber() }
       .onAppear {
         model.refresh()
         react(to: availability)

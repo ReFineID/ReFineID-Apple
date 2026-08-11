@@ -8,7 +8,7 @@ import SwiftUI
 /// Application entry point: one small status surface on every platform.
 @main
 internal struct ReFineIDApp: App {
-  #if os(macOS) && FEATURE_CONTACTLESS
+  #if os(macOS)
     /// Keeps the quit-time observer alive for the process's lifetime.
     ///
     /// Registration hands an observer back, and it is never removed:
@@ -175,15 +175,16 @@ internal struct ReFineIDApp: App {
       // the current one at quit. Synchronous on purpose - a detached
       // task would race the exiting process. Registering the observer
       // touches no other process, so it is safe on the launch path.
-      #if FEATURE_CONTACTLESS
-        QuitWithdrawal.observer = NotificationCenter.default.addObserver(
-          forName: NSApplication.willTerminateNotification,
-          object: nil,
-          queue: nil
-        ) { _ in
-          CardCredentialStore.withdrawCardAccessNumberFromDriver()
-        }
-      #endif
+      // Always, not only when contactless is enabled: a number a
+      // previous run offered must be withdrawn whatever this run's
+      // setting says, and the withdraw is harmless with nothing there.
+      QuitWithdrawal.observer = NotificationCenter.default.addObserver(
+        forName: NSApplication.willTerminateNotification,
+        object: nil,
+        queue: nil
+      ) { _ in
+        CardCredentialStore.withdrawCardAccessNumberFromDriver()
+      }
     #endif
 
     // One entry point for every launch mode, and it lives behind DEBUG.

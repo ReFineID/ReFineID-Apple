@@ -755,6 +755,22 @@
         }
       }
     },
+    "Contactless (NFC) cards": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Etäluettavat (NFC) kortit"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontaktlösa (NFC) kort"
+          }
+        }
+      }
+    },
     "Container (ASiC-E)": {
       "localizations": {
         "fi": {
@@ -1386,6 +1402,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ingår inte"
+          }
+        }
+      }
+    },
+    "Off, a card is read only when inserted into a reader. On, a card presented on a contactless reader is opened with the access number printed on its face.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pois päältä kortti luetaan vain lukijaan asetettuna. Päällä etäluettavalle lukijalle esitetty kortti avataan korttiin painetulla numerolla."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Av läses kortet endast när det sätts i en läsare. På öppnas ett kort som visas för en kontaktlös läsare med numret tryckt på kortet."
           }
         }
       }

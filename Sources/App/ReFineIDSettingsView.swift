@@ -9,6 +9,10 @@
 
     internal var body: some View {
       TabView {
+        CardReadingSettingsView()
+          .tabItem {
+            Label("Cards", systemImage: "creditcard")
+          }
         #if FEATURE_PDF_STAMP
           DocumentStampSettingsView()
             .tabItem {
