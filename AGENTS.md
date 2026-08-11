@@ -4,6 +4,9 @@
 - Apple uses PascalCase.
 - ASCII only in source, UTF-8 only where required.
 - No Magic Codes - define everything.   
+- Comments describe what the code does or the constraint it honors,
+  never why it changed. A past bug, a deprecation, the reasoning for a
+  fix belongs in the git commit message, not the source.
 - Commit often when compiles and lint is clean.
 - Push when feature is ready.
 - Verify from specifications, don't wild guess.
