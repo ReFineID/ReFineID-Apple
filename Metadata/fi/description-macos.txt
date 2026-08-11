@@ -1,0 +1,5 @@
+ReFineID tuo suomalaisen henkilökortin Maciin.
+
+Aseta henkilökortti USB-kortinlukijaan ja kirjaudu sähköisiin palveluihin suoraan Safarissa kortin varmenteella. Pudota PDF ReFineID:hen ja allekirjoita se hyväksytyllä sähköisellä allekirjoituksella, jossa on hyväksytty aikaleima ja pitkäaikaisvalidoinnin todisteet.
+
+ReFineID on avointa lähdekoodia: github.com/ReFineID/ReFineID-Apple

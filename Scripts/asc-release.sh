@@ -128,12 +128,70 @@ for v in d.get("data",[]):
     print("  %-7s %-10s %-24s build=%s" % (a["platform"], a["versionString"], a["appStoreState"], b or "-"))'
 }
 
+# Pushes a platform version's localizations from Metadata/ - the
+# description, keywords, promotional text, and the support and
+# marketing URLs - creating a locale that is absent and updating one
+# that is present. Each locale is a directory under Metadata/, and the
+# description is the platform's own (description-macos.txt,
+# description-ios.txt), so a Mac and an iPhone read differently while
+# sharing everything else. The body goes over stdin, so a description's
+# newlines and non-ASCII letters reach the API intact.
+push_metadata() {
+    local platform version vid locmap dir locale existing payload
+    platform=$1
+    version=$2
+    vid=$(ensure_version "$platform" "$version")
+    [ -n "$vid" ] || fail "could not resolve the version"
+    locmap=$("$API" "/v1/appStoreVersions/${vid}/appStoreVersionLocalizations?fields[appStoreVersionLocalizations]=locale&limit=50")
+    for dir in Metadata/*/; do
+        locale=$(basename "$dir")
+        [ -f "${dir}description-${platform}.txt" ] || continue
+        existing=$(printf '%s' "$locmap" | LOCALE="$locale" python3 -c '
+import json,os,sys
+loc=os.environ["LOCALE"]
+d=json.load(sys.stdin)
+print(next((l["id"] for l in d.get("data",[]) if l["attributes"]["locale"]==loc), ""))')
+        payload=$(PLATFORM="$platform" LOCALE="$locale" VID="$vid" EXISTING="$existing" python3 - <<'PY'
+import json, os
+p, loc, vid, existing = (os.environ[k] for k in ("PLATFORM", "LOCALE", "VID", "EXISTING"))
+def read(f):
+    return open(f, encoding="utf-8").read().strip() if os.path.exists(f) else None
+base = "Metadata/" + loc
+cfg = dict(x.strip().split("=", 1) for x in open("Metadata/config") if "=" in x)
+attrs = {
+    "description": read("%s/description-%s.txt" % (base, p)),
+    "keywords": read(base + "/keywords.txt"),
+    "promotionalText": read(base + "/promotional_text.txt"),
+    "supportUrl": cfg.get("support_url"),
+    "marketingUrl": cfg.get("marketing_url"),
+}
+attrs = {k: v for k, v in attrs.items() if v}
+if existing:
+    body = {"data": {"type": "appStoreVersionLocalizations", "id": existing, "attributes": attrs}}
+else:
+    attrs["locale"] = loc
+    body = {"data": {"type": "appStoreVersionLocalizations", "attributes": attrs,
+        "relationships": {"appStoreVersion": {"data": {"type": "appStoreVersions", "id": vid}}}}}
+print(json.dumps(body))
+PY
+)
+        if [ -n "$existing" ]; then
+            printf '%s' "$payload" | "$API" -X PATCH "/v1/appStoreVersionLocalizations/${existing}" - >/dev/null
+            echo "  ${locale}: updated"
+        else
+            printf '%s' "$payload" | "$API" -X POST "/v1/appStoreVersionLocalizations" - >/dev/null
+            echo "  ${locale}: created"
+        fi
+    done
+}
+
 cmd="${1:-}"
 shift || true
 case "$cmd" in
     app-id) app_id ;;
     ensure-version) ensure_version "$@" ;;
     attach-build) attach_build "$@" ;;
+    metadata) push_metadata "$@" ;;
     state) state ;;
     *) fail "unknown command '${cmd}'; see the header for usage" ;;
 esac

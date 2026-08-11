@@ -1,0 +1,5 @@
+ReFineID brings the Finnish identity card to iPhone and iPad.
+
+Read your card with a USB-C smart-card reader, or on iPhone with the built-in NFC antenna, then sign in to e-services directly in Safari with the certificate on your card.
+
+ReFineID is open source: github.com/ReFineID/ReFineID-Apple

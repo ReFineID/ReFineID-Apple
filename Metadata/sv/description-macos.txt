@@ -1,0 +1,5 @@
+ReFineID tar det finländska identitetskortet till Macen.
+
+Sätt identitetskortet i en USB-kortläsare och logga in på e-tjänster direkt i Safari med kortets certifikat. Släpp en PDF på ReFineID för att underteckna den med en kvalificerad elektronisk underskrift, med kvalificerad tidsstämpel och underlag för långtidsvalidering.
+
+ReFineID är öppen källkod: github.com/ReFineID/ReFineID-Apple
