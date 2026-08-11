@@ -162,9 +162,13 @@ internal struct ReFineIDApp: App {
     // as long as the app runs. Binding a loopback socket touches no
     // other process, so unlike the driver configuration above this
     // is safe on the launch path; the PIN prompts it may later show
-    // run on their own worker exchanges.
+    // run on their own worker exchanges. Behind its feature: the MVP
+    // ships without it, so a first launch binds no socket and asks
+    // for no localhost-certificate trust.
     #if os(macOS)
-      ScsService.startIfNeeded()
+      #if FEATURE_SCS
+        ScsService.startIfNeeded()
+      #endif
 
       // The offered access number lives for the app run: the status
       // screen withdraws a stale one at launch, and this withdraws

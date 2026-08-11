@@ -38,13 +38,10 @@ Technical notes for review:
   the entry red. The number is held only while the app runs and
   is never written to disk outside the app group container it
   travels through, where it is deleted at quit.
-- The app listens on 127.0.0.1:53952 (loopback only). This is the
-  Signature Creation Service interface specified by the Finnish
-  Digital and Population Data Services Agency (DVV, specification
-  v1.3); Finnish e-services call it from the browser to request
-  card signatures. It serves one request per connection and never
-  binds a non-loopback interface - the sandbox's network-server
-  entitlement exists for this.
+- The app makes outbound connections for one purpose: an archival
+  signature (PAdES-B-LTA) fetches a qualified timestamp and the
+  revocation data proving its chain. It binds no listening socket
+  and holds no network-server entitlement.
 - App Transport Security allows plain HTTP because RFC 3161
   time-stamping and RFC 6960 OCSP are specified over HTTP, and the
   fetched objects are themselves signed and verified by the app;

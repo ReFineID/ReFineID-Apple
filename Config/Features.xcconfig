@@ -18,8 +18,17 @@
 //       only contact readers are served, no CAN is asked for, and a
 //       contactless card shows "not ready".
 //
+//   FEATURE_SCS
+//       The Signature Creation Service: the loopback HTTPS server
+//       (127.0.0.1:53952, DVV spec v1.3) that web pages sign
+//       through. Off, no socket is bound and no localhost-certificate
+//       trust is asked for on first launch, and the
+//       com.apple.security.network.server entitlement is unused -
+//       drop it from Config/ReFineID.entitlements while this is off,
+//       and restore it when shipping this feature.
+//
 // Flags are space-separated. To ship one again:
-//   REFINEID_FEATURES = FEATURE_PDF_STAMP FEATURE_CONTACTLESS
+//   REFINEID_FEATURES = FEATURE_PDF_STAMP FEATURE_CONTACTLESS FEATURE_SCS
 
 REFINEID_FEATURES = FEATURE_CONTACTLESS
 

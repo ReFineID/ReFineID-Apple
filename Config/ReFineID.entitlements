@@ -10,21 +10,16 @@
      digest and a certificate identifier - never a key, a PIN, or one
      byte of the document.
 
-     The server grant exists for one feature: the SCS (Signature
-     Creation Service, DVV specification v1.3), the localhost signing
-     interface Finnish web services call at https://127.0.0.1:53952.
-     The listener binds the loopback interface only, serves one
-     request per connection, and every signature it produces passes
-     the same retry floor and PIN prompt as any other sign in this
-     app. -->
+     There is no network-server grant: the MVP ships with the SCS
+     (the loopback signing interface, FEATURE_SCS) off, so nothing
+     binds a socket. Restore com.apple.security.network.server here
+     when that feature ships - see Config/Features.xcconfig. -->
 <dict>
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
 	<key>com.apple.security.smartcard</key>
 	<true/>
 	<key>com.apple.security.network.client</key>
-	<true/>
-	<key>com.apple.security.network.server</key>
 	<true/>
 	<!-- The open and save panels. A sandboxed app reaches a file the
 	     holder picked only through Powerbox, and Powerbox declines to
