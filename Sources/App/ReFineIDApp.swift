@@ -26,6 +26,14 @@ internal struct ReFineIDApp: App {
           .windowFullScreenBehavior(.disabled)
       }
       .windowResizability(.contentSize)
+      // No help book ships, so the Help menu it would open does not
+      // belong. Replacing the group with nothing leaves the menu with
+      // no item, and MainMenuPruner removes the empty shell.
+      .commands {
+        CommandGroup(replacing: .help) {
+          // Intentionally empty: no help item, so no Help menu.
+        }
+      }
 
       Window("PIN Management", id: CardManagementView.windowID) {
         CardManagementView()
