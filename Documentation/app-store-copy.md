@@ -99,3 +99,25 @@ att underteckna den med en kvalificerad elektronisk underskrift, med
 kvalificerad tidsstämpel och underlag för långtidsvalidering.
 
 ReFineID är öppen källkod: github.com/ReFineID/ReFineID-Apple
+
+## App Store Connect fields (macOS)
+
+The web-form values, so the record is filled from one reviewed place.
+All are public; none is a secret.
+
+- **Support URL:** `https://www.refineid.fi/`
+- **Marketing URL:** `https://www.refineid.fi/`
+- **Privacy Policy URL**, per localization:
+  - en: `https://www.refineid.fi/privacy-policy/`
+  - fi: `https://www.refineid.fi/tietosuojaseloste/`
+  - sv: `https://www.refineid.fi/integritetspolicy/`
+- **Copyright:** `2026 Petri Koistinen`
+
+### App Review / Beta App Review contact
+
+- **Name:** Petri Koistinen
+- **Email:** `petri.koistinen@refineid.fi`
+- **Phone:** `+358449564098`
+
+Not `iki.fi`: the review contact is the business address, the same one
+the privacy pages and `security.txt` publish.
