@@ -2101,18 +2101,18 @@
         }
       }
     },
-    "Signing: card, timestamp, revocation data…": {
+    "Signing document…": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Allekirjoitetaan: kortti, aikaleima, sulkutiedot…"
+            "value": "Allekirjoitetaan dokumenttia…"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Signerar: kort, tidsstämpel, spärrinformation…"
+            "value": "Undertecknar dokumentet…"
           }
         }
       }
