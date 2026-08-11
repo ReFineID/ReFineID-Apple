@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 #
+# Copyright 2026 Petri Koistinen
+# Licensed under the Apache License, Version 2.0.
+#
 # Archive, verify and upload ReFineID to TestFlight, for iOS and macOS.
 #
 # Every build that reaches another person goes through here, and the

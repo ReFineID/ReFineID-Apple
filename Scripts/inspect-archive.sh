@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 #
+# Copyright 2026 Petri Koistinen
+# Licensed under the Apache License, Version 2.0.
+#
 # Archive inspection.
 #
 # Usage: Scripts/inspect-archive.sh /path/to/ReFineID.xcarchive
