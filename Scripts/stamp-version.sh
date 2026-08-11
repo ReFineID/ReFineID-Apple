@@ -1,21 +1,29 @@
 #!/usr/bin/env bash
 #
-# Stamp the calendar release version onto Version.xcconfig.
+# Stamp the calendar release version everywhere it is written.
 #
 # Run manually when cutting a release; install-macos.sh also runs it,
 # so every installed build carries the bucket it was built in.
 #
-# Sets the two settings the project's build configurations inherit from
-# Version.xcconfig, and touches no other file:
+# The version lives in two files, and this stamps both so they never
+# drift. Everything the app itself ships derives from the first: the
+# Info.plists set no version and inherit these two settings
+# (GENERATE_INFOPLIST_FILE), so there is one source for the app.
 #
-#   MARKETING_VERSION (CFBundleShortVersionString) = YY.M.D
-#       Release date, no zero padding.
+#   Version.xcconfig
+#     MARKETING_VERSION (CFBundleShortVersionString) = YY.M.D
+#         Release date, no zero padding.
+#     CURRENT_PROJECT_VERSION (CFBundleVersion)      = H * 10 + M / 10
+#         The ten-minute bucket the build is cut in.
 #
-#   CURRENT_PROJECT_VERSION (CFBundleVersion)      = H * 10 + M / 10
-#       The ten-minute bucket the build is cut in.
+#   PKCS11Bridge/Sources/PKCS11Bridge/ModuleVersion.swift
+#     A separate deliverable, the PKCS#11 module, reports its version
+#     through the PKCS#11 C API (CK_VERSION), so it needs the version
+#     as a compile-time constant it cannot read from a bundle. Stamped
+#     to YY.M.D.BUCKET.
 #
-# A stamp is therefore a two-line diff. It used to be a forty-eight line
-# one, because both settings were written into every target's build
+# A stamp is a three-line diff. It used to be a forty-eight line one,
+# because both project settings were written into every target's build
 # settings in every configuration; Version.xcconfig exists to keep the
 # project file still.
 #
