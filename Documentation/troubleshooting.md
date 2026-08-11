@@ -144,3 +144,48 @@ form or lifetime of that state. Do not reset the card identity in
 response. Recreate the site's login conversation first; if the driver is
 still never asked, force-quit Safari, reopen it, and retry. Once a
 `supports` or `sign` line appears, diagnose that exchange instead.
+
+## Uninstalling, and what a trashed app leaves behind
+
+Moving `ReFineID.app` to the Trash removes the app and deregisters the
+CryptoTokenKit driver with it: once the bundle is gone the smart-card
+system no longer lists the extension, so the card stops being offered
+system-wide. That much a trash is enough for.
+
+It is not a complete removal. Per-application data lives outside the
+bundle and stays:
+
+- `~/Library/Containers/fi.refineid.ReFineID`
+- `~/Library/Containers/fi.refineid.ReFineID.token`
+- `~/Library/Group Containers/4ZJC3SFJR2.fi.refineid`
+
+The containers hold preferences and the extension's working area; the
+group container is where the app hands the extension a contactless
+card's access number, and that file is deleted at quit in any case.
+None of it is a stored secret, but a complete removal deletes all
+three:
+
+    rm -rf ~/Library/Containers/fi.refineid.ReFineID \
+           ~/Library/Containers/fi.refineid.ReFineID.token \
+           "~/Library/Group Containers/4ZJC3SFJR2.fi.refineid"
+
+To confirm the driver is gone, either of these should name nothing:
+
+    system_profiler SPSmartCardsDataType | grep -i refineid
+    pluginkit -m | grep -i refineid
+
+LaunchServices keeps its own cached record of the removed bundle - the
+app name, its document types, the paths it used - and current macOS
+offers no command to flush a single stale entry. The record points at
+paths that no longer exist, loads nothing, and is garbage-collected by
+the system in time. It is not a driver registration; `pluginkit` and
+the smart-card system above are the authorities on that.
+
+**A build with the SCS enabled leaves one more thing.** The Signature
+Creation Service, which the first App Store release does not ship
+(`Documentation/decisions.md`, 2026-08-11), trusts a `127.0.0.1`
+certificate so the browser can reach its loopback server. A removal of
+such a build should also delete that certificate in Keychain Access
+(search `127.0.0.1`), which clears its trust with it. The shipped MVP
+creates no such certificate, so its uninstall is the three directories
+above and nothing more.
