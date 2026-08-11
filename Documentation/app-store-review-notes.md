@@ -50,6 +50,10 @@ Technical notes for review:
   enumerate them.
 - No accounts, no login, no data collection. The privacy policy is
   at https://www.refineid.fi/privacy-policy/.
+- macOS may offer to pair the inserted card for system login (its
+  built-in smart-card pairing). That prompt is the operating
+  system's, not the app's; ReFineID does not drive or require it,
+  and it can be ignored.
 
 ## Evidence held ready
 

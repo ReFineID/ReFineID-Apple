@@ -16,17 +16,26 @@ Legend:
 
 - [ ] Confirm ownership of the intended app and extension bundle identifiers on
   the current Apple Developer team; historical projects used multiple teams.
-- [ ] Prove the required smart-card APIs work from a sandboxed pure-Swift host and
-  CTK extension on a clean supported Mac. Proven on a developer Mac
-  2026-08-11: Safari TLS login, SCS signing, and contactless PACE
-  mint plus signing all through the sandboxed app and extension. The
-  clean-Mac run is what remains (fresh macOS virtual machine).
-- [ ] Prove a clean-Mac trust-chain solution without `sudo`, a package installer,
-  or silent System Keychain modification.
-- [ ] Verify whether publishing the complete required issuer chain through CTK is
-  sufficient for each promised browser/system authentication flow.
+- [x] Prove the required smart-card APIs work from a sandboxed pure-Swift host and
+  CTK extension on a clean supported Mac. Proven 2026-08-11 on a fresh
+  macOS 26.6.1 virtual machine that never held ReFineID: the app was a
+  plain copy into /Applications (no sudo), the CTK extension
+  auto-registered on first launch, an inserted card minted and
+  published its token, and Safari logged in to suomi.fi with the card.
+- [x] Prove a clean-Mac trust-chain solution without `sudo`, a package installer,
+  or silent System Keychain modification. Proven in the same clean-VM
+  run: the suomi.fi login needed no System Keychain change and no
+  admin. The only trust prompt was the SCS localhost certificate, which
+  the MVP now gates off (FEATURE_SCS), so a first launch asks for none.
+- [x] Verify whether publishing the complete required issuer chain through CTK is
+  sufficient for each promised browser/system authentication flow. Yes
+  for the browser login flow: TLS client authentication presents the
+  card certificate for the server to trust, so the clean machine
+  needed nothing in its own trust store. The system-login (sc_auth)
+  flow is out of MVP scope.
 - [ ] If external trust installation remains necessary, document and validate the
   Apple-native user flow and reconsider the one-install App Store promise.
+  Not necessary for the browser login flow (proven 2026-08-11).
 - [ ] Decide EU trader status and review the address, phone, and email that Apple
   will display before enabling EU availability.
 - [ ] Do not start an external beta until all P0 decisions have recorded evidence.
@@ -548,3 +557,12 @@ application use the card without one.
   changing macOS release triggers.
 - [ ] Maintain old release branches only when a supported old version actually
   needs patches; do not create permanent platform integration branches.
+
+## 15. Post-MVP roadmap
+
+- [ ] Opt-in "log in to this Mac with your card": guide the macOS
+  smart-card pairing (`sc_auth`) the OS already offers, with an
+  explicit lock-out and recovery warning (a lost or PIN-1-blocked
+  card must not lock the holder out of the Mac). The extension
+  already publishes a pairable token; this is the guided flow and
+  the recovery story around it, not new card code.
