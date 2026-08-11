@@ -19,6 +19,14 @@
 //       macOS only: on iPhone, built-in NFC is a required production
 //       transport and is not gated by this flag.
 //
+//       The flag alone is not enough to test contactless locally: the
+//       access-number channel needs the app-group entitlement, so a
+//       local build must restore com.apple.security.application-groups
+//       (4ZJC3SFJR2.fi.refineid) on both targets as well as setting
+//       the flag. The flag without the entitlement compiles the entry
+//       points but the channel finds no group container and the mint
+//       fails.
+//
 //   FEATURE_PDF_STAMP
 //       The visible PDF stamp: the CAN-gated mark carrying the
 //       holder's name, SATU and card ink. Off, every signature stays
