@@ -113,7 +113,7 @@ attach_build() {
 state() {
     local app
     app=$(app_id)
-    "$API" "/v1/apps/${app}/appStoreVersions?fields[appStoreVersions]=versionString,platform,appStoreState&include=build&fields[builds]=version&limit=50" \
+    "$API" "/v1/apps/${app}/appStoreVersions?fields[appStoreVersions]=versionString,platform,appStoreState,build&include=build&fields[builds]=version&limit=50" \
         | python3 -c 'import json,sys
 d=json.load(sys.stdin)
 builds={i["id"]:i["attributes"]["version"] for i in d.get("included",[]) if i["type"]=="builds"}
