@@ -3,6 +3,17 @@
   "marketingUrl": "https://www.refineid.fi/",
   "copyright": "2026 Petri Koistinen",
   "primaryCategory": "UTILITIES",
+  "ageRating": "4+",
+  "usesNonExemptEncryption": false,
+  "pricing": "free",
+  "trader": {
+    "line1": "Niittaajankatu 8a A 21",
+    "city": "Helsinki",
+    "postalCode": "00810",
+    "countryCode": "FIN",
+    "phone": "+3589564098",
+    "email": "petri.koistinen@refineid.fi"
+  },
   "review": {
     "firstName": "Petri",
     "lastName": "Koistinen",

@@ -26,6 +26,10 @@
 //   asc-release.swift app-info
 //   asc-release.swift review-contact <ios|macos> <versionString>
 //   asc-release.swift screenshots <ios|macos> <versionString>
+//   asc-release.swift age-rating
+//   asc-release.swift export-compliance <ios|macos>
+//   asc-release.swift pricing
+//   asc-release.swift submit <ios|macos> <versionString>
 
 import CryptoKit
 import Foundation
@@ -227,6 +231,13 @@ func existingLocalizations(_ path: String) -> [String: String] {
 func pushMetadata(_ platformName: String, _ version: String) {
     _ = apiPlatform(platformName)
     let versionID = ensureVersion(platformName, version)
+    // Copyright lives on the version itself, not on a localization.
+    if let copyright = metadata["copyright"] as? String {
+        api("PATCH", "/v1/appStoreVersions/\(versionID)", body: [
+            "data": ["type": "appStoreVersions", "id": versionID,
+                     "attributes": ["copyright": copyright]]])
+        print("  copyright: \(copyright)")
+    }
     let existing = existingLocalizations(
         "/v1/appStoreVersions/\(versionID)/appStoreVersionLocalizations?limit=50")
     for locale in localizations.keys.sorted() {
@@ -320,6 +331,124 @@ func reviewContact(_ platformName: String, _ version: String) {
                          "data": ["type": "appStoreVersions", "id": versionID]]]]])
     }
     print("review contact set for \(platformName) \(version)")
+}
+
+// Sets the age rating to 4+: every content category at its lowest and
+// no unrestricted web access. The declaration is app-level, carried by
+// the app info record and shared across platforms.
+func pushAgeRating() {
+    let declaration = api("GET", "/v1/appInfos/\(appInfoID())/ageRatingDeclaration")
+    guard let id = (declaration["data"] as? [String: Any])?["id"] as? String
+    else { die("no age rating declaration on the app info record") }
+    let none = "NONE"
+    let attributes: [String: Any] = [
+        "alcoholTobaccoOrDrugUseOrReferences": none,
+        "contests": none,
+        "gamblingSimulated": none,
+        "medicalOrTreatmentInformation": none,
+        "profanityOrCrudeHumor": none,
+        "sexualContentGraphicAndNudity": none,
+        "sexualContentOrNudity": none,
+        "horrorOrFearThemes": none,
+        "matureOrSuggestiveThemes": none,
+        "violenceCartoonOrFantasy": none,
+        "violenceRealistic": none,
+        "violenceRealisticProlongedGraphicOrSadistic": none,
+        "gunsOrOtherWeapons": none,
+        "healthOrWellnessTopics": false,
+        "advertising": false,
+        "gambling": false,
+        "unrestrictedWebAccess": false,
+        "ageAssurance": false,
+        "lootBox": false,
+        "messagingAndChat": false,
+        "parentalControls": false,
+        "userGeneratedContent": false,
+    ]
+    api("PATCH", "/v1/ageRatingDeclarations/\(id)", body: [
+        "data": ["type": "ageRatingDeclarations", "id": id, "attributes": attributes]])
+    print("age rating 4+ set")
+}
+
+// Marks the platform's uploaded build as using no non-exempt encryption
+// - the standard exempt answer for an app that only authenticates and
+// signs with the card, and does not itself ship an encryption product.
+func pushExportCompliance(_ platformName: String) {
+    let platform = apiPlatform(platformName)
+    guard let versionInfo = findVersion(platform) else { die("no version for \(platformName)") }
+    let response = api("GET", "/v1/appStoreVersions/\(versionInfo.id)?include=build")
+    guard let build = (response["included"] as? [[String: Any]])?
+        .first(where: { $0["type"] as? String == "builds" }), let buildID = build["id"] as? String
+    else { die("no build attached to \(platformName) \(versionInfo.version)") }
+    let usesNonExempt = metadata["usesNonExemptEncryption"] as? Bool ?? false
+    // A build that shipped with ITSAppUsesNonExemptEncryption in its
+    // Info.plist already carries the answer and cannot be overwritten.
+    let current = (build["attributes"] as? [String: Any])?["usesNonExemptEncryption"] as? Bool
+    if current == usesNonExempt {
+        print("export compliance already exempt on \(platformName) build \(versionInfo.version)")
+        return
+    }
+    api("PATCH", "/v1/builds/\(buildID)", body: [
+        "data": ["type": "builds", "id": buildID,
+                 "attributes": ["usesNonExemptEncryption": usesNonExempt]]])
+    print("export compliance (exempt) set on \(platformName) build \(versionInfo.version)")
+}
+
+// Puts the app on the free tier in every territory: a price schedule
+// whose base territory carries the zero price point, which the store
+// equalizes across all territories.
+func pushPricing() {
+    let app = appID()
+    let points = dataArray(api(
+        "GET", "/v1/apps/\(app)/appPricePoints?filter[territory]=USA&limit=200"))
+    guard let freeID = points.first(where: {
+        let price = ($0["attributes"] as? [String: Any])?["customerPrice"] as? String
+        return price.flatMap(Double.init) == 0
+    })?["id"] as? String else { die("no free price point for USA") }
+    let temporary = "${free-price}"
+    api("POST", "/v1/appPriceSchedules", body: [
+        "data": ["type": "appPriceSchedules",
+                 "relationships": [
+                     "app": ["data": ["type": "apps", "id": app]],
+                     "baseTerritory": ["data": ["type": "territories", "id": "USA"]],
+                     "manualPrices": ["data": [["type": "appPrices", "id": temporary]]]]],
+        "included": [["type": "appPrices", "id": temporary,
+                      "relationships": [
+                          "appPricePoint": ["data": ["type": "appPricePoints", "id": freeID]],
+                          "territory": ["data": ["type": "territories", "id": "USA"]]]]]])
+    print("pricing: free, all territories")
+}
+
+// Submits a platform's version for App Review. This is the one step that
+// leaves the account: it creates the review submission, adds the version
+// as its item, and marks it submitted.
+func submit(_ platformName: String, _ version: String) {
+    let platform = apiPlatform(platformName)
+    let versionID = ensureVersion(platformName, version)
+    let app = appID()
+    let open = dataArray(api("GET", "/v1/reviewSubmissions?filter[app]=\(app)"
+        + "&filter[platform]=\(platform)&filter[state]=READY_FOR_REVIEW,WAITING_FOR_REVIEW"))
+    let submissionID: String
+    if let id = open.first?["id"] as? String {
+        submissionID = id
+    } else {
+        let created = api("POST", "/v1/reviewSubmissions", body: [
+            "data": ["type": "reviewSubmissions",
+                     "attributes": ["platform": platform],
+                     "relationships": ["app": ["data": ["type": "apps", "id": app]]]]])
+        guard let id = (created["data"] as? [String: Any])?["id"] as? String
+        else { die("could not create a review submission") }
+        submissionID = id
+    }
+    api("POST", "/v1/reviewSubmissionItems", body: [
+        "data": ["type": "reviewSubmissionItems",
+                 "relationships": [
+                     "reviewSubmission": ["data": ["type": "reviewSubmissions", "id": submissionID]],
+                     "appStoreVersion": ["data": ["type": "appStoreVersions", "id": versionID]]]]])
+    api("PATCH", "/v1/reviewSubmissions/\(submissionID)", body: [
+        "data": ["type": "reviewSubmissions", "id": submissionID,
+                 "attributes": ["submitted": true]]])
+    print("submitted \(platformName) \(version) for review")
 }
 
 // PUTs one chunk to a reserved upload URL. These are presigned, so they
@@ -451,6 +580,10 @@ guard let command = arguments.first else { die("a command is required; see the h
 let rest = Array(arguments.dropFirst())
 
 switch (command, rest.count) {
+case ("get", 1):
+    let object = api("GET", rest[0])
+    let pretty = try! JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted])
+    print(String(data: pretty, encoding: .utf8) ?? "")
 case ("app-id", 0): print(appID())
 case ("state", 0): state()
 case ("ensure-version", 2): print(ensureVersion(rest[0], rest[1]))
@@ -459,5 +592,9 @@ case ("metadata", 2): pushMetadata(rest[0], rest[1])
 case ("app-info", 0): pushAppInfo()
 case ("review-contact", 2): reviewContact(rest[0], rest[1])
 case ("screenshots", 2): pushScreenshots(rest[0], rest[1])
+case ("age-rating", 0): pushAgeRating()
+case ("export-compliance", 1): pushExportCompliance(rest[0])
+case ("pricing", 0): pushPricing()
+case ("submit", 2): submit(rest[0], rest[1])
 default: die("unknown command or wrong arguments: '\(command)'; see the header")
 }
