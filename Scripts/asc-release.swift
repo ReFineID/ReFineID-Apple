@@ -1,8 +1,5 @@
 #!/usr/bin/env swift
-// Copyright 2026 Petri Koistinen
-//
-// Licensed under the Apache License, Version 2.0.
-// https://www.apache.org/licenses/LICENSE-2.0
+// Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 //
 // Drive an App Store submission through the App Store Connect API, in
 // the language this project is written in and with nothing else.

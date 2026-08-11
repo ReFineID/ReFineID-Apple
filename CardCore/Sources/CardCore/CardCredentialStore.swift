@@ -1,17 +1,4 @@
-// Copyright 2026 Petri Koistinen
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//        https://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
+// Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
 import CryptoKit
 import Foundation
@@ -28,23 +15,12 @@ import Security
 /// neither is written into a backup, restored onto another device, or
 /// sent to iCloud. Neither attribute implies the other; both are set.
 ///
-/// Neither item carries a `SecAccessControl`. PIN1 did, briefly, and it
-/// is worth recording why it does not now: the token extension has to
-/// read PIN1 while signing a request made in Safari and has no interface
-/// to answer a prompt with, so an item-level gate cannot serve the flow
-/// this app exists for. It also broke storage outright -- a protected
-/// item survives a delete that skips the authentication interface, and
-/// the add that follows fails as a duplicate, so a perfectly good PIN
-/// looked rejected.
-///
-/// No gate stands in front of storage either. An app-side biometric
-/// prompt guarded only the act of writing a PIN the holder had just
-/// typed; the extension reads the stored value ungated regardless, so
-/// possession of the unlocked phone plus the card already signs. The
-/// card's own retry counter is the control that stops a guessed PIN.
-/// Deletion is likewise ungated: it reveals nothing and removes signing
-/// authority from the device. The trade is recorded in
-/// `Documentation/decisions.md` rather than left to be discovered here.
+/// Neither item carries a `SecAccessControl`, and storage is ungated.
+/// The token extension reads the stored value while signing a Safari
+/// request and has no interface to answer a prompt, so an item-level
+/// gate cannot serve this flow; the card's own retry counter is the
+/// control that stops a guessed PIN, and deletion reveals nothing. The
+/// reasoning and the trade are in `Documentation/decisions.md`.
 public enum CardCredentialStore {
   /// What the store currently holds.
   public struct Contents: Equatable, Sendable {

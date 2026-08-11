@@ -56,6 +56,12 @@ indentation_width:
 trailing_comma:
   mandatory_comma: true
 
+# Every source file opens with the copyright and licence header. The
+# rule forbids "Copyright" by default (to strip Xcode's auto-header),
+# so it is pointed at the header that is wanted instead.
+file_header:
+  required_pattern: '// Copyright \d{4} Petri Koistinen'
+
 # Typing discipline (Documentation/typing-discipline.md), mechanically enforced:
 custom_rules:
   # A domain value must not be smuggled across an API boundary as a raw byte
