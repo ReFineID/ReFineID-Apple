@@ -466,8 +466,19 @@ application use the card without one.
 ## 13. App Store metadata and review
 
 - [ ] Publish privacy policy, support, and security pages on `www.refineid.fi`.
-- [ ] Audit actual app and dependency behavior before selecting App Privacy
+- [x] Audit actual app and dependency behavior before selecting App Privacy
   answers; claim "Data Not Collected" only if evidence supports it.
+  Production-logging audit 2026-08-11 against the Release build on a
+  clean VM, during a real contactless login to oma.posti.fi: our
+  subsystem (`fi.refineid.ReFineID`) emitted nothing to the unified
+  log, the token extension process emitted nothing, and its DEBUG-only
+  file log was never created. The Release app and extension binaries
+  carry zero diagnostic strings (readIdentity, PACE ok, sign entry,
+  the log-file path - all absent). Every logger is `#if DEBUG`, so a
+  shipped build compiles them to empty no-ops. The only residue is the
+  operating system's own CryptoTokenKit/ctkd token-lifecycle logging,
+  which is Apple's, unavoidable, and carries no PIN, PUK, full serial,
+  or certificate content.
 - [ ] Complete privacy policy URL, app privacy, age rating, category, pricing,
   availability, and export-compliance fields.
 - [ ] Confirm the public developer/seller name and EU trader disclosures match the
