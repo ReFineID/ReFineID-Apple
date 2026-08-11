@@ -21,6 +21,8 @@
 //   asc-release.swift app-id
 //   asc-release.swift state
 //   asc-release.swift builds <ios|macos>
+//   asc-release.swift distribute <ios|macos> [group]
+//   asc-release.swift invite <email>
 //   asc-release.swift ensure-version <ios|macos> <versionString>
 //   asc-release.swift attach-build <ios|macos> <versionString> <build>
 //   asc-release.swift metadata <ios|macos> <versionString>
@@ -587,6 +589,49 @@ func builds(_ platformName: String) {
     }
 }
 
+// Distributes a platform's newest build to a beta group and submits it
+// for beta app review. An external group only shows a build to its
+// testers once that review is approved; internal groups need no review.
+func distribute(_ platformName: String, _ groupName: String) {
+    let platform = apiPlatform(platformName)
+    let buildsPath = "/v1/builds?filter[app]=\(appID())"
+        + "&filter[preReleaseVersion.platform]=\(platform)&sort=-uploadedDate&limit=1"
+    guard let build = dataArray(api("GET", buildsPath)).first, let buildID = build["id"] as? String
+    else { die("no \(platformName) build to distribute") }
+    let groups = dataArray(api("GET", "/v1/apps/\(appID())/betaGroups?limit=50"))
+    guard let groupID = groups.first(where: {
+        ($0["attributes"] as? [String: Any])?["name"] as? String == groupName
+    })?["id"] as? String else { die("no beta group named '\(groupName)'") }
+    api("POST", "/v1/betaGroups/\(groupID)/relationships/builds", body: [
+        "data": [["type": "builds", "id": buildID]]])
+    print("added \(platformName) build to group '\(groupName)'")
+    let review = api("GET", "/v1/builds/\(buildID)/betaAppReviewSubmission")["data"] as? [String: Any]
+    if review == nil {
+        api("POST", "/v1/betaAppReviewSubmissions", body: [
+            "data": ["type": "betaAppReviewSubmissions",
+                     "relationships": ["build": ["data": ["type": "builds", "id": buildID]]]]])
+        print("submitted \(platformName) build for beta review")
+    } else {
+        print("beta review already exists for the \(platformName) build")
+    }
+}
+
+// Sends a TestFlight invitation email to an existing beta tester. The
+// tester must already be on the app (in a group or assigned a build);
+// this is the "resend invite" the App Store Connect UI offers.
+func invite(_ email: String) {
+    let testers = dataArray(api("GET", "/v1/betaTesters?filter[email]=\(email)"))
+    guard let testerID = testers.first?["id"] as? String else {
+        die("no beta tester with email \(email); add them to a group first")
+    }
+    api("POST", "/v1/betaTesterInvitations", body: [
+        "data": ["type": "betaTesterInvitations",
+                 "relationships": [
+                     "app": ["data": ["type": "apps", "id": appID()]],
+                     "betaTester": ["data": ["type": "betaTesters", "id": testerID]]]]])
+    print("TestFlight invite sent to \(email)")
+}
+
 func state() {
     let path = "/v1/apps/\(appID())/appStoreVersions?fields[appStoreVersions]="
         + "versionString,platform,appStoreState,build&include=build"
@@ -624,6 +669,9 @@ case ("get", 1):
 case ("app-id", 0): print(appID())
 case ("state", 0): state()
 case ("builds", 1): builds(rest[0])
+case ("distribute", 1): distribute(rest[0], "Beta")
+case ("distribute", 2): distribute(rest[0], rest[1])
+case ("invite", 1): invite(rest[0])
 case ("ensure-version", 2): print(ensureVersion(rest[0], rest[1]))
 case ("attach-build", 3): attachBuild(rest[0], rest[1], rest[2])
 case ("metadata", 2): pushMetadata(rest[0], rest[1])
