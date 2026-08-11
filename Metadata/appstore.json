@@ -25,7 +25,7 @@
     "en-US": {
       "subtitle": "Your ID card, in Safari",
       "keywords": "identity card",
-      "promotionalText": "Log in to services with your Finnish identity card.",
+      "promotionalText": "Log in to services with your identity card and sign documents.",
       "description": {
         "macos": "A reader for the Finnish identity card.\n\nInsert your identity card into a USB smart-card reader and sign in to e-services directly in Safari with the certificate on your card. Drop a PDF on ReFineID to sign it with a qualified signature.\n\nReFineID is open source: github.com/ReFineID/ReFineID-Apple",
         "ios": "ReFineID brings the Finnish identity card to iPhone and iPad.\n\nRead your card with a USB-C smart-card reader, or wirelessly on iPhone, then sign in to e-services directly in Safari with the certificate on your card.\n\nReFineID is open source: github.com/ReFineID/ReFineID-Apple"
@@ -34,7 +34,7 @@
     "fi": {
       "subtitle": "Henkilökortti Safarissa",
       "keywords": "henkilökortti",
-      "promotionalText": "Kirjaudu palveluihin henkilökortilla.",
+      "promotionalText": "Kirjaudu palveluihin henkilökortilla ja allekirjoita asiakirjoja.",
       "description": {
         "macos": "Suomalaisen henkilökortin lukija.\n\nAseta henkilökortti USB-kortinlukijaan ja kirjaudu sähköisiin palveluihin suoraan Safarissa kortin varmenteella. Pudota PDF ReFineID:hen ja allekirjoita se hyväksytyllä sähköisellä allekirjoituksella.\n\nReFineID on avointa lähdekoodia: github.com/ReFineID/ReFineID-Apple",
         "ios": "ReFineID tuo suomalaisen henkilökortin iPhoneen ja iPadiin.\n\nLue korttisi USB-C-kortinlukijalla, tai iPhonessa langattomasti, ja kirjaudu sähköisiin palveluihin suoraan Safarissa kortin varmenteella.\n\nReFineID on avointa lähdekoodia: github.com/ReFineID/ReFineID-Apple"
@@ -43,7 +43,7 @@
     "sv": {
       "subtitle": "Identitetskort i Safari",
       "keywords": "identitetskort",
-      "promotionalText": "Logga in på tjänster med ditt identitetskort.",
+      "promotionalText": "Logga in på tjänster med ditt identitetskort och underteckna dokument.",
       "description": {
         "macos": "En läsare för det finländska identitetskortet.\n\nSätt identitetskortet i en USB-kortläsare och logga in på e-tjänster direkt i Safari med kortets certifikat. Släpp en PDF på ReFineID för att underteckna den med en kvalificerad elektronisk underskrift.\n\nReFineID är öppen källkod: github.com/ReFineID/ReFineID-Apple",
         "ios": "ReFineID tar det finländska identitetskortet till iPhone och iPad.\n\nLäs kortet med en USB-C-kortläsare, eller trådlöst på iPhone, och logga in på e-tjänster direkt i Safari med kortets certifikat.\n\nReFineID är öppen källkod: github.com/ReFineID/ReFineID-Apple"
