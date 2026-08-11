@@ -36,7 +36,7 @@
       "keywords": "henkilökortti",
       "promotionalText": "Kirjaudu palveluihin henkilökortilla.",
       "description": {
-        "macos": "ReFineID tuo suomalaisen henkilökortin Maciin.\n\nAseta henkilökortti USB-kortinlukijaan ja kirjaudu sähköisiin palveluihin suoraan Safarissa kortin varmenteella. Pudota PDF ReFineID:hen ja allekirjoita se hyväksytyllä sähköisellä allekirjoituksella, jossa on hyväksytty aikaleima ja pitkäaikaisvalidoinnin todisteet.\n\nReFineID on avointa lähdekoodia: github.com/ReFineID/ReFineID-Apple",
+        "macos": "Suomalaisen henkilökortin lukija.\n\nAseta henkilökortti USB-kortinlukijaan ja kirjaudu sähköisiin palveluihin suoraan Safarissa kortin varmenteella. Pudota PDF ReFineID:hen ja allekirjoita se hyväksytyllä sähköisellä allekirjoituksella.\n\nReFineID on avointa lähdekoodia: github.com/ReFineID/ReFineID-Apple",
         "ios": "ReFineID tuo suomalaisen henkilökortin iPhoneen ja iPadiin.\n\nLue korttisi USB-C-kortinlukijalla, tai iPhonessa sisäänrakennetulla NFC-antennilla, ja kirjaudu sähköisiin palveluihin suoraan Safarissa kortin varmenteella.\n\nReFineID on avointa lähdekoodia: github.com/ReFineID/ReFineID-Apple"
       }
     },
