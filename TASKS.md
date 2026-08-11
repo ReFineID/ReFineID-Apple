@@ -560,6 +560,13 @@ application use the card without one.
 
 ## 15. Post-MVP roadmap
 
+- [ ] Ship the SCS as an explicitly activated setting, off by
+  default. It stays out of the first App Store release
+  (Documentation/decisions.md, 2026-08-11) because serving HTTPS on
+  loopback modifies the user's certificate trust settings. When it
+  returns, restore FEATURE_SCS to the default flags and the
+  network.server entitlement, and let the trust prompt happen on
+  opt-in rather than at first launch.
 - [ ] Opt-in "log in to this Mac with your card": guide the macOS
   smart-card pairing (`sc_auth`) the OS already offers, with an
   explicit lock-out and recovery warning (a lost or PIN-1-blocked

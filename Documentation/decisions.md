@@ -5,6 +5,32 @@ controls iPhone scope. `Documentation/release-plan.md` controls
 macOS scope and shared security behavior. This file records the concrete
 values chosen under them.
 
+## 2026-08-11 The SCS is out of the first App Store release
+
+The Signature Creation Service (the loopback HTTPS server web pages
+sign through) does not ship in the first App Store release. It is
+compile-gated behind `FEATURE_SCS`, absent from the default feature
+set, and the `com.apple.security.network.server` entitlement it would
+need is removed, so the signed binary binds no socket and carries no
+trust-modification code path a reviewer can reach.
+
+The reason is review risk, seen concretely on a clean machine
+2026-08-11: to serve HTTPS on loopback the SCS mints a localhost
+certificate and calls `SecTrustSettingsSetTrustSettings`, which
+prompts for the login password and modifies the user's certificate
+trust settings. That is inherent to the feature - HTTPS needs a
+trusted certificate - not incidental, and modifying trust settings is
+the kind of behavior that draws review scrutiny and can be rejected.
+Keeping it out of the binary entirely, rather than shipping it off by
+default, keeps the capability out of a reviewer's hands.
+
+It is the only feature that touches certificate trust; the
+contactless card path installs nothing and modifies no trust.
+
+When the SCS does ship, it ships as a setting the holder explicitly
+activates, so the trust prompt happens in context on opt-in rather
+than at first launch. Post-MVP roadmap: TASKS.md section 15.
+
 ## 2026-08-10 The ATS exception is macOS-only
 
 The app's Info.plist is split per SDK, the same way its entitlements
