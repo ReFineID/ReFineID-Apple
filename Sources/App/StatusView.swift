@@ -198,7 +198,6 @@
       } else {
         SignDocumentPile(
           documents: signing.queued,
-          format: format,
           remove: { document in
             signing.remove(document)
             // The shape follows what is left: taking the one

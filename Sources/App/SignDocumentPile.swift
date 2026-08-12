@@ -21,10 +21,6 @@
     /// Every file waiting, in the order it will be carried.
     internal let documents: [URL]
 
-    /// The shape the pile will take, which decides what is said about
-    /// it: one container between them, or one signature each.
-    internal let format: SignatureFormat
-
     /// Takes one document out of the pile.
     internal let remove: (URL) -> Void
 
@@ -94,16 +90,12 @@
       .padding(.vertical, Self.rowPadding)
     }
 
-    /// What the pile becomes, and the two ways to change it.
+    /// The two ways to change the pile. Nothing is said about it: the
+    /// rows are the count and the format row is the shape.
     private var footer: some View {
       VStack(alignment: .leading, spacing: Self.footerSpacing) {
         Divider()
         HStack {
-          if let summary = Self.summary(of: documents, format: format) {
-            Text(summary)
-              .font(.footnote)
-              .foregroundStyle(.secondary)
-          }
           Spacer()
           Button("Add…", action: add)
             .buttonStyle(.link)
@@ -113,19 +105,6 @@
         }
       }
       .padding(.top, Self.footerSpacing)
-    }
-
-    /// What a pile of more than one becomes, said only when there is
-    /// more than one: a single row already says everything about
-    /// itself.
-    internal static func summary(
-      of documents: [URL],
-      format: SignatureFormat
-    ) -> String? {
-      guard documents.count > 1 else { return nil }
-      return format == .pades
-        ? String(localized: "\(documents.count) documents, each signed separately")
-        : String(localized: "\(documents.count) documents in one container")
     }
   }
 
