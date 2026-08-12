@@ -18,25 +18,25 @@
 // than duplicating it.
 //
 // Usage:
-//   asc-release.swift get <path>
-//   asc-release.swift api <METHOD> <path> [json|-]
-//   asc-release.swift app-id
-//   asc-release.swift state
-//   asc-release.swift builds <ios|macos>
-//   asc-release.swift distribute <ios|macos> [group]
-//   asc-release.swift add-tester <email> [group]
-//   asc-release.swift invite <email>
-//   asc-release.swift ensure-version <ios|macos> <versionString>
-//   asc-release.swift attach-build <ios|macos> <versionString> <build>
-//   asc-release.swift metadata <ios|macos> <versionString>
-//   asc-release.swift app-info
-//   asc-release.swift review-contact <ios|macos> <versionString>
-//   asc-release.swift screenshots <ios|macos> <versionString>
-//   asc-release.swift age-rating
-//   asc-release.swift export-compliance <ios|macos>
-//   asc-release.swift pricing
-//   asc-release.swift submissions
-//   asc-release.swift submit <ios|macos> <versionString>
+//   apple-app-store-connect-release-manager.swift get <path>
+//   apple-app-store-connect-release-manager.swift api <METHOD> <path> [json|-]
+//   apple-app-store-connect-release-manager.swift app-id
+//   apple-app-store-connect-release-manager.swift state
+//   apple-app-store-connect-release-manager.swift builds <ios|macos>
+//   apple-app-store-connect-release-manager.swift distribute <ios|macos> [group]
+//   apple-app-store-connect-release-manager.swift add-tester <email> [group]
+//   apple-app-store-connect-release-manager.swift invite <email>
+//   apple-app-store-connect-release-manager.swift ensure-version <ios|macos> <versionString>
+//   apple-app-store-connect-release-manager.swift attach-build <ios|macos> <versionString> <build>
+//   apple-app-store-connect-release-manager.swift metadata <ios|macos> <versionString>
+//   apple-app-store-connect-release-manager.swift app-info
+//   apple-app-store-connect-release-manager.swift review-contact <ios|macos> <versionString>
+//   apple-app-store-connect-release-manager.swift screenshots <ios|macos> <versionString>
+//   apple-app-store-connect-release-manager.swift age-rating
+//   apple-app-store-connect-release-manager.swift export-compliance <ios|macos>
+//   apple-app-store-connect-release-manager.swift pricing
+//   apple-app-store-connect-release-manager.swift submissions
+//   apple-app-store-connect-release-manager.swift submit <ios|macos> <versionString>
 
 import CryptoKit
 import Foundation
@@ -45,8 +45,13 @@ let bundleID = "fi.refineid.ReFineID"
 let apiBase = "https://api.appstoreconnect.apple.com"
 let platforms = ["ios": "IOS", "macos": "MAC_OS"]
 
+// What this file is called, read from how it was invoked so a rename
+// cannot leave a failure naming something that no longer exists.
+let toolName = URL(fileURLWithPath: CommandLine.arguments.first ?? "release")
+    .deletingPathExtension().lastPathComponent
+
 func die(_ message: String) -> Never {
-    FileHandle.standardError.write(Data("asc-release: \(message)\n".utf8))
+    FileHandle.standardError.write(Data("\(toolName): \(message)\n".utf8))
     exit(1)
 }
 

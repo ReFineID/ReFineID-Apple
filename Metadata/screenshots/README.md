@@ -2,7 +2,7 @@
 
 Screenshots are the one part of a submission that cannot live in
 `appstore.json`: they are captures of the running app, so they are PNG
-files on disk. `asc-release.swift screenshots <ios|macos> <version>`
+files on disk. `apple-app-store-connect-release-manager.swift screenshots <ios|macos> <version>`
 uploads everything under here.
 
 ## Layout
