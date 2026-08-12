@@ -2,48 +2,14 @@
 
 Last reviewed: 2026-08-11
 
-
-
 Legend:
 
 - `[ ]` not complete
 - `[!]` blocked; add the blocker and owner immediately below the task
 - remove completed
 
-
-
-## P0. Release feasibility blockers
-
-- [ ] Confirm ownership of the intended app and extension bundle identifiers on
-  the current Apple Developer team; historical projects used multiple teams.
-- [x] Prove the required smart-card APIs work from a sandboxed pure-Swift host and
-  CTK extension on a clean supported Mac. Proven 2026-08-11 on a fresh
-  macOS 26.6.1 virtual machine that never held ReFineID: the app was a
-  plain copy into /Applications (no sudo), the CTK extension
-  auto-registered on first launch, an inserted card minted and
-  published its token, and Safari logged in to suomi.fi with the card.
-- [x] Prove a clean-Mac trust-chain solution without `sudo`, a package installer,
-  or silent System Keychain modification. Proven in the same clean-VM
-  run: the suomi.fi login needed no System Keychain change and no
-  admin. The only trust prompt was the SCS localhost certificate, which
-  the MVP now gates off (FEATURE_SCS), so a first launch asks for none.
-- [x] Verify whether publishing the complete required issuer chain through CTK is
-  sufficient for each promised browser/system authentication flow. Yes
-  for the browser login flow: TLS client authentication presents the
-  card certificate for the server to trust, so the clean machine
-  needed nothing in its own trust store. The system-login (sc_auth)
-  flow is out of MVP scope.
-- [ ] If external trust installation remains necessary, document and validate the
-  Apple-native user flow and reconsider the one-install App Store promise.
-  Not necessary for the browser login flow (proven 2026-08-11).
-- [ ] Decide EU trader status and review the address, phone, and email that Apple
-  will display before enabling EU availability.
-- [ ] Do not start an external beta until all P0 decisions have recorded evidence.
-
 ## 0. Decisions and repository foundation
 
-  build number, and the matching tag vocabulary (`Documentation/release-plan.md`,
-  "Calendar versioning").
 - [ ] Add `SECURITY.md` with private reporting instructions and supported
   versions.
 - [ ] Add contribution guidance and the source/provenance policy.
@@ -114,15 +80,6 @@ Legend:
 
 - [ ] Prove and implement the clean-machine trust/chain strategy without a
   privileged System Keychain installer (iOS trust onboarding is P0 gate 2).
-- [x] Implement supported RSA and ECC key profiles explicitly. ECC P-384 and
-  RSA-2048/3072 are certificate-selected, published, and unit-tested; both are
-  hardware-verified, RSA qualified PDF signing included (2026-08-11, contact
-  and contactless).
-
-- [x] Implement RSA/ECDSA result normalization and local signature verification.
-  ECDSA `r||s` becomes X9.62 DER; RSA stays modulus-wide. Both fail closed on
-  length or local-verification failure before a signature is returned.
-
 
 ## 5. Credential-command safety
 
@@ -141,9 +98,6 @@ Legend:
 
 ## 6. CTK extension
 
-- [x] Let the status screen say a stored number was refused, instead of
-  the refusal being visible only in the log and the latch. The entry
-  shakes and turns red from the driver's refusal marker (2026-08-11).
 - [ ] Handle card removal, reinsertion, fast same-reader swap, reader contention,
   extension reuse, and extension termination (cache resets on a fresh token and
   the OS reaps the process; full matrix still to test).
@@ -180,22 +134,6 @@ design, which is why it is the credential that exposes the fault.
   Safari's own LocalAuthentication dialog for the key's access
   control. The PIN satisfies the keychain and never reaches the card.
 
-- [x] Keep the qualified identity out of the iOS chooser: it is
-  published on macOS only, where the PKCS#11 sign module and
-  document-signing applications read it from the keychain. The iOS
-  chooser matches candidates on issuer and titles rows with the
-  subject - the card's two certificates share both - so the
-  qualified row read as a duplicate of the authentication row and
-  selecting it could only enter this loop (2026-08-12).
-- [x] macOS keeps both rows, decided 2026-08-12. The macOS chooser
-  ignores the same capability flags the iOS one does (canDecrypt,
-  canPerformKeyExchange and isSuitableForLogin are all false and it
-  lists the identity regardless), so the only lever is
-  non-publication - and on macOS the publication is load-bearing:
-  librefineid_pkcs11_sign finds the qualified identity by exactly
-  this keychain entry. Weighed against a hidden setting or dropping
-  the PKCS#11 path, the second row is the smallest cost. Not a bug;
-  do not reopen without a new chooser-side filter from Apple.
 - [ ] Try `TKTokenSmartCardPINAuthOperation` in place of the generic
   password operation. It is the variant CryptoTokenKit defines for card
   PINs, carrying a PIN format and a VERIFY template, and if the system
@@ -409,8 +347,6 @@ application use the card without one.
   check, PIN verification, and signing.
 - [ ] Test wrong-PIN-at-three transitions to two and prevents another CTK
   attempt.
-- [x] Test RSA and ECC signature inputs, output encodings, local verification,
-  certificate/profile binding, and exact CMS signature fields.
 - [ ] Test logs and diagnostic exports for PIN, PUK, serial, certificate, and APDU
   leakage.
 - [ ] Add differential tests whose expectations are independent of both Swift and
@@ -482,19 +418,6 @@ application use the card without one.
 ## 13. App Store metadata and review
 
 - [ ] Publish privacy policy, support, and security pages on `www.refineid.fi`.
-- [x] Audit actual app and dependency behavior before selecting App Privacy
-  answers; claim "Data Not Collected" only if evidence supports it.
-  Production-logging audit 2026-08-11 against the Release build on a
-  clean VM, during a real contactless login to oma.posti.fi: our
-  subsystem (`fi.refineid.ReFineID`) emitted nothing to the unified
-  log, the token extension process emitted nothing, and its DEBUG-only
-  file log was never created. The Release app and extension binaries
-  carry zero diagnostic strings (readIdentity, PACE ok, sign entry,
-  the log-file path - all absent). Every logger is `#if DEBUG`, so a
-  shipped build compiles them to empty no-ops. The only residue is the
-  operating system's own CryptoTokenKit/ctkd token-lifecycle logging,
-  which is Apple's, unavoidable, and carries no PIN, PUK, full serial,
-  or certificate content.
 - [ ] Complete privacy policy URL, app privacy, age rating, category, pricing,
   availability, and export-compliance fields.
 - [ ] Confirm the public developer/seller name and EU trader disclosures match the
@@ -560,10 +483,6 @@ application use the card without one.
 - [ ] Decide the supported reader list and USB-C-only boundary (P0 gate 4).
 - [ ] Record the export-compliance answers for a pure-Swift artifact that
   ships no own cryptography before the first TestFlight build (P0 gate 5).
-- [x] NFC CTK registration Feedback: withdrawn 2026-07-25, do not file.
-  Registration was falsified 2026-07-24 and NFC sign completion on
-  2026-07-25 (card signs the TLS CertificateVerify; HTTP 200). Nothing
-  in that draft is Apple-side. See `Documentation/card-transports.md`.
 - [ ] Port the pure-Swift PACE + secure messaging into CardCore so the
   contactless interface can be opened at all (the card seals PKCS#15
   until PACE runs). Donor: `ReFineID-iOS-Browser`
