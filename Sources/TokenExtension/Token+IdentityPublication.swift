@@ -16,12 +16,12 @@ extension Token {
   /// nothing but the role, in DVV's wording for the PIN it will ask for,
   /// resolved against the system language when the token is minted.
   private static var authenticationLabel: String {
-    String(localized: "Basic (PIN 1)")
+    String(localized: "Basic (PIN1)")
   }
 
   /// Label naming the PIN2 qualified-signature identity.
   private static var signatureLabel: String {
-    String(localized: "Signature (PIN 2)")
+    String(localized: "Signature (PIN2)")
   }
 
   #if os(macOS)
