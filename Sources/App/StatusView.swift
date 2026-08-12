@@ -148,7 +148,6 @@
       // silence: focus stays on Sign, and the outcome is drawn below it.
       .announcesOutcome(signing.failure)
       .announcesOutcome(signing.notice)
-      .announcesOutcome(signedOutcome)
     }
 
     /// The documents to sign: dropped, or chosen.

@@ -2117,22 +2117,6 @@
         }
       }
     },
-    "Show in Finder": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Näytä Finderissa"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Visa i Finder"
-          }
-        }
-      }
-    },
     "Sign": {
       "localizations": {
         "fi": {
@@ -2161,22 +2145,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Namnteckning, namn och SATU"
-          }
-        }
-      }
-    },
-    "Signed: %@": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Allekirjoitettu: %@"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Signerat: %@"
           }
         }
       }
