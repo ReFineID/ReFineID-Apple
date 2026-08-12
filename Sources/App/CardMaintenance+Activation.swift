@@ -9,101 +9,151 @@
   /// The activation flow, and reading the activation scheme off the
   /// card's own certificate.
   extension CardMaintenance {
+    /// Which PINs still await their first value.
+    ///
+    /// Judged per PIN because an interrupted activation leaves one set
+    /// and the other in its factory state (S4-1 §4.6 keeps a changed
+    /// flag per PIN). The card awaits activation while either does;
+    /// the set one is skipped, never set again - under the preset-PIN
+    /// scheme the activation PIN stops being that PIN's current value
+    /// the moment it is changed, and presenting it again would spend
+    /// a retry on a value that cannot match.
+    internal struct ActivationNeeds: Equatable, Sendable {
+      /// Whether PIN 1 still awaits its first value.
+      internal let pin1: Bool
+
+      /// Whether PIN 2 still awaits its first value.
+      internal let pin2: Bool
+
+      /// Whether anything remains for activation to do.
+      internal var any: Bool { pin1 || pin2 }
+    }
+
     /// Activates the card: classifies the scheme from the
-    /// authentication certificate, checks the preflight, then sets
-    /// PIN1 and PIN2 - in that order, stopping if PIN1 fails.
+    /// authentication certificate, then sets each PIN that still
+    /// awaits its first value - PIN1 before PIN2, stopping if PIN1
+    /// fails. A PIN already set is skipped, not set again.
     internal static func activate(
       entry: String,
-      newPin1: String,
-      newPin2: String,
+      newPin1: String?,
+      newPin2: String?,
       allowReactivation: Bool
     ) async -> ActivationReport? {
       let report = await onCard { operations -> ActivationReport? in
         guard let scheme = classifyScheme(operations) else { return nil }
-        guard
-          entry.count == scheme.activationEntryDigitCount,
-          Pin1(digits: newPin1) != nil,
-          Pin2(digits: newPin2) != nil
-        else {
+        guard entry.count == scheme.activationEntryDigitCount else {
           return ActivationReport(scheme: scheme, pin1: .invalidEntry, pin2: nil)
         }
-        if !allowReactivation, looksActivated(operations, scheme: scheme) {
+        let needs =
+          allowReactivation
+          ? ActivationNeeds(pin1: true, pin2: true)
+          : Self.needs(operations, scheme: scheme)
+        guard needs.any else {
           return ActivationReport(
             scheme: scheme, pin1: .alreadyActivated, pin2: nil
           )
         }
-        // Activation presents a credential like any other operation, so
-        // it is held to the same floor: the activation code is checked
-        // against the PUK's counter, a preset activation PIN against
-        // that PIN's own.
-        if let refusal = Self.floorRefusal(operations, scheme: scheme) {
+        // Every value that will be presented is judged before any is:
+        // half a validation would be a step spent before the refusal.
+        if needs.pin1, newPin1.flatMap({ Pin1(digits: $0) }) == nil {
+          return ActivationReport(scheme: scheme, pin1: .invalidEntry, pin2: nil)
+        }
+        if needs.pin2, newPin2.flatMap({ Pin2(digits: $0) }) == nil {
+          return ActivationReport(scheme: scheme, pin1: .invalidEntry, pin2: nil)
+        }
+        if let refusal = Self.floorRefusal(operations, scheme: scheme, needs: needs) {
           return ActivationReport(scheme: scheme, pin1: refusal, pin2: nil)
         }
-        let first = activationStep(
-          operations, scheme: scheme, entry: entry, newPin1: newPin1
-        )
-        guard first == .success else {
-          return ActivationReport(scheme: scheme, pin1: first, pin2: nil)
+        var first: Outcome = .alreadyActivated
+        if needs.pin1, let fresh = newPin1 {
+          first = activationStep(
+            operations, scheme: scheme, entry: entry, newPin1: fresh
+          )
+          guard first == .success else {
+            return ActivationReport(scheme: scheme, pin1: first, pin2: nil)
+          }
         }
-        let second = activationStep(
-          operations, scheme: scheme, entry: entry, newPin2: newPin2
-        )
+        var second: Outcome? = .alreadyActivated
+        if needs.pin2, let fresh = newPin2 {
+          second = activationStep(
+            operations, scheme: scheme, entry: entry, newPin2: fresh
+          )
+        }
         return ActivationReport(scheme: scheme, pin1: first, pin2: second)
       }
       return report.flatMap(\.self)
     }
 
-    /// Whether this card is still in its factory state, and so can be
-    /// activated at all.
+    /// Which PINs of this card still await activation.
     ///
     /// Answers nil when no card is readable or its scheme cannot be
     /// classified: activation depends on knowing which entry the card
     /// expects, and offering it without that knowledge invites a
     /// wrong-length entry that spends a retry.
-    internal static func activationReadiness() async -> ActivationReadiness? {
-      await onCard { operations -> ActivationReadiness? in
+    internal static func activationNeeds() async -> ActivationNeeds? {
+      await onCard { operations -> ActivationNeeds? in
         guard let scheme = classifyScheme(operations) else { return nil }
-        return Self.looksActivated(operations, scheme: scheme)
-          ? .alreadyActivated
-          : .ready
+        return Self.needs(operations, scheme: scheme)
       }
       .flatMap(\.self)
     }
 
-    /// Whether the counter-safe preflight sees prior activation.
-    private static func looksActivated(
+    /// The counter-safe preflight, asked once per PIN.
+    private static func needs(
       _ operations: CardOperations,
       scheme: ActivationScheme
-    ) -> Bool {
-      let probe = try? operations.probeRetryCounter(role: .pin1)
-      let record =
-        (try? operations.readPinChangeRecord(role: .pin1)) ?? .unreadable
-      let readiness = ActivationPreflight.evaluate(
-        scheme: scheme,
-        pin1Probe: probe,
-        pin1ChangeRecord: record
+    ) -> ActivationNeeds {
+      ActivationNeeds(
+        pin1: pinAwaitsActivation(operations, scheme: scheme, role: .pin1),
+        pin2: pinAwaitsActivation(operations, scheme: scheme, role: .pin2)
       )
-      return readiness == .alreadyActivated
     }
 
-    /// The floor for whichever credential this scheme presents, or nil
+    /// Whether one PIN still awaits its first value.
+    private static func pinAwaitsActivation(
+      _ operations: CardOperations,
+      scheme: ActivationScheme,
+      role: CredentialRole
+    ) -> Bool {
+      let probe = try? operations.probeRetryCounter(role: role)
+      let record =
+        (try? operations.readPinChangeRecord(role: role)) ?? .unreadable
+      return ActivationPreflight.evaluate(
+        scheme: scheme,
+        probe: probe,
+        changeRecord: record
+      ) == .ready
+    }
+
+    /// The floor for every credential this run will present, or nil
     /// when there is room to proceed.
+    ///
+    /// The activation code is checked against the PUK's counter once;
+    /// a preset activation PIN is presented against each PIN it will
+    /// set, so each of those counters is checked - only for the steps
+    /// that will actually run.
     private static func floorRefusal(
       _ operations: CardOperations,
-      scheme: ActivationScheme
+      scheme: ActivationScheme,
+      needs: ActivationNeeds
     ) -> Outcome? {
-      let role: CredentialRole =
+      let roles: [CredentialRole] =
         switch scheme {
         case .activationCodeIsPuk:
-          .puk
+          [.puk]
         case .presetActivationPin:
-          .pin1
+          [needs.pin1 ? .pin1 : nil, needs.pin2 ? .pin2 : nil].compactMap(\.self)
         }
-      guard let probe = try? operations.probeRetryCounter(role: role) else {
-        return .floorRefused(.refuseUnreadable)
+      for role in roles {
+        guard let probe = try? operations.probeRetryCounter(role: role) else {
+          return .floorRefused(.refuseUnreadable)
+        }
+        let verdict = RetryFloor.evaluate(probeOutcome: probe)
+        guard verdict == .proceed else {
+          return .floorRefused(verdict)
+        }
       }
-      let verdict = RetryFloor.evaluate(probeOutcome: probe)
-      return verdict == .proceed ? nil : .floorRefused(verdict)
+      return nil
     }
 
     /// The PIN1 half of activation under either scheme.

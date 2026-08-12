@@ -54,10 +54,12 @@
       /// How this card activates, classified from its certificate.
       internal let scheme: ActivationScheme
 
-      /// The PIN1 step's outcome.
+      /// The PIN1 step's outcome; `alreadyActivated` when the PIN was
+      /// set before this run and the step was skipped.
       internal let pin1: Outcome
 
-      /// The PIN2 step's outcome; nil when PIN1 did not succeed.
+      /// The PIN2 step's outcome: `alreadyActivated` when skipped for
+      /// the same reason, nil when a failed PIN1 stopped the run.
       internal let pin2: Outcome?
     }
 

@@ -18,6 +18,17 @@
     /// The last counter-safe probe of all three credentials.
     internal private(set) var report: CredentialProbeReport?
 
+    /// Which PINs still await their first value.
+    ///
+    /// Both by default, so a preview with no card to ask shows the
+    /// whole form; a reading replaces it with what the card says.
+    /// An interrupted activation leaves one PIN set and one waiting,
+    /// and the form asks only for the waiting one - setting the other
+    /// again would spend a retry on a value that cannot match.
+    internal private(set) var activationNeeds = CardMaintenance.ActivationNeeds(
+      pin1: true, pin2: true
+    )
+
     /// Whether this card can still be activated.
     ///
     /// False until a reading says otherwise: activation is a one-time
@@ -39,7 +50,11 @@
       guard !working else { return }
       working = true
       report = await CardMaintenance.probeCredentials()
-      offersActivation = await CardMaintenance.activationReadiness() == .ready
+      let needs = await CardMaintenance.activationNeeds()
+      if let needs {
+        activationNeeds = needs
+      }
+      offersActivation = needs?.any == true
       working = false
     }
 
@@ -70,11 +85,14 @@
       }
     }
 
-    /// Activates the card; true when both PINs were set.
+    /// Activates the card; true when every waiting PIN was set.
+    ///
+    /// A nil PIN is one the form did not ask for because the card
+    /// already carries it; the flow sets only what still waits.
     internal func activate(
       entry: String,
-      newPin1: String,
-      newPin2: String,
+      newPin1: String?,
+      newPin2: String?,
       allowReactivation: Bool
     ) async -> Bool {
       guard !working else { return false }
@@ -99,18 +117,32 @@
     }
 
     /// Turns an activation result into the sentence shown, and says
-    /// whether both PINs were set.
+    /// whether every waiting PIN was set.
+    ///
+    /// `alreadyActivated` on one PIN beside progress on the other is a
+    /// skip, not a refusal: an interrupted activation left that PIN
+    /// set, and this run finished the card.
     private func describe(_ activation: CardMaintenance.ActivationReport) -> Bool {
       let entry = activationEntryName(activation.scheme)
       switch (activation.pin1, activation.pin2) {
       case (.success, .success):
         notice = "Card activated: PIN 1 and PIN 2 are set."
         return true
+      case (.alreadyActivated, .success):
+        notice = "Card activated: PIN 2 is set. PIN 1 already was."
+        return true
+      case (.success, .alreadyActivated), (.success, nil):
+        notice = "Card activated: PIN 1 is set. PIN 2 already was."
+        return true
       case (.success, .some(let second)):
         failure = message(for: second, presenting: entry)
           .map { "PIN 1 was set, but PIN 2 was not: \($0)" }
         return false
-      case (.alreadyActivated, _):
+      case (.alreadyActivated, .some(let second)):
+        failure = message(for: second, presenting: entry)
+          .map { "PIN 2 was not set: \($0)" }
+        return false
+      case (.alreadyActivated, nil):
         failure =
           "This card looks activated already. Activating again would spend "
           + "a retry; enable reactivation only if you are sure."

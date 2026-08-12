@@ -2,7 +2,15 @@
 
 /// The side-effect-free check before activation (FINEID S4-1 §4.6).
 public enum ActivationPreflight {
-  /// Evaluates readiness from counter-safe probes alone.
+  /// Evaluates one PIN's readiness from counter-safe probes alone.
+  ///
+  /// Judged per PIN, because §4.6 sets each PIN's changed flag
+  /// individually and an interrupted activation leaves one PIN set
+  /// and the other in its factory state. A card is awaiting
+  /// activation while any of its PINs is; the set one is skipped, not
+  /// set again - under §4.6.2 the activation PIN stops being a PIN's
+  /// current value the moment that PIN is changed, and presenting it
+  /// again would spend a retry on a value that cannot match.
   ///
   /// Under the activation-code scheme (§4.6.1) both PINs ship blocked
   /// and the factory state answers the probe with nothing usable, so a
@@ -14,21 +22,21 @@ public enum ActivationPreflight {
   /// in before it was ever activated, and reading it as prior use
   /// would withhold activation from exactly the card that needs it.
   ///
-  /// Under the preset-PIN scheme (§4.6.2) PIN1 ships set to the
+  /// Under the preset-PIN scheme (§4.6.2) the PIN ships set to the
   /// activation PIN, so a healthy counter is the expected fresh state
   /// and proves nothing. The changed-since-manufacture record is the
   /// authoritative signal; only `changed` blocks the flow, an
   /// unreadable record does not.
   public static func evaluate(
     scheme: ActivationScheme,
-    pin1Probe: RetryProbeOutcome?,
-    pin1ChangeRecord: PinChangeRecord
+    probe: RetryProbeOutcome?,
+    changeRecord: PinChangeRecord
   ) -> ActivationReadiness {
     switch scheme {
     case .presetActivationPin:
-      return pin1ChangeRecord == .changed ? .alreadyActivated : .ready
+      return changeRecord == .changed ? .alreadyActivated : .ready
     case .activationCodeIsPuk:
-      switch pin1Probe {
+      switch probe {
       case .remaining, .verified, .locked:
         return .alreadyActivated
       case .invalidated, .noInformation, .other, .none:

@@ -206,7 +206,12 @@
       }
       try? await Task.sleep(for: IdentityStateView.settleDelay)
       guard !Task.isCancelled else { return }
-      awaitsActivation = await CardMaintenance.activationReadiness() == .ready
+      // Through the model rather than a bare probe, so the same
+      // reading also learns which PINs still wait - an interrupted
+      // activation left one set, and the form asks only for the
+      // other - and the counters the confirmation sheet shows.
+      await activation.refresh()
+      awaitsActivation = activation.offersActivation
     }
 
     /// The documents to sign: dropped, or chosen.

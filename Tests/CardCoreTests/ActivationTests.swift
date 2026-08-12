@@ -86,8 +86,8 @@ internal struct ActivationTests {
       #expect(
         ActivationPreflight.evaluate(
           scheme: .activationCodeIsPuk,
-          pin1Probe: probe,
-          pin1ChangeRecord: .unreadable
+          probe: probe,
+          changeRecord: .unreadable
         ) == .alreadyActivated
       )
     }
@@ -98,8 +98,8 @@ internal struct ActivationTests {
       #expect(
         ActivationPreflight.evaluate(
           scheme: .activationCodeIsPuk,
-          pin1Probe: probe,
-          pin1ChangeRecord: .unreadable
+          probe: probe,
+          changeRecord: .unreadable
         ) == .ready
       )
     }
@@ -113,22 +113,63 @@ internal struct ActivationTests {
     #expect(
       ActivationPreflight.evaluate(
         scheme: .presetActivationPin,
-        pin1Probe: .remaining(five),
-        pin1ChangeRecord: .changed
+        probe: .remaining(five),
+        changeRecord: .changed
       ) == .alreadyActivated
     )
     #expect(
       ActivationPreflight.evaluate(
         scheme: .presetActivationPin,
-        pin1Probe: .remaining(five),
-        pin1ChangeRecord: .unchanged
+        probe: .remaining(five),
+        changeRecord: .unchanged
       ) == .ready
     )
     #expect(
       ActivationPreflight.evaluate(
         scheme: .presetActivationPin,
-        pin1Probe: .locked,
-        pin1ChangeRecord: .unreadable
+        probe: .locked,
+        changeRecord: .unreadable
+      ) == .ready
+    )
+  }
+
+  /// An interrupted activation leaves one PIN set and one waiting,
+  /// and the preflight judges each on its own: the card stays ready
+  /// through the waiting PIN while the set one reads as activated, so
+  /// the flow finishes the card instead of refusing it - or worse,
+  /// setting the set one again.
+  @Test
+  internal func aHalfActivatedCardReadsPerPin() throws {
+    let five = try #require(RetryCount(attemptsRemaining: 5))
+    // Old scheme: PIN 1 was unblocked and set, PIN 2 still answers
+    // nothing usable.
+    #expect(
+      ActivationPreflight.evaluate(
+        scheme: .activationCodeIsPuk,
+        probe: .remaining(five),
+        changeRecord: .unreadable
+      ) == .alreadyActivated
+    )
+    #expect(
+      ActivationPreflight.evaluate(
+        scheme: .activationCodeIsPuk,
+        probe: .noInformation,
+        changeRecord: .unreadable
+      ) == .ready
+    )
+    // New scheme: PIN 1's changed flag is set, PIN 2's is not.
+    #expect(
+      ActivationPreflight.evaluate(
+        scheme: .presetActivationPin,
+        probe: .verified,
+        changeRecord: .changed
+      ) == .alreadyActivated
+    )
+    #expect(
+      ActivationPreflight.evaluate(
+        scheme: .presetActivationPin,
+        probe: .remaining(five),
+        changeRecord: .unchanged
       ) == .ready
     )
   }
