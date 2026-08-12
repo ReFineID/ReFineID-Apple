@@ -268,8 +268,7 @@ public enum PrimeStore {
   /// rather than reported as an empty one, because a prime that cannot be
   /// decoded is a prime the extension will not see either.
   public static func presence() -> [PrimePresence] {
-    storedItems()
-      .filter { $0.account != Self.stagedAccount }
+    presenceOrderedItems()
       .map { item in
         PrimePresence(
           instance: item.account,
@@ -278,7 +277,40 @@ public enum PrimeStore {
           issuerBytes: item.identity.issuerDER?.count ?? 0,
           hasTokenSerial: item.identity.tokenSerial != nil)
       }
-      .sorted { $0.instance < $1.instance }
+  }
+
+  /// The holder each primed card names, in the order ``presence()``
+  /// lists them.
+  ///
+  /// Only the name leaves, decoded here for the reason ``presence()``
+  /// decodes here: the certificate bytes, the card access number and
+  /// the serial belong to this type. The name is the one part of a
+  /// prime a window has to show, and reading it from the record asks
+  /// no card at all - the alternative, searching the keychain for what
+  /// the token published, has to mint a registered card to answer, and
+  /// minting one over near field opens a scan sheet.
+  ///
+  /// A record whose certificate will not parse is skipped rather than
+  /// reported as an empty name, exactly as an undecodable record is.
+  public static func primedHolderNames() -> [String] {
+    presenceOrderedItems().compactMap { item in
+      guard
+        let certificate = SecCertificateCreateWithData(
+          nil, item.identity.certDER as CFData),
+        let summary = SecCertificateCopySubjectSummary(certificate) as String?
+      else {
+        return nil
+      }
+      return summary
+    }
+  }
+
+  /// The stored primes ``presence()`` reports, in the order it reports
+  /// them: the staged record is not one of them.
+  private static func presenceOrderedItems() -> [StoredItem] {
+    storedItems()
+      .filter { $0.account != Self.stagedAccount }
+      .sorted { $0.account < $1.account }
   }
 
   /// Every decodable prime, including the short-lived staged record.

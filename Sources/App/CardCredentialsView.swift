@@ -173,16 +173,33 @@ internal struct CardCredentialsView: View {
     }
   }
 
-  /// The finished state: one word, one mark.
+  /// The finished state: who the stored card says they are.
+  ///
+  /// The same row a connected reader shows, read from the stored prime
+  /// rather than from the token: a registered card's token has to be
+  /// minted before the keychain can answer for it, and minting one over
+  /// near field opens a scan sheet on a screen nobody asked to scan
+  /// from. A check mark stands in when the name will not parse, because
+  /// the identity is set either way and that is what this row reports.
   private var identitySection: some View {
     Section {
-      LabeledContent("Identity") {
-        Image(systemName: "checkmark")
-          .foregroundStyle(.green)
-          .accessibilityLabel("Set")
+      LabeledContent("Person") {
+        if let holder = primedHolder {
+          Text(holder)
+            .textSelection(.enabled)
+        } else {
+          Image(systemName: "checkmark")
+            .foregroundStyle(.green)
+            .accessibilityLabel("Set")
+        }
       }
       .accessibilityIdentifier("identityStatus")
     }
+  }
+
+  /// Who the primed card names, or nil when no name can be read.
+  private var primedHolder: String? {
+    PrimeStore.primedHolderNames().first
   }
 
   /// One operation, in its actual order: credentials and then minting.
