@@ -346,18 +346,18 @@
         }
       }
     },
-    "Basic PIN (PIN 1)": {
+    "Basic Code (PIN1)": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Perustunnusluku (PIN 1)"
+            "value": "Perustunnusluku (PIN1)"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Baskoden (PIN 1)"
+            "value": "Baskoden (PIN1)"
           }
         }
       }
