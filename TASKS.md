@@ -187,6 +187,15 @@ design, which is why it is the credential that exposes the fault.
   subject - the card's two certificates share both - so the
   qualified row read as a duplicate of the authentication row and
   selecting it could only enter this loop (2026-08-12).
+- [x] macOS keeps both rows, decided 2026-08-12. The macOS chooser
+  ignores the same capability flags the iOS one does (canDecrypt,
+  canPerformKeyExchange and isSuitableForLogin are all false and it
+  lists the identity regardless), so the only lever is
+  non-publication - and on macOS the publication is load-bearing:
+  librefineid_pkcs11_sign finds the qualified identity by exactly
+  this keychain entry. Weighed against a hidden setting or dropping
+  the PKCS#11 path, the second row is the smallest cost. Not a bug;
+  do not reopen without a new chooser-side filter from Apple.
 - [ ] Try `TKTokenSmartCardPINAuthOperation` in place of the generic
   password operation. It is the variant CryptoTokenKit defines for card
   PINs, carrying a PIN format and a VERIFY template, and if the system
