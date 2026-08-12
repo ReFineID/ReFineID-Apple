@@ -1,6 +1,6 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if os(macOS)
+#if os(macOS) || os(iOS)
 
   import CardCore
   import Foundation
@@ -31,15 +31,40 @@
       )
     #endif
 
-    /// The holder's name from the card, or nil when none is published.
-    internal static func current() -> String? {
-      let query: [CFString: Any] = [
+    #if os(macOS)
+      /// The holder's name from whichever ReFineID token is published,
+      /// or nil when none is.
+      ///
+      /// Unnamed on macOS, where a token answers from what it published
+      /// and a card that is not there matches nothing. iOS asks by name
+      /// instead, for the reason in ``name(ofTokenIdentifier:)``.
+      internal static func current() -> String? {
+        Self.name(ofTokenIdentifier: nil)
+      }
+    #endif
+
+    /// The holder's name from one named token, or nil when it
+    /// publishes none.
+    ///
+    /// Naming the token is what makes this safe to ask on iOS. A broad
+    /// `com.apple.token` search is active there - it was measured
+    /// opening a "Ready to Scan" sheet from a screen that only wanted
+    /// to count items - because a registered token has to be minted
+    /// before it can answer for anything, and minting one over near
+    /// field is a card read. A token that is already live has published
+    /// its contents and answers from them, so the caller names one it
+    /// has proved live rather than asking the keychain at large.
+    internal static func name(ofTokenIdentifier tokenIdentifier: String?) -> String? {
+      var query: [CFString: Any] = [
         kSecClass: kSecClassCertificate,
         kSecAttrAccessGroup: kSecAttrAccessGroupToken,
         kSecReturnAttributes: true,
         kSecReturnData: true,
         kSecMatchLimit: kSecMatchLimitAll,
       ]
+      if let tokenIdentifier {
+        query[kSecAttrTokenID] = tokenIdentifier
+      }
       var found: CFTypeRef?
       let status = SecItemCopyMatching(query as CFDictionary, &found)
       guard status == errSecSuccess, let matches = found as? [[CFString: Any]] else {
@@ -53,8 +78,8 @@
       #endif
       for match in matches {
         guard
-          let tokenID = match[kSecAttrTokenID] as? String,
-          CardTokenNamespace.owns(tokenIdentifier: tokenID),
+          let matchedTokenIdentifier = match[kSecAttrTokenID] as? String,
+          CardTokenNamespace.owns(tokenIdentifier: matchedTokenIdentifier),
           let der = match[kSecValueData] as? Data,
           let facts = CertificateFacts(der: der),
           !facts.isCertificateAuthority,

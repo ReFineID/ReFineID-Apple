@@ -36,12 +36,26 @@
     /// One-shot removal handlers already installed for token IDs.
     private var removalHandlers: Set<String> = []
 
-    /// Number of live reader tokens, including ones minted before this build.
-    internal private(set) var liveReaderTokenCount = 0
+    /// The live reader tokens by identifier, including ones minted
+    /// before this build, in a stable order.
+    ///
+    /// Named rather than counted: each identifier is one this model has
+    /// already proved live and reader-backed, which is what makes it
+    /// safe to ask the keychain about. A broad token search is active
+    /// on iOS - it was measured opening a "Ready to Scan" sheet - and
+    /// what wakes the field is a registered token that has to be minted
+    /// to answer at all. A token already live answers from what it
+    /// published.
+    internal private(set) var liveReaderTokenIdentifiers: [String] = []
+
+    /// Number of live reader tokens.
+    internal var liveReaderTokenCount: Int {
+      liveReaderTokenIdentifiers.count
+    }
 
     /// Whether the setup form must be replaced by reader identity controls.
     internal var isActive: Bool {
-      liveReaderTokenCount > 0
+      !liveReaderTokenIdentifiers.isEmpty
     }
 
     internal init() {
@@ -77,10 +91,10 @@
       }
     }
 
-    /// Counts live reader tokens while excluding persistent NFC registrations.
+    /// Lists live reader tokens while excluding persistent NFC registrations.
     internal func refresh() {
       guard Self.hasReaderSlot else {
-        liveReaderTokenCount = 0
+        liveReaderTokenIdentifiers = []
         return
       }
       let refineIDTokenIdentifiers = Set(
@@ -94,10 +108,11 @@
       // is live in the watcher but absent from that list is backed by a
       // connected reader. This remains true across an app upgrade even when
       // ctkd keeps the old extension instance and token objects alive.
-      let liveReaderTokenIdentifiers =
-        refineIDTokenIdentifiers.subtracting(registeredTokenIdentifiers)
-
-      liveReaderTokenCount = liveReaderTokenIdentifiers.count
+      //
+      // Sorted, so the rows a holder reads keep one order across a
+      // refresh that changed nothing.
+      liveReaderTokenIdentifiers =
+        refineIDTokenIdentifiers.subtracting(registeredTokenIdentifiers).sorted()
 
       for tokenIdentifier in liveReaderTokenIdentifiers {
         observeRemoval(of: tokenIdentifier)
