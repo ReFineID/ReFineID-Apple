@@ -251,7 +251,7 @@
       do {
         switch format {
         case .asice:
-          try await signContainer(source, pin2: pin2, to: destination)
+          try await signContainer([source], pin2: pin2, to: destination)
         case .pades:
           try await signPdf(
             source, pin2: pin2, accessNumber: accessNumber, to: destination
@@ -263,21 +263,53 @@
       }
     }
 
-    /// One ASiC-E signature: the file as it is, no visible stamp -
-    /// the container carries the file unchanged, so there is no signed
-    /// revision to draw a mark into.
+    /// One ASiC-E signature over every file in `sources`, no visible
+    /// stamp - the container carries the files unchanged, so there is
+    /// no signed revision to draw a mark into.
+    ///
+    /// The files are read before the card is touched, so a container
+    /// attests bytes that were all present at one instant.
     private func signContainer(
-      _ source: URL,
+      _ sources: [URL],
       pin2: String,
       to destination: URL
     ) async throws {
-      let document = try Data(contentsOf: source)
-      let container = try await AsicSigner.sign(
-        document,
-        named: source.lastPathComponent,
-        pin2: pin2
-      )
+      let objects = try sources.map { source in
+        AsicSigner.dataObject(
+          try Data(contentsOf: source), named: source.lastPathComponent
+        )
+      }
+      let container = try await AsicSigner.sign(objects, pin2: pin2)
       try container.write(to: destination, options: .atomic)
+    }
+
+    /// Signs everything queued into one container.
+    ///
+    /// The whole pile under one signature, which is the shape ASiC-E
+    /// exists for: a submission of several files that one signature
+    /// covers. A PAdES batch stays several signatures, because a PDF
+    /// carries its own and cannot carry another PDF's.
+    internal func signTogether(pin2: String, to destination: URL) async {
+      let sources = queued
+      guard !sources.isEmpty, !working else { return }
+      // Replacing any original is refused for the same reason a single
+      // signature refuses it: it destroys the only unsigned copy of a
+      // file the signature attests.
+      let originals = Set(sources.map(\.standardizedFileURL))
+      guard !originals.contains(destination.standardizedFileURL) else {
+        failure = String(
+          localized: "The signed container cannot replace one of the originals."
+        )
+        return
+      }
+      let appearance = beginSigning()
+      defer { working = false }
+      do {
+        try await signContainer(sources, pin2: pin2, to: destination)
+        complete(with: destination)
+      } catch {
+        report(error, from: appearance)
+      }
     }
 
     /// One PAdES signature, with the optional visible stamp.

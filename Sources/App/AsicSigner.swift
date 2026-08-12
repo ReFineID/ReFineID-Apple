@@ -7,7 +7,7 @@
   import Security
   import UniformTypeIdentifiers
 
-  /// Signs one file into an ASiC-E container at level XAdES-LT.
+  /// Signs a set of files into one ASiC-E container at level XAdES-LT.
   ///
   /// The order is forced by what each step attests, exactly as in
   /// `DocumentSigner`: the XAdES `SignedInfo` is prepared and signed
@@ -31,29 +31,51 @@
       /// The card session signed octets that do not match the
       /// signature rebuilt from its certificate.
       case signedOctetsChanged
+
+      /// A file cannot be carried under the name it has: the container
+      /// reserves some names, and two files cannot share one.
+      case unusableName
     }
 
     /// Fallback media type for a file no type database knows.
     private static let unknownMediaType = "application/octet-stream"
 
-    /// Signs `content` under its file name, answering the container.
-    internal static func sign(
+    /// One file as it will appear inside a container, with the media
+    /// type the signature will attest for it.
+    internal static func dataObject(
       _ content: Data,
-      named name: String,
-      pin2: String
-    ) async throws -> Data {
-      let signedAt = Date()
-      let object = AsicContainer.DataObject(
+      named name: String
+    ) -> AsicContainer.DataObject {
+      AsicContainer.DataObject(
         name: name,
         mimeType: Self.mediaType(forFileNamed: name),
         content: content
       )
+    }
+
+    /// Signs `objects` into one container covered by one signature.
+    ///
+    /// One signature over the whole set, which is what a set signed
+    /// together means: one PIN 2 use, one timestamp, and one piece of
+    /// revocation evidence, attesting the files as one act rather than
+    /// as several that happen to share a minute.
+    internal static func sign(
+      _ objects: [AsicContainer.DataObject],
+      pin2: String
+    ) async throws -> Data {
+      // Asked before the card is touched. A set that cannot be carried
+      // is refused while a refusal is still free; discovering it after
+      // signing would have spent a PIN attempt on nothing.
+      guard !objects.isEmpty, AsicContainer.areNamesUsable(objects) else {
+        throw Failure.unusableName
+      }
+      let signedAt = Date()
       let answer = await CardMaintenance.qualifiedSignature(
         pin2: pin2,
         expectedCertificate: nil
       ) { certificate in
         Self.plannedSignedInfo(
-          objects: [object], certificate: certificate, signedAt: signedAt
+          objects: objects, certificate: certificate, signedAt: signedAt
         )
       }
       switch answer {
@@ -63,7 +85,7 @@
         throw DocumentSigner.Failure.stampSignerChanged
       case .signed(let product):
         return try await Self.assembled(
-          from: product, object: object, signedAt: signedAt
+          from: product, objects: objects, signedAt: signedAt
         )
       }
     }
@@ -72,7 +94,7 @@
     /// container.
     private static func assembled(
       from product: CardMaintenance.QualifiedProduct,
-      object: AsicContainer.DataObject,
+      objects: [AsicContainer.DataObject],
       signedAt: Date
     ) async throws -> Data {
       // The plan is rebuilt from the certificate the card answered
@@ -81,7 +103,7 @@
       // what was signed, and nothing downstream may proceed on it.
       guard
         let plan = XadesSignature.plan(
-          objects: [object],
+          objects: objects,
           certificate: product.certificate,
           profile: product.profile,
           signedAt: signedAt
@@ -117,7 +139,7 @@
       )
       guard
         let archive = AsicContainer.container(
-          objects: [object], signatureXml: document
+          objects: objects, signatureXml: document
         )
       else {
         throw Failure.container

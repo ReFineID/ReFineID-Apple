@@ -191,12 +191,18 @@
             .help(pending.lastPathComponent)
             .accessibilityLabel(pending.lastPathComponent)
           // A pile says how many, so a whole stack signed at once is
-          // not mistaken for the one document whose name shows. Drag
-          // more onto the area to add; this clears it.
+          // not mistaken for the one document whose name shows, and
+          // says what it will become: a container covers the set with
+          // one signature, while PDFs each keep their own. Drag more
+          // onto the area to add; this clears it.
           if signing.queued.count > 1 {
-            Text("\(signing.queued.count) documents to sign")
-              .font(.footnote)
-              .foregroundStyle(.secondary)
+            Text(
+              format == .pades
+                ? "\(signing.queued.count) documents, each signed separately"
+                : "\(signing.queued.count) documents in one container"
+            )
+            .font(.footnote)
+            .foregroundStyle(.secondary)
           }
           Button(signing.queued.count > 1 ? "Clear" : "Choose a different document…") {
             signing.queued.count > 1 ? signing.clearQueue() : choose()
@@ -215,9 +221,9 @@
     /// PIN2, the optional stamp, and the action - shown once a
     /// document is waiting.
     @ViewBuilder private var signatureSection: some View {
-      if let pending = signing.pending {
+      if signing.pending != nil {
         Section {
-          SignatureFormatRow(pending: pending, format: $format)
+          SignatureFormatRow(documents: signing.queued, format: $format)
           SecureField(pin2Cache.isWarm ? "PIN 2 (remembered)" : "PIN 2", text: $pin2)
             .onChange(of: pin2) { _, typed in
               pin2 = LimitedDigits.pin(typed)
@@ -301,10 +307,15 @@
 
     /// Takes a dropped document of any type: a PDF is signed in place
     /// by default, anything else travels in an ASiC-E container.
+    ///
+    /// The shape is decided by the whole pile and not by what just
+    /// arrived. Dropping one PDF onto a spreadsheet already waiting
+    /// would otherwise leave PAdES chosen for a set that cannot take
+    /// it, and the card would be asked before the spreadsheet refused.
     private func accept(_ urls: [URL]) -> Bool {
       guard !urls.isEmpty else { return false }
       signing.accept(urls)
-      format = Self.sharedFormat(for: urls)
+      format = Self.sharedFormat(for: signing.queued)
       pin2 = ""
       pinFocused = true
       return true
@@ -326,13 +337,17 @@
     /// looks exactly like a button that does nothing.
     private func sign() {
       guard canSign, let source = signing.pending else { return }
-      let batch = signing.queued.count > 1
+      // Several documents take one container between them, so they ask
+      // for one file. Several PDFs each keep their own signature
+      // inside themselves, so those still ask for a folder.
+      let several = signing.queued.count > 1
+      let separately = several && format == .pades
       let folder =
-        batch
+        separately
         ? SignedOutput.chooseFolder(startingAt: source.deletingLastPathComponent())
         : nil
-      let destination = batch ? nil : SignedOutput.chooseFile(for: source, format: format)
-      guard batch ? folder != nil : destination != nil else { return }
+      let destination = separately ? nil : SignedOutput.chooseFile(for: source, format: format)
+      guard separately ? folder != nil : destination != nil else { return }
       // The freshly typed PIN wins; an empty field falls back to the
       // one a signature accepted within the last minute.
       let entry = Self.isEntryComplete(pin2) ? pin2 : (pin2Cache.current() ?? "")
@@ -347,9 +362,13 @@
             pin2: entry, accessNumber: number, format: chosenFormat, intoDirectory: folder
           )
         } else if let destination {
-          await signing.sign(
-            pin2: entry, accessNumber: number, format: chosenFormat, to: destination
-          )
+          if several {
+            await signing.signTogether(pin2: entry, to: destination)
+          } else {
+            await signing.sign(
+              pin2: entry, accessNumber: number, format: chosenFormat, to: destination
+            )
+          }
         }
         // Remember only a PIN a signature accepted, so a remembered
         // value is always known good and never spends an attempt; any

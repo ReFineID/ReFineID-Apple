@@ -200,4 +200,59 @@ internal struct AsicContainerTests {
     )
     #expect(mimetype == Data(AsicContainer.mimeType.utf8))
   }
+
+  /// Ordinary names, including a subfolder, are carried as they are.
+  @Test
+  internal func usableNamesArePassed() {
+    let names = ["dossier.pdf", "annex one.txt", "appendix/figure.png", "mimetypes.txt"]
+    #expect(AsicContainer.areNamesUsable(names.map(Self.named)))
+  }
+
+  /// Names a container cannot carry, each refused on its own.
+  ///
+  /// `mimetype` and `META-INF/` belong to the container, and the rest
+  /// have no single portable meaning once the archive is unpacked - a
+  /// file under any of them could displace a manifest or a signature.
+  @Test(arguments: [
+    "mimetype",
+    "MimeType",
+    "META-INF",
+    "META-INF/manifest.xml",
+    "meta-inf/signatures0.xml",
+    "/absolute.pdf",
+    "../escaping.pdf",
+    "sub/../escaping.pdf",
+    "back\\slash.pdf",
+    "line\nbreak.pdf",
+    "",
+  ])
+  internal func unusableNamesAreRefused(name: String) {
+    #expect(!AsicContainer.areNamesUsable([Self.named(name)]))
+    #expect(
+      AsicContainer.container(
+        objects: [Self.named(name)], signatureXml: Data("signature".utf8)
+      ) == nil
+    )
+  }
+
+  /// Two files cannot share one entry name: the archive would carry
+  /// both and the signature would reference one URI twice, leaving a
+  /// reader to choose which entry it attests.
+  @Test
+  internal func repeatedNamesAreRefused() {
+    let objects = [Self.named("report.pdf"), Self.named("report.pdf")]
+    #expect(!AsicContainer.areNamesUsable(objects))
+    #expect(
+      AsicContainer.container(
+        objects: objects, signatureXml: Data("signature".utf8)
+      ) == nil
+    )
+  }
+
+  /// One file under a given name, with content that does not matter.
+  private static func named(_ name: String) -> AsicContainer.DataObject {
+    AsicContainer.DataObject(
+      name: name, mimeType: "application/octet-stream", content: Data("x".utf8)
+    )
+  }
 }

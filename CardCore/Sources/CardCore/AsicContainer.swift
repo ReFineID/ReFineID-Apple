@@ -80,18 +80,61 @@ public enum AsicContainer {
   internal static let manifestNamespace =
     "urn:oasis:names:tc:opendocument:xmlns:manifest:1.0"
 
+  /// Whether every file can be carried under the name it was given.
+  ///
+  /// `mimetype` and `META-INF/` belong to the container, and a name
+  /// used twice leaves a reader to choose which entry wins. Absolute
+  /// paths, parent-directory components, backslashes and control
+  /// characters have no one portable archive meaning. Any of them lets
+  /// a carried file take the place of a manifest or a signature once
+  /// the archive is unpacked, so they are refused rather than mangled
+  /// into something unique.
+  ///
+  /// Asked before the card signs, so a set that cannot be carried
+  /// costs no PIN attempt.
+  public static func areNamesUsable(_ objects: [DataObject]) -> Bool {
+    var seen: Set<String> = []
+    for object in objects {
+      guard Self.isNameUsable(object.name), seen.insert(object.name).inserted else {
+        return false
+      }
+    }
+    return true
+  }
+
+  /// The folder the container keeps its manifest and signatures in.
+  private static let reservedFolderName = "META-INF"
+
+  /// Whether one entry name is a name a container may carry.
+  private static func isNameUsable(_ name: String) -> Bool {
+    let folded = name.lowercased()
+    guard !name.isEmpty,
+      folded != Self.mimetypeEntryName.lowercased(),
+      folded != Self.reservedFolderName.lowercased(),
+      !folded.hasPrefix(Self.reservedFolderName.lowercased() + "/"),
+      !name.hasPrefix("/"),
+      !name.contains("\\"),
+      !name.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) })
+    else {
+      return false
+    }
+    return name.split(separator: "/", omittingEmptySubsequences: false)
+      .allSatisfy { $0 != "" && $0 != "." && $0 != ".." }
+  }
+
   /// Writes the finished `.asice` archive.
   ///
   /// `signatureXml` is a complete `META-INF/signatures0.xml`, as
   /// `XadesSignature.Plan.document` produced it. Entry order is fixed
   /// and load-bearing: `mimetype` first for the reason in the type
   /// docs, then the data objects, then the inventory and the signature
-  /// under `META-INF/`. Returns nil when an entry cannot be described
-  /// by the 32-bit ZIP fields.
+  /// under `META-INF/`. Returns nil when a name cannot be carried, or
+  /// when an entry cannot be described by the 32-bit ZIP fields.
   public static func container(
     objects: [DataObject],
     signatureXml: Data
   ) -> Data? {
+    guard Self.areNamesUsable(objects) else { return nil }
     var archive = ZipWriter()
     archive.add(name: Self.mimetypeEntryName, content: Data(Self.mimeType.utf8))
     for object in objects {

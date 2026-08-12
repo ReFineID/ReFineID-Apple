@@ -32,6 +32,9 @@
         "The signed container could not be written."
       case AsicSigner.Failure.signedOctetsChanged:
         "The card signed unexpected bytes. No signed file was written."
+      case AsicSigner.Failure.unusableName:
+        "Two documents share a file name, or one uses a name the "
+          + "container reserves. Rename one and try again."
       default:
         "The document could not be signed."
       }
