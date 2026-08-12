@@ -33,6 +33,7 @@
 //   asc-release.swift age-rating
 //   asc-release.swift export-compliance <ios|macos>
 //   asc-release.swift pricing
+//   asc-release.swift submissions
 //   asc-release.swift submit <ios|macos> <versionString>
 
 import CryptoKit
@@ -414,26 +415,77 @@ func pushExportCompliance(_ platformName: String) {
 // Puts the app on the free tier in every territory: a price schedule
 // whose base territory carries the zero price point, which the store
 // equalizes across all territories.
+// Sets the price schedule from the JSON: free, in every territory,
+// priced from one base.
+//
+// The base is the territory Apple leaves alone when it adjusts prices
+// elsewhere for tax or exchange rates, and it decides the currency the
+// baseline is written in. It is named in the JSON rather than assumed,
+// because the sensible base is the seller's own country and the
+// default is not.
 func pushPricing() {
+    guard (metadata["pricing"] as? String) == "free" else {
+        die("only free pricing is supported; 'pricing' says "
+            + "\(metadata["pricing"] ?? "nothing")")
+    }
+    let base = metadata["baseTerritory"] as? String ?? "USA"
     let app = appID()
     let points = dataArray(api(
-        "GET", "/v1/apps/\(app)/appPricePoints?filter[territory]=USA&limit=200"))
+        "GET", "/v1/apps/\(app)/appPricePoints?filter[territory]=\(base)&limit=200"))
     guard let freeID = points.first(where: {
         let price = ($0["attributes"] as? [String: Any])?["customerPrice"] as? String
         return price.flatMap(Double.init) == 0
-    })?["id"] as? String else { die("no free price point for USA") }
+    })?["id"] as? String else { die("no free price point for \(base)") }
     let temporary = "${free-price}"
     api("POST", "/v1/appPriceSchedules", body: [
         "data": ["type": "appPriceSchedules",
                  "relationships": [
                      "app": ["data": ["type": "apps", "id": app]],
-                     "baseTerritory": ["data": ["type": "territories", "id": "USA"]],
+                     "baseTerritory": ["data": ["type": "territories", "id": base]],
                      "manualPrices": ["data": [["type": "appPrices", "id": temporary]]]]],
         "included": [["type": "appPrices", "id": temporary,
                       "relationships": [
                           "appPricePoint": ["data": ["type": "appPricePoints", "id": freeID]],
-                          "territory": ["data": ["type": "territories", "id": "USA"]]]]]])
-    print("pricing: free, all territories")
+                          "territory": ["data": ["type": "territories", "id": base]]]]]])
+    print("pricing: free, all territories, based on \(base)")
+}
+
+// Every review submission, and whether it is one.
+//
+// The state is not the answer: READY_FOR_REVIEW means a container could
+// be sent, not that anything was. A submission is real when it carries
+// a version and has a submitted date, which is what this prints.
+//
+// An empty container is left behind whenever a version is refused for
+// review, and the API can create one but not remove it: DELETE is not
+// an allowed operation on this resource, and an empty one is "not in a
+// cancellable state" either. App Store Connect's own Submissions page
+// deletes them, so those are named here rather than silently listed.
+func submissions() {
+    let all = dataArray(api(
+        "GET", "/v1/reviewSubmissions?filter[app]=\(appID())&limit=50"))
+    guard !all.isEmpty else {
+        print("no review submissions")
+        return
+    }
+    for entry in all {
+        guard let id = entry["id"] as? String else { continue }
+        let attributes = entry["attributes"] as? [String: Any] ?? [:]
+        let submitted = attributes["submittedDate"] as? String
+        let items = dataArray(api("GET", "/v1/reviewSubmissions/\(id)/items")).count
+        let note = (items == 0 && submitted == nil)
+            ? "   empty; delete it in App Store Connect"
+            : ""
+        print(String(
+            format: "  %@ %@ versions=%d submitted=%@%@",
+            (attributes["platform"] as? String ?? "-")
+                .padding(toLength: 7, withPad: " ", startingAt: 0),
+            (attributes["state"] as? String ?? "-")
+                .padding(toLength: 20, withPad: " ", startingAt: 0),
+            items,
+            submitted ?? "-",
+            note))
+    }
 }
 
 // Submits a platform's version for App Review. This is the one step that
@@ -729,6 +781,7 @@ case ("screenshots", 2): pushScreenshots(rest[0], rest[1])
 case ("age-rating", 0): pushAgeRating()
 case ("export-compliance", 1): pushExportCompliance(rest[0])
 case ("pricing", 0): pushPricing()
+case ("submissions", 0): submissions()
 case ("submit", 2): submit(rest[0], rest[1])
 default: die("unknown command or wrong arguments: '\(command)'; see the header")
 }

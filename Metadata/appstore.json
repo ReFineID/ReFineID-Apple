@@ -6,6 +6,7 @@
   "ageRating": "4+",
   "usesNonExemptEncryption": false,
   "pricing": "free",
+  "baseTerritory": "FIN",
   "trader": {
     "line1": "Niittaajankatu 8a A 21",
     "city": "Helsinki",
