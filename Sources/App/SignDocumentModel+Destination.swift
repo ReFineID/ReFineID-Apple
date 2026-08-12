@@ -37,22 +37,21 @@
         .lastPathComponent
     }
 
-    /// The name a container covering several documents is offered
-    /// under: the instant it was signed, and nothing else.
+    /// The name the holder wrote for a container, stamped with the
+    /// signing instant.
     ///
-    /// No document in a set is the set. Naming the container after one
-    /// of them - whichever happened to be chosen first or last - is a
-    /// guess, and a guess that looks like a fact is worse than a blank
-    /// a holder fills in. The signing instant is kept because it is
-    /// the one part that is not a guess, and because it is what stops
-    /// a second signature from overwriting the first.
-    nonisolated internal static func suggestedContainerName(
+    /// No document in a set is the set, so a container's name is not
+    /// suggested at all: the save panel's field is left empty and the
+    /// holder writes one. The instant is appended here, after the
+    /// panel - a stamp placed in the field would be wiped by the
+    /// first keystroke, since the panel selects everything in it.
+    /// Appended, it survives without having to be defended, and it is
+    /// what stops a second signature from overwriting the first.
+    nonisolated internal static func stampedContainer(
+      from chosen: URL,
       at instant: Date
-    ) -> String {
-      let stamped = Self.destination(
-        for: URL(fileURLWithPath: "x"), at: instant, format: .asice
-      ).lastPathComponent
-      return String(stamped.dropFirst("x".count))
+    ) -> URL {
+      Self.destination(for: chosen, at: instant, format: .asice)
     }
   }
 

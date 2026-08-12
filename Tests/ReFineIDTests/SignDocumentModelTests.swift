@@ -268,14 +268,16 @@ internal struct SignDocumentModelTests {
     #expect(StatusView.sharedFormat(for: mixed) == .asice)
   }
 
-  /// A container covering a set is offered no document's name.
+  /// The signing instant is appended to the name the holder wrote for
+  /// a container, whatever they wrote.
   ///
-  /// Whichever document was chosen first is not the set, and a name
-  /// taken from it would read as a fact rather than as the guess it
-  /// is. What survives is the signing instant, which is not a guess.
+  /// The stamp is added after the save panel rather than offered in
+  /// its field: the panel selects everything in the field, so a stamp
+  /// placed there is wiped by the first keystroke. Appended, it
+  /// survives without having to be defended.
   @Test
   @MainActor
-  internal func aContainerOfSeveralIsOfferedNoDocumentName() throws {
+  internal func aContainersWrittenNameGetsTheInstantAppended() throws {
     let instant = try #require(
       DateComponents(
         calendar: Calendar(identifier: .gregorian),
@@ -283,9 +285,18 @@ internal struct SignDocumentModelTests {
         year: 2026, month: 8, day: 12, hour: 14, minute: 30, second: 12
       ).date
     )
-    let offered = SignDocumentModel.suggestedContainerName(at: instant)
-
-    #expect(offered == " - signed at 2026-08-12T14-30-12Z.asice")
+    // The panel appends the format's extension to what was typed.
+    #expect(
+      SignDocumentModel.stampedContainer(
+        from: URL(fileURLWithPath: "/documents/kasa.asice"), at: instant
+      ).lastPathComponent == "kasa - signed at 2026-08-12T14-30-12Z.asice"
+    )
+    // A name that arrives bare is stamped the same way.
+    #expect(
+      SignDocumentModel.stampedContainer(
+        from: URL(fileURLWithPath: "/documents/kasa"), at: instant
+      ).lastPathComponent == "kasa - signed at 2026-08-12T14-30-12Z.asice"
+    )
     // One document keeps its own name, which is not a guess at all.
     #expect(
       SignDocumentModel.destination(
