@@ -803,18 +803,18 @@
         }
       }
     },
-    "Container (ASiC-E)": {
+    "Container": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Säiliö (ASiC-E)"
+            "value": "Säiliö"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Container (ASiC-E)"
+            "value": "Container"
           }
         }
       }
@@ -1176,18 +1176,34 @@
         }
       }
     },
-    "In the PDF (PAdES)": {
+    "In each PDF": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "PDF-tiedostoon (PAdES)"
+            "value": "Jokaiseen PDF-tiedostoon"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "I PDF-filen (PAdES)"
+            "value": "I varje PDF-fil"
+          }
+        }
+      }
+    },
+    "In the PDF": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF-tiedostoon"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I PDF-filen"
           }
         }
       }

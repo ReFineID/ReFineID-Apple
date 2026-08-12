@@ -32,13 +32,14 @@
     }
 
     internal var body: some View {
+      // The shapes by what they do, not by their standards' acronyms:
+      // the acronyms explain nothing to someone choosing where a
+      // signature goes, and the words alone already distinguish the
+      // two. The standards are named in the documentation.
       Picker("Format", selection: $format) {
-        Text(
-          documents.count > 1
-            ? "In each PDF (PAdES)" : "In the PDF (PAdES)"
-        )
-        .tag(SignatureFormat.pades)
-        Text("Container (ASiC-E)").tag(SignatureFormat.asice)
+        Text(documents.count > 1 ? "In each PDF" : "In the PDF")
+          .tag(SignatureFormat.pades)
+        Text("Container").tag(SignatureFormat.asice)
       }
       .disabled(!everyOneAPdf)
       .accessibilityIdentifier("signatureFormat")
