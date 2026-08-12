@@ -29,10 +29,12 @@
       internal var any: Bool { pin1 || pin2 }
     }
 
-    /// Activates the card: classifies the scheme from the
-    /// authentication certificate, then sets each PIN that still
-    /// awaits its first value - PIN1 before PIN2, stopping if PIN1
-    /// fails. A PIN already set is skipped, not set again.
+    /// Activates the card.
+    ///
+    /// Classifies the scheme from the authentication certificate,
+    /// then sets each PIN that still awaits its first value - PIN1
+    /// before PIN2, stopping if PIN1 fails. A PIN already set is
+    /// skipped, not set again.
     internal static func activate(
       entry: String,
       newPin1: String?,
@@ -40,48 +42,65 @@
       allowReactivation: Bool
     ) async -> ActivationReport? {
       let report = await onCard { operations -> ActivationReport? in
-        guard let scheme = classifyScheme(operations) else { return nil }
-        guard entry.count == scheme.activationEntryDigitCount else {
-          return ActivationReport(scheme: scheme, pin1: .invalidEntry, pin2: nil)
-        }
-        let needs =
-          allowReactivation
-          ? ActivationNeeds(pin1: true, pin2: true)
-          : Self.needs(operations, scheme: scheme)
-        guard needs.any else {
-          return ActivationReport(
-            scheme: scheme, pin1: .alreadyActivated, pin2: nil
-          )
-        }
-        // Every value that will be presented is judged before any is:
-        // half a validation would be a step spent before the refusal.
-        if needs.pin1, newPin1.flatMap({ Pin1(digits: $0) }) == nil {
-          return ActivationReport(scheme: scheme, pin1: .invalidEntry, pin2: nil)
-        }
-        if needs.pin2, newPin2.flatMap({ Pin2(digits: $0) }) == nil {
-          return ActivationReport(scheme: scheme, pin1: .invalidEntry, pin2: nil)
-        }
-        if let refusal = Self.floorRefusal(operations, scheme: scheme, needs: needs) {
-          return ActivationReport(scheme: scheme, pin1: refusal, pin2: nil)
-        }
-        var first: Outcome = .alreadyActivated
-        if needs.pin1, let fresh = newPin1 {
-          first = activationStep(
-            operations, scheme: scheme, entry: entry, newPin1: fresh
-          )
-          guard first == .success else {
-            return ActivationReport(scheme: scheme, pin1: first, pin2: nil)
-          }
-        }
-        var second: Outcome? = .alreadyActivated
-        if needs.pin2, let fresh = newPin2 {
-          second = activationStep(
-            operations, scheme: scheme, entry: entry, newPin2: fresh
-          )
-        }
-        return ActivationReport(scheme: scheme, pin1: first, pin2: second)
+        Self.runActivation(
+          operations,
+          entry: entry,
+          newPin1: newPin1,
+          newPin2: newPin2,
+          allowReactivation: allowReactivation
+        )
       }
       return report.flatMap(\.self)
+    }
+
+    /// The whole activation, inside one card session.
+    private static func runActivation(
+      _ operations: CardOperations,
+      entry: String,
+      newPin1: String?,
+      newPin2: String?,
+      allowReactivation: Bool
+    ) -> ActivationReport? {
+      guard let scheme = classifyScheme(operations) else { return nil }
+      guard entry.count == scheme.activationEntryDigitCount else {
+        return ActivationReport(scheme: scheme, pin1: .invalidEntry, pin2: nil)
+      }
+      let needs =
+        allowReactivation
+        ? ActivationNeeds(pin1: true, pin2: true)
+        : Self.needs(operations, scheme: scheme)
+      guard needs.any else {
+        return ActivationReport(
+          scheme: scheme, pin1: .alreadyActivated, pin2: nil
+        )
+      }
+      // Every value that will be presented is judged before any is:
+      // half a validation would be a step spent before the refusal.
+      if needs.pin1, newPin1.flatMap({ Pin1(digits: $0) }) == nil {
+        return ActivationReport(scheme: scheme, pin1: .invalidEntry, pin2: nil)
+      }
+      if needs.pin2, newPin2.flatMap({ Pin2(digits: $0) }) == nil {
+        return ActivationReport(scheme: scheme, pin1: .invalidEntry, pin2: nil)
+      }
+      if let refusal = Self.floorRefusal(operations, scheme: scheme, needs: needs) {
+        return ActivationReport(scheme: scheme, pin1: refusal, pin2: nil)
+      }
+      var first: Outcome = .alreadyActivated
+      if needs.pin1, let fresh = newPin1 {
+        first = activationStep(
+          operations, scheme: scheme, entry: entry, newPin1: fresh
+        )
+        guard first == .success else {
+          return ActivationReport(scheme: scheme, pin1: first, pin2: nil)
+        }
+      }
+      var second: Outcome? = .alreadyActivated
+      if needs.pin2, let fresh = newPin2 {
+        second = activationStep(
+          operations, scheme: scheme, entry: entry, newPin2: fresh
+        )
+      }
+      return ActivationReport(scheme: scheme, pin1: first, pin2: second)
     }
 
     /// Which PINs of this card still await activation.

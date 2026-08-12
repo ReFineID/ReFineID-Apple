@@ -137,34 +137,22 @@
       }
     }
 
+    /// The fields on screen, in the order Return walks them.
+    private var shownFields: [Field] {
+      [.entry]
+        + (asksPin1 ? [.pin1, .pin1Repeat] : [])
+        + (asksPin2 ? [.pin2, .pin2Repeat] : [])
+    }
+
     /// Return advances through the fields that are shown; on the last
-    /// one it submits when complete.
+    /// one it asks the same question the button asks.
     private func advance(from field: Field) {
-      switch field {
-      case .entry:
-        if asksPin1 {
-          focus = .pin1
-        } else if asksPin2 {
-          focus = .pin2
-        } else if isComplete {
-          pending = .activate
-        }
-      case .pin1:
-        focus = .pin1Repeat
-      case .pin1Repeat:
-        if asksPin2 {
-          focus = .pin2
-        } else if isComplete {
-          // Return on the last field asks the same question the
-          // button asks.
-          pending = .activate
-        }
-      case .pin2:
-        focus = .pin2Repeat
-      case .pin2Repeat:
-        if isComplete {
-          pending = .activate
-        }
+      guard let place = shownFields.firstIndex(of: field) else { return }
+      let next = shownFields.index(after: place)
+      if next < shownFields.endIndex {
+        focus = shownFields[next]
+      } else if isComplete {
+        pending = .activate
       }
     }
 

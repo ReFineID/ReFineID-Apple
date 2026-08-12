@@ -40,6 +40,13 @@ internal struct AsicContainerTests {
     return report
   }
 
+  /// One file under a given name, with content that does not matter.
+  private static func named(_ name: String) -> AsicContainer.DataObject {
+    AsicContainer.DataObject(
+      name: name, mimeType: "application/octet-stream", content: Data("x".utf8)
+    )
+  }
+
   @Test
   internal func crc32MatchesTheKnownCheckValue() {
     // The standard CRC-32 check value for "123456789".
@@ -246,13 +253,6 @@ internal struct AsicContainerTests {
       AsicContainer.container(
         objects: objects, signatureXml: Data("signature".utf8)
       ) == nil
-    )
-  }
-
-  /// One file under a given name, with content that does not matter.
-  private static func named(_ name: String) -> AsicContainer.DataObject {
-    AsicContainer.DataObject(
-      name: name, mimeType: "application/octet-stream", content: Data("x".utf8)
     )
   }
 }

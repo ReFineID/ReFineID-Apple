@@ -18,6 +18,10 @@
   /// control that has to be discovered by moving a pointer over a row
   /// cannot be reached from the keyboard at all.
   internal struct SignDocumentPile: View {
+    private static let rowSpacing: CGFloat = 8
+    private static let rowPadding: CGFloat = 5
+    private static let footerSpacing: CGFloat = 6
+
     /// Every file waiting, in the order it will be carried.
     internal let documents: [URL]
 
@@ -29,10 +33,6 @@
 
     /// Empties it.
     internal let clear: () -> Void
-
-    private static let rowSpacing: CGFloat = 8
-    private static let rowPadding: CGFloat = 5
-    private static let footerSpacing: CGFloat = 6
 
     /// The document icon, at the size a form row carries.
     @ScaledMetric(relativeTo: .body)
@@ -59,6 +59,25 @@
         .accessibilityLabel("Documents to sign")
         footer
       }
+    }
+
+    /// The two ways to change the pile.
+    ///
+    /// Nothing is said about it: the rows are the count and the
+    /// format row is the shape.
+    private var footer: some View {
+      VStack(alignment: .leading, spacing: Self.footerSpacing) {
+        Divider()
+        HStack {
+          Spacer()
+          Button("Add…", action: add)
+            .buttonStyle(.link)
+            .accessibilityIdentifier("signChooseDocument")
+          Button("Clear", action: clear)
+            .buttonStyle(.link)
+        }
+      }
+      .padding(.top, Self.footerSpacing)
     }
 
     /// One document: what it is, what it is called, and its way out.
@@ -88,23 +107,6 @@
         .help("Remove \(document.lastPathComponent)")
       }
       .padding(.vertical, Self.rowPadding)
-    }
-
-    /// The two ways to change the pile. Nothing is said about it: the
-    /// rows are the count and the format row is the shape.
-    private var footer: some View {
-      VStack(alignment: .leading, spacing: Self.footerSpacing) {
-        Divider()
-        HStack {
-          Spacer()
-          Button("Add…", action: add)
-            .buttonStyle(.link)
-            .accessibilityIdentifier("signChooseDocument")
-          Button("Clear", action: clear)
-            .buttonStyle(.link)
-        }
-      }
-      .padding(.top, Self.footerSpacing)
     }
   }
 

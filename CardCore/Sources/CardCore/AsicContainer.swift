@@ -80,6 +80,9 @@ public enum AsicContainer {
   internal static let manifestNamespace =
     "urn:oasis:names:tc:opendocument:xmlns:manifest:1.0"
 
+  /// The folder the container keeps its manifest and signatures in.
+  private static let reservedFolderName = "META-INF"
+
   /// Whether every file can be carried under the name it was given.
   ///
   /// `mimetype` and `META-INF/` belong to the container, and a name
@@ -102,9 +105,6 @@ public enum AsicContainer {
     return true
   }
 
-  /// The folder the container keeps its manifest and signatures in.
-  private static let reservedFolderName = "META-INF"
-
   /// Whether one entry name is a name a container may carry.
   private static func isNameUsable(_ name: String) -> Bool {
     let folded = name.lowercased()
@@ -119,7 +119,7 @@ public enum AsicContainer {
       return false
     }
     return name.split(separator: "/", omittingEmptySubsequences: false)
-      .allSatisfy { $0 != "" && $0 != "." && $0 != ".." }
+      .allSatisfy { !$0.isEmpty && $0 != "." && $0 != ".." }
   }
 
   /// Writes the finished `.asice` archive.

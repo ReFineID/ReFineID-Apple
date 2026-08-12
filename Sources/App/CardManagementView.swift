@@ -146,7 +146,7 @@
       if awaitsActivation {
         Form {
           CardActivationSection(model: model)
-          outcomeSection
+          CardOutcomeSection(model: model)
         }
         .formStyle(.grouped)
       } else {
@@ -160,34 +160,12 @@
           .labelsHidden()
           .accessibilityIdentifier("managementTask")
           page(for: task)
-          outcomeSection
+          CardOutcomeSection(model: model)
         }
         .formStyle(.grouped)
         .disabled(model.working)
         .onChange(of: task) { _, _ in
           hasChosenTask = true
-        }
-      }
-    }
-
-    /// The one place outcomes are shown.
-    @ViewBuilder private var outcomeSection: some View {
-      if model.working || model.failure != nil || model.notice != nil {
-        Section {
-          if model.working {
-            Text("Talking to the card…")
-              .foregroundStyle(.secondary)
-          }
-          if let failure = model.failure {
-            Text(failure)
-              .foregroundStyle(.red)
-              .textSelection(.enabled)
-          }
-          if let notice = model.notice {
-            Text(notice)
-              .foregroundStyle(.green)
-              .textSelection(.enabled)
-          }
         }
       }
     }
