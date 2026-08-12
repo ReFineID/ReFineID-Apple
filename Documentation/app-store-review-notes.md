@@ -1,56 +1,38 @@
-# App Review notes (draft, 2026-08-10)
+# App Review notes
 
 What goes into App Store Connect's "Notes" field for the macOS
 review, and the evidence kept ready for reviewer questions. Reviewers
 have no Finnish identity card, so the notes must explain what the app
-is, what they can exercise without one, and where the video stands in
-for hardware.
+is and what they can exercise without one.
 
-## Submitted notes (draft)
+## What the first submission taught
 
-ReFineID is a driver and signing app for the Finnish national
-identity card (FINEID). It requires physical hardware the review
-team is unlikely to have: a FINEID smart card and a USB CCID
-smart-card reader (contact).
+The iOS submission of 26.8.12 (135) was rejected under guideline
+2.1(a), Information Needed, on 2026-08-12. The reply asked for a demo
+account or a demonstration mode and said in terms that a video of the
+app in use is not sufficient.
 
-What works without the card:
+The notes at the time offered exactly that video, so the offer is
+removed. What replaced it says the two things the guideline turns on:
+there is no account to supply because the app has none, and the
+hardware is a legal identity document issued to one citizen, which
+cannot be duplicated or lent. The notes then list what does run
+without a card, and ask whether a demonstration mode is the expected
+remedy.
 
-- The app launches to its status window and reports "Insert your
-  card" - this is the intended no-hardware state, not an error.
-- Settings (time-stamp authorities, with optional HTTP Basic
-  credentials) can be inspected.
-- The attached video demonstrates the full flow on real hardware:
-  card insertion, the identity appearing, Safari certificate login
-  to a public Finnish e-service, and signing a dropped PDF with the
-  card's qualified certificate.
+Beta App Review approved the same binary on both platforms the same
+day. The rejection is about reviewer access, not about the build.
 
-Technical notes for review:
+## Where the notes live
 
-- The bundled CryptoTokenKit persistent token extension is the
-  card driver. It is what makes the card's certificates available
-  system-wide (Safari, Mail, other apps), which is the product's
-  purpose; the app itself is the status and signing surface.
-- The app makes outbound connections for one purpose: an archival
-  signature (PAdES-B-LTA) fetches a qualified timestamp and the
-  revocation data proving its chain. It binds no listening socket
-  and holds no network-server entitlement.
-- App Transport Security allows plain HTTP because RFC 3161
-  time-stamping and RFC 6960 OCSP are specified over HTTP, and the
-  fetched objects are themselves signed and verified by the app;
-  the addresses come from the user's settings or from inside
-  certificates being validated, so no exception domain list can
-  enumerate them.
-- No accounts, no login, no data collection. The privacy policy is
-  at https://www.refineid.fi/privacy-policy/.
-- macOS may offer to pair the inserted card for system login (its
-  built-in smart-card pairing). That prompt is the operating
-  system's, not the app's; ReFineID does not drive or require it,
-  and it can be ignored.
+`Metadata/appstore.json`, under `review.notes`, and they reach App
+Store Connect with
+`Scripts/apple-app-store-connect-release-manager.swift review-contact
+<ios|macos> <version>`. They were duplicated here once and the copy
+went stale, so the text is not repeated: read it there.
 
 ## Evidence held ready
 
-- Hardware demonstration video (to record: full flow, no PIN or
-  cardholder data visible; synthetic or redacted where possible).
 - Export compliance rationale: `Documentation/export-compliance.md`.
 - Sandbox and entitlement rationale: comments in
   `Config/ReFineID.entitlements`.
