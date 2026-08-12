@@ -45,7 +45,7 @@
       } else {
         Form {
           ForEach(holders, id: \.self) { holder in
-            LabeledContent("Identity") {
+            LabeledContent("Person") {
               Text(holder)
                 .textSelection(.enabled)
             }

@@ -114,7 +114,7 @@
               .foregroundStyle(.secondary)
               .accessibilityIdentifier("loginIdentityStatus")
           } else {
-            LabeledContent("Identity") {
+            LabeledContent("Person") {
               IdentityStateView(availability: availability)
             }
             .accessibilityIdentifier("loginIdentityStatus")

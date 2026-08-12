@@ -1838,6 +1838,22 @@
         }
       }
     },
+    "Person": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henkilö"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Person"
+          }
+        }
+      }
+    },
     "Portrait QR": {
       "localizations": {
         "fi": {
