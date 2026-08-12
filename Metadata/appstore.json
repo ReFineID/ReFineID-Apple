@@ -24,6 +24,7 @@
   "localizations": {
     "en-US": {
       "subtitle": "Use your identity card online",
+      "privacyPolicyUrl": "https://www.refineid.fi/privacy-policy/",
       "keywords": "identity card",
       "promotionalText": {
         "macos": "Log in to services with your identity card and sign documents.",
@@ -36,6 +37,7 @@
     },
     "fi": {
       "subtitle": "Käytä henkilökorttia verkossa",
+      "privacyPolicyUrl": "https://www.refineid.fi/tietosuojaseloste/",
       "keywords": "henkilökortti",
       "promotionalText": {
         "macos": "Kirjaudu palveluihin henkilökortilla ja allekirjoita asiakirjoja.",
@@ -48,6 +50,7 @@
     },
     "sv": {
       "subtitle": "Använd identitetskortet online",
+      "privacyPolicyUrl": "https://www.refineid.fi/integritetspolicy/",
       "keywords": "identitetskort",
       "promotionalText": {
         "macos": "Logga in på tjänster med ditt identitetskort och underteckna dokument.",

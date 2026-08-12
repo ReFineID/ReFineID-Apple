@@ -295,21 +295,30 @@ func pushAppInfo() {
                      "data": ["type": "appCategories", "id": category]]]]])
     print("primary category: \(category)")
     let existing = existingLocalizations("/v1/appInfos/\(infoID)/appInfoLocalizations?limit=50")
+    // The privacy policy URL lives here too, and is per locale: the
+    // policy is published in each language at its own address. App
+    // Store Connect asks for it on the app record rather than on a
+    // version, and a submission without it is refused.
     for locale in localizations.keys.sorted() {
-        guard let subtitle = (localizations[locale] as? [String: Any])?["subtitle"] as? String
-        else { continue }
+        let entry = localizations[locale] as? [String: Any] ?? [:]
+        guard let subtitle = entry["subtitle"] as? String else { continue }
+        var attributes: [String: Any] = ["subtitle": subtitle]
+        if let policy = entry["privacyPolicyUrl"] as? String {
+            attributes["privacyPolicyUrl"] = policy
+        }
         if let id = existing[locale] {
             api("PATCH", "/v1/appInfoLocalizations/\(id)", body: [
                 "data": ["type": "appInfoLocalizations", "id": id,
-                         "attributes": ["subtitle": subtitle]]])
-            print("  \(locale): subtitle updated")
+                         "attributes": attributes]])
+            print("  \(locale): subtitle and privacy policy updated")
         } else {
+            attributes["locale"] = locale
             api("POST", "/v1/appInfoLocalizations", body: [
                 "data": ["type": "appInfoLocalizations",
-                         "attributes": ["locale": locale, "subtitle": subtitle],
+                         "attributes": attributes,
                          "relationships": ["appInfo": [
                              "data": ["type": "appInfos", "id": infoID]]]]])
-            print("  \(locale): subtitle created")
+            print("  \(locale): subtitle and privacy policy created")
         }
     }
 }

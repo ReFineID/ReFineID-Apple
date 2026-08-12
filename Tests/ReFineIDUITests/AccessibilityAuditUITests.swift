@@ -89,6 +89,21 @@ internal final class AccessibilityAuditUITests: XCTestCase {
     try audit(app, window: "status")
   }
 
+  /// Audits the same window at the largest text size the system offers.
+  ///
+  /// The store is told this app supports larger text, and this is what
+  /// that claim rests on: the audit's clipped-text and hit-region
+  /// checks run against a window drawn at the accessibility sizes,
+  /// where a fixed height or a rigid frame stops being invisible.
+  internal func testTheMainWindowPassesTheAuditAtTheLargestTextSize() throws {
+    let app = UITestApp.launch(arguments: [
+      "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL",
+      "-NSPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL",
+    ])
+    attachScreenshot(app.screenshot(), named: "05-main-window-largest-text")
+    try audit(app, window: "status")
+  }
+
   /// Runs the audit and reports what it found.
   ///
   /// The default failure names the rule and nothing else, which is not

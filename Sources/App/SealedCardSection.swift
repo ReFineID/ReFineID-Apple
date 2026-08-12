@@ -81,6 +81,14 @@
     @Binding internal var offering: Bool
 
     @State private var number = ""
+    /// Whether the holder has asked the system for less movement.
+    ///
+    /// The shake is the one thing in this app that moves. A holder who
+    /// turns motion down has said they do not want it, and the refusal
+    /// still reads without it: the row turns red and says so.
+    @Environment(\.accessibilityReduceMotion)
+    private var reduceMotion
+
     @State private var refused = false
     @State private var step: Step?
     @State private var shakes: CGFloat = 0
@@ -261,7 +269,9 @@
               offering = false
               step = nil
               refused = true
-              withAnimation { shakes += 1 }
+              if !reduceMotion {
+                withAnimation { shakes += 1 }
+              }
             }
             return
           }
