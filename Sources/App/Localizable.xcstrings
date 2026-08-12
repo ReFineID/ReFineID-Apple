@@ -1078,6 +1078,22 @@
         }
       }
     },
+    "Enable authentication": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ota tunnistautuminen käyttöön"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivera identifiering"
+          }
+        }
+      }
+    },
     "Finnish identity card middleware": {
       "extractionState": "manual",
       "localizations": {
@@ -2080,22 +2096,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ange"
-          }
-        }
-      }
-    },
-    "Set up Finnish ID card": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ota henkilökortti käyttöön"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ta identitetskortet i bruk"
           }
         }
       }

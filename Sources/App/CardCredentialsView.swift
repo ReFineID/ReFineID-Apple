@@ -187,7 +187,7 @@ internal struct CardCredentialsView: View {
 
   /// One operation, in its actual order: credentials and then minting.
   @ViewBuilder private var createIdentitySection: some View {
-    Section("Set up Finnish ID card") {
+    Section("Enable authentication") {
       cardAccessNumberRow
       pin1Row
     }
