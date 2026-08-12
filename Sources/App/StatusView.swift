@@ -225,11 +225,6 @@
             .focused($pinFocused)
             .onSubmit { sign() }
             .accessibilityIdentifier("signPin2")
-          if pin2Cache.isWarm {
-            Text("PIN 2 is remembered for a minute so a pile signs at once.")
-              .font(.footnote)
-              .foregroundStyle(.secondary)
-          }
           // The visible stamp is drawn into the PDF's signed revision;
           // a container carries the file unchanged, so there is
           // nothing to draw it into. The whole feature is compiled in

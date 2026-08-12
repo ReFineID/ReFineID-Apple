@@ -1550,22 +1550,6 @@
         }
       }
     },
-    "PIN 2 is remembered for a minute so a pile signs at once.": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PIN 2 muistetaan minuutin ajan, jotta pino allekirjoitetaan kerralla."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PIN 2 kommer ihåg i en minut så att en hög undertecknas på en gång."
-          }
-        }
-      }
-    },
     "PIN Management": {
       "localizations": {
         "fi": {
