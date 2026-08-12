@@ -366,7 +366,12 @@ func reviewContact(_ platformName: String, _ version: String) {
         "contactEmail": review["email"] ?? "",
         "demoAccountRequired": false,
     ]
-    if let notes = review["notes"] as? String { attributes["notes"] = notes }
+    // Per platform, like the description: the two builds do not have the
+    // same screens, and a note listing one that is not there is worse
+    // than no note at all in front of a reviewer who cannot get past it.
+    if let notes = (review["notes"] as? [String: Any])?[platformName] as? String {
+        attributes["notes"] = notes
+    }
     let existing = api(
         "GET", "/v1/appStoreVersions/\(versionID)/appStoreReviewDetail")["data"] as? [String: Any]
     if let id = existing?["id"] as? String {
