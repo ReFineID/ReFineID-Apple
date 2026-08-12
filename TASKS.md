@@ -180,6 +180,13 @@ design, which is why it is the credential that exposes the fault.
   Safari's own LocalAuthentication dialog for the key's access
   control. The PIN satisfies the keychain and never reaches the card.
 
+- [x] Keep the qualified identity out of the iOS chooser: it is
+  published on macOS only, where the PKCS#11 sign module and
+  document-signing applications read it from the keychain. The iOS
+  chooser matches candidates on issuer and titles rows with the
+  subject - the card's two certificates share both - so the
+  qualified row read as a duplicate of the authentication row and
+  selecting it could only enter this loop (2026-08-12).
 - [ ] Try `TKTokenSmartCardPINAuthOperation` in place of the generic
   password operation. It is the variant CryptoTokenKit defines for card
   PINs, carrying a PIN format and a VERIFY template, and if the system

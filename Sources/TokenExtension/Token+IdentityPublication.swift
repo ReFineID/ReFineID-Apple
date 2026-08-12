@@ -24,43 +24,56 @@ extension Token {
     String(localized: "Signature (PIN 2)")
   }
 
-  /// The qualified-signature certificate and key as keychain items.
-  ///
-  /// The key is sign-only and NOT suitable for login: it is the
-  /// non-repudiation key, gated behind PIN2 through its own constraint,
-  /// and every signature costs a fresh PIN2 entry - the session never
-  /// caches one. Failure to build these is not failure to publish the
-  /// token: the authentication identity stands on its own.
-  private static func qualifiedItems(
-    leaf: SecCertificate,
-    profile: CardKeyProfile
-  ) -> [TKTokenKeychainItem] {
-    guard
-      let certificate = TKTokenKeychainCertificate(
-        certificate: leaf,
-        objectID: Self.signObjectID
-      ),
-      let key = TKTokenKeychainKey(
-        certificate: leaf,
-        objectID: Self.signObjectID
-      )
-    else {
-      TokenLog.error("publish: qualified keychain item construction failed")
-      return []
+  #if os(macOS)
+    /// The qualified-signature certificate and key as keychain items,
+    /// macOS only.
+    ///
+    /// The key is sign-only and NOT suitable for login: it is the
+    /// non-repudiation key, gated behind PIN2 through its own constraint,
+    /// and every signature costs a fresh PIN2 entry - the session never
+    /// caches one. Failure to build these is not failure to publish the
+    /// token: the authentication identity stands on its own.
+    ///
+    /// Every consumer of this keychain entry is a Mac one: the PKCS#11
+    /// sign module and document-signing applications, which reach the
+    /// key through `SecKeyCreateSignature`. On iOS the only reader of
+    /// published identities is Safari's client-certificate chooser,
+    /// which matches candidates on issuer and titles rows with the
+    /// subject - the card's two certificates share both - while the
+    /// non-repudiation key completes no TLS handshake. Published there,
+    /// this identity is a second identical row that can only ask for
+    /// PIN2 and fail, so it is not published there at all.
+    private static func qualifiedItems(
+      leaf: SecCertificate,
+      profile: CardKeyProfile
+    ) -> [TKTokenKeychainItem] {
+      guard
+        let certificate = TKTokenKeychainCertificate(
+          certificate: leaf,
+          objectID: Self.signObjectID
+        ),
+        let key = TKTokenKeychainKey(
+          certificate: leaf,
+          objectID: Self.signObjectID
+        )
+      else {
+        TokenLog.error("publish: qualified keychain item construction failed")
+        return []
+      }
+      key.keyType = profile.keyType
+      key.keySizeInBits = profile.keySizeInBits
+      key.canSign = true
+      key.canDecrypt = false
+      key.canPerformKeyExchange = false
+      key.isSuitableForLogin = false
+      // swiftlint:disable:next legacy_objc_type
+      let signOperationKey = NSNumber(value: TKTokenOperation.signData.rawValue)
+      key.constraints = [signOperationKey: Pin2AuthOperation.signDataConstraint]
+      certificate.label = Self.signatureLabel
+      key.label = Self.signatureLabel
+      return [certificate, key]
     }
-    key.keyType = profile.keyType
-    key.keySizeInBits = profile.keySizeInBits
-    key.canSign = true
-    key.canDecrypt = false
-    key.canPerformKeyExchange = false
-    key.isSuitableForLogin = false
-    // swiftlint:disable:next legacy_objc_type
-    let signOperationKey = NSNumber(value: TKTokenOperation.signData.rawValue)
-    key.constraints = [signOperationKey: Pin2AuthOperation.signDataConstraint]
-    certificate.label = Self.signatureLabel
-    key.label = Self.signatureLabel
-    return [certificate, key]
-  }
+  #endif
 
   /// Builds and fills the keychain contents from the read identity.
   internal func publish(
@@ -110,11 +123,11 @@ extension Token {
     keychainKey.label = Self.authenticationLabel
 
     var items: [TKTokenKeychainItem] = [keychainCertificate, keychainKey]
-    if let signLeaf, let signProfile {
-      items.append(
-        contentsOf: Self.qualifiedItems(leaf: signLeaf, profile: signProfile)
-      )
-    }
+    #if os(macOS)
+      if let signLeaf, let signProfile {
+        items.append(contentsOf: Self.qualifiedItems(leaf: signLeaf, profile: signProfile))
+      }
+    #endif
     if let issuerDER = identity.issuerDER,
       let issuer = SecCertificateCreateWithData(nil, issuerDER as CFData),
       let issuerItem = TKTokenKeychainCertificate(
