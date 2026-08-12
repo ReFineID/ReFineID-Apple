@@ -34,6 +34,11 @@
 
     private let model = LoginIdentityModel.shared
     @State private var signing = SignDocumentModel()
+
+    /// Whether the inserted card is still waiting to be taken into
+    /// use, and the model the activation form works through.
+    @State private var awaitsActivation = false
+    @State private var activation = CardManagementModel()
     @State private var pin2Cache = Pin2Cache()
     @State private var offeringNumber = false
     @State private var pin2 = ""
@@ -94,6 +99,16 @@
             // appears only when the slot's answer proves the card is
             // on the antenna - a contact card is never asked.
             SealedCardSection(offering: $offeringNumber)
+          } else if awaitsActivation {
+            // A factory-fresh card has exactly one next step, and the
+            // window becomes it. It can sign nothing and log into
+            // nothing yet, so the identity row, the drop area and the
+            // PIN field would all be furniture that cannot be used
+            // before the card can.
+            CardActivationSection(
+              model: activation, showsReactivationOverride: false
+            )
+            activationOutcome
           } else if availability == .noCard {
             // With no card there is exactly one thing to say, and a
             // labeled row saying it twice is not it.
@@ -135,10 +150,63 @@
       .onChange(of: availability) { _, now in
         react(to: now)
       }
+      .task(id: availability) {
+        await watchForActivation()
+      }
       // Signing is what this window is for, and its answer arrived in
       // silence: focus stays on Sign, and the outcome is drawn below it.
       .announcesOutcome(signing.failure)
       .announcesOutcome(signing.notice)
+      .announcesOutcome(activation.failure)
+      .announcesOutcome(activation.notice)
+    }
+
+    /// What activation said, drawn under its form.
+    @ViewBuilder private var activationOutcome: some View {
+      if activation.working || activation.failure != nil || activation.notice != nil {
+        Section {
+          if activation.working {
+            Text("Talking to the card…")
+              .foregroundStyle(.secondary)
+          }
+          if let failure = activation.failure {
+            Text(failure)
+              .foregroundStyle(.red)
+              .textSelection(.enabled)
+          }
+          if let notice = activation.notice {
+            Text(notice)
+              .foregroundStyle(.green)
+              .textSelection(.enabled)
+          }
+        }
+      }
+    }
+
+    /// Notices a card waiting to be taken into use.
+    ///
+    /// This window does no card I/O on its ordinary paths. The one
+    /// probe here runs only after a present card has gone the settling
+    /// time without publishing an identity - past the driver's own
+    /// mint and recovery window - and it opens one short session and
+    /// closes it. An activated card that was merely slow answers
+    /// "already active" and nothing changes; a factory-fresh card
+    /// turns the window into its activation.
+    private func watchForActivation() async {
+      #if DEBUG
+        if DebugActivationPreview.isEnabled() {
+          awaitsActivation = true
+          return
+        }
+      #endif
+      guard availability == .cardWithoutIdentity, !offeringNumber, !awaitingAccessNumber
+      else {
+        awaitsActivation = false
+        return
+      }
+      try? await Task.sleep(for: IdentityStateView.settleDelay)
+      guard !Task.isCancelled else { return }
+      awaitsActivation = await CardMaintenance.activationReadiness() == .ready
     }
 
     /// The documents to sign: dropped, or chosen.

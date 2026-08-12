@@ -144,6 +144,19 @@ internal final class AccessibilityAuditUITests: XCTestCase {
     try audit(app, window: "status")
   }
 
+  /// Audits the activation takeover, which no audit reaches without a
+  /// factory-fresh card in the reader: a card activates once in its
+  /// life, so a debug launch argument forces the screen instead.
+  internal func testTheActivationTakeoverPassesTheAudit() throws {
+    let app = UITestApp.launch(arguments: ["--preview-activation"])
+    let activate = app.buttons[UITestIdentifiers.managementActivate]
+    XCTAssertTrue(
+      activate.waitForExistence(timeout: 10), "the takeover did not appear"
+    )
+    attachScreenshot(app.screenshot(), named: "04-activation-takeover")
+    try audit(app, window: "status")
+  }
+
   /// Audits the PIN settings pane, where every task spends something
   /// the holder cannot get back by pressing undo.
   ///

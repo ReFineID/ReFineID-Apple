@@ -5,13 +5,11 @@
   import CardCore
   import SwiftUI
 
-  /// The activation form: the entry from the issuance letter, the two
-  /// new PINs, and an explicit reactivation override.
+  /// The activation form: the activation code from the issuance
+  /// letter and the two new PINs.
   ///
-  /// Which entry the card expects - the eight-digit activation code
-  /// or the seven-digit activation PIN - depends on when it was
-  /// issued; the driver classifies the card and refuses a wrong-length
-  /// entry before anything is spent.
+  /// The driver classifies the card and refuses a wrong-length code
+  /// before anything is spent.
   internal struct CardActivationSection: View {
     /// The keyboard path through the section.
     private enum Field {
@@ -23,6 +21,14 @@
     }
 
     internal let model: CardManagementModel
+
+    /// Whether the explicit reactivation override is offered.
+    ///
+    /// In the settings pane it is the escape hatch for a card the
+    /// preflight misjudged; the main window's takeover appears only
+    /// for a card the preflight has just called factory-fresh, where
+    /// the override would be a switch with nothing to override.
+    internal var showsReactivationOverride = true
 
     @State private var entry = ""
     @State private var newPin1 = ""
@@ -45,15 +51,11 @@
 
     internal var body: some View {
       Section {
-        Text(
-          "For a new card: enter the activation code or activation PIN "
-            + "from the issuance letter, and choose both PINs."
-        )
-        .font(.footnote)
-        .foregroundStyle(.secondary)
         entryRows
-        Toggle("Allow reactivation", isOn: $allowReactivation)
-          .accessibilityIdentifier("managementActivationOverride")
+        if showsReactivationOverride {
+          Toggle("Allow reactivation", isOn: $allowReactivation)
+            .accessibilityIdentifier("managementActivationOverride")
+        }
         HStack {
           Spacer()
           Button("Activate Card") {
@@ -78,7 +80,7 @@
 
     /// The five secret fields.
     @ViewBuilder private var entryRows: some View {
-      SecureField("Activation code or PIN", text: $entry)
+      SecureField("Activation code", text: $entry)
         .onChange(of: entry) { _, typed in
           entry = LimitedDigits.puk(typed)
         }

@@ -201,18 +201,18 @@
         }
       }
     },
-    "Activation code or PIN": {
+    "Activation code": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aktivointikoodi tai PIN"
+            "value": "Aktivointikoodi"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aktiveringskod eller PIN"
+            "value": "Aktiveringskod"
           }
         }
       }

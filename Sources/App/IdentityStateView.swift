@@ -29,10 +29,14 @@
     /// recovers a stuck card is tried at the same moment, so the
     /// warning appears only once that has had its chance. Shorter, and
     /// every insertion flashes orange for a fraction of a second.
-    private static let settleDelaySeconds = 3
+    ///
+    /// Internal, not private: the activation watch in `StatusView`
+    /// waits out the same settling before it probes the card, for the
+    /// same reason.
+    internal static let settleDelaySeconds = 3
 
     /// The same, as the sleep wants it.
-    private static let settleDelay: Duration = .seconds(settleDelaySeconds)
+    internal static let settleDelay: Duration = .seconds(settleDelaySeconds)
 
     #if DEBUG
       /// Row outcomes, in development builds only.
