@@ -135,6 +135,11 @@
       .onAppear {
         model.refresh()
         react(to: availability)
+        #if DEBUG
+          if DebugSampleDocuments.isEnabled(), signing.queued.isEmpty {
+            _ = accept(DebugSampleDocuments.seeded())
+          }
+        #endif
       }
       .onChange(of: availability) { _, now in
         react(to: now)
@@ -146,11 +151,11 @@
       .announcesOutcome(signedOutcome)
     }
 
-    /// The document to sign: dropped, or chosen.
+    /// The documents to sign: dropped, or chosen.
     @ViewBuilder private var documentSection: some View {
       Section {
         dropContents
-          .frame(maxWidth: .infinity, minHeight: Self.dropHeight)
+          .frame(maxWidth: .infinity)
           .contentShape(.rect)
           .overlay {
             if isTargeted {
@@ -163,58 +168,47 @@
           } isTargeted: { targeted in
             isTargeted = targeted
           }
-          .accessibilityLabel("Document to sign")
-          .accessibilityValue(
-            signing.pending?.lastPathComponent ?? "none chosen"
-          )
+          .accessibilityLabel("Documents to sign")
+          .accessibilityValue(Self.pileValue(signing.queued))
       }
     }
 
-    /// What the drop area shows: an invitation, or the chosen file.
+    /// What the drop area shows: an invitation, or the pile itself.
+    ///
+    /// The invitation keeps the tall target a drop needs. The pile
+    /// replaces it, because a list of files is the drop target once
+    /// there are files, and holding both would put a stack of names
+    /// under an icon inviting a stack of names.
     @ViewBuilder private var dropContents: some View {
-      VStack(spacing: Self.dropSpacing) {
-        Image(systemName: signing.pending == nil ? "doc.badge.plus" : "doc.text")
-          .font(.title)
-          .foregroundStyle(
-            isTargeted ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary)
-          )
-          .accessibilityHidden(true)
-        if let pending = signing.pending {
-          // The name is shortened in the middle so both ends stay
-          // readable, and at larger text sizes it shortens further.
-          // What is dropped is dropped from the drawing only: the whole
-          // name is still what VoiceOver reads and what the pointer
-          // uncovers, so no size loses the document being signed.
-          Text(pending.lastPathComponent)
-            .lineLimit(1)
-            .truncationMode(.middle)
-            .help(pending.lastPathComponent)
-            .accessibilityLabel(pending.lastPathComponent)
-          // A pile says how many, so a whole stack signed at once is
-          // not mistaken for the one document whose name shows, and
-          // says what it will become: a container covers the set with
-          // one signature, while PDFs each keep their own. Drag more
-          // onto the area to add; this clears it.
-          if signing.queued.count > 1 {
-            Text(
-              format == .pades
-                ? "\(signing.queued.count) documents, each signed separately"
-                : "\(signing.queued.count) documents in one container"
+      if signing.queued.isEmpty {
+        VStack(spacing: Self.dropSpacing) {
+          Image(systemName: "doc.badge.plus")
+            .font(.title)
+            .foregroundStyle(
+              isTargeted ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary)
             )
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-          }
-          Button(signing.queued.count > 1 ? "Clear" : "Choose a different document…") {
-            signing.queued.count > 1 ? signing.clearQueue() : choose()
-          }
-          .buttonStyle(.link)
-        } else {
+            .accessibilityHidden(true)
           Text("Drop documents here to sign them")
             .foregroundStyle(.secondary)
           Button("Choose…") { choose() }
             .buttonStyle(.link)
             .accessibilityIdentifier("signChooseDocument")
         }
+        .frame(maxWidth: .infinity, minHeight: Self.dropHeight)
+      } else {
+        SignDocumentPile(
+          documents: signing.queued,
+          format: format,
+          remove: { document in
+            signing.remove(document)
+            // The shape follows what is left: taking the one
+            // spreadsheet out of a pile of PDFs makes PAdES possible
+            // again, and leaving ASiC-E chosen would hide that.
+            format = Self.sharedFormat(for: signing.queued)
+          },
+          add: { choose() },
+          clear: { signing.clear() }
+        )
       }
     }
 

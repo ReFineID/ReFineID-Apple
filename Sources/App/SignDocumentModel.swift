@@ -88,6 +88,26 @@
       pending = nil
     }
 
+    /// Takes one document out of the pile.
+    ///
+    /// A pile is built by dropping, and a wrong file dropped into it
+    /// has to come out again without emptying the pile and starting
+    /// over. Removing the document the options are shown for moves
+    /// them to the next one, and removing the last leaves the window
+    /// as it was before anything was dropped.
+    internal func remove(_ url: URL) {
+      let target = url.standardizedFileURL
+      queued.removeAll { $0.standardizedFileURL == target }
+      batchOutcomes = []
+      guard !queued.isEmpty else {
+        clear()
+        return
+      }
+      if pending?.standardizedFileURL == target {
+        pending = queued.first
+      }
+    }
+
     /// Points the model at one document of a batch.
     internal func focus(on url: URL) {
       pending = url

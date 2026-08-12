@@ -40,6 +40,20 @@
       return everyOneAPdf ? .pades : .asice
     }
 
+    /// What the drop area reads as: the file when there is one, how
+    /// many when there is a pile, and that it is empty when it is.
+    ///
+    /// The names themselves are read from the rows below, so this says
+    /// the size rather than reciting a stack of file names into a
+    /// value that cannot be navigated.
+    internal static func pileValue(_ documents: [URL]) -> String {
+      guard let first = documents.first else {
+        return String(localized: "none chosen")
+      }
+      guard documents.count > 1 else { return first.lastPathComponent }
+      return String(localized: "\(documents.count) documents")
+    }
+
     /// What the card is busy with, or nothing when it is not.
     ///
     /// Both notes live on the action row rather than in boxes of

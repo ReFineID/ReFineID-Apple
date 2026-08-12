@@ -25,8 +25,22 @@ internal enum UITestApp {
 
   /// Launches the app under test in the named language.
   internal static func launch(language: String) -> XCUIApplication {
+    Self.launch(language: language, arguments: [])
+  }
+
+  /// Launches the app under test with further arguments of its own.
+  internal static func launch(arguments: [String]) -> XCUIApplication {
+    Self.launch(language: "en", arguments: arguments)
+  }
+
+  /// Launches the app under test in the named language, with further
+  /// arguments only the test asking for them needs.
+  internal static func launch(
+    language: String,
+    arguments: [String]
+  ) -> XCUIApplication {
     let app = XCUIApplication()
-    app.launchArguments += ["-AppleLanguages", "(\(language))"]
+    app.launchArguments += ["-AppleLanguages", "(\(language))"] + arguments
     app.launch()
     return app
   }
