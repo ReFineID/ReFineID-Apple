@@ -15,31 +15,48 @@
   internal enum SignedOutput {
     /// Asks for the file one signature is written to.
     ///
-    /// A container covering a set is offered no name at all, because
-    /// no one document in a set is the set: naming it after whichever
-    /// was chosen first would be a guess wearing the look of a fact.
-    /// The field is left empty for the holder to write - the panel
-    /// will not save on an empty name, so a name is always theirs -
-    /// and the signing instant is appended to what they wrote. One
-    /// document is offered its own name, which is not a guess.
+    /// A container covering a set is proposed the signing instant and
+    /// no name in front of it, because no one document in a set is
+    /// the set: naming it after whichever was chosen first would be a
+    /// guess wearing the look of a fact. The suffix is shown rather
+    /// than silently appended, so the name on disk is the name in the
+    /// field. One document is offered its own name, which is not a
+    /// guess.
     internal static func chooseFile(
       for documents: [URL],
       format: SignatureFormat
     ) -> URL? {
       guard let first = documents.first else { return nil }
       let together = documents.count > 1
+      // Captured before the panel, so the instant shown in the field
+      // is the instant stamped on whatever comes back.
+      let instant = Date()
       let panel = NSSavePanel()
       panel.allowedContentTypes = format.allowedContentTypes
       panel.nameFieldStringValue =
-        together ? "" : SignDocumentModel.suggestedName(for: first, format: format)
+        together
+        ? SignDocumentModel.signedNameSuffix(at: instant)
+        : SignDocumentModel.suggestedName(for: first, format: format)
       panel.directoryURL = first.deletingLastPathComponent()
       panel.message =
         together
-        ? String(localized: "Name the container; the signing time is added to the name.")
+        ? String(localized: "Write a name in front of the signing time.")
         : String(localized: "Where to keep the signed document.")
       panel.prompt = String(localized: "Sign")
+      if together {
+        // The panel opens with the whole field selected, where the
+        // first keystroke would replace the proposed instant. The
+        // caret is moved to the front instead, so what is typed
+        // becomes the name's beginning. Scheduled onto the panel's
+        // own run loop, because the field editor does not exist
+        // until the panel is on screen.
+        DispatchQueue.main.async {
+          (panel.firstResponder as? NSTextView)?
+            .setSelectedRange(NSRange(location: 0, length: 0))
+        }
+      }
       guard panel.runModal() == .OK, let chosen = panel.url else { return nil }
-      return together ? SignDocumentModel.stampedContainer(from: chosen, at: Date()) : chosen
+      return together ? SignDocumentModel.stampedContainer(from: chosen, at: instant) : chosen
     }
 
     /// Asks for the folder a batch is written to, starting beside the

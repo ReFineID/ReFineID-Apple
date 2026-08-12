@@ -3001,6 +3001,22 @@
         }
       }
     },
+    "signed at %@": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "allekirjoitettu %@"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "undertecknad %@"
+          }
+        }
+      }
+    },
     "state unknown": {
       "localizations": {
         "fi": {

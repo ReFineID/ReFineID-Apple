@@ -15,16 +15,26 @@
       at instant: Date,
       format: SignatureFormat
     ) -> URL {
+      let name = source.deletingPathExtension().lastPathComponent
+      return source.deletingLastPathComponent()
+        .appendingPathComponent(name + Self.signedNameSuffix(at: instant))
+        .appendingPathExtension(format.outputPathExtension(for: source))
+    }
+
+    /// The suffix every signed output's name carries: the word for
+    /// signing in the app's language, then the UTC instant.
+    ///
+    /// The instant itself stays in the engineering form in every
+    /// language - a name a Finnish holder mails abroad still sorts
+    /// and reads the same - and only the word is translated.
+    nonisolated internal static func signedNameSuffix(at instant: Date) -> String {
       let formatter = ISO8601DateFormatter()
       formatter.timeZone = TimeZone(secondsFromGMT: 0)
       formatter.formatOptions = [.withInternetDateTime]
       let instantText = formatter.string(from: instant)
         .replacingOccurrences(of: ":", with: "-")
         .replacingOccurrences(of: "+00-00", with: "Z")
-      let name = source.deletingPathExtension().lastPathComponent
-      return source.deletingLastPathComponent()
-        .appendingPathComponent("\(name) - signed at \(instantText)")
-        .appendingPathExtension(format.outputPathExtension(for: source))
+      return " - " + String(localized: "signed at \(instantText)")
     }
 
     /// The name a signed document should be offered under: the
@@ -38,20 +48,26 @@
     }
 
     /// The name the holder wrote for a container, stamped with the
-    /// signing instant.
+    /// signing instant - unless they kept the proposed one, which
+    /// already carries it.
     ///
-    /// No document in a set is the set, so a container's name is not
-    /// suggested at all: the save panel's field is left empty and the
-    /// holder writes one. The instant is appended here, after the
-    /// panel - a stamp placed in the field would be wiped by the
-    /// first keystroke, since the panel selects everything in it.
-    /// Appended, it survives without having to be defended, and it is
-    /// what stops a second signature from overwriting the first.
+    /// No document in a set is the set, so no document's name is
+    /// suggested: the panel proposes the suffix alone and the holder
+    /// writes the beginning. When the suffix comes back it is kept as
+    /// it is; when typing replaced it, the same instant is appended
+    /// again, so the stamp survives without having to be defended and
+    /// a second signature can never overwrite the first.
     nonisolated internal static func stampedContainer(
       from chosen: URL,
       at instant: Date
     ) -> URL {
-      Self.destination(for: chosen, at: instant, format: .asice)
+      let stem = chosen.deletingPathExtension().lastPathComponent
+      guard !stem.hasSuffix(Self.signedNameSuffix(at: instant)) else {
+        return chosen.pathExtension.isEmpty
+          ? chosen.appendingPathExtension("asice")
+          : chosen
+      }
+      return Self.destination(for: chosen, at: instant, format: .asice)
     }
   }
 

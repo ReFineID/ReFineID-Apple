@@ -268,16 +268,16 @@ internal struct SignDocumentModelTests {
     #expect(StatusView.sharedFormat(for: mixed) == .asice)
   }
 
-  /// The signing instant is appended to the name the holder wrote for
-  /// a container, whatever they wrote.
+  /// A container's name always carries the signing instant, whether
+  /// the holder kept the proposed suffix or typed over it.
   ///
-  /// The stamp is added after the save panel rather than offered in
-  /// its field: the panel selects everything in the field, so a stamp
-  /// placed there is wiped by the first keystroke. Appended, it
-  /// survives without having to be defended.
+  /// The panel proposes the suffix and the holder writes the
+  /// beginning; a name that comes back with the suffix is kept as it
+  /// is, and one where typing replaced it gets the same instant
+  /// appended - stamped once either way.
   @Test
   @MainActor
-  internal func aContainersWrittenNameGetsTheInstantAppended() throws {
+  internal func aContainersWrittenNameCarriesTheInstantExactlyOnce() throws {
     let instant = try #require(
       DateComponents(
         calendar: Calendar(identifier: .gregorian),
@@ -285,7 +285,16 @@ internal struct SignDocumentModelTests {
         year: 2026, month: 8, day: 12, hour: 14, minute: 30, second: 12
       ).date
     )
-    // The panel appends the format's extension to what was typed.
+    // Typed in front of the proposed suffix: kept, not stamped again.
+    #expect(
+      SignDocumentModel.stampedContainer(
+        from: URL(
+          fileURLWithPath: "/documents/kasa - signed at 2026-08-12T14-30-12Z.asice"
+        ),
+        at: instant
+      ).lastPathComponent == "kasa - signed at 2026-08-12T14-30-12Z.asice"
+    )
+    // Typed over the suffix: the same instant is appended.
     #expect(
       SignDocumentModel.stampedContainer(
         from: URL(fileURLWithPath: "/documents/kasa.asice"), at: instant
