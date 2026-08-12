@@ -250,7 +250,11 @@ func pushMetadata(_ platformName: String, _ version: String) {
         else { continue }
         var attributes: [String: Any] = ["description": description]
         if let keywords = entry["keywords"] as? String { attributes["keywords"] = keywords }
-        if let promo = entry["promotionalText"] as? String { attributes["promotionalText"] = promo }
+        // Per platform, like the description: the Mac signs documents
+        // and the iPhone does not yet, so one sentence cannot serve both.
+        if let promo = (entry["promotionalText"] as? [String: Any])?[platformName] as? String {
+            attributes["promotionalText"] = promo
+        }
         if let support = metadata["supportUrl"] as? String { attributes["supportUrl"] = support }
         if let marketing = metadata["marketingUrl"] as? String { attributes["marketingUrl"] = marketing }
         if let id = existing[locale] {
