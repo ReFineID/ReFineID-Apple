@@ -18,6 +18,8 @@
 // than duplicating it.
 //
 // Usage:
+//   asc-release.swift get <path>
+//   asc-release.swift api <METHOD> <path> [json|-]
 //   asc-release.swift app-id
 //   asc-release.swift state
 //   asc-release.swift builds <ios|macos>
@@ -137,6 +139,29 @@ func api(_ method: String, _ path: String, body: [String: Any]? = nil) -> [Strin
     }
     if data.isEmpty { return [:] }
     return (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? [:]
+}
+
+// Prints a response the way a person reads it.
+func printJSON(_ object: [String: Any]) {
+    guard !object.isEmpty else { return }
+    let pretty = try! JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted])
+    print(String(data: pretty, encoding: .utf8) ?? "")
+}
+
+// A request body from an argument, or from stdin when it is "-".
+//
+// The one-off calls a release needs - reading what an endpoint holds,
+// patching an attribute the named commands do not cover - used to go
+// through a shell wrapper around curl and a Ruby token minter. They are
+// the same call this file already makes, so they are made here.
+func readBody(_ argument: String) -> [String: Any] {
+    let text = argument == "-"
+        ? String(data: FileHandle.standardInput.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        : argument
+    guard let object = try? JSONSerialization.jsonObject(with: Data(text.utf8)),
+        let body = object as? [String: Any]
+    else { die("the body is not a JSON object") }
+    return body
 }
 
 func apiPlatform(_ name: String) -> String {
@@ -761,9 +786,11 @@ let rest = Array(arguments.dropFirst())
 
 switch (command, rest.count) {
 case ("get", 1):
-    let object = api("GET", rest[0])
-    let pretty = try! JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted])
-    print(String(data: pretty, encoding: .utf8) ?? "")
+    printJSON(api("GET", rest[0]))
+case ("api", 2):
+    printJSON(api(rest[0].uppercased(), rest[1]))
+case ("api", 3):
+    printJSON(api(rest[0].uppercased(), rest[1], body: readBody(rest[2])))
 case ("app-id", 0): print(appID())
 case ("state", 0): state()
 case ("builds", 1): builds(rest[0])
