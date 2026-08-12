@@ -37,13 +37,6 @@ internal struct ReFineIDApp: App {
         }
       }
 
-      Window("PIN Management", id: CardManagementView.windowID) {
-        CardManagementView()
-          .writingToolsBehavior(.disabled)
-          .windowFullScreenBehavior(.disabled)
-      }
-      .windowResizability(.contentSize)
-
       Settings {
         ReFineIDSettingsView()
           .writingToolsBehavior(.disabled)

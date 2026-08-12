@@ -23,9 +23,18 @@
               Label("PDF Stamp", systemImage: "signature")
             }
         #endif
+        // Credential management is settings work: rarely visited,
+        // never part of signing a document, and a card is asked for
+        // only once a task runs. It lived in a window of its own
+        // opened from a button on the main screen, which gave the
+        // rarest task the most permanent button in the app.
+        CardManagementView()
+          .tabItem {
+            Label("PIN", systemImage: "key")
+          }
         TimestampAuthoritiesSettingsView()
           .tabItem {
-            Label("Time Stamps", systemImage: "clock.badge.checkmark")
+            Label("Time Stamp", systemImage: "clock.badge.checkmark")
           }
       }
       .frame(minWidth: Self.paneWidth, minHeight: Self.paneHeight)

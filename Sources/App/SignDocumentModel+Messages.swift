@@ -82,7 +82,7 @@
       case .rejected(let remaining):
         "Wrong PIN 2: \(remaining.attemptsRemaining) attempts remain."
       case .pinBlocked, .floorRefused(.refuseBlocked):
-        "PIN 2 is blocked; unblock it in PIN Management."
+        "PIN 2 is blocked; reset it in the PIN settings."
       case .floorRefused(.refuseLowAttempts):
         "Only one or two attempts remain on PIN 2; ReFineID refuses to "
           + "spend a near-last attempt."

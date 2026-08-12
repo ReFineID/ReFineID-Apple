@@ -1550,34 +1550,18 @@
         }
       }
     },
-    "PIN Management": {
+    "PIN": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "PIN-koodien hallinta"
+            "value": "PIN"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hantering av PIN-koder"
-          }
-        }
-      }
-    },
-    "PIN Management…": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PIN-koodien hallinta…"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hantering av PIN-koder…"
+            "value": "PIN"
           }
         }
       }
@@ -2593,18 +2577,18 @@
         }
       }
     },
-    "Time Stamps": {
+    "Time Stamp": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aikaleimat"
+            "value": "Aikaleima"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tidsstämplar"
+            "value": "Tidsstämpel"
           }
         }
       }

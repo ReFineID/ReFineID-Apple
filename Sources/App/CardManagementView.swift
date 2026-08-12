@@ -50,9 +50,6 @@
       }
     }
 
-    /// Window identity, for the menu command that opens it.
-    internal static let windowID = "pin-management"
-
     /// Internal, not private: the counter presentation lives in
     /// CardManagementView+Attempts.swift and lays out the same row.
     internal static let rowSymbolSpacing: CGFloat = 4

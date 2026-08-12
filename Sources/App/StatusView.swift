@@ -32,9 +32,6 @@
     @ScaledMetric(relativeTo: .body)
     private var minimumWidth: CGFloat = 420
 
-    @Environment(\.openWindow)
-    private var openWindow
-
     private let model = LoginIdentityModel.shared
     @State private var signing = SignDocumentModel()
     @State private var pin2Cache = Pin2Cache()
@@ -115,12 +112,6 @@
         }
         .formStyle(.grouped)
         .fixedSize(horizontal: false, vertical: true)
-        if availability != .noCard, !offeringNumber, !awaitingAccessNumber {
-          Button("PIN Management…") {
-            openWindow(id: CardManagementView.windowID)
-          }
-          .accessibilityIdentifier("pinManagementButton")
-        }
       }
       .padding(Self.padding)
       .frame(minWidth: minimumWidth, alignment: .leading)
