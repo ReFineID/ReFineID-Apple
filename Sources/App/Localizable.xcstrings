@@ -346,6 +346,22 @@
         }
       }
     },
+    "Basic PIN (PIN 1)": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Perustunnusluku (PIN 1)"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baskoden (PIN 1)"
+          }
+        }
+      }
+    },
     "Cancel": {
       "localizations": {
         "fi": {
@@ -383,13 +399,13 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kortin käyttönumero"
+            "value": "Kortin pääsykoodi"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kortets åtkomstnummer"
+            "value": "Kortets åtkomstkod"
           }
         }
       }
@@ -399,13 +415,13 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kortin käyttönumero (CAN)"
+            "value": "Kortin pääsykoodi (CAN)"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kortets åtkomstnummer (CAN)"
+            "value": "Kortets åtkomstkod (CAN)"
           }
         }
       }
@@ -416,13 +432,13 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kortin käyttönumero"
+            "value": "Kortin pääsykoodi"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kortets åtkomstnummer"
+            "value": "Kortets åtkomstkod"
           }
         }
       }
@@ -1707,6 +1723,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Läser rapporten"
+          }
+        }
+      }
+    },
+    "Read Certificate from Card": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lue varmenne kortilta"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läs certifikat från kortet"
           }
         }
       }

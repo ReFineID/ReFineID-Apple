@@ -254,7 +254,7 @@ internal struct CardCredentialsView: View {
   /// claims the box is filled. A stored PIN is never read back, so the
   /// box is empty whether or not one is kept.
   @ViewBuilder private var pin1Row: some View {
-    SecureField("PIN 1", text: $pin1Entry)
+    SecureField("Basic PIN (PIN 1)", text: $pin1Entry)
       #if os(iOS)
         .keyboardType(.numberPad)
         .textInputAutocapitalization(.never)

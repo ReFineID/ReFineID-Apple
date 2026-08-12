@@ -6,11 +6,13 @@
   import CryptoTokenKit
   import SwiftUI
 
-  /// The single identity-creation action embedded below both credentials.
+  /// The single identity-creation action embedded below both credentials,
+  /// named for what it does: the certificate is read off the card over
+  /// PACE and stored, and that stored read is the identity.
   ///
   /// Apple's NFC sheets own live progress and completion. Persistent card
   /// and Safari state belongs in Diagnostics, not below this button. The
-  /// parent owns ``isRegistered``: a set identity replaces this whole
+  /// parent owns ``isRegistered``: a stored identity replaces this whole
   /// setup section, not just this button.
   @available(iOS 26.0, *)
   internal struct CardRegistrationSections: View {
@@ -60,7 +62,7 @@
           }
         }
       } label: {
-        Text("Set identity")
+        Text("Read Certificate from Card")
           .frame(maxWidth: .infinity)
       }
       .buttonStyle(.borderedProminent)
