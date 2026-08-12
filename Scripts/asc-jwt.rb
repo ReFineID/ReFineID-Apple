@@ -1,5 +1,7 @@
 #!/usr/bin/ruby
-#
+# Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
+# 
+
 # Mint a short-lived App Store Connect API token and print it.
 #
 # The API wants an ES256 JWT signed with the .p8 downloaded from App

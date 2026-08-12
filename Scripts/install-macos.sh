@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-#
 # Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
-#
+# 
 
 # Build, verify and install ReFineID into /Applications on this Mac.
 #

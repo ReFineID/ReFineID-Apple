@@ -438,7 +438,7 @@ the selection field structurally wasted rather than merely unlucky.
 `registerSmartCard` does make a registered token's certificate
 *attributes* visible cold. Safari does not select from attributes, so
 they never reach the picker. This is the still-open item already filed
-in `refineid-mono-internal/doc/releng/apple-feedback-nfc-ctk-registration.md`.
+in `Documentation/releng/apple-feedback-nfc-ctk-registration.md`.
 
 The Apple-side fix would be to populate the picker from registered
 smart-card tokens' attributes, take the holder's choice, and only then

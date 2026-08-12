@@ -19,7 +19,7 @@
   /// delays CAN-PACE after unsuccessful attempts, and an interrupted run
   /// may be counted as another presentation. The public security target
   /// does not disclose the counter's reset rule; see
-  /// `doc/bugs/2026-08-09-thales-can-pace-delay.md`.
+  /// `Documentation/bugs/2026-08-09-thales-can-pace-delay.md`.
   internal enum DebugPaceCheck {
     /// Carries a slot out of the manager's callback.
     ///

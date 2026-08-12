@@ -127,7 +127,7 @@ The 2026-07-25 device exchange, recorded in the 2026-07-28 transport
 decision below, proves native CryptoTokenKit mTLS over NFC through the TLS
 `CertificateVerify` and HTTP 200. `Documentation/card-transports.md`
 records the architecture. Apple's CryptoTokenKit and CoreNFC references in
-`doc/references.md` prove the platform API surface; they do not decide this
+`Documentation/references.md` prove the platform API surface; they do not decide this
 product's shipping scope. This entry does.
 
 ## 2026-08-04 Card management and PIN2 signing enter scope, macOS first

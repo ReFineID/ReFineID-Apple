@@ -22,6 +22,7 @@
 //   asc-release.swift state
 //   asc-release.swift builds <ios|macos>
 //   asc-release.swift distribute <ios|macos> [group]
+//   asc-release.swift add-tester <email> [group]
 //   asc-release.swift invite <email>
 //   asc-release.swift ensure-version <ios|macos> <versionString>
 //   asc-release.swift attach-build <ios|macos> <versionString> <build>
@@ -616,6 +617,22 @@ func distribute(_ platformName: String, _ groupName: String) {
     }
 }
 
+// Creates a beta tester in a beta group. Joining an external group is
+// what makes App Store Connect send the TestFlight invitation email, so
+// this is the whole "invite a new tester" flow; `invite` merely resends.
+func addTester(_ email: String, _ groupName: String) {
+    let groups = dataArray(api("GET", "/v1/apps/\(appID())/betaGroups?limit=50"))
+    guard let groupID = groups.first(where: {
+        ($0["attributes"] as? [String: Any])?["name"] as? String == groupName
+    })?["id"] as? String else { die("no beta group named '\(groupName)'") }
+    api("POST", "/v1/betaTesters", body: [
+        "data": ["type": "betaTesters",
+                 "attributes": ["email": email],
+                 "relationships": [
+                     "betaGroups": ["data": [["type": "betaGroups", "id": groupID]]]]]])
+    print("added \(email) to group '\(groupName)'")
+}
+
 // Sends a TestFlight invitation email to an existing beta tester. The
 // tester must already be on the app (in a group or assigned a build);
 // this is the "resend invite" the App Store Connect UI offers.
@@ -671,6 +688,8 @@ case ("state", 0): state()
 case ("builds", 1): builds(rest[0])
 case ("distribute", 1): distribute(rest[0], "Beta")
 case ("distribute", 2): distribute(rest[0], rest[1])
+case ("add-tester", 1): addTester(rest[0], "Beta")
+case ("add-tester", 2): addTester(rest[0], rest[1])
 case ("invite", 1): invite(rest[0])
 case ("ensure-version", 2): print(ensureVersion(rest[0], rest[1]))
 case ("attach-build", 3): attachBuild(rest[0], rest[1], rest[2])

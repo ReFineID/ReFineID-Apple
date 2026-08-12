@@ -21,7 +21,7 @@ Three kinds of source appear here, and they carry very different weight:
 
 ## How to use this file
 
-Cite by BibTeX key, e.g. `[saltzer1975protection](doc/references.md#saltzer1975protection)`.
+Cite by BibTeX key, e.g. `[saltzer1975protection](Documentation/references.md#saltzer1975protection)`.
 Grep `references.bib` for `@saltzer1975protection` to recover the
 bibliographic data, and this file for the same anchor to recover the
 interpretation. A `###` heading here is always a BibTeX key; `####`

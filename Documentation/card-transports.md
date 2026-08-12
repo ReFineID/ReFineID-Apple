@@ -72,7 +72,7 @@ touched.
 
 iOS 26 added `TKSmartCardSlotManager.createNFCSlot(message:)` and
 `TKSmartCardTokenRegistrationManager`. The shape that works, proven on
-device (see `refineid-mono-internal/doc/ios-native-nfc-safari.md`):
+device (see `Documentation/ios-native-nfc-safari.md`):
 
 1. **Prime, once per card, in one field.** The app opens an NFC slot,
    runs PACE with the CAN, reads the authentication certificate and card

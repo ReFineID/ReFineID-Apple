@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-#
 # Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
-#
+# 
 
 # Capture the frontmost ReFineID window onto an App-Store-ready
 # canvas: 2880x1800 (16:10), window centred, dark background.
