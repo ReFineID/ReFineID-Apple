@@ -915,6 +915,22 @@
         }
       }
     },
+    "Connection opened.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yhteys avattu."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anslutning öppnad."
+          }
+        }
+      }
+    },
     "Contactless (NFC) cards": {
       "localizations": {
         "fi": {
@@ -1694,18 +1710,18 @@
         }
       }
     },
-    "Opening a secure channel with the card.": {
+    "Opening a connection to the card.": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Avataan suojattua yhteyttä korttiin."
+            "value": "Avataan yhteys korttiin."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Öppnar en skyddad anslutning till kortet."
+            "value": "Öppnar anslutning till kortet."
           }
         }
       }
@@ -1838,22 +1854,6 @@
         }
       }
     },
-    "Present your Finnish identity card.": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Näytä henkilökorttisi."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Visa ditt identitetskort."
-          }
-        }
-      }
-    },
     "Present your identity card to the reader": {
       "localizations": {
         "fi": {
@@ -1866,6 +1866,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Visa ditt identitetskort för läsaren"
+          }
+        }
+      }
+    },
+    "Present your identity card.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Näytä henkilökorttisi."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visa ditt identitetskort."
           }
         }
       }
@@ -2368,22 +2384,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Skyddad kanal"
-          }
-        }
-      }
-    },
-    "Secure channel opened.": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Suojattu yhteys avattu."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Skyddad anslutning öppnad."
           }
         }
       }
@@ -3073,6 +3073,22 @@
         }
       }
     },
+    "The system is ready": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Järjestelmä on käyttövalmis"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Systemet är klart"
+          }
+        }
+      }
+    },
     "This clears ReFineID's diagnostic trace. It does not remove your card details or Safari identity.": {
       "localizations": {
         "fi": {
@@ -3137,7 +3153,7 @@
         }
       }
     },
-    "USB-C reader connected with Finnish ID card.": {
+    "USB-C reader connected with ID card.": {
       "localizations": {
         "fi": {
           "stringUnit": {
@@ -3153,7 +3169,7 @@
         }
       }
     },
-    "USB-C readers connected with Finnish ID cards.": {
+    "USB-C readers connected with ID cards.": {
       "localizations": {
         "fi": {
           "stringUnit": {
@@ -3397,22 +3413,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Skriv ett namn framför signeringstiden."
-          }
-        }
-      }
-    },
-    "Your card is set up. Safari can now ask for it.": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Korttisi on käyttövalmis. Safari voi nyt pyytää sitä."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ditt kort är klart. Safari kan nu be om det."
           }
         }
       }

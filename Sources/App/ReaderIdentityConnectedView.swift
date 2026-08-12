@@ -58,9 +58,9 @@
     /// card data.
     private var message: String {
       if model.liveReaderTokenCount == 1 {
-        String(localized: "USB-C reader connected with Finnish ID card.")
+        String(localized: "USB-C reader connected with ID card.")
       } else {
-        String(localized: "USB-C readers connected with Finnish ID cards.")
+        String(localized: "USB-C readers connected with ID cards.")
       }
     }
 

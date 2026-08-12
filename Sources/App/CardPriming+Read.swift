@@ -45,7 +45,7 @@
         // its first command is the one that has to be accepted -- so a
         // refused reposition is not turned into a failure here.
         try? CardOperations(channel: channel).selectMasterFile()
-        progress(String(localized: "Opening a secure channel with the card."))
+        progress(String(localized: "Opening a connection to the card."))
         let keys: PaceSessionKeys
         do {
           keys = try PaceEstablishment(channel: channel).establish(with: accessNumber)
@@ -55,7 +55,7 @@
         }
         step(.secureChannel, .done)
         step(.certificate, .running)
-        progress(String(localized: "Secure channel opened."))
+        progress(String(localized: "Connection opened."))
         let operations = CardOperations(
           channel: SecureMessagingChannel(wrapping: channel, sessionKeys: keys))
         progress(String(localized: "Reading the certificate from the card."))

@@ -103,7 +103,7 @@
     /// The title already says an action is wanted, so this only names the
     /// card.
     internal static let registrationPrompt = String(
-      localized: "Present your Finnish identity card.")
+      localized: "Present your identity card.")
 
     /// How many times registration is attempted while the card is live.
     ///
@@ -327,7 +327,7 @@
         stored: true,
         registered: registered,
         summary: registered
-          ? String(localized: "Your card is set up. Safari can now ask for it.")
+          ? String(localized: "The system is ready")
           : String(
             localized: """
               The card details were stored, but Safari setup did not \
