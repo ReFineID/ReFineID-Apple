@@ -540,6 +540,21 @@ func uploadScreenshot(setID: String, file: URL) {
     print("    \(file.lastPathComponent)")
 }
 
+// Whether a display type belongs to a platform.
+//
+// The locale folders hold every platform's shots side by side, and a
+// version takes only its own: offering a Mac version an iPhone set is
+// refused with "Display Type Not Allowed", which aborted the run and
+// left the locales after it with nothing.
+func platform(_ platformName: String, shows folderName: String) -> Bool {
+    switch platformName {
+    case "macos":
+        folderName.hasPrefix("APP_DESKTOP")
+    default:
+        folderName.hasPrefix("APP_IPHONE") || folderName.hasPrefix("APP_IPAD")
+    }
+}
+
 // Uploads every PNG under Metadata/screenshots/<locale>/<DISPLAY_TYPE>/
 // for a platform's version, one screenshot set per display type.
 func pushScreenshots(_ platformName: String, _ version: String) {
@@ -555,6 +570,7 @@ func pushScreenshots(_ platformName: String, _ version: String) {
         print("  \(locale):")
         for displayDir in displayDirs.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
             let displayType = displayDir.lastPathComponent
+            guard platform(platformName, shows: displayType) else { continue }
             let shots = ((try? fileManager.contentsOfDirectory(
                 at: displayDir, includingPropertiesForKeys: nil)) ?? [])
                 .filter { $0.pathExtension.lowercased() == "png" }
