@@ -95,9 +95,16 @@ internal final class AccessibilityAuditUITests: XCTestCase {
   /// enough to fix anything: each issue is recorded with the element it
   /// concerns, so the report says which control in which window.
   private func audit(_ app: XCUIApplication, window identifier: String) throws {
+    try audit(app, subject: app.windows[identifier], named: identifier)
+  }
+
+  /// The same audit against a window already found by other means,
+  /// for windows that carry no stable identifier of their own.
+  private func audit(
+    _ app: XCUIApplication, subject: XCUIElement, named identifier: String
+  ) throws {
     var barriers: [String] = []
     var scaffolding: [String] = []
-    let subject = app.windows[identifier]
     XCTAssertTrue(subject.waitForExistence(timeout: 10), "no window \(identifier)")
     let windows = [subject.frame]
     try app.performAccessibilityAudit(for: Self.checksThatCanBeTrusted) { issue in
@@ -137,27 +144,31 @@ internal final class AccessibilityAuditUITests: XCTestCase {
     try audit(app, window: "status")
   }
 
-  /// Audits the credential management window, where every task spends
-  /// something the holder cannot get back by pressing undo.
+  /// Audits the PIN settings pane, where every task spends something
+  /// the holder cannot get back by pressing undo.
   ///
-  /// The window opens from the main window's own button: the menu bar
-  /// belongs to whichever app is frontmost, so a test that reaches for
-  /// it fails for a reason that has nothing to do with accessibility. The button appears only while a card is
-  /// present, and without one there is nothing here to audit.
-  internal func testManagementWindowPassesTheAudit() throws {
+  /// Settings opens by its shortcut rather than through the menu bar:
+  /// the menu belongs to whichever app is frontmost, so a test that
+  /// reaches for it fails for a reason that has nothing to do with
+  /// accessibility.
+  internal func testPinSettingsPanePassesTheAudit() throws {
     let app = UITestApp.launch()
-    let button = app.buttons[UITestIdentifiers.pinManagementButton]
-    try XCTSkipUnless(
-      button.waitForExistence(timeout: 10),
-      "no card present; management window unavailable"
-    )
-    button.click()
+    app.typeKey(",", modifierFlags: .command)
+    let pinTab = app.toolbars.buttons["PIN"]
+    XCTAssertTrue(pinTab.waitForExistence(timeout: 10), "no settings window")
+    pinTab.click()
+    // The pane's body follows the card: the task picker for a card in
+    // use or none at all, the activation form for a factory card.
+    // Either is a pane worth auditing; neither appearing means the
+    // pane did not open.
+    let picker = app.descendants(matching: .any)[UITestIdentifiers.managementTask]
     XCTAssertTrue(
-      app.descendants(matching: .any)[UITestIdentifiers.managementTask]
-        .waitForExistence(timeout: 10),
-      "management window did not open"
+      picker.waitForExistence(timeout: 10)
+        || app.staticTexts["Attempts left:"].waitForExistence(timeout: 5),
+      "the PIN pane did not open"
     )
-    attachScreenshot(app.screenshot(), named: "02-management-window")
-    try audit(app, window: "pin-management")
+    attachScreenshot(app.screenshot(), named: "02-pin-settings-pane")
+    let settings = app.windows.containing(.toolbar, identifier: nil).firstMatch
+    try audit(app, subject: settings, named: "pin-settings")
   }
 }

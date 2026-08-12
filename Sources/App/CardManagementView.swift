@@ -133,10 +133,14 @@
       model.offersActivation
     }
 
-    /// One tab per task, and only the chosen one on screen.
+    /// One segment per task, and only the chosen one on screen.
     ///
-    /// Tabs rather than a list: every task the card allows is named in
-    /// full and visible at once, so the credential is chosen with the
+    /// A segmented control rather than tabs: this view is a pane of
+    /// the settings window, whose tab bar is the window's own - a
+    /// nested TabView's items are hoisted up beside the panes, four
+    /// tasks impersonating four settings panes. The segments keep
+    /// what the tabs gave: every task the card allows named in full
+    /// and visible at once, so the credential is chosen with the
     /// action in a single act.
     @ViewBuilder private var taskSection: some View {
       if awaitsActivation {
@@ -146,19 +150,20 @@
         }
         .formStyle(.grouped)
       } else {
-        TabView(selection: $task) {
-          ForEach(ManagementTask.allCases) { candidate in
-            Form {
-              page(for: candidate)
-              outcomeSection
+        Form {
+          Picker("Task", selection: $task) {
+            ForEach(ManagementTask.allCases) { candidate in
+              Text(candidate.name).tag(candidate)
             }
-            .formStyle(.grouped)
-            .tabItem { Text(candidate.name) }
-            .tag(candidate)
           }
+          .pickerStyle(.segmented)
+          .labelsHidden()
+          .accessibilityIdentifier("managementTask")
+          page(for: task)
+          outcomeSection
         }
+        .formStyle(.grouped)
         .disabled(model.working)
-        .accessibilityIdentifier("managementTask")
         .onChange(of: task) { _, _ in
           hasChosenTask = true
         }
