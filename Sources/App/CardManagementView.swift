@@ -102,10 +102,15 @@
           Spacer()
         }
         if refusesAnyCredential {
+          // One literal, not three joined: a joined string is a String
+          // expression, which picks the Text initializer that does not
+          // localize, and no catalog entry can reach it.
           Text(
-            "ReFineID will not use a credential with one or two "
-              + "attempts left. Restore it with other software, or "
-              + "unblock it here once the card has blocked it."
+            """
+            ReFineID will not use a credential with one or two attempts \
+            left. Restore it with other software, or unblock it here \
+            once the card has blocked it.
+            """
           )
           .foregroundStyle(.red)
         }

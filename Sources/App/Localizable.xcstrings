@@ -72,6 +72,22 @@
         }
       }
     },
+    "%lld documents": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld dokumenttia"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld dokument"
+          }
+        }
+      }
+    },
     "%lld documents to sign": {
       "localizations": {
         "fi": {
@@ -281,6 +297,22 @@
         }
       }
     },
+    "Add…": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lisää…"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till…"
+          }
+        }
+      }
+    },
     "Allow reactivation": {
       "localizations": {
         "fi": {
@@ -330,22 +362,6 @@
         }
       }
     },
-    "CAN": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "CAN"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "CAN"
-          }
-        }
-      }
-    },
     "Basic Code (PIN1)": {
       "localizations": {
         "fi": {
@@ -358,6 +374,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Baskoden (PIN1)"
+          }
+        }
+      }
+    },
+    "CAN": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CAN"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CAN"
           }
         }
       }
@@ -443,6 +475,38 @@
         }
       }
     },
+    "Card details already stored on this iPhone.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortin tiedot on jo tallennettu tähän iPhoneen."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortets uppgifter är redan sparade på den här iPhone."
+          }
+        }
+      }
+    },
+    "Card details stored on this iPhone.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortin tiedot tallennettu tähän iPhoneen."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortets uppgifter sparade på den här iPhone."
+          }
+        }
+      }
+    },
     "Card detected, not ready - if this lasts, re-insert it": {
       "localizations": {
         "fi": {
@@ -471,6 +535,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kort hittades"
+          }
+        }
+      }
+    },
+    "Card found. Keep holding.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortti löytyi. Pidä se paikallaan."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortet hittades. Håll kvar det."
+          }
+        }
+      }
+    },
+    "Card identity read.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortin varmenne luettu."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortets certifikat inläst."
           }
         }
       }
@@ -505,6 +601,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kort i läsaren"
+          }
+        }
+      }
+    },
+    "Card registered for Safari.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortti rekisteröity Safariin."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortet registrerat för Safari."
           }
         }
       }
@@ -868,6 +980,22 @@
         }
       }
     },
+    "Could not save card details": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortin tietoja ei voitu tallentaa"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortets uppgifter kunde inte sparas"
+          }
+        }
+      }
+    },
     "Could not store PIN 1 (%d).": {
       "localizations": {
         "fi": {
@@ -1008,6 +1136,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dokument att signera"
+          }
+        }
+      }
+    },
+    "Documents to sign": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allekirjoitettavat dokumentit"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokument att underteckna"
           }
         }
       }
@@ -1171,6 +1315,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Format"
+          }
+        }
+      }
+    },
+    "Hold the card on the top back of the phone.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pidä korttia puhelimen yläosan takana."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Håll kortet mot telefonens övre baksida."
           }
         }
       }
@@ -1403,6 +1563,22 @@
         }
       }
     },
+    "No card was found. Hold the card against the top of the phone.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Korttia ei löytynyt. Pidä korttia puhelimen yläosaa vasten."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inget kort hittades. Håll kortet mot telefonens övre del."
+          }
+        }
+      }
+    },
     "No handwritten signature; the stamp will show the certificate identity.": {
       "localizations": {
         "fi": {
@@ -1518,6 +1694,22 @@
         }
       }
     },
+    "Opening a secure channel with the card.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avataan suojattua yhteyttä korttiin."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öppnar en skyddad anslutning till kortet."
+          }
+        }
+      }
+    },
     "PDF Stamp": {
       "localizations": {
         "fi": {
@@ -1530,6 +1722,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "PDF-stämpel"
+          }
+        }
+      }
+    },
+    "PIN": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN"
           }
         }
       }
@@ -1582,22 +1790,6 @@
         }
       }
     },
-    "PIN": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PIN"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PIN"
-          }
-        }
-      }
-    },
     "PUK": {
       "localizations": {
         "fi": {
@@ -1642,6 +1834,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Porträtt-QR"
+          }
+        }
+      }
+    },
+    "Present your Finnish identity card.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Näytä henkilökorttisi."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visa ditt identitetskort."
           }
         }
       }
@@ -1694,6 +1902,22 @@
         }
       }
     },
+    "ReFineID will not use a credential with one or two attempts left. Restore it with other software, or unblock it here once the card has blocked it.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ReFineID ei käytä tunnuslukua, jossa on yksi tai kaksi yritystä jäljellä. Palauta se toisella ohjelmistolla tai poista sulku täällä, kun kortti on lukinnut sen."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ReFineID använder inte en kod med ett eller två försök kvar. Återställ den med annan programvara, eller lås upp den här när kortet har låst den."
+          }
+        }
+      }
+    },
     "ReFineID's Safari card identities were reset.": {
       "localizations": {
         "fi": {
@@ -1706,6 +1930,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "ReFineID:s kortidentiteter för Safari återställdes."
+          }
+        }
+      }
+    },
+    "Read Certificate from Card": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lue varmenne kortilta"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läs certifikat från kortet"
           }
         }
       }
@@ -1743,22 +1983,6 @@
         }
       }
     },
-    "Read Certificate from Card": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lue varmenne kortilta"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Läs certifikat från kortet"
-          }
-        }
-      }
-    },
     "Reading the card…": {
       "localizations": {
         "fi": {
@@ -1771,6 +1995,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Läser kortet…"
+          }
+        }
+      }
+    },
+    "Reading the certificate from the card.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Luetaan varmennetta kortilta."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läser certifikatet från kortet."
           }
         }
       }
@@ -2035,6 +2275,22 @@
         }
       }
     },
+    "Safari setup did not finish": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Safari-määritys jäi kesken"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Safari-konfigurationen slutfördes inte"
+          }
+        }
+      }
+    },
     "Save": {
       "extractionState": "manual",
       "localizations": {
@@ -2068,6 +2324,38 @@
         }
       }
     },
+    "Scan": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skannaa"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skanna"
+          }
+        }
+      }
+    },
+    "Scan card QR code": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skannaa kortin QR-koodi"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skanna kortets QR-kod"
+          }
+        }
+      }
+    },
     "Secure channel": {
       "localizations": {
         "fi": {
@@ -2080,6 +2368,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Skyddad kanal"
+          }
+        }
+      }
+    },
+    "Secure channel opened.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suojattu yhteys avattu."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skyddad anslutning öppnad."
           }
         }
       }
@@ -2113,6 +2417,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Konfigurera ditt kort"
+          }
+        }
+      }
+    },
+    "Setup attempt %lld did not take.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Määritysyritys %lld ei onnistunut."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konfigurationsförsök %lld lyckades inte."
+          }
+        }
+      }
+    },
+    "Setup was cancelled.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Määritys peruutettiin."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konfigurationen avbröts."
           }
         }
       }
@@ -2280,6 +2616,22 @@
         }
       }
     },
+    "Store the card access number first, then try again.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tallenna ensin kortin pääsykoodi ja yritä uudelleen."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spara först kortets åtkomstkod och försök igen."
+          }
+        }
+      }
+    },
     "Stored": {
       "extractionState": "manual",
       "localizations": {
@@ -2432,6 +2784,70 @@
         }
       }
     },
+    "The card could not be read. Hold it still and try again.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Korttia ei voitu lukea. Pidä se paikallaan ja yritä uudelleen."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortet kunde inte läsas. Håll det stilla och försök igen."
+          }
+        }
+      }
+    },
+    "The card details could not be stored on this iPhone.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortin tietoja ei voitu tallentaa tähän iPhoneen."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortets uppgifter kunde inte sparas på den här iPhone."
+          }
+        }
+      }
+    },
+    "The card details were stored, but Safari setup did not finish. Try priming the card again.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortin tiedot tallennettiin, mutta Safari-määritys jäi kesken. Yritä kortin käyttöönottoa uudelleen."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortets uppgifter sparades, men Safari-konfigurationen slutfördes inte. Försök läsa in kortet igen."
+          }
+        }
+      }
+    },
+    "The card did not return a usable certificate.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortti ei palauttanut käyttökelpoista varmennetta."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortet returnerade inget användbart certifikat."
+          }
+        }
+      }
+    },
     "The card is in use by another app - try again": {
       "extractionState": "stale",
       "localizations": {
@@ -2445,6 +2861,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kortet används av en annan app - försök igen"
+          }
+        }
+      }
+    },
+    "The card left before setup finished.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortti poistui ennen kuin määritys valmistui."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortet togs bort innan konfigurationen slutfördes."
+          }
+        }
+      }
+    },
+    "The card was not recognized. Try holding it again.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Korttia ei tunnistettu. Yritä pitää sitä uudelleen."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortet kändes inte igen. Försök hålla det igen."
           }
         }
       }
@@ -2545,6 +2993,22 @@
         }
       }
     },
+    "The phone's card reader is busy. Try again in a moment.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puhelimen kortinlukija on varattu. Yritä hetken kuluttua uudelleen."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefonens kortläsare är upptagen. Försök igen om en stund."
+          }
+        }
+      }
+    },
     "The portrait forms a signed QR stamp carrying the document name and signing time.": {
       "localizations": {
         "fi": {
@@ -2577,6 +3041,22 @@
         }
       }
     },
+    "The signed container cannot replace one of the originals.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allekirjoitettu säiliö ei voi korvata alkuperäistä tiedostoa."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den undertecknade containern kan inte ersätta en av originalfilerna."
+          }
+        }
+      }
+    },
     "The signed document cannot replace the original.": {
       "localizations": {
         "fi": {
@@ -2605,6 +3085,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Detta rensar ReFineID:s diagnostikspår. Det tar inte bort dina kortuppgifter eller din identitet för Safari."
+          }
+        }
+      }
+    },
+    "This iPhone would not open a card reading session.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tämä iPhone ei avannut kortinlukuistuntoa."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den här iPhone öppnade ingen kortläsningssession."
           }
         }
       }
@@ -2646,13 +3142,13 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "USB-C-lukija ja henkil\u00f6kortti kytketty."
+            "value": "USB-C-lukija ja henkilökortti kytketty."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "USB-C-l\u00e4sare med identitetskort ansluten."
+            "value": "USB-C-läsare med identitetskort ansluten."
           }
         }
       }
@@ -2662,13 +3158,13 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "USB-C-lukijat ja henkil\u00f6kortit kytketty."
+            "value": "USB-C-lukijat ja henkilökortit kytketty."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "USB-C-l\u00e4sare med identitetskort anslutna."
+            "value": "USB-C-läsare med identitetskort anslutna."
           }
         }
       }
@@ -2889,6 +3385,38 @@
         }
       }
     },
+    "Write a name in front of the signing time.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kirjoita nimi allekirjoitusajan eteen."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skriv ett namn framför signeringstiden."
+          }
+        }
+      }
+    },
+    "Your card is set up. Safari can now ask for it.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Korttisi on käyttövalmis. Safari voi nyt pyytää sitä."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ditt kort är klart. Safari kan nu be om det."
+          }
+        }
+      }
+    },
     "blocked": {
       "localizations": {
         "fi": {
@@ -2981,6 +3509,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "inget kort i läsaren"
+          }
+        }
+      }
+    },
+    "none chosen": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ei valittua"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "inget valt"
           }
         }
       }
