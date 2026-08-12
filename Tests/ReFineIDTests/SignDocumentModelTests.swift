@@ -236,4 +236,63 @@ internal struct SignDocumentModelTests {
     #expect(message.contains("not the card read for the stamp"))
     #expect(message.contains("No signed file was written"))
   }
+
+  /// A pile of PDFs keeps the shape that signs each one in place.
+  ///
+  /// PDFs are signed one by one and stored one by one; the container
+  /// is what a set of other file types has no alternative to. A pile
+  /// of PDFs that could only take the container shape would have lost
+  /// the ordinary way of signing several PDFs at once.
+  @Test
+  @MainActor
+  internal func severalPdfsAreStillSignedOneByOne() {
+    let pdfs = [
+      URL(fileURLWithPath: "/documents/One.pdf"),
+      URL(fileURLWithPath: "/documents/Two.pdf"),
+      URL(fileURLWithPath: "/documents/Three.pdf"),
+    ]
+    #expect(StatusView.sharedFormat(for: pdfs) == .pades)
+    // And the choice is genuinely offered, not merely defaulted: the
+    // same pile can be sent into one container instead.
+    #expect(SignatureFormat.available(for: pdfs[0]).contains(.asice))
+  }
+
+  /// One file type among PDFs leaves the container as the only shape.
+  @Test
+  @MainActor
+  internal func aMixedPileCanOnlyTakeTheContainer() {
+    let mixed = [
+      URL(fileURLWithPath: "/documents/One.pdf"),
+      URL(fileURLWithPath: "/documents/Ledger.ods"),
+    ]
+    #expect(StatusView.sharedFormat(for: mixed) == .asice)
+  }
+
+  /// A container covering a set is offered no document's name.
+  ///
+  /// Whichever document was chosen first is not the set, and a name
+  /// taken from it would read as a fact rather than as the guess it
+  /// is. What survives is the signing instant, which is not a guess.
+  @Test
+  @MainActor
+  internal func aContainerOfSeveralIsOfferedNoDocumentName() throws {
+    let instant = try #require(
+      DateComponents(
+        calendar: Calendar(identifier: .gregorian),
+        timeZone: TimeZone(secondsFromGMT: 0),
+        year: 2026, month: 8, day: 12, hour: 14, minute: 30, second: 12
+      ).date
+    )
+    let offered = SignDocumentModel.suggestedContainerName(at: instant)
+
+    #expect(offered == " - signed at 2026-08-12T14-30-12Z.asice")
+    // One document keeps its own name, which is not a guess at all.
+    #expect(
+      SignDocumentModel.destination(
+        for: URL(fileURLWithPath: "/documents/Agreement.odt"),
+        at: instant,
+        format: .asice
+      ).lastPathComponent == "Agreement - signed at 2026-08-12T14-30-12Z.asice"
+    )
+  }
 }

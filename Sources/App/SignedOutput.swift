@@ -14,12 +14,27 @@
   @MainActor
   internal enum SignedOutput {
     /// Asks for the file one signature is written to.
-    internal static func chooseFile(for source: URL, format: SignatureFormat) -> URL? {
+    ///
+    /// A container covering a set is offered the signing instant and
+    /// no name, because no one document in a set is the set: naming it
+    /// after whichever was chosen first would be a guess wearing the
+    /// look of a fact. One document is offered its own name.
+    internal static func chooseFile(
+      for documents: [URL],
+      format: SignatureFormat
+    ) -> URL? {
+      guard let first = documents.first else { return nil }
       let panel = NSSavePanel()
       panel.allowedContentTypes = format.allowedContentTypes
-      panel.nameFieldStringValue = SignDocumentModel.suggestedName(for: source, format: format)
-      panel.directoryURL = source.deletingLastPathComponent()
-      panel.message = String(localized: "Where to keep the signed document.")
+      panel.nameFieldStringValue =
+        documents.count > 1
+        ? SignDocumentModel.suggestedContainerName(at: Date())
+        : SignDocumentModel.suggestedName(for: first, format: format)
+      panel.directoryURL = first.deletingLastPathComponent()
+      panel.message =
+        documents.count > 1
+        ? String(localized: "Name the container and choose where to keep it.")
+        : String(localized: "Where to keep the signed document.")
       panel.prompt = String(localized: "Sign")
       guard panel.runModal() == .OK else { return nil }
       return panel.url

@@ -340,7 +340,8 @@
         separately
         ? SignedOutput.chooseFolder(startingAt: source.deletingLastPathComponent())
         : nil
-      let destination = separately ? nil : SignedOutput.chooseFile(for: source, format: format)
+      let destination =
+        separately ? nil : SignedOutput.chooseFile(for: signing.queued, format: format)
       guard separately ? folder != nil : destination != nil else { return }
       // The freshly typed PIN wins; an empty field falls back to the
       // one a signature accepted within the last minute.
