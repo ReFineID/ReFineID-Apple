@@ -21,6 +21,9 @@
     /// Drop the stored card access number, wherever it is kept.
     case forgetCan = "--forget-can"
 
+    /// Changes and restores both PINs over a named physical transport.
+    case managementProbe = "--management-probe"
+
     /// Runs one PACE handshake over an attached reader and times it.
     case paceCheck = "--pace-check"
 
@@ -65,7 +68,7 @@
       case .diagnostics, .forgetCan, .paceCheck, .resetCardState, .setCan,
         .setPin1, .signDocument, .signProbe, .tokenPublishProbe, .trace:
         false
-      case .ctkSignProbe, .prime:
+      case .ctkSignProbe, .managementProbe, .prime:
         true
       }
     }
@@ -79,7 +82,7 @@
       case .ctkSignProbe, .diagnostics, .forgetCan, .paceCheck, .prime,
         .resetCardState, .tokenPublishProbe, .trace:
         false
-      case .setCan, .setPin1, .signDocument, .signProbe:
+      case .managementProbe, .setCan, .setPin1, .signDocument, .signProbe:
         true
       }
     }

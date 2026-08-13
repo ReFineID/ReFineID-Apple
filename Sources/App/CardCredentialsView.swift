@@ -135,6 +135,9 @@ internal struct CardCredentialsView: View {
       } else {
         createIdentitySection
       }
+      if !isHolding {
+        managementSection
+      }
       if let failure = model.failure {
         Section {
           Text(failure)

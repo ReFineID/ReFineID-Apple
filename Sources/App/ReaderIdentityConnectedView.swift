@@ -50,6 +50,14 @@
                 .textSelection(.enabled)
             }
           }
+          Section {
+            NavigationLink {
+              CardManagementView()
+            } label: {
+              Label("Manage card", systemImage: "key")
+            }
+            .accessibilityIdentifier("manageCard")
+          }
         }
       }
     }

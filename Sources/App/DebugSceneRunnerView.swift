@@ -48,6 +48,8 @@
         let report = await Self.offMainThread(CtkSignProbe.report)
         DebugConsole.emit(report.lines)
         DebugConsole.finish(succeeded: report.succeeded)
+      case .managementProbe:
+        DebugConsole.finish(succeeded: await DebugCardManagementProbe.run())
       case .prime:
         DebugConsole.finish(succeeded: await Self.prime())
       case .diagnostics, .forgetCan, .paceCheck, .resetCardState, .setCan,

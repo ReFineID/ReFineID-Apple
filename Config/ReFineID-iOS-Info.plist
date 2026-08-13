@@ -19,7 +19,7 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NFCReaderUsageDescription</key>
-	<string>ReFineID reads your identity card over NFC to sign you in.</string>
+	<string>ReFineID reads your identity card over NFC for authentication, activation, and PIN management.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>ReFineID reads the access number printed on your card so you do not have to type it.</string>
 	<!-- Press and hold the icon to run the setup flow against a test

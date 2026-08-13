@@ -81,10 +81,13 @@ public enum ActivationScheme: Equatable, Sendable {
   /// applied, and remains the fallback if the platform cannot expose the
   /// validity start.
   public static func classify(authenticationCertificateDER der: Data) -> Self? {
-    guard let certificate = SecCertificateCreateWithData(nil, der as CFData) else {
+    guard
+      let certificate = SecCertificateCreateWithData(nil, der as CFData),
+      let facts = CertificateFacts(der: der)
+    else {
       return nil
     }
-    let issuer = Self.issuerCommonName(of: certificate)
+    let issuer = DistinguishedName.commonName(inName: facts.issuerName)
     if issuer?.contains(Self.organisationalIssuerMarker) == true {
       return nil
     }
@@ -115,26 +118,6 @@ public enum ActivationScheme: Equatable, Sendable {
     }
     if issuerCommonName.hasSuffix(Self.issuerEccSuffix) {
       return .presetActivationPin
-    }
-    return nil
-  }
-
-  /// The issuing CA's common name, when Security.framework exposes it.
-  private static func issuerCommonName(of certificate: SecCertificate) -> String? {
-    let key = kSecOIDX509V1IssuerName as String
-    guard
-      let values =
-        SecCertificateCopyValues(certificate, [key] as CFArray, nil)
-        as? [String: [String: Any]],
-      let entries =
-        values[key]?[kSecPropertyKeyValue as String] as? [[String: Any]]
-    else {
-      return nil
-    }
-    for entry in entries {
-      let label = entry[kSecPropertyKeyLabel as String] as? String
-      guard label == (kSecOIDCommonName as String) else { continue }
-      return entry[kSecPropertyKeyValue as String] as? String
     }
     return nil
   }

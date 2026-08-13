@@ -33,7 +33,13 @@ extension CardOperations {
     role: CredentialRole
   ) -> Bool {
     let probe = try? probeRetryCounter(role: role)
-    let record = (try? readPinChangeRecord(role: role)) ?? .unreadable
+    let record: PinChangeRecord
+    switch scheme {
+    case .activationCodeIsPuk:
+      record = .unreadable
+    case .presetActivationPin:
+      record = (try? readPinChangeRecord(role: role)) ?? .unreadable
+    }
     return ActivationPreflight.evaluate(
       scheme: scheme,
       probe: probe,
