@@ -139,6 +139,7 @@ extension Token {
   ) throws -> PublishedIdentity {
     TokenLog.info("readIdentity: reading leaf EF.4331")
     let leaf = try operations.readCertificate(.authentication)
+    try Self.requireActivatedCitizenCard(leaf, operations: operations)
     TokenLog.info("readIdentity: leaf \(leaf.count) bytes; reading token serial")
     let serial = try operations.readTokenSerial()
     TokenLog.info("readIdentity: token serial read; resolving issuer")
@@ -160,6 +161,29 @@ extension Token {
       signLeafDER: signLeaf,
       tokenSerial: serial
     )
+  }
+
+  /// Refuses token publication while a known citizen card is factory-fresh.
+  ///
+  /// Both probes are counter-safe. Unknown schemes, including organization
+  /// cards whose activation is issuer-managed, retain their existing path.
+  private static func requireActivatedCitizenCard(
+    _ authenticationCertificate: Data,
+    operations: CardOperations
+  ) throws {
+    guard
+      let scheme = ActivationScheme.classify(
+        authenticationCertificateDER: authenticationCertificate)
+    else {
+      return
+    }
+    let needs = operations.activationNeeds(scheme: scheme)
+    guard !needs.any else {
+      TokenLog.notice(
+        "readIdentity: activation required pin1=\(needs.pin1) pin2=\(needs.pin2)"
+      )
+      throw TokenError.activationRequired
+    }
   }
 
   /// Records what the card's own directories say it carries.

@@ -225,35 +225,49 @@ internal struct SmartCardChannel: CardChannel {
   /// which keeps its session alive for the signature that follows (see
   /// ``HeldCardSession``).
   internal func beginSession() throws {
-    let began = Box(false)
-    let failure = Box<Error?>(nil)
-    let wait = SessionWait(card: smartCard)
-    let semaphore = DispatchSemaphore(value: 0)
-    let started = ContinuousClock.now
-    smartCard.beginSession { opened, error in
-      began.value = opened
-      failure.value = error
-      wait.releaseIfAbandoned(opened: opened)
-      semaphore.signal()
-    }
-    guard semaphore.wait(timeout: .now() + Self.sessionWaitBudget) == .success else {
-      wait.giveUp()
-      TokenLog.trace(
-        "session: gave up waiting after "
-          + TraceTiming.milliseconds(started.duration(to: ContinuousClock.now)) + " ms"
-      )
-      throw CardOperationError.sessionUnavailable
-    }
-    let elapsed = TraceTiming.milliseconds(started.duration(to: ContinuousClock.now))
-    guard began.value else {
+    let offers = SmartCardProtocolNegotiation.offers(
+      answerToReset: smartCard.slot.atr?.bytes)
+    for (offset, protocols) in offers.enumerated() {
+      smartCard.allowedProtocols = protocols
+      let began = Box(false)
+      let failure = Box<Error?>(nil)
+      let wait = SessionWait(card: smartCard)
+      let semaphore = DispatchSemaphore(value: 0)
+      let started = ContinuousClock.now
+      smartCard.beginSession { opened, error in
+        began.value = opened
+        failure.value = error
+        wait.releaseIfAbandoned(opened: opened)
+        semaphore.signal()
+      }
+      guard semaphore.wait(timeout: .now() + Self.sessionWaitBudget) == .success else {
+        wait.giveUp()
+        TokenLog.trace(
+          "session: gave up waiting after "
+            + TraceTiming.milliseconds(started.duration(to: ContinuousClock.now)) + " ms"
+        )
+        throw CardOperationError.sessionUnavailable
+      }
+      let elapsed = TraceTiming.milliseconds(started.duration(to: ContinuousClock.now))
+      if began.value {
+        TokenLog.trace("session: begin ok ms=\(elapsed)")
+        return
+      }
       // The failure is the diagnosis here: TKError -7 on the built-in
       // contactless slot means the field the mint held has already ended.
       TokenLog.trace(
         "session: begin refused ms=\(elapsed) reason=\(String(describing: failure.value))"
       )
-      throw failure.value ?? CardOperationError.sessionUnavailable
+      let hasNarrowerOffer = offset + 1 < offers.count
+      guard
+        hasNarrowerOffer,
+        SmartCardProtocolNegotiation.retries(after: failure.value)
+      else {
+        throw failure.value ?? CardOperationError.sessionUnavailable
+      }
+      TokenLog.trace("session: retrying with a narrower protocol offer")
     }
-    TokenLog.trace("session: begin ok ms=\(elapsed)")
+    throw CardOperationError.sessionUnavailable
   }
 
   /// Ends a session opened with ``beginSession()``.

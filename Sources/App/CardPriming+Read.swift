@@ -22,6 +22,9 @@
 
       /// Full PKCS#15 serial retained for exact reconstruction.
       internal let tokenSerial: String
+
+      /// Proof that the live card did not report a factory activation state.
+      internal let activationCheck: PrimedIdentity.ActivationCheck
     }
 
     /// Reads everything the later signature must not have to read.
@@ -74,6 +77,10 @@
     /// The reads behind the secure channel, validated into a payload.
     private static func readIdentity(operations: CardOperations) throws -> Payload {
       let certificate = try operations.readCertificate(.authentication)
+      let activationCheck = try Self.activationCheck(
+        certificate: certificate,
+        operations: operations
+      )
       let serial = try operations.readTokenSerial()
       guard let instance = CardInstanceIdentifier(tokenSerial: serial) else {
         throw Failure.unidentifiedCard
@@ -93,7 +100,27 @@
         instance: instance,
         certificate: certificate,
         issuer: issuer,
-        tokenSerial: serial.value)
+        tokenSerial: serial.value,
+        activationCheck: activationCheck)
+    }
+
+    /// Accepts only a card with no known factory activation state.
+    ///
+    /// Unknown schemes retain their existing issuer-managed path. The reads
+    /// used for known citizen cards do not change credential counters.
+    private static func activationCheck(
+      certificate: Data,
+      operations: CardOperations
+    ) throws -> PrimedIdentity.ActivationCheck {
+      guard
+        let scheme = ActivationScheme.classify(
+          authenticationCertificateDER: certificate)
+      else {
+        return .passed
+      }
+      let needs = operations.activationNeeds(scheme: scheme)
+      guard !needs.any else { throw Failure.activationRequired }
+      return .passed
     }
   }
 

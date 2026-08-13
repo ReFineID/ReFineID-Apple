@@ -10,6 +10,9 @@ internal enum TokenError: Error {
   /// present the PIN sheet and retry.
   case authenticationRequired
 
+  /// The card still carries at least one factory activation credential.
+  case activationRequired
+
   /// The leaf certificate DER did not construct a `SecCertificate`.
   case certificateUnreadable
 
@@ -57,7 +60,7 @@ internal enum TokenError: Error {
       TKError(.corruptedData)
     case .pinAlreadyRejected, .pinFormatInvalid, .pinRejected, .signRefused:
       TKError(.authenticationFailed)
-    case .primeMissing, .transportDisabled, .unsealAlreadyRefused,
+    case .activationRequired, .primeMissing, .transportDisabled, .unsealAlreadyRefused,
       .unsupportedKeyProfile:
       // Not this driver's card. Refusal is safe: the system treats the
       // card as unhandled rather than as broken.

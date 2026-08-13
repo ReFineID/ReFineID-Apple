@@ -64,12 +64,6 @@
     /// out.
     internal static let shared = LoginIdentityModel()
 
-    /// Seconds the unready state must persist before the software
-    /// reinsertion is tried.
-    private static let recoveryDelaySeconds = 3
-
-    /// The same, as the sleep wants it.
-    private static let recoveryDelay: Duration = .seconds(recoveryDelaySeconds)
     /// The credential entry the app itself publishes, which the
     /// system lists as a token without it ever being a card.
     private static let credentialEntryPrefix =
@@ -146,8 +140,22 @@
         // takes the process with it. The card can leave between the
         // state read above and this call, so the session is ended only
         // when the card says it opened one.
-        guard let opened = try? await card.beginSession(), opened else { continue }
-        card.endSession()
+        let offers = SmartCardProtocolNegotiation.offers(
+          answerToReset: slot.atr?.bytes)
+        for (offset, protocols) in offers.enumerated() {
+          card.allowedProtocols = protocols
+          do {
+            guard try await card.beginSession() else { break }
+            card.endSession()
+            break
+          } catch {
+            let hasNarrowerOffer = offset + 1 < offers.count
+            guard
+              hasNarrowerOffer,
+              SmartCardProtocolNegotiation.retries(after: error)
+            else { break }
+          }
+        }
       }
     }
 
@@ -177,7 +185,7 @@
       }
     }
 
-    /// Schedules one software "reinsertion" for this card appearance.
+    /// Performs one software "reinsertion" for this card appearance.
     ///
     /// The no-card-I/O rule above has exactly one exception, taken
     /// only in the state it exists to prevent: a card in the reader
@@ -189,16 +197,15 @@
     /// whose signature could be made to wait, and once per
     /// appearance, so a card the driver genuinely cannot serve is
     /// not prodded forever.
-    internal func attemptRecovery() {
-      guard !attempted, recovery == nil else { return }
-      recovery = Task { @MainActor [weak self] in
-        try? await Task.sleep(for: Self.recoveryDelay)
-        guard let self, !Task.isCancelled, !isReady else { return }
-        attempted = true
-        await Self.touchPresentCard()
-        recovery = nil
-        refresh()
-      }
+    internal func attemptRecovery() async {
+      guard !attempted, recovery == nil, !isReady else { return }
+      attempted = true
+      let task = Task { await Self.touchPresentCard() }
+      recovery = task
+      await task.value
+      guard !task.isCancelled, !Task.isCancelled else { return }
+      recovery = nil
+      refresh()
     }
 
     /// Stops any scheduled recovery; a card that left resets the

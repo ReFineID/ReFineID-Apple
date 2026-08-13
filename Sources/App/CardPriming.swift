@@ -84,6 +84,9 @@
       /// No card access number is stored, so PACE cannot be run.
       case cardAccessNumberMissing
 
+      /// The card still needs its first holder PIN values.
+      case activationRequired
+
       /// The certificate came off the card but is not a certificate.
       case certificateUnreadable
 
@@ -294,7 +297,8 @@
         let identity = CardCredentialStore.primedIdentity(
           certificate: payload.certificate,
           issuer: payload.issuer,
-          tokenSerial: payload.tokenSerial),
+          tokenSerial: payload.tokenSerial,
+          activationCheck: payload.activationCheck),
         PrimeStore.store(identity, forLookup: lookup)
       else {
         step(.stored, .failed)

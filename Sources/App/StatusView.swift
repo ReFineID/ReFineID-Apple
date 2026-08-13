@@ -98,15 +98,38 @@
             // on the antenna - a contact card is never asked.
             SealedCardSection(offering: $offeringNumber)
           } else if activation.awaitsActivation {
-            // A factory-fresh card has exactly one next step, and the
-            // window becomes it. It can sign nothing and log into
-            // nothing yet, so the identity row, the drop area and the
-            // PIN field would all be furniture that cannot be used
-            // before the card can.
+            // The extension's activation token is the authoritative
+            // semantic result. It outranks derived token readiness and
+            // publishes no identity or signing keys.
             CardActivationSection(
               model: activation.management, showsReactivationOverride: false
             )
             CardOutcomeSection(model: activation.management)
+          } else if availability == .ready {
+            // Signing belongs exclusively to a published identity. No
+            // provisional or error state offers unusable controls.
+            LabeledContent("Person") {
+              IdentityStateView(
+                availability: availability,
+                warnsUnavailableCard: false
+              )
+            }
+            .accessibilityIdentifier("loginIdentityStatus")
+            documentSection
+            signatureSection
+            outcomeSection
+          } else if activation.isReading {
+            // Protocol negotiation may momentarily make the reader say
+            // its slot is empty. The operation is still in progress,
+            // so neither a removal message nor signing controls belong
+            // in this state.
+            LabeledContent("Person") {
+              IdentityStateView(
+                availability: .cardWithoutIdentity,
+                warnsUnavailableCard: false
+              )
+            }
+            .accessibilityIdentifier("loginIdentityStatus")
           } else if availability == .noCard {
             // With no card there is exactly one thing to say, and a
             // labeled row saying it twice is not it.
@@ -114,13 +137,16 @@
               .foregroundStyle(.secondary)
               .accessibilityIdentifier("loginIdentityStatus")
           } else {
+            // A card with no usable identity cannot sign. Keep the
+            // failure local to the identity row instead of offering
+            // controls whose operation must fail.
             LabeledContent("Person") {
-              IdentityStateView(availability: availability)
+              IdentityStateView(
+                availability: availability,
+                warnsUnavailableCard: activation.warnsUnavailableCard
+              )
             }
             .accessibilityIdentifier("loginIdentityStatus")
-            documentSection
-            signatureSection
-            outcomeSection
           }
         }
         .formStyle(.grouped)
@@ -139,6 +165,11 @@
       .onAppear {
         model.refresh()
         react(to: availability)
+        activation.observe(
+          availability: availability,
+          paused: offeringNumber || awaitingAccessNumber,
+          identity: model
+        )
         #if DEBUG
           if DebugSampleDocuments.isEnabled(), signing.queued.isEmpty {
             _ = accept(DebugSampleDocuments.seeded())
@@ -147,13 +178,24 @@
       }
       .onChange(of: availability) { _, now in
         react(to: now)
-      }
-      .task(id: availability) {
-        await activation.watch(
-          availability: availability,
-          paused: offeringNumber || awaitingAccessNumber
+        activation.observe(
+          availability: now,
+          paused: offeringNumber || awaitingAccessNumber,
+          identity: model
         )
       }
+      .onChange(of: offeringNumber || awaitingAccessNumber) { _, _ in
+        activation.observe(
+          availability: availability,
+          paused: offeringNumber || awaitingAccessNumber,
+          identity: model
+        )
+      }
+      .onChange(of: activation.defersRemoval) { wasDeferred, isDeferred in
+        guard wasDeferred, !isDeferred, availability == .noCard else { return }
+        react(to: .noCard)
+      }
+      .onDisappear { activation.stop() }
       // Signing is what this window is for, and its answer arrived in
       // silence: focus stays on Sign, and the outcome is drawn below it.
       .announcesOutcome(signing.failure)
@@ -265,17 +307,21 @@
       }
     }
 
-    /// Recovery follows the state: the unready state schedules one
-    /// attempt, the card leaving resets the budget, ready stands
-    /// down.
+    /// Ready stands recovery down and a removed card resets its budget.
+    /// The activation watch owns the unready path so inspection and
+    /// recovery remain serialized.
     private func react(to availability: LoginIdentityModel.Availability) {
       switch availability {
       case .ready:
         model.cancelRecovery(cardLeft: false)
         offeringNumber = false
       case .cardWithoutIdentity:
-        model.attemptRecovery()
+        break
       case .noCard:
+        // A CCID protocol reset can publish this between T=Any and its
+        // successful T=0/T=1 fallback. Defer removal cleanup until the
+        // card operation itself has ended.
+        guard !activation.defersRemoval else { return }
         model.cancelRecovery(cardLeft: true)
         signing.cardRemoved()
         pin2 = ""

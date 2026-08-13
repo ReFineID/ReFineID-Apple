@@ -11,12 +11,8 @@
     internal let model: CardManagementModel
 
     internal var body: some View {
-      if model.working || model.failure != nil || model.notice != nil {
+      if model.failure != nil || model.notice != nil {
         Section {
-          if model.working {
-            Text("Talking to the card…")
-              .foregroundStyle(.secondary)
-          }
           if let failure = model.failure {
             Text(failure)
               .foregroundStyle(.red)

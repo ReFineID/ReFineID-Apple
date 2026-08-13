@@ -1,6 +1,7 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
 import Foundation
+import Security
 
 /// How a card is activated, decided by its issuance date
 /// (FINEID S4-1 §4.6).
@@ -73,6 +74,26 @@ public enum ActivationScheme: Equatable, Sendable {
       : .activationCodeIsPuk
   }
 
+  /// Classifies a citizen card from its authentication certificate.
+  ///
+  /// The validity start is the authoritative generation boundary. The
+  /// issuer common name excludes organizational cards before that date is
+  /// applied, and remains the fallback if the platform cannot expose the
+  /// validity start.
+  public static func classify(authenticationCertificateDER der: Data) -> Self? {
+    guard let certificate = SecCertificateCreateWithData(nil, der as CFData) else {
+      return nil
+    }
+    let issuer = Self.issuerCommonName(of: certificate)
+    if issuer?.contains(Self.organisationalIssuerMarker) == true {
+      return nil
+    }
+    if let issued = SecCertificateCopyNotValidBeforeDate(certificate) as Date? {
+      return Self.classify(issuedOn: issued)
+    }
+    return issuer.flatMap(Self.classify(issuerCommonName:))
+  }
+
   /// Classifies by the issuer common name, or nil to refuse.
   ///
   /// Fallback and cross-check for when the notBefore could not be
@@ -94,6 +115,26 @@ public enum ActivationScheme: Equatable, Sendable {
     }
     if issuerCommonName.hasSuffix(Self.issuerEccSuffix) {
       return .presetActivationPin
+    }
+    return nil
+  }
+
+  /// The issuing CA's common name, when Security.framework exposes it.
+  private static func issuerCommonName(of certificate: SecCertificate) -> String? {
+    let key = kSecOIDX509V1IssuerName as String
+    guard
+      let values =
+        SecCertificateCopyValues(certificate, [key] as CFArray, nil)
+        as? [String: [String: Any]],
+      let entries =
+        values[key]?[kSecPropertyKeyValue as String] as? [[String: Any]]
+    else {
+      return nil
+    }
+    for entry in entries {
+      let label = entry[kSecPropertyKeyLabel as String] as? String
+      guard label == (kSecOIDCommonName as String) else { continue }
+      return entry[kSecPropertyKeyValue as String] as? String
     }
     return nil
   }

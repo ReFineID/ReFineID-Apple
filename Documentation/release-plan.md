@@ -7,6 +7,11 @@ for the Swift macOS ReFineID release. [TASKS.md](../TASKS.md) is the
 checkable execution list. If the two documents disagree, this plan controls until
 the disagreement is resolved in a reviewed change.
 
+The executable human and automation procedure is the
+[macOS App Store release runbook](release-runbook.md). The plan defines what
+must be true; the runbook defines how an approved release operator proves and
+executes it.
+
 This document's iOS and NFC exclusions apply only to the macOS artifact. They
 must not be applied to iPhone: built-in NFC is a required production transport
 in its TestFlight and App Store builds. Its scope is controlled by

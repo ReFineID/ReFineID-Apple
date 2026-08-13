@@ -38,6 +38,8 @@
     /// Explains an app-level priming failure.
     private static func summary(for failure: Failure) -> String {
       switch failure {
+      case Failure.activationRequired:
+        String(localized: "Activate this card first, then try setup again.")
       case Failure.cardAccessNumberMissing:
         String(localized: "Store the card access number first, then try again.")
       case Failure.certificateUnreadable:

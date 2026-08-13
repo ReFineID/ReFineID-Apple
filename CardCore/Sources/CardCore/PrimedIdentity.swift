@@ -30,6 +30,14 @@ import Foundation
 /// The two copies had to be kept in sync by review; this one record lives
 /// in the module the app and the extension both link.
 public struct PrimedIdentity: Codable, Equatable, Sendable {
+  /// Proof carried only by a prime whose live-card activation check passed.
+  ///
+  /// The single case makes unchecked and legacy records fail decoding
+  /// instead of silently becoming eligible for token publication.
+  public enum ActivationCheck: String, Codable, Equatable, Sendable {
+    case passed
+  }
+
   /// Six digits from the front of the card.
   ///
   /// Never logged, never displayed, never included in an error.
@@ -43,6 +51,9 @@ public struct PrimedIdentity: Codable, Equatable, Sendable {
 
   /// The card's PKCS#15 token serial, when the prime read one.
   public let tokenSerial: String?
+
+  /// Proof that no known citizen-card activation state blocked this prime.
+  public let activationCheck: ActivationCheck
 
   /// Core NFC historical/application bytes that bind a staged record to
   /// the immediately following CryptoTokenKit field.
@@ -68,6 +79,7 @@ public struct PrimedIdentity: Codable, Equatable, Sendable {
     certificate: Data,
     issuer: Data?,
     tokenSerial: String?,
+    activationCheck: ActivationCheck,
     contactlessIdentification: Data? = nil,
     stagedAt: Date? = nil
   ) {
@@ -79,6 +91,7 @@ public struct PrimedIdentity: Codable, Equatable, Sendable {
     self.certDER = certificate
     self.issuerDER = issuer
     self.tokenSerial = tokenSerial
+    self.activationCheck = activationCheck
     self.contactlessIdentification = contactlessIdentification
     self.stagedAt = stagedAt
   }

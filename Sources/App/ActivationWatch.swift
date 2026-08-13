@@ -2,55 +2,180 @@
 
 #if os(macOS)
 
+  import CardCore
+  import CryptoTokenKit
   import Foundation
   import Observation
 
-  /// Notices a card waiting to be taken into use, for the window that
-  /// becomes its activation.
+  /// Turns CryptoTokenKit's authoritative token events into the status
+  /// window's card state without competing for the first card session.
   ///
-  /// The status window does no card I/O on its ordinary paths. The one
-  /// probe here runs only after a present card has gone the identity
-  /// row's settling time without publishing - past the driver's own
-  /// mint and recovery window - and it opens one short session and
-  /// closes it. An activated card that was merely slow answers
-  /// "already active" and nothing changes; a factory-fresh card turns
-  /// the window into its activation.
+  /// An activated card publishes its identity token. A recognized new
+  /// card publishes an empty activation token. A transport failure
+  /// publishes neither and therefore remains processing rather than
+  /// being misreported as a permanent card error.
   @MainActor
   @Observable
   internal final class ActivationWatch {
-    /// Whether the inserted card is still waiting to be taken into use.
-    internal private(set) var awaitsActivation = false
+    private enum State {
+      case idle
+      case reading
+      case awaitsActivation
+    }
 
-    /// The model the activation form works through.
+    private var state = State.idle
+
+    @ObservationIgnored
+    private var latestAvailability = LoginIdentityModel.Availability.noCard
+
+    @ObservationIgnored
+    private var paused = false
+
+    @ObservationIgnored
+    private var activationTokenIDs = Set<String>()
+
+    @ObservationIgnored
+    private var tokenWatcher: TKTokenWatcher?
+
+    @ObservationIgnored
+    private var managementRefresh: Task<Void, Never>?
+
+    @ObservationIgnored
+    private var managementRefreshID = 0
+
     internal let management = CardManagementModel()
 
-    /// Follows one availability reading; cancelled by the next.
-    ///
-    /// `paused` stands the watch down while the window is asking for a
-    /// card access number, for the same reason the drop target does:
-    /// nothing may touch the card before the number has.
-    internal func watch(
+    internal var awaitsActivation: Bool {
+      state == .awaitsActivation
+    }
+
+    internal var isReading: Bool {
+      state == .reading
+    }
+
+    /// Removal cleanup waits for the same system event that ends the
+    /// processing or activation token, not a transient empty-slot pulse.
+    internal var defersRemoval: Bool {
+      state == .reading || state == .awaitsActivation
+    }
+
+    /// Kept for the identity view's API. Transport outcomes are never
+    /// definitive semantic errors.
+    internal var warnsUnavailableCard: Bool { false }
+
+    internal init() {
+      let watcher = TKTokenWatcher()
+      tokenWatcher = watcher
+      watcher.setInsertionHandler(Self.insertionHandler(for: self))
+    }
+
+    /// CryptoTokenKit calls this block on its private XPC queue. Build
+    /// the block outside MainActor isolation, then cross actors only by
+    /// scheduling the state mutation explicitly.
+    nonisolated private static func insertionHandler(
+      for watch: ActivationWatch
+    ) -> @Sendable (String) -> Void {
+      { [weak watch] tokenID in
+        Task { @MainActor [weak watch] in
+          watch?.tokenInserted(tokenID)
+        }
+      }
+    }
+
+    /// Removal callbacks have the same CryptoTokenKit queue contract as
+    /// insertion callbacks and must use the same isolation boundary.
+    nonisolated private static func removalHandler(
+      for watch: ActivationWatch
+    ) -> @Sendable (String) -> Void {
+      { [weak watch] tokenID in
+        Task { @MainActor [weak watch] in
+          watch?.tokenRemoved(tokenID)
+        }
+      }
+    }
+
+    internal func observe(
       availability: LoginIdentityModel.Availability,
-      paused: Bool
-    ) async {
+      paused: Bool,
+      identity _: LoginIdentityModel
+    ) {
+      latestAvailability = availability
+      self.paused = paused
+
       #if DEBUG
         if DebugActivationPreview.isEnabled() {
-          awaitsActivation = true
+          state = .awaitsActivation
           return
         }
       #endif
-      guard availability == .cardWithoutIdentity, !paused else {
-        awaitsActivation = false
+
+      reconcile()
+    }
+
+    private func tokenInserted(_ tokenID: String) {
+      guard ActivationTokenIdentity.recognizes(tokenID: tokenID) else { return }
+      activationTokenIDs.insert(tokenID)
+      tokenWatcher?.addRemovalHandler(
+        Self.removalHandler(for: self),
+        forTokenID: tokenID
+      )
+      reconcile()
+    }
+
+    private func tokenRemoved(_ tokenID: String) {
+      activationTokenIDs.remove(tokenID)
+      reconcile()
+    }
+
+    /// The complete transition table. Token presence outranks raw slot
+    /// absence because CCID protocol resets can emit the latter while
+    /// the logical token remains present.
+    private func reconcile() {
+      guard !paused else {
+        stopManagementRefresh()
+        state = .idle
         return
       }
-      try? await Task.sleep(for: IdentityStateView.settleDelay)
-      guard !Task.isCancelled else { return }
-      // Through the model rather than a bare probe, so the same
-      // reading also learns which PINs still wait - an interrupted
-      // activation left one set, and the form asks only for the
-      // other - and the counters the confirmation sheet shows.
-      await management.refresh()
-      awaitsActivation = management.offersActivation
+
+      if !activationTokenIDs.isEmpty {
+        state = .awaitsActivation
+        startManagementRefreshIfNeeded()
+      } else if latestAvailability == .ready {
+        stopManagementRefresh()
+        state = .idle
+      } else if latestAvailability == .cardWithoutIdentity {
+        stopManagementRefresh()
+        state = .reading
+      } else {
+        stopManagementRefresh()
+        state = .idle
+      }
+    }
+
+    /// The activation token is inserted only after the extension has
+    /// finished its read, so this read no longer races token creation.
+    /// It merely populates the activation form and never changes a PIN.
+    private func startManagementRefreshIfNeeded() {
+      guard managementRefresh == nil else { return }
+      managementRefreshID += 1
+      let id = managementRefreshID
+      managementRefresh = Task { @MainActor [weak self] in
+        guard let self else { return }
+        await self.management.refresh()
+        guard self.managementRefreshID == id, !Task.isCancelled else { return }
+        self.managementRefresh = nil
+      }
+    }
+
+    private func stopManagementRefresh() {
+      managementRefreshID += 1
+      managementRefresh?.cancel()
+      managementRefresh = nil
+    }
+
+    internal func stop() {
+      stopManagementRefresh()
+      state = .idle
     }
   }
 

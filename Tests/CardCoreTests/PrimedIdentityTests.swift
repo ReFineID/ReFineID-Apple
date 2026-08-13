@@ -18,6 +18,9 @@ internal struct PrimedIdentityTests {
   /// An unmistakably synthetic PKCS#15 token serial.
   private static let sampleSerial = "SYNTHETIC-PRIME-SERIAL"
 
+  /// Marker carried only by a prime whose live activation check passed.
+  private static let activationCheck = PrimedIdentity.ActivationCheck.passed
+
   /// Synthetic historical/application bytes for the Core NFC to CTK bridge.
   private static let sampleContactlessIdentification = Data([
     0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
@@ -30,16 +33,21 @@ internal struct PrimedIdentityTests {
   internal func refusesACardAccessNumberThatIsNotSixDigits() {
     let certificate = WireHex.data(Self.sampleCertificateHexDigits)
     #expect(
-      PrimedIdentity(can: "12345", certificate: certificate, issuer: nil, tokenSerial: nil) == nil)
+      PrimedIdentity(
+        can: "12345", certificate: certificate, issuer: nil, tokenSerial: nil,
+        activationCheck: Self.activationCheck) == nil)
     #expect(
-      PrimedIdentity(can: "12345a", certificate: certificate, issuer: nil, tokenSerial: nil) == nil)
+      PrimedIdentity(
+        can: "12345a", certificate: certificate, issuer: nil, tokenSerial: nil,
+        activationCheck: Self.activationCheck) == nil)
   }
 
   @Test
   internal func refusesAnEmptyCertificate() {
     #expect(
       PrimedIdentity(
-        can: Self.sampleCan, certificate: Data(), issuer: nil, tokenSerial: nil) == nil)
+        can: Self.sampleCan, certificate: Data(), issuer: nil, tokenSerial: nil,
+        activationCheck: Self.activationCheck) == nil)
   }
 
   @Test
@@ -47,7 +55,8 @@ internal struct PrimedIdentityTests {
     let certificate = WireHex.data(Self.sampleCertificateHexDigits)
     #expect(
       PrimedIdentity(
-        can: Self.sampleCan, certificate: certificate, issuer: nil, tokenSerial: "") == nil)
+        can: Self.sampleCan, certificate: certificate, issuer: nil, tokenSerial: "",
+        activationCheck: Self.activationCheck) == nil)
   }
 
   @Test
@@ -59,6 +68,7 @@ internal struct PrimedIdentityTests {
         certificate: certificate,
         issuer: nil,
         tokenSerial: Self.sampleSerial,
+        activationCheck: Self.activationCheck,
         contactlessIdentification: Data(),
         stagedAt: Self.sampleStagedAt) == nil)
   }
@@ -68,7 +78,8 @@ internal struct PrimedIdentityTests {
     let certificate = WireHex.data(Self.sampleCertificateHexDigits)
     let identity = try #require(
       PrimedIdentity(
-        can: Self.sampleCan, certificate: certificate, issuer: nil, tokenSerial: nil))
+        can: Self.sampleCan, certificate: certificate, issuer: nil, tokenSerial: nil,
+        activationCheck: Self.activationCheck))
     #expect(identity.issuerDER == nil)
     #expect(identity.tokenSerial == nil)
   }
@@ -81,11 +92,13 @@ internal struct PrimedIdentityTests {
         certificate: WireHex.data(Self.sampleCertificateHexDigits),
         issuer: WireHex.data(Self.sampleIssuerHexDigits),
         tokenSerial: Self.sampleSerial,
+        activationCheck: Self.activationCheck,
         contactlessIdentification: Self.sampleContactlessIdentification,
         stagedAt: Self.sampleStagedAt))
     let payload = try JSONEncoder().encode(identity)
     let decoded = try JSONDecoder().decode(PrimedIdentity.self, from: payload)
     #expect(decoded == identity)
+    #expect(decoded.activationCheck == .passed)
     #expect(decoded.contactlessIdentification == Self.sampleContactlessIdentification)
     #expect(decoded.stagedAt == Self.sampleStagedAt)
   }
@@ -97,7 +110,8 @@ internal struct PrimedIdentityTests {
         can: Self.sampleCan,
         certificate: WireHex.data(Self.sampleCertificateHexDigits),
         issuer: nil,
-        tokenSerial: nil))
+        tokenSerial: nil,
+        activationCheck: Self.activationCheck))
     let payload = try JSONEncoder().encode(identity)
     let decoded = try JSONDecoder().decode(PrimedIdentity.self, from: payload)
     #expect(decoded == identity)

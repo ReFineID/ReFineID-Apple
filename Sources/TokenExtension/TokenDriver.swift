@@ -83,13 +83,33 @@ internal final class TokenDriver: TKSmartCardTokenDriver, TKSmartCardTokenDriver
     smartCard: TKSmartCard,
     aid: Data?,
     tokenDriver: TKSmartCardTokenDriver
-  ) throws -> Token {
+  ) throws -> TKSmartCardToken {
     do {
-      return try Token(smartCard: smartCard, aid: aid, tokenDriver: tokenDriver)
+      return try readerTokenOnce(smartCard: smartCard, aid: aid, tokenDriver: tokenDriver)
     } catch let failure where isTransport(failure) {
       TokenLog.info("createToken: transport failed (\(failure)); one retry")
       Thread.sleep(forTimeInterval: retryInterval)
+      return try readerTokenOnce(smartCard: smartCard, aid: aid, tokenDriver: tokenDriver)
+    }
+  }
+
+  /// Converts the card's semantic activation result into an empty
+  /// token. Transport failures still escape so the existing retry and
+  /// CryptoTokenKit recovery paths retain their meaning.
+  private static func readerTokenOnce(
+    smartCard: TKSmartCard,
+    aid: Data?,
+    tokenDriver: TKSmartCardTokenDriver
+  ) throws -> TKSmartCardToken {
+    do {
       return try Token(smartCard: smartCard, aid: aid, tokenDriver: tokenDriver)
+    } catch TokenError.activationRequired {
+      TokenLog.notice("createToken: publishing activation-required state")
+      return ActivationRequiredToken(
+        smartCard: smartCard,
+        aid: aid,
+        tokenDriver: tokenDriver
+      )
     }
   }
 
@@ -120,7 +140,7 @@ internal final class TokenDriver: TKSmartCardTokenDriver, TKSmartCardTokenDriver
       // Transport selection is automatic. CryptoTokenKit calls this
       // driver only for a slot that exists, so an attached reader or the
       // phone's active NFC slot is, by definition, available for use.
-      let token: Token =
+      let token: TKSmartCardToken =
         switch transport {
         case .nearField:
           try mintFromPrime(smartCard: smartCard, aid: aid, tokenDriver: driver)
@@ -128,7 +148,7 @@ internal final class TokenDriver: TKSmartCardTokenDriver, TKSmartCardTokenDriver
           try Self.readerToken(smartCard: smartCard, aid: aid, tokenDriver: driver)
         }
       if transport == .reader {
-        token.supersedeStoredContactlessIdentities()
+        (token as? Token)?.supersedeStoredContactlessIdentities()
       }
       TokenLog.info(
         "createToken succeeded ms=\(Self.elapsed(since: started))"

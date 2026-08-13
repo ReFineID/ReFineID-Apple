@@ -111,24 +111,36 @@ internal struct SmartCardChannel: CardChannel {
 
   /// Opens an exclusive session, runs `body`, and ends it - synchronously.
   internal func withSession<T>(_ body: (Self) throws -> T) throws -> T {
-    let began = Box(false)
-    let failure = Box<Error?>(nil)
-    let wait = SessionWait(card: smartCard)
-    let semaphore = DispatchSemaphore(value: 0)
-    smartCard.beginSession { opened, error in
-      began.value = opened
-      failure.value = error
-      wait.releaseIfAbandoned(opened: opened)
-      semaphore.signal()
+    let offers = SmartCardProtocolNegotiation.offers(
+      answerToReset: smartCard.slot.atr?.bytes)
+    for (offset, protocols) in offers.enumerated() {
+      smartCard.allowedProtocols = protocols
+      let began = Box(false)
+      let failure = Box<Error?>(nil)
+      let wait = SessionWait(card: smartCard)
+      let semaphore = DispatchSemaphore(value: 0)
+      smartCard.beginSession { opened, error in
+        began.value = opened
+        failure.value = error
+        wait.releaseIfAbandoned(opened: opened)
+        semaphore.signal()
+      }
+      guard semaphore.wait(timeout: .now() + Self.sessionWaitBudget) == .success else {
+        wait.giveUp()
+        throw CardOperationError.sessionUnavailable
+      }
+      if began.value {
+        defer { smartCard.endSession() }
+        return try body(self)
+      }
+      let hasNarrowerOffer = offset + 1 < offers.count
+      guard
+        hasNarrowerOffer,
+        SmartCardProtocolNegotiation.retries(after: failure.value)
+      else {
+        throw failure.value ?? CardOperationError.sessionUnavailable
+      }
     }
-    guard semaphore.wait(timeout: .now() + Self.sessionWaitBudget) == .success else {
-      wait.giveUp()
-      throw CardOperationError.sessionUnavailable
-    }
-    guard began.value else {
-      throw failure.value ?? CardOperationError.sessionUnavailable
-    }
-    defer { smartCard.endSession() }
-    return try body(self)
+    throw CardOperationError.sessionUnavailable
   }
 }

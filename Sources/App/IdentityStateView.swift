@@ -14,29 +14,13 @@
   /// settles and only warns once the state has lasted long enough to
   /// mean something.
   internal struct IdentityStateView: View {
-    /// One tracked moment: the availability and the token listing's
-    /// generation, either of whose movement re-reads the row.
-    private struct TrackKey: Equatable {
-      let availability: LoginIdentityModel.Availability
-      let generation: Int
+    /// One tracked event. Token-list movement matters only while an
+    /// identity is published, because only then is there a holder name
+    /// to re-read.
+    private enum TrackKey: Equatable {
+      case availability(LoginIdentityModel.Availability)
+      case ready(generation: Int)
     }
-
-    /// How long a card may be present without a published identity
-    /// before the row says to re-insert it.
-    ///
-    /// Matched to the driver's own recovery delay: an ordinary mint
-    /// finishes well inside it, and the software reinsertion that
-    /// recovers a stuck card is tried at the same moment, so the
-    /// warning appears only once that has had its chance. Shorter, and
-    /// every insertion flashes orange for a fraction of a second.
-    ///
-    /// Internal, not private: the activation watch in `StatusView`
-    /// waits out the same settling before it probes the card, for the
-    /// same reason.
-    internal static let settleDelaySeconds = 3
-
-    /// The same, as the sleep wants it.
-    internal static let settleDelay: Duration = .seconds(settleDelaySeconds)
 
     #if DEBUG
       /// Row outcomes, in development builds only.
@@ -51,6 +35,11 @@
     /// What the login row keys on.
     internal let availability: LoginIdentityModel.Availability
 
+    /// A completed activation check and recovery found no usable
+    /// identity. Until that event, absence means that the card is still
+    /// being read rather than that it failed.
+    internal let warnsUnavailableCard: Bool
+
     /// The model, watched so a token event re-reads the name even
     /// when the availability itself did not move.
     private let model = LoginIdentityModel.shared
@@ -62,16 +51,19 @@
     /// it.
     @State private var holder: String?
 
-    /// Whether the unready state has lasted long enough to warn about.
-    @State private var settled = false
+    /// The event which can change the row's asynchronous contents.
+    private var trackKey: TrackKey {
+      switch availability {
+      case .ready:
+        .ready(generation: model.generation)
+      case .cardWithoutIdentity, .noCard:
+        .availability(availability)
+      }
+    }
 
     internal var body: some View {
       content
-        .task(
-          id: TrackKey(
-            availability: availability,
-            generation: model.generation)
-        ) {
+        .task(id: trackKey) {
           await track()
         }
     }
@@ -88,7 +80,7 @@
         Text(holder ?? "")
           .textSelection(.enabled)
       case .cardWithoutIdentity:
-        if settled {
+        if warnsUnavailableCard {
           Text("Card detected, not ready - if this lasts, re-insert it")
             .foregroundStyle(.orange)
         } else {
@@ -101,18 +93,12 @@
       }
     }
 
-    /// Follows one availability: reads the name when ready, and lets the
-    /// unready state settle before it is called a problem.
-    ///
-    /// Re-run on every change and cancelled on the one before it, so a
-    /// card that becomes ready within the delay cancels the warning it
-    /// would otherwise have shown. The name is read off the main actor
-    /// and never blocks the row.
+    /// Follows one availability and reads the name when ready. The name
+    /// is read off the main actor and never blocks the row.
     private func track() async {
       #if DEBUG
         Self.log.info("track: \(String(describing: self.availability))")
       #endif
-      settled = false
       switch availability {
       case .ready:
         // A read that answers nothing while the token is listed is
@@ -125,10 +111,6 @@
         }.value
       case .cardWithoutIdentity:
         holder = nil
-        try? await Task.sleep(for: Self.settleDelay)
-        if !Task.isCancelled {
-          settled = true
-        }
       case .noCard:
         holder = nil
       }

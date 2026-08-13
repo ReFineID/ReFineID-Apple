@@ -3,8 +3,6 @@
 #if os(macOS)
 
   import CardCore
-  import Foundation
-  import Security
 
   /// The activation flow, and reading the activation scheme off the
   /// card's own certificate.
@@ -18,16 +16,7 @@
     /// scheme the activation PIN stops being that PIN's current value
     /// the moment it is changed, and presenting it again would spend
     /// a retry on a value that cannot match.
-    internal struct ActivationNeeds: Equatable, Sendable {
-      /// Whether PIN 1 still awaits its first value.
-      internal let pin1: Bool
-
-      /// Whether PIN 2 still awaits its first value.
-      internal let pin2: Bool
-
-      /// Whether anything remains for activation to do.
-      internal var any: Bool { pin1 || pin2 }
-    }
+    internal typealias ActivationNeeds = CardActivationNeeds
 
     /// Activates the card.
     ///
@@ -122,26 +111,7 @@
       _ operations: CardOperations,
       scheme: ActivationScheme
     ) -> ActivationNeeds {
-      ActivationNeeds(
-        pin1: pinAwaitsActivation(operations, scheme: scheme, role: .pin1),
-        pin2: pinAwaitsActivation(operations, scheme: scheme, role: .pin2)
-      )
-    }
-
-    /// Whether one PIN still awaits its first value.
-    private static func pinAwaitsActivation(
-      _ operations: CardOperations,
-      scheme: ActivationScheme,
-      role: CredentialRole
-    ) -> Bool {
-      let probe = try? operations.probeRetryCounter(role: role)
-      let record =
-        (try? operations.readPinChangeRecord(role: role)) ?? .unreadable
-      return ActivationPreflight.evaluate(
-        scheme: scheme,
-        probe: probe,
-        changeRecord: record
-      ) == .ready
+      operations.activationNeeds(scheme: scheme)
     }
 
     /// The floor for every credential this run will present, or nil
@@ -267,54 +237,10 @@
     internal static func classifyScheme(
       _ operations: CardOperations
     ) -> ActivationScheme? {
-      guard
-        let der = try? operations.readCertificate(.authentication),
-        let certificate = SecCertificateCreateWithData(nil, der as CFData)
-      else {
+      guard let der = try? operations.readCertificate(.authentication) else {
         return nil
       }
-      if let issued = notBefore(of: certificate) {
-        return ActivationScheme.classify(issuedOn: issued)
-      }
-      return issuerCommonName(of: certificate)
-        .flatMap(ActivationScheme.classify(issuerCommonName:))
-    }
-
-    /// The certificate's notBefore instant, when the platform can read
-    /// it.
-    private static func notBefore(of certificate: SecCertificate) -> Date? {
-      let key = kSecOIDX509V1ValidityNotBefore as String
-      guard
-        let values =
-          SecCertificateCopyValues(certificate, [key] as CFArray, nil)
-          as? [String: [String: Any]],
-        let seconds = values[key]?[kSecPropertyKeyValue as String] as? Double
-      else {
-        return nil
-      }
-      return Date(timeIntervalSinceReferenceDate: seconds)
-    }
-
-    /// The issuer's common name, when the platform can read it.
-    private static func issuerCommonName(
-      of certificate: SecCertificate
-    ) -> String? {
-      let key = kSecOIDX509V1IssuerName as String
-      guard
-        let values =
-          SecCertificateCopyValues(certificate, [key] as CFArray, nil)
-          as? [String: [String: Any]],
-        let entries =
-          values[key]?[kSecPropertyKeyValue as String] as? [[String: Any]]
-      else {
-        return nil
-      }
-      for entry in entries {
-        let label = entry[kSecPropertyKeyLabel as String] as? String
-        guard label == (kSecOIDCommonName as String) else { continue }
-        return entry[kSecPropertyKeyValue as String] as? String
-      }
-      return nil
+      return ActivationScheme.classify(authenticationCertificateDER: der)
     }
   }
 

@@ -177,6 +177,7 @@ public enum PrimeStore {
       certificate: stored.certDER,
       issuer: stored.issuerDER,
       tokenSerial: stored.tokenSerial,
+      activationCheck: stored.activationCheck,
       contactlessIdentification: stored.contactlessIdentification,
       stagedAt: stored.stagedAt)
   }

@@ -75,6 +75,13 @@ internal struct ActivationTests {
   }
 
   @Test
+  internal func cardNeedsActivationWhileEitherPinDoes() {
+    #expect(!CardActivationNeeds(pin1: false, pin2: false).any)
+    #expect(CardActivationNeeds(pin1: true, pin2: false).any)
+    #expect(CardActivationNeeds(pin1: false, pin2: true).any)
+  }
+
+  @Test
   internal func activationCodePreflightTreatsAnyLiveReadingAsActivated() throws {
     let five = try #require(RetryCount(attemptsRemaining: 5))
     // A live counter is evidence the slot was written to. Invalidated
