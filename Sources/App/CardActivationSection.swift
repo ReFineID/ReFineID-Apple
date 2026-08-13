@@ -115,7 +115,7 @@ internal struct CardActivationSection: View {
       .listRowInsets(EdgeInsets())
       .listRowBackground(Color.clear)
     #endif
-    .disabled(!isComplete || model.cardOperationInProgress)
+    .disabled(!isComplete || !model.canContactCard || model.cardOperationInProgress)
     .accessibilityIdentifier("managementActivate")
   }
 
@@ -133,7 +133,7 @@ internal struct CardActivationSection: View {
         .focused($focus, equals: .entry)
         .onSubmit { advance(from: .entry) }
         .accessibilityIdentifier("managementActivationEntry")
-      validationIndicator(activationEntryIsValid)
+      CredentialValidationIndicator(valid: activationEntryIsValid)
     }
     if asksPin1 {
       HStack {
@@ -146,7 +146,7 @@ internal struct CardActivationSection: View {
           .focused($focus, equals: .pin1)
           .onSubmit { advance(from: .pin1) }
           .accessibilityIdentifier("managementActivationPin1")
-        validationIndicator(pin1IsValid)
+        CredentialValidationIndicator(valid: pin1IsValid)
       }
       HStack {
         SecureField("New PIN 1 again", text: $newPin1Repeated)
@@ -158,7 +158,9 @@ internal struct CardActivationSection: View {
           .focused($focus, equals: .pin1Repeat)
           .onSubmit { advance(from: .pin1Repeat) }
           .accessibilityIdentifier("managementActivationPin1Repeat")
-        validationIndicator(repeatedPin1IsValid, entriesDiffer: pin1EntriesDiffer)
+        CredentialValidationIndicator(
+          valid: repeatedPin1IsValid,
+          entriesDiffer: pin1EntriesDiffer)
       }
     }
     if asksPin2 {
@@ -172,7 +174,7 @@ internal struct CardActivationSection: View {
           .focused($focus, equals: .pin2)
           .onSubmit { advance(from: .pin2) }
           .accessibilityIdentifier("managementActivationPin2")
-        validationIndicator(pin2IsValid)
+        CredentialValidationIndicator(valid: pin2IsValid)
       }
       HStack {
         SecureField("New PIN 2 again", text: $newPin2Repeated)
@@ -184,30 +186,11 @@ internal struct CardActivationSection: View {
           .focused($focus, equals: .pin2Repeat)
           .onSubmit { advance(from: .pin2Repeat) }
           .accessibilityIdentifier("managementActivationPin2Repeat")
-        validationIndicator(repeatedPin2IsValid, entriesDiffer: pin2EntriesDiffer)
+        CredentialValidationIndicator(
+          valid: repeatedPin2IsValid,
+          entriesDiffer: pin2EntriesDiffer)
       }
     }
-  }
-
-  private func validationIndicator(
-    _ valid: Bool,
-    entriesDiffer: Bool = false
-  ) -> some View {
-    let symbol =
-      valid
-      ? "checkmark.circle.fill"
-      : entriesDiffer ? "exclamationmark.triangle.fill" : "xmark.circle.fill"
-    let color: Color = valid ? .green : entriesDiffer ? .orange : .red
-    let label =
-      valid
-      ? String(localized: "Valid entry")
-      : entriesDiffer
-        ? String(localized: "The new entries differ.")
-        : String(localized: "Invalid entry")
-    return Image(systemName: symbol)
-      .foregroundStyle(color)
-      .accessibilityLabel(
-        Text(label))
   }
 
   /// The fields on screen, in the order Return walks them.

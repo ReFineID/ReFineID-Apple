@@ -49,17 +49,19 @@
           .frame(maxWidth: .infinity, maxHeight: .infinity)
       } else {
         Form {
-          ForEach(holders, id: \.self) { holder in
-            LabeledContent("Person") {
-              Text(holder)
-                .textSelection(.enabled)
+          Section("Identity") {
+            ForEach(holders, id: \.self) { holder in
+              LabeledContent("Person") {
+                Text(holder)
+                  .textSelection(.enabled)
+              }
             }
           }
-          Section {
+          Section("Manage") {
             NavigationLink {
               CardManagementView(readerCardIsPresent: true)
             } label: {
-              Label("Manage card", systemImage: "key")
+              Label("Personal Identification Numbers (PINs)", systemImage: "key")
             }
             .accessibilityIdentifier("manageCard")
           }

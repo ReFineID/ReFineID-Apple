@@ -28,10 +28,12 @@ public enum CardTransport: String, CaseIterable, Equatable, Sendable {
   /// I/O, and both the token extension and the app have to reach the
   /// same verdict about the same slot, so the marker lives here rather
   /// than once in each of them.
-  public static let nearFieldSlotMarker = "NFC"
+  public static let nearFieldSlotMarker = "Built-in NFC Slot"
 
   /// Which transport a slot of this name belongs to.
   public static func transport(forSlotNamed name: String) -> Self {
-    name.localizedCaseInsensitiveContains(Self.nearFieldSlotMarker) ? .nearField : .reader
+    name.localizedCaseInsensitiveCompare(Self.nearFieldSlotMarker) == .orderedSame
+      ? .nearField
+      : .reader
   }
 }

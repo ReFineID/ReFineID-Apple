@@ -31,6 +31,7 @@ internal struct CardCredentialsView: View {
   @State private var registrationReset = false
   @State private var isRegistered = false
   @State private var isLandscapeLayout = false
+  @FocusState private var isCardAccessNumberFieldFocused: Bool
   @FocusState private var isPin1FieldFocused: Bool
 
   #if canImport(CoreNFC) && os(iOS)
@@ -42,6 +43,21 @@ internal struct CardCredentialsView: View {
   private var isPin1EntryComplete: Bool {
     pin1Entry.count >= Pin1.minimumDigitCount
       && pin1Entry.count <= Pin1.maximumDigitCount
+  }
+
+  /// The point at which operations using the printed card number can be
+  /// offered. Until all six digits exist, PIN1 has no card to belong to.
+  private var isCardAccessNumberEntryComplete: Bool {
+    cardAccessNumberEntry.count == CardAccessNumber.digitCount
+  }
+
+  /// The visible CAN handed to PIN management, only when complete.
+  ///
+  /// The setup field is also where a stored CAN is shown, so there is
+  /// one source of truth and the management screen never has to ask for
+  /// the same printed number again.
+  internal var managementCardAccessNumber: String? {
+    isCardAccessNumberEntryComplete ? cardAccessNumberEntry : nil
   }
 
   /// Whether this launch is demonstrating the flow without a card.
@@ -136,9 +152,11 @@ internal struct CardCredentialsView: View {
       } else {
         createIdentitySection
       }
-      if !isHolding {
-        managementSection
-      }
+      #if !os(iOS)
+        if !isHolding {
+          managementSection
+        }
+      #endif
       if let failure = model.failure {
         Section {
           Text(failure)
@@ -158,6 +176,19 @@ internal struct CardCredentialsView: View {
       .listSectionSpacing(Self.sectionSpacing)
       .navigationTitle("ReFineID")
       .navigationBarTitleDisplayMode(.large)
+      .toolbar {
+        if let cardAccessNumber = managementCardAccessNumber, !isHolding {
+          ToolbarItem(placement: .topBarTrailing) {
+            NavigationLink {
+              CardManagementView(cardAccessNumber: cardAccessNumber)
+            } label: {
+              Image(systemName: "key")
+                .accessibilityLabel(Text("Change or Reset PINs"))
+            }
+            .accessibilityIdentifier("manageCard")
+          }
+        }
+      }
       .onGeometryChange(for: Bool.self) { geometry in
         geometry.size.width > geometry.size.height
       } action: { isLandscape in
@@ -167,7 +198,11 @@ internal struct CardCredentialsView: View {
     // Pinned under every product control: what this run is, when it is
     // anything but the shipped product doing its job.
     .safeAreaInset(edge: .bottom) {
-      CardSetupFooter(isDemonstration: isDemonstration)
+      VStack(spacing: 0) {
+        if !isCardAccessNumberFieldFocused, !isPin1FieldFocused {
+          CardSetupFooter(isDemonstration: isDemonstration)
+        }
+      }
     }
     .onAppear {
       model.refresh()
@@ -186,6 +221,15 @@ internal struct CardCredentialsView: View {
       // as it was. Seeding again here puts the stored number back in
       // front of the holder, which is where a wrong one gets noticed.
       showStoredCardAccessNumber()
+    }
+    .onChange(of: isCardAccessNumberEntryComplete) { _, complete in
+      // A PIN entered for one complete CAN must not survive while that
+      // CAN is erased or replaced. It reappears only after the new card
+      // number is complete and the holder enters its PIN deliberately.
+      if !complete {
+        pin1Entry = ""
+        isPin1FieldFocused = false
+      }
     }
     #if os(iOS)
       .sheet(isPresented: $isScanning) {
@@ -226,26 +270,30 @@ internal struct CardCredentialsView: View {
 
   /// One operation, in its actual order: credentials and then minting.
   @ViewBuilder private var createIdentitySection: some View {
-    Section("Enable authentication") {
+    Section("Connection establishment") {
       cardAccessNumberRow
-      pin1Row
     }
-    #if os(iOS)
-      // Its own section and its own visual weight: the credential rows
-      // collect input, this is the screen's one primary action.
-      Section {
-        CardRegistrationSections(
-          canPrepareCredentials: canPrepareIdentity,
-          isDemonstration: isDemonstration,
-          prepareCredentials: prepareIdentity,
-          isRegistered: $isRegistered,
-          model: primingModel
-        )
-        .id(registrationReset)
+    if isCardAccessNumberEntryComplete {
+      Section("Enable authentication") {
+        pin1Row
       }
-      .listRowBackground(Color.clear)
-      .listRowInsets(EdgeInsets())
-    #endif
+      #if os(iOS)
+        // Its own section and its own visual weight: the credential rows
+        // collect input, this is the screen's one primary action.
+        Section {
+          CardRegistrationSections(
+            canPrepareCredentials: canPrepareIdentity,
+            isDemonstration: isDemonstration,
+            prepareCredentials: prepareIdentity,
+            isRegistered: $isRegistered,
+            model: primingModel
+          )
+          .id(registrationReset)
+        }
+        .listRowBackground(Color.clear)
+        .listRowInsets(EdgeInsets())
+      #endif
+    }
   }
 
   /// The six printed digits, with the QR scanner beside them.
@@ -259,6 +307,7 @@ internal struct CardCredentialsView: View {
       HStack {
         SecureField("Card Access Number (CAN)", text: $cardAccessNumberEntry)
           .keyboardType(.numberPad)
+          .focused($isCardAccessNumberFieldFocused)
           .accessibilityIdentifier("cardAccessNumberField")
           .onChange(of: cardAccessNumberEntry) { _, typed in
             cardAccessNumberEntry = LimitedDigits.cardAccessNumber(typed)
@@ -393,6 +442,7 @@ internal struct CardCredentialsView: View {
   private func clearEntries() {
     cardAccessNumberEntry = ""
     pin1Entry = ""
+    isCardAccessNumberFieldFocused = false
     isPin1FieldFocused = false
   }
 }

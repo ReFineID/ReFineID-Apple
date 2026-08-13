@@ -233,6 +233,102 @@
         }
       }
     },
+    "Connection establishment": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yhteyden muodostaminen"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anslutning"
+          }
+        }
+      }
+    },
+    "Change or Reset PINs": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vaihda tai palauta PIN-koodit"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ändra eller återställ PIN-koder"
+          }
+        }
+      }
+    },
+    "Identity": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henkilöllisyys"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identitet"
+          }
+        }
+      }
+    },
+    "Manage": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hallinta"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hantera"
+          }
+        }
+      }
+    },
+    "Personal Identification Numbers": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henkilökohtaiset tunnusluvut"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personliga identifieringsnummer"
+          }
+        }
+      }
+    },
+    "Personal Identification Numbers (PINs)": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henkilökohtaiset tunnusluvut (PIN-koodit)"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personliga identifieringsnummer (PIN-koder)"
+          }
+        }
+      }
+    },
     "Invalid entry": {
       "localizations": {
         "fi": {

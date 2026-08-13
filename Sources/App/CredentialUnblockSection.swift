@@ -52,21 +52,30 @@ internal struct CredentialUnblockSection: View {
   }
 
   /// Ready when the PUK and both new entries can possibly be right.
-  private var isComplete: Bool {
+  private var pukIsValid: Bool {
     (Puk.minimumDigitCount...Puk.maximumDigitCount).contains(puk.count)
-      && targetBounds.contains(new.count)
-      && new == repeated
+  }
+
+  private var newIsValid: Bool {
+    targetBounds.contains(new.count)
+  }
+
+  private var repeatedIsValid: Bool {
+    newIsValid && repeated == new
+  }
+
+  private var entriesDiffer: Bool {
+    newIsValid && targetBounds.contains(repeated.count) && repeated != new
+  }
+
+  private var isComplete: Bool {
+    pukIsValid && newIsValid && repeatedIsValid
   }
 
   internal var body: some View {
     Group {
       Section {
         entryRows
-        if !new.isEmpty, !repeated.isEmpty, new != repeated {
-          Text("The new entries differ.")
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-        }
       }
       resetButton
     }
@@ -99,40 +108,51 @@ internal struct CredentialUnblockSection: View {
       .listRowBackground(Color.clear)
     #endif
     .keyboardShortcut(.defaultAction)
-    .disabled(!isComplete || model.cardOperationInProgress)
+    .disabled(!isComplete || !model.canContactCard || model.cardOperationInProgress)
     .accessibilityIdentifier("managementReset\(identifierName)")
   }
 
   /// The target picker and the three secret fields, threaded for
   /// Return.
   @ViewBuilder private var entryRows: some View {
-    SecureField("PUK", text: $puk)
-      .textContentType(.oneTimeCode)
-      .keyboardType(.numberPad)
-      .onChange(of: puk) { _, typed in
-        puk = LimitedDigits.puk(typed)
-      }
-      .focused($focus, equals: .puk)
-      .onSubmit { advance(from: .puk) }
-      .accessibilityIdentifier("managementReset\(identifierName)Puk")
-    SecureField("New \(targetName)", text: $new)
-      .textContentType(.oneTimeCode)
-      .keyboardType(.numberPad)
-      .onChange(of: new) { _, typed in
-        new = LimitedDigits.pin(typed)
-      }
-      .focused($focus, equals: .new)
-      .onSubmit { advance(from: .new) }
-      .accessibilityIdentifier("managementReset\(identifierName)New")
-    SecureField("New \(targetName) again", text: $repeated)
-      .textContentType(.oneTimeCode)
-      .keyboardType(.numberPad)
-      .onChange(of: repeated) { _, typed in
-        repeated = LimitedDigits.pin(typed)
-      }
-      .focused($focus, equals: .repeated)
-      .onSubmit { advance(from: .repeated) }
-      .accessibilityIdentifier("managementReset\(identifierName)Repeat")
+    HStack {
+      SecureField("PUK", text: $puk)
+        .textContentType(.oneTimeCode)
+        .keyboardType(.numberPad)
+        .onChange(of: puk) { _, typed in
+          puk = LimitedDigits.puk(typed)
+        }
+        .focused($focus, equals: .puk)
+        .onSubmit { advance(from: .puk) }
+        .accessibilityIdentifier("managementReset\(identifierName)Puk")
+      CredentialValidationIndicator(valid: pukIsValid)
+    }
+    HStack {
+      SecureField("New \(targetName)", text: $new)
+        .textContentType(.oneTimeCode)
+        .keyboardType(.numberPad)
+        .onChange(of: new) { _, typed in
+          new = LimitedDigits.pin(typed)
+        }
+        .focused($focus, equals: .new)
+        .onSubmit { advance(from: .new) }
+        .accessibilityIdentifier("managementReset\(identifierName)New")
+      CredentialValidationIndicator(valid: newIsValid)
+    }
+    HStack {
+      SecureField("New \(targetName) again", text: $repeated)
+        .textContentType(.oneTimeCode)
+        .keyboardType(.numberPad)
+        .onChange(of: repeated) { _, typed in
+          repeated = LimitedDigits.pin(typed)
+        }
+        .focused($focus, equals: .repeated)
+        .onSubmit { advance(from: .repeated) }
+        .accessibilityIdentifier("managementReset\(identifierName)Repeat")
+      CredentialValidationIndicator(
+        valid: repeatedIsValid,
+        entriesDiffer: entriesDiffer)
+    }
   }
 
   /// Return advances; on the last field it submits when complete.

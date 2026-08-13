@@ -16,6 +16,7 @@ import SwiftUI
 internal struct CardManagementView: View {
   private struct ReaderReadKey: Equatable {
     let isPresent: Bool
+    let isReady: Bool
     let transport: CardMaintenance.Transport
   }
 
@@ -70,6 +71,7 @@ internal struct CardManagementView: View {
   private var windowWidth: CGFloat = 560
 
   private let startsWithReaderCard: Bool
+  private let usesProvidedCardAccessNumber: Bool
   private let cardPresence = CardPresence.shared
 
   @State private var model: CardManagementModel
@@ -79,24 +81,35 @@ internal struct CardManagementView: View {
 
   internal init(
     readerCardIsPresent: Bool = false,
-    activationRequired: Bool = false
+    activationRequired: Bool = false,
+    cardAccessNumber: String? = nil
   ) {
     startsWithReaderCard = readerCardIsPresent
+    usesProvidedCardAccessNumber =
+      cardAccessNumber?.count == CardAccessNumber.digitCount
     _model = State(
       initialValue: CardManagementModel(
         transport: readerCardIsPresent ? .reader : nil,
-        activationRequired: activationRequired
+        activationRequired: activationRequired,
+        cardAccessNumber: cardAccessNumber
       )
     )
   }
 
   private var readerCardIsPresent: Bool {
-    startsWithReaderCard || cardPresence.isReaderCardPresent
+    cardPresence.hasCompletedInitialScan
+      ? cardPresence.isReaderCardPresent
+      : startsWithReaderCard
+  }
+
+  private var readerCardIsReady: Bool {
+    cardPresence.hasCompletedInitialScan && cardPresence.isReaderCardReady
   }
 
   private var readerReadKey: ReaderReadKey {
     ReaderReadKey(
       isPresent: readerCardIsPresent,
+      isReady: readerCardIsReady,
       transport: model.transport
     )
   }
@@ -107,7 +120,8 @@ internal struct CardManagementView: View {
         .frame(minWidth: windowWidth)
       #else
         .id(isLandscapeLayout)
-        .navigationTitle(awaitsActivation ? "ReFineID" : "Manage card")
+        .navigationTitle(
+          awaitsActivation ? "ReFineID" : "Personal Identification Numbers")
         .navigationBarTitleDisplayMode(awaitsActivation ? .large : .inline)
         .onGeometryChange(for: Bool.self) { geometry in
           geometry.size.width > geometry.size.height
@@ -116,7 +130,7 @@ internal struct CardManagementView: View {
         }
       #endif
       .safeAreaInset(edge: .bottom, spacing: 0) {
-        if !awaitsActivation && (!readerCardIsPresent || model.report != nil) {
+        if !awaitsActivation, model.report != nil {
           attemptsBar
         }
       }
@@ -127,6 +141,7 @@ internal struct CardManagementView: View {
         .task(id: readerReadKey) {
           if readerCardIsPresent {
             model.transport = .reader
+            guard readerCardIsReady else { return }
             // The token insertion event has already classified this as
             // an unactivated card. Do not hold the activation form behind
             // a second full credential probe; activation performs its own
@@ -138,6 +153,9 @@ internal struct CardManagementView: View {
             }
           } else if model.transport == .reader {
             model.cardRemoved()
+            if model.availableTransports.contains(.nearField) {
+              model.transport = .nearField
+            }
           }
         }
       #endif
@@ -261,35 +279,25 @@ internal struct CardManagementView: View {
 
   @ViewBuilder private var connectionSection: some View {
     #if os(iOS)
-      if !readerCardIsPresent {
-        Section("Card connection") {
-          if model.availableTransports.count > 1 {
-            Picker("Connection", selection: $model.transport) {
-              ForEach(model.availableTransports) { transport in
-                Text(transport.name).tag(transport)
-              }
+      if !readerCardIsPresent,
+        model.transport == .nearField,
+        !usesProvidedCardAccessNumber
+      {
+        Section("NFC") {
+          SecureField("Card Access Number (CAN)", text: $model.cardAccessNumber)
+            .textContentType(.oneTimeCode)
+            .keyboardType(.numberPad)
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+            .onChange(of: model.cardAccessNumber) { _, typed in
+              model.cardAccessNumber = LimitedDigits.cardAccessNumber(typed)
             }
-            .pickerStyle(.segmented)
+            .accessibilityIdentifier("managementCardAccessNumber")
+          Button("Read card") {
+            Task { await model.refresh() }
           }
-          if model.transport == .nearField {
-            SecureField("Card Access Number (CAN)", text: $model.cardAccessNumber)
-              .textContentType(.oneTimeCode)
-              .keyboardType(.numberPad)
-              .textInputAutocapitalization(.never)
-              .autocorrectionDisabled()
-              .onChange(of: model.cardAccessNumber) { _, typed in
-                model.cardAccessNumber = LimitedDigits.cardAccessNumber(typed)
-              }
-              .accessibilityIdentifier("managementCardAccessNumber")
-            Button("Read card") {
-              Task { await model.refresh() }
-            }
-            .disabled(model.cardOperationInProgress || !model.canContactCard)
-            .accessibilityIdentifier("managementReadCard")
-          } else {
-            Text("Connect a card reader and insert your card.")
-              .foregroundStyle(.secondary)
-          }
+          .disabled(model.cardOperationInProgress || !model.canContactCard)
+          .accessibilityIdentifier("managementReadCard")
         }
       }
     #endif

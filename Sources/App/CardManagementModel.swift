@@ -56,11 +56,13 @@ internal final class CardManagementModel {
 
   internal init(
     transport: CardMaintenance.Transport? = nil,
-    activationRequired: Bool = false
+    activationRequired: Bool = false,
+    cardAccessNumber: String? = nil
   ) {
     self.transport = transport ?? CardMaintenance.preferredTransport
     offersActivation = activationRequired
-    cardAccessNumber = CardCredentialStore.displayedCardAccessNumber() ?? ""
+    self.cardAccessNumber =
+      cardAccessNumber ?? CardCredentialStore.displayedCardAccessNumber() ?? ""
   }
 
   internal func cardRemoved() {

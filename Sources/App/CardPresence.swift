@@ -25,6 +25,15 @@ internal final class CardPresence {
     /// iPhone's temporary NFC slot.
     internal private(set) var isReaderCardPresent = false
 
+    /// Whether an external-reader card has completed system probing and
+    /// is ready for a session. Presence becomes true earlier, while the
+    /// slot is still `.probing`; card I/O must wait for this separate fact.
+    internal private(set) var isReaderCardReady = false
+
+    /// Whether the first live slot inventory has replaced presentation
+    /// hints supplied by the view that opened card management.
+    internal private(set) var hasCompletedInitialScan = false
+
     /// Whether any of those cards is on a contactless interface.
     ///
     /// Read from the slot's synthesized answer to reset, so it costs
@@ -63,6 +72,9 @@ internal final class CardPresence {
         watch(slot, named: name)
       }
       recount()
+      if !hasCompletedInitialScan {
+        hasCompletedInitialScan = true
+      }
     }
 
     /// Watches one slot's card state.
@@ -97,6 +109,10 @@ internal final class CardPresence {
       let readerPresent = occupied.contains { name, _ in
         CardTransport.transport(forSlotNamed: name) == .reader
       }
+      let readerReady = slots.contains { name, slot in
+        CardTransport.transport(forSlotNamed: name) == .reader
+          && slot.state == .validCard
+      }
       let contactless = occupied.values.contains { slot in
         slot.atr.map { AnswerToReset.indicatesContactlessInterface(bytes: $0.bytes) } ?? false
       }
@@ -108,6 +124,9 @@ internal final class CardPresence {
       }
       if readerPresent != isReaderCardPresent {
         isReaderCardPresent = readerPresent
+      }
+      if readerReady != isReaderCardReady {
+        isReaderCardReady = readerReady
       }
     }
 }
