@@ -562,7 +562,7 @@ all. They are worth keeping.
   and copy. TestFlight and Release exclude the diagnostics source files
   from the app target, and since 2026-07-30 carry no logging of any kind
   either -- no system log line, no file, no trace item, and not even the
-  message literals. `Scripts/inspect-archive.sh` fails an archive in
+  message literals. The release manager's `inspect-archive` command fails an archive in
   which any of them reappear. The report deliberately does not enumerate
   `com.apple.token` identities:
   that supposedly read-only query was measured presenting the NFC reader

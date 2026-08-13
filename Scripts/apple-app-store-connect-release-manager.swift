@@ -1,12 +1,13 @@
 #!/usr/bin/env swift
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 //
-// Drive an App Store submission through the App Store Connect API, in
-// the language this project is written in and with nothing else.
+// Drive the complete Apple release lifecycle in the language this project
+// is written in and with no shell release entry points.
 //
-// The steps below the web UI are a handful of JSON-over-HTTP calls, and
-// doing them by hand leaves no record of what was done. This composes
-// them into named commands. CryptoKit signs the ES256 token from the
+// Local commands archive, inspect, export, and optionally upload a candidate.
+// The remaining web-UI steps are JSON-over-HTTP calls, and doing them by hand
+// leaves no record of what was done. This composes all of them into named
+// commands. CryptoKit signs the ES256 token from the
 // .p8 (which is a P-256 key), URLSession makes the calls, and
 // JSONSerialization reads and writes the bodies, so there is no Ruby,
 // no Python, and nothing to install. The app is known by its bundle id
@@ -40,6 +41,828 @@
 
 import CryptoKit
 import Foundation
+
+// MARK: - Local release engineering
+
+private struct ReleaseProcessResult {
+    let status: Int32
+    let stdout: String
+    let stderr: String
+
+    var combinedOutput: String {
+        [stdout, stderr].filter { !$0.isEmpty }.joined(separator: "\n")
+    }
+}
+
+private func releaseFail(_ message: String) -> Never {
+    FileHandle.standardError.write(Data("FAIL: \(message)\n".utf8))
+    exit(1)
+}
+
+private func releaseNote(_ message: String) {
+    print("  ok: \(message)")
+}
+
+@discardableResult
+private func releaseRun(
+    _ executable: String,
+    _ arguments: [String],
+    currentDirectory: URL? = nil,
+    capture: Bool = false,
+    allowFailure: Bool = false
+) -> ReleaseProcessResult {
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: executable)
+    process.arguments = arguments
+    process.currentDirectoryURL = currentDirectory
+
+    let stdoutPipe = capture ? Pipe() : nil
+    let stderrPipe = capture ? Pipe() : nil
+    process.standardOutput = stdoutPipe
+    process.standardError = stderrPipe
+
+    do {
+        try process.run()
+    } catch {
+        releaseFail("could not run \(executable): \(error.localizedDescription)")
+    }
+
+    let stdoutData = stdoutPipe?.fileHandleForReading.readDataToEndOfFile() ?? Data()
+    let stderrData = stderrPipe?.fileHandleForReading.readDataToEndOfFile() ?? Data()
+    process.waitUntilExit()
+
+    let result = ReleaseProcessResult(
+        status: process.terminationStatus,
+        stdout: String(decoding: stdoutData, as: UTF8.self),
+        stderr: String(decoding: stderrData, as: UTF8.self)
+    )
+    if result.status != 0 && !allowFailure {
+        let command = ([executable] + arguments).joined(separator: " ")
+        let detail = result.combinedOutput.trimmingCharacters(in: .whitespacesAndNewlines)
+        releaseFail(detail.isEmpty ? "command failed: \(command)" : "command failed: \(command)\n\(detail)")
+    }
+    return result
+}
+
+private let releaseFileManager = FileManager.default
+private let releaseRepositoryRoot = URL(fileURLWithPath: #filePath)
+    .deletingLastPathComponent()
+    .deletingLastPathComponent()
+
+private func releaseIsDirectory(_ url: URL) -> Bool {
+    var isDirectory: ObjCBool = false
+    return releaseFileManager.fileExists(atPath: url.path, isDirectory: &isDirectory)
+        && isDirectory.boolValue
+}
+
+private func releaseDescendants(of root: URL) -> [URL] {
+    guard let enumerator = releaseFileManager.enumerator(
+        at: root,
+        includingPropertiesForKeys: [.isDirectoryKey, .isRegularFileKey],
+        options: [],
+        errorHandler: { url, error in
+            releaseFail("could not inspect \(url.path): \(error.localizedDescription)")
+        }
+    ) else {
+        releaseFail("could not enumerate \(root.path)")
+    }
+
+    var urls: [URL] = []
+    while let url = enumerator.nextObject() as? URL {
+        urls.append(url)
+    }
+    return urls
+}
+
+private func releasePlist(at url: URL) -> [String: Any] {
+    do {
+        let data = try Data(contentsOf: url)
+        guard let plist = try PropertyListSerialization.propertyList(
+            from: data,
+            options: [],
+            format: nil
+        ) as? [String: Any] else {
+            releaseFail("\(url.path) is not a dictionary property list")
+        }
+        return plist
+    } catch {
+        releaseFail("could not read \(url.path): \(error.localizedDescription)")
+    }
+}
+
+private func releaseRegex(_ pattern: String, matches value: String) -> Bool {
+    guard let expression = try? NSRegularExpression(pattern: pattern) else {
+        releaseFail("invalid internal release regex: \(pattern)")
+    }
+    let range = NSRange(value.startIndex..<value.endIndex, in: value)
+    return expression.firstMatch(in: value, range: range) != nil
+}
+
+private struct ReleaseArchiveLayout {
+    let platform: String
+    let app: URL
+    let appExecutable: URL
+    let appPlist: URL
+    let appResources: URL
+    let plugins: URL
+    let tokenBundle: URL
+    let discoveryBundle: URL
+    let tokenExecutable: URL
+    let discoveryExecutable: URL
+    let tokenPlist: URL
+    let discoveryPlist: URL
+    let expectedArchitectures: Set<String>
+    let hasDiscovery: Bool
+    let allowedEntitlements: Set<String>
+    let requiredEntitlements: Set<String>
+}
+
+private func releaseArchiveLayout(at archive: URL) -> ReleaseArchiveLayout {
+    let app = archive
+        .appendingPathComponent("Products")
+        .appendingPathComponent("Applications")
+        .appendingPathComponent("ReFineID.app")
+    guard releaseIsDirectory(app) else {
+        releaseFail("expected exactly \(app.path)")
+    }
+
+    let contents = app.appendingPathComponent("Contents")
+    if releaseIsDirectory(contents) {
+        let plugins = contents.appendingPathComponent("PlugIns")
+        let tokenBundle = plugins.appendingPathComponent("ReFineIDTokenExtension.appex")
+        let discoveryBundle = plugins.appendingPathComponent("ReFineIDDiscoveryExtension.appex")
+        return ReleaseArchiveLayout(
+            platform: "macOS",
+            app: app,
+            appExecutable: contents.appendingPathComponent("MacOS/ReFineID"),
+            appPlist: contents.appendingPathComponent("Info.plist"),
+            appResources: contents.appendingPathComponent("Resources"),
+            plugins: plugins,
+            tokenBundle: tokenBundle,
+            discoveryBundle: discoveryBundle,
+            tokenExecutable: tokenBundle.appendingPathComponent("Contents/MacOS/ReFineIDTokenExtension"),
+            discoveryExecutable: discoveryBundle.appendingPathComponent(
+                "Contents/MacOS/ReFineIDDiscoveryExtension"
+            ),
+            tokenPlist: tokenBundle.appendingPathComponent("Contents/Info.plist"),
+            discoveryPlist: discoveryBundle.appendingPathComponent("Contents/Info.plist"),
+            expectedArchitectures: ["arm64", "x86_64"],
+            hasDiscovery: false,
+            allowedEntitlements: [
+                "com.apple.security.app-sandbox",
+                "com.apple.security.smartcard",
+                "com.apple.security.network.client",
+                "com.apple.security.files.user-selected.read-write",
+                "com.apple.application-identifier",
+                "com.apple.developer.team-identifier",
+                "com.apple.security.get-task-allow",
+            ],
+            requiredEntitlements: [
+                "com.apple.security.app-sandbox",
+                "com.apple.security.smartcard",
+            ]
+        )
+    }
+
+    let plugins = app.appendingPathComponent("PlugIns")
+    let tokenBundle = plugins.appendingPathComponent("ReFineIDTokenExtension.appex")
+    let discoveryBundle = plugins.appendingPathComponent("ReFineIDDiscoveryExtension.appex")
+    return ReleaseArchiveLayout(
+        platform: "iOS",
+        app: app,
+        appExecutable: app.appendingPathComponent("ReFineID"),
+        appPlist: app.appendingPathComponent("Info.plist"),
+        appResources: app,
+        plugins: plugins,
+        tokenBundle: tokenBundle,
+        discoveryBundle: discoveryBundle,
+        tokenExecutable: tokenBundle.appendingPathComponent("ReFineIDTokenExtension"),
+        discoveryExecutable: discoveryBundle.appendingPathComponent("ReFineIDDiscoveryExtension"),
+        tokenPlist: tokenBundle.appendingPathComponent("Info.plist"),
+        discoveryPlist: discoveryBundle.appendingPathComponent("Info.plist"),
+        expectedArchitectures: ["arm64"],
+        hasDiscovery: true,
+        allowedEntitlements: [
+            "keychain-access-groups",
+            "com.apple.developer.nfc.readersession.formats",
+            "application-identifier",
+            "com.apple.developer.team-identifier",
+            "get-task-allow",
+        ],
+        requiredEntitlements: ["keychain-access-groups"]
+    )
+}
+
+private func releaseEntitlements(of url: URL) -> [String: Any] {
+    let result = releaseRun(
+        "/usr/bin/codesign",
+        ["-d", "--entitlements", "-", "--xml", url.path],
+        capture: true,
+        allowFailure: true
+    )
+    guard result.status == 0, !result.stdout.isEmpty else {
+        releaseFail("\(url.path): no entitlements; the bundle is unsigned or unreadable")
+    }
+    do {
+        guard let value = try PropertyListSerialization.propertyList(
+            from: Data(result.stdout.utf8),
+            options: [],
+            format: nil
+        ) as? [String: Any] else {
+            releaseFail("\(url.path): entitlements are not a dictionary property list")
+        }
+        return value
+    } catch {
+        releaseFail("\(url.path): entitlements are not readable as a property list")
+    }
+}
+
+private func releaseTeamIdentifier(of url: URL) -> String {
+    let result = releaseRun(
+        "/usr/bin/codesign",
+        ["-dv", url.path],
+        capture: true,
+        allowFailure: true
+    )
+    for line in result.combinedOutput.split(whereSeparator: \.isNewline) {
+        if line.hasPrefix("TeamIdentifier=") {
+            return String(line.dropFirst("TeamIdentifier=".count))
+        }
+    }
+    releaseFail("could not read the team identifier from \(url.path)")
+}
+
+private func releaseDeclaresAID(_ plistURL: URL) -> Bool {
+    let plist = releasePlist(at: plistURL)
+    let extensionDictionary = plist["NSExtension"] as? [String: Any]
+    let attributes = extensionDictionary?["NSExtensionAttributes"] as? [String: Any]
+    return attributes?["com.apple.ctk.aid"] != nil
+}
+
+private func inspectReleaseArchive(_ archive: URL) {
+    let layout = releaseArchiveLayout(at: archive)
+    releaseNote("archive is \(layout.platform)")
+
+    guard releaseIsDirectory(layout.tokenBundle) else {
+        releaseFail("embedded extension missing: \(layout.tokenBundle.path)")
+    }
+    if layout.hasDiscovery {
+        guard releaseIsDirectory(layout.discoveryBundle) else {
+            releaseFail("embedded extension missing: \(layout.discoveryBundle.path)")
+        }
+    } else if releaseIsDirectory(layout.discoveryBundle) {
+        releaseFail("discovery extension is iOS-only: \(layout.discoveryBundle.path)")
+    }
+
+    let executables = layout.hasDiscovery
+        ? [layout.appExecutable, layout.tokenExecutable, layout.discoveryExecutable]
+        : [layout.appExecutable, layout.tokenExecutable]
+    let bundles = layout.hasDiscovery
+        ? [layout.app, layout.tokenBundle, layout.discoveryBundle]
+        : [layout.app, layout.tokenBundle]
+    let extensions = layout.hasDiscovery
+        ? [layout.tokenBundle, layout.discoveryBundle]
+        : [layout.tokenBundle]
+    let extensionPlists = layout.hasDiscovery
+        ? [layout.tokenPlist, layout.discoveryPlist]
+        : [layout.tokenPlist]
+
+    let products = archive.appendingPathComponent("Products")
+    let appCount = releaseDescendants(of: products).filter { url in
+        guard url.pathExtension == "app", releaseIsDirectory(url) else {
+            return false
+        }
+        let relative = url.path.dropFirst(products.path.count)
+        return relative.split(separator: "/").count <= 2
+    }.count
+    guard appCount == 1 else {
+        releaseFail("expected 1 .app in archive, found \(appCount)")
+    }
+
+    let pluginCount: Int
+    do {
+        pluginCount = try releaseFileManager.contentsOfDirectory(
+            at: layout.plugins,
+            includingPropertiesForKeys: nil
+        ).count
+    } catch {
+        releaseFail("could not inspect \(layout.plugins.path): \(error.localizedDescription)")
+    }
+    let expectedPluginCount = layout.hasDiscovery ? 2 : 1
+    guard pluginCount == expectedPluginCount else {
+        releaseFail("expected \(expectedPluginCount) plug-in(s), found \(pluginCount)")
+    }
+    releaseNote("one app, \(expectedPluginCount) embedded extension(s)")
+
+    let expectedExecutablePaths = Set(executables.map(\.standardizedFileURL.path))
+    var unexpectedMachO: [String] = []
+    let descendants = releaseDescendants(of: layout.app)
+    for url in descendants {
+        let values = try? url.resourceValues(forKeys: [.isRegularFileKey])
+        guard values?.isRegularFile == true,
+              !expectedExecutablePaths.contains(url.standardizedFileURL.path) else {
+            continue
+        }
+        let result = releaseRun(
+            "/usr/bin/file",
+            ["-b", url.path],
+            capture: true,
+            allowFailure: true
+        )
+        if result.stdout.contains("Mach-O") {
+            unexpectedMachO.append(url.path)
+        }
+    }
+    guard unexpectedMachO.isEmpty else {
+        releaseFail("unexpected Mach-O files:\n\(unexpectedMachO.joined(separator: "\n"))")
+    }
+    for forbidden in ["dylib", "framework", "so", "a"] {
+        let hits = descendants.filter { $0.pathExtension == forbidden }.prefix(5)
+        guard hits.isEmpty else {
+            releaseFail(
+                "forbidden *.\(forbidden) content:\n"
+                    + hits.map(\.path).joined(separator: "\n")
+            )
+        }
+    }
+    releaseNote("no unexpected executables, libraries, or frameworks")
+
+    for executable in executables {
+        let output = releaseRun(
+            "/usr/bin/lipo",
+            ["-archs", executable.path],
+            capture: true
+        ).stdout
+        let architectures = Set(output.split(whereSeparator: \.isWhitespace).map(String.init))
+        guard architectures == layout.expectedArchitectures else {
+            releaseFail(
+                "\(executable.path) architectures: "
+                    + "'\(architectures.sorted().joined(separator: " "))' "
+                    + "(expected \(layout.expectedArchitectures.sorted().joined(separator: " ")))"
+            )
+        }
+    }
+    releaseNote(
+        "all binaries are \(layout.expectedArchitectures.sorted().joined(separator: " "))"
+    )
+
+    let forbiddenStrings =
+        #"refineid-token-extension\.log|^(sign|session|discovery|mintFromPrime|createToken|supports|beginAuth|unseal|reader|prime): |^--(diagnostics|trace|reset-card-state|set-can|forget-can|set-pin1|prime)$"#
+    for executable in executables {
+        let output = releaseRun(
+            "/usr/bin/strings",
+            ["-a", executable.path],
+            capture: true
+        ).stdout
+        let leaked = Array(
+            Set(
+                output.split(whereSeparator: \.isNewline)
+                    .map(String.init)
+                    .filter { releaseRegex(forbiddenStrings, matches: $0) }
+            ).sorted().prefix(10)
+        )
+        guard leaked.isEmpty else {
+            releaseFail(
+                "\(executable.lastPathComponent): diagnostic or logging strings present:\n"
+                    + leaked.joined(separator: "\n")
+            )
+        }
+    }
+    releaseNote("no diagnostic or logging strings in any binary")
+
+    for executable in executables {
+        let output = releaseRun(
+            "/usr/bin/otool",
+            ["-l", executable.path],
+            capture: true
+        ).stdout
+        let coverageCount = output.split(whereSeparator: \.isNewline).filter {
+            $0.contains("__llvm_prf") || $0.contains("__llvm_cov")
+        }.count
+        guard coverageCount == 0 else {
+            releaseFail(
+                "\(executable.lastPathComponent): \(coverageCount) coverage sections present"
+            )
+        }
+    }
+    releaseNote("no coverage instrumentation")
+
+    for bundle in bundles {
+        let entitlements = releaseEntitlements(of: bundle)
+        let keys = Set(entitlements.keys)
+        let missing = layout.requiredEntitlements.subtracting(keys)
+        guard missing.isEmpty else {
+            releaseFail(
+                "\(bundle.path): missing \(missing.sorted().joined(separator: ", ")) entitlement"
+            )
+        }
+        let stray = keys.subtracting(layout.allowedEntitlements)
+        guard stray.isEmpty else {
+            releaseFail(
+                "\(bundle.path): unreviewed entitlements:\n"
+                    + stray.sorted().joined(separator: "\n")
+            )
+        }
+    }
+    if layout.platform == "macOS" {
+        let extensionEntitlements = releaseEntitlements(of: layout.tokenExecutable)
+        guard extensionEntitlements["com.apple.security.network.client"] == nil else {
+            releaseFail(
+                "\(layout.tokenExecutable.path): extensions must not carry a network entitlement"
+            )
+        }
+        releaseNote("the network entitlement is the app's alone")
+    }
+    releaseNote("entitlements match the reviewed allowlist")
+
+    if layout.platform == "iOS" {
+        let entitlements = releaseEntitlements(of: layout.app)
+        guard let groups = entitlements["keychain-access-groups"] as? [String],
+              let firstGroup = groups.first,
+              firstGroup.hasSuffix(".fi.refineid.ReFineID") else {
+            releaseFail("the app's own keychain access group is not first")
+        }
+        releaseNote("app's own keychain group is first (\(firstGroup))")
+    }
+
+    let appTeam = releaseTeamIdentifier(of: layout.app)
+    for extensionBundle in extensions {
+        let extensionTeam = releaseTeamIdentifier(of: extensionBundle)
+        guard extensionTeam == appTeam else {
+            releaseFail(
+                "team mismatch: app '\(appTeam)' vs "
+                    + "\(extensionBundle.path) '\(extensionTeam)'"
+            )
+        }
+    }
+    releaseNote("app and embedded extensions signed by the same team (\(appTeam))")
+
+    let appPlist = releasePlist(at: layout.appPlist)
+    guard let appVersion = appPlist["CFBundleShortVersionString"] as? String,
+          let appBuild = appPlist["CFBundleVersion"] as? String else {
+        releaseFail("app version or build is missing from \(layout.appPlist.path)")
+    }
+    for plistURL in extensionPlists {
+        let plist = releasePlist(at: plistURL)
+        guard plist["CFBundleShortVersionString"] as? String == appVersion else {
+            releaseFail("version mismatch: app \(appVersion) vs \(plistURL.path)")
+        }
+        guard plist["CFBundleVersion"] as? String == appBuild else {
+            releaseFail("build mismatch: app \(appBuild) vs \(plistURL.path)")
+        }
+    }
+    releaseNote("app and embedded extensions are version \(appVersion) (\(appBuild))")
+
+    if layout.platform == "iOS" {
+        guard let usesNonExemptEncryption =
+            appPlist["ITSAppUsesNonExemptEncryption"] as? Bool else {
+            releaseFail("ITSAppUsesNonExemptEncryption missing from the app Info.plist")
+        }
+        if usesNonExemptEncryption {
+            let code = appPlist["ITSEncryptionExportComplianceCode"] as? String
+            guard let code, !code.isEmpty else {
+                releaseFail(
+                    "ITSAppUsesNonExemptEncryption is true but "
+                        + "ITSEncryptionExportComplianceCode is missing. "
+                        + "App Store Connect rejects that upload with 90592."
+                )
+            }
+            releaseNote("export compliance answered (non-exempt, code present)")
+        } else {
+            releaseNote("export compliance answered (exempt from documentation)")
+        }
+    }
+
+    if layout.hasDiscovery {
+        guard releaseDeclaresAID(layout.discoveryPlist) else {
+            releaseFail(
+                "discovery extension declares no com.apple.ctk.aid; no card is ever polled"
+            )
+        }
+    }
+    guard !releaseDeclaresAID(layout.tokenPlist) else {
+        releaseFail("token extension declares com.apple.ctk.aid; the token will never be minted")
+    }
+    if layout.hasDiscovery {
+        releaseNote("AID declared by the discovery extension only")
+    } else {
+        releaseNote("no AID declared; a Mac reader hands the card over without one")
+    }
+
+    let privacyManifest = layout.appResources.appendingPathComponent("PrivacyInfo.xcprivacy")
+    guard releaseFileManager.fileExists(atPath: privacyManifest.path) else {
+        releaseFail("missing PrivacyInfo.xcprivacy in app resources")
+    }
+    releaseNote("privacy manifest present")
+
+    let quarantine = releaseRun(
+        "/usr/bin/xattr",
+        ["-rl", layout.app.path],
+        capture: true,
+        allowFailure: true
+    ).combinedOutput
+    let quarantined = quarantine.split(whereSeparator: \.isNewline).filter {
+        $0.contains("com.apple.quarantine")
+    }.prefix(5)
+    guard quarantined.isEmpty else {
+        releaseFail(
+            "quarantined files in archive:\n"
+                + quarantined.map(String.init).joined(separator: "\n")
+        )
+    }
+    releaseNote("no quarantine attributes")
+
+    let verification = releaseRun(
+        "/usr/bin/codesign",
+        ["--verify", "--deep", "--strict", layout.app.path],
+        capture: true,
+        allowFailure: true
+    )
+    guard verification.status == 0 else {
+        releaseFail(
+            verification.combinedOutput.isEmpty
+                ? "codesign verification failed"
+                : "codesign verification failed:\n\(verification.combinedOutput)"
+        )
+    }
+    releaseNote("codesign verifies (deep, strict)")
+    print("PASS: \(archive.path) (\(layout.platform))")
+}
+
+private enum ReleaseCandidatePlatform: String {
+    case ios
+    case macos
+
+    var destination: String {
+        switch self {
+        case .ios: "generic/platform=iOS"
+        case .macos: "generic/platform=macOS"
+        }
+    }
+}
+
+private struct ReleaseUploadCredentials {
+    let keyID: String
+    let issuerID: String
+    let privateKeyPath: String
+}
+
+private func releaseEnvironment() -> [String: String] {
+    var environment = ProcessInfo.processInfo.environment
+    let home = releaseFileManager.homeDirectoryForCurrentUser.path
+    let envURL = releaseFileManager.homeDirectoryForCurrentUser
+        .appendingPathComponent(".appstoreconnect/env")
+    guard let contents = try? String(contentsOf: envURL, encoding: .utf8) else {
+        return environment
+    }
+
+    for originalLine in contents.split(whereSeparator: \.isNewline) {
+        var line = originalLine.trimmingCharacters(in: .whitespaces)
+        if line.hasPrefix("export ") {
+            line.removeFirst("export ".count)
+        }
+        guard !line.isEmpty, !line.hasPrefix("#"), let separator = line.firstIndex(of: "=") else {
+            continue
+        }
+        let key = line[..<separator].trimmingCharacters(in: .whitespaces)
+        var value = line[line.index(after: separator)...]
+            .trimmingCharacters(in: .whitespaces)
+        if value.count >= 2,
+           (value.first == "\"" && value.last == "\"")
+            || (value.first == "'" && value.last == "'") {
+            value.removeFirst()
+            value.removeLast()
+        }
+        environment[key] = value
+            .replacingOccurrences(of: "$HOME", with: home)
+            .replacingOccurrences(of: "~", with: home, options: [.anchored])
+    }
+    return environment
+}
+
+private func releaseUploadCredentials() -> ReleaseUploadCredentials {
+    let environment = releaseEnvironment()
+    guard let keyID = environment["ASC_KEY_ID"], !keyID.isEmpty else {
+        releaseFail("ASC_KEY_ID is required for --upload")
+    }
+    guard let issuerID = environment["ASC_ISSUER_ID"], !issuerID.isEmpty else {
+        releaseFail("ASC_ISSUER_ID is required for --upload")
+    }
+    let defaultPath = releaseFileManager.homeDirectoryForCurrentUser
+        .appendingPathComponent(".appstoreconnect/private_keys/AuthKey_\(keyID).p8")
+        .path
+    let privateKeyPath = environment["ASC_PRIVATE_KEY_PATH"] ?? defaultPath
+    guard releaseFileManager.fileExists(atPath: privateKeyPath) else {
+        releaseFail("App Store Connect private key is missing at \(privateKeyPath)")
+    }
+    return ReleaseUploadCredentials(
+        keyID: keyID,
+        issuerID: issuerID,
+        privateKeyPath: privateKeyPath
+    )
+}
+
+private func releaseWriteExportOptions(to destination: URL, upload: Bool) {
+    let source = releaseRepositoryRoot
+        .appendingPathComponent("Config/ExportOptions-AppStore.plist")
+    var options = releasePlist(at: source)
+    if upload {
+        options["destination"] = "upload"
+    }
+    do {
+        let data = try PropertyListSerialization.data(
+            fromPropertyList: options,
+            format: .xml,
+            options: 0
+        )
+        try data.write(to: destination, options: .atomic)
+    } catch {
+        releaseFail("could not write \(destination.path): \(error.localizedDescription)")
+    }
+}
+
+private func releaseCandidate(_ arguments: [String]) {
+    var selection = "all"
+    var sawSelection = false
+    var upload = false
+    for argument in arguments {
+        switch argument {
+        case "--upload":
+            upload = true
+        case "--no-upload":
+            upload = false
+        case "ios", "macos", "all":
+            guard !sawSelection else {
+                releaseFail("candidate accepts one of ios, macos, or all")
+            }
+            selection = argument
+            sawSelection = true
+        default:
+            releaseFail("unknown candidate argument: \(argument)")
+        }
+    }
+
+    let status = releaseRun(
+        "/usr/bin/git",
+        ["status", "--porcelain"],
+        currentDirectory: releaseRepositoryRoot,
+        capture: true
+    ).stdout
+    guard status.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        releaseFail("the working tree is dirty; commit the exact release candidate first")
+    }
+
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+    let components = calendar.dateComponents(
+        [.year, .month, .day, .hour, .minute],
+        from: Date()
+    )
+    guard let year = components.year,
+          let month = components.month,
+          let day = components.day,
+          let hour = components.hour,
+          let minute = components.minute else {
+        releaseFail("could not derive the UTC release version")
+    }
+    let marketingVersion = String(format: "%02d.%d.%d", year % 100, month, day)
+    let buildNumber = hour * 10 + minute / 10
+    let commit = releaseRun(
+        "/usr/bin/git",
+        ["rev-parse", "--short", "HEAD"],
+        currentDirectory: releaseRepositoryRoot,
+        capture: true
+    ).stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    let platforms: [ReleaseCandidatePlatform]
+    switch selection {
+    case "ios":
+        platforms = [.ios]
+    case "macos":
+        platforms = [.macos]
+    default:
+        platforms = [.ios, .macos]
+    }
+    let credentials = upload ? releaseUploadCredentials() : nil
+    let outputRoot = releaseRepositoryRoot.appendingPathComponent("build/testflight")
+    do {
+        try releaseFileManager.createDirectory(
+            at: outputRoot,
+            withIntermediateDirectories: true
+        )
+    } catch {
+        releaseFail("could not create \(outputRoot.path): \(error.localizedDescription)")
+    }
+
+    print(
+        "Candidate \(marketingVersion) (\(buildNumber)), commit \(commit), "
+            + (upload ? "upload enabled" : "local export only")
+    )
+    for platform in platforms {
+        let archive = outputRoot.appendingPathComponent(
+            "ReFineID-\(platform.rawValue).xcarchive"
+        )
+        let exportDirectory = outputRoot.appendingPathComponent("export-\(platform.rawValue)")
+        let exportOptions = outputRoot.appendingPathComponent(
+            "ExportOptions-\(platform.rawValue).plist"
+        )
+        for disposable in [archive, exportDirectory, exportOptions] {
+            if releaseFileManager.fileExists(atPath: disposable.path) {
+                do {
+                    try releaseFileManager.removeItem(at: disposable)
+                } catch {
+                    releaseFail(
+                        "could not remove \(disposable.path): \(error.localizedDescription)"
+                    )
+                }
+            }
+        }
+
+        print("Archiving \(platform.rawValue)...")
+        releaseRun(
+            "/usr/bin/xcodebuild",
+            [
+                "archive",
+                "-project", "ReFineID.xcodeproj",
+                "-scheme", "ReFineID",
+                "-configuration", "TestFlight",
+                "-destination", platform.destination,
+                "-archivePath", archive.path,
+                "MARKETING_VERSION=\(marketingVersion)",
+                "CURRENT_PROJECT_VERSION=\(buildNumber)",
+                "CLANG_ENABLE_CODE_COVERAGE=NO",
+                "-allowProvisioningUpdates",
+                "-quiet",
+            ],
+            currentDirectory: releaseRepositoryRoot
+        )
+
+        inspectReleaseArchive(archive)
+        releaseWriteExportOptions(to: exportOptions, upload: upload)
+
+        var exportArguments = [
+            "-exportArchive",
+            "-archivePath", archive.path,
+            "-exportPath", exportDirectory.path,
+            "-exportOptionsPlist", exportOptions.path,
+            "-allowProvisioningUpdates",
+            "-quiet",
+        ]
+        if let credentials {
+            exportArguments += [
+                "-authenticationKeyPath", credentials.privateKeyPath,
+                "-authenticationKeyID", credentials.keyID,
+                "-authenticationKeyIssuerID", credentials.issuerID,
+            ]
+        }
+        print(upload ? "Uploading \(platform.rawValue)..." : "Exporting \(platform.rawValue)...")
+        releaseRun(
+            "/usr/bin/xcodebuild",
+            exportArguments,
+            currentDirectory: releaseRepositoryRoot
+        )
+    }
+    print("Candidate complete: \(marketingVersion) (\(buildNumber)), commit \(commit)")
+}
+
+private func printReleaseManagerUsage() {
+    print(
+        """
+        Usage: Scripts/apple-app-store-connect-release-manager.swift <command> [arguments]
+
+        Local release commands:
+          candidate [ios|macos|all] [--upload]
+              Archive, inspect, and export a clean-tree candidate. Upload is opt-in.
+          inspect-archive <path-to-xcarchive>
+              Apply every reviewed archive gate without uploading or changing App Store state.
+
+        App Store Connect commands:
+          get, api, app-id, state, builds, distribute, add-tester, invite
+          ensure-version, attach-build, metadata, app-info, review-contact
+          screenshots, age-rating, export-compliance, pricing, submissions, submit
+        """
+    )
+}
+
+private let releaseManagerArguments = Array(CommandLine.arguments.dropFirst())
+if releaseManagerArguments.isEmpty
+    || ["help", "--help", "-h"].contains(releaseManagerArguments[0]) {
+    printReleaseManagerUsage()
+    exit(0)
+}
+switch releaseManagerArguments[0] {
+case "candidate":
+    releaseCandidate(Array(releaseManagerArguments.dropFirst()))
+    exit(0)
+case "inspect-archive":
+    guard releaseManagerArguments.count == 2 else {
+        releaseFail("usage: inspect-archive <path-to-xcarchive>")
+    }
+    inspectReleaseArchive(URL(fileURLWithPath: releaseManagerArguments[1]))
+    exit(0)
+default:
+    break
+}
 
 let bundleID = "fi.refineid.ReFineID"
 let apiBase = "https://api.appstoreconnect.apple.com"

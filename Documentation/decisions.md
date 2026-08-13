@@ -145,7 +145,7 @@ the card-scanner camera code are `#if os(iOS)`.
 One consequence to not forget: `ITSAppUsesNonExemptEncryption` now
 lives in both files, so the flip to `true` with Apple's compliance
 code (the 2026-08-07 entry below) must land in both in the same
-commit. `inspect-archive.sh` checks the built product's plist, so
+commit. The release manager's `inspect-archive` command checks the built product's plist, so
 either platform's archive still fails if its copy is wrong.
 
 ## 2026-08-09 Built-in NFC ships in production on iPhone
@@ -323,7 +323,7 @@ declaration; declaring exempt on a judgement call costs credibility we
 would rather not spend, in a product whose whole subject is identity.
 
 Stating it in the bundle rather than answering it per upload is the
-point of the check in `inspect-archive.sh`: the answer belongs in
+point of the release manager's `inspect-archive` check: the answer belongs in
 reviewed source, not in whatever somebody clicked at four in the
 afternoon.
 
@@ -340,7 +340,7 @@ That is a deliberate wait rather than a workaround. The alternative
 offered itself twice -- drop the key and answer the questionnaire per
 build -- and was refused both times for the same reason the key exists.
 
-`inspect-archive.sh` now fails locally when the declaration is `true`
+The release manager's `inspect-archive` command now fails locally when the declaration is `true`
 and the code is absent. The same answer that took a full archive, an
 export and several minutes of transfer to get from Apple takes about a
 second here.
@@ -410,8 +410,8 @@ affected value into a `Bool` first.
 
 Measured on the current source: the TestFlight and Release binaries
 contain none of the trace literals and no reference to the extension log
-file; the Profile token extension still contains 23. `Scripts/inspect-archive.sh`
-now fails an archive in which any of them reappear, and rejects the
+file; the Profile token extension still contains 23. The release manager's
+`inspect-archive` command now fails an archive in which any of them reappear, and rejects the
 Profile bundle when pointed at it.
 
 ## 2026-07-29 Every connected reader card is published; Safari selects
@@ -650,7 +650,7 @@ grants the macOS sandbox and smart-card access and nothing else, because
 that half reads no keychain item, holds no card session and stores
 nothing. Sharing one file with the minting half would have handed it that
 half's keychain group the moment the group was added, which is exactly
-what happened next. `Scripts/inspect-archive.sh` checks the reviewed
+what happened next. The release manager's `inspect-archive` command checks the reviewed
 entitlement allowlist for both binaries, and now also fails an archive in
 which the AID is on the wrong extension. The iOS discovery file later
 gained one keychain group, for one write - see "Where the diagnostics
@@ -689,7 +689,7 @@ failed at the mint look identical. The group is the app's own, so the
 binary could in principle read the prime too - a second, dedicated group
 cannot be addressed without hard-coding the team prefix in source. macOS
 is left alone: it has `log stream`, and widening the reviewed allowlist
-in `Scripts/inspect-archive.sh` for a diagnostic would be the wrong
+in the release manager's `inspect-archive` command for a diagnostic would be the wrong
 trade.
 
 ## 2026-07-27 The biometric gate is in app code, not in the keychain item
@@ -742,7 +742,7 @@ credential store to "ask for PIN1", the prime to "not a contactless
 card" - so the contact path behaves exactly as it always has. macOS has
 no NFC slot to prime for, and adding a group there would widen the
 reviewed allowlist in
-`Scripts/inspect-archive.sh` for no working feature.
+the release manager's `inspect-archive` command for no working feature.
 
 ## 2026-07-28 Select the available card transport automatically
 
@@ -825,7 +825,7 @@ Token extension (`Config/TokenExtension.entitlements`):
 - `com.apple.security.smartcard` - the CryptoTokenKit extension talks to the
   card.
 
-No other entitlement is approved. `Scripts/inspect-archive.sh` fails the
+No other entitlement is approved. The release manager's `inspect-archive` command fails the
 archive if any other entitlement appears.
 
 ## 2026-07-22 Source layout
@@ -857,4 +857,4 @@ an upload declaring `true` without a code, mid-transfer, with 90592. A
 upload.
 
 The reviewed-source point stands: the answer stays in the bundle, and
-`inspect-archive.sh` still refuses `true` without a code.
+the release manager's `inspect-archive` command still refuses `true` without a code.

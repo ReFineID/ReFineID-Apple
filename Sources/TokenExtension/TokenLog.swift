@@ -27,8 +27,8 @@
 /// build a line nobody reads. A plain `String` was measured leaving
 /// about twenty trace fragments in the optimized binary: an empty
 /// inlined function removes the call, but not always the interpolation
-/// that produced its argument. `Scripts/inspect-archive.sh` fails an
-/// archive in which any of them reappear.
+/// that produced its argument. The Swift release manager's `inspect-archive`
+/// command fails an archive in which any of them reappear.
 ///
 /// One cost, worth knowing before writing a call: a closure formed in a
 /// scope that consumes a noncopyable value makes Swift 6.3.3 report a

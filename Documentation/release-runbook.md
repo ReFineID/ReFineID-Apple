@@ -15,7 +15,7 @@ There are three different artifacts. Do not confuse them.
 | Artifact | Command | Purpose |
 | --- | --- | --- |
 | Local macOS build | `Scripts/install-macos.sh --configuration Release` | Install an optimized development-signed build on this Mac. |
-| App Store candidate | `Scripts/release-testflight.sh --platform macos` | Archive, inspect, export, and upload the production candidate to App Store Connect. |
+| App Store candidate | `Scripts/apple-app-store-connect-release-manager.swift candidate macos --upload` | Archive, inspect, export, and upload the production candidate to App Store Connect. |
 | Direct download | No supported command | Developer ID signing, notarization, and stapling are not currently a release path for this product. |
 
 The App Store candidate uses the `TestFlight` configuration, not `Release`.
@@ -28,9 +28,11 @@ the Store trust and distribution processing.
 
 ## Authoritative entry points
 
-- `Scripts/release-testflight.sh` owns archive, inspection, export, and upload.
-- `Scripts/inspect-archive.sh` is the executable archive gate. The release
-  script always runs it before export.
+- `Scripts/apple-app-store-connect-release-manager.swift` is the sole public
+  release CLI. Release shell entry points are not supported.
+- Its `candidate` command owns archive, inspection, export, and optional upload.
+- Its `inspect-archive` command is the executable archive gate. `candidate`
+  always invokes it before export.
 - `Scripts/apple-app-store-connect-release-manager.swift` owns App Store
   Connect metadata, tester distribution, build attachment, and review
   submission.
@@ -132,7 +134,7 @@ pair and do not invent a manual number outside the documented policy.
 This is the safe rehearsal and archive gate:
 
 ```sh
-Scripts/release-testflight.sh --platform macos --no-upload
+Scripts/apple-app-store-connect-release-manager.swift candidate macos
 ```
 
 The command must:
@@ -141,8 +143,8 @@ The command must:
 2. Compute the UTC version and build.
 3. Record the source commit in its output.
 4. Archive with the `TestFlight` configuration.
-5. Run `Scripts/inspect-archive.sh` successfully.
-6. Export to `build/testflight/macos`.
+5. Pass the Swift manager's built-in `inspect-archive` gates.
+6. Export to `build/testflight/export-macos`.
 
 The inspected archive is:
 
@@ -165,7 +167,7 @@ archive check to make a release continue.
 After explicit upload approval, run:
 
 ```sh
-Scripts/release-testflight.sh --platform macos
+Scripts/apple-app-store-connect-release-manager.swift candidate macos --upload
 ```
 
 This repeats archive and inspection before exporting with destination

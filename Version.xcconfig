@@ -19,8 +19,8 @@
 //       machine's zone. UTC has neither problem.
 //
 // Scripts/stamp-version.sh rewrites the two settings below and nothing
-// else. Scripts/release-testflight.sh overrides both on the xcodebuild
-// command line, which wins over this file, so a release never edits it.
+// else. The Swift release manager's candidate command overrides both on the
+// xcodebuild command line, which wins over this file, so a release never edits it.
 
 #include "Config/Features.xcconfig"
 
