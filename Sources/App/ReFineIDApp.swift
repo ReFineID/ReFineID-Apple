@@ -21,6 +21,16 @@ internal struct ReFineIDApp: App {
     }
   #endif
 
+  #if os(iOS)
+    /// Catches the Home Screen action that starts a demonstration.
+    ///
+    /// The app has no other use for an application delegate; this one
+    /// exists to be where a quick action arrives. What is done with it is
+    /// in ``DemoModeShortcut``.
+    @UIApplicationDelegateAdaptor(DemoModeAppDelegate.self)
+    private var demoModeDelegate
+  #endif
+
   internal var body: some Scene {
     #if os(macOS)
       Window("ReFineID", id: "status") {

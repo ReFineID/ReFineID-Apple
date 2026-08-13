@@ -133,7 +133,10 @@
     /// wanted, and the meter and sound below say the hold is running, so
     /// a sentence telling them to keep holding is a third voice saying
     /// what two already said.
-    private static var holdMessage: String {
+    ///
+    /// ``DemoCardHold`` opens its panel with the same line, so a
+    /// demonstration is told what a card read is told.
+    internal static var holdMessage: String {
       String(localized: "Hold the card on the top back of the phone.")
     }
 

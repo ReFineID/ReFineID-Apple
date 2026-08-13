@@ -21,7 +21,6 @@ import SwiftUI
 /// what VoiceOver already wants.
 internal struct CardCredentialsView: View {
   private static let sectionSpacing: CGFloat = 24
-  private static let footerPadding: CGFloat = 12
 
   @State private var model = CardCredentialsModel()
   @State private var cardAccessNumberEntry = ""
@@ -44,13 +43,39 @@ internal struct CardCredentialsView: View {
       && pin1Entry.count <= Pin1.maximumDigitCount
   }
 
+  /// Whether this launch is demonstrating the flow without a card.
+  ///
+  /// Every branch below that reads it is a place where the screen
+  /// deliberately does not touch the card, the keychain or the system.
+  private var isDemonstration: Bool {
+    #if os(iOS)
+      return DemoMode.shared.isActive
+    #else
+      return false
+    #endif
+  }
+
+  /// Whether there is an identity to show instead of a setup form.
+  ///
+  /// A demonstration answers from ``DemoMode``, which holds its identity
+  /// for the process and writes nothing; everything else answers from
+  /// what the device actually registered.
+  private var hasIdentity: Bool {
+    #if os(iOS)
+      if isDemonstration {
+        return DemoMode.shared.hasIdentity
+      }
+    #endif
+    return isRegistered
+  }
+
   /// Whether a card is being held against the phone right now.
   ///
   /// Read from the model the parent owns, so it cannot be stranded by
   /// the very views a hold hides.
   private var isHolding: Bool {
     #if canImport(CoreNFC) && os(iOS)
-      return primingModel.isRunning
+      return primingModel.isRunning || DemoMode.shared.isHolding
     #else
       return false
     #endif
@@ -64,7 +89,7 @@ internal struct CardCredentialsView: View {
   /// rather than the device as different.
   private var offersNearField: Bool {
     #if canImport(CoreNFC) && os(iOS)
-      return primingModel.allowsNearField
+      return primingModel.allowsNearField || isDemonstration
     #else
       return true
     #endif
@@ -75,7 +100,13 @@ internal struct CardCredentialsView: View {
   /// A field left empty falls back to what is stored; a field with
   /// something in it has to be complete, because a half-typed
   /// replacement is a replacement the holder is still writing.
+  ///
+  /// A demonstration has no stored pair to fall back to and no card to
+  /// check either entry against, so it asks only that both were typed.
   private var canPrepareIdentity: Bool {
+    if isDemonstration {
+      return !cardAccessNumberEntry.isEmpty && !pin1Entry.isEmpty
+    }
     let numberReady =
       cardAccessNumberEntry.isEmpty
       ? model.contents.hasCardAccessNumber
@@ -97,10 +128,10 @@ internal struct CardCredentialsView: View {
         // whole screen. There is nothing to store first -- a card in a
         // contact reader needs no access number.
         readerOnlySection
-      } else if isRegistered {
+      } else if hasIdentity {
         // A set identity replaces the whole setup: nothing about it is
         // left to configure, so nothing about configuring it is shown.
-        identitySection
+        CardIdentitySection(isDemonstration: isDemonstration)
       } else {
         createIdentitySection
       }
@@ -114,7 +145,7 @@ internal struct CardCredentialsView: View {
       // credentials are not: the fields above are editable until an
       // identity exists, so a wrong number is corrected by typing over
       // it rather than by forgetting anything.
-      if isRegistered, !isHolding, offersNearField {
+      if hasIdentity, !isHolding, offersNearField {
         forgetSection
       }
     }
@@ -123,17 +154,17 @@ internal struct CardCredentialsView: View {
       .navigationTitle("ReFineID")
       .navigationBarTitleDisplayMode(.large)
     #endif
-    // Development-only, pinned under every product control: a shipped
-    // build has no diagnostics and no logging at all.
-    #if DEBUG
-      .safeAreaInset(edge: .bottom) { diagnosticsFooter }
-    #endif
+    // Pinned under every product control: what this run is, when it is
+    // anything but the shipped product doing its job.
+    .safeAreaInset(edge: .bottom) {
+      CardSetupFooter(isDemonstration: isDemonstration)
+    }
     .onAppear {
       model.refresh()
       refreshRegistration()
       showStoredCardAccessNumber()
     }
-    .onChange(of: isRegistered) { _, registered in
+    .onChange(of: hasIdentity) { _, registered in
       // A set identity ends the fields' job; nothing they held is worth
       // keeping in memory once the setup they belonged to is over.
       if registered {
@@ -156,6 +187,16 @@ internal struct CardCredentialsView: View {
       isPresented: $showsForgetConfirmation
     ) {
       Button("Forget", role: .destructive) {
+        // A demonstration has nothing stored to forget: dropping its
+        // test person returns the screen to the setup form, and the run
+        // stays a demonstration.
+        #if os(iOS)
+          if isDemonstration {
+            DemoMode.shared.forgetIdentity()
+            clearEntries()
+            return
+          }
+        #endif
         model.forgetEverything()
         registrationReset.toggle()
         isRegistered = false
@@ -173,35 +214,6 @@ internal struct CardCredentialsView: View {
     }
   }
 
-  /// The finished state: who the stored card says they are.
-  ///
-  /// The same row a connected reader shows, read from the stored prime
-  /// rather than from the token: a registered card's token has to be
-  /// minted before the keychain can answer for it, and minting one over
-  /// near field opens a scan sheet on a screen nobody asked to scan
-  /// from. A check mark stands in when the name will not parse, because
-  /// the identity is set either way and that is what this row reports.
-  private var identitySection: some View {
-    Section {
-      LabeledContent("Person") {
-        if let holder = primedHolder {
-          Text(holder)
-            .textSelection(.enabled)
-        } else {
-          Image(systemName: "checkmark")
-            .foregroundStyle(.green)
-            .accessibilityLabel("Set")
-        }
-      }
-      .accessibilityIdentifier("identityStatus")
-    }
-  }
-
-  /// Who the primed card names, or nil when no name can be read.
-  private var primedHolder: String? {
-    PrimeStore.primedHolderNames().first
-  }
-
   /// One operation, in its actual order: credentials and then minting.
   @ViewBuilder private var createIdentitySection: some View {
     Section("Enable authentication") {
@@ -214,6 +226,7 @@ internal struct CardCredentialsView: View {
       Section {
         CardRegistrationSections(
           canPrepareCredentials: canPrepareIdentity,
+          isDemonstration: isDemonstration,
           prepareCredentials: prepareIdentity,
           isRegistered: $isRegistered,
           model: primingModel
@@ -284,20 +297,6 @@ internal struct CardCredentialsView: View {
       }
   }
 
-  #if DEBUG
-    private var diagnosticsFooter: some View {
-      NavigationLink {
-        DiagnosticsView()
-      } label: {
-        Label("Diagnostics", systemImage: "stethoscope")
-      }
-      .accessibilityIdentifier("diagnosticsButton")
-      .padding(.vertical, Self.footerPadding)
-      .frame(maxWidth: .infinity)
-      .background(.bar)
-    }
-  #endif
-
   /// The destructive action, shown only when there is an identity.
   ///
   /// It removes everything the device knows about the card, which is
@@ -331,7 +330,12 @@ internal struct CardCredentialsView: View {
   /// empty box. Seeing the digits is also the only way to notice that
   /// the stored ones are wrong, which is the usual reason a setup breaks
   /// half way.
+  ///
+  /// A demonstration seeds nothing. It reads no stored value at all, so
+  /// a card this device really knows about is not put on a screen that
+  /// is showing a test person.
   private func showStoredCardAccessNumber() {
+    guard !isDemonstration else { return }
     guard cardAccessNumberEntry.isEmpty, let stored = model.storedCardAccessNumber else {
       return
     }
@@ -354,6 +358,12 @@ internal struct CardCredentialsView: View {
   /// empty field means the holder is content with what is stored.
   @MainActor
   private func prepareIdentity() -> Bool {
+    // A demonstration stores neither entry. What was typed stays in the
+    // fields it was typed into and goes no further than this screen.
+    guard !isDemonstration else {
+      isPin1FieldFocused = false
+      return true
+    }
     let accessNumber = cardAccessNumberEntry.isEmpty ? nil : cardAccessNumberEntry
     let pin1 = pin1Entry.isEmpty ? nil : pin1Entry
 

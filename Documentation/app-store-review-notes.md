@@ -23,6 +23,15 @@ remedy.
 Beta App Review approved the same binary on both platforms the same
 day. The rejection is about reviewer access, not about the build.
 
+## The answer to it
+
+The demonstration mode the notes offered to add was added, on iPhone
+only, on 2026-08-13. The reasoning and its safety argument are in
+`Documentation/decisions.md`; the iOS notes now walk a reviewer
+through it in four steps. The macOS notes are unchanged, and still
+close by offering a demonstration mode: nothing has asked for one
+there.
+
 ## Where the notes live
 
 `Metadata/appstore.json`, under `review.notes`, and they reach App

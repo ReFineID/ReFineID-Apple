@@ -1,0 +1,24 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Demo Mode" : {
+      "comment" : "Home Screen quick action, declared as UIApplicationShortcutItemTitle in Config/ReFineID-iOS-Info.plist. The English title in the plist is the key.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esittelytila"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Demoläge"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

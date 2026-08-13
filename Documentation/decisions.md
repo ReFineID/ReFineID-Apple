@@ -5,6 +5,45 @@ controls iPhone scope. `Documentation/release-plan.md` controls
 macOS scope and shared security behavior. This file records the concrete
 values chosen under them.
 
+## 2026-08-13 A demonstration mode ships on iPhone, for one launch only
+
+The iOS submission was rejected under guideline 2.1(a) asking for a
+demo account or a demonstration mode. There is no account to give, and
+the hardware is a legal identity document that cannot be lent, so the
+remedy is the mode. It ships in the release build, because a
+demonstration only a development build can perform demonstrates
+nothing to a reviewer.
+
+It is entered by pressing and holding the Home Screen icon and
+choosing Demo Mode, a static `UIApplicationShortcutItems` entry so it
+is on the icon before the app has ever been launched. There is no way
+out but quitting: the state lives in one process-lifetime object and
+is never written down, so an ordinary launch cannot be a demonstration
+and a holder cannot be left in one. That is the whole of the safety
+argument, and it is why the mode has no stored flag, no setting and no
+toggle.
+
+What it replaces is the answer, not the flow. The two credential
+fields accept any digits and are never stored, the button opens the
+system scan sheet the product opens and closes it on a timer, and the
+identity that follows is a localized name: DOE JANE 12345678N in
+English, MEIKALAINEN MAIJA in Finnish, SVENSSON ANNA in Swedish, all
+carrying the same specimen SATU. No card is addressed, nothing reaches
+the prime store or the credential store, and no token is registered,
+so the system is offered no identity -- the name is a string and not a
+certificate.
+
+A device with no antenna performs the same hold without a panel.
+Otherwise an iPad reviewer would be shown the reader-only notice and
+could demonstrate nothing.
+
+The screen says `Demo Mode` at its foot for as long as the mode runs,
+in the place a development build offers Diagnostics. The two never
+appear together, and Diagnostics is absent from a release binary
+entirely: `DiagnosticsView.swift` and its collaborators are named in
+`EXCLUDED_SOURCE_FILE_NAMES` for the TestFlight and Release
+configurations.
+
 ## 2026-08-11 Contactless card reading is out of the first macOS release
 
 macOS is contact-reader only in the first App Store release.

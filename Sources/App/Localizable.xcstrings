@@ -1076,6 +1076,38 @@
         }
       }
     },
+    "DEMO MODE": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ESITTELYTILA"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DEMOLÄGE"
+          }
+        }
+      }
+    },
+    "DOE JANE 12345678N": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MEIKALAINEN MAIJA 12345678N"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SVENSSON ANNA 12345678N"
+          }
+        }
+      }
+    },
     "Delete": {
       "localizations": {
         "fi": {

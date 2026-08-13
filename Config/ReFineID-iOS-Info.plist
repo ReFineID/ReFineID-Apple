@@ -22,6 +22,24 @@
 	<string>ReFineID reads your identity card over NFC to sign you in.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>ReFineID reads the access number printed on your card so you do not have to type it.</string>
+	<!-- Press and hold the icon to run the setup flow against a test
+	     person instead of a card, for someone who has no Finnish
+	     identity card to present. Declared here rather than registered
+	     at runtime so it is on the icon before the app has ever been
+	     launched. The title is the key its translations are looked up
+	     under in Sources/App/InfoPlist.xcstrings; the type is what
+	     DemoModeShortcut matches. -->
+	<key>UIApplicationShortcutItems</key>
+	<array>
+		<dict>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>eyeglasses</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Demo Mode</string>
+			<key>UIApplicationShortcutItemType</key>
+			<string>fi.refineid.shortcut.demonstration</string>
+		</dict>
+	</array>
 	<key>com.apple.developer.nfc.readersession.iso7816.select-identifiers</key>
 	<array>
 		<string>A000000063504B43532D3135</string>

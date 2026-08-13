@@ -34,6 +34,13 @@
     /// Whether the parent has either stored or complete entered credentials.
     internal let canPrepareCredentials: Bool
 
+    /// Whether this hold demonstrates the flow instead of reading a card.
+    ///
+    /// A demonstration keeps the button and the sheet and replaces what
+    /// is behind them. ``DemoMode`` owns the identity it produces, so
+    /// ``isRegistered`` stays about the card and is left alone.
+    internal let isDemonstration: Bool
+
     /// Stores the two entries before opening the NFC field.
     internal let prepareCredentials: @MainActor () -> Bool
 
@@ -56,6 +63,10 @@
       Button {
         Task {
           guard prepareCredentials() else { return }
+          guard !isDemonstration else {
+            await DemoMode.shared.readTestIdentity()
+            return
+          }
           await model.prime()
           if case .succeeded = model.lastRunResult {
             isRegistered = true
@@ -71,11 +82,19 @@
       .disabled(
         model.isRunning
           || !canPrepareCredentials
-          || !model.allowsNearField
+          || !isTransportReady
       )
       .onAppear {
         model.refresh()
       }
+    }
+
+    /// Whether this device can carry out the hold the button starts.
+    ///
+    /// A demonstration opens no slot it depends on, so an iPad's missing
+    /// antenna is no reason to withhold the button from one.
+    private var isTransportReady: Bool {
+      model.allowsNearField || isDemonstration
     }
 
     /// Lets the device test observe the completed operation without

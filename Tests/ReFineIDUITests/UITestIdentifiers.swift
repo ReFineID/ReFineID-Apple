@@ -20,6 +20,9 @@ internal enum UITestIdentifiers {
   /// The six-digit entry field, present until an identity is set.
   internal static let cardAccessNumberField = "cardAccessNumberField"
 
+  /// The standing notice under a demonstration run.
+  internal static let demoModeNotice = "demoModeNotice"
+
   /// The row that opens the diagnostics capture from setup.
   internal static let diagnosticsButton = "diagnosticsButton"
 
