@@ -47,32 +47,41 @@ internal struct SignDocumentShapeTests {
   /// beginning; a name that comes back with the suffix is kept as it
   /// is, and one where typing replaced it gets the same instant
   /// appended - stamped once either way.
+  ///
+  /// The suffix is read from the code rather than written out here.
+  /// Half of it is the word for signing in the app's language, so a
+  /// spelled-out English one asserts the machine's language and fails
+  /// on a Finnish or Swedish one for a reason that has nothing to do
+  /// with how a container is named. What must not move with the
+  /// language is the instant, and that is asserted on its own.
   @Test
   @MainActor
   internal func aContainersWrittenNameCarriesTheInstantExactlyOnce() throws {
     let instant = try #require(
       ISO8601DateFormatter().date(from: "2026-08-12T14:30:12Z")
     )
+    let suffix = SignDocumentModel.signedNameSuffix(at: instant)
+    // The instant keeps the engineering form in every language: a name
+    // mailed abroad still sorts and reads the same.
+    #expect(suffix.contains("2026-08-12T14-30-12Z"))
     // Typed in front of the proposed suffix: kept, not stamped again.
     #expect(
       SignDocumentModel.stampedContainer(
-        from: URL(
-          fileURLWithPath: "/documents/kasa - signed at 2026-08-12T14-30-12Z.asice"
-        ),
+        from: URL(fileURLWithPath: "/documents/kasa" + suffix + ".asice"),
         at: instant
-      ).lastPathComponent == "kasa - signed at 2026-08-12T14-30-12Z.asice"
+      ).lastPathComponent == "kasa" + suffix + ".asice"
     )
     // Typed over the suffix: the same instant is appended.
     #expect(
       SignDocumentModel.stampedContainer(
         from: URL(fileURLWithPath: "/documents/kasa.asice"), at: instant
-      ).lastPathComponent == "kasa - signed at 2026-08-12T14-30-12Z.asice"
+      ).lastPathComponent == "kasa" + suffix + ".asice"
     )
     // A name that arrives bare is stamped the same way.
     #expect(
       SignDocumentModel.stampedContainer(
         from: URL(fileURLWithPath: "/documents/kasa"), at: instant
-      ).lastPathComponent == "kasa - signed at 2026-08-12T14-30-12Z.asice"
+      ).lastPathComponent == "kasa" + suffix + ".asice"
     )
     // One document keeps its own name, which is not a guess at all.
     #expect(
@@ -80,7 +89,7 @@ internal struct SignDocumentShapeTests {
         for: URL(fileURLWithPath: "/documents/Agreement.odt"),
         at: instant,
         format: .asice
-      ).lastPathComponent == "Agreement - signed at 2026-08-12T14-30-12Z.asice"
+      ).lastPathComponent == "Agreement" + suffix + ".asice"
     )
   }
 }

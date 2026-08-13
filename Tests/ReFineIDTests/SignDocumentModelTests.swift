@@ -70,7 +70,17 @@ internal struct SignDocumentModelTests {
     let mark = try #require(model.stampMark())
     #expect(mark.operators.contains("0.0000 5.0000 cm"))
     #expect(mark.operators.contains("0.0000 -10.0000 cm"))
-    #expect(model.stampFailure?.contains("certificate identity") == true)
+    // The note is localized, so it is compared against the same string
+    // the model builds rather than an English fragment: a fragment
+    // asserts the machine's language, and this test is about which note
+    // was chosen.
+    #expect(
+      model.stampFailure
+        == String(
+          localized:
+            "No handwritten signature; the stamp will show the certificate identity."
+        )
+    )
     #expect(
       model.visibleStamp(on: Data())?.signerCertificate
         == Self.stampCertificate
@@ -136,7 +146,9 @@ internal struct SignDocumentModelTests {
     )
 
     #expect(model.stampMark() == nil)
-    #expect(model.stampFailure?.contains("image could not be read") == true)
+    #expect(
+      model.stampFailure == String(localized: "The signature image could not be read.")
+    )
   }
 
   @Test
