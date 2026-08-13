@@ -3,7 +3,7 @@
 import CardCore
 import SwiftUI
 
-/// The activation form: the activation code from the issuance
+/// The activation form: the activation PIN from the issuance
 /// letter and the two new PINs.
 ///
 /// The driver classifies the card and refuses a wrong-length code
@@ -20,63 +20,71 @@ internal struct CardActivationSection: View {
 
   internal let model: CardManagementModel
 
-  /// Whether the explicit reactivation override is offered.
-  ///
-  /// In the settings pane it is the escape hatch for a card the
-  /// preflight misjudged; the main window's takeover appears only
-  /// for a card the preflight has just called factory-fresh, where
-  /// the override would be a switch with nothing to override.
-  internal var showsReactivationOverride = true
-
   @State private var entry = ""
   @State private var newPin1 = ""
   @State private var newPin1Repeated = ""
   @State private var newPin2 = ""
   @State private var newPin2Repeated = ""
-  @State private var allowReactivation = false
   @State private var pending: CredentialOperationConfirmation.Operation?
   @FocusState private var focus: Field?
 
-  /// Whether the form asks for PIN 1: the card still waits for it,
-  /// or a reactivation override puts everything back on the table.
+  /// Whether the form asks for PIN 1 because the card still waits for it.
   private var asksPin1: Bool {
-    model.activationNeeds.pin1 || allowReactivation
+    model.activationNeeds.pin1
   }
 
-  /// Whether the form asks for PIN 2, by the same rule.
+  /// Whether the form asks for PIN 2 because the card still waits for it.
   private var asksPin2: Bool {
-    model.activationNeeds.pin2 || allowReactivation
+    model.activationNeeds.pin2
   }
 
-  /// Ready when every entry the card still waits for can possibly
-  /// be right; the exact activation-entry length is the card's to
-  /// judge.
+  private var activationEntryIsValid: Bool {
+    guard let scheme = model.activationScheme else { return false }
+    return entry.count == scheme.activationEntryDigitCount
+  }
+
+  private var pin1IsValid: Bool {
+    (Pin1.minimumDigitCount...Pin1.maximumDigitCount).contains(newPin1.count)
+  }
+
+  private var repeatedPin1IsValid: Bool {
+    pin1IsValid && newPin1Repeated == newPin1
+  }
+
+  private var pin1EntriesDiffer: Bool {
+    pin1IsValid
+      && (Pin1.minimumDigitCount...Pin1.maximumDigitCount).contains(newPin1Repeated.count)
+      && newPin1Repeated != newPin1
+  }
+
+  private var pin2IsValid: Bool {
+    (Pin2.minimumDigitCount...Pin2.maximumDigitCount).contains(newPin2.count)
+  }
+
+  private var repeatedPin2IsValid: Bool {
+    pin2IsValid && newPin2Repeated == newPin2
+  }
+
+  private var pin2EntriesDiffer: Bool {
+    pin2IsValid
+      && (Pin2.minimumDigitCount...Pin2.maximumDigitCount).contains(newPin2Repeated.count)
+      && newPin2Repeated != newPin2
+  }
+
+  /// Ready only when the activation PIN has the exact length selected
+  /// by the card ATR and every requested new PIN is valid and repeated.
   private var isComplete: Bool {
-    (Puk.minimumDigitCount...Puk.maximumDigitCount).contains(entry.count)
-      && (!asksPin1
-        || (Pin1.minimumDigitCount...Pin1.maximumDigitCount).contains(newPin1.count)
-          && newPin1 == newPin1Repeated)
-      && (!asksPin2
-        || (Pin2.minimumDigitCount...Pin2.maximumDigitCount).contains(newPin2.count)
-          && newPin2 == newPin2Repeated)
+    activationEntryIsValid
+      && (!asksPin1 || pin1IsValid && repeatedPin1IsValid)
+      && (!asksPin2 || pin2IsValid && repeatedPin2IsValid)
   }
 
   internal var body: some View {
-    Section {
-      entryRows
-      if showsReactivationOverride {
-        Toggle("Allow reactivation", isOn: $allowReactivation)
-          .accessibilityIdentifier("managementActivationOverride")
+    Group {
+      Section("Card activation") {
+        entryRows
       }
-      HStack {
-        Spacer()
-        Button("Activate Card") {
-          pending = .activate
-        }
-        .buttonStyle(.borderedProminent)
-        .disabled(!isComplete || model.working)
-        .accessibilityIdentifier("managementActivate")
-      }
+      activationButton
     }
     .task {
       // This form never placed focus at all, so its first field had
@@ -92,49 +100,114 @@ internal struct CardActivationSection: View {
     }
   }
 
+  private var activationButton: some View {
+    Button {
+      pending = .activate
+    } label: {
+      Text("Activate Card")
+        #if os(iOS)
+          .frame(maxWidth: .infinity)
+        #endif
+    }
+    .buttonStyle(.borderedProminent)
+    #if os(iOS)
+      .controlSize(.large)
+      .listRowInsets(EdgeInsets())
+      .listRowBackground(Color.clear)
+    #endif
+    .disabled(!isComplete || model.cardOperationInProgress)
+    .accessibilityIdentifier("managementActivate")
+  }
+
   /// The secret fields, only for what the card still waits for: an
   /// interrupted activation left one PIN set, and asking for a new
   /// value it will not take invites a retry spent on nothing.
   @ViewBuilder private var entryRows: some View {
-    SecureField("Activation code", text: $entry)
-      .onChange(of: entry) { _, typed in
-        entry = LimitedDigits.puk(typed)
-      }
-      .focused($focus, equals: .entry)
-      .onSubmit { advance(from: .entry) }
-      .accessibilityIdentifier("managementActivationEntry")
+    HStack {
+      SecureField("Activation PIN", text: $entry)
+        .textContentType(.oneTimeCode)
+        .keyboardType(.numberPad)
+        .onChange(of: entry) { _, typed in
+          entry = LimitedDigits.puk(typed)
+        }
+        .focused($focus, equals: .entry)
+        .onSubmit { advance(from: .entry) }
+        .accessibilityIdentifier("managementActivationEntry")
+      validationIndicator(activationEntryIsValid)
+    }
     if asksPin1 {
-      SecureField("New PIN 1", text: $newPin1)
-        .onChange(of: newPin1) { _, typed in
-          newPin1 = LimitedDigits.pin(typed)
-        }
-        .focused($focus, equals: .pin1)
-        .onSubmit { advance(from: .pin1) }
-        .accessibilityIdentifier("managementActivationPin1")
-      SecureField("New PIN 1 again", text: $newPin1Repeated)
-        .onChange(of: newPin1Repeated) { _, typed in
-          newPin1Repeated = LimitedDigits.pin(typed)
-        }
-        .focused($focus, equals: .pin1Repeat)
-        .onSubmit { advance(from: .pin1Repeat) }
-        .accessibilityIdentifier("managementActivationPin1Repeat")
+      HStack {
+        SecureField("New PIN 1", text: $newPin1)
+          .textContentType(.oneTimeCode)
+          .keyboardType(.numberPad)
+          .onChange(of: newPin1) { _, typed in
+            newPin1 = LimitedDigits.pin1(typed)
+          }
+          .focused($focus, equals: .pin1)
+          .onSubmit { advance(from: .pin1) }
+          .accessibilityIdentifier("managementActivationPin1")
+        validationIndicator(pin1IsValid)
+      }
+      HStack {
+        SecureField("New PIN 1 again", text: $newPin1Repeated)
+          .textContentType(.oneTimeCode)
+          .keyboardType(.numberPad)
+          .onChange(of: newPin1Repeated) { _, typed in
+            newPin1Repeated = LimitedDigits.pin1(typed)
+          }
+          .focused($focus, equals: .pin1Repeat)
+          .onSubmit { advance(from: .pin1Repeat) }
+          .accessibilityIdentifier("managementActivationPin1Repeat")
+        validationIndicator(repeatedPin1IsValid, entriesDiffer: pin1EntriesDiffer)
+      }
     }
     if asksPin2 {
-      SecureField("New PIN 2", text: $newPin2)
-        .onChange(of: newPin2) { _, typed in
-          newPin2 = LimitedDigits.pin(typed)
-        }
-        .focused($focus, equals: .pin2)
-        .onSubmit { advance(from: .pin2) }
-        .accessibilityIdentifier("managementActivationPin2")
-      SecureField("New PIN 2 again", text: $newPin2Repeated)
-        .onChange(of: newPin2Repeated) { _, typed in
-          newPin2Repeated = LimitedDigits.pin(typed)
-        }
-        .focused($focus, equals: .pin2Repeat)
-        .onSubmit { advance(from: .pin2Repeat) }
-        .accessibilityIdentifier("managementActivationPin2Repeat")
+      HStack {
+        SecureField("New PIN 2", text: $newPin2)
+          .textContentType(.oneTimeCode)
+          .keyboardType(.numberPad)
+          .onChange(of: newPin2) { _, typed in
+            newPin2 = LimitedDigits.pin2(typed)
+          }
+          .focused($focus, equals: .pin2)
+          .onSubmit { advance(from: .pin2) }
+          .accessibilityIdentifier("managementActivationPin2")
+        validationIndicator(pin2IsValid)
+      }
+      HStack {
+        SecureField("New PIN 2 again", text: $newPin2Repeated)
+          .textContentType(.oneTimeCode)
+          .keyboardType(.numberPad)
+          .onChange(of: newPin2Repeated) { _, typed in
+            newPin2Repeated = LimitedDigits.pin2(typed)
+          }
+          .focused($focus, equals: .pin2Repeat)
+          .onSubmit { advance(from: .pin2Repeat) }
+          .accessibilityIdentifier("managementActivationPin2Repeat")
+        validationIndicator(repeatedPin2IsValid, entriesDiffer: pin2EntriesDiffer)
+      }
     }
+  }
+
+  private func validationIndicator(
+    _ valid: Bool,
+    entriesDiffer: Bool = false
+  ) -> some View {
+    let symbol =
+      valid
+      ? "checkmark.circle.fill"
+      : entriesDiffer ? "exclamationmark.triangle.fill" : "xmark.circle.fill"
+    let color: Color = valid ? .green : entriesDiffer ? .orange : .red
+    let label =
+      valid
+      ? String(localized: "Valid entry")
+      : entriesDiffer
+        ? String(localized: "The new entries differ.")
+        : String(localized: "Invalid entry")
+    return Image(systemName: symbol)
+      .foregroundStyle(color)
+      .accessibilityLabel(
+        Text(label))
   }
 
   /// The fields on screen, in the order Return walks them.
@@ -158,17 +231,15 @@ internal struct CardActivationSection: View {
 
   /// Runs activation and clears the fields when the card accepted.
   private func activate() {
-    guard isComplete, !model.working else { return }
+    guard isComplete, !model.cardOperationInProgress else { return }
     let activationEntry = entry
     let pin1Entry = asksPin1 ? newPin1 : nil
     let pin2Entry = asksPin2 ? newPin2 : nil
-    let override = allowReactivation
     Task {
       let accepted = await model.activate(
         entry: activationEntry,
         newPin1: pin1Entry,
-        newPin2: pin2Entry,
-        allowReactivation: override
+        newPin2: pin2Entry
       )
       if accepted {
         entry = ""
@@ -176,7 +247,6 @@ internal struct CardActivationSection: View {
         newPin1Repeated = ""
         newPin2 = ""
         newPin2Repeated = ""
-        allowReactivation = false
         focus = nil
       }
     }

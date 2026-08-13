@@ -1,12 +1,14 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
 import CardCore
+import CryptoTokenKit
 import Foundation
 
 extension CardMaintenance {
   internal struct Snapshot: Equatable, Sendable {
     internal let report: CredentialProbeReport?
     internal let activationNeeds: ActivationNeeds?
+    internal let activationScheme: ActivationScheme?
   }
 
   internal struct MutationReport: Equatable, Sendable {
@@ -25,6 +27,33 @@ extension CardMaintenance {
     ) { operations in
       snapshot(on: operations)
     }
+  }
+
+  /// Determines the activation generation without probing credentials.
+  ///
+  /// A reader ATR normally answers immediately and is sufficient for
+  /// every MultiApp generation. The certificate fallback covers a
+  /// documented card whose ATR is not in the generation table, still
+  /// without reading any retry counter.
+  internal static func readerActivationScheme() async -> ActivationScheme? {
+    guard let manager = TKSmartCardSlotManager.default else { return nil }
+    let occupied = await CardSlotSearch.allOccupied(in: manager).filter { candidate in
+      CardTransport.transport(forSlotNamed: candidate.name) == .reader
+    }
+    for candidate in occupied {
+      guard let answerToReset = candidate.slot.atr?.bytes else { continue }
+      if let scheme = ActivationScheme.classify(answerToReset: answerToReset) {
+        return scheme
+      }
+    }
+    return await onCard(
+      transport: .reader,
+      cardAccessNumber: nil,
+      message: ""
+    ) { operations in
+      classifyScheme(operations)
+    }
+    .flatMap(\.self)
   }
 
   internal static func changePin1(
@@ -180,6 +209,6 @@ extension CardMaintenance {
       operations.activationNeeds(scheme: activationScheme)
     }
     let report = try? operations.probeCredentials()
-    return Snapshot(report: report, activationNeeds: needs)
+    return Snapshot(report: report, activationNeeds: needs, activationScheme: scheme)
   }
 }

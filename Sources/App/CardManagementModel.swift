@@ -11,15 +11,25 @@ internal final class CardManagementModel {
     pin1: true,
     pin2: true
   )
+  internal private(set) var activationScheme: ActivationScheme?
   internal private(set) var offersActivation = false
   internal private(set) var working = false
   internal private(set) var failure: String?
   internal private(set) var notice: String?
 
+  private var nextRefreshIdentifier = 0
+  private var activeRefreshIdentifier: Int?
+
+  internal var cardOperationInProgress: Bool {
+    working || activeRefreshIdentifier != nil
+  }
+
   internal var transport: CardMaintenance.Transport {
     didSet {
       guard transport != oldValue else { return }
+      activeRefreshIdentifier = nil
       report = nil
+      activationScheme = nil
       offersActivation = false
       failure = nil
       notice = nil
@@ -44,21 +54,47 @@ internal final class CardManagementModel {
       : "No readable card. Connect a reader and insert the card."
   }
 
-  internal init() {
-    transport = CardMaintenance.preferredTransport
+  internal init(
+    transport: CardMaintenance.Transport? = nil,
+    activationRequired: Bool = false
+  ) {
+    self.transport = transport ?? CardMaintenance.preferredTransport
+    offersActivation = activationRequired
     cardAccessNumber = CardCredentialStore.displayedCardAccessNumber() ?? ""
   }
 
+  internal func cardRemoved() {
+    activeRefreshIdentifier = nil
+    report = nil
+    activationScheme = nil
+    offersActivation = false
+    failure = nil
+    notice = nil
+  }
+
+  /// Reads only the card generation needed to validate an activation PIN.
+  /// No retry counter is queried and the form remains interactive while
+  /// the ATR or certificate classification completes.
+  internal func detectActivationScheme() async {
+    guard offersActivation, transport == .reader else { return }
+    let detected = await CardMaintenance.readerActivationScheme()
+    guard offersActivation, transport == .reader else { return }
+    activationScheme = detected
+  }
+
   internal func refresh() async {
-    guard !working, canContactCard else { return }
-    working = true
+    guard !cardOperationInProgress, canContactCard else { return }
+    nextRefreshIdentifier &+= 1
+    let refreshIdentifier = nextRefreshIdentifier
+    activeRefreshIdentifier = refreshIdentifier
     failure = nil
     notice = nil
     let result = await CardMaintenance.snapshot(
       transport: transport,
       cardAccessNumber: offeredCardAccessNumber
     )
-    working = false
+    guard activeRefreshIdentifier == refreshIdentifier else { return }
+    activeRefreshIdentifier = nil
     guard let result else {
       report = nil
       offersActivation = false
@@ -116,10 +152,9 @@ internal final class CardManagementModel {
   internal func activate(
     entry: String,
     newPin1: String?,
-    newPin2: String?,
-    allowReactivation: Bool
+    newPin2: String?
   ) async -> Bool {
-    guard !working, canContactCard else { return false }
+    guard !cardOperationInProgress, canContactCard else { return false }
     working = true
     failure = nil
     notice = nil
@@ -127,8 +162,7 @@ internal final class CardManagementModel {
       request: CardMaintenance.ActivationRequest(
         entry: entry,
         newPin1: newPin1,
-        newPin2: newPin2,
-        allowReactivation: allowReactivation
+        newPin2: newPin2
       ),
       transport: transport,
       cardAccessNumber: offeredCardAccessNumber
@@ -148,6 +182,7 @@ internal final class CardManagementModel {
     preservingOutcome: Bool = false
   ) {
     report = snapshot.report
+    activationScheme = snapshot.activationScheme
     if let needs = snapshot.activationNeeds {
       activationNeeds = needs
       offersActivation = needs.any
@@ -205,7 +240,7 @@ internal final class CardManagementModel {
     accepted: String,
     _ operation: () async -> CardMaintenance.MutationReport
   ) async -> Bool {
-    guard !working, canContactCard else { return false }
+    guard !cardOperationInProgress, canContactCard else { return false }
     working = true
     failure = nil
     notice = nil

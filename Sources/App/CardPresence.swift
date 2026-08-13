@@ -1,10 +1,8 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if os(macOS)
-
-  import CardCore
-  import CryptoTokenKit
-  import Observation
+import CardCore
+import CryptoTokenKit
+import Observation
 
   /// Whether a smart card is physically in a reader right now.
   ///
@@ -15,13 +13,17 @@
   /// is exactly the state the login row has to name. What this fact
   /// gates is the offering of card work at all - signing a document
   /// and managing PINs are not meaningful without a card under them.
-  @MainActor
-  @Observable
-  internal final class CardPresence {
+@MainActor
+@Observable
+internal final class CardPresence {
     internal static let shared = CardPresence()
 
     /// Whether any slot reports a card, responsive or not.
     internal private(set) var isCardPresent = false
+
+    /// Whether a card is present in an external reader rather than the
+    /// iPhone's temporary NFC slot.
+    internal private(set) var isReaderCardPresent = false
 
     /// Whether any of those cards is on a contactless interface.
     ///
@@ -83,7 +85,7 @@
       // Assigned only when it differs. Observation notifies on
       // every write, unchanged or not, and each notification
       // re-renders the window that reads this.
-      let occupied = slots.values.filter { slot in
+      let occupied = slots.filter { _, slot in
         switch slot.state {
         case .validCard, .muteCard, .probing:
           true
@@ -92,7 +94,10 @@
         }
       }
       let present = !occupied.isEmpty
-      let contactless = occupied.contains { slot in
+      let readerPresent = occupied.contains { name, _ in
+        CardTransport.transport(forSlotNamed: name) == .reader
+      }
+      let contactless = occupied.values.contains { slot in
         slot.atr.map { AnswerToReset.indicatesContactlessInterface(bytes: $0.bytes) } ?? false
       }
       if present != isCardPresent {
@@ -101,7 +106,8 @@
       if contactless != isContactlessCardPresent {
         isContactlessCardPresent = contactless
       }
+      if readerPresent != isReaderCardPresent {
+        isReaderCardPresent = readerPresent
+      }
     }
-  }
-
-#endif
+}

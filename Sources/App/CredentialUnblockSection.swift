@@ -59,23 +59,16 @@ internal struct CredentialUnblockSection: View {
   }
 
   internal var body: some View {
-    Section {
-      entryRows
-      if !new.isEmpty, !repeated.isEmpty, new != repeated {
-        Text("The new entries differ.")
-          .font(.footnote)
-          .foregroundStyle(.secondary)
-      }
-      HStack {
-        Spacer()
-        Button("Reset \(targetName)") {
-          pending = .unblock(target)
+    Group {
+      Section {
+        entryRows
+        if !new.isEmpty, !repeated.isEmpty, new != repeated {
+          Text("The new entries differ.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
         }
-        .buttonStyle(.borderedProminent)
-        .keyboardShortcut(.defaultAction)
-        .disabled(!isComplete || model.working)
-        .accessibilityIdentifier("managementReset\(identifierName)")
       }
+      resetButton
     }
     .task {
       // See InitialFieldFocus: the window must settle first, or the
@@ -90,10 +83,32 @@ internal struct CredentialUnblockSection: View {
     }
   }
 
+  private var resetButton: some View {
+    Button {
+      pending = .unblock(target)
+    } label: {
+      Text("Reset \(targetName)")
+        #if os(iOS)
+          .frame(maxWidth: .infinity)
+        #endif
+    }
+    .buttonStyle(.borderedProminent)
+    #if os(iOS)
+      .controlSize(.large)
+      .listRowInsets(EdgeInsets())
+      .listRowBackground(Color.clear)
+    #endif
+    .keyboardShortcut(.defaultAction)
+    .disabled(!isComplete || model.cardOperationInProgress)
+    .accessibilityIdentifier("managementReset\(identifierName)")
+  }
+
   /// The target picker and the three secret fields, threaded for
   /// Return.
   @ViewBuilder private var entryRows: some View {
     SecureField("PUK", text: $puk)
+      .textContentType(.oneTimeCode)
+      .keyboardType(.numberPad)
       .onChange(of: puk) { _, typed in
         puk = LimitedDigits.puk(typed)
       }
@@ -101,6 +116,8 @@ internal struct CredentialUnblockSection: View {
       .onSubmit { advance(from: .puk) }
       .accessibilityIdentifier("managementReset\(identifierName)Puk")
     SecureField("New \(targetName)", text: $new)
+      .textContentType(.oneTimeCode)
+      .keyboardType(.numberPad)
       .onChange(of: new) { _, typed in
         new = LimitedDigits.pin(typed)
       }
@@ -108,6 +125,8 @@ internal struct CredentialUnblockSection: View {
       .onSubmit { advance(from: .new) }
       .accessibilityIdentifier("managementReset\(identifierName)New")
     SecureField("New \(targetName) again", text: $repeated)
+      .textContentType(.oneTimeCode)
+      .keyboardType(.numberPad)
       .onChange(of: repeated) { _, typed in
         repeated = LimitedDigits.pin(typed)
       }
@@ -134,7 +153,7 @@ internal struct CredentialUnblockSection: View {
 
   /// Runs the unblock and clears the fields when the card accepted.
   private func unblock() {
-    guard isComplete, !model.working else { return }
+    guard isComplete, !model.cardOperationInProgress else { return }
     let unblockTarget = target
     let pukEntry = puk
     let newEntry = new

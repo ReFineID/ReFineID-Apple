@@ -28,6 +28,11 @@ internal enum LimitedDigits {
     Self.digits(text, maximumCount: Pin1.maximumDigitCount)
   }
 
+  /// PIN2: ASCII digits up to the supported maximum.
+  internal static func pin2(_ text: String) -> String {
+    Self.digits(text, maximumCount: Pin2.maximumDigitCount)
+  }
+
   /// Any PIN entry: ASCII digits up to the shared PIN maximum, which
   /// PIN1 and PIN2 both have.
   internal static func pin(_ text: String) -> String {

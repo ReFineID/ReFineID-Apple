@@ -30,6 +30,7 @@ internal struct CardCredentialsView: View {
   @State private var showsForgetConfirmation = false
   @State private var registrationReset = false
   @State private var isRegistered = false
+  @State private var isLandscapeLayout = false
   @FocusState private var isPin1FieldFocused: Bool
 
   #if canImport(CoreNFC) && os(iOS)
@@ -153,9 +154,15 @@ internal struct CardCredentialsView: View {
       }
     }
     #if os(iOS)
+      .id(isLandscapeLayout)
       .listSectionSpacing(Self.sectionSpacing)
       .navigationTitle("ReFineID")
       .navigationBarTitleDisplayMode(.large)
+      .onGeometryChange(for: Bool.self) { geometry in
+        geometry.size.width > geometry.size.height
+      } action: { isLandscape in
+        isLandscapeLayout = isLandscape
+      }
     #endif
     // Pinned under every product control: what this run is, when it is
     // anything but the shipped product doing its job.

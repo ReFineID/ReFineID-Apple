@@ -101,9 +101,7 @@
             // The extension's activation token is the authoritative
             // semantic result. It outranks derived token readiness and
             // publishes no identity or signing keys.
-            CardActivationSection(
-              model: activation.management, showsReactivationOverride: false
-            )
+            CardActivationSection(model: activation.management)
             CardOutcomeSection(model: activation.management)
           } else if availability == .ready {
             // Signing belongs exclusively to a published identity. No

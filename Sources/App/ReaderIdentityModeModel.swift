@@ -53,6 +53,14 @@
       liveReaderTokenIdentifiers.count
     }
 
+    /// Whether an inserted reader card published the authoritative empty
+    /// token that means its factory credentials still require activation.
+    internal var hasActivationRequiredCard: Bool {
+      liveReaderTokenIdentifiers.contains(
+        where: ActivationTokenIdentity.recognizes(tokenID:)
+      )
+    }
+
     /// Whether the setup form must be replaced by reader identity controls.
     internal var isActive: Bool {
       !liveReaderTokenIdentifiers.isEmpty

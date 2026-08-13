@@ -63,6 +63,17 @@ public enum ActivationScheme: Equatable, Sendable {
     }
   }
 
+  /// Classifies the activation procedure directly from a reader ATR.
+  ///
+  /// This is available before an exclusive card session starts, so a
+  /// form can validate the activation PIN without first probing retry
+  /// counters or reading a certificate from the card.
+  public static func classify(answerToReset: Data) -> Self? {
+    guard let parsed = AnswerToReset(bytes: answerToReset) else { return nil }
+    return FineidCardTypeValues.activationScheme(
+      forHistoricalBytes: parsed.historicalBytes)
+  }
+
   /// Classifies by the authentication certificate's notBefore date.
   ///
   /// The authoritative classifier: DVV names the cutover date itself,

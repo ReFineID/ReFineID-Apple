@@ -14,6 +14,11 @@ import SwiftUI
 /// access control, and this window never spends a near-last attempt.
 /// Entries are never stored and never echoed anywhere.
 internal struct CardManagementView: View {
+  private struct ReaderReadKey: Equatable {
+    let isPresent: Bool
+    let transport: CardMaintenance.Transport
+  }
+
   /// The four things this window does to a credential in use.
   ///
   /// Each is one tab, named in full. The action and the credential
@@ -64,23 +69,77 @@ internal struct CardManagementView: View {
   @ScaledMetric(relativeTo: .body)
   private var windowWidth: CGFloat = 560
 
-  @State private var model = CardManagementModel()
+  private let startsWithReaderCard: Bool
+  private let cardPresence = CardPresence.shared
+
+  @State private var model: CardManagementModel
   @State private var task: ManagementTask = .changePin1
   @State private var hasChosenTask = false
+  @State private var isLandscapeLayout = false
+
+  internal init(
+    readerCardIsPresent: Bool = false,
+    activationRequired: Bool = false
+  ) {
+    startsWithReaderCard = readerCardIsPresent
+    _model = State(
+      initialValue: CardManagementModel(
+        transport: readerCardIsPresent ? .reader : nil,
+        activationRequired: activationRequired
+      )
+    )
+  }
+
+  private var readerCardIsPresent: Bool {
+    startsWithReaderCard || cardPresence.isReaderCardPresent
+  }
+
+  private var readerReadKey: ReaderReadKey {
+    ReaderReadKey(
+      isPresent: readerCardIsPresent,
+      transport: model.transport
+    )
+  }
 
   internal var body: some View {
     taskSection
       #if os(macOS)
         .frame(minWidth: windowWidth)
       #else
-        .navigationTitle("Manage card")
-        .navigationBarTitleDisplayMode(.inline)
+        .id(isLandscapeLayout)
+        .navigationTitle(awaitsActivation ? "ReFineID" : "Manage card")
+        .navigationBarTitleDisplayMode(awaitsActivation ? .large : .inline)
+        .onGeometryChange(for: Bool.self) { geometry in
+          geometry.size.width > geometry.size.height
+        } action: { isLandscape in
+          isLandscapeLayout = isLandscape
+        }
       #endif
       .safeAreaInset(edge: .bottom, spacing: 0) {
-        attemptsBar
+        if !awaitsActivation && (!readerCardIsPresent || model.report != nil) {
+          attemptsBar
+        }
       }
       #if os(macOS)
         .task { await model.refresh() }
+      #endif
+      #if os(iOS)
+        .task(id: readerReadKey) {
+          if readerCardIsPresent {
+            model.transport = .reader
+            // The token insertion event has already classified this as
+            // an unactivated card. Do not hold the activation form behind
+            // a second full credential probe; activation performs its own
+            // retry-floor checks inside the exclusive card session.
+            if awaitsActivation {
+              await model.detectActivationScheme()
+            } else {
+              await model.refresh()
+            }
+          } else if model.transport == .reader {
+            model.cardRemoved()
+          }
+        }
       #endif
       .onChange(of: model.report) { _, report in
         suggestTask(from: report)
@@ -182,7 +241,11 @@ internal struct CardManagementView: View {
             Text(candidate.name).tag(candidate)
           }
         }
-        .pickerStyle(.segmented)
+    #if os(iOS)
+      .pickerStyle(.menu)
+    #else
+      .pickerStyle(.segmented)
+    #endif
         .labelsHidden()
         .accessibilityIdentifier("managementTask")
         page(for: task)
@@ -198,33 +261,36 @@ internal struct CardManagementView: View {
 
   @ViewBuilder private var connectionSection: some View {
     #if os(iOS)
-      Section("Card connection") {
-        if model.availableTransports.count > 1 {
-          Picker("Connection", selection: $model.transport) {
-            ForEach(model.availableTransports) { transport in
-              Text(transport.name).tag(transport)
+      if !readerCardIsPresent {
+        Section("Card connection") {
+          if model.availableTransports.count > 1 {
+            Picker("Connection", selection: $model.transport) {
+              ForEach(model.availableTransports) { transport in
+                Text(transport.name).tag(transport)
+              }
             }
+            .pickerStyle(.segmented)
           }
-          .pickerStyle(.segmented)
-        }
-        if model.transport == .nearField {
-          SecureField("Card Access Number (CAN)", text: $model.cardAccessNumber)
-            .keyboardType(.numberPad)
-            .textInputAutocapitalization(.never)
-            .autocorrectionDisabled()
-            .onChange(of: model.cardAccessNumber) { _, typed in
-              model.cardAccessNumber = LimitedDigits.cardAccessNumber(typed)
+          if model.transport == .nearField {
+            SecureField("Card Access Number (CAN)", text: $model.cardAccessNumber)
+              .textContentType(.oneTimeCode)
+              .keyboardType(.numberPad)
+              .textInputAutocapitalization(.never)
+              .autocorrectionDisabled()
+              .onChange(of: model.cardAccessNumber) { _, typed in
+                model.cardAccessNumber = LimitedDigits.cardAccessNumber(typed)
+              }
+              .accessibilityIdentifier("managementCardAccessNumber")
+            Button("Read card") {
+              Task { await model.refresh() }
             }
-            .accessibilityIdentifier("managementCardAccessNumber")
-        } else {
-          Text("Connect a card reader and insert your card.")
-            .foregroundStyle(.secondary)
+            .disabled(model.cardOperationInProgress || !model.canContactCard)
+            .accessibilityIdentifier("managementReadCard")
+          } else {
+            Text("Connect a card reader and insert your card.")
+              .foregroundStyle(.secondary)
+          }
         }
-        Button("Read card") {
-          Task { await model.refresh() }
-        }
-        .disabled(model.working || !model.canContactCard)
-        .accessibilityIdentifier("managementReadCard")
       }
     #endif
   }

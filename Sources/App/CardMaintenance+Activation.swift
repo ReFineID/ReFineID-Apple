@@ -20,7 +20,6 @@ extension CardMaintenance {
     internal let entry: String
     internal let newPin1: String?
     internal let newPin2: String?
-    internal let allowReactivation: Bool
   }
 
   internal static func activate(
@@ -38,8 +37,7 @@ extension CardMaintenance {
           operations,
           entry: request.entry,
           newPin1: request.newPin1,
-          newPin2: request.newPin2,
-          allowReactivation: request.allowReactivation
+          newPin2: request.newPin2
         )
       else {
         return nil
@@ -56,17 +54,13 @@ extension CardMaintenance {
     _ operations: CardOperations,
     entry: String,
     newPin1: String?,
-    newPin2: String?,
-    allowReactivation: Bool
+    newPin2: String?
   ) -> ActivationReport? {
     guard let scheme = classifyScheme(operations) else { return nil }
     guard entry.count == scheme.activationEntryDigitCount else {
       return ActivationReport(scheme: scheme, pin1: .invalidEntry, pin2: nil)
     }
-    let needs =
-      allowReactivation
-      ? ActivationNeeds(pin1: true, pin2: true)
-      : operations.activationNeeds(scheme: scheme)
+    let needs = operations.activationNeeds(scheme: scheme)
     guard needs.any else {
       return ActivationReport(scheme: scheme, pin1: .alreadyActivated, pin2: nil)
     }

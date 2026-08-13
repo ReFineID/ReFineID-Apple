@@ -36,7 +36,12 @@
 
     /// The identities, or the fallback while none has a name.
     @ViewBuilder private var content: some View {
-      if holders.isEmpty {
+      if model.hasActivationRequiredCard {
+        CardManagementView(
+          readerCardIsPresent: true,
+          activationRequired: true
+        )
+      } else if holders.isEmpty {
         Text(message)
           .font(.title2.weight(.semibold))
           .multilineTextAlignment(.center)
@@ -52,7 +57,7 @@
           }
           Section {
             NavigationLink {
-              CardManagementView()
+              CardManagementView(readerCardIsPresent: true)
             } label: {
               Label("Manage card", systemImage: "key")
             }

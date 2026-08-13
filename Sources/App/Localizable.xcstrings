@@ -217,18 +217,50 @@
         }
       }
     },
-    "Activation code": {
+    "Activation PIN": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aktivointikoodi"
+            "value": "Aktivointitunnusluku"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "Aktiveringskod"
+          }
+        }
+      }
+    },
+    "Invalid entry": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Virheellinen arvo"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ogiltigt värde"
+          }
+        }
+      }
+    },
+    "Valid entry": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kelvollinen arvo"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giltigt värde"
           }
         }
       }
@@ -438,6 +470,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kortets åtkomstkod"
+          }
+        }
+      }
+    },
+    "Card activation": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortin käyttöönotto"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortaktivering"
           }
         }
       }
