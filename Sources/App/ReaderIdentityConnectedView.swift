@@ -29,6 +29,19 @@
       content
         .navigationTitle("ReFineID")
         .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+          if !model.hasActivationRequiredCard, model.liveReaderTokenCount > 0 {
+            ToolbarItem(placement: .topBarTrailing) {
+              NavigationLink {
+                CardManagementView(readerCardIsPresent: true)
+              } label: {
+                Image(systemName: "key")
+                  .accessibilityLabel(Text("Change or Reset PINs"))
+              }
+              .accessibilityIdentifier("manageCard")
+            }
+          }
+        }
         .task(id: model.liveReaderTokenIdentifiers) {
           await readHolders()
         }
@@ -56,14 +69,6 @@
                   .textSelection(.enabled)
               }
             }
-          }
-          Section("Manage") {
-            NavigationLink {
-              CardManagementView(readerCardIsPresent: true)
-            } label: {
-              Label("Personal Identification Numbers (PINs)", systemImage: "key")
-            }
-            .accessibilityIdentifier("manageCard")
           }
         }
       }

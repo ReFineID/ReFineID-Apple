@@ -56,22 +56,6 @@
         }
       }
     },
-    "%lld attempts remain.": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Yrityksiä on jäljellä %lld."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Det finns %lld försök kvar."
-          }
-        }
-      }
-    },
     "%lld documents": {
       "localizations": {
         "fi": {
@@ -201,22 +185,6 @@
         }
       }
     },
-    "Activate this card?": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aktivoidaanko tämä kortti?"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vill du aktivera det här kortet?"
-          }
-        }
-      }
-    },
     "Activation PIN": {
       "localizations": {
         "fi": {
@@ -302,7 +270,7 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Henkilöllisyys"
+            "value": "Identiteetti"
           }
         },
         "sv": {
@@ -874,22 +842,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Byt %@"
-          }
-        }
-      }
-    },
-    "Change %@?": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vaihdetaanko %@?"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vill du byta %@?"
           }
         }
       }
@@ -1555,22 +1507,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Håll kortet mot telefonens övre baksida."
-          }
-        }
-      }
-    },
-    "Identity": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Identiteetti"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Identitet"
           }
         }
       }
@@ -2434,22 +2370,6 @@
         }
       }
     },
-    "Reset %@?": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Palautetaanko %@?"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vill du återställa %@?"
-          }
-        }
-      }
-    },
     "Reset PIN 1": {
       "localizations": {
         "fi": {
@@ -2970,44 +2890,6 @@
         }
       }
     },
-    "The card checks the %@ first, and a wrong entry spends one attempt. Exhausting the %@ cannot be undone by any software.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "The card checks the %1$@ first, and a wrong entry spends one attempt. Exhausting the %2$@ cannot be undone by any software."
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kortti tarkistaa ensin koodin %@, ja väärä syöte kuluttaa yhden yrityksen. Kun %@ on kulutettu loppuun, sitä ei palauta mikään ohjelmisto."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kortet kontrollerar %@ först, och en felaktig inmatning förbrukar ett försök. När %@ är förbrukad kan ingen programvara återställa den."
-          }
-        }
-      }
-    },
-    "The card checks the current %@ first, and a wrong entry spends one attempt.": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kortti tarkistaa ensin nykyisen koodin %@, ja väärä syöte kuluttaa yhden yrityksen."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kortet kontrollerar nuvarande %@ först, och en felaktig inmatning förbrukar ett försök."
-          }
-        }
-      }
-    },
     "The card could not be read. Hold it still and try again.": {
       "localizations": {
         "fi": {
@@ -3149,22 +3031,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Certifikatets identitet kunde inte läsas."
-          }
-        }
-      }
-    },
-    "The entry from the issuance letter works once, and this sets both PIN 1 and PIN 2 to the values typed above.": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Myöntökirjeen koodi toimii kerran, ja tämä asettaa sekä PIN 1:n että PIN 2:n yllä kirjoitettuihin arvoihin."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Koden från utfärdandebrevet fungerar en gång, och detta ställer in både PIN 1 och PIN 2 till värdena som skrivits ovan."
           }
         }
       }
@@ -3845,6 +3711,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "verifierad under den här sessionen"
+          }
+        }
+      }
+    },
+    "Confirm %@ change?": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vahvistetaanko koodin %@ vaihto?"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bekräfta byte av %@?"
+          }
+        }
+      }
+    },
+    "Confirm %@ reset?": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vahvistetaanko koodin %@ palautus?"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bekräfta återställning av %@?"
+          }
+        }
+      }
+    },
+    "Confirm card activation?": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vahvistetaanko kortin käyttöönotto?"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bekräfta kortaktivering?"
+          }
+        }
+      }
+    },
+    "A wrong current %@ spends one attempt. %lld attempts remain.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Väärä nykyinen %1$@ kuluttaa yhden yrityksen. Yrityksiä on jäljellä %2$lld."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En felaktig nuvarande %1$@ förbrukar ett försök. %2$lld försök återstår."
+          }
+        }
+      }
+    },
+    "A wrong %@ spends one attempt. %lld attempts remain. Exhausting the %@ cannot be undone by software.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Väärä %1$@ kuluttaa yhden yrityksen. Yrityksiä on jäljellä %2$lld. Loppuun kulunutta koodia %3$@ ei voi palauttaa ohjelmistolla."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En felaktig %1$@ förbrukar ett försök. %2$lld försök återstår. En förbrukad %3$@ kan inte återställas med programvara."
           }
         }
       }

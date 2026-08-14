@@ -3,6 +3,8 @@
 import CardCore
 import SwiftUI
 
+#if os(macOS)
+
 /// How a retry counter is shown: the number against a full card, a
 /// colour band, and a marker so the band never rests on colour alone.
 ///
@@ -41,7 +43,9 @@ extension CardManagementView {
   private static func attemptsSpoken(_ outcome: RetryProbeOutcome?) -> String {
     switch outcome {
     case .remaining(let count):
-      if count.attemptsRemaining >= RetryFloor.minimumAttemptsToProceed {
+      if count.isBlocked {
+        String(localized: "blocked - unblock with the PUK")
+      } else if count.attemptsRemaining >= RetryFloor.minimumAttemptsToProceed {
         String(localized: "\(count.attemptsRemaining) attempts remaining")
       } else {
         String(localized: "\(count.attemptsRemaining) attempts remaining - low")
@@ -124,5 +128,6 @@ extension CardManagementView {
     .accessibilityValue(Self.attemptsSpoken(outcome))
   }
 
-  /// Speaks an outcome the moment it lands, for a VoiceOver user
 }
+
+#endif

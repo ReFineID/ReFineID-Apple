@@ -141,8 +141,14 @@ internal final class CardManagementModel {
     apply(result)
   }
 
+  /// Removes feedback that belongs to the previously selected operation.
+  internal func clearOutcome() {
+    failure = nil
+    notice = nil
+  }
+
   internal func changePin1(current: String, new: String) async -> Bool {
-    await perform(presenting: "PIN 1", accepted: "PIN 1 changed.") {
+    await perform(presenting: "PIN 1", accepted: "PIN 1 changed") {
       await CardMaintenance.changePin1(
         current: current,
         new: new,
@@ -153,7 +159,7 @@ internal final class CardManagementModel {
   }
 
   internal func changePin2(current: String, new: String) async -> Bool {
-    await perform(presenting: "PIN 2", accepted: "PIN 2 changed.") {
+    await perform(presenting: "PIN 2", accepted: "PIN 2 changed") {
       await CardMaintenance.changePin2(
         current: current,
         new: new,
@@ -166,8 +172,8 @@ internal final class CardManagementModel {
   internal func unblock(target: CredentialRole, puk: String, new: String) async -> Bool {
     let accepted =
       target == .pin2
-      ? "PIN 2 unblocked and set to the new value."
-      : "PIN 1 unblocked and set to the new value."
+      ? "PIN 2 reset"
+      : "PIN 1 reset"
     return await perform(presenting: "PUK", accepted: accepted) {
       if target == .pin2 {
         return await CardMaintenance.unblockPin2(
@@ -192,6 +198,10 @@ internal final class CardManagementModel {
     newPin2: String?
   ) async -> Bool {
     guard !cardOperationInProgress, canContactCard else { return false }
+    guard let scheme = activationScheme else {
+      failure = "The card could not be classified for activation."
+      return false
+    }
     working = true
     failure = nil
     notice = nil
@@ -199,7 +209,9 @@ internal final class CardManagementModel {
       request: CardMaintenance.ActivationRequest(
         entry: entry,
         newPin1: newPin1,
-        newPin2: newPin2
+        newPin2: newPin2,
+        scheme: scheme,
+        needs: activationNeeds
       ),
       transport: transport,
       cardAccessNumber: offeredCardAccessNumber
@@ -209,9 +221,10 @@ internal final class CardManagementModel {
       failure = "The card could not be classified for activation."
       return false
     }
-    let succeeded = describe(execution.activation)
-    apply(execution.snapshot, preservingOutcome: true)
-    return succeeded
+    _ = describe(execution.activation)
+    activationNeeds = execution.remaining
+    offersActivation = execution.remaining.any
+    return !execution.remaining.any
   }
 
   private func apply(
@@ -242,13 +255,13 @@ internal final class CardManagementModel {
     let entry = activationEntryName(activation.scheme)
     switch (activation.pin1, activation.pin2) {
     case (.success, .success):
-      notice = "Card activated: PIN 1 and PIN 2 are set."
+      notice = "Card activated: PIN 1 and PIN 2 are set"
       return true
     case (.alreadyActivated, .success):
-      notice = "Card activated: PIN 2 is set. PIN 1 already was."
+      notice = "Card activated: PIN 2 is set; PIN 1 already was"
       return true
     case (.success, .alreadyActivated), (.success, nil):
-      notice = "Card activated: PIN 1 is set. PIN 2 already was."
+      notice = "Card activated: PIN 1 is set; PIN 2 already was"
       return true
     case (.success, .some(let second)):
       failure = message(for: second, presenting: entry)

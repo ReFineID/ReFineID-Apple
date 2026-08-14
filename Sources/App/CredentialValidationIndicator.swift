@@ -6,10 +6,13 @@ import SwiftUI
 internal struct CredentialValidationIndicator: View {
   internal let valid: Bool
   internal var entriesDiffer = false
+  internal var isEmpty = false
 
   internal var body: some View {
     Image(systemName: symbol)
       .foregroundStyle(color)
+      .opacity(isEmpty ? 0 : 1)
+      .accessibilityHidden(isEmpty)
       .accessibilityLabel(Text(accessibilityDescription))
   }
 

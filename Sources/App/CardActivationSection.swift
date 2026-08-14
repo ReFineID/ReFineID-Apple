@@ -96,7 +96,11 @@ internal struct CardActivationSection: View {
       #endif
       focus = .entry
     }
-    .confirmCredentialOperation($pending, report: model.report) { _ in
+    .confirmCredentialOperation(
+      $pending,
+      report: model.report,
+      reject: { _ in clearEntries() }
+    ) { _ in
       activate()
     }
   }
@@ -134,7 +138,9 @@ internal struct CardActivationSection: View {
         .focused($focus, equals: .entry)
         .onSubmit { advance(from: .entry) }
         .accessibilityIdentifier("managementActivationEntry")
-      CredentialValidationIndicator(valid: activationEntryIsValid)
+      CredentialValidationIndicator(
+        valid: activationEntryIsValid,
+        isEmpty: entry.isEmpty)
     }
     if asksPin1 {
       HStack {
@@ -147,7 +153,9 @@ internal struct CardActivationSection: View {
           .focused($focus, equals: .pin1)
           .onSubmit { advance(from: .pin1) }
           .accessibilityIdentifier("managementActivationPin1")
-        CredentialValidationIndicator(valid: pin1IsValid)
+        CredentialValidationIndicator(
+          valid: pin1IsValid,
+          isEmpty: newPin1.isEmpty)
       }
       HStack {
         SecureField("New PIN 1 again", text: $newPin1Repeated)
@@ -161,7 +169,8 @@ internal struct CardActivationSection: View {
           .accessibilityIdentifier("managementActivationPin1Repeat")
         CredentialValidationIndicator(
           valid: repeatedPin1IsValid,
-          entriesDiffer: pin1EntriesDiffer)
+          entriesDiffer: pin1EntriesDiffer,
+          isEmpty: newPin1Repeated.isEmpty)
       }
     }
     if asksPin2 {
@@ -175,7 +184,9 @@ internal struct CardActivationSection: View {
           .focused($focus, equals: .pin2)
           .onSubmit { advance(from: .pin2) }
           .accessibilityIdentifier("managementActivationPin2")
-        CredentialValidationIndicator(valid: pin2IsValid)
+        CredentialValidationIndicator(
+          valid: pin2IsValid,
+          isEmpty: newPin2.isEmpty)
       }
       HStack {
         SecureField("New PIN 2 again", text: $newPin2Repeated)
@@ -189,7 +200,8 @@ internal struct CardActivationSection: View {
           .accessibilityIdentifier("managementActivationPin2Repeat")
         CredentialValidationIndicator(
           valid: repeatedPin2IsValid,
-          entriesDiffer: pin2EntriesDiffer)
+          entriesDiffer: pin2EntriesDiffer,
+          isEmpty: newPin2Repeated.isEmpty)
       }
     }
   }
@@ -225,15 +237,28 @@ internal struct CardActivationSection: View {
         newPin1: pin1Entry,
         newPin2: pin2Entry
       )
-      if accepted {
-        entry = ""
+      if !model.activationNeeds.pin1 {
         newPin1 = ""
         newPin1Repeated = ""
+      }
+      if !model.activationNeeds.pin2 {
         newPin2 = ""
         newPin2Repeated = ""
-        focus = nil
+      }
+      if accepted {
+        clearEntries()
         onActivated()
       }
     }
+  }
+
+  /// Destroys the activation entry and every new PIN held by the form.
+  private func clearEntries() {
+    entry = ""
+    newPin1 = ""
+    newPin1Repeated = ""
+    newPin2 = ""
+    newPin2Repeated = ""
+    focus = nil
   }
 }

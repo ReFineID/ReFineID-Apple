@@ -13,13 +13,15 @@ extension CardMaintenance {
 
   internal struct ActivationExecution: Equatable, Sendable {
     internal let activation: ActivationReport
-    internal let snapshot: Snapshot
+    internal let remaining: ActivationNeeds
   }
 
   internal struct ActivationRequest: Sendable {
     internal let entry: String
     internal let newPin1: String?
     internal let newPin2: String?
+    internal let scheme: ActivationScheme
+    internal let needs: ActivationNeeds
   }
 
   internal static func activate(
@@ -32,19 +34,24 @@ extension CardMaintenance {
       cardAccessNumber: cardAccessNumber,
       message: String(localized: "Hold the card still while it is activated.")
     ) { operations -> ActivationExecution? in
-      guard
-        let activation = runActivation(
-          operations,
-          entry: request.entry,
-          newPin1: request.newPin1,
-          newPin2: request.newPin2
-        )
-      else {
+      guard let activation = runActivation(operations, request: request) else {
         return nil
       }
+      // Mutation is complete before any state inspection begins. A successful
+      // command response is authoritative even if the postflight cannot read
+      // the changed-since-manufacture record after secure messaging ends.
+      let observed = operations.activationNeeds(scheme: request.scheme)
+      let remaining = ActivationNeeds(
+        pin1: request.needs.pin1
+          && activation.pin1 != .success
+          && observed.pin1,
+        pin2: request.needs.pin2
+          && activation.pin2 != .some(.success)
+          && observed.pin2
+      )
       return ActivationExecution(
         activation: activation,
-        snapshot: snapshot(on: operations)
+        remaining: remaining
       )
     }
     .flatMap(\.self)
@@ -52,34 +59,32 @@ extension CardMaintenance {
 
   private static func runActivation(
     _ operations: CardOperations,
-    entry: String,
-    newPin1: String?,
-    newPin2: String?
+    request: ActivationRequest
   ) -> ActivationReport? {
-    guard let scheme = classifyScheme(operations) else { return nil }
-    guard entry.count == scheme.activationEntryDigitCount else {
-      return ActivationReport(scheme: scheme, pin1: .invalidEntry, pin2: nil)
+    let scheme = request.scheme
+    let needs = request.needs
+    guard request.entry.count == scheme.activationEntryDigitCount else {
+      return ActivationReport(
+        scheme: scheme,
+        pin1: .invalidEntry,
+        pin2: nil)
     }
-    let needs = operations.activationNeeds(scheme: scheme)
     guard needs.any else {
       return ActivationReport(scheme: scheme, pin1: .alreadyActivated, pin2: nil)
     }
-    if needs.pin1, newPin1.flatMap({ Pin1(digits: $0) }) == nil {
+    if needs.pin1, request.newPin1.flatMap({ Pin1(digits: $0) }) == nil {
       return ActivationReport(scheme: scheme, pin1: .invalidEntry, pin2: nil)
     }
-    if needs.pin2, newPin2.flatMap({ Pin2(digits: $0) }) == nil {
+    if needs.pin2, request.newPin2.flatMap({ Pin2(digits: $0) }) == nil {
       return ActivationReport(scheme: scheme, pin1: .invalidEntry, pin2: nil)
-    }
-    if let refusal = floorRefusal(operations, scheme: scheme, needs: needs) {
-      return ActivationReport(scheme: scheme, pin1: refusal, pin2: nil)
     }
 
     var first: Outcome = .alreadyActivated
-    if needs.pin1, let fresh = newPin1 {
+    if needs.pin1, let fresh = request.newPin1 {
       first = activationStep(
         operations,
         scheme: scheme,
-        entry: entry,
+        entry: request.entry,
         newPin1: fresh
       )
       guard first == .success else {
@@ -88,39 +93,15 @@ extension CardMaintenance {
     }
 
     var second: Outcome? = .alreadyActivated
-    if needs.pin2, let fresh = newPin2 {
+    if needs.pin2, let fresh = request.newPin2 {
       second = activationStep(
         operations,
         scheme: scheme,
-        entry: entry,
+        entry: request.entry,
         newPin2: fresh
       )
     }
     return ActivationReport(scheme: scheme, pin1: first, pin2: second)
-  }
-
-  private static func floorRefusal(
-    _ operations: CardOperations,
-    scheme: ActivationScheme,
-    needs: ActivationNeeds
-  ) -> Outcome? {
-    let roles: [CredentialRole] =
-      switch scheme {
-      case .activationCodeIsPuk:
-        [.puk]
-      case .presetActivationPin:
-        [needs.pin1 ? .pin1 : nil, needs.pin2 ? .pin2 : nil].compactMap(\.self)
-      }
-    for role in roles {
-      guard let probe = try? operations.probeRetryCounter(role: role) else {
-        return .floorRefused(.refuseUnreadable)
-      }
-      let verdict = RetryFloor.evaluate(probeOutcome: probe)
-      guard verdict == .proceed else {
-        return .floorRefused(verdict)
-      }
-    }
-    return nil
   }
 
   private static func activationStep(
@@ -134,6 +115,9 @@ extension CardMaintenance {
       guard let code = Puk(digits: entry), let pin = Pin1(digits: newPin1) else {
         return .invalidEntry
       }
+      if let refusal = activationFloorRefusal(operations, role: .puk) {
+        return refusal
+      }
       do {
         try operations.unblockPin1(
           puk: code.consumeForSingleTransmission(),
@@ -146,6 +130,9 @@ extension CardMaintenance {
     case .presetActivationPin:
       guard let preset = Pin1(digits: entry), let pin = Pin1(digits: newPin1) else {
         return .invalidEntry
+      }
+      if let refusal = activationFloorRefusal(operations, role: .pin1) {
+        return refusal
       }
       do {
         try operations.changePin1(
@@ -170,6 +157,9 @@ extension CardMaintenance {
       guard let code = Puk(digits: entry), let pin = Pin2(digits: newPin2) else {
         return .invalidEntry
       }
+      if let refusal = activationFloorRefusal(operations, role: .puk) {
+        return refusal
+      }
       do {
         try operations.unblockPin2(
           puk: code.consumeForSingleTransmission(),
@@ -183,6 +173,9 @@ extension CardMaintenance {
       guard let preset = Pin2(digits: entry), let pin = Pin2(digits: newPin2) else {
         return .invalidEntry
       }
+      if let refusal = activationFloorRefusal(operations, role: .pin2) {
+        return refusal
+      }
       do {
         try operations.changePin2(
           current: preset.consumeForSingleTransmission(),
@@ -193,6 +186,20 @@ extension CardMaintenance {
         return outcome(of: error)
       }
     }
+  }
+
+  /// Applies the shared `{1, 2}` refusal set immediately before one
+  /// activation write. This probe is credential state, not a certificate
+  /// read, and each PIN receives its own fresh decision.
+  private static func activationFloorRefusal(
+    _ operations: CardOperations,
+    role: CredentialRole
+  ) -> Outcome? {
+    guard let probe = try? operations.probeRetryCounter(role: role) else {
+      return .floorRefused(.refuseUnreadable)
+    }
+    let verdict = RetryFloor.evaluate(probeOutcome: probe)
+    return verdict == .proceed ? nil : .floorRefused(verdict)
   }
 
   internal static func classifyScheme(

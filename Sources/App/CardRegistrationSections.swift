@@ -26,7 +26,7 @@
     internal static var hasRegisteredIdentity: Bool {
       let credentials = CardCredentialStore.contents()
       return credentials.hasPin1
-        && PrimeStore.storedCount() > 0
+        && !PrimeStore.primedHolderNames().isEmpty
         && TKSmartCardTokenRegistrationManager.default.registeredSmartCardTokens
           .contains { CardTokenNamespace.owns(tokenIdentifier: $0) }
     }

@@ -98,18 +98,25 @@ internal struct CardCredentialsView: View {
     #endif
   }
 
-  /// Whether there is an identity to show instead of a setup form.
+  /// The holder of the complete identity to show instead of a setup form.
   ///
   /// A demonstration answers from ``DemoMode``, which holds its identity
   /// for the process and writes nothing; everything else answers from
-  /// what the device actually registered.
-  private var hasIdentity: Bool {
+  /// what the device actually registered. A registration that cannot name
+  /// its holder is incomplete and must never render as a finished identity.
+  private var identityHolder: String? {
     #if os(iOS)
       if isDemonstration {
-        return DemoMode.shared.hasIdentity
+        return DemoMode.shared.hasIdentity ? DemoMode.holderName : nil
       }
     #endif
-    return isRegistered
+    guard isRegistered else { return nil }
+    return PrimeStore.primedHolderNames().first
+  }
+
+  /// Whether there is a complete, displayable identity.
+  private var hasIdentity: Bool {
+    identityHolder != nil
   }
 
   /// Whether a card is being held against the phone right now.
@@ -166,10 +173,10 @@ internal struct CardCredentialsView: View {
         // whole screen. There is nothing to store first -- a card in a
         // contact reader needs no access number.
         readerOnlySection
-      } else if hasIdentity {
+      } else if let identityHolder {
         // A set identity replaces the whole setup: nothing about it is
         // left to configure, so nothing about configuring it is shown.
-        CardIdentitySection(isDemonstration: isDemonstration)
+        CardIdentitySection(holder: identityHolder)
       } else {
         createIdentitySection
       }

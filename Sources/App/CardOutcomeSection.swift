@@ -19,6 +19,9 @@ internal struct CardOutcomeSection: View {
         if let notice = model.notice {
           Text(notice)
             .foregroundStyle(.green)
+            .bold()
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity, alignment: .center)
             .textSelection(.enabled)
         }
       }

@@ -54,21 +54,23 @@ internal struct CardManagementView: View {
     }
   }
 
-  /// Internal, not private: the counter presentation lives in
-  /// CardManagementView+Attempts.swift and lays out the same row.
-  internal static let rowSymbolSpacing: CGFloat = 4
+  #if os(macOS)
+    /// Internal, not private: the counter presentation lives in
+    /// CardManagementView+Attempts.swift and lays out the same row.
+    internal static let rowSymbolSpacing: CGFloat = 4
 
-  private static let attemptsSpacing: CGFloat = 14
+    private static let attemptsSpacing: CGFloat = 14
 
-  private static let barHorizontalPadding: CGFloat = 16
+    private static let barHorizontalPadding: CGFloat = 16
 
-  private static let barVerticalPadding: CGFloat = 6
+    private static let barVerticalPadding: CGFloat = 6
 
-  private static let barLineSpacing: CGFloat = 4
+    private static let barLineSpacing: CGFloat = 4
 
-  /// The window's own width, which grows with the text inside it.
-  @ScaledMetric(relativeTo: .body)
-  private var windowWidth: CGFloat = 560
+    /// The window's own width, which grows with the text inside it.
+    @ScaledMetric(relativeTo: .body)
+    private var windowWidth: CGFloat = 560
+  #endif
 
   private let startsWithReaderCard: Bool
   private let usesProvidedCardAccessNumber: Bool
@@ -141,11 +143,13 @@ internal struct CardManagementView: View {
           isLandscapeLayout = isLandscape
         }
       #endif
-      .safeAreaInset(edge: .bottom, spacing: 0) {
-        if !awaitsActivation, model.report != nil {
-          attemptsBar
+      #if os(macOS)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+          if !awaitsActivation, model.report != nil {
+            attemptsBar
+          }
         }
-      }
+      #endif
       #if os(macOS)
         .task { await model.refresh() }
       #endif
@@ -165,9 +169,7 @@ internal struct CardManagementView: View {
             }
           } else if model.transport == .reader {
             model.cardRemoved()
-            if model.availableTransports.contains(.nearField) {
-              model.transport = .nearField
-            }
+            dismiss()
           }
         }
       #endif
@@ -187,19 +189,9 @@ internal struct CardManagementView: View {
   /// along the foot without taking a place in the form. They are
   /// still the numbers that decide whether the task can run, so the
   /// bar says so in words when one of them refuses.
-  @ViewBuilder private var attemptsBar: some View {
-    VStack(alignment: .leading, spacing: Self.barLineSpacing) {
-      #if os(iOS)
-        VStack(alignment: .leading, spacing: Self.barLineSpacing) {
-          Text("Attempts left:")
-            .foregroundStyle(.secondary)
-          HStack(spacing: Self.attemptsSpacing) {
-            attemptsEntry("PIN 1", model.report?.pin1)
-            attemptsEntry("PIN 2", model.report?.pin2)
-            attemptsEntry("PUK", model.report?.puk)
-          }
-        }
-      #else
+  #if os(macOS)
+    @ViewBuilder private var attemptsBar: some View {
+      VStack(alignment: .leading, spacing: Self.barLineSpacing) {
         HStack(spacing: Self.attemptsSpacing) {
           Text("Attempts left:")
             .foregroundStyle(.secondary)
@@ -208,27 +200,27 @@ internal struct CardManagementView: View {
           attemptsEntry("PUK", model.report?.puk)
           Spacer()
         }
-      #endif
-      if refusesAnyCredential {
-        // One literal, not three joined: a joined string is a String
-        // expression, which picks the Text initializer that does not
-        // localize, and no catalog entry can reach it.
-        Text(
-          """
-          ReFineID will not use a credential with one or two attempts \
-          left. Restore it with other software, or unblock it here \
-          once the card has blocked it.
-          """
-        )
-        .foregroundStyle(.red)
+        if refusesAnyCredential {
+          // One literal, not three joined: a joined string is a String
+          // expression, which picks the Text initializer that does not
+          // localize, and no catalog entry can reach it.
+          Text(
+            """
+            ReFineID will not use a credential with one or two attempts \
+            left. Restore it with other software, or unblock it here \
+            once the card has blocked it.
+            """
+          )
+          .foregroundStyle(.red)
+        }
       }
+      .font(.footnote)
+      .padding(.horizontal, Self.barHorizontalPadding)
+      .padding(.vertical, Self.barVerticalPadding)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .background(.bar)
     }
-    .font(.footnote)
-    .padding(.horizontal, Self.barHorizontalPadding)
-    .padding(.vertical, Self.barVerticalPadding)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .background(.bar)
-  }
+  #endif
 
   /// The tasks this card can actually be asked to do.
   ///
@@ -280,13 +272,16 @@ internal struct CardManagementView: View {
     #endif
         .labelsHidden()
         .accessibilityIdentifier("managementTask")
-        page(for: task)
+        if model.notice == nil {
+          page(for: task)
+        }
         CardOutcomeSection(model: model)
       }
       .formStyle(.grouped)
       .disabled(model.working)
       .onChange(of: task) { _, _ in
         hasChosenTask = true
+        model.clearOutcome()
       }
     }
   }
@@ -322,15 +317,17 @@ internal struct CardManagementView: View {
     #endif
   }
 
-  /// Whether any credential sits in the band this app will not use.
-  private var refusesAnyCredential: Bool {
-    guard let report = model.report else { return false }
-    return [report.pin1, report.pin2, report.puk].contains { outcome in
-      guard case .remaining(let count) = outcome else { return false }
-      return !count.isBlocked
-        && count.attemptsRemaining < RetryFloor.minimumAttemptsToProceed
+  #if os(macOS)
+    /// Whether any credential sits in the band this app will not use.
+    private var refusesAnyCredential: Bool {
+      guard let report = model.report else { return false }
+      return [report.pin1, report.pin2, report.puk].contains { outcome in
+        guard case .remaining(let count) = outcome else { return false }
+        return !count.isBlocked
+          && count.attemptsRemaining < RetryFloor.minimumAttemptsToProceed
+      }
     }
-  }
+  #endif
 
   /// The form one tab shows.
   @ViewBuilder

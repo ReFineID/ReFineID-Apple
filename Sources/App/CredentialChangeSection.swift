@@ -120,7 +120,11 @@ internal struct CredentialChangeSection: View {
       #endif
       focus = .current
     }
-    .confirmCredentialOperation($pending, report: model.report) { _ in
+    .confirmCredentialOperation(
+      $pending,
+      report: model.report,
+      reject: { _ in clearEntries() }
+    ) { _ in
       change()
     }
   }
@@ -157,7 +161,9 @@ internal struct CredentialChangeSection: View {
         .focused($focus, equals: .current)
         .onSubmit { advance(from: .current) }
         .accessibilityIdentifier("managementChange\(credential.identifierName)Current")
-      CredentialValidationIndicator(valid: currentIsValid)
+      CredentialValidationIndicator(
+        valid: currentIsValid,
+        isEmpty: current.isEmpty)
     }
     HStack {
       SecureField("New \(credential.name)", text: $new)
@@ -169,7 +175,9 @@ internal struct CredentialChangeSection: View {
         .focused($focus, equals: .new)
         .onSubmit { advance(from: .new) }
         .accessibilityIdentifier("managementChange\(credential.identifierName)New")
-      CredentialValidationIndicator(valid: newIsValid)
+      CredentialValidationIndicator(
+        valid: newIsValid,
+        isEmpty: new.isEmpty)
     }
     HStack {
       SecureField("New \(credential.name) again", text: $repeated)
@@ -183,7 +191,8 @@ internal struct CredentialChangeSection: View {
         .accessibilityIdentifier("managementChange\(credential.identifierName)Repeat")
       CredentialValidationIndicator(
         valid: repeatedIsValid,
-        entriesDiffer: entriesDiffer)
+        entriesDiffer: entriesDiffer,
+        isEmpty: repeated.isEmpty)
     }
   }
 
@@ -218,11 +227,16 @@ internal struct CredentialChangeSection: View {
           await model.changePin2(current: currentEntry, new: newEntry)
         }
       if accepted {
-        current = ""
-        new = ""
-        repeated = ""
-        focus = nil
+        clearEntries()
       }
     }
+  }
+
+  /// Destroys every secret entered for this operation.
+  private func clearEntries() {
+    current = ""
+    new = ""
+    repeated = ""
+    focus = nil
   }
 }

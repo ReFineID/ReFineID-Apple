@@ -87,7 +87,11 @@ internal struct CredentialUnblockSection: View {
       #endif
       focus = .puk
     }
-    .confirmCredentialOperation($pending, report: model.report) { _ in
+    .confirmCredentialOperation(
+      $pending,
+      report: model.report,
+      reject: { _ in clearEntries() }
+    ) { _ in
       unblock()
     }
   }
@@ -125,7 +129,9 @@ internal struct CredentialUnblockSection: View {
         .focused($focus, equals: .puk)
         .onSubmit { advance(from: .puk) }
         .accessibilityIdentifier("managementReset\(identifierName)Puk")
-      CredentialValidationIndicator(valid: pukIsValid)
+      CredentialValidationIndicator(
+        valid: pukIsValid,
+        isEmpty: puk.isEmpty)
     }
     HStack {
       SecureField("New \(targetName)", text: $new)
@@ -137,7 +143,9 @@ internal struct CredentialUnblockSection: View {
         .focused($focus, equals: .new)
         .onSubmit { advance(from: .new) }
         .accessibilityIdentifier("managementReset\(identifierName)New")
-      CredentialValidationIndicator(valid: newIsValid)
+      CredentialValidationIndicator(
+        valid: newIsValid,
+        isEmpty: new.isEmpty)
     }
     HStack {
       SecureField("New \(targetName) again", text: $repeated)
@@ -151,7 +159,8 @@ internal struct CredentialUnblockSection: View {
         .accessibilityIdentifier("managementReset\(identifierName)Repeat")
       CredentialValidationIndicator(
         valid: repeatedIsValid,
-        entriesDiffer: entriesDiffer)
+        entriesDiffer: entriesDiffer,
+        isEmpty: repeated.isEmpty)
     }
   }
 
@@ -179,11 +188,16 @@ internal struct CredentialUnblockSection: View {
     let newEntry = new
     Task {
       if await model.unblock(target: unblockTarget, puk: pukEntry, new: newEntry) {
-        puk = ""
-        new = ""
-        repeated = ""
-        focus = nil
+        clearEntries()
       }
     }
+  }
+
+  /// Destroys every secret entered for this operation.
+  private func clearEntries() {
+    puk = ""
+    new = ""
+    repeated = ""
+    focus = nil
   }
 }

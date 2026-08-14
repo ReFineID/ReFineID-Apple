@@ -3,7 +3,9 @@
 /// Every CTK PIN-bearing command obtains fresh retry state first,
 /// side-effect-free, and this rule decides whether the operation may proceed.
 public enum RetryFloor {
-  /// An operation proceeds only when at least this many attempts remain.
+  /// An unblocked operation proceeds only when at least this many attempts
+  /// remain. Zero also proceeds because a blocked credential has no attempt
+  /// left for the operation to consume.
   public static let minimumAttemptsToProceed: UInt8 = 3
 
   /// Decides from one fresh reading.
@@ -16,8 +18,7 @@ public enum RetryFloor {
   /// immediately before it.
   public static func evaluate(freshReading: RetryCount?) -> RetryFloorVerdict {
     guard let reading = freshReading else { return .refuseUnreadable }
-    if reading.isBlocked { return .refuseBlocked }
-    if reading.attemptsRemaining < Self.minimumAttemptsToProceed {
+    if reading.attemptsRemaining == 1 || reading.attemptsRemaining == 2 {
       return .refuseLowAttempts
     }
     return .proceed
@@ -43,7 +44,7 @@ public enum RetryFloor {
     case .verified:
       return .proceed
     case .locked:
-      return .refuseBlocked
+      return .proceed
     case .invalidated, .noInformation, .other:
       return .refuseUnreadable
     }
