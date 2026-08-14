@@ -6,6 +6,7 @@ import SwiftUI
 internal struct CredentialValidationIndicator: View {
   internal let valid: Bool
   internal var entriesDiffer = false
+  internal var unchanged = false
   internal var isEmpty = false
 
   internal var body: some View {
@@ -18,18 +19,24 @@ internal struct CredentialValidationIndicator: View {
 
   private var symbol: String {
     if valid { return "checkmark.circle.fill" }
-    return entriesDiffer ? "exclamationmark.triangle.fill" : "xmark.circle.fill"
+    return hasWarning ? "exclamationmark.triangle.fill" : "xmark.circle.fill"
   }
 
   private var color: Color {
     if valid { return .green }
-    return entriesDiffer ? .orange : .red
+    return hasWarning ? .orange : .red
+  }
+
+  private var hasWarning: Bool {
+    entriesDiffer || unchanged
   }
 
   private var accessibilityDescription: String {
     if valid { return String(localized: "Valid entry") }
-    return entriesDiffer
-      ? String(localized: "The new entries differ.")
-      : String(localized: "Invalid entry")
+    if unchanged {
+      return String(localized: "The new PIN must differ from the current PIN.")
+    }
+    if entriesDiffer { return String(localized: "The new entries differ.") }
+    return String(localized: "Invalid entry")
   }
 }

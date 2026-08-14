@@ -14,14 +14,10 @@
       if signingModel.failure != nil || signingModel.notice != nil {
         Section {
           if let failure = signingModel.failure {
-            Text(failure)
-              .foregroundStyle(.red)
-              .textSelection(.enabled)
+            CredentialOutcomeText(message: failure, tone: .failure)
           }
           if let note = signingModel.notice {
-            Text(note)
-              .foregroundStyle(.orange)
-              .textSelection(.enabled)
+            CredentialOutcomeText(message: note, tone: .notice)
           }
         }
       }

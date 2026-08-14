@@ -29,12 +29,17 @@ internal enum ReaderSignature {
     request: SignRequest,
     token: Token
   ) throws -> Data {
-    try performSign(
-      channel: try unsealed(channel, with: accessNumber),
-      enteredPin: enteredPin,
-      request: request,
-      token: token
-    )
+    do {
+      return try performSign(
+        channel: try unsealed(channel, with: accessNumber),
+        enteredPin: enteredPin,
+        request: request,
+        token: token
+      )
+    } catch PaceEstablishment.Failure.authenticationTokenMismatch {
+      token.revokeAutomaticIdentityAfterCanRejection()
+      throw TokenError.primeMissing
+    }
   }
 
   /// The channel to work in: the plain one for a contact card, or a

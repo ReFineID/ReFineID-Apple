@@ -120,7 +120,11 @@ internal struct CardActivationSection: View {
       .listRowInsets(EdgeInsets())
       .listRowBackground(Color.clear)
     #endif
-    .disabled(!isComplete || !model.canContactCard || model.cardOperationInProgress)
+    .disabled(
+      !isComplete
+        || !model.canContactCard
+        || !model.allowsActivationOperation
+        || model.cardOperationInProgress)
     .accessibilityIdentifier("managementActivate")
   }
 
@@ -131,7 +135,9 @@ internal struct CardActivationSection: View {
     HStack {
       SecureField("Activation PIN", text: $entry)
         .textContentType(.oneTimeCode)
-        .keyboardType(.numberPad)
+        #if os(iOS)
+          .keyboardType(.numberPad)
+        #endif
         .onChange(of: entry) { _, typed in
           entry = LimitedDigits.puk(typed)
         }
@@ -146,7 +152,9 @@ internal struct CardActivationSection: View {
       HStack {
         SecureField("New PIN 1", text: $newPin1)
           .textContentType(.oneTimeCode)
-          .keyboardType(.numberPad)
+          #if os(iOS)
+            .keyboardType(.numberPad)
+          #endif
           .onChange(of: newPin1) { _, typed in
             newPin1 = LimitedDigits.pin1(typed)
           }
@@ -160,7 +168,9 @@ internal struct CardActivationSection: View {
       HStack {
         SecureField("New PIN 1 again", text: $newPin1Repeated)
           .textContentType(.oneTimeCode)
-          .keyboardType(.numberPad)
+          #if os(iOS)
+            .keyboardType(.numberPad)
+          #endif
           .onChange(of: newPin1Repeated) { _, typed in
             newPin1Repeated = LimitedDigits.pin1(typed)
           }
@@ -177,7 +187,9 @@ internal struct CardActivationSection: View {
       HStack {
         SecureField("New PIN 2", text: $newPin2)
           .textContentType(.oneTimeCode)
-          .keyboardType(.numberPad)
+          #if os(iOS)
+            .keyboardType(.numberPad)
+          #endif
           .onChange(of: newPin2) { _, typed in
             newPin2 = LimitedDigits.pin2(typed)
           }
@@ -191,7 +203,9 @@ internal struct CardActivationSection: View {
       HStack {
         SecureField("New PIN 2 again", text: $newPin2Repeated)
           .textContentType(.oneTimeCode)
-          .keyboardType(.numberPad)
+          #if os(iOS)
+            .keyboardType(.numberPad)
+          #endif
           .onChange(of: newPin2Repeated) { _, typed in
             newPin2Repeated = LimitedDigits.pin2(typed)
           }
@@ -225,28 +239,20 @@ internal struct CardActivationSection: View {
     }
   }
 
-  /// Runs activation and clears the fields when the card accepted.
+  /// Runs activation and destroys every entry after the card responds.
   private func activate() {
     guard isComplete, !model.cardOperationInProgress else { return }
     let activationEntry = entry
     let pin1Entry = asksPin1 ? newPin1 : nil
     let pin2Entry = asksPin2 ? newPin2 : nil
+    clearEntries()
     Task {
       let accepted = await model.activate(
         entry: activationEntry,
         newPin1: pin1Entry,
         newPin2: pin2Entry
       )
-      if !model.activationNeeds.pin1 {
-        newPin1 = ""
-        newPin1Repeated = ""
-      }
-      if !model.activationNeeds.pin2 {
-        newPin2 = ""
-        newPin2Repeated = ""
-      }
       if accepted {
-        clearEntries()
         onActivated()
       }
     }

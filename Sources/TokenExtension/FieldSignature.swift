@@ -36,15 +36,22 @@ internal struct FieldSignature {
   /// The PIN is spent exactly once. There is deliberately no fresh-card
   /// fallback here: once ctkd's field has ended, opening another session
   /// merely waits through `TKError -7` and cannot continue the original
-  /// PACE channel.
+  /// PACE channel. A PACE authentication-token mismatch is cryptographic
+  /// proof that the stored CAN cannot open the presented card, so it revokes
+  /// this automatic identity rather than leaving a mintable broken token.
   internal func perform(pin1: consuming Pin1, request: SignRequest) throws -> Data {
     // The mint starts PACE immediately on a worker and retains that exact
     // secure channel. This keeps the expensive work ahead of Safari's
     // later sign callback and keeps its mutable counter for a second
     // signature from the same token.
-    let lease = try token.heldSession.preparedChannel(accessNumber: accessNumber)
-    defer { _ = lease.channel }
-    return try sign(in: lease.channel, pin1: pin1, request: request)
+    do {
+      let lease = try token.heldSession.preparedChannel(accessNumber: accessNumber)
+      defer { _ = lease.channel }
+      return try sign(in: lease.channel, pin1: pin1, request: request)
+    } catch PaceEstablishment.Failure.authenticationTokenMismatch {
+      token.revokeAutomaticIdentityAfterCanRejection()
+      throw TokenError.primeMissing
+    }
   }
 
   /// VERIFY PIN1 and the on-card signature, inside the PACE channel.

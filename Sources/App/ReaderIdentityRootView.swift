@@ -4,7 +4,7 @@
 
   import SwiftUI
 
-  /// Chooses the app's only useful surface while a USB-C reader identity is live.
+  /// Chooses the app's only useful surface while a reader identity is live.
   internal struct ReaderIdentityRootView: View {
     @Environment(\.scenePhase)
     private var scenePhase
@@ -19,7 +19,9 @@
           CardCredentialsView()
         }
       }
-      .onAppear { model.refresh() }
+      .onAppear {
+        model.refresh()
+      }
       .onChange(of: scenePhase) {
         if scenePhase == .active {
           model.refresh()

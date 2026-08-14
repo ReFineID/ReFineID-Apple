@@ -70,10 +70,6 @@
         Task { @MainActor in
           guard let pin1 = enteredPin1() else { return }
           defer { clearPin1Entry() }
-          guard !isDemonstration else {
-            await DemoMode.shared.readTestIdentity()
-            return
-          }
           await model.prime(pin1: pin1)
           if case .succeeded = model.lastRunResult,
             storeVerifiedPin1(pin1)

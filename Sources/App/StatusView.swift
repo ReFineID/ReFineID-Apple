@@ -11,9 +11,9 @@
   /// document with it.
   ///
   /// It stays small. The login row does zero card I/O - it reads only
-  /// what `ctkd` has already published, because an open session here
-  /// once held the card while the token extension waited to sign, and
-  /// hung a Safari login until the app was quit.
+  /// what `ctkd` has already published. Once that identity is ready, the
+  /// health key starts one short retry-counter probe. It never polls and
+  /// never delays identity presentation or signing controls.
   ///
   /// Signing lives here rather than in a window of its own: dropping a
   /// document on the app is the thing a holder will try, and the app
@@ -32,6 +32,7 @@
     private var minimumWidth: CGFloat = 420
 
     private let model = LoginIdentityModel.shared
+    private let retryHealth = CredentialRetryHealth.shared
     @State private var signing = SignDocumentModel()
 
     /// Notices a card waiting to be taken into use, and carries the
@@ -82,8 +83,20 @@
 
     internal var body: some View {
       VStack(alignment: .leading, spacing: Self.spacing) {
-        Text(verbatim: "ReFineID")
-          .font(.largeTitle.bold())
+        HStack {
+          Text(verbatim: "ReFineID")
+            .font(.largeTitle.bold())
+          Spacer()
+          if availability == .ready {
+            SettingsLink {
+              CredentialRetryHealthKey(level: retryHealth.level)
+            }
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.circle)
+            .controlSize(.large)
+            .accessibilityIdentifier("manageCard")
+          }
+        }
         Form {
           // While an entered number awaits the card's verdict, the
           // window is the instruction and nothing else: the steps to
@@ -101,7 +114,9 @@
             // The extension's activation token is the authoritative
             // semantic result. It outranks derived token readiness and
             // publishes no identity or signing keys.
-            CardActivationSection(model: activation.management)
+            CardActivationSection(
+              model: activation.management,
+              onActivated: { model.refresh() })
             CardOutcomeSection(model: activation.management)
           } else if availability == .ready {
             // Signing belongs exclusively to a published identity. No
@@ -313,13 +328,15 @@
       case .ready:
         model.cancelRecovery(cardLeft: false)
         offeringNumber = false
+        retryHealth.refreshFromReader()
       case .cardWithoutIdentity:
-        break
+        retryHealth.clear()
       case .noCard:
         // A CCID protocol reset can publish this between T=Any and its
         // successful T=0/T=1 fallback. Defer removal cleanup until the
         // card operation itself has ended.
         guard !activation.defersRemoval else { return }
+        retryHealth.clear()
         model.cancelRecovery(cardLeft: true)
         signing.cardRemoved()
         pin2 = ""

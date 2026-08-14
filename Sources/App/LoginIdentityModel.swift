@@ -9,19 +9,16 @@
 
   /// Whether the system has a ReFineID login identity to offer right now.
   ///
-  /// It observes and never touches the card, and that is the whole
-  /// design rather than an optimisation. A card is exclusive: a status
-  /// screen that opens a session to read a card holds it, and the token
-  /// extension's signature then waits for this app to let go. That wait
-  /// is the one thing no protocol timer bounds -- it is not the card
-  /// being slow, it is another process not answering -- and on
-  /// 2026-08-03 it was measured hanging a Safari login at the PIN1
-  /// retry-floor probe until the app was quit. A window that reads no
-  /// card cannot do that to a login.
+  /// Identity availability comes exclusively from token events; this model
+  /// never polls the card. The earlier failure mode was an event-engine bug
+  /// that repeatedly rebuilt watchers and queried state, continuously
+  /// contending with `ctkd` until Safari authentication stalled. A separate
+  /// health model may perform one bounded retry-counter probe after a ready
+  /// event, but neither model loops while waiting for a card.
   ///
   /// `TKTokenWatcher` reports what `ctkd` has already published, so the
-  /// answer costs nothing and stays live: a card arriving or leaving
-  /// moves it without anyone pressing refresh.
+  /// availability answer stays live: a card arriving or leaving moves it
+  /// without polling or anyone pressing refresh.
   @MainActor
   @Observable
   internal final class LoginIdentityModel {

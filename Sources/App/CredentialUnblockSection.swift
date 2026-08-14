@@ -112,7 +112,11 @@ internal struct CredentialUnblockSection: View {
       .listRowBackground(Color.clear)
     #endif
     .keyboardShortcut(.defaultAction)
-    .disabled(!isComplete || !model.canContactCard || model.cardOperationInProgress)
+    .disabled(
+      !isComplete
+        || !model.canContactCard
+        || !model.allowsCredentialOperation(spending: .puk)
+        || model.cardOperationInProgress)
     .accessibilityIdentifier("managementReset\(identifierName)")
   }
 
@@ -122,7 +126,9 @@ internal struct CredentialUnblockSection: View {
     HStack {
       SecureField("PUK", text: $puk)
         .textContentType(.oneTimeCode)
-        .keyboardType(.numberPad)
+        #if os(iOS)
+          .keyboardType(.numberPad)
+        #endif
         .onChange(of: puk) { _, typed in
           puk = LimitedDigits.puk(typed)
         }
@@ -136,7 +142,9 @@ internal struct CredentialUnblockSection: View {
     HStack {
       SecureField("New \(targetName)", text: $new)
         .textContentType(.oneTimeCode)
-        .keyboardType(.numberPad)
+        #if os(iOS)
+          .keyboardType(.numberPad)
+        #endif
         .onChange(of: new) { _, typed in
           new = LimitedDigits.pin(typed)
         }
@@ -150,7 +158,9 @@ internal struct CredentialUnblockSection: View {
     HStack {
       SecureField("New \(targetName) again", text: $repeated)
         .textContentType(.oneTimeCode)
-        .keyboardType(.numberPad)
+        #if os(iOS)
+          .keyboardType(.numberPad)
+        #endif
         .onChange(of: repeated) { _, typed in
           repeated = LimitedDigits.pin(typed)
         }
@@ -180,16 +190,15 @@ internal struct CredentialUnblockSection: View {
     }
   }
 
-  /// Runs the unblock and clears the fields when the card accepted.
+  /// Runs the unblock and destroys every entry after the card responds.
   private func unblock() {
     guard isComplete, !model.cardOperationInProgress else { return }
     let unblockTarget = target
     let pukEntry = puk
     let newEntry = new
+    clearEntries()
     Task {
-      if await model.unblock(target: unblockTarget, puk: pukEntry, new: newEntry) {
-        clearEntries()
-      }
+      _ = await model.unblock(target: unblockTarget, puk: pukEntry, new: newEntry)
     }
   }
 

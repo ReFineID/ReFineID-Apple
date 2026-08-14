@@ -33,6 +33,18 @@ internal enum UITestApp {
     Self.launch(language: "en", arguments: arguments)
   }
 
+  /// Launches a deterministic virtual card scenario with no hardware or secret.
+  internal static func launchVirtualCard(
+    scenario: String
+  ) -> XCUIApplication {
+    Self.launch(arguments: ["--virtual-card", scenario])
+  }
+
+  /// Enters virtual mode with no card so all test state is configured in UI.
+  internal static func launchVirtualCard() -> XCUIApplication {
+    Self.launchVirtualCard(scenario: "absent")
+  }
+
   /// Launches the app under test in the named language, with further
   /// arguments only the test asking for them needs.
   internal static func launch(

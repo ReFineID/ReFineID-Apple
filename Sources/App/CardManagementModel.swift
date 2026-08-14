@@ -6,7 +6,9 @@ import Observation
 @MainActor
 @Observable
 internal final class CardManagementModel {
-  internal private(set) var report: CredentialProbeReport?
+  internal private(set) var report: CredentialProbeReport? {
+    didSet { CredentialRetryHealth.shared.update(report) }
+  }
   internal private(set) var activationNeeds = CardMaintenance.ActivationNeeds(
     pin1: true,
     pin2: true
@@ -272,9 +274,7 @@ internal final class CardManagementModel {
         .map { "PIN 2 was not set: \($0)" }
       return false
     case (.alreadyActivated, nil):
-      failure =
-        "This card looks activated already. Activating again would spend "
-        + "a retry; enable reactivation only if you are sure."
+      failure = "This card is already activated."
       return false
     case (let first, _):
       failure = message(for: first, presenting: entry)
@@ -327,18 +327,19 @@ internal final class CardManagementModel {
     case .floorRefused(.refuseBlocked), .pinBlocked:
       "\(presenting) is blocked."
     case .floorRefused(.refuseLowAttempts):
-      "Only one or two attempts remain on \(presenting); ReFineID "
-        + "refuses to spend a near-last attempt."
+      CredentialOutcomeMessage.lowAttemptRefusal()
     case .floorRefused:
       "The \(presenting) retry counter could not be read; nothing was sent."
     case .rejected(let remaining):
-      "Wrong \(presenting): \(remaining.attemptsRemaining) attempts remain."
+      CredentialOutcomeMessage.rejection(
+        credentialName: presenting,
+        remaining: remaining)
     case .invalidated:
       "The credential slot is invalidated; only the issuer can recover it."
     case .alreadyActivated:
       "This card looks activated already."
     case .failed:
-      "The card refused the operation."
+      "The card operation did not complete."
     }
   }
 }

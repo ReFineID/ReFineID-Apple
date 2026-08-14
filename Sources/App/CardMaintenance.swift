@@ -106,6 +106,10 @@ internal enum CardMaintenance {
     internal static func connectionSnapshot(
       cardAccessNumber: String
     ) async -> ConnectionSnapshotResult {
+      if await DemoMode.shared.isActive {
+        return await DemoMode.shared.connectionSnapshot(
+          cardAccessNumber: cardAccessNumber)
+      }
       guard SupportedCardTransports.offersNearField else { return .failed }
       let held: NearFieldCardSession
       do {
@@ -239,6 +243,15 @@ internal enum CardMaintenance {
         }
       }
     #endif
+  #else
+    /// The first wireless connection is an iOS-only operation. Keeping the
+    /// unavailable implementation explicit lets shared UI models compile for
+    /// macOS without pretending that a reader session is an NFC setup flow.
+    internal static func connectionSnapshot(
+      cardAccessNumber _: String
+    ) async -> ConnectionSnapshotResult {
+      .failed
+    }
   #endif
 
   /// Establishes the first PACE channel while preserving a rejected CAN

@@ -15,9 +15,9 @@ import Security
 /// one wrong entry is never resent, and the fail-closed local
 /// verification of the card's signature.
 ///
-/// A PIN2 rejection never revokes the published identity: revocation
-/// is the automatic-identity response to a PIN1 rejection, and the
-/// qualified key has no automatic path to protect.
+/// A card-confirmed CAN or PIN2 rejection bankrupts the published token.
+/// The extension has no recovery UI; the containing app must explicitly
+/// establish a new trusted token before any signing can resume.
 internal enum QualifiedSignature {
   /// Unseals the channel if the card asks for it, then signs in it.
   internal static func perform(
@@ -25,14 +25,21 @@ internal enum QualifiedSignature {
     unsealingWith accessNumber: CardAccessNumber?,
     enteredPin: String?,
     request: SignRequest,
-    signPublicKey: SecKey
+    signPublicKey: SecKey,
+    token: Token
   ) throws -> Data {
-    try performSign(
-      channel: try ReaderSignature.unsealed(channel, with: accessNumber),
-      enteredPin: enteredPin,
-      request: request,
-      signPublicKey: signPublicKey
-    )
+    do {
+      return try performSign(
+        channel: try ReaderSignature.unsealed(channel, with: accessNumber),
+        enteredPin: enteredPin,
+        request: request,
+        signPublicKey: signPublicKey,
+        token: token
+      )
+    } catch PaceEstablishment.Failure.authenticationTokenMismatch {
+      token.revokeAutomaticIdentityAfterCanRejection()
+      throw TokenError.primeMissing
+    }
   }
 
   /// The full qualified sign flow, inside the caller's exclusive
@@ -43,7 +50,8 @@ internal enum QualifiedSignature {
     channel: any CardChannel,
     enteredPin: String?,
     request: SignRequest,
-    signPublicKey: SecKey
+    signPublicKey: SecKey,
+    token: Token
   ) throws -> Data {
     let operations = CardOperations(channel: channel)
     try operations.selectFineidApplication()
@@ -68,10 +76,14 @@ internal enum QualifiedSignature {
     do {
       try operations.verifyPin2(pin2.consumeForSingleTransmission())
     } catch CardOperationError.pinRejected {
-      CredentialMemory.rejectedPins.recordRejection(fingerprint)
+      token.revokeIdentityAfterPin2Rejection(
+        serial: serial,
+        fingerprint: fingerprint)
       throw TokenError.pinRejected
     } catch CardOperationError.pinBlocked {
-      CredentialMemory.rejectedPins.recordRejection(fingerprint)
+      token.revokeIdentityAfterPin2Rejection(
+        serial: serial,
+        fingerprint: fingerprint)
       throw TokenError.pinRejected
     } catch CardOperationError.credentialInvalidated {
       // A never-activated signature slot: not a wrong PIN, not a card

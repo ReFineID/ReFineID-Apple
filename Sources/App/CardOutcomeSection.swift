@@ -12,17 +12,10 @@ internal struct CardOutcomeSection: View {
     if model.failure != nil || model.notice != nil {
       Section {
         if let failure = model.failure {
-          Text(failure)
-            .foregroundStyle(.red)
-            .textSelection(.enabled)
+          CredentialOutcomeText(message: failure, tone: .failure)
         }
         if let notice = model.notice {
-          Text(notice)
-            .foregroundStyle(.green)
-            .bold()
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity, alignment: .center)
-            .textSelection(.enabled)
+          CredentialOutcomeText(message: notice, tone: .success)
         }
       }
     }

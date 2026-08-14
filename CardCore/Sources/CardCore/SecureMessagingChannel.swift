@@ -13,11 +13,12 @@ import Foundation
 /// that travelled in DO'99' -- so `CardOperations`, `BinaryReadAssembler`
 /// and everything above them are unchanged by the transport choice.
 ///
-/// A command is protected as DO'87' (the ISO 7816-4 padded plaintext under
+/// A command's data is protected as DO'85' for an odd instruction byte or
+/// DO'87' for an even instruction byte (the ISO 7816-4 padded plaintext under
 /// AES-256-CBC, with the send-sequence counter encrypted under Kenc as the
-/// IV), DO'97' (the enclosed command's Le) and DO'8E' (the leading eight
-/// bytes of an AES-CMAC over the padded concatenation of the counter, the
-/// padded header, DO'87' and DO'97'). The class byte gets the
+/// IV), followed by DO'97' (the enclosed command's Le) and DO'8E' (the leading
+/// eight bytes of an AES-CMAC over the padded concatenation of the counter,
+/// the padded header and enclosed data objects). The class byte gets the
 /// secure-messaging bits before the header is MACed, which is what binds
 /// the header to the cryptogram.
 ///
@@ -60,13 +61,23 @@ public final class SecureMessagingChannel: CardChannel {
 
     /// The enclosed command's Le, nil when it expects no response data.
     let expectedLength: UInt8?
+
+    /// Whether the original instruction byte selects DO'85' rather than
+    /// DO'87' for its encrypted command data.
+    let hasOddInstruction: Bool
+  }
+
+  /// A parsed encrypted data object, preserving its tag because DO'85' and
+  /// DO'87' have different value encodings and the tag is covered by the MAC.
+  private struct CryptogramObject {
+    let tag: UInt8
+    let value: Data
   }
 
   /// The secure-messaging data objects of a response.
   private struct ResponseObjects {
-    /// DO'87', the padding indicator followed by the cryptogram; nil when
-    /// the response carried no data.
-    let cryptogram: Data?
+    /// DO'85' or DO'87'; nil when the response carried no data.
+    let cryptogram: CryptogramObject?
 
     /// DO'99', the two status bytes of the enclosed plain response.
     let status: Data
@@ -128,14 +139,21 @@ public final class SecureMessagingChannel: CardChannel {
     guard bytes.count >= Self.headerLength else { throw Failure.malformedCommand }
     var header = Data(bytes.prefix(Self.headerLength))
     header[header.startIndex] |= PaceValues.classSecureMessagingBit
+    let hasOddInstruction = !bytes[1].isMultiple(of: 2)
     if bytes.count == Self.headerLength {
-      return PlainCommandParts(header: header, data: Data(), expectedLength: nil)
+      return PlainCommandParts(
+        header: header,
+        data: Data(),
+        expectedLength: nil,
+        hasOddInstruction: hasOddInstruction
+      )
     }
     if bytes.count == Self.headerLength + 1 {
       return PlainCommandParts(
         header: header,
         data: Data(),
-        expectedLength: bytes[Self.headerLength]
+        expectedLength: bytes[Self.headerLength],
+        hasOddInstruction: hasOddInstruction
       )
     }
     let dataStart = Self.headerLength + 1
@@ -145,7 +163,12 @@ public final class SecureMessagingChannel: CardChannel {
     }
     let data = Data(bytes[dataStart..<dataStart + dataLength])
     if bytes.count == dataStart + dataLength {
-      return PlainCommandParts(header: header, data: data, expectedLength: nil)
+      return PlainCommandParts(
+        header: header,
+        data: data,
+        expectedLength: nil,
+        hasOddInstruction: hasOddInstruction
+      )
     }
     guard bytes.count == dataStart + dataLength + 1 else {
       throw Failure.malformedCommand
@@ -153,7 +176,8 @@ public final class SecureMessagingChannel: CardChannel {
     return PlainCommandParts(
       header: header,
       data: data,
-      expectedLength: bytes[dataStart + dataLength]
+      expectedLength: bytes[dataStart + dataLength],
+      hasOddInstruction: hasOddInstruction
     )
   }
 
@@ -166,13 +190,14 @@ public final class SecureMessagingChannel: CardChannel {
     guard let records = try? DerTlvRecord.sequence(in: body) else {
       throw Failure.malformedResponse
     }
-    var cryptogram: Data?
+    var cryptogram: CryptogramObject?
     var status: Data?
     var mac: Data?
     for record in records {
       switch record.tag {
-      case PaceValues.cryptogramTag:
-        cryptogram = record.value
+      case PaceValues.oddInstructionCryptogramTag, PaceValues.cryptogramTag:
+        guard cryptogram == nil else { throw Failure.malformedResponse }
+        cryptogram = CryptogramObject(tag: record.tag, value: record.value)
       case PaceValues.statusTag:
         status = record.value
       case PaceValues.macTag:
@@ -250,12 +275,17 @@ public final class SecureMessagingChannel: CardChannel {
     return response
   }
 
-  /// DO'87' for a command data field: the padding indicator followed by
-  /// the padded plaintext under AES-256-CBC, or empty when the command
-  /// carries no data.
-  private func cryptogramObject(for data: Data) throws -> Data {
+  /// DO'85' or DO'87' for a command data field. DO'85' carries ciphertext
+  /// directly for odd instructions; DO'87' prefixes it with the padding
+  /// indicator for even instructions. An empty data field emits no object.
+  private func cryptogramObject(
+    for data: Data,
+    hasOddInstruction: Bool
+  ) throws -> Data {
     guard !data.isEmpty else { return Data() }
-    var value = Data([PaceValues.paddingContentIndicator])
+    var value = hasOddInstruction
+      ? Data()
+      : Data([PaceValues.paddingContentIndicator])
     value.append(
       try AesCbc.encrypt(
         key: encryptionKey,
@@ -263,7 +293,10 @@ public final class SecureMessagingChannel: CardChannel {
         plaintext: Self.padded(data)
       )
     )
-    guard let object = DerTlvRecord.encoded(tag: PaceValues.cryptogramTag, value: value)
+    let tag = hasOddInstruction
+      ? PaceValues.oddInstructionCryptogramTag
+      : PaceValues.cryptogramTag
+    guard let object = DerTlvRecord.encoded(tag: tag, value: value)
     else {
       throw Failure.oversizedCommand
     }
@@ -288,7 +321,10 @@ public final class SecureMessagingChannel: CardChannel {
   private func wrap(_ plain: Data) throws -> Data {
     let parts = try Self.commandParts(of: plain)
     incrementSendSequenceCounter()
-    let cryptogramObject = try cryptogramObject(for: parts.data)
+    let cryptogramObject = try cryptogramObject(
+      for: parts.data,
+      hasOddInstruction: parts.hasOddInstruction
+    )
     let expectedLengthObject = try expectedLengthObject(for: parts.expectedLength)
 
     var macInput = sendSequenceCounter
@@ -332,8 +368,8 @@ public final class SecureMessagingChannel: CardChannel {
     if let cryptogram = objects.cryptogram {
       guard
         let object = DerTlvRecord.encoded(
-          tag: PaceValues.cryptogramTag,
-          value: cryptogram
+          tag: cryptogram.tag,
+          value: cryptogram.value
         )
       else {
         throw Failure.malformedResponse
@@ -360,10 +396,18 @@ public final class SecureMessagingChannel: CardChannel {
     guard let cryptogram = objects.cryptogram else {
       return (Data(), objects.status)
     }
-    guard cryptogram.first == PaceValues.paddingContentIndicator else {
+    let ciphertext: Data
+    switch cryptogram.tag {
+    case PaceValues.oddInstructionCryptogramTag:
+      ciphertext = cryptogram.value
+    case PaceValues.cryptogramTag:
+      guard cryptogram.value.first == PaceValues.paddingContentIndicator else {
+        throw Failure.malformedResponse
+      }
+      ciphertext = Data(cryptogram.value.dropFirst())
+    default:
       throw Failure.malformedResponse
     }
-    let ciphertext = Data(cryptogram.dropFirst())
     guard !ciphertext.isEmpty, ciphertext.count.isMultiple(of: AesCbc.blockSize) else {
       throw Failure.malformedResponse
     }

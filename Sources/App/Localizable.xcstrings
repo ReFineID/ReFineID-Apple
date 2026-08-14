@@ -490,18 +490,409 @@
         }
       }
     },
-    "Basic Code (PIN1)": {
+    "Basic Code (PIN 1)": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Perustunnusluku (PIN1)"
+            "value": "Perustunnusluku (PIN 1)"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Baskoden (PIN1)"
+            "value": "Baskoden (PIN 1)"
+          }
+        }
+      }
+    },
+    "PIN 1 requires recovery": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 1 on palautettava"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 1 måste återställas"
+          }
+        }
+      }
+    },
+    "Reset PIN 1 with your PUK.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Palauta PIN 1 PUK-koodilla."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återställ PIN 1 med din PUK-kod."
+          }
+        }
+      }
+    },
+    "PIN 2 requires recovery": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 2 on palautettava"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 2 måste återställas"
+          }
+        }
+      }
+    },
+    "Reset PIN 2 with your PUK.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Palauta PIN 2 PUK-koodilla."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återställ PIN 2 med din PUK-kod."
+          }
+        }
+      }
+    },
+    "Use other software to recover the card": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Palauta kortti toisella ohjelmistolla"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återställ kortet med annan programvara"
+          }
+        }
+      }
+    },
+    "ReFineID will not use either of the final two PUK attempts.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ReFineID ei käytä kumpaakaan kahdesta viimeisestä PUK-yrityksestä."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ReFineID använder inte något av de två sista PUK-försöken."
+          }
+        }
+      }
+    },
+    "The PUK is blocked": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PUK on lukittu"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PUK-koden är spärrad"
+          }
+        }
+      }
+    },
+    "This card cannot be recovered with software.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tätä korttia ei voi palauttaa ohjelmistolla."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortet kan inte återställas med programvara."
+          }
+        }
+      }
+    },
+    "PIN 1 is incorrect.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 1 on väärä."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 1 är felaktig."
+          }
+        }
+      }
+    },
+    "PIN 2 is incorrect.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 2 on väärä."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 2 är felaktig."
+          }
+        }
+      }
+    },
+    "PUK is incorrect.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PUK on väärä."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PUK är felaktig."
+          }
+        }
+      }
+    },
+    "Activation code is incorrect.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivointikoodi on väärä."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktiveringskoden är felaktig."
+          }
+        }
+      }
+    },
+    "Activation PIN is incorrect.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivointitunnusluku on väärä."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktiveringskoden är felaktig."
+          }
+        }
+      }
+    },
+    "You have %u attempts remaining.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sinulla on %u yritystä jäljellä."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du har %u försök kvar."
+          }
+        }
+      }
+    },
+    "A credential has fewer than five attempts remaining": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yhdellä tunnusluvulla on alle viisi yritystä jäljellä"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En kod har färre än fem försök kvar"
+          }
+        }
+      }
+    },
+    "A credential is blocked or has at most two attempts remaining": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tunnusluku on lukittu tai sillä on enintään kaksi yritystä jäljellä"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En kod är spärrad eller har högst två försök kvar"
+          }
+        }
+      }
+    },
+    "All credential attempts are available": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaikki tunnuslukuyritykset ovat käytettävissä"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alla kodförsök är tillgängliga"
+          }
+        }
+      }
+    },
+    "Credential retry status unavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tunnuslukuyritysten tila ei ole saatavilla"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kodförsökens status är inte tillgänglig"
+          }
+        }
+      }
+    },
+    "Operation refused": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toimintoa ei suoritettu"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åtgärden avvisades"
+          }
+        }
+      }
+    },
+    "Only 1 attempt remains for %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vain 1 yritys on jäljellä koodille %@."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Endast 1 försök återstår för %@."
+          }
+        }
+      }
+    },
+    "Only %u attempts remain for %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vain %1$u yritystä on jäljellä koodille %2$@."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Endast %1$u försök återstår för %2$@."
+          }
+        }
+      }
+    },
+    "Use another software or reset %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Käytä toista ohjelmistoa tai palauta %@."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Använd en annan programvara eller återställ %@."
+          }
+        }
+      }
+    },
+    "PIN 1 is blocked": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 1 on lukittu"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 1 är spärrad"
           }
         }
       }
@@ -3791,6 +4182,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "En felaktig %1$@ förbrukar ett försök. %2$lld försök återstår. En förbrukad %3$@ kan inte återställas med programvara."
+          }
+        }
+      }
+    },
+    "The new PIN must differ from the current PIN.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uuden PIN-koodin on oltava eri kuin nykyisen PIN-koodin."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den nya PIN-koden måste skilja sig från den nuvarande PIN-koden."
+          }
+        }
+      }
+    },
+    "The operation was not sent.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toimintoa ei lähetetty."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åtgärden skickades inte."
+          }
+        }
+      }
+    },
+    "ReFineID does not use either of the last two attempts.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ReFineID ei käytä kumpaakaan kahdesta viimeisestä yrityksestä."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ReFineID använder inte något av de två sista försöken."
           }
         }
       }

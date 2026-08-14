@@ -2,7 +2,7 @@
 
 import CardCore
 
-/// Revokes persistent automatic-signing authority on a confirmed PIN1 refusal.
+/// Revokes persistent automatic-signing authority on a confirmed credential refusal.
 extension Token {
   /// Revokes automatic signing authority after this card rejects PIN1.
   ///
@@ -19,6 +19,7 @@ extension Token {
     serial: TokenSerial,
     fingerprint: PinFingerprint
   ) {
+    revokeCurrentInstance()
     CredentialMemory.rejectedPins.recordRejection(fingerprint)
     CredentialMemory.acceptedPin1.clear(serial: serial)
 
@@ -27,6 +28,58 @@ extension Token {
       return
     }
 
+    revokeStoredAutomaticIdentity(
+      reason: .pin1Rejection,
+      forgetCardAccessNumber: false,
+      forgetPin1: true
+    )
+  }
+
+  /// Revokes the complete automatic identity after PACE proves that the
+  /// stored CAN and the presented card cannot authenticate each other.
+  internal func revokeAutomaticIdentityAfterCanRejection() {
+    revokeCurrentInstance()
+    if let serial = primedSerial {
+      CredentialMemory.acceptedPin1.clear(serial: serial)
+    }
+    revokeStoredAutomaticIdentity(
+      reason: .canRejection,
+      forgetCardAccessNumber: true,
+      forgetPin1: true
+    )
+  }
+
+  /// Revokes the live and stored token after this card rejects PIN2.
+  /// PIN2 is never persisted, and a PIN2 rejection does not invalidate
+  /// the independently proven CAN or PIN1 credentials.
+  internal func revokeIdentityAfterPin2Rejection(
+    serial: TokenSerial,
+    fingerprint: PinFingerprint
+  ) {
+    revokeCurrentInstance()
+    CredentialMemory.rejectedPins.recordRejection(fingerprint)
+    CredentialMemory.acceptedPin1.clear(serial: serial)
+
+    guard CardInstanceIdentifier(tokenSerial: serial) == cardInstanceID else {
+      TokenLog.error("PIN2 rejection serial did not match token instance")
+      return
+    }
+
+    revokeStoredAutomaticIdentity(
+      reason: .pin2Rejection,
+      forgetCardAccessNumber: false,
+      forgetPin1: false
+    )
+  }
+
+  /// Removes every persistent and live capability of this automatic token.
+  /// A bad CAN also removes PIN1 because neither secret may remain attached
+  /// to an identity whose physical card could not be authenticated.
+  private func revokeStoredAutomaticIdentity(
+    reason: TokenRegistrationRevoker.Reason,
+    forgetCardAccessNumber: Bool,
+    forgetPin1: Bool
+  ) {
     let representsStoredIdentity: Bool =
       switch interface {
       case .fieldWithDeadline:
@@ -35,14 +88,18 @@ extension Token {
         PrimeStore.contains(instanceID: cardInstanceID)
       }
     guard representsStoredIdentity else {
-      TokenLog.notice("PIN1 rejected; no stored automatic identity belonged to this token")
+      TokenLog.notice("\(reason.logPrefix); no stored automatic identity belonged to this token")
       return
     }
 
-    CardCredentialStore.forgetPin1()
+    if forgetCardAccessNumber {
+      CardCredentialStore.forgetAll()
+    } else if forgetPin1 {
+      CardCredentialStore.forgetPin1()
+    }
     PrimeStore.forget(instanceID: cardInstanceID)
     PrimeStore.forgetStaged()
-    TokenRegistrationRevoker.revoke(cardInstanceID, reason: .pin1Rejection)
-    TokenLog.error("PIN1 rejected; stored PIN1, prime, and token registration revoked")
+    TokenRegistrationRevoker.revoke(cardInstanceID, reason: reason)
+    TokenLog.error("\(reason.logPrefix); automatic identity revoked")
   }
 }

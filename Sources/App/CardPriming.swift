@@ -84,8 +84,12 @@
       /// No card access number is stored, so PACE cannot be run.
       case cardAccessNumberMissing
 
-      /// PIN1 was invalid or its retry floor refused verification.
+      /// PIN1 was malformed or its retry counter could not be read.
       case pin1Unavailable
+
+      /// One or two attempts remain. The exact card-reported count survives
+      /// into the UI instead of being collapsed into an opaque safety error.
+      case pin1LowAttempts(RetryCount)
 
       /// The card still needs its first holder PIN values.
       case activationRequired
@@ -140,7 +144,7 @@
     /// a sentence telling them to keep holding is a third voice saying
     /// what two already said.
     ///
-    /// ``DemoCardHold`` opens its panel with the same line, so a
+    /// Virtual card setup presents the same line, so a
     /// demonstration is told what a card read is told.
     internal static var holdMessage: String {
       String(localized: "Hold the card on the top back of the phone.")

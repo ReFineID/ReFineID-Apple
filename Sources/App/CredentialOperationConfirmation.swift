@@ -14,7 +14,9 @@ import SwiftUI
 /// be checked before the card sees it, so confirmation is the only
 /// one of the three available here.
 ///
-/// The alert names the operation in full. A pristine credential needs
+/// The centered alert names the operation once, on its affirmative action. That
+/// label is explicit for assistive technology and long enough for the system to
+/// stack it above Cancel without a redundant question. A pristine credential needs
 /// no warning; retry guidance appears only after one or two mistakes,
 /// while the shared retry floor prevents a third. Cancel is the default
 /// and destroys every secret held by the form.
@@ -64,9 +66,10 @@ internal struct CredentialOperationConfirmation: ViewModifier {
   /// Rejects the operation and destroys the form's transient secrets.
   internal let reject: (Operation) -> Void
 
-  /// The question, which names the credential being set.
-  private static func title(of operation: Operation) -> String {
-    switch operation {
+  /// The affirmative action, derived from the existing localized question so
+  /// all supported languages retain their translations without duplicating keys.
+  private static func actionTitle(of operation: Operation) -> String {
+    let title: String = switch operation {
     case .change(let role):
       String(localized: "Confirm \(Self.name(of: role)) change?")
     case .unblock(let role):
@@ -74,18 +77,7 @@ internal struct CredentialOperationConfirmation: ViewModifier {
     case .activate:
       String(localized: "Confirm card activation?")
     }
-  }
-
-  /// The affirmative action, without repeating the question mark.
-  private static func actionTitle(of operation: Operation) -> String {
-    switch operation {
-    case .change(let role):
-      String(localized: "Change \(Self.name(of: role))")
-    case .unblock(let role):
-      String(localized: "Reset \(Self.name(of: role))")
-    case .activate:
-      String(localized: "Activate Card")
-    }
+    return title.last == "?" ? String(title.dropLast()) : title
   }
 
   /// Warns only after the counter has fallen to four or three. Five is
@@ -95,11 +87,14 @@ internal struct CredentialOperationConfirmation: ViewModifier {
     report: CredentialProbeReport?
   ) -> String? {
     let spent = operation.spends.map(Self.name) ?? ""
+    let minimum = Int(RetryFloor.minimumAttemptsToProceed)
+    let pristine = Int(RetryCount.pristineAllowance)
     guard
       let remaining = operation.spends.flatMap({ role in
       Self.remaining(for: role, in: report)
       }),
-      remaining == 4 || remaining == 3
+      remaining >= minimum,
+      remaining < pristine
     else {
       return nil
     }
@@ -156,10 +151,7 @@ internal struct CredentialOperationConfirmation: ViewModifier {
   internal func body(content: Content) -> some View {
     content
       .alert(
-        // Verbatim: the title is already a translated sentence, and
-        // handing it over as a key would put the English one, and an
-        // empty string, into the catalogue as things to translate.
-        Text(verbatim: pending.map(Self.title) ?? ""),
+        Text(verbatim: ""),
         isPresented: Binding(
           get: { pending != nil },
           set: { shown in

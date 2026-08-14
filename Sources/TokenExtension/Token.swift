@@ -76,14 +76,33 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
 
   /// Stable public identity of the physical card represented by this token.
   ///
-  /// This is also the revocation boundary: a confirmed PIN1 rejection
-  /// removes only this card's stored prime and CryptoTokenKit registration.
+  /// This is also the revocation boundary: a confirmed CAN, PIN1, or PIN2
+  /// rejection bankrupts this live token and its stored registration.
   internal let cardInstanceID: CardInstanceIdentifier
+
+  /// One-way lifetime state shared by every session of this token.
+  private let revocationLock = NSLock()
+  private var revoked = false
 
   /// The card session taken at the mint and kept open for the signature.
   ///
   /// Empty on the contact path, which opens a session per operation.
   internal let heldSession = HeldCardSession()
+
+  /// Whether a card-confirmed credential refusal has bankrupted this token.
+  internal var isRevoked: Bool {
+    revocationLock.lock()
+    defer { revocationLock.unlock() }
+    return revoked
+  }
+
+  /// Irreversibly disables this token instance and releases its card session.
+  internal func revokeCurrentInstance() {
+    revocationLock.lock()
+    revoked = true
+    revocationLock.unlock()
+    heldSession.release()
+  }
 
   /// Releases the held session when the card leaves the slot.
   internal var slotStateObservation: NSKeyValueObservation?

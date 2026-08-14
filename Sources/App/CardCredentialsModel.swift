@@ -136,6 +136,7 @@ internal final class CardCredentialsModel {
   /// Ungated, like storing it.
   internal func forgetCardAccessNumber() {
     failure = nil
+    CredentialRetryHealth.shared.clear()
     CardCredentialStore.forgetCardAccessNumber()
     refresh()
   }
@@ -157,6 +158,7 @@ internal final class CardCredentialsModel {
   /// Nothing is disclosed; authority is removed.
   internal func forgetEverything() {
     failure = nil
+    CredentialRetryHealth.shared.clear()
     let outcome = CardStateReset.perform()
     CardCredentialStore.forgetAll()
     refresh()

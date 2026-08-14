@@ -31,7 +31,7 @@ internal struct CardManagementView: View {
   /// takes a new value whether or not the credential was blocked, so
   /// someone who has forgotten a PIN does not have to exhaust it
   /// first to be allowed a new one.
-  internal enum ManagementTask: CaseIterable, Identifiable {
+  internal enum ManagementTask: CaseIterable, Identifiable, Equatable {
     case changePin1
     case changePin2
     case resetPin1
@@ -77,10 +77,11 @@ internal struct CardManagementView: View {
   private let activationRequired: Bool
   private let onActivationSucceeded: () -> Void
   private let cardPresence = CardPresence.shared
+  private let retryHealth = CredentialRetryHealth.shared
   @Environment(\.dismiss) private var dismiss
 
   @State private var model: CardManagementModel
-  @State private var task: ManagementTask = .changePin1
+  @State private var task: ManagementTask
   @State private var hasChosenTask = false
   @State private var isLandscapeLayout = false
 
@@ -108,16 +109,30 @@ internal struct CardManagementView: View {
         activationNeeds: activationNeeds
       )
     )
+    _task = State(
+      initialValue: Self.initialTask(
+        for: CredentialRetryHealth.shared.recovery)
+    )
   }
 
   private var readerCardIsPresent: Bool {
-    cardPresence.hasCompletedInitialScan
+    #if os(iOS)
+    if DemoMode.shared.isActive {
+      return DemoMode.shared.isReaderCardPresent
+    }
+    #endif
+    return cardPresence.hasCompletedInitialScan
       ? cardPresence.isReaderCardPresent
       : startsWithReaderCard
   }
 
   private var readerCardIsReady: Bool {
-    cardPresence.hasCompletedInitialScan && cardPresence.isReaderCardReady
+    #if os(iOS)
+    if DemoMode.shared.isActive {
+      return DemoMode.shared.isReaderCardPresent
+    }
+    #endif
+    return cardPresence.hasCompletedInitialScan && cardPresence.isReaderCardReady
   }
 
   private var readerReadKey: ReaderReadKey {
@@ -200,19 +215,6 @@ internal struct CardManagementView: View {
           attemptsEntry("PUK", model.report?.puk)
           Spacer()
         }
-        if refusesAnyCredential {
-          // One literal, not three joined: a joined string is a String
-          // expression, which picks the Text initializer that does not
-          // localize, and no catalog entry can reach it.
-          Text(
-            """
-            ReFineID will not use a credential with one or two attempts \
-            left. Restore it with other software, or unblock it here \
-            once the card has blocked it.
-            """
-          )
-          .foregroundStyle(.red)
-        }
       }
       .font(.footnote)
       .padding(.horizontal, Self.barHorizontalPadding)
@@ -260,28 +262,90 @@ internal struct CardManagementView: View {
     } else {
       Form {
         connectionSection
-        Picker("Task", selection: $task) {
-          ForEach(ManagementTask.allCases) { candidate in
-            Text(candidate.name).tag(candidate)
+        let tasks = availableTasks
+        if !tasks.isEmpty {
+          Picker("Task", selection: $task) {
+            ForEach(tasks) { candidate in
+              Text(candidate.name).tag(candidate)
+            }
+          }
+    #if os(iOS)
+          .pickerStyle(.menu)
+    #else
+          .pickerStyle(.segmented)
+    #endif
+          .labelsHidden()
+          .accessibilityIdentifier("managementTask")
+          if model.notice == nil, tasks.contains(task) {
+            page(for: task)
           }
         }
-    #if os(iOS)
-      .pickerStyle(.menu)
-    #else
-      .pickerStyle(.segmented)
-    #endif
-        .labelsHidden()
-        .accessibilityIdentifier("managementTask")
-        if model.notice == nil {
-          page(for: task)
-        }
         CardOutcomeSection(model: model)
+        recoveryGuidanceSection
       }
       .formStyle(.grouped)
       .disabled(model.working)
       .onChange(of: task) { _, _ in
         hasChosenTask = true
         model.clearOutcome()
+      }
+    }
+  }
+
+  /// A critical card is a recovery workflow, never a PIN-change workflow.
+  private var availableTasks: [ManagementTask] {
+    switch retryHealth.recovery {
+    case .resetPin1, .resetPin2:
+      [.resetPin1, .resetPin2]
+    case .useOtherSoftware, .unrecoverable:
+      []
+    case nil:
+      ManagementTask.allCases
+    }
+  }
+
+  private static func initialTask(
+    for recovery: CredentialRetryHealth.Recovery?
+  ) -> ManagementTask {
+    switch recovery {
+    case .resetPin1:
+      .resetPin1
+    case .resetPin2:
+      .resetPin2
+    case .useOtherSoftware, .unrecoverable, nil:
+      .changePin1
+    }
+  }
+
+  @ViewBuilder private var recoveryGuidanceSection: some View {
+    if model.failure == nil, model.notice == nil {
+      switch retryHealth.recovery {
+      case .resetPin1:
+        Section {
+          CredentialOutcomeText(
+            message: CredentialOutcomeMessage.recoveryGuidance(for: .pin1),
+            tone: .notice)
+        }
+      case .resetPin2:
+        Section {
+          CredentialOutcomeText(
+            message: CredentialOutcomeMessage.recoveryGuidance(for: .pin2),
+            tone: .notice)
+        }
+      case .useOtherSoftware:
+        Section {
+          CredentialOutcomeText(
+            message: CredentialOutcomeMessage.otherSoftwareRecovery(),
+            tone: .failure)
+        }
+      case .unrecoverable:
+        Section {
+          CredentialOutcomeText(
+            message: CredentialOutcomeMessage.unrecoverableCard(),
+            tone: .failure)
+        }
+      case nil:
+        EmptyView()
       }
     }
   }
@@ -317,18 +381,6 @@ internal struct CardManagementView: View {
     #endif
   }
 
-  #if os(macOS)
-    /// Whether any credential sits in the band this app will not use.
-    private var refusesAnyCredential: Bool {
-      guard let report = model.report else { return false }
-      return [report.pin1, report.pin2, report.puk].contains { outcome in
-        guard case .remaining(let count) = outcome else { return false }
-        return !count.isBlocked
-          && count.attemptsRemaining < RetryFloor.minimumAttemptsToProceed
-      }
-    }
-  #endif
-
   /// The form one tab shows.
   @ViewBuilder
   private func page(for task: ManagementTask) -> some View {
@@ -346,7 +398,24 @@ internal struct CardManagementView: View {
 
   /// Opens on what the card needs, until the holder chooses.
   private func suggestTask(from report: CredentialProbeReport?) {
-    guard !hasChosenTask, !awaitsActivation, let report else { return }
+    guard !awaitsActivation, let report else { return }
+    let recoveryTask: ManagementTask? = switch retryHealth.recovery {
+    case .resetPin1:
+      .resetPin1
+    case .resetPin2:
+      .resetPin2
+    case .useOtherSoftware, .unrecoverable, nil:
+      nil
+    }
+    if let recoveryTask {
+      if !availableTasks.contains(task)
+        || (!hasChosenTask && model.notice == nil)
+      {
+        task = recoveryTask
+      }
+      return
+    }
+    guard !hasChosenTask else { return }
     let blocked: [RetryProbeOutcome] = [.locked, .invalidated]
     // Land on the credential that is actually blocked, so the form in
     // front of the holder spends the one they came for. PIN 1 first

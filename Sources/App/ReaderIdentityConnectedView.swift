@@ -20,6 +20,7 @@
     private static let messagePadding: CGFloat = 32
 
     internal let model: ReaderIdentityModeModel
+    private let retryHealth = CredentialRetryHealth.shared
 
     /// The holder names read from the live reader tokens, in the order
     /// their tokens are listed.
@@ -35,14 +36,13 @@
               NavigationLink {
                 CardManagementView(readerCardIsPresent: true)
               } label: {
-                Image(systemName: "key")
-                  .accessibilityLabel(Text("Change or Reset PINs"))
+                CredentialRetryHealthKey(level: retryHealth.level)
               }
               .accessibilityIdentifier("manageCard")
             }
           }
         }
-        .task(id: model.liveReaderTokenIdentifiers) {
+        .task(id: model.holderReadKey) {
           await readHolders()
         }
     }
@@ -67,6 +67,7 @@
               LabeledContent("Person") {
                 Text(holder)
                   .textSelection(.enabled)
+                  .accessibilityIdentifier("readerCardHolder")
               }
             }
           }
@@ -91,12 +92,7 @@
     /// no near-field read is provoked - see
     /// ``PublishedIdentityName/name(ofTokenIdentifier:)``.
     private func readHolders() async {
-      let identifiers = model.liveReaderTokenIdentifiers
-      holders = await Task.detached(priority: .utility) {
-        identifiers.compactMap { identifier in
-          PublishedIdentityName.name(ofTokenIdentifier: identifier)
-        }
-      }.value
+      holders = await model.holderNames()
     }
   }
 

@@ -85,10 +85,23 @@
         certificate: certificate,
         operations: operations
       )
-      guard let pin1 = Pin1(digits: digits),
-        let probe = try? operations.probeRetryCounter(role: .pin1),
-        RetryFloor.evaluate(probeOutcome: probe) == .proceed
-      else {
+      guard let pin1 = Pin1(digits: digits) else {
+        throw Failure.pin1Unavailable
+      }
+      guard let probe = try? operations.probeRetryCounter(role: .pin1) else {
+        throw Failure.pin1Unavailable
+      }
+      switch RetryFloor.evaluate(probeOutcome: probe) {
+      case .proceed:
+        break
+      case .refuseLowAttempts:
+        guard case .remaining(let remaining) = probe else {
+          throw Failure.pin1Unavailable
+        }
+        throw Failure.pin1LowAttempts(remaining)
+      case .refuseBlocked:
+        throw CardOperationError.pinBlocked
+      case .refuseUnreadable:
         throw Failure.pin1Unavailable
       }
       try operations.verifyPin1(pin1.consumeForSingleTransmission())

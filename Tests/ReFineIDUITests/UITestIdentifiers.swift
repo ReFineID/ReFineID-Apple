@@ -71,4 +71,25 @@ internal enum UITestIdentifiers {
 
   /// The activation action; Entry/Pin1/Pin2 fields sit beside it.
   internal static let managementActivate = "managementActivate"
+
+  /// The floating entry into the editable virtual card.
+  internal static let virtualCardOverlay = "virtualCardOverlay"
+
+  /// The virtual card editor.
+  internal static let virtualCardEditor = "virtualCardEditor"
+
+  /// Applies a virtual card state and fault plan.
+  internal static let virtualCardApply = "virtualCardApply"
+
+  /// The preset and deterministic-fault menus in the virtual-card editor.
+  internal static let virtualCardScenario = "virtualCardScenario"
+  internal static let virtualCardFault = "virtualCardFault"
+
+  /// Editable retry counters in the virtual-card editor.
+  internal static let virtualCardPIN1Attempts = "virtualCardPIN1Attempts"
+  internal static let virtualCardPIN2Attempts = "virtualCardPIN2Attempts"
+  internal static let virtualCardPUKAttempts = "virtualCardPUKAttempts"
+
+  /// The holder published by a reader-backed virtual card.
+  internal static let readerCardHolder = "readerCardHolder"
 }

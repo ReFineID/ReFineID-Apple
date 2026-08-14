@@ -20,13 +20,42 @@ extension CardMaintenance {
     transport: Transport,
     cardAccessNumber: String?
   ) async -> Snapshot? {
-    await onCard(
+    #if os(iOS)
+      if await DemoMode.shared.isActive {
+        return await DemoMode.shared.maintenanceSnapshot()
+      }
+    #endif
+    return await onCard(
       transport: transport,
       cardAccessNumber: cardAccessNumber,
       message: String(localized: "Hold the card near the top of the iPhone.")
     ) { operations in
       snapshot(on: operations)
     }
+  }
+
+  /// Reads only the three credential retry counters.
+  ///
+  /// Reader insertion uses this narrow probe for the shared health key. It
+  /// deliberately skips activation classification, certificate reads, and all
+  /// mutation paths so presenting identity remains independent of this status.
+  internal static func credentialReport(
+    transport: Transport,
+    cardAccessNumber: String?
+  ) async -> CredentialProbeReport? {
+    #if os(iOS)
+      if await DemoMode.shared.isActive {
+        return await DemoMode.shared.credentialReport()
+      }
+    #endif
+    return await onCard(
+      transport: transport,
+      cardAccessNumber: cardAccessNumber,
+      message: ""
+    ) { operations in
+      try? operations.probeCredentials()
+    }
+    .flatMap(\.self)
   }
 
   /// Determines the activation generation without probing credentials.
@@ -36,6 +65,11 @@ extension CardMaintenance {
   /// documented card whose ATR is not in the generation table, still
   /// without reading any retry counter.
   internal static func readerActivationScheme() async -> ActivationScheme? {
+    #if os(iOS)
+      if await DemoMode.shared.isActive {
+        return await DemoMode.shared.readerActivationScheme()
+      }
+    #endif
     guard let manager = TKSmartCardSlotManager.default else { return nil }
     let occupied = await CardSlotSearch.allOccupied(in: manager).filter { candidate in
       CardTransport.transport(forSlotNamed: candidate.name) == .reader
@@ -62,8 +96,14 @@ extension CardMaintenance {
     transport: Transport,
     cardAccessNumber: String?
   ) async -> MutationReport {
-    await withFloor(
+    #if os(iOS)
+      if await DemoMode.shared.isActive {
+        return await DemoMode.shared.changePIN1(current: current, new: new)
+      }
+    #endif
+    return await withFloor(
       .pin1,
+      confirming: .pin1,
       transport: transport,
       cardAccessNumber: cardAccessNumber,
       message: String(localized: "Hold the card still while PIN 1 is changed.")
@@ -92,8 +132,14 @@ extension CardMaintenance {
     transport: Transport,
     cardAccessNumber: String?
   ) async -> MutationReport {
-    await withFloor(
+    #if os(iOS)
+      if await DemoMode.shared.isActive {
+        return await DemoMode.shared.changePIN2(current: current, new: new)
+      }
+    #endif
+    return await withFloor(
       .pin2,
+      confirming: .pin2,
       transport: transport,
       cardAccessNumber: cardAccessNumber,
       message: String(localized: "Hold the card still while PIN 2 is changed.")
@@ -122,8 +168,14 @@ extension CardMaintenance {
     transport: Transport,
     cardAccessNumber: String?
   ) async -> MutationReport {
-    await withFloor(
+    #if os(iOS)
+      if await DemoMode.shared.isActive {
+        return await DemoMode.shared.resetPIN1(puk: puk, new: new)
+      }
+    #endif
+    return await withFloor(
       .puk,
+      confirming: .pin1,
       transport: transport,
       cardAccessNumber: cardAccessNumber,
       message: String(localized: "Hold the card still while PIN 1 is reset.")
@@ -149,8 +201,14 @@ extension CardMaintenance {
     transport: Transport,
     cardAccessNumber: String?
   ) async -> MutationReport {
-    await withFloor(
+    #if os(iOS)
+      if await DemoMode.shared.isActive {
+        return await DemoMode.shared.resetPIN2(puk: puk, new: new)
+      }
+    #endif
+    return await withFloor(
       .puk,
+      confirming: .pin2,
       transport: transport,
       cardAccessNumber: cardAccessNumber,
       message: String(localized: "Hold the card still while PIN 2 is reset.")
@@ -172,6 +230,7 @@ extension CardMaintenance {
 
   private static func withFloor(
     _ role: CredentialRole,
+    confirming target: CredentialRole,
     transport: Transport,
     cardAccessNumber: String?,
     message: String,
@@ -195,12 +254,43 @@ extension CardMaintenance {
           snapshot: snapshot(on: operations)
         )
       }
+      let outcome = operation(operations)
+      let resultingSnapshot = snapshot(on: operations)
+      let confirmedOutcome =
+        outcome == .success && !confirmsRestored(target, in: resultingSnapshot)
+        ? .failed
+        : outcome
       return MutationReport(
-        outcome: operation(operations),
-        snapshot: snapshot(on: operations)
+        outcome: confirmedOutcome,
+        snapshot: resultingSnapshot
       )
     }
     return result ?? MutationReport(outcome: .noCard, snapshot: nil)
+  }
+
+  /// A successful CHANGE REFERENCE DATA or RESET RETRY COUNTER restores the
+  /// target credential's retry allowance. Never turn the command status word
+  /// into a success notice when the card's immediate state contradicts it.
+  private static func confirmsRestored(
+    _ role: CredentialRole,
+    in snapshot: Snapshot
+  ) -> Bool {
+    let outcome: RetryProbeOutcome? = switch role {
+    case .pin1:
+      snapshot.report?.pin1
+    case .pin2:
+      snapshot.report?.pin2
+    case .puk:
+      snapshot.report?.puk
+    }
+    return switch outcome {
+    case .remaining(let count):
+      count.attemptsRemaining == RetryCount.pristineAllowance
+    case .verified:
+      true
+    case .invalidated, .locked, .noInformation, .other, .none:
+      false
+    }
   }
 
   internal static func snapshot(on operations: CardOperations) -> Snapshot {

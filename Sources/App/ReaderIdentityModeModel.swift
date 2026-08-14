@@ -6,7 +6,10 @@
   import CryptoTokenKit
   import SwiftUI
 
-  /// Observes successfully minted reader identities without probing a card.
+  /// Observes reader identities from the selected physical or virtual backend.
+  ///
+  /// A newly appearing activated reader card starts one bounded retry-counter
+  /// probe for the shared health key. There is no card-presence polling.
   @MainActor
   @Observable
   internal final class ReaderIdentityModeModel {
@@ -33,6 +36,9 @@
     /// Watches physical token publication and removal.
     private let watcher = TKTokenWatcher()
 
+    /// Session-only health shared by every PIN-management shortcut.
+    private let retryHealth = CredentialRetryHealth.shared
+
     /// One-shot removal handlers already installed for token IDs.
     private var removalHandlers: Set<String> = []
 
@@ -50,24 +56,57 @@
 
     /// Number of live reader tokens.
     internal var liveReaderTokenCount: Int {
-      liveReaderTokenIdentifiers.count
+      if DemoMode.shared.isActive {
+        return DemoMode.shared.isReaderCardPresent ? 1 : 0
+      }
+      return liveReaderTokenIdentifiers.count
     }
 
     /// Whether an inserted reader card published the authoritative empty
     /// token that means its factory credentials still require activation.
     internal var hasActivationRequiredCard: Bool {
-      liveReaderTokenIdentifiers.contains(
+      if DemoMode.shared.isActive {
+        return DemoMode.shared.isReaderCardPresent
+          && DemoMode.shared.activationNeeds.any
+      }
+      return liveReaderTokenIdentifiers.contains(
         where: ActivationTokenIdentity.recognizes(tokenID:)
       )
     }
 
     /// Whether the setup form must be replaced by reader identity controls.
     internal var isActive: Bool {
-      !liveReaderTokenIdentifiers.isEmpty
+      if DemoMode.shared.isActive {
+        return DemoMode.shared.isReaderCardPresent
+      }
+      return !liveReaderTokenIdentifiers.isEmpty
+    }
+
+    /// Changes whenever the identities rendered by the shared reader view change.
+    internal var holderReadKey: [String] {
+      if DemoMode.shared.isActive {
+        return isActive ? [DemoMode.shared.holderName] : []
+      }
+      return liveReaderTokenIdentifiers
     }
 
     internal init() {
-      watcher.setInsertionHandler(Self.insertionHandler(for: self))
+      if !DemoMode.shared.isActive {
+        watcher.setInsertionHandler(Self.insertionHandler(for: self))
+      }
+    }
+
+    /// Returns holder names without exposing the backend to the view.
+    internal func holderNames() async -> [String] {
+      if DemoMode.shared.isActive {
+        return isActive ? [DemoMode.shared.holderName] : []
+      }
+      let identifiers = liveReaderTokenIdentifiers
+      return await Task.detached(priority: .utility) {
+        identifiers.compactMap { identifier in
+          PublishedIdentityName.name(ofTokenIdentifier: identifier)
+        }
+      }.value
     }
 
     /// Builds a ctkd callback with no inherited main-actor isolation.
@@ -101,7 +140,14 @@
 
     /// Lists live reader tokens while excluding persistent NFC registrations.
     internal func refresh() {
+      if DemoMode.shared.isActive {
+        liveReaderTokenIdentifiers = []
+        return
+      }
       guard Self.hasReaderSlot else {
+        if !liveReaderTokenIdentifiers.isEmpty {
+          retryHealth.clear()
+        }
         liveReaderTokenIdentifiers = []
         return
       }
@@ -119,8 +165,20 @@
       //
       // Sorted, so the rows a holder reads keep one order across a
       // refresh that changed nothing.
-      liveReaderTokenIdentifiers =
+      let nextReaderTokenIdentifiers =
         refineIDTokenIdentifiers.subtracting(registeredTokenIdentifiers).sorted()
+
+      let cardAppearanceChanged =
+        nextReaderTokenIdentifiers != liveReaderTokenIdentifiers
+      liveReaderTokenIdentifiers = nextReaderTokenIdentifiers
+
+      if cardAppearanceChanged {
+        if liveReaderTokenIdentifiers.isEmpty || hasActivationRequiredCard {
+          retryHealth.clear()
+        } else {
+          retryHealth.refreshFromReader()
+        }
+      }
 
       for tokenIdentifier in liveReaderTokenIdentifiers {
         observeRemoval(of: tokenIdentifier)

@@ -110,10 +110,12 @@ internal struct ReFineIDApp: App {
     #if os(macOS)
       StatusView()
     #else
-      // A successfully minted USB-C token owns the app while its reader
-      // remains connected. Otherwise the phone offers the one-time NFC
-      // identity setup.
       ReaderIdentityRootView()
+        .overlay(alignment: .bottomTrailing) {
+          if DemoMode.shared.isActive {
+            VirtualIDCardOverlay()
+          }
+        }
     #endif
   }
 
@@ -203,6 +205,10 @@ internal struct ReFineIDApp: App {
     // least of all one that takes a PIN on the command line.
     #if DEBUG
       DebugLaunchModes.runBeforeScene()
+    #endif
+
+    #if os(iOS) && DEBUG
+      DemoMode.shared.activateFromLaunchArguments()
     #endif
   }
 }

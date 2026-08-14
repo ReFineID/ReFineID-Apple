@@ -28,6 +28,7 @@ internal struct CardCredentialsView: View {
   private static let sectionSpacing: CGFloat = 24
 
   @State private var model = CardCredentialsModel()
+  private let retryHealth = CredentialRetryHealth.shared
   @State private var cardAccessNumberEntry = ""
   @State private var pin1Entry = ""
   @State private var isScanning = false
@@ -39,7 +40,6 @@ internal struct CardCredentialsView: View {
   @State private var activationScheme: ActivationScheme?
   @State private var activationNeeds: CardActivationNeeds?
   @State private var destination: Destination?
-  @State private var demonstrationConnected = false
   @FocusState private var isCardAccessNumberFieldFocused: Bool
   @FocusState private var isPin1FieldFocused: Bool
 
@@ -74,8 +74,14 @@ internal struct CardCredentialsView: View {
   /// one source of truth and the management screen never has to ask for
   /// the same printed number again.
   internal var managementCardAccessNumber: String? {
-    !isDemonstration
-      && model.contents.hasCardAccessNumber
+    #if os(iOS)
+    if isDemonstration {
+      return DemoMode.shared.hasValidatedConnection
+        ? DemoMode.shared.displayedCardAccessNumber
+        : nil
+    }
+    #endif
+    return model.contents.hasCardAccessNumber
       && isCardAccessNumberEntryComplete
       ? cardAccessNumberEntry
       : nil
@@ -83,13 +89,18 @@ internal struct CardCredentialsView: View {
 
   /// Disclosure follows a validated connection, never digit count alone.
   private var hasConfiguredCard: Bool {
-    model.contents.hasCardAccessNumber || (isDemonstration && demonstrationConnected)
+    #if os(iOS)
+      if isDemonstration {
+        return DemoMode.shared.hasValidatedConnection
+      }
+    #endif
+    return model.contents.hasCardAccessNumber
   }
 
-  /// Whether this launch is demonstrating the flow without a card.
+  /// Whether this launch routes every card and device effect to a virtual card.
   ///
-  /// Every branch below that reads it is a place where the screen
-  /// deliberately does not touch the card, the keychain or the system.
+  /// Every branch below that reads it stays inside the process-scoped virtual
+  /// environment and does not touch physical I/O, Keychain, or token state.
   private var isDemonstration: Bool {
     #if os(iOS)
       return DemoMode.shared.isActive
@@ -107,7 +118,7 @@ internal struct CardCredentialsView: View {
   private var identityHolder: String? {
     #if os(iOS)
       if isDemonstration {
-        return DemoMode.shared.hasIdentity ? DemoMode.holderName : nil
+        return DemoMode.shared.hasIdentity ? DemoMode.shared.holderName : nil
       }
     #endif
     guard isRegistered else { return nil }
@@ -151,12 +162,14 @@ internal struct CardCredentialsView: View {
   /// something in it has to be complete, because a half-typed
   /// replacement is a replacement the holder is still writing.
   ///
-  /// A demonstration has no stored pair to fall back to and no card to
-  /// check either entry against, so it asks only that both were typed.
+  /// A demonstration validates the transient PIN against its virtual card and
+  /// never falls back to credentials stored for a physical identity.
   private var canPrepareIdentity: Bool {
+    #if os(iOS)
     if isDemonstration {
-      return !cardAccessNumberEntry.isEmpty && !pin1Entry.isEmpty
+      return DemoMode.shared.hasValidatedConnection && isPin1EntryComplete
     }
+    #endif
     return model.contents.hasCardAccessNumber && isPin1EntryComplete
   }
 
@@ -187,8 +200,7 @@ internal struct CardCredentialsView: View {
       #endif
       if let failure = model.failure {
         Section {
-          Text(failure)
-            .foregroundStyle(.red)
+          CredentialOutcomeText(message: failure, tone: .failure)
         }
       }
       // Only an identity is worth a destructive action. Stored
@@ -210,8 +222,7 @@ internal struct CardCredentialsView: View {
             Button {
               destination = .pinManagement
             } label: {
-              Image(systemName: "key")
-                .accessibilityLabel(Text("Change or Reset PINs"))
+              CredentialRetryHealthKey(level: retryHealth.level)
             }
             .accessibilityIdentifier("manageCard")
           }
@@ -287,10 +298,14 @@ internal struct CardCredentialsView: View {
       // A PIN entered for one complete CAN must not survive while that
       // CAN is erased or replaced. It reappears only after the new card
       // number is complete and the holder enters its PIN deliberately.
-      if !complete {
-        pin1Entry = ""
-        isPin1FieldFocused = false
-        demonstrationConnected = false
+        if !complete {
+          pin1Entry = ""
+          isPin1FieldFocused = false
+          #if os(iOS)
+          if isDemonstration {
+            DemoMode.shared.forgetIdentity()
+          }
+          #endif
       }
     }
     .onChange(of: cardAccessNumberEntry) { _, entered in
@@ -366,6 +381,12 @@ internal struct CardCredentialsView: View {
         }
         .listRowBackground(Color.clear)
         .listRowInsets(EdgeInsets())
+        if let failure = primingModel.failure {
+          Section {
+            CredentialOutcomeText(message: failure, tone: .failure)
+              .accessibilityIdentifier("primeFailureMessage")
+          }
+        }
       #endif
     } else {
       Section {
@@ -432,7 +453,7 @@ internal struct CardCredentialsView: View {
   /// claims the box is filled. A stored PIN is never read back, so the
   /// box is empty whether or not one is kept.
   @ViewBuilder private var pin1Row: some View {
-    SecureField("Basic Code (PIN1)", text: $pin1Entry)
+    SecureField("Basic Code (PIN 1)", text: $pin1Entry)
       #if os(iOS)
         .keyboardType(.numberPad)
         .textInputAutocapitalization(.never)
@@ -479,11 +500,16 @@ internal struct CardCredentialsView: View {
   /// the stored ones are wrong, which is the usual reason a setup breaks
   /// half way.
   ///
-  /// A demonstration seeds nothing. It reads no stored value at all, so
-  /// a card this device really knows about is not put on a screen that
-  /// is showing a test person.
+  /// A demonstration displays only its virtual device state, so a CAN stored
+  /// for a physical identity cannot appear beside a fictional holder.
   private func showStoredCardAccessNumber() {
-    guard !isDemonstration else { return }
+    #if os(iOS)
+    if isDemonstration {
+      guard cardAccessNumberEntry.isEmpty else { return }
+      cardAccessNumberEntry = DemoMode.shared.displayedCardAccessNumber ?? ""
+      return
+    }
+    #endif
     guard cardAccessNumberEntry.isEmpty, let stored = model.storedCardAccessNumber else {
       return
     }
@@ -515,11 +541,6 @@ internal struct CardCredentialsView: View {
   /// Runs the first non-mutating connection and routes from live card state.
   private func connectIdentityCard() {
     guard isCardAccessNumberEntryComplete, !model.isConnecting else { return }
-    if isDemonstration {
-      demonstrationConnected = true
-      isCardAccessNumberFieldFocused = false
-      return
-    }
     let entered = cardAccessNumberEntry
     activationScheme = nil
     activationNeeds = nil
@@ -529,13 +550,17 @@ internal struct CardCredentialsView: View {
       guard entered == cardAccessNumberEntry else { return }
       switch result {
       case .activated:
-        model.forgetPin1()
-        if !model.saveCardAccessNumber(entered) {
+        if !isDemonstration {
+          model.forgetPin1()
+        }
+        if !isDemonstration, !model.saveCardAccessNumber(entered) {
           cardAccessNumberEntry = ""
           isCardAccessNumberFieldFocused = true
         }
       case .activationRequired(let scheme, let needs):
-        model.forgetPin1()
+        if !isDemonstration {
+          model.forgetPin1()
+        }
         activationScheme = scheme
         activationNeeds = needs
         destination = .activation
@@ -552,6 +577,10 @@ internal struct CardCredentialsView: View {
   private func activationSucceeded() {
     activationScheme = nil
     activationNeeds = nil
+    if isDemonstration {
+      showStoredCardAccessNumber()
+      return
+    }
     if !model.saveCardAccessNumber(cardAccessNumberEntry) {
       cardAccessNumberEntry = ""
       isCardAccessNumberFieldFocused = true

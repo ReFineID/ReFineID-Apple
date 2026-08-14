@@ -48,7 +48,8 @@ extension TokenSession {
           unsealingWith: token.sealedAccessNumber,
           enteredPin: entered,
           request: request,
-          signPublicKey: signPublicKey
+          signPublicKey: signPublicKey,
+          token: token
         )
       }
       TokenLog.trace("sign: qualified path produced \(signature.count) DER bytes")

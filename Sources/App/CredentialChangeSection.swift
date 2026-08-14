@@ -92,8 +92,15 @@ internal struct CredentialChangeSection: View {
       && repeated != new
   }
 
+  /// A card write that replaces a PIN with the same value has no useful
+  /// effect. Flag every completed row so the holder can see that the form as
+  /// a whole, rather than one particular entry, needs to change.
+  private var newPinMatchesCurrent: Bool {
+    currentIsValid && repeatedIsValid && current == new
+  }
+
   private var isComplete: Bool {
-    currentIsValid && newIsValid && repeatedIsValid
+    currentIsValid && newIsValid && repeatedIsValid && !newPinMatchesCurrent
   }
 
   internal var body: some View {
@@ -145,7 +152,11 @@ internal struct CredentialChangeSection: View {
       .listRowBackground(Color.clear)
     #endif
     .keyboardShortcut(.defaultAction)
-    .disabled(!isComplete || !model.canContactCard || model.cardOperationInProgress)
+    .disabled(
+      !isComplete
+        || !model.canContactCard
+        || !model.allowsCredentialOperation(spending: role)
+        || model.cardOperationInProgress)
     .accessibilityIdentifier("managementChange\(credential.identifierName)")
   }
 
@@ -154,7 +165,9 @@ internal struct CredentialChangeSection: View {
     HStack {
       SecureField("Current \(credential.name)", text: $current)
         .textContentType(.oneTimeCode)
-        .keyboardType(.numberPad)
+        #if os(iOS)
+          .keyboardType(.numberPad)
+        #endif
         .onChange(of: current) { _, typed in
           current = LimitedDigits.pin(typed)
         }
@@ -162,13 +175,16 @@ internal struct CredentialChangeSection: View {
         .onSubmit { advance(from: .current) }
         .accessibilityIdentifier("managementChange\(credential.identifierName)Current")
       CredentialValidationIndicator(
-        valid: currentIsValid,
+        valid: currentIsValid && !newPinMatchesCurrent,
+        unchanged: newPinMatchesCurrent,
         isEmpty: current.isEmpty)
     }
     HStack {
       SecureField("New \(credential.name)", text: $new)
         .textContentType(.oneTimeCode)
-        .keyboardType(.numberPad)
+        #if os(iOS)
+          .keyboardType(.numberPad)
+        #endif
         .onChange(of: new) { _, typed in
           new = LimitedDigits.pin(typed)
         }
@@ -176,13 +192,16 @@ internal struct CredentialChangeSection: View {
         .onSubmit { advance(from: .new) }
         .accessibilityIdentifier("managementChange\(credential.identifierName)New")
       CredentialValidationIndicator(
-        valid: newIsValid,
+        valid: newIsValid && !newPinMatchesCurrent,
+        unchanged: newPinMatchesCurrent,
         isEmpty: new.isEmpty)
     }
     HStack {
       SecureField("New \(credential.name) again", text: $repeated)
         .textContentType(.oneTimeCode)
-        .keyboardType(.numberPad)
+        #if os(iOS)
+          .keyboardType(.numberPad)
+        #endif
         .onChange(of: repeated) { _, typed in
           repeated = LimitedDigits.pin(typed)
         }
@@ -190,8 +209,9 @@ internal struct CredentialChangeSection: View {
         .onSubmit { advance(from: .repeated) }
         .accessibilityIdentifier("managementChange\(credential.identifierName)Repeat")
       CredentialValidationIndicator(
-        valid: repeatedIsValid,
+        valid: repeatedIsValid && !newPinMatchesCurrent,
         entriesDiffer: entriesDiffer,
+        unchanged: newPinMatchesCurrent,
         isEmpty: repeated.isEmpty)
     }
   }
@@ -213,21 +233,18 @@ internal struct CredentialChangeSection: View {
     }
   }
 
-  /// Runs the change and clears the fields when the card accepted.
+  /// Runs the change and destroys every entry after the card responds.
   private func change() {
     guard isComplete, !model.cardOperationInProgress else { return }
     let currentEntry = current
     let newEntry = new
+    clearEntries()
     Task {
-      let accepted =
-        switch credential {
-        case .pin1:
-          await model.changePin1(current: currentEntry, new: newEntry)
-        case .pin2:
-          await model.changePin2(current: currentEntry, new: newEntry)
-        }
-      if accepted {
-        clearEntries()
+      switch credential {
+      case .pin1:
+        _ = await model.changePin1(current: currentEntry, new: newEntry)
+      case .pin2:
+        _ = await model.changePin2(current: currentEntry, new: newEntry)
       }
     }
   }

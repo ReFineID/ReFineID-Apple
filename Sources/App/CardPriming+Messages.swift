@@ -2,6 +2,7 @@
 
 #if canImport(CoreNFC) && os(iOS)
 
+  import CardCore
   import Foundation
 
   /// How a failed hold is explained, on the sheet and afterwards.
@@ -10,19 +11,24 @@
     ///
     /// The sheet is the only surface a holder can see while a card is
     /// against the phone, so it carries the reason rather than a shrug.
-    /// While the contactless path is still being brought up it also
-    /// carries the underlying error, because "could not read the card"
-    /// describes a dozen different faults identically and the difference
-    /// is the whole diagnosis. It never names a PIN, a card access
-    /// number or the holder: card errors carry status words and typed
-    /// reasons, not secrets.
+    /// It never carries an internal error description: Apple's panel has
+    /// room for one short line, while the app retains the fuller sanitized
+    /// result after the panel closes.
     internal static func sheetMessage(for error: any Error) -> String {
-      let reason = Self.summary(for: error)
-      #if DEBUG
-        return reason + " (" + String(describing: error) + ")"
-      #else
-        return reason
-      #endif
+      if case Failure.pin1LowAttempts = error {
+        return String(localized: "Operation refused")
+      }
+      if let failure = error as? CardOperationError {
+        switch failure {
+        case .pinRejected:
+          return CredentialOutcomeMessage.incorrect(credentialName: "PIN 1")
+        case .pinBlocked:
+          return String(localized: "PIN 1 is blocked")
+        default:
+          break
+        }
+      }
+      return Self.summary(for: error)
     }
 
     internal static func summary(for error: any Error) -> String {
@@ -32,7 +38,24 @@
       if let failure = error as? NearFieldCardSession.Failure {
         return Self.summary(for: failure)
       }
+      if let failure = error as? CardOperationError {
+        return Self.summary(for: failure)
+      }
       return String(localized: "The card could not be read. Hold it still and try again.")
+    }
+
+    /// Explains a card refusal without exposing its status word or raw error.
+    private static func summary(for failure: CardOperationError) -> String {
+      switch failure {
+      case .pinRejected(let remaining):
+        return CredentialOutcomeMessage.rejection(
+          credentialName: "PIN 1",
+          remaining: remaining)
+      case .pinBlocked:
+        return String(localized: "PIN 1 is blocked") + "."
+      default:
+        return String(localized: "The card could not be read. Hold it still and try again.")
+      }
     }
 
     /// Explains an app-level priming failure.
@@ -44,6 +67,10 @@
         String(localized: "Store the card access number first, then try again.")
       case Failure.pin1Unavailable:
         String(localized: "PIN 1 could not be verified safely.")
+      case Failure.pin1LowAttempts(let remaining):
+        CredentialOutcomeMessage.lowAttemptRefusal(
+          credentialName: "PIN 1",
+          remaining: remaining)
       case Failure.certificateUnreadable:
         String(localized: "The card did not return a usable certificate.")
       case Failure.primeNotStored:

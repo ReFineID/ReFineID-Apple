@@ -9,8 +9,8 @@
   ///
   /// The model holds no secret. It reads the card access number through
   /// ``CardCredentialStore``, which never hands the digits back. Apple's
-  /// NFC sheets report the operation; the setup form retains no progress
-  /// or result presentation of its own.
+  /// NFC sheet reports the live operation; after it closes, the setup form
+  /// retains only a sanitized failure sentence.
   @available(iOS 26.0, *)
   @MainActor
   @Observable
@@ -40,19 +40,27 @@
     /// Apple's NFC sheet reports it to the holder.
     internal private(set) var lastRunResult = RunResult.notRun
 
+    /// A short, sanitized failure retained after Apple's NFC sheet closes.
+    internal private(set) var failure: String?
+
     /// Refreshes what is stored, without touching any secret.
     internal func refresh() {
       contents = CardCredentialStore.contents()
       allowsNearField = SupportedCardTransports.offersNearField
     }
 
-    /// Primes the card for later system-driven logins.
+    /// Primes the card for later system-driven logins through the selected backend.
     internal func prime(pin1: String) async {
       guard !isRunning else { return }
+      if DemoMode.shared.isActive {
+        await primeVirtualCard(pin1: pin1)
+        return
+      }
       refresh()
       guard contents.hasCardAccessNumber, allowsNearField else { return }
       isRunning = true
       lastRunResult = .notRun
+      failure = nil
       let outcome = await CardPriming.prime(
         pin1: pin1,
         progress: { _ in
@@ -65,13 +73,60 @@
       // The sound is started and answered inside the panel's lifetime,
       // in `CardPriming`; nothing here makes a noise after it closed. A
       // hold the holder cancelled never got as far as a sound at all.
-      lastRunResult =
-        outcome.cancelled
-        ? .notRun
-        : (outcome.stored && outcome.registered ? .succeeded : .failed)
+      if outcome.cancelled {
+        lastRunResult = .notRun
+        failure = nil
+      } else if outcome.stored && outcome.registered {
+        lastRunResult = .succeeded
+        failure = nil
+      } else {
+        lastRunResult = .failed
+        failure = outcome.summary
+      }
       refresh()
       isRunning = false
     }
-  }
+
+    /// Simulates only card/device effects; callers still use ``prime(pin1:)``.
+    private func primeVirtualCard(pin1: String) async {
+      isRunning = true
+      lastRunResult = .notRun
+      failure = nil
+      defer { isRunning = false }
+      switch await DemoMode.shared.authenticate(pin1: pin1) {
+      case .success:
+        lastRunResult = .succeeded
+      case .invalidEntry:
+        lastRunResult = .failed
+        failure = String(localized: "PIN 1 does not fit its digit rules.")
+      case .blocked:
+        lastRunResult = .failed
+        failure = String(localized: "PIN 1 is blocked.")
+      case .rejected(let remaining):
+        lastRunResult = .failed
+        if let count = RetryCount(attemptsRemaining: remaining) {
+          failure = CredentialOutcomeMessage.rejection(
+            credentialName: "PIN 1",
+            remaining: count)
+        }
+      case .refusedLowAttempts(let remaining):
+        lastRunResult = .failed
+        if let count = RetryCount(attemptsRemaining: remaining) {
+          failure = CredentialOutcomeMessage.lowAttemptRefusal(
+            credentialName: "PIN 1",
+            remaining: count)
+        }
+      case .certificateUnavailable:
+        lastRunResult = .failed
+        failure = String(localized: "The card certificate could not be read.")
+      case .tokenPublicationFailed:
+        lastRunResult = .failed
+        failure = String(localized: "Safari setup did not finish. Try again.")
+      case .transportFailure:
+        lastRunResult = .failed
+        failure = String(localized: "The identity card could not be read. Try again.")
+      }
+    }
+}
 
 #endif

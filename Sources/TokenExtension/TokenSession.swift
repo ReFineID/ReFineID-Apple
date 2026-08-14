@@ -70,6 +70,10 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
     beginAuthFor operation: TKTokenOperation,
     constraint: Any
   ) throws -> TKTokenAuthOperation {
+    guard let cardToken = token as? Token, !cardToken.isRevoked else {
+      throw TKError(.tokenNotFound)
+    }
+
     // The constraint names the credential: each published key carries
     // its own, so the qualified key can never be satisfied by a PIN1
     // flow or vice versa.
@@ -107,6 +111,7 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
       TokenLog.error("supports: session token is not a ReFineID Token")
       return false
     }
+    guard !token.isRevoked else { return false }
     guard let profile = Self.profile(for: keyObjectID, of: token) else {
       return false
     }
@@ -163,6 +168,9 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
   ) throws -> Data {
     guard let cardToken = token as? Token else {
       throw TKError(.badParameter)
+    }
+    guard !cardToken.isRevoked else {
+      throw TKError(.tokenNotFound)
     }
     if (keyObjectID as? String) == Token.signObjectID {
       return try qualifiedThroughReader(
