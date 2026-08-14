@@ -233,18 +233,18 @@
         }
       }
     },
-    "Connection establishment": {
+    "Connect Identity Card Wirelessly": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yhteyden muodostaminen"
+            "value": "Yhdistä henkilökortti langattomasti"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Anslutning"
+            "value": "Anslut identitetskortet trådlöst"
           }
         }
       }

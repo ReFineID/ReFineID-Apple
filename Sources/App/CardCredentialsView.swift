@@ -51,6 +51,14 @@ internal struct CardCredentialsView: View {
     cardAccessNumberEntry.count == CardAccessNumber.digitCount
   }
 
+  /// CAN receives initial focus only while it is the screen's sole input.
+  private var shouldFocusCardAccessNumber: Bool {
+    !hasIdentity
+      && offersNearField
+      && !isHolding
+      && !isCardAccessNumberEntryComplete
+  }
+
   /// The visible CAN handed to PIN management, only when complete.
   ///
   /// The setup field is also where a stored CAN is shown, so there is
@@ -209,6 +217,15 @@ internal struct CardCredentialsView: View {
       refreshRegistration()
       showStoredCardAccessNumber()
     }
+    .task(id: shouldFocusCardAccessNumber) {
+      guard shouldFocusCardAccessNumber else { return }
+      // Let the conditional Form row enter the hierarchy before asking
+      // SwiftUI to make it first responder. This yields an event turn;
+      // it is not a time-based delay.
+      await Task.yield()
+      guard shouldFocusCardAccessNumber else { return }
+      isCardAccessNumberFieldFocused = true
+    }
     .onChange(of: hasIdentity) { _, registered in
       // A set identity ends the fields' job; nothing they held is worth
       // keeping in memory once the setup they belonged to is over.
@@ -270,7 +287,7 @@ internal struct CardCredentialsView: View {
 
   /// One operation, in its actual order: credentials and then minting.
   @ViewBuilder private var createIdentitySection: some View {
-    Section("Connection establishment") {
+    Section("Connect Identity Card Wirelessly") {
       cardAccessNumberRow
     }
     if isCardAccessNumberEntryComplete {
