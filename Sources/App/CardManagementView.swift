@@ -72,7 +72,10 @@ internal struct CardManagementView: View {
 
   private let startsWithReaderCard: Bool
   private let usesProvidedCardAccessNumber: Bool
+  private let activationRequired: Bool
+  private let onActivationSucceeded: () -> Void
   private let cardPresence = CardPresence.shared
+  @Environment(\.dismiss) private var dismiss
 
   @State private var model: CardManagementModel
   @State private var task: ManagementTask = .changePin1
@@ -82,16 +85,25 @@ internal struct CardManagementView: View {
   internal init(
     readerCardIsPresent: Bool = false,
     activationRequired: Bool = false,
-    cardAccessNumber: String? = nil
+    cardAccessNumber: String? = nil,
+    activationScheme: ActivationScheme? = nil,
+    activationNeeds: CardActivationNeeds? = nil,
+    onActivationSucceeded: @escaping () -> Void = {}
   ) {
     startsWithReaderCard = readerCardIsPresent
+    self.activationRequired = activationRequired
     usesProvidedCardAccessNumber =
       cardAccessNumber?.count == CardAccessNumber.digitCount
+    self.onActivationSucceeded = onActivationSucceeded
     _model = State(
       initialValue: CardManagementModel(
-        transport: readerCardIsPresent ? .reader : nil,
+        transport: readerCardIsPresent
+          ? .reader
+          : (usesProvidedCardAccessNumber ? .nearField : nil),
         activationRequired: activationRequired,
-        cardAccessNumber: cardAccessNumber
+        cardAccessNumber: cardAccessNumber,
+        activationScheme: activationScheme,
+        activationNeeds: activationNeeds
       )
     )
   }
@@ -231,7 +243,7 @@ internal struct CardManagementView: View {
   /// would be a second door to the same operation with a retry spent
   /// on getting there.
   private var awaitsActivation: Bool {
-    model.offersActivation
+    activationRequired || model.offersActivation
   }
 
   /// One segment per task, and only the chosen one on screen.
@@ -247,7 +259,9 @@ internal struct CardManagementView: View {
     if awaitsActivation {
       Form {
         connectionSection
-        CardActivationSection(model: model)
+        CardActivationSection(
+          model: model,
+          onActivated: activationCompleted)
         CardOutcomeSection(model: model)
       }
       .formStyle(.grouped)
@@ -277,6 +291,11 @@ internal struct CardManagementView: View {
     }
   }
 
+  private func activationCompleted() {
+    onActivationSucceeded()
+    dismiss()
+  }
+
   @ViewBuilder private var connectionSection: some View {
     #if os(iOS)
       if !readerCardIsPresent,
@@ -284,7 +303,7 @@ internal struct CardManagementView: View {
         !usesProvidedCardAccessNumber
       {
         Section("NFC") {
-          SecureField("Card Access Number (CAN)", text: $model.cardAccessNumber)
+          TextField("Card Access Number (CAN)", text: $model.cardAccessNumber)
             .textContentType(.oneTimeCode)
             .keyboardType(.numberPad)
             .textInputAutocapitalization(.never)

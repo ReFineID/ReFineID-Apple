@@ -20,6 +20,11 @@ import SwiftUI
 /// nothing to do with the card. They cost nothing at runtime and they are
 /// what VoiceOver already wants.
 internal struct CardCredentialsView: View {
+  private enum Destination: Hashable {
+    case activation
+    case pinManagement
+  }
+
   private static let sectionSpacing: CGFloat = 24
 
   @State private var model = CardCredentialsModel()
@@ -31,6 +36,10 @@ internal struct CardCredentialsView: View {
   @State private var registrationReset = false
   @State private var isRegistered = false
   @State private var isLandscapeLayout = false
+  @State private var activationScheme: ActivationScheme?
+  @State private var activationNeeds: CardActivationNeeds?
+  @State private var destination: Destination?
+  @State private var demonstrationConnected = false
   @FocusState private var isCardAccessNumberFieldFocused: Bool
   @FocusState private var isPin1FieldFocused: Bool
 
@@ -65,7 +74,16 @@ internal struct CardCredentialsView: View {
   /// one source of truth and the management screen never has to ask for
   /// the same printed number again.
   internal var managementCardAccessNumber: String? {
-    isCardAccessNumberEntryComplete ? cardAccessNumberEntry : nil
+    !isDemonstration
+      && model.contents.hasCardAccessNumber
+      && isCardAccessNumberEntryComplete
+      ? cardAccessNumberEntry
+      : nil
+  }
+
+  /// Disclosure follows a validated connection, never digit count alone.
+  private var hasConfiguredCard: Bool {
+    model.contents.hasCardAccessNumber || (isDemonstration && demonstrationConnected)
   }
 
   /// Whether this launch is demonstrating the flow without a card.
@@ -100,7 +118,7 @@ internal struct CardCredentialsView: View {
   /// the very views a hold hides.
   private var isHolding: Bool {
     #if canImport(CoreNFC) && os(iOS)
-      return primingModel.isRunning || DemoMode.shared.isHolding
+      return model.isConnecting || primingModel.isRunning || DemoMode.shared.isHolding
     #else
       return false
     #endif
@@ -132,12 +150,7 @@ internal struct CardCredentialsView: View {
     if isDemonstration {
       return !cardAccessNumberEntry.isEmpty && !pin1Entry.isEmpty
     }
-    let numberReady =
-      cardAccessNumberEntry.isEmpty
-      ? model.contents.hasCardAccessNumber
-      : cardAccessNumberEntry.count == CardAccessNumber.digitCount
-    let pinReady = pin1Entry.isEmpty ? model.contents.hasPin1 : isPin1EntryComplete
-    return numberReady && pinReady
+    return model.contents.hasCardAccessNumber && isPin1EntryComplete
   }
 
   internal var body: some View {
@@ -185,16 +198,40 @@ internal struct CardCredentialsView: View {
       .navigationTitle("ReFineID")
       .navigationBarTitleDisplayMode(.large)
       .toolbar {
-        if let cardAccessNumber = managementCardAccessNumber, !isHolding {
+        if managementCardAccessNumber != nil, !isHolding {
           ToolbarItem(placement: .topBarTrailing) {
-            NavigationLink {
-              CardManagementView(cardAccessNumber: cardAccessNumber)
+            Button {
+              destination = .pinManagement
             } label: {
               Image(systemName: "key")
                 .accessibilityLabel(Text("Change or Reset PINs"))
             }
             .accessibilityIdentifier("manageCard")
           }
+        }
+      }
+      .navigationDestination(item: $destination) { destination in
+        switch destination {
+        case .activation:
+#if DEBUG
+          let _ = DebugConsole.emit("navigation-destination: activation")
+#endif
+          if let activationScheme, let activationNeeds {
+            CardManagementView(
+              activationRequired: true,
+              cardAccessNumber: cardAccessNumberEntry,
+              activationScheme: activationScheme,
+              activationNeeds: activationNeeds,
+              onActivationSucceeded: activationSucceeded)
+              .id(Destination.activation)
+          }
+        case .pinManagement:
+#if DEBUG
+          let _ = DebugConsole.emit("navigation-destination: PIN management")
+#endif
+          CardManagementView(
+            cardAccessNumber: managementCardAccessNumber)
+            .id(Destination.pinManagement)
         }
       }
       .onGeometryChange(for: Bool.self) { geometry in
@@ -246,7 +283,18 @@ internal struct CardCredentialsView: View {
       if !complete {
         pin1Entry = ""
         isPin1FieldFocused = false
+        demonstrationConnected = false
       }
+    }
+    .onChange(of: cardAccessNumberEntry) { _, entered in
+      if !entered.isEmpty {
+        model.clearFailure()
+      }
+      guard entered.isEmpty,
+        !isDemonstration,
+        model.contents.hasCardAccessNumber
+      else { return }
+      model.forgetEverything()
     }
     #if os(iOS)
       .sheet(isPresented: $isScanning) {
@@ -290,7 +338,7 @@ internal struct CardCredentialsView: View {
     Section("Connect Identity Card Wirelessly") {
       cardAccessNumberRow
     }
-    if isCardAccessNumberEntryComplete {
+    if hasConfiguredCard {
       Section("Enable authentication") {
         pin1Row
       }
@@ -301,7 +349,9 @@ internal struct CardCredentialsView: View {
           CardRegistrationSections(
             canPrepareCredentials: canPrepareIdentity,
             isDemonstration: isDemonstration,
-            prepareCredentials: prepareIdentity,
+            enteredPin1: enteredPin1,
+            storeVerifiedPin1: model.savePin1,
+            clearPin1Entry: clearPin1Entry,
             isRegistered: $isRegistered,
             model: primingModel
           )
@@ -310,6 +360,21 @@ internal struct CardCredentialsView: View {
         .listRowBackground(Color.clear)
         .listRowInsets(EdgeInsets())
       #endif
+    } else {
+      Section {
+        Button {
+          connectIdentityCard()
+        } label: {
+          Text("Connect")
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.large)
+        .disabled(!isCardAccessNumberEntryComplete || model.isConnecting)
+        .accessibilityIdentifier("connectCard")
+      }
+      .listRowBackground(Color.clear)
+      .listRowInsets(EdgeInsets())
     }
   }
 
@@ -322,7 +387,7 @@ internal struct CardCredentialsView: View {
   @ViewBuilder private var cardAccessNumberRow: some View {
     #if os(iOS)
       HStack {
-        SecureField("Card Access Number (CAN)", text: $cardAccessNumberEntry)
+        TextField("Card Access Number (CAN)", text: $cardAccessNumberEntry)
           .keyboardType(.numberPad)
           .focused($isCardAccessNumberFieldFocused)
           .accessibilityIdentifier("cardAccessNumberField")
@@ -341,7 +406,7 @@ internal struct CardCredentialsView: View {
         }
       }
     #else
-      SecureField("Card Access Number (CAN)", text: $cardAccessNumberEntry)
+      TextField("Card Access Number (CAN)", text: $cardAccessNumberEntry)
         .accessibilityIdentifier("cardAccessNumberField")
         .onChange(of: cardAccessNumberEntry) { _, typed in
           cardAccessNumberEntry = LimitedDigits.cardAccessNumber(typed)
@@ -425,34 +490,65 @@ internal struct CardCredentialsView: View {
     #endif
   }
 
-  /// Stores the entered pair immediately before the NFC operation.
-  ///
-  /// A typed value wins over a stored one. The fields stay editable
-  /// until an identity exists precisely so a mistyped number can be
-  /// corrected, and a correction that the store ignored because
-  /// something was already kept would be worse than no field at all. An
-  /// empty field means the holder is content with what is stored.
+  /// Returns the transient PIN only to the card-reading operation.
   @MainActor
-  private func prepareIdentity() -> Bool {
-    // A demonstration stores neither entry. What was typed stays in the
-    // fields it was typed into and goes no further than this screen.
-    guard !isDemonstration else {
-      isPin1FieldFocused = false
-      return true
-    }
-    let accessNumber = cardAccessNumberEntry.isEmpty ? nil : cardAccessNumberEntry
-    let pin1 = pin1Entry.isEmpty ? nil : pin1Entry
-
-    // The fields keep what was typed. Emptying them here was what left a
-    // holder unable to see, check or correct a PIN after a hold that
-    // failed -- the one moment both are worth looking at. They are
-    // cleared when the identity is set and when the card is forgotten,
-    // which is when there is nothing left for them to be about.
+  private func enteredPin1() -> String? {
+    guard isPin1EntryComplete else { return nil }
     isPin1FieldFocused = false
+    return pin1Entry
+  }
 
-    return model.prepareIdentity(
-      cardAccessNumber: accessNumber,
-      pin1: pin1)
+  /// Removes PIN1 from UI memory after every completed NFC operation.
+  @MainActor
+  private func clearPin1Entry() {
+    pin1Entry = ""
+    isPin1FieldFocused = false
+  }
+
+  /// Runs the first non-mutating connection and routes from live card state.
+  private func connectIdentityCard() {
+    guard isCardAccessNumberEntryComplete, !model.isConnecting else { return }
+    if isDemonstration {
+      demonstrationConnected = true
+      isCardAccessNumberFieldFocused = false
+      return
+    }
+    let entered = cardAccessNumberEntry
+    activationScheme = nil
+    activationNeeds = nil
+    isCardAccessNumberFieldFocused = false
+    Task {
+      guard let result = await model.connect(cardAccessNumber: entered) else { return }
+      guard entered == cardAccessNumberEntry else { return }
+      switch result {
+      case .activated:
+        model.forgetPin1()
+        if !model.saveCardAccessNumber(entered) {
+          cardAccessNumberEntry = ""
+          isCardAccessNumberFieldFocused = true
+        }
+      case .activationRequired(let scheme, let needs):
+        model.forgetPin1()
+        activationScheme = scheme
+        activationNeeds = needs
+        destination = .activation
+      case .wrongCardAccessNumber:
+        cardAccessNumberEntry = ""
+        isCardAccessNumberFieldFocused = true
+      case .failed:
+        break
+      }
+    }
+  }
+
+  /// Activation succeeded on the card; only now is its CAN persistent.
+  private func activationSucceeded() {
+    activationScheme = nil
+    activationNeeds = nil
+    if !model.saveCardAccessNumber(cardAccessNumberEntry) {
+      cardAccessNumberEntry = ""
+      isCardAccessNumberFieldFocused = true
+    }
   }
 
   /// Empties both fields once they have nothing left to describe.

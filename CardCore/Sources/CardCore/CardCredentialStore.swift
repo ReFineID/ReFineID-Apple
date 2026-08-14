@@ -364,19 +364,19 @@ public enum CardCredentialStore {
   /// them looking in the wrong place.
   private static func write(_ digits: String, account: String) -> OSStatus {
     guard let data = digits.data(using: .utf8) else { return errSecParam }
-    var attributes = query(account: account)
-    attributes[kSecValueData as String] = data
-    attributes[kSecAttrAccessible as String] =
-      kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-    delete(account: account)
-    let status = SecItemAdd(attributes as CFDictionary, nil)
-    guard status == errSecDuplicateItem else { return status }
-    // The old item outlived the delete, which a protected item can do.
-    // Replacing its data in place still gets the holder what they asked
-    // for, and it keeps the access control that is already on it.
-    return SecItemUpdate(
-      query(account: account) as CFDictionary,
-      [kSecValueData as String: data] as CFDictionary)
+    let coordinates = query(account: account)
+    let replacement = [kSecValueData as String: data]
+    let updated = SecItemUpdate(
+      coordinates as CFDictionary,
+      replacement as CFDictionary)
+    if updated == errSecSuccess { return updated }
+    guard updated == errSecItemNotFound else { return updated }
+
+    var insertion = coordinates
+    insertion[kSecValueData as String] = data
+    insertion[kSecAttrAccessible as String] =
+      kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+    return SecItemAdd(insertion as CFDictionary, nil)
   }
 
   /// Removes an item.

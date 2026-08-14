@@ -19,6 +19,7 @@ internal struct CardActivationSection: View {
   }
 
   internal let model: CardManagementModel
+  internal let onActivated: () -> Void
 
   @State private var entry = ""
   @State private var newPin1 = ""
@@ -231,6 +232,7 @@ internal struct CardActivationSection: View {
         newPin2 = ""
         newPin2Repeated = ""
         focus = nil
+        onActivated()
       }
     }
   }

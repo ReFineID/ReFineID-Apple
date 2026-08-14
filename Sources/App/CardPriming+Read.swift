@@ -33,6 +33,7 @@
     internal static func read(
       from sheet: PrimingSheetReporter,
       accessNumber: CardAccessNumber,
+      pin1: String,
       progress: Progress,
       step: StepReport
     ) throws -> Payload {
@@ -63,7 +64,7 @@
           channel: SecureMessagingChannel(wrapping: channel, sessionKeys: keys))
         progress(String(localized: "Reading the certificate from the card."))
         do {
-          let payload = try Self.readIdentity(operations: operations)
+          let payload = try Self.readIdentity(operations: operations, pin1: pin1)
           step(.certificate, .done)
           progress(String(localized: "Card identity read."))
           return payload
@@ -75,12 +76,22 @@
     }
 
     /// The reads behind the secure channel, validated into a payload.
-    private static func readIdentity(operations: CardOperations) throws -> Payload {
+    private static func readIdentity(
+      operations: CardOperations,
+      pin1 digits: String
+    ) throws -> Payload {
       let certificate = try operations.readCertificate(.authentication)
       let activationCheck = try Self.activationCheck(
         certificate: certificate,
         operations: operations
       )
+      guard let pin1 = Pin1(digits: digits),
+        let probe = try? operations.probeRetryCounter(role: .pin1),
+        RetryFloor.evaluate(probeOutcome: probe) == .proceed
+      else {
+        throw Failure.pin1Unavailable
+      }
+      try operations.verifyPin1(pin1.consumeForSingleTransmission())
       let serial = try operations.readTokenSerial()
       guard let instance = CardInstanceIdentifier(tokenSerial: serial) else {
         throw Failure.unidentifiedCard

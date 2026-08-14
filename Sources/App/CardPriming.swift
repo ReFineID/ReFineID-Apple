@@ -84,6 +84,9 @@
       /// No card access number is stored, so PACE cannot be run.
       case cardAccessNumberMissing
 
+      /// PIN1 was invalid or its retry floor refused verification.
+      case pin1Unavailable
+
       /// The card still needs its first holder PIN values.
       case activationRequired
 
@@ -149,6 +152,7 @@
     /// it can fail is something they need to read rather than something a
     /// caller needs to catch.
     internal static func prime(
+      pin1: String,
       progress: @escaping Progress,
       step: @escaping StepReport
     ) async -> Outcome {
@@ -194,6 +198,7 @@
       let outcome = await Self.hold(
         sheet: sheet,
         accessNumber: accessNumber,
+        pin1: pin1,
         progress: progress,
         step: report)
       await CardPrimingFeedback.report(succeeded: outcome.stored && outcome.registered)
@@ -207,6 +212,7 @@
     private static func hold(
       sheet: PrimingSheetReporter,
       accessNumber: CardAccessNumber,
+      pin1: String,
       progress: @escaping Progress,
       step: @escaping StepReport
     ) async -> Outcome {
@@ -218,22 +224,11 @@
         return Self.failure(Failure.unidentifiedCard)
       }
 
-      // A re-prime restores a lost registration without one APDU. The
-      // extension finds the same record by the same lookup, so the mint
-      // is immediate and the whole hold is the registration.
-      if let instance = Self.storedInstance(lookup: lookup) {
-        for done in [CardPrimingStep.secureChannel, .certificate, .stored] {
-          step(done, .done)
-        }
-        progress(String(localized: "Card details already stored on this iPhone."))
-        return await Self.finish(
-          instance: instance, sheet: sheet, progress: progress, step: step)
-      }
-
       return await Self.readStoreRegister(
         sheet: sheet,
         lookup: lookup,
         accessNumber: accessNumber,
+        pin1: pin1,
         progress: progress,
         step: step)
     }
@@ -247,25 +242,12 @@
         cancelled: (error as? NearFieldCardSession.Failure) == .dismissed)
     }
 
-    /// The instance an existing prime already names, when one does.
-    private static func storedInstance(
-      lookup: PrimeLookupIdentifier
-    ) -> CardInstanceIdentifier? {
-      guard
-        let existing = PrimeStore.read(lookupID: lookup),
-        let serialText = existing.tokenSerial,
-        let serial = TokenSerial(value: serialText)
-      else {
-        return nil
-      }
-      return CardInstanceIdentifier(tokenSerial: serial)
-    }
-
     /// Reads the card in this same field, stores the prime, registers.
     private static func readStoreRegister(
       sheet: PrimingSheetReporter,
       lookup: PrimeLookupIdentifier,
       accessNumber: CardAccessNumber,
+      pin1: String,
       progress: @escaping Progress,
       step: @escaping StepReport
     ) async -> Outcome {
@@ -276,6 +258,7 @@
           try Self.read(
             from: sheet,
             accessNumber: accessNumber,
+            pin1: pin1,
             progress: progress,
             step: step)
         }

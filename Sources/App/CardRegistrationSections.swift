@@ -41,8 +41,14 @@
     /// ``isRegistered`` stays about the card and is left alone.
     internal let isDemonstration: Bool
 
-    /// Stores the two entries before opening the NFC field.
-    internal let prepareCredentials: @MainActor () -> Bool
+    /// Supplies the transient PIN to the one NFC operation.
+    internal let enteredPin1: @MainActor () -> String?
+
+    /// Commits PIN1 only after the card accepted it.
+    internal let storeVerifiedPin1: @MainActor (String) -> Bool
+
+    /// Clears the transient entry after the operation ends.
+    internal let clearPin1Entry: @MainActor () -> Void
 
     /// Flipped when a hold ends with a registered identity.
     @Binding internal var isRegistered: Bool
@@ -61,14 +67,17 @@
       // full-width control: the credential rows above collect, this
       // commits. Everything after the tap is Apple's NFC sheet.
       Button {
-        Task {
-          guard prepareCredentials() else { return }
+        Task { @MainActor in
+          guard let pin1 = enteredPin1() else { return }
+          defer { clearPin1Entry() }
           guard !isDemonstration else {
             await DemoMode.shared.readTestIdentity()
             return
           }
-          await model.prime()
-          if case .succeeded = model.lastRunResult {
+          await model.prime(pin1: pin1)
+          if case .succeeded = model.lastRunResult,
+            storeVerifiedPin1(pin1)
+          {
             isRegistered = true
           }
         }

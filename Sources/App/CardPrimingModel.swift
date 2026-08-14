@@ -47,13 +47,14 @@
     }
 
     /// Primes the card for later system-driven logins.
-    internal func prime() async {
+    internal func prime(pin1: String) async {
       guard !isRunning else { return }
       refresh()
       guard contents.hasCardAccessNumber, allowsNearField else { return }
       isRunning = true
       lastRunResult = .notRun
       let outcome = await CardPriming.prime(
+        pin1: pin1,
         progress: { _ in
           // The meter on the system NFC sheet carries progress; the
           // holder is looking at the card, not at this screen.

@@ -44,6 +44,10 @@
     /// Runs the mode and ends the process with its status.
     private static func run(_ mode: DebugLaunchMode) async {
       switch mode {
+      case .activationProbe:
+        let report = await CardMaintenance.debugActivationSignals()
+        DebugConsole.emit(report.lines)
+        DebugConsole.finish(succeeded: report.succeeded)
       case .ctkSignProbe:
         let report = await Self.offMainThread(CtkSignProbe.report)
         DebugConsole.emit(report.lines)
@@ -89,7 +93,14 @@
         DebugConsole.emit("card access number stored: \(contents.hasCardAccessNumber)")
         DebugConsole.emit(
           "near field available: \(SupportedCardTransports.offersNearField)")
+        guard let pin1 = ProcessInfo.processInfo.environment["REFINEID_DEBUG_PIN1"],
+          !pin1.isEmpty
+        else {
+          DebugConsole.emit("prime: REFINEID_DEBUG_PIN1 is required")
+          return false
+        }
         let outcome = await CardPriming.prime(
+          pin1: pin1,
           progress: { line in
             DebugConsole.emit("progress: " + line)
           },

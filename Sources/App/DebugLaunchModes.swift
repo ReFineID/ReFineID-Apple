@@ -80,7 +80,7 @@
     /// Runs one mode that needs no window.
     internal static func report(for mode: DebugLaunchMode) -> DebugModeReport {
       switch mode {
-      case .ctkSignProbe, .managementProbe, .prime:
+      case .activationProbe, .ctkSignProbe, .managementProbe, .prime:
         DebugModeReport(
           lines: [mode.rawValue + ": needs a live scene; it is run from the window instead"],
           succeeded: false)

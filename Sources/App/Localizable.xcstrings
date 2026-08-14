@@ -233,6 +233,22 @@
         }
       }
     },
+    "Connect": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yhdistä"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anslut"
+          }
+        }
+      }
+    },
     "Connect Identity Card Wirelessly": {
       "localizations": {
         "fi": {
@@ -245,6 +261,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Anslut identitetskortet trådlöst"
+          }
+        }
+      }
+    },
+    "The Card Access Number (CAN) is incorrect.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortin käyttönumero (CAN) on väärä."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortets åtkomstnummer (CAN) är felaktigt."
           }
         }
       }

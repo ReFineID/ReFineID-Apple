@@ -14,6 +14,15 @@ import SwiftUI
 @MainActor
 @Observable
 internal final class CardCredentialsModel {
+  internal enum ConnectionResult: Sendable {
+    case activated
+    case activationRequired(
+      scheme: ActivationScheme,
+      needs: CardActivationNeeds)
+    case wrongCardAccessNumber
+    case failed
+  }
+
   /// What the device currently holds.
   internal private(set) var contents = CardCredentialStore.contents()
 
@@ -28,11 +37,61 @@ internal final class CardCredentialsModel {
   /// Set when the last action failed, for the holder to read.
   internal private(set) var failure: String?
 
+  /// True only while the initial, side-effect-free card classification runs.
+  internal private(set) var isConnecting = false
+
+  /// Establishes PACE with an entered CAN and classifies the live card.
+  /// Nothing is persisted and no credential-changing command is sent.
+  internal func connect(cardAccessNumber: String) async -> ConnectionResult? {
+    guard !isConnecting,
+      CardAccessNumber(digits: cardAccessNumber) != nil
+    else { return nil }
+    isConnecting = true
+    failure = nil
+    defer { isConnecting = false }
+    let result = await CardMaintenance.connectionSnapshot(
+      cardAccessNumber: cardAccessNumber)
+    let snapshot: CardMaintenance.Snapshot
+    switch result {
+    case .connected(let connected):
+      snapshot = connected
+    case .wrongCardAccessNumber:
+      failure = String(localized: "The Card Access Number (CAN) is incorrect.")
+      return .wrongCardAccessNumber
+    case .failed:
+      failure = String(localized: "The identity card could not be read. Try again.")
+      return .failed
+    }
+    if let scheme = snapshot.activationScheme,
+      let needs = snapshot.activationNeeds,
+      needs.any
+    {
+      return .activationRequired(scheme: scheme, needs: needs)
+    }
+    if snapshot.activationScheme != nil, snapshot.activationNeeds != nil {
+      return .activated
+    }
+    failure = String(localized: "The identity card could not be classified. Try again.")
+    return .failed
+  }
+
+  /// Removes a correction message as soon as the holder starts again.
+  internal func clearFailure() {
+    failure = nil
+  }
+
   /// Refreshes what is stored, without touching PIN1.
   internal func refresh() {
-    contents = CardCredentialStore.contents()
-    storedCardAccessNumber = CardCredentialStore.displayedCardAccessNumber()
-    hasForgettableState = CardStateReset.hasForgettableState()
+    let refreshedContents = CardCredentialStore.contents()
+    let refreshedCardAccessNumber = CardCredentialStore.displayedCardAccessNumber()
+    let refreshedForgettableState = CardStateReset.hasForgettableState()
+
+    // Publish the value before the presence flag. Views reacting to a
+    // removed credential must see nil, not briefly restore the old CAN
+    // and feed it back through automatic persistence.
+    storedCardAccessNumber = refreshedCardAccessNumber
+    contents = refreshedContents
+    hasForgettableState = refreshedForgettableState
   }
 
   /// Stores the card access number, with no gate in front.
@@ -40,14 +99,16 @@ internal final class CardCredentialsModel {
   /// Ungated: the number is printed on the card face, so a prompt in
   /// front of storing it protected nothing and cost every setup an
   /// interruption.
-  internal func saveCardAccessNumber(_ digits: String) {
+  @discardableResult
+  internal func saveCardAccessNumber(_ digits: String) -> Bool {
     failure = nil
-    let status = CardCredentialStore.save(cardAccessNumber: digits)
-    if status != errSecSuccess {
-      failure = String(
-        localized: "Could not store the card access number (\(status)).")
+    guard CardCredentialStore.save(cardAccessNumber: digits) == errSecSuccess else {
+      CardCredentialStore.forgetCardAccessNumber()
+      refresh()
+      return false
     }
     refresh()
+    return contents.hasCardAccessNumber
   }
 
   /// Stores PIN1, with no gate in front.
@@ -58,34 +119,16 @@ internal final class CardCredentialsModel {
   /// signing field -- so possession of the unlocked phone plus the card
   /// already signs, gate or no gate. The card's own retry counter is the
   /// control that actually stops a guessed PIN.
-  internal func savePin1(_ digits: String) {
+  @discardableResult
+  internal func savePin1(_ digits: String) -> Bool {
     failure = nil
-    let status = CardCredentialStore.save(pin1: digits)
-    if status != errSecSuccess {
-      failure = String(localized: "Could not store PIN 1 (\(status)).")
+    guard CardCredentialStore.save(pin1: digits) == errSecSuccess else {
+      CardCredentialStore.forgetPin1()
+      refresh()
+      return false
     }
     refresh()
-  }
-
-  /// Stores any credentials that are not already present before minting.
-  ///
-  /// A nil value means that credential is already stored. The operation
-  /// stops at the first failed write so the NFC field never opens with an
-  /// incomplete credential set.
-  internal func prepareIdentity(
-    cardAccessNumber: String?,
-    pin1: String?
-  ) -> Bool {
-    if let cardAccessNumber {
-      saveCardAccessNumber(cardAccessNumber)
-      guard contents.hasCardAccessNumber else { return false }
-    }
-    if let pin1 {
-      savePin1(pin1)
-      guard contents.hasPin1 else { return false }
-    }
-    refresh()
-    return contents.hasCardAccessNumber && contents.hasPin1
+    return contents.hasPin1
   }
 
   /// Forgets the card access number, so it can be entered again.

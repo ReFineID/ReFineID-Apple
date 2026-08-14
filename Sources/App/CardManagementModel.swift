@@ -17,6 +17,7 @@ internal final class CardManagementModel {
   internal private(set) var failure: String?
   internal private(set) var notice: String?
 
+  private let activationRequired: Bool
   private var nextRefreshIdentifier = 0
   private var activeRefreshIdentifier: Int?
 
@@ -27,10 +28,15 @@ internal final class CardManagementModel {
   internal var transport: CardMaintenance.Transport {
     didSet {
       guard transport != oldValue else { return }
+#if DEBUG
+      DebugConsole.emit("card-management: transport changed from \(oldValue) to \(transport); clearing activation offer")
+#endif
       activeRefreshIdentifier = nil
       report = nil
-      activationScheme = nil
-      offersActivation = false
+      if !activationRequired {
+        activationScheme = nil
+        offersActivation = false
+      }
       failure = nil
       notice = nil
     }
@@ -57,19 +63,40 @@ internal final class CardManagementModel {
   internal init(
     transport: CardMaintenance.Transport? = nil,
     activationRequired: Bool = false,
-    cardAccessNumber: String? = nil
+    cardAccessNumber: String? = nil,
+    activationScheme: ActivationScheme? = nil,
+    activationNeeds: CardActivationNeeds? = nil
   ) {
+    self.activationRequired = activationRequired
     self.transport = transport ?? CardMaintenance.preferredTransport
-    offersActivation = activationRequired
+    self.activationScheme = activationScheme
+    if let activationNeeds {
+      self.activationNeeds = activationNeeds
+      offersActivation = activationRequired && activationNeeds.any
+    } else {
+      offersActivation = activationRequired
+    }
     self.cardAccessNumber =
       cardAccessNumber ?? CardCredentialStore.displayedCardAccessNumber() ?? ""
+#if DEBUG
+    DebugConsole.emit(
+      "card-management: initialized activationRequired=\(activationRequired) "
+        + "needs=\(String(describing: activationNeeds)) "
+        + "offersActivation=\(offersActivation) transport=\(self.transport)"
+    )
+#endif
   }
 
   internal func cardRemoved() {
+#if DEBUG
+    DebugConsole.emit("card-management: card removed; clearing activation offer")
+#endif
     activeRefreshIdentifier = nil
     report = nil
-    activationScheme = nil
-    offersActivation = false
+    if !activationRequired {
+      activationScheme = nil
+      offersActivation = false
+    }
     failure = nil
     notice = nil
   }
@@ -78,14 +105,17 @@ internal final class CardManagementModel {
   /// No retry counter is queried and the form remains interactive while
   /// the ATR or certificate classification completes.
   internal func detectActivationScheme() async {
-    guard offersActivation, transport == .reader else { return }
+    guard (activationRequired || offersActivation), transport == .reader else { return }
     let detected = await CardMaintenance.readerActivationScheme()
-    guard offersActivation, transport == .reader else { return }
+    guard (activationRequired || offersActivation), transport == .reader else { return }
     activationScheme = detected
   }
 
   internal func refresh() async {
     guard !cardOperationInProgress, canContactCard else { return }
+#if DEBUG
+    DebugConsole.emit("card-management: refresh started; offersActivation=\(offersActivation) transport=\(transport)")
+#endif
     nextRefreshIdentifier &+= 1
     let refreshIdentifier = nextRefreshIdentifier
     activeRefreshIdentifier = refreshIdentifier
@@ -98,8 +128,13 @@ internal final class CardManagementModel {
     guard activeRefreshIdentifier == refreshIdentifier else { return }
     activeRefreshIdentifier = nil
     guard let result else {
+#if DEBUG
+      DebugConsole.emit("card-management: refresh failed; clearing activation offer")
+#endif
       report = nil
-      offersActivation = false
+      if !activationRequired {
+        offersActivation = false
+      }
       failure = unreadableCardMessage
       return
     }
@@ -191,6 +226,12 @@ internal final class CardManagementModel {
     } else {
       offersActivation = false
     }
+#if DEBUG
+    DebugConsole.emit(
+      "card-management: applied snapshot needs=\(String(describing: snapshot.activationNeeds)) "
+        + "offersActivation=\(offersActivation)"
+    )
+#endif
     if !preservingOutcome {
       failure = nil
       notice = nil

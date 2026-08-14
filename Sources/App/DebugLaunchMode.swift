@@ -12,6 +12,9 @@
   ///
   /// DEBUG only. A release build knows none of these flags.
   internal enum DebugLaunchMode: String, CaseIterable, Sendable {
+    /// Read the factory-activation signals over NFC without changing the card.
+    case activationProbe = "--activation-probe"
+
     /// Sign through the token extension exactly as Safari does.
     case ctkSignProbe = "--ctk-sign-probe"
 
@@ -68,7 +71,7 @@
       case .diagnostics, .forgetCan, .paceCheck, .resetCardState, .setCan,
         .setPin1, .signDocument, .signProbe, .tokenPublishProbe, .trace:
         false
-      case .ctkSignProbe, .managementProbe, .prime:
+      case .activationProbe, .ctkSignProbe, .managementProbe, .prime:
         true
       }
     }
@@ -79,7 +82,7 @@
     /// from the command line at each launch and never committed anywhere.
     internal var takesValue: Bool {
       switch self {
-      case .ctkSignProbe, .diagnostics, .forgetCan, .paceCheck, .prime,
+      case .activationProbe, .ctkSignProbe, .diagnostics, .forgetCan, .paceCheck, .prime,
         .resetCardState, .tokenPublishProbe, .trace:
         false
       case .managementProbe, .setCan, .setPin1, .signDocument, .signProbe:
