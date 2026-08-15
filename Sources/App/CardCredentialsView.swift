@@ -456,7 +456,7 @@ internal struct CardCredentialsView: View {
         Button {
           connectIdentityCard()
         } label: {
-          Label("Enable", systemImage: "globe")
+          Label("Enable", systemImage: "person.badge.key.fill")
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
         }
