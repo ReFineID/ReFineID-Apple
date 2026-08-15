@@ -199,6 +199,10 @@
         app.secureTextFields[UITestIdentifiers.pin1Field]
           .waitForExistence(timeout: Self.appearTimeout),
         "activated card did not reveal PIN 1 authentication")
+      XCTAssertTrue(
+        app.buttons[UITestIdentifiers.signDocuments]
+          .waitForExistence(timeout: Self.appearTimeout),
+        "validated NFC card did not reveal document signing")
     }
 
     internal func testPartialActivationRequestsOnlyPIN2ThroughGUI() {

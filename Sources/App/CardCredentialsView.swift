@@ -197,7 +197,7 @@ internal struct CardCredentialsView: View {
         createIdentitySection
       }
       #if os(iOS)
-        if hasIdentity, !isHolding {
+        if hasConfiguredCard, !isHolding {
           Section(
             String(
               localized: "signing.section",
