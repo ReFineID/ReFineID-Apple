@@ -309,6 +309,10 @@ internal struct CardCredentialsView: View {
       // A set identity ends the fields' job; nothing they held is worth
       // keeping in memory once the setup they belonged to is over.
       if registered {
+        // Registration can arrive from the visible Virtual ID Card editor as
+        // well as from a real card operation. Keep the same stored-CAN input
+        // invariant in both cases so the management key is immediately usable.
+        showStoredCardAccessNumber()
         finishBrowserRegistration(succeeded: true)
         clearPin1Entry()
       } else {

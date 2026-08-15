@@ -56,7 +56,7 @@
       XCTAssertTrue(identity.waitForExistence(timeout: Self.appearTimeout))
       openManagement(in: app)
 
-      let back = app.buttons.firstMatch
+      let back = app.navigationBars.buttons.firstMatch
       XCTAssertTrue(back.waitForExistence(timeout: Self.appearTimeout))
       back.tap()
       XCTAssertTrue(
