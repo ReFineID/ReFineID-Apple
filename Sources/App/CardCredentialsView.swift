@@ -180,7 +180,9 @@ internal struct CardCredentialsView: View {
       } else if let identityHolder {
         // A set identity replaces the whole setup: nothing about it is
         // left to configure, so nothing about configuring it is shown.
-        CardIdentitySection(holder: identityHolder)
+        CardIdentitySection(holder: identityHolder) {
+          showsForgetConfirmation = true
+        }
       } else {
         createIdentitySection
       }
@@ -204,9 +206,9 @@ internal struct CardCredentialsView: View {
                 systemImage: "signature")
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
             }
             .buttonStyle(.borderedProminent)
-            .controlSize(.large)
             .accessibilityIdentifier("signDocuments")
             .disabled(!isCardAccessNumberEntryComplete)
           }
@@ -223,13 +225,6 @@ internal struct CardCredentialsView: View {
         Section {
           CredentialOutcomeText(message: failure, tone: .failure)
         }
-      }
-      // Only an identity is worth a destructive action. Stored
-      // credentials are not: the fields above are editable until an
-      // identity exists, so a wrong number is corrected by typing over
-      // it rather than by forgetting anything.
-      if hasIdentity, !isHolding, offersNearField {
-        forgetSection
       }
     }
     #if os(iOS)
@@ -314,12 +309,8 @@ internal struct CardCredentialsView: View {
       // A set identity ends the fields' job; nothing they held is worth
       // keeping in memory once the setup they belonged to is over.
       if registered {
-        if flowState == .registeringBrowser {
-          transition(.registrationSucceeded)
-        } else {
-          synchronizeIdentityState()
-        }
-        clearEntries()
+        finishBrowserRegistration(succeeded: true)
+        clearPin1Entry()
       } else {
         synchronizeIdentityState()
       }
@@ -439,15 +430,13 @@ internal struct CardCredentialsView: View {
             canPrepareCredentials: canPrepareIdentity,
             isDemonstration: isDemonstration,
             enteredPin1: enteredPin1,
-            storeVerifiedPin1: model.savePin1,
+            storeVerifiedPin1: storeVerifiedPin1,
             clearPin1Entry: clearPin1Entry,
             onRegistrationStarted: {
               transition(.startConfiguredBrowserRegistration)
             },
             onRegistrationFinished: { succeeded in
-              if !succeeded {
-                transition(.registrationFailed)
-              }
+              finishBrowserRegistration(succeeded: succeeded)
             },
             isRegistered: $isRegistered,
             model: primingModel
@@ -471,7 +460,6 @@ internal struct CardCredentialsView: View {
           BrowserAuthenticationEnableLabel()
         }
           .buttonStyle(.borderedProminent)
-          .controlSize(.large)
           .disabled(
             !isCardAccessNumberEntryComplete
               || !isPin1EntryComplete
@@ -567,20 +555,6 @@ internal struct CardCredentialsView: View {
         .onChange(of: pin1Entry) { _, typed in
           pin1Entry = LimitedDigits.pin1(typed)
         }
-    }
-  }
-
-  /// The destructive action, shown only when there is an identity.
-  ///
-  /// It removes everything the device knows about the card, which is
-  /// worth confirming. Before an identity exists there is nothing here
-  /// that needs removing rather than overwriting.
-  private var forgetSection: some View {
-    Section {
-      Button("Forget identity", role: .destructive) {
-        showsForgetConfirmation = true
-      }
-      .accessibilityIdentifier("forgetCardIdentityButton")
     }
   }
 
@@ -718,15 +692,13 @@ internal struct CardCredentialsView: View {
             model.forgetPin1()
           }
           #if canImport(CoreNFC) && os(iOS)
-            await CardRegistrationSections.registerIdentity(
+            let succeeded = await CardRegistrationSections.registerIdentity(
               pin1: pin1,
               model: primingModel,
-              storeVerifiedPin1: model.savePin1,
+              storeVerifiedPin1: storeVerifiedPin1,
               clearPin1Entry: clearPin1Entry,
               markRegistered: { isRegistered = true })
-            if !isRegistered {
-              transition(.registrationFailed)
-            }
+            finishBrowserRegistration(succeeded: succeeded)
           #endif
         }
       case .activationRequired(let scheme, let needs):
@@ -784,6 +756,31 @@ internal struct CardCredentialsView: View {
       transition(.identityLoaded)
     } else if !hasIdentity, flowState == .identityHome {
       transition(.identityForgotten)
+    }
+  }
+
+  /// Commits verified PIN 1 at the device boundary.
+  ///
+  /// A Virtual ID Card already models the same successful persistence and
+  /// token-publication effects inside its simulated authenticate operation.
+  /// It must never write demonstration credentials into the real Keychain.
+  private func storeVerifiedPin1(_ pin1: String) -> Bool {
+    #if os(iOS)
+      if isDemonstration {
+        return demoMode.hasIdentity
+      }
+    #endif
+    return model.savePin1(pin1)
+  }
+
+  /// Completes registration from the operation result instead of waiting for
+  /// SwiftUI to observe a separate identity mutation. The observation may run
+  /// before or after the callback, so success is deliberately idempotent.
+  private func finishBrowserRegistration(succeeded: Bool) {
+    if flowState == .registeringBrowser {
+      transition(succeeded ? .registrationSucceeded : .registrationFailed)
+    } else if succeeded {
+      synchronizeIdentityState()
     }
   }
 

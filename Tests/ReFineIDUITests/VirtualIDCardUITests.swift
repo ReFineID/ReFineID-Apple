@@ -14,11 +14,6 @@
       case registeredIdentity
     }
 
-    private struct ScenarioCase {
-      let name: String
-      let destination: Destination
-    }
-
     private struct CredentialJourney {
       let task: String
       let fields: [(identifier: String, value: String)]
@@ -33,60 +28,88 @@
       continueAfterFailure = false
     }
 
-    internal func testEveryScenarioIsConfiguredAndRoutedThroughGUI() {
-      let cases = [
-        ScenarioCase(name: "factory-fresh-nfc", destination: .cardAccessNumber),
-        ScenarioCase(
-          name: "legacy-factory-fresh-nfc",
-          destination: .cardAccessNumber),
-        ScenarioCase(
-          name: "partial-activation-nfc",
-          destination: .cardAccessNumber),
-        ScenarioCase(name: "activated-nfc", destination: .cardAccessNumber),
-        ScenarioCase(name: "registered-nfc", destination: .registeredIdentity),
-        ScenarioCase(name: "factory-fresh-reader", destination: .activation),
-        ScenarioCase(name: "activated-reader", destination: .readerIdentity),
-        ScenarioCase(name: "pin1-recovery-reader", destination: .readerIdentity),
-        ScenarioCase(name: "pin2-recovery-reader", destination: .readerIdentity),
-        ScenarioCase(
-          name: "puk-recovery-refused-reader",
-          destination: .readerIdentity),
-        ScenarioCase(name: "absent", destination: .cardAccessNumber),
-      ]
-
-      for testCase in cases {
-        let app = UITestApp.launchVirtualCard()
-        applyScenario(testCase.name, in: app)
-        assertDestination(testCase.destination, scenario: testCase.name, in: app)
-        app.terminate()
-      }
+    internal func testScenarioFactoryFreshNFCRoutesThroughGUI() {
+      assertScenario("factory-fresh-nfc", destination: .cardAccessNumber)
     }
 
-    internal func testEveryFaultPresetIsConfiguredThroughGUI() {
-      let presets = [
-        "none",
-        "nfcDisconnectBeforeConnection",
-        "readerFailsCounterQuery",
-        "cardRemovedDuringPINChange",
-        "responseLostAfterPIN1Activation",
-        "responseLostAfterPIN2Activation",
-        "certificateReadFailure",
-        "tokenPublicationFailure",
-        "cardRemovedDuringSignature",
-        "responseLostAfterSignature",
-      ]
-      let app = UITestApp.launchVirtualCard()
+    internal func testScenarioLegacyFactoryFreshNFCRoutesThroughGUI() {
+      assertScenario("legacy-factory-fresh-nfc", destination: .cardAccessNumber)
+    }
 
-      for preset in presets {
-        openEditor(in: app)
-        selectMenu(
-          identifier: UITestIdentifiers.virtualCardFault,
-          option: preset,
-          optionIdentifier: "virtualCardFaultOption.\(preset)",
-          in: app,
-          scrolling: true)
-        applyEditor(in: app)
-      }
+    internal func testScenarioPartialActivationNFCRoutesThroughGUI() {
+      assertScenario("partial-activation-nfc", destination: .cardAccessNumber)
+    }
+
+    internal func testScenarioActivatedNFCRoutesThroughGUI() {
+      assertScenario("activated-nfc", destination: .cardAccessNumber)
+    }
+
+    internal func testScenarioRegisteredNFCRoutesThroughGUI() {
+      assertScenario("registered-nfc", destination: .registeredIdentity)
+    }
+
+    internal func testScenarioFactoryFreshReaderRoutesThroughGUI() {
+      assertScenario("factory-fresh-reader", destination: .activation)
+    }
+
+    internal func testScenarioActivatedReaderRoutesThroughGUI() {
+      assertScenario("activated-reader", destination: .readerIdentity)
+    }
+
+    internal func testScenarioPIN1RecoveryReaderRoutesThroughGUI() {
+      assertScenario("pin1-recovery-reader", destination: .readerIdentity)
+    }
+
+    internal func testScenarioPIN2RecoveryReaderRoutesThroughGUI() {
+      assertScenario("pin2-recovery-reader", destination: .readerIdentity)
+    }
+
+    internal func testScenarioPUKRecoveryRefusedReaderRoutesThroughGUI() {
+      assertScenario("puk-recovery-refused-reader", destination: .readerIdentity)
+    }
+
+    internal func testScenarioAbsentCardRoutesThroughGUI() {
+      assertScenario("absent", destination: .cardAccessNumber)
+    }
+
+    internal func testFaultPresetNoneIsConfiguredThroughGUI() {
+      assertFaultPreset("none")
+    }
+
+    internal func testFaultPresetNFCDisconnectIsConfiguredThroughGUI() {
+      assertFaultPreset("nfcDisconnectBeforeConnection")
+    }
+
+    internal func testFaultPresetReaderCounterFailureIsConfiguredThroughGUI() {
+      assertFaultPreset("readerFailsCounterQuery")
+    }
+
+    internal func testFaultPresetCardRemovalDuringPINChangeIsConfiguredThroughGUI() {
+      assertFaultPreset("cardRemovedDuringPINChange")
+    }
+
+    internal func testFaultPresetLostPIN1ActivationResponseIsConfiguredThroughGUI() {
+      assertFaultPreset("responseLostAfterPIN1Activation")
+    }
+
+    internal func testFaultPresetLostPIN2ActivationResponseIsConfiguredThroughGUI() {
+      assertFaultPreset("responseLostAfterPIN2Activation")
+    }
+
+    internal func testFaultPresetCertificateReadFailureIsConfiguredThroughGUI() {
+      assertFaultPreset("certificateReadFailure")
+    }
+
+    internal func testFaultPresetTokenPublicationFailureIsConfiguredThroughGUI() {
+      assertFaultPreset("tokenPublicationFailure")
+    }
+
+    internal func testFaultPresetCardRemovalDuringSignatureIsConfiguredThroughGUI() {
+      assertFaultPreset("cardRemovedDuringSignature")
+    }
+
+    internal func testFaultPresetLostSignatureResponseIsConfiguredThroughGUI() {
+      assertFaultPreset("responseLostAfterSignature")
     }
 
     internal func testVirtualCardEditorPassesAccessibilityAudit() throws {
@@ -96,6 +119,7 @@
       XCTAssertEqual(overlay.label, "Virtual ID Card")
       XCTAssertFalse((overlay.value as? String ?? "").isEmpty)
 
+      applyScenario("registered-nfc", in: app)
       openEditor(in: app)
       try app.performAccessibilityAudit { issue in
         XCTFail(
@@ -108,42 +132,12 @@
       }
     }
 
-    internal func testVirtualCardEditorIsLocalizedAndAccessible() {
-      for language in ["fi", "sv"] {
-        let app = UITestApp.launch(
-          language: language,
-          arguments: ["--virtual-card", "absent"])
-        let overlay = app.buttons[UITestIdentifiers.virtualCardOverlay]
-        XCTAssertTrue(
-          overlay.waitForExistence(timeout: Self.appearTimeout),
-          "floating Virtual ID Card is missing in \(language)")
-        XCTAssertFalse(overlay.label.isEmpty)
-        XCTAssertNotEqual(
-          overlay.label,
-          "Virtual ID Card",
-          "Virtual ID Card kept its English accessibility label in \(language)")
+    internal func testVirtualCardEditorIsLocalizedAndAccessibleInFinnish() {
+      assertVirtualCardEditorLocalization(language: "fi")
+    }
 
-        openEditor(in: app)
-        let scenario = app.descendants(matching: .any)[
-          UITestIdentifiers.virtualCardScenario
-        ]
-        let fault = app.descendants(matching: .any)[
-          UITestIdentifiers.virtualCardFault
-        ]
-        XCTAssertTrue(scenario.waitForExistence(timeout: Self.appearTimeout))
-        XCTAssertFalse(scenario.label.isEmpty)
-        XCTAssertFalse(
-          scenario.label.localizedCaseInsensitiveContains("Preset"),
-          "scenario picker kept its English label in \(language)")
-
-        scrollTo(fault, in: app)
-        XCTAssertTrue(fault.waitForExistence(timeout: Self.appearTimeout))
-        XCTAssertFalse(fault.label.isEmpty)
-        XCTAssertFalse(
-          fault.label.localizedCaseInsensitiveContains("Fault"),
-          "fault picker kept its English label in \(language)")
-        app.terminate()
-      }
+    internal func testVirtualCardEditorIsLocalizedAndAccessibleInSwedish() {
+      assertVirtualCardEditorLocalization(language: "sv")
     }
 
       internal func testFactoryFreshNFCCardActivatesThroughGUI() {
@@ -276,8 +270,8 @@
       XCTAssertFalse(app.secureTextFields["managementActivationPin1"].exists)
     }
 
-    internal func testEveryCredentialOperationRunsThroughGUI() {
-      let journeys = [
+    internal func testChangePIN1RunsThroughGUI() {
+      assertCredentialJourney(
         CredentialJourney(
           task: "Change PIN 1",
           fields: [
@@ -286,7 +280,11 @@
             ("managementChangePIN1Repeat", "9876"),
           ],
           action: UITestIdentifiers.managementChangePin1,
-          outcome: "PIN 1 changed"),
+          outcome: "PIN 1 changed"))
+    }
+
+    internal func testChangePIN2RunsThroughGUI() {
+      assertCredentialJourney(
         CredentialJourney(
           task: "Change PIN 2",
           fields: [
@@ -295,7 +293,11 @@
             ("managementChangePIN2Repeat", "987654"),
           ],
           action: UITestIdentifiers.managementChangePin2,
-          outcome: "PIN 2 changed"),
+          outcome: "PIN 2 changed"))
+    }
+
+    internal func testResetPIN1RunsThroughGUI() {
+      assertCredentialJourney(
         CredentialJourney(
           task: "Reset PIN 1",
           fields: [
@@ -304,7 +306,11 @@
             ("managementResetPIN1Repeat", "9876"),
           ],
           action: UITestIdentifiers.managementResetPin1,
-          outcome: "PIN 1 reset"),
+          outcome: "PIN 1 reset"))
+    }
+
+    internal func testResetPIN2RunsThroughGUI() {
+      assertCredentialJourney(
         CredentialJourney(
           task: "Reset PIN 2",
           fields: [
@@ -313,27 +319,7 @@
             ("managementResetPIN2Repeat", "987654"),
           ],
           action: UITestIdentifiers.managementResetPin2,
-          outcome: "PIN 2 reset"),
-      ]
-
-      for journey in journeys {
-        let app = UITestApp.launchVirtualCard()
-        applyScenario("activated-reader", in: app)
-        openManagement(in: app)
-        selectMenu(
-          identifier: UITestIdentifiers.managementTask,
-          option: journey.task,
-          in: app)
-        for field in journey.fields {
-          fillSecure(field.identifier, with: field.value, in: app)
-        }
-        commit(action: journey.action, in: app)
-        XCTAssertTrue(
-          app.staticTexts[journey.outcome]
-            .waitForExistence(timeout: Self.appearTimeout),
-          "\(journey.task) did not publish its outcome")
-        app.terminate()
-      }
+          outcome: "PIN 2 reset"))
     }
 
     internal func testRetryCounterEditedInGUISelectsRecovery() {
@@ -427,39 +413,115 @@
       assertPIN2Attempts(5, in: app)
     }
 
-    internal func testSigningScreenIsLocalizedInFinnishAndSwedish() {
-      let expectations = [
-        (
-          language: "fi",
-          labels: ["Allekirjoitustapa", "Yksittäin (PDF)", "Pakettina (ASiC-E)"]
-        ),
-        (
-          language: "sv",
-          labels: ["Signeringssätt", "Separat (PDF)", "Som paket (ASiC-E)"]
-        ),
-      ]
-      for expectation in expectations {
-        let app = UITestApp.launch(
-          language: expectation.language,
-          arguments: ["--virtual-card", "absent"])
-        configureSigningCard(in: app)
-        openSigning(in: app)
+    internal func testSigningScreenIsLocalizedInFinnish() {
+      assertSigningLocalization(
+        language: "fi",
+        labels: ["Allekirjoitustapa", "Yksittäin (PDF)", "Pakettina (ASiC-E)"])
+    }
 
-        let commit = app.buttons[UITestIdentifiers.signingCommit]
-        XCTAssertTrue(commit.waitForExistence(timeout: Self.appearTimeout))
-        XCTAssertFalse(commit.label.isEmpty)
-        XCTAssertNotEqual(
-          commit.label,
-          "Sign documents",
-          "signing action remained English in \(expectation.language)")
-        for label in expectation.labels {
-          XCTAssertTrue(
-            app.descendants(matching: .any)
-              .matching(NSPredicate(format: "label == %@", label))
-              .firstMatch.waitForExistence(timeout: Self.appearTimeout),
-            "missing \(expectation.language) signing label: \(label)")
-        }
-        app.terminate()
+    internal func testSigningScreenIsLocalizedInSwedish() {
+      assertSigningLocalization(
+        language: "sv",
+        labels: ["Signeringssätt", "Separat (PDF)", "Som paket (ASiC-E)"])
+    }
+
+    private func assertScenario(
+      _ scenario: String,
+      destination: Destination
+    ) {
+      let app = UITestApp.launchVirtualCard()
+      applyScenario(scenario, in: app)
+      assertDestination(destination, scenario: scenario, in: app)
+    }
+
+    private func assertFaultPreset(_ preset: String) {
+      let app = UITestApp.launchVirtualCard()
+      openEditor(in: app)
+      selectMenu(
+        identifier: UITestIdentifiers.virtualCardFault,
+        option: preset,
+        optionIdentifier: "virtualCardFaultOption.\(preset)",
+        in: app,
+        scrolling: true)
+      applyEditor(in: app)
+    }
+
+    private func assertCredentialJourney(_ journey: CredentialJourney) {
+      let app = UITestApp.launchVirtualCard()
+      applyScenario("activated-reader", in: app)
+      openManagement(in: app)
+      selectMenu(
+        identifier: UITestIdentifiers.managementTask,
+        option: journey.task,
+        in: app)
+      for field in journey.fields {
+        fillSecure(field.identifier, with: field.value, in: app)
+      }
+      commit(action: journey.action, in: app)
+      XCTAssertTrue(
+        app.staticTexts[journey.outcome]
+          .waitForExistence(timeout: Self.appearTimeout),
+        "\(journey.task) did not publish its outcome")
+    }
+
+    private func assertVirtualCardEditorLocalization(language: String) {
+      let app = UITestApp.launch(
+        language: language,
+        arguments: ["--virtual-card", "absent"])
+      let overlay = app.buttons[UITestIdentifiers.virtualCardOverlay]
+      XCTAssertTrue(
+        overlay.waitForExistence(timeout: Self.appearTimeout),
+        "floating Virtual ID Card is missing in \(language)")
+      XCTAssertFalse(overlay.label.isEmpty)
+      XCTAssertNotEqual(
+        overlay.label,
+        "Virtual ID Card",
+        "Virtual ID Card kept its English accessibility label in \(language)")
+
+      openEditor(in: app)
+      let scenario = app.descendants(matching: .any)[
+        UITestIdentifiers.virtualCardScenario
+      ]
+      let fault = app.descendants(matching: .any)[
+        UITestIdentifiers.virtualCardFault
+      ]
+      XCTAssertTrue(scenario.waitForExistence(timeout: Self.appearTimeout))
+      XCTAssertFalse(scenario.label.isEmpty)
+      XCTAssertFalse(
+        scenario.label.localizedCaseInsensitiveContains("Preset"),
+        "scenario picker kept its English label in \(language)")
+
+      scrollTo(fault, in: app)
+      XCTAssertTrue(fault.waitForExistence(timeout: Self.appearTimeout))
+      XCTAssertFalse(fault.label.isEmpty)
+      XCTAssertFalse(
+        fault.label.localizedCaseInsensitiveContains("Fault"),
+        "fault picker kept its English label in \(language)")
+    }
+
+    private func assertSigningLocalization(
+      language: String,
+      labels: [String]
+    ) {
+      let app = UITestApp.launch(
+        language: language,
+        arguments: ["--virtual-card", "absent"])
+      configureSigningCard(in: app)
+      openSigning(in: app)
+
+      let commit = app.buttons[UITestIdentifiers.signingCommit]
+      XCTAssertTrue(commit.waitForExistence(timeout: Self.appearTimeout))
+      XCTAssertFalse(commit.label.isEmpty)
+      XCTAssertNotEqual(
+        commit.label,
+        "Sign documents",
+        "signing action remained English in \(language)")
+      for label in labels {
+        XCTAssertTrue(
+          app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label == %@", label))
+            .firstMatch.waitForExistence(timeout: Self.appearTimeout),
+          "missing \(language) signing label: \(label)")
       }
     }
 

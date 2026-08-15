@@ -149,6 +149,10 @@
 
   /// Floating access to the editable card while a demonstration is active.
   internal struct VirtualIDCardOverlay: View {
+    /// White text on the system red fill does not meet normal-text contrast.
+    /// Keep the diagnostic meaning red while meeting the accessibility audit.
+    private static let accessibleRed = Color(red: 0.65, green: 0, blue: 0)
+
     private let demoMode = DemoMode.shared
     internal let openEditor: () -> Void
 
@@ -170,7 +174,7 @@
           systemImage: "creditcard")
       }
       .buttonStyle(.borderedProminent)
-      .tint(.red)
+      .tint(Self.accessibleRed)
       .accessibilityIdentifier("virtualCardOverlay")
       .accessibilityLabel(
         Text(virtualCardLocalized("title", defaultValue: "Virtual ID Card")))

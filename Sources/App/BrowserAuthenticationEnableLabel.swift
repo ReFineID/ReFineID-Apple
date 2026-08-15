@@ -10,5 +10,6 @@ internal struct BrowserAuthenticationEnableLabel: View {
     Label("Enable", systemImage: "person.badge.key.fill")
       .foregroundStyle(.white)
       .frame(maxWidth: .infinity)
+      .padding(.vertical, 8)
   }
 }

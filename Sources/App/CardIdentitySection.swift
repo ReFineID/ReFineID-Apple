@@ -13,6 +13,9 @@ internal struct CardIdentitySection: View {
   /// The complete holder name read from the primed identity certificate.
   internal let holder: String
 
+  /// Removes the device-local identity after the parent confirms the action.
+  internal let forget: () -> Void
+
   internal var body: some View {
     Section("Identity") {
       LabeledContent("Person") {
@@ -20,6 +23,19 @@ internal struct CardIdentitySection: View {
           .textSelection(.enabled)
       }
       .accessibilityIdentifier("identityStatus")
+
+      Button(action: forget) {
+        Label("Forget identity", systemImage: "person.badge.minus")
+          .foregroundStyle(.white)
+          .frame(maxWidth: .infinity)
+          .padding(.vertical, 8)
+      }
+        .buttonStyle(.borderedProminent)
+        .tint(Color(red: 0.65, green: 0, blue: 0))
+        .padding(.top, 12)
+        .listRowBackground(Color.clear)
+        .listRowInsets(EdgeInsets())
+        .accessibilityIdentifier("forgetCardIdentityButton")
     }
   }
 }

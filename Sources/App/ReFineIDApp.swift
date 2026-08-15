@@ -113,28 +113,30 @@ internal struct ReFineIDApp: App {
     #else
       ZStack(alignment: .bottomTrailing) {
         ReaderIdentityRootView()
-          .accessibilityHidden(showsVirtualCardEditor)
-          .allowsHitTesting(!showsVirtualCardEditor)
-        if showsVirtualCardEditor {
-          VirtualIDCardEditor(demoMode: DemoMode.shared) {
-            showsVirtualCardEditor = false
-            DemoMode.shared.setEditorPresented(false)
-            NotificationCenter.default.post(
-              name: .virtualIDCardEditorDidDismiss,
-              object: nil)
+        if DemoMode.shared.isActive {
+          VirtualIDCardOverlay {
+            DemoMode.shared.setEditorPresented(true)
+            showsVirtualCardEditor = true
           }
-          .zIndex(2)
-        } else {
-          if DemoMode.shared.isActive {
-            VirtualIDCardOverlay {
-              DemoMode.shared.setEditorPresented(true)
-              showsVirtualCardEditor = true
-            }
-              // Keep the overlay's hit-test surface on the floating control;
-              // the parent overlay otherwise accepts the root view's full
-              // proposal and can shield the product UI underneath it.
-              .fixedSize()
-          }
+            // Keep the overlay's hit-test surface on the floating control;
+            // the parent overlay otherwise accepts the root view's full
+            // proposal and can shield the product UI underneath it.
+            .fixedSize()
+        }
+      }
+      .accessibilityHidden(showsVirtualCardEditor)
+      .allowsHitTesting(!showsVirtualCardEditor)
+      .fullScreenCover(
+        isPresented: $showsVirtualCardEditor,
+        onDismiss: {
+          DemoMode.shared.setEditorPresented(false)
+          NotificationCenter.default.post(
+            name: .virtualIDCardEditorDidDismiss,
+            object: nil)
+        }
+      ) {
+        VirtualIDCardEditor(demoMode: DemoMode.shared) {
+          showsVirtualCardEditor = false
         }
       }
     #endif
