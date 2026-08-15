@@ -176,7 +176,7 @@ internal struct CredentialRetryHealthKey: View {
 
   internal var body: some View {
     ZStack(alignment: .bottomTrailing) {
-      if let level {
+      if let level = displayedLevel {
         Image(systemName: systemName)
           .contentTransition(
             .symbolEffect(
@@ -195,12 +195,19 @@ internal struct CredentialRetryHealthKey: View {
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text("Change or Reset PINs"))
     .accessibilityValue(
-      level?.accessibilityValue
+      displayedLevel?.accessibilityValue
         ?? String(localized: "Credential retry status unavailable"))
-    .onAppear { animateIfNeeded(level) }
-    .onChange(of: level) { _, newLevel in
+    .onAppear { animateIfNeeded(displayedLevel) }
+    .onChange(of: displayedLevel) { _, newLevel in
       animateIfNeeded(newLevel)
     }
+  }
+
+  /// A slashed key means the card has not been verified in this session.
+  /// A cached retry report must not decorate that unavailable state as
+  /// healthy, warning, or critical.
+  private var displayedLevel: CredentialRetryHealth.Level? {
+    systemName == "key.slash" ? nil : level
   }
 
   @ViewBuilder private func statusBadge(
