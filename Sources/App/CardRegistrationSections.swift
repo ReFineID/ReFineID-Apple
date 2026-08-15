@@ -50,6 +50,10 @@
     /// Clears the transient entry after the operation ends.
     internal let clearPin1Entry: @MainActor () -> Void
 
+    /// Lets the application flow enter and leave its registration state.
+    internal var onRegistrationStarted: @MainActor () -> Void = {}
+    internal var onRegistrationFinished: @MainActor (Bool) -> Void = { _ in }
+
     /// Flipped when a hold ends with a registered identity.
     @Binding internal var isRegistered: Bool
 
@@ -91,17 +95,17 @@
       Button {
         Task { @MainActor in
           guard let pin1 = enteredPin1() else { return }
+          onRegistrationStarted()
           await Self.registerIdentity(
             pin1: pin1,
             model: model,
             storeVerifiedPin1: storeVerifiedPin1,
             clearPin1Entry: clearPin1Entry,
             markRegistered: { isRegistered = true })
+          onRegistrationFinished(isRegistered)
         }
       } label: {
-        Label("Enable", systemImage: "person.badge.key.fill")
-          .foregroundStyle(.white)
-          .frame(maxWidth: .infinity)
+        BrowserAuthenticationEnableLabel()
       }
       .buttonStyle(.borderedProminent)
       .controlSize(.large)

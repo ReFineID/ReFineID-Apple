@@ -20,12 +20,6 @@ import SwiftUI
 /// nothing to do with the card. They cost nothing at runtime and they are
 /// what VoiceOver already wants.
 internal struct CardCredentialsView: View {
-  private enum Destination: Hashable {
-    case activation
-    case pinManagement
-    case signDocuments
-  }
-
   private enum CardConnectionPurpose: Sendable {
     case browserAuthentication(pin1: String)
     case pinManagement
@@ -47,7 +41,7 @@ internal struct CardCredentialsView: View {
   @State private var isRegistered = false
   @State private var activationScheme: ActivationScheme?
   @State private var activationNeeds: CardActivationNeeds?
-  @State private var destination: Destination?
+  @State private var flowState = CardSetupStateMachine.initialState
   @FocusState private var isCardAccessNumberFieldFocused: Bool
   @FocusState private var isPin1FieldFocused: Bool
 
@@ -199,7 +193,8 @@ internal struct CardCredentialsView: View {
               table: "DocumentSigning")
           ) {
             Button {
-              destination = .signDocuments
+              synchronizeIdentityState()
+              transition(.openDocumentSigning)
             } label: {
               Label(
                 String(
@@ -258,7 +253,7 @@ internal struct CardCredentialsView: View {
           }
         }
       }
-      .navigationDestination(item: $destination) { destination in
+      .navigationDestination(item: flowDestination) { destination in
         switch destination {
         case .activation:
 #if DEBUG
@@ -271,7 +266,7 @@ internal struct CardCredentialsView: View {
               activationScheme: activationScheme,
               activationNeeds: activationNeeds,
               onActivationSucceeded: activationSucceeded)
-              .id(Destination.activation)
+              .id(CardSetupStateMachine.Destination.activation)
           }
         case .pinManagement:
 #if DEBUG
@@ -279,12 +274,12 @@ internal struct CardCredentialsView: View {
 #endif
           CardManagementView(
             cardAccessNumber: managementCardAccessNumber)
-            .id(Destination.pinManagement)
+            .id(CardSetupStateMachine.Destination.pinManagement)
         case .signDocuments:
           DocumentSigningView(
             transport: .nearField,
             cardAccessNumber: managementCardAccessNumber)
-            .id(Destination.signDocuments)
+            .id(CardSetupStateMachine.Destination.signDocuments)
         }
       }
     #endif
@@ -313,12 +308,20 @@ internal struct CardCredentialsView: View {
       model.refresh()
       refreshRegistration()
       showStoredCardAccessNumber()
+      synchronizeIdentityState()
     }
     .onChange(of: hasIdentity) { _, registered in
       // A set identity ends the fields' job; nothing they held is worth
       // keeping in memory once the setup they belonged to is over.
       if registered {
+        if flowState == .registeringBrowser {
+          transition(.registrationSucceeded)
+        } else {
+          synchronizeIdentityState()
+        }
         clearEntries()
+      } else {
+        synchronizeIdentityState()
       }
     }
     .onChange(of: model.contents) { _, _ in
@@ -392,6 +395,7 @@ internal struct CardCredentialsView: View {
         model.forgetEverything()
         registrationReset.toggle()
         isRegistered = false
+        synchronizeIdentityState()
         clearEntries()
       }
     }
@@ -437,6 +441,14 @@ internal struct CardCredentialsView: View {
             enteredPin1: enteredPin1,
             storeVerifiedPin1: model.savePin1,
             clearPin1Entry: clearPin1Entry,
+            onRegistrationStarted: {
+              transition(.startConfiguredBrowserRegistration)
+            },
+            onRegistrationFinished: { succeeded in
+              if !succeeded {
+                transition(.registrationFailed)
+              }
+            },
             isRegistered: $isRegistered,
             model: primingModel
           )
@@ -456,9 +468,7 @@ internal struct CardCredentialsView: View {
         Button {
           connectIdentityCard()
         } label: {
-          Label("Enable", systemImage: "person.badge.key.fill")
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
+          BrowserAuthenticationEnableLabel()
         }
           .buttonStyle(.borderedProminent)
           .controlSize(.large)
@@ -643,10 +653,11 @@ internal struct CardCredentialsView: View {
   /// route selected by that card state without repeating NFC work.
   private func openCardManagement() {
     guard isCardAccessNumberEntryComplete, !model.isConnecting else { return }
+    synchronizeIdentityState()
     if let activationNeeds, activationNeeds.any {
-      destination = .activation
+      transition(.openKnownActivation)
     } else if model.hasVerifiedCardStatus {
-      destination = .pinManagement
+      transition(.openVerifiedManagement)
     } else {
       classifyIdentityCard(for: .pinManagement)
     }
@@ -656,20 +667,31 @@ internal struct CardCredentialsView: View {
   /// healthy path before either PIN management or browser registration opens.
   private func classifyIdentityCard(for purpose: CardConnectionPurpose) {
     guard isCardAccessNumberEntryComplete, !model.isConnecting else { return }
+    switch purpose {
+    case .browserAuthentication:
+      transition(.startBrowserClassification)
+    case .pinManagement:
+      transition(.startManagementClassification)
+    }
     let entered = cardAccessNumberEntry
     activationScheme = nil
     activationNeeds = nil
     isCardAccessNumberFieldFocused = false
     Task {
-      guard let result = await model.connect(cardAccessNumber: entered) else { return }
+      guard let result = await model.connect(cardAccessNumber: entered) else {
+        transition(.classificationFailed)
+        return
+      }
       guard entered == cardAccessNumberEntry else {
         model.invalidateCardStatus()
+        transition(.classificationFailed)
         return
       }
       if case .browserAuthentication(let pin1) = purpose,
         pin1 != pin1Entry
       {
         model.invalidateCardStatus()
+        transition(.classificationFailed)
         return
       }
       switch result {
@@ -678,18 +700,20 @@ internal struct CardCredentialsView: View {
           cardAccessNumberEntry = ""
           clearPin1Entry()
           isCardAccessNumberFieldFocused = true
+          transition(.classificationFailed)
           return
         }
         if retryHealth.recovery != nil {
           clearPin1Entry()
-          destination = .pinManagement
+          transition(.classificationRecoveryRequired)
           return
         }
         switch purpose {
         case .pinManagement:
           clearPin1Entry()
-          destination = .pinManagement
+          transition(.classificationActivated)
         case .browserAuthentication(let pin1):
+          transition(.classificationActivated)
           if !isDemonstration {
             model.forgetPin1()
           }
@@ -700,6 +724,9 @@ internal struct CardCredentialsView: View {
               storeVerifiedPin1: model.savePin1,
               clearPin1Entry: clearPin1Entry,
               markRegistered: { isRegistered = true })
+            if !isRegistered {
+              transition(.registrationFailed)
+            }
           #endif
         }
       case .activationRequired(let scheme, let needs):
@@ -709,13 +736,15 @@ internal struct CardCredentialsView: View {
         clearPin1Entry()
         activationScheme = scheme
         activationNeeds = needs
-        destination = .activation
+        transition(.classificationActivationRequired)
       case .wrongCardAccessNumber:
         cardAccessNumberEntry = ""
         clearPin1Entry()
         isCardAccessNumberFieldFocused = true
+        transition(.classificationWrongCardAccessNumber)
       case .failed:
         clearPin1Entry()
+        transition(.classificationFailed)
       }
     }
   }
@@ -726,14 +755,46 @@ internal struct CardCredentialsView: View {
     activationNeeds = nil
     if isDemonstration {
       showStoredCardAccessNumber()
-      destination = nil
+      transition(.activationSucceeded)
       return
     }
     if !model.saveCardAccessNumber(cardAccessNumberEntry) {
       cardAccessNumberEntry = ""
       isCardAccessNumberFieldFocused = true
     }
-    destination = nil
+    transition(.activationSucceeded)
+  }
+
+  /// SwiftUI navigation is a projection of the formal flow state. A pop is
+  /// fed back as an event so origin restoration is modeled as well.
+  private var flowDestination: Binding<CardSetupStateMachine.Destination?> {
+    Binding(
+      get: { flowState.destination },
+      set: { destination in
+        guard destination == nil, flowState.destination != nil else { return }
+        transition(.destinationDismissed)
+      }
+    )
+  }
+
+  /// Persistent identity is an input event, never an alternate navigation
+  /// branch outside the reducer.
+  private func synchronizeIdentityState() {
+    if hasIdentity, flowState == .home {
+      transition(.identityLoaded)
+    } else if !hasIdentity, flowState == .identityHome {
+      transition(.identityForgotten)
+    }
+  }
+
+  private func transition(_ event: CardSetupStateMachine.Event) {
+    switch CardSetupStateMachine.reduce(state: flowState, event: event) {
+    case .transitioned(let target):
+      flowState = target
+    case .rejected:
+      assertionFailure(
+        "Rejected card-setup transition: \(flowState.rawValue) + \(event.rawValue)")
+    }
   }
 
   /// Empties both fields once they have nothing left to describe.
