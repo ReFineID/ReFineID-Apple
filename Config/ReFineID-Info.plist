@@ -2,6 +2,13 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_refineid-rly._tcp</string>
+		<string>_refineid-rly._udp</string>
+	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>ReFineID connects Safari to the identity card held by your iPhone.</string>
 	<!-- macOS only. The iOS build uses ReFineID-iOS-Info.plist:
 	     every network request this app makes is compiled for macOS
 	     alone, so the ATS exception below is declared only here, and

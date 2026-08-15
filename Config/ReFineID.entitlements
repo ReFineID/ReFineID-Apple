@@ -21,6 +21,8 @@
 	<true/>
 	<key>com.apple.security.network.client</key>
 	<true/>
+	<key>com.apple.security.network.server</key>
+	<true/>
 	<!-- The open and save panels. A sandboxed app reaches a file the
 	     holder picked only through Powerbox, and Powerbox declines to
 	     show a panel at all without this - which looks from the outside

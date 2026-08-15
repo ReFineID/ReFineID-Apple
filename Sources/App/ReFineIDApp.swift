@@ -180,6 +180,11 @@ internal struct ReFineIDApp: App {
     // item. Nothing reads it now, so remove it on the first launch after
     // an upgrade rather than leave sensitive dead data in the keychain.
     CardCredentialStore.removeLegacySigningWindow()
+    #if os(iOS)
+      PhonePersistentTokenRelay.shared.start()
+    #elseif os(macOS)
+      MacPersistentTokenRegistry.shared.start()
+    #endif
 
     // A hold marks the next NFC field as its own registration field, and
     // clears the mark when it ends. A hold that never ends -- the app

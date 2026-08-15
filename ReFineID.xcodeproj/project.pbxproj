@@ -975,6 +975,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/TokenExtension-Info.plist";
+				"INFOPLIST_FILE[sdk=macosx*]" = "Config/TokenExtension-macOS-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "ReFineID Token";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -1009,6 +1010,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/TokenExtension-Info.plist";
+				"INFOPLIST_FILE[sdk=macosx*]" = "Config/TokenExtension-macOS-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "ReFineID Token";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -1042,6 +1044,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/TokenExtension-Info.plist";
+				"INFOPLIST_FILE[sdk=macosx*]" = "Config/TokenExtension-macOS-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "ReFineID Token";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -1075,6 +1078,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/TokenExtension-Info.plist";
+				"INFOPLIST_FILE[sdk=macosx*]" = "Config/TokenExtension-macOS-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "ReFineID Token";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
