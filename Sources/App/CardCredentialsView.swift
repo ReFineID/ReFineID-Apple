@@ -26,6 +26,11 @@ internal struct CardCredentialsView: View {
     case signDocuments
   }
 
+  private enum CardConnectionPurpose: Sendable {
+    case browserAuthentication(pin1: String)
+    case pinManagement
+  }
+
   private static let sectionSpacing: CGFloat = 24
 
   @State private var model = CardCredentialsModel()
@@ -71,23 +76,12 @@ internal struct CardCredentialsView: View {
       && !isCardAccessNumberEntryComplete
   }
 
-  /// The visible CAN handed to PIN management, only when complete.
+  /// The complete visible CAN handed to signing and PIN management.
   ///
-  /// The setup field is also where a stored CAN is shown, so there is
-  /// one source of truth and the management screen never has to ask for
-  /// the same printed number again.
+  /// These routes can establish and verify their own card session, so they
+  /// become available at six digits without requiring an earlier NFC read.
   internal var managementCardAccessNumber: String? {
-    #if os(iOS)
-    if isDemonstration {
-      return demoMode.hasValidatedConnection
-        ? demoMode.displayedCardAccessNumber
-        : nil
-    }
-    #endif
-    return model.contents.hasCardAccessNumber
-      && isCardAccessNumberEntryComplete
-      ? cardAccessNumberEntry
-      : nil
+    isCardAccessNumberEntryComplete ? cardAccessNumberEntry : nil
   }
 
   /// Disclosure follows a validated connection, never digit count alone.
@@ -197,11 +191,11 @@ internal struct CardCredentialsView: View {
         createIdentitySection
       }
       #if os(iOS)
-        if hasConfiguredCard, !isHolding {
+        if !isHolding {
           Section(
             String(
-              localized: "signing.section",
-              defaultValue: "Documents",
+              localized: "signing.document",
+              defaultValue: "Document",
               table: "DocumentSigning")
           ) {
             Button {
@@ -209,13 +203,20 @@ internal struct CardCredentialsView: View {
             } label: {
               Label(
                 String(
-                  localized: "signing.open",
-                  defaultValue: "Sign documents",
+                  localized: "signing.title",
+                  defaultValue: "Sign",
                   table: "DocumentSigning"),
                 systemImage: "signature")
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
             }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
             .accessibilityIdentifier("signDocuments")
+            .disabled(!isCardAccessNumberEntryComplete)
           }
+          .listRowBackground(Color.clear)
+          .listRowInsets(EdgeInsets())
         }
       #endif
       #if !os(iOS)
@@ -241,14 +242,19 @@ internal struct CardCredentialsView: View {
       .navigationTitle("ReFineID")
       .navigationBarTitleDisplayMode(.large)
       .toolbar {
-        if managementCardAccessNumber != nil, !isHolding {
+        if !isHolding {
           ToolbarItem(placement: .topBarTrailing) {
             Button {
-              destination = .pinManagement
+              openCardManagement()
             } label: {
-              CredentialRetryHealthKey(level: retryHealth.level)
+              CredentialRetryHealthKey(
+                level: retryHealth.level,
+                systemName: model.hasVerifiedCardStatus ? "key" : "key.slash")
             }
             .accessibilityIdentifier("manageCard")
+            .accessibilityLabel(
+              model.hasVerifiedCardStatus ? Text("Change or Reset PINs") : Text("Read card"))
+            .disabled(!isCardAccessNumberEntryComplete || model.isConnecting)
           }
         }
       }
@@ -351,6 +357,9 @@ internal struct CardCredentialsView: View {
       }
     }
     .onChange(of: cardAccessNumberEntry) { _, entered in
+      model.invalidateCardStatus()
+      activationScheme = nil
+      activationNeeds = nil
       if !entered.isEmpty {
         model.clearFailure()
       }
@@ -397,13 +406,25 @@ internal struct CardCredentialsView: View {
     }
   }
 
+  private func compactSectionHeader(
+    _ title: LocalizedStringKey
+  ) -> some View {
+    Text(title)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .listRowInsets(EdgeInsets())
+  }
+
   /// One operation, in its actual order: credentials and then minting.
     @ViewBuilder private var createIdentitySection: some View {
-      Section("Connect Identity Card Wirelessly") {
+      Section {
         cardAccessNumberRow
+      } header: {
+        compactSectionHeader("Connect Identity Card")
       }
-      Section("Enable browser authentication") {
+      Section {
         pin1Row
+      } header: {
+        compactSectionHeader("Browser authentication")
       }
       if hasConfiguredCard {
         #if os(iOS)
@@ -435,7 +456,8 @@ internal struct CardCredentialsView: View {
         Button {
           connectIdentityCard()
         } label: {
-          Text("Connect")
+          Label("Enable", systemImage: "globe")
+            .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
         }
           .buttonStyle(.borderedProminent)
@@ -462,12 +484,10 @@ internal struct CardCredentialsView: View {
       HStack {
         TextField(
           "Card Access Number (CAN)",
-          text: $cardAccessNumberEntry,
-          axis: .vertical)
+          text: $cardAccessNumberEntry)
+          .font(.body)
           .keyboardType(.numberPad)
           .textContentType(nil)
-          .lineLimit(1...2)
-          .fixedSize(horizontal: false, vertical: true)
           .focused($isCardAccessNumberFieldFocused)
           .accessibilityIdentifier("cardAccessNumberField")
           .onAppear {
@@ -492,15 +512,16 @@ internal struct CardCredentialsView: View {
               .labelStyle(.iconOnly)
           }
           .buttonStyle(.borderless)
+          .frame(width: 44, height: 44)
+          .contentShape(Rectangle())
+          .padding(-10)
         }
       }
     #else
       TextField(
         "Card Access Number (CAN)",
-        text: $cardAccessNumberEntry,
-        axis: .vertical)
-        .lineLimit(1...2)
-        .fixedSize(horizontal: false, vertical: true)
+        text: $cardAccessNumberEntry)
+        .font(.body)
         .accessibilityIdentifier("cardAccessNumberField")
         .onChange(of: cardAccessNumberEntry) { _, typed in
           cardAccessNumberEntry = LimitedDigits.cardAccessNumber(typed)
@@ -519,19 +540,24 @@ internal struct CardCredentialsView: View {
   /// claims the box is filled. A stored PIN is never read back, so the
   /// box is empty whether or not one is kept.
   @ViewBuilder private var pin1Row: some View {
-    SecureField("Basic Code (PIN 1)", text: $pin1Entry)
-      #if os(iOS)
-        .keyboardType(.numberPad)
-        .textInputAutocapitalization(.never)
-      #endif
-      .autocorrectionDisabled()
-      .lineLimit(1...2)
-      .fixedSize(horizontal: false, vertical: true)
-      .focused($isPin1FieldFocused)
-      .accessibilityIdentifier("pin1Field")
-      .onChange(of: pin1Entry) { _, typed in
-        pin1Entry = LimitedDigits.pin1(typed)
-      }
+    CredentialSecretField(
+      name: String(localized: "Basic Code (PIN 1)"),
+      text: $pin1Entry,
+      revealIdentifier: "pin1FieldReveal"
+    ) {
+      SecureField("Basic Code (PIN 1)", text: $pin1Entry)
+        .font(.body)
+        #if os(iOS)
+          .keyboardType(.numberPad)
+          .textInputAutocapitalization(.never)
+        #endif
+        .autocorrectionDisabled()
+        .focused($isPin1FieldFocused)
+        .accessibilityIdentifier("pin1Field")
+        .onChange(of: pin1Entry) { _, typed in
+          pin1Entry = LimitedDigits.pin1(typed)
+        }
+    }
   }
 
   /// The destructive action, shown only when there is an identity.
@@ -606,29 +632,66 @@ internal struct CardCredentialsView: View {
     isPin1FieldFocused = false
   }
 
-  /// Runs the first non-mutating connection and routes from live card state.
-    private func connectIdentityCard() {
-      guard isCardAccessNumberEntryComplete,
-        let pin1 = enteredPin1(),
-        !model.isConnecting
-      else { return }
-      let entered = cardAccessNumberEntry
-      activationScheme = nil
-      activationNeeds = nil
+  /// Starts browser setup only after the same live classification used by
+  /// every other wireless card route.
+  private func connectIdentityCard() {
+    guard let pin1 = enteredPin1() else { return }
+    classifyIdentityCard(for: .browserAuthentication(pin1: pin1))
+  }
+
+  /// A slashed key performs the prerequisite read; a verified key opens the
+  /// route selected by that card state without repeating NFC work.
+  private func openCardManagement() {
+    guard isCardAccessNumberEntryComplete, !model.isConnecting else { return }
+    if let activationNeeds, activationNeeds.any {
+      destination = .activation
+    } else if model.hasVerifiedCardStatus {
+      destination = .pinManagement
+    } else {
+      classifyIdentityCard(for: .pinManagement)
+    }
+  }
+
+  /// One side-effect-free NFC snapshot decides activation, recovery, and the
+  /// healthy path before either PIN management or browser registration opens.
+  private func classifyIdentityCard(for purpose: CardConnectionPurpose) {
+    guard isCardAccessNumberEntryComplete, !model.isConnecting else { return }
+    let entered = cardAccessNumberEntry
+    activationScheme = nil
+    activationNeeds = nil
     isCardAccessNumberFieldFocused = false
-      Task {
-        guard let result = await model.connect(cardAccessNumber: entered) else { return }
-        guard entered == cardAccessNumberEntry, pin1 == pin1Entry else { return }
-        switch result {
-        case .activated:
+    Task {
+      guard let result = await model.connect(cardAccessNumber: entered) else { return }
+      guard entered == cardAccessNumberEntry else {
+        model.invalidateCardStatus()
+        return
+      }
+      if case .browserAuthentication(let pin1) = purpose,
+        pin1 != pin1Entry
+      {
+        model.invalidateCardStatus()
+        return
+      }
+      switch result {
+      case .activated:
+        if !isDemonstration, !model.saveCardAccessNumber(entered) {
+          cardAccessNumberEntry = ""
+          clearPin1Entry()
+          isCardAccessNumberFieldFocused = true
+          return
+        }
+        if retryHealth.recovery != nil {
+          clearPin1Entry()
+          destination = .pinManagement
+          return
+        }
+        switch purpose {
+        case .pinManagement:
+          clearPin1Entry()
+          destination = .pinManagement
+        case .browserAuthentication(let pin1):
           if !isDemonstration {
             model.forgetPin1()
-          }
-          if !isDemonstration, !model.saveCardAccessNumber(entered) {
-            cardAccessNumberEntry = ""
-            clearPin1Entry()
-            isCardAccessNumberFieldFocused = true
-            return
           }
           #if canImport(CoreNFC) && os(iOS)
             await CardRegistrationSections.registerIdentity(
@@ -638,22 +701,23 @@ internal struct CardCredentialsView: View {
               clearPin1Entry: clearPin1Entry,
               markRegistered: { isRegistered = true })
           #endif
-        case .activationRequired(let scheme, let needs):
-          if !isDemonstration {
-            model.forgetPin1()
-          }
-          clearPin1Entry()
-          activationScheme = scheme
-          activationNeeds = needs
-          destination = .activation
-        case .wrongCardAccessNumber:
-          cardAccessNumberEntry = ""
-          clearPin1Entry()
-          isCardAccessNumberFieldFocused = true
-        case .failed:
-          clearPin1Entry()
         }
+      case .activationRequired(let scheme, let needs):
+        if !isDemonstration {
+          model.forgetPin1()
+        }
+        clearPin1Entry()
+        activationScheme = scheme
+        activationNeeds = needs
+        destination = .activation
+      case .wrongCardAccessNumber:
+        cardAccessNumberEntry = ""
+        clearPin1Entry()
+        isCardAccessNumberFieldFocused = true
+      case .failed:
+        clearPin1Entry()
       }
+    }
   }
 
   /// Activation succeeded on the card; only now is its CAN persistent.

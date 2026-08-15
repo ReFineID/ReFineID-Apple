@@ -40,6 +40,10 @@ internal final class CardCredentialsModel {
   /// True only while the initial, side-effect-free card classification runs.
   internal private(set) var isConnecting = false
 
+  /// True only after this launch has classified the live card and, for an
+  /// activated card, obtained a complete credential retry report.
+  internal private(set) var hasVerifiedCardStatus = false
+
   /// Establishes PACE with an entered CAN and classifies the live card.
   /// Nothing is persisted and no credential-changing command is sent.
   internal func connect(cardAccessNumber: String) async -> ConnectionResult? {
@@ -48,6 +52,8 @@ internal final class CardCredentialsModel {
     else { return nil }
     isConnecting = true
     failure = nil
+    hasVerifiedCardStatus = false
+    CredentialRetryHealth.shared.clear()
     defer { isConnecting = false }
     let result = await CardMaintenance.connectionSnapshot(
       cardAccessNumber: cardAccessNumber)
@@ -66,9 +72,17 @@ internal final class CardCredentialsModel {
       let needs = snapshot.activationNeeds,
       needs.any
     {
+      CredentialRetryHealth.shared.update(snapshot.report)
+      hasVerifiedCardStatus = true
       return .activationRequired(scheme: scheme, needs: needs)
     }
     if snapshot.activationScheme != nil, snapshot.activationNeeds != nil {
+      CredentialRetryHealth.shared.update(snapshot.report)
+      guard CredentialRetryHealth.shared.level != nil else {
+        failure = String(localized: "The identity card could not be read. Try again.")
+        return .failed
+      }
+      hasVerifiedCardStatus = true
       return .activated
     }
     failure = String(localized: "The identity card could not be classified. Try again.")
@@ -78,6 +92,12 @@ internal final class CardCredentialsModel {
   /// Removes a correction message as soon as the holder starts again.
   internal func clearFailure() {
     failure = nil
+  }
+
+  /// Invalidates a live classification when the CAN it belongs to changes.
+  internal func invalidateCardStatus() {
+    hasVerifiedCardStatus = false
+    CredentialRetryHealth.shared.clear()
   }
 
   /// Refreshes what is stored, without touching PIN1.
@@ -136,7 +156,7 @@ internal final class CardCredentialsModel {
   /// Ungated, like storing it.
   internal func forgetCardAccessNumber() {
     failure = nil
-    CredentialRetryHealth.shared.clear()
+    invalidateCardStatus()
     CardCredentialStore.forgetCardAccessNumber()
     refresh()
   }
@@ -158,7 +178,7 @@ internal final class CardCredentialsModel {
   /// Nothing is disclosed; authority is removed.
   internal func forgetEverything() {
     failure = nil
-    CredentialRetryHealth.shared.clear()
+    invalidateCardStatus()
     let outcome = CardStateReset.perform()
     CardCredentialStore.forgetAll()
     refresh()

@@ -46,7 +46,6 @@
     @State private var inputs: [Input] = []
     @State private var format: SignatureFormat = .pades
     @State private var pin2 = ""
-    @State private var revealsPIN2 = false
     @State private var importsDocuments = false
     @State private var exportsDocument = false
     @State private var isSigning = false
@@ -148,43 +147,33 @@
 
     private var credentialSection: some View {
       Section(text("signing.authorization", "Signature authorization")) {
-        HStack {
-          Group {
-            if revealsPIN2 {
-              TextField(
-                text("signing.pin2", "Signature (PIN 2)"),
-                text: $pin2)
-            } else {
-              SecureField(
-                text("signing.pin2", "Signature (PIN 2)"),
-                text: $pin2)
+        CredentialSecretField(
+          name: text("signing.pin2", "Signature (PIN 2)"),
+          text: $pin2,
+          revealIdentifier: "signingPIN2Reveal",
+          field: {
+            SecureField(
+              text("signing.pin2", "Signature (PIN 2)"),
+              text: $pin2)
+              .keyboardType(.numberPad)
+              .textContentType(.oneTimeCode)
+              .accessibilityIdentifier("signingPIN2")
+              .onChange(of: pin2) { _, value in
+                pin2 = String(
+                  value.filter(\.isNumber).prefix(Pin2.maximumDigitCount))
+              }
+          },
+          validation: {
+            if !pin2.isEmpty {
+              Image(
+                systemName: pin2IsValid
+                  ? "checkmark.circle.fill"
+                  : "xmark.circle.fill")
+                .foregroundStyle(pin2IsValid ? .green : .red)
+                .accessibilityHidden(true)
             }
           }
-          .keyboardType(.numberPad)
-          .textContentType(.oneTimeCode)
-          .accessibilityIdentifier("signingPIN2")
-          .onChange(of: pin2) { _, value in
-            pin2 = String(
-              value.filter(\.isNumber).prefix(Pin2.maximumDigitCount))
-          }
-          if !pin2.isEmpty {
-            Image(
-              systemName: pin2IsValid
-                ? "checkmark.circle.fill"
-                : "xmark.circle.fill")
-              .foregroundStyle(pin2IsValid ? .green : .red)
-              .accessibilityHidden(true)
-          }
-          Button {
-            revealsPIN2.toggle()
-          } label: {
-            Image(systemName: revealsPIN2 ? "eye.slash" : "eye")
-          }
-          .accessibilityLabel(
-            revealsPIN2
-              ? text("signing.hidePIN", "Hide PIN 2")
-              : text("signing.showPIN", "Show PIN 2"))
-        }
+        )
       }
     }
 
@@ -216,15 +205,6 @@
             ?? text("signing.success", "Documents signed"),
           tone: .success)
           .accessibilityIdentifier("signingSuccess")
-        if output != nil {
-          Button(text("signing.save", "Save signed document")) {
-            exportsDocument = true
-          }
-          .accessibilityIdentifier("signingSave")
-        }
-        Button(text("signing.again", "Sign other documents")) {
-          reset()
-        }
       }
     }
 
@@ -277,7 +257,6 @@
       let enteredPIN2 = pin2
       defer {
         pin2 = ""
-        revealsPIN2 = false
         isSigning = false
       }
       if DemoMode.shared.isActive {
@@ -379,16 +358,6 @@
       format = .pades
     }
 
-    private func reset() {
-      inputs = []
-      format = .pades
-      output = nil
-      completed = false
-      completionMessage = nil
-      message = nil
-      pin2 = ""
-    }
-
     private func showFailure(_ value: String) {
       messageTone = .failure
       message = value
@@ -398,6 +367,7 @@
       completed = true
       completionMessage = value
       message = nil
+      exportsDocument = output != nil
     }
 
     private func text(

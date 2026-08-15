@@ -201,34 +201,34 @@
         }
       }
     },
-    "Connect": {
+    "Enable": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yhdistä"
+            "value": "Ota käyttöön"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Anslut"
+            "value": "Aktivera"
           }
         }
       }
     },
-    "Connect Identity Card Wirelessly": {
+    "Connect Identity Card": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yhdistä henkilökortti langattomasti"
+            "value": "Yhdistä henkilökortti"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Anslut identitetskortet trådlöst"
+            "value": "Anslut identitetskortet"
           }
         }
       }
@@ -1789,18 +1789,18 @@
         }
       }
     },
-    "Enable browser authentication": {
+    "Browser authentication": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ota selaintunnistautuminen käyttöön"
+            "value": "Selaintunnistautuminen"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aktivera autentisering i webbläsaren"
+            "value": "Webbläsarinloggning"
           }
         }
       }
@@ -4233,6 +4233,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "ReFineID använder inte något av de två sista försöken."
+          }
+        }
+      }
+    },
+    "Hide %@": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Piilota %@"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dölj %@"
+          }
+        }
+      }
+    },
+    "Show %@": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Näytä %@"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visa %@"
           }
         }
       }

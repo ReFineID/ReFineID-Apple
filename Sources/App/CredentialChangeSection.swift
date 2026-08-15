@@ -163,58 +163,79 @@ internal struct CredentialChangeSection: View {
 
   /// The three secret fields, threaded for Return.
   @ViewBuilder private var entryRows: some View {
-    HStack {
-      SecureField("Current \(credential.name)", text: $current)
-        .textContentType(.oneTimeCode)
-        #if os(iOS)
-          .keyboardType(.numberPad)
-        #endif
-        .onChange(of: current) { _, typed in
-          current = LimitedDigits.pin(typed)
-        }
-        .focused($focus, equals: .current)
-        .onSubmit { advance(from: .current) }
-        .accessibilityIdentifier("managementChange\(credential.identifierName)Current")
-      CredentialValidationIndicator(
-        valid: currentIsValid && !newPinMatchesCurrent,
-        unchanged: newPinMatchesCurrent,
-        isEmpty: current.isEmpty)
-    }
-    HStack {
-      SecureField("New \(credential.name)", text: $new)
-        .textContentType(.oneTimeCode)
-        #if os(iOS)
-          .keyboardType(.numberPad)
-        #endif
-        .onChange(of: new) { _, typed in
-          new = LimitedDigits.pin(typed)
-        }
-        .focused($focus, equals: .new)
-        .onSubmit { advance(from: .new) }
-        .accessibilityIdentifier("managementChange\(credential.identifierName)New")
-      CredentialValidationIndicator(
-        valid: newIsValid && !newPinMatchesCurrent,
-        unchanged: newPinMatchesCurrent,
-        isEmpty: new.isEmpty)
-    }
-    HStack {
-      SecureField("New \(credential.name) again", text: $repeated)
-        .textContentType(.oneTimeCode)
-        #if os(iOS)
-          .keyboardType(.numberPad)
-        #endif
-        .onChange(of: repeated) { _, typed in
-          repeated = LimitedDigits.pin(typed)
-        }
-        .focused($focus, equals: .repeated)
-        .onSubmit { advance(from: .repeated) }
-        .accessibilityIdentifier("managementChange\(credential.identifierName)Repeat")
-      CredentialValidationIndicator(
-        valid: repeatedIsValid && !newPinMatchesCurrent,
-        entriesDiffer: entriesDiffer,
-        unchanged: newPinMatchesCurrent,
-        isEmpty: repeated.isEmpty)
-    }
+    CredentialSecretField(
+      name: String(localized: "Current \(credential.name)"),
+      text: $current,
+      revealIdentifier: "managementChange\(credential.identifierName)CurrentReveal",
+      field: {
+        SecureField("Current \(credential.name)", text: $current)
+          .textContentType(.oneTimeCode)
+          #if os(iOS)
+            .keyboardType(.numberPad)
+          #endif
+          .onChange(of: current) { _, typed in
+            current = LimitedDigits.pin(typed)
+          }
+          .focused($focus, equals: .current)
+          .onSubmit { advance(from: .current) }
+          .accessibilityIdentifier("managementChange\(credential.identifierName)Current")
+      },
+      validation: {
+        CredentialValidationIndicator(
+          valid: currentIsValid && !newPinMatchesCurrent,
+          unchanged: newPinMatchesCurrent,
+          isEmpty: current.isEmpty)
+      }
+    )
+    CredentialSecretField(
+      name: String(localized: "New \(credential.name)"),
+      text: $new,
+      revealIdentifier: "managementChange\(credential.identifierName)NewReveal",
+      field: {
+        SecureField("New \(credential.name)", text: $new)
+          .textContentType(.oneTimeCode)
+          #if os(iOS)
+            .keyboardType(.numberPad)
+          #endif
+          .onChange(of: new) { _, typed in
+            new = LimitedDigits.pin(typed)
+          }
+          .focused($focus, equals: .new)
+          .onSubmit { advance(from: .new) }
+          .accessibilityIdentifier("managementChange\(credential.identifierName)New")
+      },
+      validation: {
+        CredentialValidationIndicator(
+          valid: newIsValid && !newPinMatchesCurrent,
+          unchanged: newPinMatchesCurrent,
+          isEmpty: new.isEmpty)
+      }
+    )
+    CredentialSecretField(
+      name: String(localized: "New \(credential.name) again"),
+      text: $repeated,
+      revealIdentifier: "managementChange\(credential.identifierName)RepeatReveal",
+      field: {
+        SecureField("New \(credential.name) again", text: $repeated)
+          .textContentType(.oneTimeCode)
+          #if os(iOS)
+            .keyboardType(.numberPad)
+          #endif
+          .onChange(of: repeated) { _, typed in
+            repeated = LimitedDigits.pin(typed)
+          }
+          .focused($focus, equals: .repeated)
+          .onSubmit { advance(from: .repeated) }
+          .accessibilityIdentifier("managementChange\(credential.identifierName)Repeat")
+      },
+      validation: {
+        CredentialValidationIndicator(
+          valid: repeatedIsValid && !newPinMatchesCurrent,
+          entriesDiffer: entriesDiffer,
+          unchanged: newPinMatchesCurrent,
+          isEmpty: repeated.isEmpty)
+      }
+    )
   }
 
   /// Return advances; on the last field it submits when complete.

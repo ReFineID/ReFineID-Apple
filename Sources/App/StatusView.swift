@@ -269,15 +269,24 @@
     /// document is waiting.
     @ViewBuilder private var signatureSection: some View {
       if signing.pending != nil {
+        let pinTitle = pin2Cache.isWarm
+          ? String(localized: "PIN 2 (remembered)")
+          : String(localized: "PIN 2")
         Section {
           SignatureFormatRow(documents: signing.queued, format: $format)
-          SecureField(pin2Cache.isWarm ? "PIN 2 (remembered)" : "PIN 2", text: $pin2)
-            .onChange(of: pin2) { _, typed in
-              pin2 = LimitedDigits.pin(typed)
-            }
-            .focused($pinFocused)
-            .onSubmit { sign() }
-            .accessibilityIdentifier("signPin2")
+          CredentialSecretField(
+            name: pinTitle,
+            text: $pin2,
+            revealIdentifier: "signPin2Reveal"
+          ) {
+            SecureField(pinTitle, text: $pin2)
+              .onChange(of: pin2) { _, typed in
+                pin2 = LimitedDigits.pin(typed)
+              }
+              .focused($pinFocused)
+              .onSubmit { sign() }
+              .accessibilityIdentifier("signPin2")
+          }
           // The visible stamp is drawn into the PDF's signed revision;
           // a container carries the file unchanged, so there is
           // nothing to draw it into. The whole feature is compiled in

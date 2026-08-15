@@ -28,19 +28,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sign documents"
+            "value": "Sign"
           }
         },
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Allekirjoita asiakirjoja"
+            "value": "Allekirjoita"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Signera dokument"
+            "value": "Signera"
           }
         }
       }
@@ -56,7 +56,7 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Asiakirjat"
+            "value": "Asiakirjoja"
           }
         },
         "sv": {
@@ -67,24 +67,24 @@
         }
       }
     },
-    "signing.open": {
+    "signing.document": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sign documents"
+            "value": "Document"
           }
         },
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Allekirjoita asiakirjoja"
+            "value": "Asiakirja"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Signera dokument"
+            "value": "Dokument"
           }
         }
       }
@@ -265,50 +265,6 @@
         }
       }
     },
-    "signing.hidePIN": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hide PIN 2"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Piilota PIN 2"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dölj PIN 2"
-          }
-        }
-      }
-    },
-    "signing.showPIN": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Show PIN 2"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Näytä PIN 2"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Visa PIN 2"
-          }
-        }
-      }
-    },
     "signing.progress": {
       "localizations": {
         "en": {
@@ -371,50 +327,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dokumenten är signerade"
-          }
-        }
-      }
-    },
-    "signing.save": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Save signed document"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tallenna allekirjoitettu asiakirja"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Spara signerat dokument"
-          }
-        }
-      }
-    },
-    "signing.again": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sign other documents"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Allekirjoita muita asiakirjoja"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Signera andra dokument"
           }
         }
       }

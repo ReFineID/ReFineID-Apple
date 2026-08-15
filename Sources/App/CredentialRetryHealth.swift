@@ -162,17 +162,34 @@ internal final class CredentialRetryHealth {
 /// value, so health is never communicated by color alone.
 internal struct CredentialRetryHealthKey: View {
   internal let level: CredentialRetryHealth.Level?
+  internal let systemName: String
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var animationTrigger = false
+
+  internal init(
+    level: CredentialRetryHealth.Level?,
+    systemName: String = "key"
+  ) {
+    self.level = level
+    self.systemName = systemName
+  }
 
   internal var body: some View {
     ZStack(alignment: .bottomTrailing) {
       if let level {
-        Image(systemName: "key")
+        Image(systemName: systemName)
+          .contentTransition(
+            .symbolEffect(
+              .replace.magic(fallback: .offUp.byLayer),
+              options: .nonRepeating))
           .foregroundStyle(level.color)
         statusBadge(level)
       } else {
-        Image(systemName: "key")
+        Image(systemName: systemName)
+          .contentTransition(
+            .symbolEffect(
+              .replace.magic(fallback: .offUp.byLayer),
+              options: .nonRepeating))
       }
     }
     .accessibilityElement(children: .ignore)

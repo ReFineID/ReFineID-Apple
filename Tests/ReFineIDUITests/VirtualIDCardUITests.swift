@@ -193,6 +193,57 @@
         "123456")
     }
 
+    internal func testWirelessManagementRequiresLiveCardClassification() {
+      let app = UITestApp.launchVirtualCard()
+      applyScenario("activated-nfc", in: app)
+      let signing = app.buttons[UITestIdentifiers.signDocuments]
+      let key = app.buttons["manageCard"]
+
+      XCTAssertTrue(
+        signing.waitForExistence(timeout: Self.appearTimeout),
+        "wireless setup hid document signing instead of presenting it disabled")
+      XCTAssertFalse(
+        signing.isEnabled,
+        "document signing was enabled before CAN was complete")
+      XCTAssertEqual(signing.label, "Sign")
+      XCTAssertTrue(app.staticTexts["Document"].exists)
+      XCTAssertTrue(key.waitForExistence(timeout: Self.appearTimeout))
+      XCTAssertFalse(key.isEnabled, "PIN management was enabled before CAN was complete")
+
+      let enable = app.buttons["connectCard"]
+      XCTAssertTrue(enable.waitForExistence(timeout: Self.appearTimeout))
+      XCTAssertEqual(enable.label, "Enable")
+      let connectHeader = app.staticTexts["Connect Identity Card"]
+      let browserHeader = app.staticTexts["Browser authentication"]
+      let documentHeader = app.staticTexts["Document"]
+      XCTAssertTrue(connectHeader.exists)
+      XCTAssertTrue(browserHeader.exists)
+      XCTAssertEqual(connectHeader.frame.minX, documentHeader.frame.minX, accuracy: 1)
+      XCTAssertEqual(browserHeader.frame.minX, documentHeader.frame.minX, accuracy: 1)
+
+      let can = app.textFields[UITestIdentifiers.cardAccessNumberField]
+      let pin1 = app.secureTextFields[UITestIdentifiers.pin1Field]
+      XCTAssertTrue(can.exists)
+      XCTAssertTrue(pin1.exists)
+      XCTAssertEqual(can.frame.height, pin1.frame.height, accuracy: 1)
+
+      focusAndType(can, value: "123456", in: app)
+      let signingEnabled = XCTNSPredicateExpectation(
+        predicate: NSPredicate(format: "enabled == true"),
+        object: signing)
+      let keyEnabled = XCTNSPredicateExpectation(
+        predicate: NSPredicate(format: "enabled == true"),
+        object: key)
+      XCTAssertEqual(
+        XCTWaiter.wait(
+          for: [signingEnabled, keyEnabled],
+          timeout: Self.appearTimeout),
+        .completed,
+        "six-digit CAN did not enable signing and PIN management")
+
+      openManagement(in: app)
+    }
+
       internal func testActivatedNFCCardRevealsAuthenticationThroughGUI() {
         let app = UITestApp.launchVirtualCard()
         applyScenario("activated-nfc", in: app)
@@ -321,6 +372,12 @@
         app.descendants(matching: .any)[UITestIdentifiers.signingSuccess]
           .waitForExistence(timeout: Self.appearTimeout),
         "virtual document signing did not reach its completed state")
+      XCTAssertFalse(
+        app.buttons["signingSave"].exists,
+        "successful signing retained a redundant save button")
+      XCTAssertFalse(
+        app.buttons["Sign other documents"].exists,
+        "successful signing retained duplicate navigation")
     }
 
     internal func testWrongSignaturePINConsumesOneAttemptThroughGUI() {

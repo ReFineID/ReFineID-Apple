@@ -124,55 +124,76 @@ internal struct CredentialUnblockSection: View {
   /// The target picker and the three secret fields, threaded for
   /// Return.
   @ViewBuilder private var entryRows: some View {
-    HStack {
-      SecureField("PUK", text: $puk)
-        .textContentType(.oneTimeCode)
-        #if os(iOS)
-          .keyboardType(.numberPad)
-        #endif
-        .onChange(of: puk) { _, typed in
-          puk = LimitedDigits.puk(typed)
-        }
-        .focused($focus, equals: .puk)
-        .onSubmit { advance(from: .puk) }
-        .accessibilityIdentifier("managementReset\(identifierName)Puk")
-      CredentialValidationIndicator(
-        valid: pukIsValid,
-        isEmpty: puk.isEmpty)
-    }
-    HStack {
-      SecureField("New \(targetName)", text: $new)
-        .textContentType(.oneTimeCode)
-        #if os(iOS)
-          .keyboardType(.numberPad)
-        #endif
-        .onChange(of: new) { _, typed in
-          new = LimitedDigits.pin(typed)
-        }
-        .focused($focus, equals: .new)
-        .onSubmit { advance(from: .new) }
-        .accessibilityIdentifier("managementReset\(identifierName)New")
-      CredentialValidationIndicator(
-        valid: newIsValid,
-        isEmpty: new.isEmpty)
-    }
-    HStack {
-      SecureField("New \(targetName) again", text: $repeated)
-        .textContentType(.oneTimeCode)
-        #if os(iOS)
-          .keyboardType(.numberPad)
-        #endif
-        .onChange(of: repeated) { _, typed in
-          repeated = LimitedDigits.pin(typed)
-        }
-        .focused($focus, equals: .repeated)
-        .onSubmit { advance(from: .repeated) }
-        .accessibilityIdentifier("managementReset\(identifierName)Repeat")
-      CredentialValidationIndicator(
-        valid: repeatedIsValid,
-        entriesDiffer: entriesDiffer,
-        isEmpty: repeated.isEmpty)
-    }
+    CredentialSecretField(
+      name: String(localized: "PUK"),
+      text: $puk,
+      revealIdentifier: "managementReset\(identifierName)PukReveal",
+      field: {
+        SecureField("PUK", text: $puk)
+          .textContentType(.oneTimeCode)
+          #if os(iOS)
+            .keyboardType(.numberPad)
+          #endif
+          .onChange(of: puk) { _, typed in
+            puk = LimitedDigits.puk(typed)
+          }
+          .focused($focus, equals: .puk)
+          .onSubmit { advance(from: .puk) }
+          .accessibilityIdentifier("managementReset\(identifierName)Puk")
+      },
+      validation: {
+        CredentialValidationIndicator(
+          valid: pukIsValid,
+          isEmpty: puk.isEmpty)
+      }
+    )
+    CredentialSecretField(
+      name: String(localized: "New \(targetName)"),
+      text: $new,
+      revealIdentifier: "managementReset\(identifierName)NewReveal",
+      field: {
+        SecureField("New \(targetName)", text: $new)
+          .textContentType(.oneTimeCode)
+          #if os(iOS)
+            .keyboardType(.numberPad)
+          #endif
+          .onChange(of: new) { _, typed in
+            new = LimitedDigits.pin(typed)
+          }
+          .focused($focus, equals: .new)
+          .onSubmit { advance(from: .new) }
+          .accessibilityIdentifier("managementReset\(identifierName)New")
+      },
+      validation: {
+        CredentialValidationIndicator(
+          valid: newIsValid,
+          isEmpty: new.isEmpty)
+      }
+    )
+    CredentialSecretField(
+      name: String(localized: "New \(targetName) again"),
+      text: $repeated,
+      revealIdentifier: "managementReset\(identifierName)RepeatReveal",
+      field: {
+        SecureField("New \(targetName) again", text: $repeated)
+          .textContentType(.oneTimeCode)
+          #if os(iOS)
+            .keyboardType(.numberPad)
+          #endif
+          .onChange(of: repeated) { _, typed in
+            repeated = LimitedDigits.pin(typed)
+          }
+          .focused($focus, equals: .repeated)
+          .onSubmit { advance(from: .repeated) }
+          .accessibilityIdentifier("managementReset\(identifierName)Repeat")
+      },
+      validation: {
+        CredentialValidationIndicator(
+          valid: repeatedIsValid,
+          entriesDiffer: entriesDiffer,
+          isEmpty: repeated.isEmpty)
+      }
+    )
   }
 
   /// Return advances; on the last field it submits when complete.

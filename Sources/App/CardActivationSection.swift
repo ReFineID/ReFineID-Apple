@@ -133,91 +133,126 @@ internal struct CardActivationSection: View {
   /// interrupted activation left one PIN set, and asking for a new
   /// value it will not take invites a retry spent on nothing.
   @ViewBuilder private var entryRows: some View {
-    HStack {
-      SecureField("Activation PIN", text: $entry)
-        .textContentType(.oneTimeCode)
-        #if os(iOS)
-          .keyboardType(.numberPad)
-        #endif
-        .onChange(of: entry) { _, typed in
-          entry = LimitedDigits.puk(typed)
-        }
-        .focused($focus, equals: .entry)
-        .onSubmit { advance(from: .entry) }
-        .accessibilityIdentifier("managementActivationEntry")
-      CredentialValidationIndicator(
-        valid: activationEntryIsValid,
-        isEmpty: entry.isEmpty)
-    }
+    CredentialSecretField(
+      name: String(localized: "Activation PIN"),
+      text: $entry,
+      revealIdentifier: "managementActivationEntryReveal",
+      field: {
+        SecureField("Activation PIN", text: $entry)
+          .textContentType(.oneTimeCode)
+          #if os(iOS)
+            .keyboardType(.numberPad)
+          #endif
+          .onChange(of: entry) { _, typed in
+            entry = LimitedDigits.puk(typed)
+          }
+          .focused($focus, equals: .entry)
+          .onSubmit { advance(from: .entry) }
+          .accessibilityIdentifier("managementActivationEntry")
+      },
+      validation: {
+        CredentialValidationIndicator(
+          valid: activationEntryIsValid,
+          isEmpty: entry.isEmpty)
+      }
+    )
     if asksPin1 {
-      HStack {
-        SecureField("New PIN 1", text: $newPin1)
-          .textContentType(.oneTimeCode)
-          #if os(iOS)
-            .keyboardType(.numberPad)
-          #endif
-          .onChange(of: newPin1) { _, typed in
-            newPin1 = LimitedDigits.pin1(typed)
-          }
-          .focused($focus, equals: .pin1)
-          .onSubmit { advance(from: .pin1) }
-          .accessibilityIdentifier("managementActivationPin1")
-        CredentialValidationIndicator(
-          valid: pin1IsValid,
-          isEmpty: newPin1.isEmpty)
-      }
-      HStack {
-        SecureField("New PIN 1 again", text: $newPin1Repeated)
-          .textContentType(.oneTimeCode)
-          #if os(iOS)
-            .keyboardType(.numberPad)
-          #endif
-          .onChange(of: newPin1Repeated) { _, typed in
-            newPin1Repeated = LimitedDigits.pin1(typed)
-          }
-          .focused($focus, equals: .pin1Repeat)
-          .onSubmit { advance(from: .pin1Repeat) }
-          .accessibilityIdentifier("managementActivationPin1Repeat")
-        CredentialValidationIndicator(
-          valid: repeatedPin1IsValid,
-          entriesDiffer: pin1EntriesDiffer,
-          isEmpty: newPin1Repeated.isEmpty)
-      }
+      CredentialSecretField(
+        name: String(localized: "New PIN 1"),
+        text: $newPin1,
+        revealIdentifier: "managementActivationPin1Reveal",
+        field: {
+          SecureField("New PIN 1", text: $newPin1)
+            .textContentType(.oneTimeCode)
+            #if os(iOS)
+              .keyboardType(.numberPad)
+            #endif
+            .onChange(of: newPin1) { _, typed in
+              newPin1 = LimitedDigits.pin1(typed)
+            }
+            .focused($focus, equals: .pin1)
+            .onSubmit { advance(from: .pin1) }
+            .accessibilityIdentifier("managementActivationPin1")
+        },
+        validation: {
+          CredentialValidationIndicator(
+            valid: pin1IsValid,
+            isEmpty: newPin1.isEmpty)
+        }
+      )
+      CredentialSecretField(
+        name: String(localized: "New PIN 1 again"),
+        text: $newPin1Repeated,
+        revealIdentifier: "managementActivationPin1RepeatReveal",
+        field: {
+          SecureField("New PIN 1 again", text: $newPin1Repeated)
+            .textContentType(.oneTimeCode)
+            #if os(iOS)
+              .keyboardType(.numberPad)
+            #endif
+            .onChange(of: newPin1Repeated) { _, typed in
+              newPin1Repeated = LimitedDigits.pin1(typed)
+            }
+            .focused($focus, equals: .pin1Repeat)
+            .onSubmit { advance(from: .pin1Repeat) }
+            .accessibilityIdentifier("managementActivationPin1Repeat")
+        },
+        validation: {
+          CredentialValidationIndicator(
+            valid: repeatedPin1IsValid,
+            entriesDiffer: pin1EntriesDiffer,
+            isEmpty: newPin1Repeated.isEmpty)
+        }
+      )
     }
     if asksPin2 {
-      HStack {
-        SecureField("New PIN 2", text: $newPin2)
-          .textContentType(.oneTimeCode)
-          #if os(iOS)
-            .keyboardType(.numberPad)
-          #endif
-          .onChange(of: newPin2) { _, typed in
-            newPin2 = LimitedDigits.pin2(typed)
-          }
-          .focused($focus, equals: .pin2)
-          .onSubmit { advance(from: .pin2) }
-          .accessibilityIdentifier("managementActivationPin2")
-        CredentialValidationIndicator(
-          valid: pin2IsValid,
-          isEmpty: newPin2.isEmpty)
-      }
-      HStack {
-        SecureField("New PIN 2 again", text: $newPin2Repeated)
-          .textContentType(.oneTimeCode)
-          #if os(iOS)
-            .keyboardType(.numberPad)
-          #endif
-          .onChange(of: newPin2Repeated) { _, typed in
-            newPin2Repeated = LimitedDigits.pin2(typed)
-          }
-          .focused($focus, equals: .pin2Repeat)
-          .onSubmit { advance(from: .pin2Repeat) }
-          .accessibilityIdentifier("managementActivationPin2Repeat")
-        CredentialValidationIndicator(
-          valid: repeatedPin2IsValid,
-          entriesDiffer: pin2EntriesDiffer,
-          isEmpty: newPin2Repeated.isEmpty)
-      }
+      CredentialSecretField(
+        name: String(localized: "New PIN 2"),
+        text: $newPin2,
+        revealIdentifier: "managementActivationPin2Reveal",
+        field: {
+          SecureField("New PIN 2", text: $newPin2)
+            .textContentType(.oneTimeCode)
+            #if os(iOS)
+              .keyboardType(.numberPad)
+            #endif
+            .onChange(of: newPin2) { _, typed in
+              newPin2 = LimitedDigits.pin2(typed)
+            }
+            .focused($focus, equals: .pin2)
+            .onSubmit { advance(from: .pin2) }
+            .accessibilityIdentifier("managementActivationPin2")
+        },
+        validation: {
+          CredentialValidationIndicator(
+            valid: pin2IsValid,
+            isEmpty: newPin2.isEmpty)
+        }
+      )
+      CredentialSecretField(
+        name: String(localized: "New PIN 2 again"),
+        text: $newPin2Repeated,
+        revealIdentifier: "managementActivationPin2RepeatReveal",
+        field: {
+          SecureField("New PIN 2 again", text: $newPin2Repeated)
+            .textContentType(.oneTimeCode)
+            #if os(iOS)
+              .keyboardType(.numberPad)
+            #endif
+            .onChange(of: newPin2Repeated) { _, typed in
+              newPin2Repeated = LimitedDigits.pin2(typed)
+            }
+            .focused($focus, equals: .pin2Repeat)
+            .onSubmit { advance(from: .pin2Repeat) }
+            .accessibilityIdentifier("managementActivationPin2Repeat")
+        },
+        validation: {
+          CredentialValidationIndicator(
+            valid: repeatedPin2IsValid,
+            entriesDiffer: pin2EntriesDiffer,
+            isEmpty: newPin2Repeated.isEmpty)
+        }
+      )
     }
   }
 
