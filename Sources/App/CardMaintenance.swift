@@ -344,9 +344,16 @@ internal enum CardMaintenance {
         ?? CardCredentialStore.cardAccessNumber()
       guard let offered else { return nil }
       try? operations.selectMasterFile()
-      guard
-        let keys = try? PaceEstablishment(channel: channel).establish(with: offered)
-      else {
+      let keys: PaceSessionKeys
+      do {
+        keys = try PaceEstablishment(channel: channel).establish(with: offered)
+      } catch PaceEstablishment.Failure.authenticationTokenMismatch {
+        CardCredentialStore.forgetCardAccessNumber()
+        return nil
+      } catch PaceEstablishment.Failure.cardRejected(.authenticationFailed) {
+        CardCredentialStore.forgetCardAccessNumber()
+        return nil
+      } catch {
         return nil
       }
       let secure = SecureMessagingChannel(wrapping: channel, sessionKeys: keys)

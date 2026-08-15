@@ -231,7 +231,7 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
         browser.startBrowsingForPeers()
         self.browser = browser
       }
-      trace("started")
+      trace("started role=\(role)")
     }
 
     public func send(_ message: PersistentRelayMessage) throws {
@@ -265,6 +265,7 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
         return false
       }
       guard !wasClosed else { return }
+      trace("closed \(String(describing: error))")
       advertiser?.stopAdvertisingPeer()
       browser?.stopBrowsingForPeers()
       onEvent(.closed(error))
@@ -301,6 +302,7 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
         onEvent(.connected)
         trace("connected \(peerID.displayName)")
       case .notConnected:
+        trace("not connected \(peerID.displayName)")
         if everConnected.withLock({ $0 }) {
           finish(.disconnected)
         } else if let peer = lastFoundPeer {
@@ -349,10 +351,11 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
 
     public func advertiser(
       _: MCNearbyServiceAdvertiser,
-      didReceiveInvitationFromPeer _: MCPeerID,
+      didReceiveInvitationFromPeer peerID: MCPeerID,
       withContext _: Data?,
       invitationHandler: (Bool, MCSession?) -> Void
     ) {
+      trace("accepted invitation from \(peerID.displayName)")
       invitationHandler(true, session)
     }
 
@@ -360,6 +363,7 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
       _: MCNearbyServiceAdvertiser,
       didNotStartAdvertisingPeer error: any Error
     ) {
+      trace("advertising failed \(String(describing: error))")
       finish(.startup(String(describing: error)))
     }
 
@@ -368,11 +372,13 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
       foundPeer peerID: MCPeerID,
       withDiscoveryInfo _: [String: String]?
     ) {
+      trace("found \(peerID.displayName)")
       lastFoundPeer = peerID
       invite(peerID)
     }
 
     public func browser(_: MCNearbyServiceBrowser, lostPeer peerID: MCPeerID) {
+      trace("lost \(peerID.displayName)")
       if lastFoundPeer?.displayName == peerID.displayName {
         lastFoundPeer = nil
       }
@@ -382,6 +388,7 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
       _: MCNearbyServiceBrowser,
       didNotStartBrowsingForPeers error: any Error
     ) {
+      trace("browsing failed \(String(describing: error))")
       finish(.startup(String(describing: error)))
     }
 

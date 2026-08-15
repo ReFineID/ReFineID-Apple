@@ -22,6 +22,13 @@ import Security
 /// control that stops a guessed PIN, and deletion reveals nothing. The
 /// reasoning and the trade are in `Documentation/decisions.md`.
 public enum CardCredentialStore {
+  /// Posted in-process whenever the stored CAN is explicitly removed.
+  ///
+  /// The app uses this to clear any visible copy immediately after the
+  /// card rejects PACE. It is deliberately an event rather than polling.
+  public static let cardAccessNumberDidInvalidate =
+    Notification.Name("fi.refineid.card-access-number-did-invalidate")
+
   /// What the store currently holds.
   public struct Contents: Equatable, Sendable {
     /// Whether a card access number is stored.
@@ -282,6 +289,9 @@ public enum CardCredentialStore {
   /// Removes the card access number, from the driver's copy as well.
   public static func forgetCardAccessNumber() {
     delete(account: cardAccessNumberAccount)
+    NotificationCenter.default.post(
+      name: cardAccessNumberDidInvalidate,
+      object: nil)
     #if os(macOS)
       OfferedAccessNumber.withdraw()
       DriverConfiguredCredentials.withdraw()

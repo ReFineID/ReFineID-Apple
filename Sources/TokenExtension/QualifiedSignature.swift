@@ -39,6 +39,9 @@ internal enum QualifiedSignature {
     } catch PaceEstablishment.Failure.authenticationTokenMismatch {
       token.revokeAutomaticIdentityAfterCanRejection()
       throw TokenError.primeMissing
+    } catch PaceEstablishment.Failure.cardRejected(.authenticationFailed) {
+      token.revokeAutomaticIdentityAfterCanRejection()
+      throw TokenError.primeMissing
     }
   }
 

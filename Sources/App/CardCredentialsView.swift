@@ -367,6 +367,18 @@ internal struct CardCredentialsView: View {
       else { return }
       model.forgetEverything()
     }
+    .onReceive(
+      NotificationCenter.default.publisher(
+        for: CardCredentialStore.cardAccessNumberDidInvalidate)
+    ) { _ in
+      model.refresh()
+      cardAccessNumberEntry = ""
+      clearPin1Entry()
+      activationScheme = nil
+      activationNeeds = nil
+      model.invalidateCardStatus()
+      isCardAccessNumberFieldFocused = true
+    }
     #if os(iOS)
       .sheet(isPresented: $isScanning) {
         scannerSheet

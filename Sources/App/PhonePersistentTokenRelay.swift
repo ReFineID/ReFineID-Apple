@@ -184,6 +184,11 @@
                 // failure. It invalidates both the visible and persistent CAN.
                 CardCredentialStore.forgetCardAccessNumber()
                 return .failure(.wrongCardAccessNumber)
+              } catch PaceEstablishment.Failure.cardRejected(.authenticationFailed) {
+                // Some card generations report a rejected final PACE token
+                // as 6300 instead of returning a token for local comparison.
+                CardCredentialStore.forgetCardAccessNumber()
+                return .failure(.wrongCardAccessNumber)
               }
               let operations = CardOperations(
                 channel: SecureMessagingChannel(
