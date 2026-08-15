@@ -7,6 +7,7 @@ import XCTest
 final class CardSetupStateMachineTests: XCTestCase {
   private struct ParsedGrammar {
     let initialState: CardSetupStateMachine.State
+    let states: Set<CardSetupStateMachine.State>
     let transitions: [CardSetupStateMachine.Transition]
   }
 
@@ -19,6 +20,7 @@ final class CardSetupStateMachineTests: XCTestCase {
     let grammar = try loadGrammar()
 
     XCTAssertEqual(grammar.initialState, CardSetupStateMachine.initialState)
+    XCTAssertEqual(grammar.states, Set(CardSetupStateMachine.State.allCases))
     XCTAssertEqual(
       grammar.transitions.count,
       Set(grammar.transitions).count,
@@ -81,7 +83,8 @@ final class CardSetupStateMachineTests: XCTestCase {
 
     for state in [
       CardSetupStateMachine.State.classifyingBrowser,
-      .classifyingManagement,
+      .classifyingManagementHome,
+      .classifyingManagementIdentity,
     ] {
       let handled = Set(
         CardSetupStateMachine.transitions
@@ -94,14 +97,19 @@ final class CardSetupStateMachineTests: XCTestCase {
 
   func testCardOutcomeRoutesRespectPurpose() {
     assertTransition(.classifyingBrowser, .classificationActivated, .registeringBrowser)
-    assertTransition(.classifyingManagement, .classificationActivated, .pinManagementHome)
+    assertTransition(.classifyingManagementHome, .classificationActivated, .pinManagementHome)
+    assertTransition(.classifyingManagementIdentity, .classificationActivated, .pinManagementIdentity)
     assertTransition(.classifyingBrowser, .classificationRecoveryRequired, .pinManagementHome)
-    assertTransition(.classifyingManagement, .classificationRecoveryRequired, .pinManagementHome)
-    assertTransition(.classifyingBrowser, .classificationActivationRequired, .activation)
-    assertTransition(.classifyingManagement, .classificationActivationRequired, .activation)
+    assertTransition(.classifyingManagementHome, .classificationRecoveryRequired, .pinManagementHome)
+    assertTransition(.classifyingManagementIdentity, .classificationRecoveryRequired, .pinManagementIdentity)
+    assertTransition(.classifyingBrowser, .classificationActivationRequired, .activationHome)
+    assertTransition(.classifyingManagementHome, .classificationActivationRequired, .activationHome)
+    assertTransition(.classifyingManagementIdentity, .classificationActivationRequired, .activationIdentity)
   }
 
   func testDestinationDismissalPreservesIdentityOrigin() {
+    assertTransition(.activationHome, .destinationDismissed, .home)
+    assertTransition(.activationIdentity, .destinationDismissed, .identityHome)
     assertTransition(.pinManagementHome, .destinationDismissed, .home)
     assertTransition(.pinManagementIdentity, .destinationDismissed, .identityHome)
     assertTransition(.documentSigningHome, .destinationDismissed, .home)
@@ -110,7 +118,8 @@ final class CardSetupStateMachineTests: XCTestCase {
 
   func testDestinationProjectionIsCompleteAndUnambiguous() {
     let expected: [CardSetupStateMachine.State: CardSetupStateMachine.Destination] = [
-      .activation: .activation,
+      .activationHome: .activation,
+      .activationIdentity: .activation,
       .pinManagementHome: .pinManagement,
       .pinManagementIdentity: .pinManagement,
       .documentSigningHome: .signDocuments,
@@ -122,11 +131,15 @@ final class CardSetupStateMachineTests: XCTestCase {
     }
   }
 
-  func testIdentityCannotOpenFactoryActivation() {
-    XCTAssertEqual(
-      CardSetupStateMachine.reduce(state: .identityHome, event: .openKnownActivation),
-      .rejected
-    )
+  func testIdentityOriginSurvivesEveryManagementClassificationFailure() {
+    assertTransition(
+      .classifyingManagementIdentity,
+      .classificationWrongCardAccessNumber,
+      .identityHome)
+    assertTransition(
+      .classifyingManagementIdentity,
+      .classificationFailed,
+      .identityHome)
   }
 
   private func assertTransition(
@@ -161,6 +174,7 @@ final class CardSetupStateMachineTests: XCTestCase {
 
     return ParsedGrammar(
       initialState: try XCTUnwrap(delegate.initialState),
+      states: delegate.states,
       transitions: delegate.transitions
     )
   }
@@ -168,6 +182,7 @@ final class CardSetupStateMachineTests: XCTestCase {
 
 private final class GrammarParserDelegate: NSObject, XMLParserDelegate {
   var initialState: CardSetupStateMachine.State?
+  var states: Set<CardSetupStateMachine.State> = []
   var transitions: [CardSetupStateMachine.Transition] = []
   var errors: [String] = []
 
@@ -196,6 +211,9 @@ private final class GrammarParserDelegate: NSObject, XMLParserDelegate {
       else {
         errors.append("Unknown or missing SCXML state id")
         return
+      }
+      if !states.insert(state).inserted {
+        errors.append("Duplicate SCXML state id \(rawState)")
       }
       currentState = state
 

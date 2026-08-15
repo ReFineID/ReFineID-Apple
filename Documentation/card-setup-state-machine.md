@@ -19,6 +19,9 @@ navigation from the resulting state.
   home state without publishing an identity.
 - Dismissing a destination restores the correct registered or unregistered
   origin.
+- Classification started from a registered identity preserves that origin on
+  success, recovery, activation, wrong CAN, failure, and destination dismissal.
+- A reducer rejection aborts the initiating action before card I/O starts.
 
 ## Change control
 
@@ -44,6 +47,10 @@ as events.
 
 ## Method
 
-The format follows W3C SCXML 1.0. The separation between the declarative
-transition relation and the pure reducer follows statechart and model-based
-testing practice described in the project references.
+The format follows W3C SCXML 1.0
+[`w3c_scxml_2015`](references.md#w3c_scxml_2015). The separation between the
+declarative transition relation and the pure reducer follows statechart
+[`harel_statecharts_1987`](references.md#harel_statecharts_1987) and
+model-based testing
+[`utting_legeard_model_based_testing_2007`](references.md#utting_legeard_model_based_testing_2007)
+practice described in the project references.

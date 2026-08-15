@@ -14,14 +14,16 @@
     <transition event="identity.loaded" target="identityHome"/>
     <transition event="browser.classification.start" target="classifyingBrowser"/>
     <transition event="browser.registration.start" target="registeringBrowser"/>
-    <transition event="management.classification.start" target="classifyingManagement"/>
-    <transition event="activation.open.known" target="activation"/>
+    <transition event="management.classification.start" target="classifyingManagementHome"/>
+    <transition event="activation.open.known" target="activationHome"/>
     <transition event="management.open.verified" target="pinManagementHome"/>
     <transition event="signing.open" target="documentSigningHome"/>
   </state>
 
   <state id="identityHome">
     <transition event="identity.forgotten" target="home"/>
+    <transition event="management.classification.start" target="classifyingManagementIdentity"/>
+    <transition event="activation.open.known" target="activationIdentity"/>
     <transition event="management.open.verified" target="pinManagementIdentity"/>
     <transition event="signing.open" target="documentSigningIdentity"/>
   </state>
@@ -29,17 +31,25 @@
   <state id="classifyingBrowser">
     <transition event="classification.activated" target="registeringBrowser"/>
     <transition event="classification.recovery-required" target="pinManagementHome"/>
-    <transition event="classification.activation-required" target="activation"/>
+    <transition event="classification.activation-required" target="activationHome"/>
     <transition event="classification.wrong-can" target="home"/>
     <transition event="classification.failed" target="home"/>
   </state>
 
-  <state id="classifyingManagement">
+  <state id="classifyingManagementHome">
     <transition event="classification.activated" target="pinManagementHome"/>
     <transition event="classification.recovery-required" target="pinManagementHome"/>
-    <transition event="classification.activation-required" target="activation"/>
+    <transition event="classification.activation-required" target="activationHome"/>
     <transition event="classification.wrong-can" target="home"/>
     <transition event="classification.failed" target="home"/>
+  </state>
+
+  <state id="classifyingManagementIdentity">
+    <transition event="classification.activated" target="pinManagementIdentity"/>
+    <transition event="classification.recovery-required" target="pinManagementIdentity"/>
+    <transition event="classification.activation-required" target="activationIdentity"/>
+    <transition event="classification.wrong-can" target="identityHome"/>
+    <transition event="classification.failed" target="identityHome"/>
   </state>
 
   <state id="registeringBrowser">
@@ -47,9 +57,14 @@
     <transition event="registration.failed" target="home"/>
   </state>
 
-  <state id="activation">
+  <state id="activationHome">
     <transition event="activation.succeeded" target="home"/>
     <transition event="destination.dismissed" target="home"/>
+  </state>
+
+  <state id="activationIdentity">
+    <transition event="activation.succeeded" target="identityHome"/>
+    <transition event="destination.dismissed" target="identityHome"/>
   </state>
 
   <state id="pinManagementHome">

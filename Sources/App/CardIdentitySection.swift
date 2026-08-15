@@ -32,7 +32,7 @@ internal struct CardIdentitySection: View {
       }
         .buttonStyle(.borderedProminent)
         .tint(Color(red: 0.65, green: 0, blue: 0))
-        .padding(.top, 12)
+        .padding(.top, 24)
         .listRowBackground(Color.clear)
         .listRowInsets(EdgeInsets())
         .accessibilityIdentifier("forgetCardIdentityButton")

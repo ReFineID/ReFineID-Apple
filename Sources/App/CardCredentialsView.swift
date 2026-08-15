@@ -641,12 +641,15 @@ internal struct CardCredentialsView: View {
   /// healthy path before either PIN management or browser registration opens.
   private func classifyIdentityCard(for purpose: CardConnectionPurpose) {
     guard isCardAccessNumberEntryComplete, !model.isConnecting else { return }
+    let started: Bool
     switch purpose {
     case .browserAuthentication:
-      transition(.startBrowserClassification)
+      started = transition(.startBrowserClassification)
     case .pinManagement:
-      transition(.startManagementClassification)
+      started = transition(.startManagementClassification)
     }
+    guard started else { return }
+    let preservesRegisteredIdentity = flowState == .classifyingManagementIdentity
     let entered = cardAccessNumberEntry
     activationScheme = nil
     activationNeeds = nil
@@ -710,9 +713,11 @@ internal struct CardCredentialsView: View {
         activationNeeds = needs
         transition(.classificationActivationRequired)
       case .wrongCardAccessNumber:
-        cardAccessNumberEntry = ""
+        if !preservesRegisteredIdentity {
+          cardAccessNumberEntry = ""
+          isCardAccessNumberFieldFocused = true
+        }
         clearPin1Entry()
-        isCardAccessNumberFieldFocused = true
         transition(.classificationWrongCardAccessNumber)
       case .failed:
         clearPin1Entry()
@@ -784,13 +789,16 @@ internal struct CardCredentialsView: View {
     }
   }
 
-  private func transition(_ event: CardSetupStateMachine.Event) {
+  @discardableResult
+  private func transition(_ event: CardSetupStateMachine.Event) -> Bool {
     switch CardSetupStateMachine.reduce(state: flowState, event: event) {
     case .transitioned(let target):
       flowState = target
+      return true
     case .rejected:
       assertionFailure(
         "Rejected card-setup transition: \(flowState.rawValue) + \(event.rawValue)")
+      return false
     }
   }
 

@@ -48,6 +48,22 @@
       assertScenario("registered-nfc", destination: .registeredIdentity)
     }
 
+    internal func testRegisteredNFCCardClassifiesAndReturnsToIdentityThroughGUI() {
+      let app = UITestApp.launchVirtualCard()
+      applyScenario("registered-nfc", in: app)
+
+      let identity = app.staticTexts[UITestIdentifiers.identityStatus]
+      XCTAssertTrue(identity.waitForExistence(timeout: Self.appearTimeout))
+      openManagement(in: app)
+
+      let back = app.buttons.firstMatch
+      XCTAssertTrue(back.waitForExistence(timeout: Self.appearTimeout))
+      back.tap()
+      XCTAssertTrue(
+        identity.waitForExistence(timeout: Self.appearTimeout),
+        "dismissing PIN management lost the registered identity origin")
+    }
+
     internal func testScenarioFactoryFreshReaderRoutesThroughGUI() {
       assertScenario("factory-fresh-reader", destination: .activation)
     }
@@ -238,7 +254,7 @@
       openManagement(in: app)
     }
 
-      internal func testActivatedNFCCardRevealsAuthenticationThroughGUI() {
+    internal func testActivatedNFCCardRevealsAuthenticationThroughGUI() {
         let app = UITestApp.launchVirtualCard()
         applyScenario("activated-nfc", in: app)
 
@@ -256,6 +272,46 @@
         app.buttons[UITestIdentifiers.signDocuments]
           .waitForExistence(timeout: Self.appearTimeout),
         "validated NFC card did not reveal document signing")
+    }
+
+    internal func testWrongCardAccessNumberReturnsToSetupThroughGUI() {
+      let app = UITestApp.launchVirtualCard()
+      applyScenario("activated-nfc", in: app)
+      connect(accessNumber: "654321", pin1: "1234", in: app)
+
+      let field = app.textFields[UITestIdentifiers.cardAccessNumberField]
+      XCTAssertTrue(field.waitForExistence(timeout: Self.appearTimeout))
+      XCTAssertEqual(field.value as? String, "Card Access Number (CAN)")
+      XCTAssertTrue(
+        app.staticTexts["The Card Access Number (CAN) is incorrect."]
+          .waitForExistence(timeout: Self.appearTimeout))
+      XCTAssertFalse(app.buttons[UITestIdentifiers.managementActivate].exists)
+    }
+
+    internal func testConnectionFailureKeepsTransientCardAccessNumber() {
+      let app = UITestApp.launchVirtualCard()
+      openEditor(in: app)
+      selectMenu(
+        identifier: UITestIdentifiers.virtualCardScenario,
+        option: "activated-nfc",
+        optionIdentifier: "virtualCardScenarioOption.activated-nfc",
+        in: app)
+      selectMenu(
+        identifier: UITestIdentifiers.virtualCardFault,
+        option: "nfcDisconnectBeforeConnection",
+        optionIdentifier:
+          "virtualCardFaultOption.nfcDisconnectBeforeConnection",
+        in: app,
+        scrolling: true)
+      applyEditor(in: app)
+      connect(accessNumber: "123456", pin1: "1234", in: app)
+
+      XCTAssertEqual(
+        app.textFields[UITestIdentifiers.cardAccessNumberField].value as? String,
+        "123456")
+      XCTAssertTrue(
+        app.staticTexts["The identity card could not be read. Try again."]
+          .waitForExistence(timeout: Self.appearTimeout))
     }
 
       internal func testPartialActivationRequestsOnlyPIN2ThroughGUI() {

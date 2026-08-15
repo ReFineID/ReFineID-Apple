@@ -12,9 +12,11 @@ internal enum CardSetupStateMachine {
     case home
     case identityHome
     case classifyingBrowser
-    case classifyingManagement
+    case classifyingManagementHome
+    case classifyingManagementIdentity
     case registeringBrowser
-    case activation
+    case activationHome
+    case activationIdentity
     case pinManagementHome
     case pinManagementIdentity
     case documentSigningHome
@@ -74,32 +76,42 @@ internal enum CardSetupStateMachine {
     .init(source: .home, event: .identityLoaded, target: .identityHome),
     .init(source: .home, event: .startBrowserClassification, target: .classifyingBrowser),
     .init(source: .home, event: .startConfiguredBrowserRegistration, target: .registeringBrowser),
-    .init(source: .home, event: .startManagementClassification, target: .classifyingManagement),
-    .init(source: .home, event: .openKnownActivation, target: .activation),
+    .init(source: .home, event: .startManagementClassification, target: .classifyingManagementHome),
+    .init(source: .home, event: .openKnownActivation, target: .activationHome),
     .init(source: .home, event: .openVerifiedManagement, target: .pinManagementHome),
     .init(source: .home, event: .openDocumentSigning, target: .documentSigningHome),
 
     .init(source: .identityHome, event: .identityForgotten, target: .home),
+    .init(source: .identityHome, event: .startManagementClassification, target: .classifyingManagementIdentity),
+    .init(source: .identityHome, event: .openKnownActivation, target: .activationIdentity),
     .init(source: .identityHome, event: .openVerifiedManagement, target: .pinManagementIdentity),
     .init(source: .identityHome, event: .openDocumentSigning, target: .documentSigningIdentity),
 
     .init(source: .classifyingBrowser, event: .classificationActivated, target: .registeringBrowser),
     .init(source: .classifyingBrowser, event: .classificationRecoveryRequired, target: .pinManagementHome),
-    .init(source: .classifyingBrowser, event: .classificationActivationRequired, target: .activation),
+    .init(source: .classifyingBrowser, event: .classificationActivationRequired, target: .activationHome),
     .init(source: .classifyingBrowser, event: .classificationWrongCardAccessNumber, target: .home),
     .init(source: .classifyingBrowser, event: .classificationFailed, target: .home),
 
-    .init(source: .classifyingManagement, event: .classificationActivated, target: .pinManagementHome),
-    .init(source: .classifyingManagement, event: .classificationRecoveryRequired, target: .pinManagementHome),
-    .init(source: .classifyingManagement, event: .classificationActivationRequired, target: .activation),
-    .init(source: .classifyingManagement, event: .classificationWrongCardAccessNumber, target: .home),
-    .init(source: .classifyingManagement, event: .classificationFailed, target: .home),
+    .init(source: .classifyingManagementHome, event: .classificationActivated, target: .pinManagementHome),
+    .init(source: .classifyingManagementHome, event: .classificationRecoveryRequired, target: .pinManagementHome),
+    .init(source: .classifyingManagementHome, event: .classificationActivationRequired, target: .activationHome),
+    .init(source: .classifyingManagementHome, event: .classificationWrongCardAccessNumber, target: .home),
+    .init(source: .classifyingManagementHome, event: .classificationFailed, target: .home),
+
+    .init(source: .classifyingManagementIdentity, event: .classificationActivated, target: .pinManagementIdentity),
+    .init(source: .classifyingManagementIdentity, event: .classificationRecoveryRequired, target: .pinManagementIdentity),
+    .init(source: .classifyingManagementIdentity, event: .classificationActivationRequired, target: .activationIdentity),
+    .init(source: .classifyingManagementIdentity, event: .classificationWrongCardAccessNumber, target: .identityHome),
+    .init(source: .classifyingManagementIdentity, event: .classificationFailed, target: .identityHome),
 
     .init(source: .registeringBrowser, event: .registrationSucceeded, target: .identityHome),
     .init(source: .registeringBrowser, event: .registrationFailed, target: .home),
 
-    .init(source: .activation, event: .activationSucceeded, target: .home),
-    .init(source: .activation, event: .destinationDismissed, target: .home),
+    .init(source: .activationHome, event: .activationSucceeded, target: .home),
+    .init(source: .activationHome, event: .destinationDismissed, target: .home),
+    .init(source: .activationIdentity, event: .activationSucceeded, target: .identityHome),
+    .init(source: .activationIdentity, event: .destinationDismissed, target: .identityHome),
 
     .init(source: .pinManagementHome, event: .destinationDismissed, target: .home),
     .init(source: .pinManagementIdentity, event: .destinationDismissed, target: .identityHome),
@@ -120,13 +132,14 @@ internal enum CardSetupStateMachine {
 extension CardSetupStateMachine.State {
   internal var destination: CardSetupStateMachine.Destination? {
     switch self {
-    case .activation:
+    case .activationHome, .activationIdentity:
       .activation
     case .pinManagementHome, .pinManagementIdentity:
       .pinManagement
     case .documentSigningHome, .documentSigningIdentity:
       .signDocuments
-    case .home, .identityHome, .classifyingBrowser, .classifyingManagement, .registeringBrowser:
+    case .home, .identityHome, .classifyingBrowser, .classifyingManagementHome,
+      .classifyingManagementIdentity, .registeringBrowser:
       nil
     }
   }
