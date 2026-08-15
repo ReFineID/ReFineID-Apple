@@ -186,3 +186,29 @@ rather than evidence.
   often enough for a name-selected profile to be safer in practice than
   a single module with per-key policy. The argument is least privilege
   plus the explicitness of a path in a config file, not measurement.
+
+## Formal application-flow specification and model-based testing
+
+### W3C, State Chart XML (SCXML): State Machine Notation for Control Abstraction 1.0
+
+The canonical card-setup grammar uses SCXML's standard representation of explicit states, events, targets, and an initial state. A transition omitted from a state is treated by ReFineID as a rejected event rather than an implicit self-transition.
+
+- Supports: the machine-readable syntax and execution vocabulary used by `card-setup-state-machine.scxml`.
+- Does NOT prove: that ReFineID's chosen product states or card-policy decisions are correct; those remain project requirements verified by model and UI tests.
+- Source quality: normative.
+
+### Harel, Statecharts: A Visual Formalism for Complex Systems
+
+Harel's statechart work provides the formal engineering basis for representing reactive behavior as explicit states and event-driven transitions instead of timing-dependent UI branches.
+
+- Supports: the explicit event/state modeling approach and the separation of behavior from rendering.
+- Does NOT prove: protocol correctness, NFC reliability, or any ReFineID-specific transition.
+- Source quality: peer-reviewed.
+
+### Utting and Legeard, Practical Model-Based Testing
+
+The model tests apply model-based testing principles by treating the transition relation as an executable oracle, enumerating the finite State x Event space, and checking implementation parity, rejection behavior, reachability, and routing invariants.
+
+- Supports: deriving systematic tests from a behavioral model and checking implementation conformance against that model.
+- Does NOT prove: complete correctness of platform frameworks, card firmware, or UI rendering outside the modeled scenarios.
+- Source quality: industry-published.

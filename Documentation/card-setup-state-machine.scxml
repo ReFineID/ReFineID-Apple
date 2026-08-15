@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SPDX-License-Identifier: EUPL-1.2
+
+  Canonical grammar for the iOS card-setup and card-operation flow.
+  An event omitted from a state is rejected; there are no implicit
+  self-transitions and no timing-based transitions.
+-->
+<scxml xmlns="http://www.w3.org/2005/07/scxml"
+       version="1.0"
+       name="ReFineIDCardSetup"
+       initial="home">
+  <state id="home">
+    <transition event="identity.loaded" target="identityHome"/>
+    <transition event="browser.classification.start" target="classifyingBrowser"/>
+    <transition event="browser.registration.start" target="registeringBrowser"/>
+    <transition event="management.classification.start" target="classifyingManagement"/>
+    <transition event="activation.open.known" target="activation"/>
+    <transition event="management.open.verified" target="pinManagementHome"/>
+    <transition event="signing.open" target="documentSigningHome"/>
+  </state>
+
+  <state id="identityHome">
+    <transition event="identity.forgotten" target="home"/>
+    <transition event="management.open.verified" target="pinManagementIdentity"/>
+    <transition event="signing.open" target="documentSigningIdentity"/>
+  </state>
+
+  <state id="classifyingBrowser">
+    <transition event="classification.activated" target="registeringBrowser"/>
+    <transition event="classification.recovery-required" target="pinManagementHome"/>
+    <transition event="classification.activation-required" target="activation"/>
+    <transition event="classification.wrong-can" target="home"/>
+    <transition event="classification.failed" target="home"/>
+  </state>
+
+  <state id="classifyingManagement">
+    <transition event="classification.activated" target="pinManagementHome"/>
+    <transition event="classification.recovery-required" target="pinManagementHome"/>
+    <transition event="classification.activation-required" target="activation"/>
+    <transition event="classification.wrong-can" target="home"/>
+    <transition event="classification.failed" target="home"/>
+  </state>
+
+  <state id="registeringBrowser">
+    <transition event="registration.succeeded" target="identityHome"/>
+    <transition event="registration.failed" target="home"/>
+  </state>
+
+  <state id="activation">
+    <transition event="activation.succeeded" target="home"/>
+    <transition event="destination.dismissed" target="home"/>
+  </state>
+
+  <state id="pinManagementHome">
+    <transition event="destination.dismissed" target="home"/>
+  </state>
+
+  <state id="pinManagementIdentity">
+    <transition event="destination.dismissed" target="identityHome"/>
+  </state>
+
+  <state id="documentSigningHome">
+    <transition event="destination.dismissed" target="home"/>
+  </state>
+
+  <state id="documentSigningIdentity">
+    <transition event="destination.dismissed" target="identityHome"/>
+  </state>
+</scxml>
