@@ -62,6 +62,8 @@ internal final class CardCredentialsModel {
     case .connected(let connected):
       snapshot = connected
     case .wrongCardAccessNumber:
+      CardCredentialStore.forgetCardAccessNumber()
+      refresh()
       failure = String(localized: "The Card Access Number (CAN) is incorrect.")
       return .wrongCardAccessNumber
     case .failed:

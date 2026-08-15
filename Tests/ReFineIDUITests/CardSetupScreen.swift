@@ -58,7 +58,12 @@ internal enum CardSetupScreen {
       return false
     }
     field.tap()
+    field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 32))
     field.typeText(digits)
+
+    if fieldIdentifier == UITestIdentifiers.cardAccessNumberField {
+      return (field.value as? String) == digits
+    }
     return true
   }
 }

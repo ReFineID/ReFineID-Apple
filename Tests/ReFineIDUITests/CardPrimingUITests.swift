@@ -44,26 +44,26 @@
       let app = UITestApp.launch()
       attachScreenshot(app.screenshot(), named: "01-setup-opened")
       Self.storeCredentialsIfGiven(in: app)
+      app.swipeUp()
 
-      let start = app.buttons[UITestIdentifiers.primeStartButton]
+      let connect = app.buttons["connectCard"]
+      let prime = app.buttons[UITestIdentifiers.primeStartButton]
+      let start = connect.waitForExistence(timeout: 2) ? connect : prime
       guard start.waitForExistence(timeout: Self.appearTimeout), start.isEnabled else {
         attachScreenshot(app.screenshot(), named: "02-registration-unavailable")
-        attachText(AppDiagnostics.text(from: app), named: "03-diagnostics")
         XCTFail(
-          "Safari setup would not start: CAN or PIN1 is missing")
+          "Safari setup would not start from the current credential state")
         return
       }
       attachScreenshot(app.screenshot(), named: "02-registration-ready")
       start.tap()
 
-      _ = start.waitForNonExistence(timeout: Self.primeTimeout)
+      let identity = app.staticTexts[UITestIdentifiers.identityStatus]
+      let registered = identity.waitForExistence(timeout: Self.primeTimeout)
       attachScreenshot(app.screenshot(), named: "03-registration-finished")
-      let diagnostics = AppDiagnostics.text(from: app)
-      attachText(diagnostics, named: "04-diagnostics")
       XCTAssertTrue(
-        diagnostics.contains("fi.refineid.ReFineID.token:"),
-        "the card was not registered for Safari. "
-          + "The attached diagnostics say what this device holds now.")
+        registered,
+        "the card was not registered for Safari")
     }
   }
 

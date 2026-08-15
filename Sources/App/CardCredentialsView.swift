@@ -653,7 +653,6 @@ internal struct CardCredentialsView: View {
       started = transition(.startManagementClassification)
     }
     guard started else { return }
-    let preservesRegisteredIdentity = flowState == .classifyingManagementIdentity
     let entered = cardAccessNumberEntry
     activationScheme = nil
     activationNeeds = nil
@@ -717,10 +716,8 @@ internal struct CardCredentialsView: View {
         activationNeeds = needs
         transition(.classificationActivationRequired)
       case .wrongCardAccessNumber:
-        if !preservesRegisteredIdentity {
-          cardAccessNumberEntry = ""
-          isCardAccessNumberFieldFocused = true
-        }
+        cardAccessNumberEntry = ""
+        isCardAccessNumberFieldFocused = true
         clearPin1Entry()
         transition(.classificationWrongCardAccessNumber)
       case .failed:
