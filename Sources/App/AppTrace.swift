@@ -24,7 +24,7 @@
 /// and a shipped build must still be able to delete a buffer some
 /// earlier development build left on the device.
 internal enum AppTrace {
-  /// Appends one already-sanitized line to the shared trace.
+  /// Appends one complete Debug trace line to the shared trace.
   internal static func append(_ line: @autoclosure () -> String) {
     #if DEBUG
       ExtensionTrace.append(line())

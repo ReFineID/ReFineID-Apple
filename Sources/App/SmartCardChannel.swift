@@ -87,9 +87,9 @@ internal struct SmartCardChannel: CardChannel {
   ///
   /// The app's own card work -- priming, above all -- was invisible while
   /// only the extensions were traced, which meant a failed hold could be
-  /// read about afterwards but never diagnosed. Instruction byte, sizes,
-  /// status word and timing only; `VERIFY` is redacted wholesale by
-  /// ``CardExchangeTrace``, so no PIN reaches the buffer.
+  /// read about afterwards but never diagnosed. Debug records the complete
+  /// command and response through ``CardExchangeTrace``; ``AppTrace`` compiles
+  /// the entire operation away from shipped builds.
   internal func transmit(_ payload: Data) throws -> Data {
     let reply = Box<Data?>(nil)
     let semaphore = DispatchSemaphore(value: 0)

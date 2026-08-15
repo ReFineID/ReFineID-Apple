@@ -135,9 +135,9 @@ internal struct SmartCardChannel: CardChannel {
   /// This is the one place every exchange the extension makes passes
   /// through -- plain and secure-messaged alike, since the secure channel
   /// wraps this one -- so it is where the trace is taken. The recorded
-  /// line carries the instruction, the sizes, the status word and the
-  /// elapsed time, never a payload, and VERIFY is redacted wholesale
-  /// (``CardExchangeTrace``).
+  /// Debug records the complete command and response through
+  /// ``CardExchangeTrace``. ``TokenLog`` compiles the trace sink out of
+  /// shipped builds.
   internal func transmit(_ payload: Data) throws -> Data {
     let reply = Box<Data?>(nil)
     let transportError = Box<Error?>(nil)

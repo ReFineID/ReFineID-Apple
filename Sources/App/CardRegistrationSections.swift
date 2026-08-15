@@ -99,7 +99,8 @@
             markRegistered: { isRegistered = true })
         }
       } label: {
-        Text("Read Certificate from Card")
+        Label("Enable", systemImage: "person.badge.key.fill")
+          .foregroundStyle(.white)
           .frame(maxWidth: .infinity)
       }
       .buttonStyle(.borderedProminent)

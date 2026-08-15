@@ -29,16 +29,32 @@
   /// `--prime-safari --prime-auto` in the donor
   /// `platform/apple/RefineID/Local/SafariIdentityPrimeView.swift`.
   internal struct DebugSceneRunnerView: View {
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var hasStarted = false
+
     /// The mode this window was opened to run.
     internal let mode: DebugLaunchMode
 
     internal var body: some View {
       VStack {
-        ProgressView()
+        if mode == .activationProbe, !hasStarted {
+          Button("Start read-only activation probe") {
+            hasStarted = true
+            Task { await Self.run(mode) }
+          }
+          .buttonStyle(.borderedProminent)
+          .accessibilityHint("Reads card activation state without changing the card")
+        } else {
+          ProgressView()
+        }
         Text(verbatim: "ReFineID debug: " + mode.rawValue)
       }
       .padding()
-      .task { await Self.run(mode) }
+      .task(id: scenePhase) {
+        guard mode != .activationProbe, scenePhase == .active, !hasStarted else { return }
+        hasStarted = true
+        await Self.run(mode)
+      }
     }
 
     /// Runs the mode and ends the process with its status.

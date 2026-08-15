@@ -246,6 +246,9 @@ public struct CredentialBearingCommand: ~Copyable {
   /// After this call the command no longer exists; retransmission
   /// requires a fresh user entry by construction.
   public consuming func intoTransportPayload() -> Data {
-    encoded
+    #if DEBUG
+      DebugCredentialWriteCeiling.consumePermitIfEnabled()
+    #endif
+    return encoded
   }
 }

@@ -2501,22 +2501,6 @@
         }
       }
     },
-    "Read Certificate from Card": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lue varmenne kortilta"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Läs certifikat från kortet"
-          }
-        }
-      }
-    },
     "Reader": {
       "extractionState": "stale",
       "localizations": {

@@ -4,18 +4,13 @@ import Foundation
 
 /// One card exchange, as the single line a trace records it on.
 ///
-/// The line is the smallest thing that still answers the question a
-/// failed login asks: which instruction was sent, how much went each way,
-/// what the card answered, and how long the card took. Everything else
-/// about an APDU -- the data field above all -- is left out, because a
-/// trace that carried payloads would eventually carry a certificate, a
-/// serial, or a PIN block.
+/// Debug traces are deliberately complete: every command and raw response
+/// byte is present, including credential-bearing commands. This is the trace
+/// used while bringing up card protocols and comparing implementations.
 ///
-/// VERIFY is redacted wholesale. Its data field is the padded PIN block,
-/// and its length is the one thing about that block worth guessing at, so
-/// neither is written: the instruction, the status word (which carries
-/// the retry counter, and is exactly what a failed login needs) and the
-/// elapsed time, and nothing else.
+/// Non-Debug formatting remains payload-safe. Credential commands retain only
+/// their instruction, status word, and timing, while other commands retain
+/// sizes. The app and token-extension trace sinks compile out of Release.
 public enum CardExchangeTrace {
   /// Position of the instruction byte in a command APDU: CLA INS P1 P2.
   private static let instructionIndex: Int = 1
@@ -32,12 +27,6 @@ public enum CardExchangeTrace {
   /// What is printed in place of a redacted value.
   private static let redacted: String = "redacted"
 
-  /// How many leading command bytes a debug trace shows.
-  ///
-  /// Enough for the header, length and the first of the data field, which
-  /// is what distinguishes one PACE step from another.
-  private static let tracedHeadLength: Int = 12
-
   /// One exchange as a trace line.
   ///
   /// `response` is the raw transport answer including its status word, or
@@ -52,27 +41,30 @@ public enum CardExchangeTrace {
       " rx=" + (received ?? Self.unknown)
       + " sw=" + (status ?? Self.unknown)
       + " ms=" + TraceTiming.milliseconds(elapsed)
-    guard let instruction = Self.instruction(of: request) else {
-      return "apdu ins=" + Self.unknown + " tx=\(request.count)" + tail
-    }
-    let named = "apdu ins=" + String(format: Self.byteFormat, instruction)
-    guard instruction != Iso7816Values.insVerify else {
-      return named + " verify tx=" + Self.redacted + tail
-    }
+    let instruction = Self.instruction(of: request)
+    let named = "apdu ins=" + (instruction.map {
+      String(format: Self.byteFormat, $0)
+    } ?? Self.unknown)
     #if DEBUG
-      // The header and a little of the body, while the contactless path
-      // is still being brought up: an instruction byte alone cannot show
-      // that two implementations send the same command, and that
-      // comparison is the whole of the current work. SELECT, MSE and
-      // GENERAL AUTHENTICATE carry no secret -- VERIFY returned above,
-      // before reaching this line, and is the only command that does.
-      let head = request.prefix(Self.tracedHeadLength)
-        .map { String(format: Self.byteFormat, $0) }
-        .joined()
-      return named + " tx=\(request.count) head=" + head + tail
+      let rawResponse = response.map(Self.hex) ?? Self.unknown
+      return named
+        + " tx=\(request.count) request=" + Self.hex(request)
+        + " response=" + rawResponse
+        + tail
     #else
+      guard let instruction else {
+        return named + " tx=\(request.count)" + tail
+      }
+      guard !Self.isCredentialBearing(instruction) else {
+        return named + " credential tx=" + Self.redacted + tail
+      }
       return named + " tx=\(request.count)" + tail
     #endif
+  }
+
+  /// Complete uppercase hexadecimal representation of one byte string.
+  private static func hex(_ bytes: Data) -> String {
+    bytes.map { String(format: Self.byteFormat, $0) }.joined()
   }
 
   /// The instruction byte, or nil when the payload is too short to have
@@ -81,5 +73,17 @@ public enum CardExchangeTrace {
     let header = Array(request.prefix(Self.instructionIndex + 1))
     guard header.count > Self.instructionIndex else { return nil }
     return header[Self.instructionIndex]
+  }
+
+  /// Whether an instruction can carry a PIN, activation PIN, or PUK.
+  private static func isCredentialBearing(_ instruction: UInt8) -> Bool {
+    switch instruction {
+    case Iso7816Values.insVerify,
+      Iso7816Values.insChangeReferenceData,
+      Iso7816Values.insResetRetryCounter:
+      true
+    default:
+      false
+    }
   }
 }
