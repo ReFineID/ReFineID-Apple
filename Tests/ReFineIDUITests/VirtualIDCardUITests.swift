@@ -146,10 +146,10 @@
       }
     }
 
-    internal func testFactoryFreshNFCCardActivatesThroughGUI() {
-      let app = UITestApp.launchVirtualCard()
-      applyScenario("factory-fresh-nfc", in: app)
-      connect(accessNumber: "123456", in: app)
+      internal func testFactoryFreshNFCCardActivatesThroughGUI() {
+        let app = UITestApp.launchVirtualCard()
+        applyScenario("factory-fresh-nfc", in: app)
+        connect(accessNumber: "123456", pin1: "1234", in: app)
 
       fillSecure("managementActivationEntry", with: "1234567", in: app)
       fillSecure("managementActivationPin1", with: "4567", in: app)
@@ -175,8 +175,12 @@
             + "feedback=\(visibleFeedback); "
             + "PIN 1 factory=\(String(describing: pin1Factory.value)), "
             + "PIN 2 factory=\(String(describing: pin2Factory.value))")
-        return
-      }
+          return
+        }
+        XCTAssertEqual(
+          pin1.value as? String,
+          "Basic Code (PIN 1)",
+          "PIN 1 entered before factory-card classification was retained")
     }
 
     internal func testCardAccessNumberAcceptsDirectGUIInput() {
@@ -189,27 +193,31 @@
         "123456")
     }
 
-    internal func testActivatedNFCCardRevealsAuthenticationThroughGUI() {
-      let app = UITestApp.launchVirtualCard()
-      applyScenario("activated-nfc", in: app)
+      internal func testActivatedNFCCardRevealsAuthenticationThroughGUI() {
+        let app = UITestApp.launchVirtualCard()
+        applyScenario("activated-nfc", in: app)
 
-      connect(accessNumber: "123456", in: app)
+        XCTAssertTrue(
+          app.secureTextFields[UITestIdentifiers.pin1Field]
+            .waitForExistence(timeout: Self.appearTimeout),
+          "initial setup did not offer PIN 1 with CAN")
+        connect(accessNumber: "123456", pin1: "1234", in: app)
 
-      XCTAssertTrue(
-        app.secureTextFields[UITestIdentifiers.pin1Field]
-          .waitForExistence(timeout: Self.appearTimeout),
-        "activated card did not reveal PIN 1 authentication")
-      XCTAssertTrue(
+        XCTAssertTrue(
+          app.staticTexts["Identity"]
+            .waitForExistence(timeout: Self.appearTimeout),
+          "activated card did not continue directly through authentication")
+        XCTAssertTrue(
         app.buttons[UITestIdentifiers.signDocuments]
           .waitForExistence(timeout: Self.appearTimeout),
         "validated NFC card did not reveal document signing")
     }
 
-    internal func testPartialActivationRequestsOnlyPIN2ThroughGUI() {
-      let app = UITestApp.launchVirtualCard()
-      applyScenario("partial-activation-nfc", in: app)
+      internal func testPartialActivationRequestsOnlyPIN2ThroughGUI() {
+        let app = UITestApp.launchVirtualCard()
+        applyScenario("partial-activation-nfc", in: app)
 
-      connect(accessNumber: "123456", in: app)
+        connect(accessNumber: "123456", pin1: "1234", in: app)
 
       XCTAssertTrue(
         app.secureTextFields["managementActivationPin2"]
@@ -590,21 +598,25 @@
       choice.tap()
     }
 
-    private func connect(
-      accessNumber: String,
-      in app: XCUIApplication
-    ) {
-      let field = app.textFields[UITestIdentifiers.cardAccessNumberField]
-      XCTAssertTrue(field.waitForExistence(timeout: Self.appearTimeout))
-      focusAndType(field, value: accessNumber, in: app)
-      let connect = app.buttons["connectCard"]
+      private func connect(
+        accessNumber: String,
+        pin1: String,
+        in app: XCUIApplication
+      ) {
+        let field = app.textFields[UITestIdentifiers.cardAccessNumberField]
+        XCTAssertTrue(field.waitForExistence(timeout: Self.appearTimeout))
+        focusAndType(field, value: accessNumber, in: app)
+        let pin1Field = app.secureTextFields[UITestIdentifiers.pin1Field]
+        XCTAssertTrue(pin1Field.waitForExistence(timeout: Self.appearTimeout))
+        focusAndType(pin1Field, value: pin1, in: app)
+        let connect = app.buttons["connectCard"]
       let enabled = XCTNSPredicateExpectation(
         predicate: NSPredicate(format: "enabled == true"),
         object: connect)
       XCTAssertEqual(
-        XCTWaiter.wait(for: [enabled], timeout: Self.appearTimeout),
-        .completed,
-        "Connect is disabled for a complete CAN")
+          XCTWaiter.wait(for: [enabled], timeout: Self.appearTimeout),
+          .completed,
+          "Connect is disabled for complete CAN and PIN 1 entries")
       connect.tap()
     }
 

@@ -63,7 +63,7 @@ internal struct CardCredentialsView: View {
     cardAccessNumberEntry.count == CardAccessNumber.digitCount
   }
 
-  /// CAN receives initial focus only while it is the screen's sole input.
+    /// CAN receives initial focus as the first input of an unconfigured card.
   private var shouldFocusCardAccessNumber: Bool {
     !hasIdentity
       && offersNearField
@@ -398,15 +398,15 @@ internal struct CardCredentialsView: View {
   }
 
   /// One operation, in its actual order: credentials and then minting.
-  @ViewBuilder private var createIdentitySection: some View {
-    Section("Connect Identity Card Wirelessly") {
-      cardAccessNumberRow
-    }
-    if hasConfiguredCard {
-      Section("Enable authentication") {
+    @ViewBuilder private var createIdentitySection: some View {
+      Section("Connect Identity Card Wirelessly") {
+        cardAccessNumberRow
+      }
+      Section("Enable browser authentication") {
         pin1Row
       }
-      #if os(iOS)
+      if hasConfiguredCard {
+        #if os(iOS)
         // Its own section and its own visual weight: the credential rows
         // collect input, this is the screen's one primary action.
         Section {
@@ -438,10 +438,13 @@ internal struct CardCredentialsView: View {
           Text("Connect")
             .frame(maxWidth: .infinity)
         }
-        .buttonStyle(.borderedProminent)
-        .controlSize(.large)
-        .disabled(!isCardAccessNumberEntryComplete || model.isConnecting)
-        .accessibilityIdentifier("connectCard")
+          .buttonStyle(.borderedProminent)
+          .controlSize(.large)
+          .disabled(
+            !isCardAccessNumberEntryComplete
+              || !isPin1EntryComplete
+              || model.isConnecting)
+          .accessibilityIdentifier("connectCard")
       }
       .listRowBackground(Color.clear)
       .listRowInsets(EdgeInsets())
@@ -604,38 +607,53 @@ internal struct CardCredentialsView: View {
   }
 
   /// Runs the first non-mutating connection and routes from live card state.
-  private func connectIdentityCard() {
-    guard isCardAccessNumberEntryComplete, !model.isConnecting else { return }
-    let entered = cardAccessNumberEntry
-    activationScheme = nil
-    activationNeeds = nil
+    private func connectIdentityCard() {
+      guard isCardAccessNumberEntryComplete,
+        let pin1 = enteredPin1(),
+        !model.isConnecting
+      else { return }
+      let entered = cardAccessNumberEntry
+      activationScheme = nil
+      activationNeeds = nil
     isCardAccessNumberFieldFocused = false
-    Task {
-      guard let result = await model.connect(cardAccessNumber: entered) else { return }
-      guard entered == cardAccessNumberEntry else { return }
-      switch result {
-      case .activated:
-        if !isDemonstration {
-          model.forgetPin1()
-        }
-        if !isDemonstration, !model.saveCardAccessNumber(entered) {
+      Task {
+        guard let result = await model.connect(cardAccessNumber: entered) else { return }
+        guard entered == cardAccessNumberEntry, pin1 == pin1Entry else { return }
+        switch result {
+        case .activated:
+          if !isDemonstration {
+            model.forgetPin1()
+          }
+          if !isDemonstration, !model.saveCardAccessNumber(entered) {
+            cardAccessNumberEntry = ""
+            clearPin1Entry()
+            isCardAccessNumberFieldFocused = true
+            return
+          }
+          #if canImport(CoreNFC) && os(iOS)
+            await CardRegistrationSections.registerIdentity(
+              pin1: pin1,
+              model: primingModel,
+              storeVerifiedPin1: model.savePin1,
+              clearPin1Entry: clearPin1Entry,
+              markRegistered: { isRegistered = true })
+          #endif
+        case .activationRequired(let scheme, let needs):
+          if !isDemonstration {
+            model.forgetPin1()
+          }
+          clearPin1Entry()
+          activationScheme = scheme
+          activationNeeds = needs
+          destination = .activation
+        case .wrongCardAccessNumber:
           cardAccessNumberEntry = ""
+          clearPin1Entry()
           isCardAccessNumberFieldFocused = true
+        case .failed:
+          clearPin1Entry()
         }
-      case .activationRequired(let scheme, let needs):
-        if !isDemonstration {
-          model.forgetPin1()
-        }
-        activationScheme = scheme
-        activationNeeds = needs
-        destination = .activation
-      case .wrongCardAccessNumber:
-        cardAccessNumberEntry = ""
-        isCardAccessNumberFieldFocused = true
-      case .failed:
-        break
       }
-    }
   }
 
   /// Activation succeeded on the card; only now is its CAN persistent.

@@ -62,6 +62,28 @@
     /// happened when it was.
     internal let model: CardPrimingModel
 
+    /// Runs the one credential-registration path used by both initial setup
+    /// and the later explicit certificate-read action.
+    ///
+    /// PIN1 remains transient until the card accepts it and Safari identity
+    /// publication succeeds. Every outcome clears the entered value.
+    @MainActor
+    internal static func registerIdentity(
+      pin1: String,
+      model: CardPrimingModel,
+      storeVerifiedPin1: @MainActor (String) -> Bool,
+      clearPin1Entry: @MainActor () -> Void,
+      markRegistered: @MainActor () -> Void
+    ) async {
+      defer { clearPin1Entry() }
+      await model.prime(pin1: pin1)
+      if case .succeeded = model.lastRunResult,
+        storeVerifiedPin1(pin1)
+      {
+        markRegistered()
+      }
+    }
+
     internal var body: some View {
       // The one primary action of the screen, so it is the one filled,
       // full-width control: the credential rows above collect, this
@@ -69,13 +91,12 @@
       Button {
         Task { @MainActor in
           guard let pin1 = enteredPin1() else { return }
-          defer { clearPin1Entry() }
-          await model.prime(pin1: pin1)
-          if case .succeeded = model.lastRunResult,
-            storeVerifiedPin1(pin1)
-          {
-            isRegistered = true
-          }
+          await Self.registerIdentity(
+            pin1: pin1,
+            model: model,
+            storeVerifiedPin1: storeVerifiedPin1,
+            clearPin1Entry: clearPin1Entry,
+            markRegistered: { isRegistered = true })
         }
       } label: {
         Text("Read Certificate from Card")

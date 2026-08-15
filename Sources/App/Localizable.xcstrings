@@ -1789,18 +1789,18 @@
         }
       }
     },
-    "Enable authentication": {
+    "Enable browser authentication": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ota tunnistautuminen käyttöön"
+            "value": "Ota selaintunnistautuminen käyttöön"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aktivera identifiering"
+            "value": "Aktivera autentisering i webbläsaren"
           }
         }
       }
