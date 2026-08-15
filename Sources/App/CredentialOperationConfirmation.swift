@@ -154,20 +154,20 @@ internal struct CredentialOperationConfirmation: ViewModifier {
         Text(verbatim: ""),
         isPresented: Binding(
           get: { pending != nil },
-          set: { shown in
-            if !shown, let operation = pending {
-              pending = nil
-              reject(operation)
-            }
-          }
+          // UIKit writes false before dispatching the selected alert action.
+          // Clearing `pending` here invalidates `presenting:` before either
+          // button closure can run. Alerts have explicit Confirm and Cancel
+          // actions, and those are the sole owners of this state transition.
+          set: { _ in }
         ),
         presenting: pending
       ) { operation in
         Button(Self.actionTitle(of: operation)) {
-          pending = nil
           confirm(operation)
+          pending = nil
         }
         .accessibilityIdentifier("managementConfirm")
+        .keyboardShortcut(.defaultAction)
         Button("Cancel", role: .cancel) {
           pending = nil
           reject(operation)

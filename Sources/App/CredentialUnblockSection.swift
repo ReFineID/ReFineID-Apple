@@ -98,6 +98,7 @@ internal struct CredentialUnblockSection: View {
 
   private var resetButton: some View {
     Button {
+      focus = nil
       pending = .unblock(target)
     } label: {
       Text("Reset \(targetName)")
@@ -185,6 +186,7 @@ internal struct CredentialUnblockSection: View {
       // Return on the last field asks the same question the button
       // asks; the PUK is the one counter that cannot be restored.
       if isComplete {
+        focus = nil
         pending = .unblock(target)
       }
     }

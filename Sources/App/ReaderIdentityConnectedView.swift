@@ -54,22 +54,44 @@
           readerCardIsPresent: true,
           activationRequired: true
         )
-      } else if holders.isEmpty {
-        Text(message)
-          .font(.title2.weight(.semibold))
-          .multilineTextAlignment(.center)
-          .padding(Self.messagePadding)
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
       } else {
         Form {
-          Section("Identity") {
-            ForEach(holders, id: \.self) { holder in
-              LabeledContent("Person") {
-                Text(holder)
-                  .textSelection(.enabled)
-                  .accessibilityIdentifier("readerCardHolder")
+          if holders.isEmpty {
+            Section("Identity") {
+              Text(message)
+                .font(.title2.weight(.semibold))
+                .multilineTextAlignment(.center)
+                .padding(Self.messagePadding)
+                .frame(maxWidth: .infinity)
+            }
+          } else {
+            Section("Identity") {
+              ForEach(holders, id: \.self) { holder in
+                LabeledContent("Person") {
+                  Text(holder)
+                    .textSelection(.enabled)
+                    .accessibilityIdentifier("readerCardHolder")
+                }
               }
             }
+          }
+          Section(
+            String(
+              localized: "signing.section",
+              defaultValue: "Documents",
+              table: "DocumentSigning")
+          ) {
+            NavigationLink {
+              DocumentSigningView(transport: .reader, cardAccessNumber: nil)
+            } label: {
+              Label(
+                String(
+                  localized: "signing.open",
+                  defaultValue: "Sign documents",
+                  table: "DocumentSigning"),
+                systemImage: "signature")
+            }
+            .accessibilityIdentifier("signDocuments")
           }
         }
       }

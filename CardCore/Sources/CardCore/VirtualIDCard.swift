@@ -315,6 +315,8 @@ public actor VirtualIDCard {
     case responseLostAfterPIN2Activation
     case certificateReadFailure
     case tokenPublicationFailure
+    case cardRemovedDuringSignature
+    case responseLostAfterSignature
 
     public var id: Self { self }
 
@@ -365,6 +367,20 @@ public actor VirtualIDCard {
             operation: .authenticate,
             phase: .afterCardExecution,
             effect: .tokenNotPublished)
+        ]
+      case .cardRemovedDuringSignature:
+        [
+          Fault(
+            operation: .qualifiedSignature,
+            phase: .beforeCommand,
+            effect: .cardRemoved)
+        ]
+      case .responseLostAfterSignature:
+        [
+          Fault(
+            operation: .qualifiedSignature,
+            phase: .afterCardExecution,
+            effect: .connectionLost)
         ]
       }
     }
@@ -450,6 +466,17 @@ public actor VirtualIDCard {
     case refusedLowAttempts(remaining: UInt8)
     case certificateUnavailable
     case tokenPublicationFailed(Snapshot)
+    case transportFailure(FaultEffect)
+  }
+
+  /// The card boundary exercised by a qualified document signature.
+  public enum SignatureResult: Equatable, Sendable {
+    case success
+    case invalidEntry
+    case blocked
+    case rejected(remaining: UInt8)
+    case refusedLowAttempts(remaining: UInt8)
+    case certificateUnavailable
     case transportFailure(FaultEffect)
   }
 
@@ -678,6 +705,55 @@ public actor VirtualIDCard {
     current.device.cachedIdentity = true
     current.device.tokenRegistered = true
     return .success(current)
+  }
+
+  /// Authorizes one virtual qualified signature with the same retry floor
+  /// and state transitions as the physical card boundary.
+  public func authorizeQualifiedSignature(pin2: String) -> SignatureResult {
+    current.device.pendingSigningRequest = true
+    guard credentialIsValid(pin2, for: .pin2) else {
+      return finishSignature(.invalidEntry)
+    }
+    if let failure = operationFailure() {
+      return finishSignature(.transportFailure(failure))
+    }
+    if let fault = consumeFault(
+      for: .qualifiedSignature,
+      phase: .beforeCommand)
+    {
+      return finishSignature(.transportFailure(fault))
+    }
+    guard current.card.signatureCertificate == .valid else {
+      return finishSignature(.certificateUnavailable)
+    }
+    switch current.card.pin2.attemptsRemaining {
+    case 0:
+      return finishSignature(.blocked)
+    case 1, 2:
+      return finishSignature(
+        .refusedLowAttempts(remaining: current.card.pin2.attemptsRemaining))
+    default:
+      break
+    }
+    if pin2 != current.card.pin2.value {
+      current.card.pin2.attemptsRemaining -= 1
+      let remaining = current.card.pin2.attemptsRemaining
+      return finishSignature(
+        remaining == 0 ? .blocked : .rejected(remaining: remaining))
+    }
+    current.card.pin2.attemptsRemaining = RetryCount.pristineAllowance
+    if let fault = consumeFault(
+      for: .qualifiedSignature,
+      phase: .afterCardExecution)
+    {
+      return finishSignature(.transportFailure(fault))
+    }
+    return finishSignature(.success)
+  }
+
+  private func finishSignature(_ result: SignatureResult) -> SignatureResult {
+    current.device.pendingSigningRequest = false
+    return result
   }
 
   private var activationRequired: Bool {

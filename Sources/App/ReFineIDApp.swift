@@ -29,6 +29,7 @@ internal struct ReFineIDApp: App {
     /// in ``DemoModeShortcut``.
     @UIApplicationDelegateAdaptor(DemoModeAppDelegate.self)
     private var demoModeDelegate
+    @State private var showsVirtualCardEditor = false
   #endif
 
   internal var body: some Scene {
@@ -110,12 +111,32 @@ internal struct ReFineIDApp: App {
     #if os(macOS)
       StatusView()
     #else
-      ReaderIdentityRootView()
-        .overlay(alignment: .bottomTrailing) {
+      ZStack(alignment: .bottomTrailing) {
+        ReaderIdentityRootView()
+          .accessibilityHidden(showsVirtualCardEditor)
+          .allowsHitTesting(!showsVirtualCardEditor)
+        if showsVirtualCardEditor {
+          VirtualIDCardEditor(demoMode: DemoMode.shared) {
+            showsVirtualCardEditor = false
+            DemoMode.shared.setEditorPresented(false)
+            NotificationCenter.default.post(
+              name: .virtualIDCardEditorDidDismiss,
+              object: nil)
+          }
+          .zIndex(2)
+        } else {
           if DemoMode.shared.isActive {
-            VirtualIDCardOverlay()
+            VirtualIDCardOverlay {
+              DemoMode.shared.setEditorPresented(true)
+              showsVirtualCardEditor = true
+            }
+              // Keep the overlay's hit-test surface on the floating control;
+              // the parent overlay otherwise accepts the root view's full
+              // proposal and can shield the product UI underneath it.
+              .fixedSize()
           }
         }
+      }
     #endif
   }
 

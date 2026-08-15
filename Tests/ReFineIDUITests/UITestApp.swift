@@ -52,7 +52,10 @@ internal enum UITestApp {
     arguments: [String]
   ) -> XCUIApplication {
     let app = XCUIApplication()
-    app.launchArguments += ["-AppleLanguages", "(\(language))"] + arguments
+    app.launchArguments += [
+      "-AppleLanguages", "(\(language))",
+      "--ui-test-disable-motion",
+    ] + arguments
     app.launch()
     return app
   }

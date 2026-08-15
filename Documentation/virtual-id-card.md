@@ -72,6 +72,7 @@ VirtualIDCard implements the operations currently exposed by iOS:
 - PIN 1 and PIN 2 reset with PUK.
 - Independent PIN 1 and PIN 2 activation.
 - Authentication-certificate setup with PIN 1.
+- Qualified document-signature authorization with PIN 2.
 
 The retry-floor policy is shared in behavior with the product:
 
@@ -111,6 +112,8 @@ cover:
 - Lost reply after PIN 2 activation.
 - Certificate read failure.
 - Token publication failure.
+- Card removal before a qualified signature command.
+- Lost reply after the card authorizes a qualified signature.
 
 Tests use named deterministic presets. Random faults are not accepted in the
 required suite because an unreproducible failure is not a useful release gate.
@@ -139,8 +142,12 @@ Tests/ReFineIDUITests/VirtualIDCardUITests.swift enters an empty virtual mode,
 opens the floating card, and configures scenarios, faults, credentials, and
 retry counters through the visible editor. It then drives the production UI
 through activation, authentication, every PIN change/reset operation, reader
-identity, and recovery routing. Launch arguments enter virtual mode only; they
-do not inject the finished state used by these journeys.
+identity, qualified document signing, and recovery routing. The signing matrix
+covers success, malformed PIN 2 input, wrong PIN 2 with one-attempt
+consumption, the retry floor, every unavailable signature-certificate state,
+card removal before authorization, and a lost reply after authorization.
+Launch arguments enter virtual mode only; they do not inject the finished state
+used by these journeys.
 
 Every named scenario and fault preset is selected through the GUI. Exhaustive
 counter and fault-phase combinations remain in CardCore because repeating the
@@ -175,20 +182,25 @@ transport behavior and real APDU compatibility, which a virtual card cannot
 prove. They are not a pull-request prerequisite and never use repository
 credentials.
 
-### Deferred adapter
+### Extension boundary
 
-The model reserves authentication-signature, qualified-signature, certificate,
-and pending-signing operations. Browser and CryptoTokenKit extension
-virtualization is not yet wired end to end. Until that adapter exists, the
-framework must not claim to test Safari signing or token-extension lifecycle.
+The app's qualified document-signing journey is wired end to end through the
+same document signer, retry policy, outcome model, and SwiftUI screens as a real
+card. Only the physical transport and cryptographic result are simulated; demo
+mode never fabricates a file that could be mistaken for a genuine card
+signature. Browser and CryptoTokenKit extension virtualization remains outside
+this harness, so it does not claim to test Safari signing or the token-extension
+lifecycle.
 
 ## App Store demonstration
 
 The Demonstration quick action starts a factory-fresh NFC card. A red floating
 Virtual ID Card control opens the editor. Reviewers can select named states,
 edit all UI-relevant card and device values, choose one deterministic fault,
-and apply it. The permanent DEMO MODE footer prevents fictional identity data
-from being mistaken for a real card result.
+and apply it. A pending document-signing request supplies a fictional local PDF
+so reviewers can exercise the complete signing UI without the Files picker.
+The permanent DEMO MODE footer prevents fictional identity data or signing
+outcomes from being mistaken for a real card result.
 
 ## Xcode Cloud
 

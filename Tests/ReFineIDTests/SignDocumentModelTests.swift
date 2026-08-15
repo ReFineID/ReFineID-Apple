@@ -48,8 +48,14 @@ internal struct SignDocumentModelTests {
       for: DocumentSigner.Failure.validation(EvidenceFailure.unavailable)
     )
 
-    #expect(message.contains("authenticated certificate and revocation"))
-    #expect(message.contains("No signed file was written"))
+    #expect(
+      message == String(
+        localized: "error.validation",
+        defaultValue:
+          "Authenticated certificate and revocation evidence could not be collected.",
+        table: "DocumentSigning"
+      )
+    )
   }
 
   @Test
@@ -245,7 +251,12 @@ internal struct SignDocumentModelTests {
       for: DocumentSigner.Failure.stampSignerChanged
     )
 
-    #expect(message.contains("not the card read for the stamp"))
-    #expect(message.contains("No signed file was written"))
+    #expect(
+      message == String(
+        localized: "error.cardChanged",
+        defaultValue: "The signing card changed. Nothing was written.",
+        table: "DocumentSigning"
+      )
+    )
   }
 }

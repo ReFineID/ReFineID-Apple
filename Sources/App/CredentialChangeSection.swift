@@ -138,6 +138,7 @@ internal struct CredentialChangeSection: View {
 
   private var changeButton: some View {
     Button {
+      focus = nil
       pending = .change(role)
     } label: {
       Text("Change \(credential.name)")
@@ -228,6 +229,7 @@ internal struct CredentialChangeSection: View {
       // asks; a keyboard path that skipped it would be the fastest
       // way to spend the wrong counter.
       if isComplete {
+        focus = nil
         pending = .change(role)
       }
     }

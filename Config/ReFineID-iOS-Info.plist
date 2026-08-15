@@ -4,12 +4,13 @@
 <dict>
 	<!-- iOS only; the macOS build uses ReFineID-Info.plist.
 
-	     There is deliberately no NSAppTransportSecurity key here.
-	     The plain-HTTP fetching the macOS plist must allow - RFC 3161
-	     timestamping, RFC 6960 OCSP - is compiled for macOS alone,
-	     so the iOS binary makes no network request and declares no
-	     ATS exception. If iOS ever gains a network path, the
-	     exception must be argued again, not inherited. -->
+	     Document signing follows certificate-declared RFC 3161, OCSP,
+	     and CRL endpoints. Some public PKI endpoints still use HTTP,
+	     so ATS permits those fetches. SigningNetwork remains the
+	     enforcement boundary: it accepts only HTTP(S), rejects local
+	     and private destinations, pins resolved public addresses,
+	     bounds redirects and response sizes, and cryptographically
+	     verifies every fetched artifact before use. -->
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>en</string>
@@ -19,7 +20,12 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NFCReaderUsageDescription</key>
-	<string>ReFineID reads your identity card over NFC for authentication, activation, and PIN management.</string>
+	<string>ReFineID reads your identity card over NFC for authentication, document signing, activation, and PIN management.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>ReFineID reads the access number printed on your card so you do not have to type it.</string>
 	<!-- Press and hold the icon to run the setup flow against a test

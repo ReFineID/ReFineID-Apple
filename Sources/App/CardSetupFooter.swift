@@ -30,11 +30,10 @@ internal struct CardSetupFooter: View {
   /// it. No symbol beside it -- the bar is the signal, and a small
   /// picture next to shouted text only makes the text smaller.
   ///
-  /// White on red rather than green on red. Red and green are the pair
-  /// most colour-blind readers cannot separate, and green on red carries
-  /// about 2.9:1 of contrast where 4.5:1 is the floor; white on the
-  /// system red clears it at this weight, and clears it again in the
-  /// dark and increased-contrast palettes the system substitutes.
+  /// White on a dark red rather than green on red. Red and green are the
+  /// pair most colour-blind readers cannot separate, while the darker red
+  /// keeps the standing warning above the text contrast floor in every
+  /// appearance without relying on colour as its only signal.
   @ViewBuilder private var demonstration: some View {
     #if os(iOS)
       Text("DEMO MODE")
@@ -43,7 +42,9 @@ internal struct CardSetupFooter: View {
         .accessibilityIdentifier("demoModeNotice")
         .padding(.vertical, Self.padding)
         .frame(maxWidth: .infinity)
-        .background(Color.red, ignoresSafeAreaEdges: .bottom)
+        .background(
+          Color(red: 0.68, green: 0.04, blue: 0.04),
+          ignoresSafeAreaEdges: .bottom)
     #endif
   }
 

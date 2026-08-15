@@ -22,10 +22,15 @@
     internal private(set) var state =
       VirtualIDCard.Scenario.factoryFreshNearField.snapshot
     internal private(set) var revision = 0
+    internal private(set) var isEditorPresented = false
 
     private var card = VirtualIDCard(scenario: .factoryFreshNearField)
 
     internal var isHolding: Bool { false }
+
+    internal func setEditorPresented(_ presented: Bool) {
+      isEditorPresented = presented
+    }
 
     internal var hasIdentity: Bool {
       state.device.cachedIdentity && state.device.tokenRegistered
@@ -208,6 +213,14 @@
       pin1: String
     ) async -> VirtualIDCard.AuthenticationResult {
       let result = await card.authenticate(pin1: pin1)
+      _ = await synchronizeFromCard()
+      return result
+    }
+
+    internal func authorizeQualifiedSignature(
+      pin2: String
+    ) async -> VirtualIDCard.SignatureResult {
+      let result = await card.authorizeQualifiedSignature(pin2: pin2)
       _ = await synchronizeFromCard()
       return result
     }

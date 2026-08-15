@@ -93,6 +93,12 @@ internal enum SignOids {
   /// id-RSASSA-PSS (RFC 8017 appendix A.4.3).
   internal static let rsaPss = "1.2.840.113549.1.1.10"
 
+  /// rsaEncryption (RFC 8017 appendix A.2.1).
+  internal static let rsaEncryption = "1.2.840.113549.1.1.1"
+
+  /// id-mgf1 (RFC 8017 appendix A.2.1).
+  internal static let maskGenerationFunction1 = "1.2.840.113549.1.1.8"
+
   /// SHA-1, the OCSP CertID hash (RFC 6960 mandates support).
   internal static let sha1 = "1.3.14.3.2.26"
 
@@ -122,6 +128,9 @@ internal enum SignOids {
 
   /// id-ce-keyUsage (RFC 5280 §4.2.1.3).
   internal static let keyUsage = "2.5.29.15"
+
+  /// id-ce-subjectKeyIdentifier (RFC 5280 §4.2.1.2).
+  internal static let subjectKeyIdentifier = "2.5.29.14"
 
   /// X.509 subjectAltName extension.
   internal static let subjectAltName = "2.5.29.17"

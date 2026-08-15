@@ -72,6 +72,8 @@
         "responseLostAfterPIN2Activation",
         "certificateReadFailure",
         "tokenPublicationFailure",
+        "cardRemovedDuringSignature",
+        "responseLostAfterSignature",
       ]
       let app = UITestApp.launchVirtualCard()
 
@@ -95,7 +97,15 @@
       XCTAssertFalse((overlay.value as? String ?? "").isEmpty)
 
       openEditor(in: app)
-      try app.performAccessibilityAudit()
+      try app.performAccessibilityAudit { issue in
+        XCTFail(
+          """
+          \(issue.compactDescription)
+          \(issue.detailedDescription)
+          Element: \(String(describing: issue.element))
+          """)
+        return true
+      }
     }
 
     internal func testVirtualCardEditorIsLocalizedAndAccessible() {
@@ -148,10 +158,35 @@
       fillSecure("managementActivationPin2Repeat", with: "654321", in: app)
       commit(action: UITestIdentifiers.managementActivate, in: app)
 
-      XCTAssertTrue(
-        app.secureTextFields[UITestIdentifiers.pin1Field]
-          .waitForExistence(timeout: Self.appearTimeout),
-        "successful activation did not reveal authentication")
+      let pin1 = app.secureTextFields[UITestIdentifiers.pin1Field]
+      guard pin1.waitForExistence(timeout: Self.appearTimeout) else {
+        let visibleFeedback = app.staticTexts.allElementsBoundByIndex
+          .map(\.label)
+          .filter { !$0.isEmpty }
+          .joined(separator: " | ")
+        openEditor(in: app)
+        let pin1Factory = app.switches["virtualCardPIN1Factory"]
+        let pin2Factory = app.switches["virtualCardPIN2Factory"]
+        scrollTo(pin1Factory, in: app)
+        XCTAssertTrue(pin1Factory.waitForExistence(timeout: Self.appearTimeout))
+        XCTAssertTrue(pin2Factory.waitForExistence(timeout: Self.appearTimeout))
+        XCTFail(
+          "successful activation did not reveal authentication; "
+            + "feedback=\(visibleFeedback); "
+            + "PIN 1 factory=\(String(describing: pin1Factory.value)), "
+            + "PIN 2 factory=\(String(describing: pin2Factory.value))")
+        return
+      }
+    }
+
+    internal func testCardAccessNumberAcceptsDirectGUIInput() {
+      let app = UITestApp.launchVirtualCard()
+      let field = app.textFields[UITestIdentifiers.cardAccessNumberField]
+      XCTAssertTrue(field.waitForExistence(timeout: Self.appearTimeout))
+      focusAndType(field, value: "123456", in: app)
+      XCTAssertEqual(
+        app.textFields[UITestIdentifiers.cardAccessNumberField].value as? String,
+        "123456")
     }
 
     internal func testActivatedNFCCardRevealsAuthenticationThroughGUI() {
@@ -264,6 +299,101 @@
         "a PIN 1 retry floor did not select PIN 1 recovery")
     }
 
+    internal func testQualifiedDocumentSigningSucceedsThroughGUI() {
+      let app = signingApp()
+
+      fillSecure(UITestIdentifiers.signingPIN2, with: "123456", in: app)
+      app.buttons[UITestIdentifiers.signingCommit].tap()
+
+      XCTAssertTrue(
+        app.descendants(matching: .any)[UITestIdentifiers.signingSuccess]
+          .waitForExistence(timeout: Self.appearTimeout),
+        "virtual document signing did not reach its completed state")
+    }
+
+    internal func testWrongSignaturePINConsumesOneAttemptThroughGUI() {
+      let app = signingApp()
+
+      fillSecure(UITestIdentifiers.signingPIN2, with: "000000", in: app)
+      app.buttons[UITestIdentifiers.signingCommit].tap()
+      assertSigningMessage(contains: "PIN 2 is incorrect", in: app)
+      assertPIN2Attempts(4, in: app)
+    }
+
+    internal func testSignatureRetryFloorIsEnforcedThroughGUI() {
+      let app = signingApp(pin2Attempts: 2)
+
+      fillSecure(UITestIdentifiers.signingPIN2, with: "123456", in: app)
+      app.buttons[UITestIdentifiers.signingCommit].tap()
+      assertSigningMessage(contains: "Operation refused", in: app)
+      assertPIN2Attempts(2, in: app)
+    }
+
+    internal func testMissingSignatureCertificateFailsThroughGUI() {
+      let app = signingApp(signatureCertificate: "missing")
+
+      fillSecure(UITestIdentifiers.signingPIN2, with: "123456", in: app)
+      app.buttons[UITestIdentifiers.signingCommit].tap()
+      assertSigningMessage(contains: "certificate is unavailable", in: app)
+      assertPIN2Attempts(5, in: app)
+    }
+
+    internal func testCardRemovalBeforeSignatureDoesNotSpendAttempt() {
+      let app = signingApp(fault: "cardRemovedDuringSignature")
+
+      fillSecure(UITestIdentifiers.signingPIN2, with: "123456", in: app)
+      app.buttons[UITestIdentifiers.signingCommit].tap()
+      assertSigningMessage(contains: "connection was lost", in: app)
+      assertPIN2Attempts(5, in: app)
+    }
+
+    internal func testLostResponseAfterSignaturePreservesCardExecution() {
+      let app = signingApp(
+        pin2Attempts: 4,
+        fault: "responseLostAfterSignature")
+
+      fillSecure(UITestIdentifiers.signingPIN2, with: "123456", in: app)
+      app.buttons[UITestIdentifiers.signingCommit].tap()
+      assertSigningMessage(contains: "connection was lost", in: app)
+      assertPIN2Attempts(5, in: app)
+    }
+
+    internal func testSigningScreenIsLocalizedInFinnishAndSwedish() {
+      let expectations = [
+        (
+          language: "fi",
+          labels: ["Allekirjoitustapa", "Yksittäin (PDF)", "Pakettina (ASiC-E)"]
+        ),
+        (
+          language: "sv",
+          labels: ["Signeringssätt", "Separat (PDF)", "Som paket (ASiC-E)"]
+        ),
+      ]
+      for expectation in expectations {
+        let app = UITestApp.launch(
+          language: expectation.language,
+          arguments: ["--virtual-card", "absent"])
+        configureSigningCard(in: app)
+        openSigning(in: app)
+
+        let commit = app.buttons[UITestIdentifiers.signingCommit]
+        XCTAssertTrue(commit.waitForExistence(timeout: Self.appearTimeout))
+        XCTAssertFalse(commit.label.isEmpty)
+        XCTAssertNotEqual(
+          commit.label,
+          "Sign documents",
+          "signing action remained English in \(expectation.language)")
+        for label in expectation.labels {
+          XCTAssertTrue(
+            app.descendants(matching: .any)
+              .matching(NSPredicate(format: "label == %@", label))
+              .firstMatch.waitForExistence(timeout: Self.appearTimeout),
+            "missing \(expectation.language) signing label: \(label)")
+        }
+        app.terminate()
+      }
+    }
+
     private func assertDestination(
       _ destination: Destination,
       scenario: String,
@@ -298,6 +428,104 @@
       applyEditor(in: app)
     }
 
+    private func signingApp(
+      pin2Attempts: Int = 5,
+      signatureCertificate: String? = nil,
+      fault: String? = nil
+    ) -> XCUIApplication {
+      let app = UITestApp.launchVirtualCard()
+      configureSigningCard(
+        pin2Attempts: pin2Attempts,
+        signatureCertificate: signatureCertificate,
+        fault: fault,
+        in: app)
+      openSigning(in: app)
+      return app
+    }
+
+    private func configureSigningCard(
+      pin2Attempts: Int = 5,
+      signatureCertificate: String? = nil,
+      fault: String? = nil,
+      in app: XCUIApplication
+    ) {
+      openEditor(in: app)
+      selectMenu(
+        identifier: UITestIdentifiers.virtualCardScenario,
+        option: "activated-reader",
+        optionIdentifier: "virtualCardScenarioOption.activated-reader",
+        in: app)
+
+      if pin2Attempts != 5 {
+        let stepper = app.steppers[UITestIdentifiers.virtualCardPIN2Attempts]
+        scrollTo(stepper, in: app)
+        XCTAssertTrue(stepper.waitForExistence(timeout: Self.appearTimeout))
+        for _ in pin2Attempts..<5 { stepper.buttons.firstMatch.tap() }
+      }
+
+      if let signatureCertificate {
+        selectMenu(
+          identifier: "virtualCardSignatureCertificate",
+          option: signatureCertificate,
+          optionIdentifier:
+            "virtualCardCertificateOption.\(signatureCertificate)",
+          in: app,
+          scrolling: true)
+      }
+
+      let pending = app.buttons["virtualCardSigningPending"]
+      scrollTo(pending, in: app)
+      XCTAssertTrue(pending.waitForExistence(timeout: Self.appearTimeout))
+      pending.tap()
+
+      if let fault {
+        selectMenu(
+          identifier: UITestIdentifiers.virtualCardFault,
+          option: fault,
+          optionIdentifier: "virtualCardFaultOption.\(fault)",
+          in: app,
+          scrolling: true)
+      }
+      applyEditor(in: app)
+    }
+
+    private func openSigning(in app: XCUIApplication) {
+      let link = app.buttons[UITestIdentifiers.signDocuments]
+      XCTAssertTrue(link.waitForExistence(timeout: Self.appearTimeout))
+      link.tap()
+      XCTAssertTrue(
+        app.secureTextFields[UITestIdentifiers.signingPIN2]
+          .waitForExistence(timeout: Self.appearTimeout),
+        "pending virtual document was not prepared")
+    }
+
+    private func assertSigningMessage(
+      contains expected: String,
+      in app: XCUIApplication
+    ) {
+      let message = app.descendants(matching: .any)[
+        UITestIdentifiers.signingMessage
+      ]
+      XCTAssertTrue(message.waitForExistence(timeout: Self.appearTimeout))
+      XCTAssertTrue(
+        message.label.localizedCaseInsensitiveContains(expected),
+        "unexpected signing feedback: \(message.label)")
+    }
+
+    private func assertPIN2Attempts(
+      _ expected: Int,
+      in app: XCUIApplication
+    ) {
+      openEditor(in: app)
+      let stepper = app.steppers[UITestIdentifiers.virtualCardPIN2Attempts]
+      scrollTo(stepper, in: app)
+      XCTAssertTrue(stepper.waitForExistence(timeout: Self.appearTimeout))
+      XCTAssertTrue(
+        (stepper.value as? String ?? "").contains("\(expected)"),
+        "PIN 2 counter is \(stepper.value ?? "missing"), expected \(expected)")
+      app.buttons[UITestIdentifiers.virtualCardApply].tap()
+    }
+
     private func openEditor(in app: XCUIApplication) {
       let overlay = app.buttons[UITestIdentifiers.virtualCardOverlay]
       XCTAssertTrue(
@@ -314,10 +542,24 @@
       let apply = app.buttons[UITestIdentifiers.virtualCardApply]
       XCTAssertTrue(apply.waitForExistence(timeout: Self.appearTimeout))
       apply.tap()
-      XCTAssertTrue(
-        app.buttons[UITestIdentifiers.virtualCardOverlay]
-          .waitForExistence(timeout: Self.appearTimeout),
+      let editor = app.descendants(matching: .any)[
+        UITestIdentifiers.virtualCardEditor
+      ]
+      let editorDismissed = XCTNSPredicateExpectation(
+        predicate: NSPredicate(format: "exists == false"),
+        object: editor)
+      XCTAssertEqual(
+        XCTWaiter.wait(for: [editorDismissed], timeout: Self.appearTimeout),
+        .completed,
         "Virtual ID Card editor did not close")
+      let overlay = app.buttons[UITestIdentifiers.virtualCardOverlay]
+      let overlayReady = XCTNSPredicateExpectation(
+        predicate: NSPredicate(format: "exists == true AND hittable == true"),
+        object: overlay)
+      XCTAssertTrue(
+        XCTWaiter.wait(for: [overlayReady], timeout: Self.appearTimeout)
+          == .completed,
+        "floating Virtual ID Card did not become ready")
     }
 
     private func selectMenu(
@@ -350,10 +592,15 @@
     ) {
       let field = app.textFields[UITestIdentifiers.cardAccessNumberField]
       XCTAssertTrue(field.waitForExistence(timeout: Self.appearTimeout))
-      field.tap()
-      field.typeText(accessNumber)
+      focusAndType(field, value: accessNumber, in: app)
       let connect = app.buttons["connectCard"]
-      XCTAssertTrue(connect.isEnabled, "Connect is disabled for a complete CAN")
+      let enabled = XCTNSPredicateExpectation(
+        predicate: NSPredicate(format: "enabled == true"),
+        object: connect)
+      XCTAssertEqual(
+        XCTWaiter.wait(for: [enabled], timeout: Self.appearTimeout),
+        .completed,
+        "Connect is disabled for a complete CAN")
       connect.tap()
     }
 
@@ -375,7 +622,34 @@
       XCTAssertTrue(
         field.waitForExistence(timeout: Self.appearTimeout),
         "\(identifier) field is missing")
+      focusAndType(field, value: value, in: app)
+    }
+
+    private func focusAndType(
+      _ field: XCUIElement,
+      value: String,
+      in app: XCUIApplication
+    ) {
+      let ready = XCTNSPredicateExpectation(
+        predicate: NSPredicate(format: "exists == true AND hittable == true"),
+        object: field)
+      XCTAssertEqual(
+        XCTWaiter.wait(for: [ready], timeout: Self.appearTimeout),
+        .completed,
+        "\(field.identifier) did not become ready for input")
+      app.activate()
       field.tap()
+      let keyboard = app.keyboards.firstMatch
+      XCTAssertTrue(
+        keyboard.waitForExistence(timeout: Self.appearTimeout),
+        "The numeric keyboard did not appear for \(field.identifier)")
+      let focused = XCTNSPredicateExpectation(
+        predicate: NSPredicate(format: "hasKeyboardFocus == true"),
+        object: field)
+      XCTAssertEqual(
+        XCTWaiter.wait(for: [focused], timeout: Self.appearTimeout),
+        .completed,
+        "\(field.identifier) did not receive keyboard focus")
       field.typeText(value)
     }
 
@@ -384,11 +658,66 @@
       scrollTo(action, in: app)
       XCTAssertTrue(action.isEnabled, "\(identifier) is disabled")
       action.tap()
-      let confirm = app.buttons
+      // iOS exposes nested outer and inner button nodes for each centered
+      // alert action. Optimized element queries miss these nodes on iOS 26,
+      // while a full accessibility snapshot materializes both identifiers.
+      // Tapping waits for application quiescence, so this is an event barrier,
+      // not a timing delay.
+      let hierarchy = app.debugDescription
+      let snapshot = XCTAttachment(string: hierarchy)
+      snapshot.name = "Confirmation accessibility snapshot"
+      snapshot.lifetime = .deleteOnSuccess
+      add(snapshot)
+      guard let center = accessibilityFrameCenter(
+        of: UITestIdentifiers.managementConfirm,
+        in: hierarchy
+      ) else {
+        XCTFail("\(identifier) did not present its confirmation")
+        return
+      }
+      let semanticConfirm = app.descendants(matching: .any)
         .matching(identifier: UITestIdentifiers.managementConfirm)
         .firstMatch
-      XCTAssertTrue(confirm.waitForExistence(timeout: Self.appearTimeout))
-      confirm.tap()
+      if semanticConfirm.exists {
+        semanticConfirm.tap()
+        return
+      }
+      app.coordinate(withNormalizedOffset: .zero)
+        .withOffset(center)
+        .tap()
+    }
+
+    private func accessibilityFrameCenter(of identifier: String, in hierarchy: String) -> CGVector? {
+      let number = #"-?[0-9]+(?:\.[0-9]+)?"#
+      let escapedIdentifier = NSRegularExpression.escapedPattern(for: identifier)
+      let pattern = #"\{\{("# + number + #"), ("# + number + #")\}, \{("#
+        + number + #"), ("# + number + #")\}\}, identifier: '"#
+        + escapedIdentifier + #"'"#
+      guard
+        let expression = try? NSRegularExpression(pattern: pattern),
+        let match = expression.firstMatch(
+          in: hierarchy,
+          range: NSRange(hierarchy.startIndex..., in: hierarchy)
+        )
+      else {
+        return nil
+      }
+
+      func value(at index: Int) -> CGFloat? {
+        guard let range = Range(match.range(at: index), in: hierarchy) else { return nil }
+        guard let parsed = Double(String(hierarchy[range])) else { return nil }
+        return CGFloat(parsed)
+      }
+
+      guard
+        let x = value(at: 1),
+        let y = value(at: 2),
+        let width = value(at: 3),
+        let height = value(at: 4)
+      else {
+        return nil
+      }
+      return CGVector(dx: x + width / 2, dy: y + height / 2)
     }
 
     private func scrollTo(_ element: XCUIElement, in app: XCUIApplication) {

@@ -83,7 +83,6 @@ internal struct CardManagementView: View {
   @State private var model: CardManagementModel
   @State private var task: ManagementTask
   @State private var hasChosenTask = false
-  @State private var isLandscapeLayout = false
 
   internal init(
     readerCardIsPresent: Bool = false,
@@ -148,15 +147,9 @@ internal struct CardManagementView: View {
       #if os(macOS)
         .frame(minWidth: windowWidth)
       #else
-        .id(isLandscapeLayout)
         .navigationTitle(
           awaitsActivation ? "ReFineID" : "Personal Identification Numbers")
         .navigationBarTitleDisplayMode(awaitsActivation ? .large : .inline)
-        .onGeometryChange(for: Bool.self) { geometry in
-          geometry.size.width > geometry.size.height
-        } action: { isLandscape in
-          isLandscapeLayout = isLandscape
-        }
       #endif
       #if os(macOS)
         .safeAreaInset(edge: .bottom, spacing: 0) {

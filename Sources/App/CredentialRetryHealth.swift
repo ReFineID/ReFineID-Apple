@@ -211,12 +211,26 @@ internal struct CredentialRetryHealthKey: View {
   /// Motion calls attention only to degraded states. Yielding one render pass
   /// lets an initially degraded badge exist before its effect begins. Yellow
   /// pulses once; red repeats until the state changes. There is no timing
-  /// constant, and Reduce Motion suppresses both.
+  /// constant, and Reduce Motion suppresses both. UI automation also opts
+  /// out: XCTest waits for animation quiescence before taps, while the red
+  /// state intentionally never becomes quiescent for a holder.
   private func animateIfNeeded(_ level: CredentialRetryHealth.Level?) {
-    guard !reduceMotion, level == .warning || level == .critical else { return }
+    guard
+      !reduceMotion,
+      !Self.uiAutomationDisablesMotion,
+      level == .warning || level == .critical
+    else { return }
     Task { @MainActor in
       await Task.yield()
       animationTrigger.toggle()
     }
+  }
+
+  private static var uiAutomationDisablesMotion: Bool {
+    #if DEBUG
+      ProcessInfo.processInfo.arguments.contains("--ui-test-disable-motion")
+    #else
+      false
+    #endif
   }
 }

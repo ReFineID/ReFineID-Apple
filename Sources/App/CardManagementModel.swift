@@ -199,7 +199,7 @@ internal final class CardManagementModel {
     newPin1: String?,
     newPin2: String?
   ) async -> Bool {
-    guard !cardOperationInProgress, canContactCard else { return false }
+    guard beginCardOperation() else { return false }
     guard let scheme = activationScheme else {
       failure = "The card could not be classified for activation."
       return false
@@ -296,7 +296,7 @@ internal final class CardManagementModel {
     accepted: String,
     _ operation: () async -> CardMaintenance.MutationReport
   ) async -> Bool {
-    guard !cardOperationInProgress, canContactCard else { return false }
+    guard beginCardOperation() else { return false }
     working = true
     failure = nil
     notice = nil
@@ -311,6 +311,23 @@ internal final class CardManagementModel {
       apply(snapshot, preservingOutcome: true)
     }
     return mutation.outcome == .success
+  }
+
+  /// Starts a mutating card operation or explains why it could not start.
+  ///
+  /// Buttons mirror these conditions, but confirmation is asynchronous: card
+  /// removal or an event-driven refresh can happen while the system alert is
+  /// visible. A confirmed operation must never disappear as a silent no-op.
+  private func beginCardOperation() -> Bool {
+    if cardOperationInProgress {
+      failure = "Another card operation is still in progress. Try again."
+      return false
+    }
+    guard canContactCard else {
+      failure = unreadableCardMessage
+      return false
+    }
+    return true
   }
 
   private func message(

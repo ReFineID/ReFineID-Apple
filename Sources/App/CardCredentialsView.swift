@@ -23,12 +23,16 @@ internal struct CardCredentialsView: View {
   private enum Destination: Hashable {
     case activation
     case pinManagement
+    case signDocuments
   }
 
   private static let sectionSpacing: CGFloat = 24
 
   @State private var model = CardCredentialsModel()
   private let retryHealth = CredentialRetryHealth.shared
+  #if os(iOS)
+    private let demoMode = DemoMode.shared
+  #endif
   @State private var cardAccessNumberEntry = ""
   @State private var pin1Entry = ""
   @State private var isScanning = false
@@ -36,7 +40,6 @@ internal struct CardCredentialsView: View {
   @State private var showsForgetConfirmation = false
   @State private var registrationReset = false
   @State private var isRegistered = false
-  @State private var isLandscapeLayout = false
   @State private var activationScheme: ActivationScheme?
   @State private var activationNeeds: CardActivationNeeds?
   @State private var destination: Destination?
@@ -76,8 +79,8 @@ internal struct CardCredentialsView: View {
   internal var managementCardAccessNumber: String? {
     #if os(iOS)
     if isDemonstration {
-      return DemoMode.shared.hasValidatedConnection
-        ? DemoMode.shared.displayedCardAccessNumber
+      return demoMode.hasValidatedConnection
+        ? demoMode.displayedCardAccessNumber
         : nil
     }
     #endif
@@ -91,7 +94,7 @@ internal struct CardCredentialsView: View {
   private var hasConfiguredCard: Bool {
     #if os(iOS)
       if isDemonstration {
-        return DemoMode.shared.hasValidatedConnection
+        return demoMode.hasValidatedConnection
       }
     #endif
     return model.contents.hasCardAccessNumber
@@ -103,7 +106,7 @@ internal struct CardCredentialsView: View {
   /// environment and does not touch physical I/O, Keychain, or token state.
   private var isDemonstration: Bool {
     #if os(iOS)
-      return DemoMode.shared.isActive
+      return demoMode.isActive
     #else
       return false
     #endif
@@ -118,7 +121,7 @@ internal struct CardCredentialsView: View {
   private var identityHolder: String? {
     #if os(iOS)
       if isDemonstration {
-        return DemoMode.shared.hasIdentity ? DemoMode.shared.holderName : nil
+        return demoMode.hasIdentity ? demoMode.holderName : nil
       }
     #endif
     guard isRegistered else { return nil }
@@ -136,7 +139,7 @@ internal struct CardCredentialsView: View {
   /// the very views a hold hides.
   private var isHolding: Bool {
     #if canImport(CoreNFC) && os(iOS)
-      return model.isConnecting || primingModel.isRunning || DemoMode.shared.isHolding
+      return model.isConnecting || primingModel.isRunning || demoMode.isHolding
     #else
       return false
     #endif
@@ -167,7 +170,7 @@ internal struct CardCredentialsView: View {
   private var canPrepareIdentity: Bool {
     #if os(iOS)
     if isDemonstration {
-      return DemoMode.shared.hasValidatedConnection && isPin1EntryComplete
+      return demoMode.hasValidatedConnection && isPin1EntryComplete
     }
     #endif
     return model.contents.hasCardAccessNumber && isPin1EntryComplete
@@ -193,6 +196,28 @@ internal struct CardCredentialsView: View {
       } else {
         createIdentitySection
       }
+      #if os(iOS)
+        if hasIdentity, !isHolding {
+          Section(
+            String(
+              localized: "signing.section",
+              defaultValue: "Documents",
+              table: "DocumentSigning")
+          ) {
+            Button {
+              destination = .signDocuments
+            } label: {
+              Label(
+                String(
+                  localized: "signing.open",
+                  defaultValue: "Sign documents",
+                  table: "DocumentSigning"),
+                systemImage: "signature")
+            }
+            .accessibilityIdentifier("signDocuments")
+          }
+        }
+      #endif
       #if !os(iOS)
         if !isHolding {
           managementSection
@@ -212,7 +237,6 @@ internal struct CardCredentialsView: View {
       }
     }
     #if os(iOS)
-      .id(isLandscapeLayout)
       .listSectionSpacing(Self.sectionSpacing)
       .navigationTitle("ReFineID")
       .navigationBarTitleDisplayMode(.large)
@@ -250,36 +274,39 @@ internal struct CardCredentialsView: View {
           CardManagementView(
             cardAccessNumber: managementCardAccessNumber)
             .id(Destination.pinManagement)
+        case .signDocuments:
+          DocumentSigningView(
+            transport: .nearField,
+            cardAccessNumber: managementCardAccessNumber)
+            .id(Destination.signDocuments)
         }
-      }
-      .onGeometryChange(for: Bool.self) { geometry in
-        geometry.size.width > geometry.size.height
-      } action: { isLandscape in
-        isLandscapeLayout = isLandscape
       }
     #endif
     // Pinned under every product control: what this run is, when it is
     // anything but the shipped product doing its job.
     .safeAreaInset(edge: .bottom) {
-      VStack(spacing: 0) {
-        if !isCardAccessNumberFieldFocused, !isPin1FieldFocused {
-          CardSetupFooter(isDemonstration: isDemonstration)
-        }
+      #if os(iOS)
+        let includesFooter = !demoMode.isEditorPresented
+      #else
+        let includesFooter = true
+      #endif
+      if includesFooter {
+        let hidesFooter =
+          isCardAccessNumberFieldFocused || isPin1FieldFocused
+        CardSetupFooter(isDemonstration: isDemonstration)
+          // Keep the inset structurally stable while the keyboard is present.
+          // Removing it rebuilds Form cells and strands UIKit's keyboard with
+          // no first responder. An invisible footer is also absent to touch and
+          // accessibility users, without changing the input hierarchy.
+          .opacity(hidesFooter ? 0 : 1)
+          .allowsHitTesting(!hidesFooter)
+          .accessibilityHidden(hidesFooter)
       }
     }
     .onAppear {
       model.refresh()
       refreshRegistration()
       showStoredCardAccessNumber()
-    }
-    .task(id: shouldFocusCardAccessNumber) {
-      guard shouldFocusCardAccessNumber else { return }
-      // Let the conditional Form row enter the hierarchy before asking
-      // SwiftUI to make it first responder. This yields an event turn;
-      // it is not a time-based delay.
-      await Task.yield()
-      guard shouldFocusCardAccessNumber else { return }
-      isCardAccessNumberFieldFocused = true
     }
     .onChange(of: hasIdentity) { _, registered in
       // A set identity ends the fields' job; nothing they held is worth
@@ -294,6 +321,21 @@ internal struct CardCredentialsView: View {
       // front of the holder, which is where a wrong one gets noticed.
       showStoredCardAccessNumber()
     }
+    #if os(iOS)
+      .onReceive(
+        NotificationCenter.default.publisher(
+          for: .virtualIDCardEditorDidDismiss)
+      ) { _ in
+        // The floating editor owns focus while it is open. Reset the bindings
+        // before returning focus to the CAN field on the next event turn.
+        isCardAccessNumberFieldFocused = false
+        isPin1FieldFocused = false
+        DispatchQueue.main.async {
+          guard shouldFocusCardAccessNumber else { return }
+          isCardAccessNumberFieldFocused = true
+        }
+      }
+    #endif
     .onChange(of: isCardAccessNumberEntryComplete) { _, complete in
       // A PIN entered for one complete CAN must not survive while that
       // CAN is erased or replaced. It reappears only after the new card
@@ -303,7 +345,7 @@ internal struct CardCredentialsView: View {
           isPin1FieldFocused = false
           #if os(iOS)
           if isDemonstration {
-            DemoMode.shared.forgetIdentity()
+            demoMode.forgetIdentity()
           }
           #endif
       }
@@ -333,7 +375,7 @@ internal struct CardCredentialsView: View {
         // stays a demonstration.
         #if os(iOS)
           if isDemonstration {
-            DemoMode.shared.forgetIdentity()
+            demoMode.forgetIdentity()
             clearEntries()
             return
           }
@@ -415,10 +457,26 @@ internal struct CardCredentialsView: View {
   @ViewBuilder private var cardAccessNumberRow: some View {
     #if os(iOS)
       HStack {
-        TextField("Card Access Number (CAN)", text: $cardAccessNumberEntry)
+        TextField(
+          "Card Access Number (CAN)",
+          text: $cardAccessNumberEntry,
+          axis: .vertical)
           .keyboardType(.numberPad)
+          .textContentType(nil)
+          .lineLimit(1...2)
+          .fixedSize(horizontal: false, vertical: true)
           .focused($isCardAccessNumberFieldFocused)
           .accessibilityIdentifier("cardAccessNumberField")
+          .onAppear {
+            // This row is the entire first-use interaction. Request focus only
+            // after the actual field has joined the hierarchy, on the next
+            // event turn, so the request cannot create a keyboard without a
+            // surviving first responder.
+            DispatchQueue.main.async {
+              guard shouldFocusCardAccessNumber else { return }
+              isCardAccessNumberFieldFocused = true
+            }
+          }
           .onChange(of: cardAccessNumberEntry) { _, typed in
             cardAccessNumberEntry = LimitedDigits.cardAccessNumber(typed)
           }
@@ -434,7 +492,12 @@ internal struct CardCredentialsView: View {
         }
       }
     #else
-      TextField("Card Access Number (CAN)", text: $cardAccessNumberEntry)
+      TextField(
+        "Card Access Number (CAN)",
+        text: $cardAccessNumberEntry,
+        axis: .vertical)
+        .lineLimit(1...2)
+        .fixedSize(horizontal: false, vertical: true)
         .accessibilityIdentifier("cardAccessNumberField")
         .onChange(of: cardAccessNumberEntry) { _, typed in
           cardAccessNumberEntry = LimitedDigits.cardAccessNumber(typed)
@@ -459,6 +522,8 @@ internal struct CardCredentialsView: View {
         .textInputAutocapitalization(.never)
       #endif
       .autocorrectionDisabled()
+      .lineLimit(1...2)
+      .fixedSize(horizontal: false, vertical: true)
       .focused($isPin1FieldFocused)
       .accessibilityIdentifier("pin1Field")
       .onChange(of: pin1Entry) { _, typed in
@@ -506,7 +571,7 @@ internal struct CardCredentialsView: View {
     #if os(iOS)
     if isDemonstration {
       guard cardAccessNumberEntry.isEmpty else { return }
-      cardAccessNumberEntry = DemoMode.shared.displayedCardAccessNumber ?? ""
+      cardAccessNumberEntry = demoMode.displayedCardAccessNumber ?? ""
       return
     }
     #endif
@@ -579,12 +644,14 @@ internal struct CardCredentialsView: View {
     activationNeeds = nil
     if isDemonstration {
       showStoredCardAccessNumber()
+      destination = nil
       return
     }
     if !model.saveCardAccessNumber(cardAccessNumberEntry) {
       cardAccessNumberEntry = ""
       isCardAccessNumberFieldFocused = true
     }
+    destination = nil
   }
 
   /// Empties both fields once they have nothing left to describe.

@@ -24,10 +24,10 @@ internal struct RetryFloorPolicyTests {
       let count = try #require(RetryCount(attemptsRemaining: remaining))
       #expect(RetryFloor.evaluate(freshReading: count) == .refuseLowAttempts)
     }
-    // Zero: already blocked. Not our refusal to make - and the state
-    // the PUK exists to undo, which is why it is named apart.
+    // Zero: already blocked and cannot spend another attempt. Let the
+    // card operation route into its unblock path.
     let blocked = try #require(RetryCount(attemptsRemaining: 0))
-    #expect(RetryFloor.evaluate(freshReading: blocked) == .refuseBlocked)
+    #expect(RetryFloor.evaluate(freshReading: blocked) == .proceed)
   }
 
   @Test
@@ -52,11 +52,10 @@ internal struct RetryFloorPolicyTests {
   }
 
   @Test
-  internal func aLockedCredentialIsNamedApartFromAnUnreadableOne() {
-    // The two are different answers to the holder: one says unblock it,
-    // the other says the card could not be read. Collapsing them would
-    // send someone to the issuer for a reader fault.
-    #expect(RetryFloor.evaluate(probeOutcome: .locked) == .refuseBlocked)
+  internal func aLockedCredentialCanProceedWithoutSpendingAnAttempt() {
+    // A locked credential cannot spend another attempt; unlike an
+    // unreadable counter, its state is explicit and safe to route.
+    #expect(RetryFloor.evaluate(probeOutcome: .locked) == .proceed)
   }
 
   @Test
@@ -68,7 +67,7 @@ internal struct RetryFloorPolicyTests {
     let low = try #require(RetryCount(attemptsRemaining: 2))
     let healthy = try #require(RetryCount(attemptsRemaining: 5))
     let state = CredentialRetryState(pin1: blocked, pin2: low, puk: healthy)
-    #expect(RetryFloor.evaluate(freshReading: state.pin1) == .refuseBlocked)
+    #expect(RetryFloor.evaluate(freshReading: state.pin1) == .proceed)
     #expect(RetryFloor.evaluate(freshReading: state.pin2) == .refuseLowAttempts)
     #expect(RetryFloor.evaluate(freshReading: state.puk) == .proceed)
   }

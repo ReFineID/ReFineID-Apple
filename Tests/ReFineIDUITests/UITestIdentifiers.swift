@@ -92,4 +92,13 @@ internal enum UITestIdentifiers {
 
   /// The holder published by a reader-backed virtual card.
   internal static let readerCardHolder = "readerCardHolder"
+
+  /// The reader/NFC identity route into qualified document signing.
+  internal static let signDocuments = "signDocuments"
+
+  /// Document-signing controls shared by reader and NFC routes.
+  internal static let signingPIN2 = "signingPIN2"
+  internal static let signingCommit = "signingCommit"
+  internal static let signingSuccess = "signingSuccess"
+  internal static let signingMessage = "signingMessage"
 }

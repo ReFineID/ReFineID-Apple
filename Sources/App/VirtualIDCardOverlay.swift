@@ -4,6 +4,12 @@
 
   import CardCore
   import SwiftUI
+  import UIKit
+
+  internal extension Notification.Name {
+    static let virtualIDCardEditorDidDismiss = Notification.Name(
+      "fi.refineid.virtual-id-card-editor-did-dismiss")
+  }
 
   private func virtualCardLocalized(
     _ key: StaticString,
@@ -113,6 +119,10 @@
         virtualCardLocalized(
           "fault.cardRemovedDuringPINChange",
           defaultValue: "Card removed during PIN change")
+      case .cardRemovedDuringSignature:
+        virtualCardLocalized(
+          "fault.cardRemovedDuringSignature",
+          defaultValue: "Card removed during document signing")
       case .responseLostAfterPIN1Activation:
         virtualCardLocalized(
           "fault.responseLostAfterPIN1Activation",
@@ -121,6 +131,10 @@
         virtualCardLocalized(
           "fault.responseLostAfterPIN2Activation",
           defaultValue: "Response lost after PIN 2 activation")
+      case .responseLostAfterSignature:
+        virtualCardLocalized(
+          "fault.responseLostAfterSignature",
+          defaultValue: "Response lost after document signing")
       case .certificateReadFailure:
         virtualCardLocalized(
           "fault.certificateReadFailure",
@@ -136,11 +150,20 @@
   /// Floating access to the editable card while a demonstration is active.
   internal struct VirtualIDCardOverlay: View {
     private let demoMode = DemoMode.shared
-    @State private var showsEditor = false
+    internal let openEditor: () -> Void
 
     internal var body: some View {
       Button {
-        showsEditor = true
+        // The CAN field is intentionally focused when it is the only setup
+        // input. End that responder session before presenting the editor;
+        // otherwise UIKit can restore a detached text input when the sheet
+        // closes, making the visible field ignore both touch and VoiceOver.
+        UIApplication.shared.sendAction(
+          #selector(UIResponder.resignFirstResponder),
+          to: nil,
+          from: nil,
+          for: nil)
+        openEditor()
       } label: {
         Label(
           virtualCardLocalized("title", defaultValue: "Virtual ID Card"),
@@ -159,9 +182,6 @@
             defaultValue: "Opens the virtual card settings.")))
       .padding(.trailing, 12)
       .padding(.bottom, 64)
-      .sheet(isPresented: $showsEditor) {
-        VirtualIDCardEditor(demoMode: demoMode)
-      }
     }
 
     private var statusDescription: String {
@@ -188,15 +208,16 @@
   }
 
   /// Edits one complete virtual card/device snapshot and one fault plan.
-  private struct VirtualIDCardEditor: View {
+  internal struct VirtualIDCardEditor: View {
     internal let demoMode: DemoMode
-    @Environment(\.dismiss) private var dismiss
+    internal let close: () -> Void
     @State private var draft: VirtualIDCard.Snapshot
     @State private var scenario = VirtualIDCard.Scenario.factoryFreshNearField
     @State private var faultPreset = VirtualIDCard.FaultPreset.none
 
-    internal init(demoMode: DemoMode) {
+    internal init(demoMode: DemoMode, close: @escaping () -> Void) {
       self.demoMode = demoMode
+      self.close = close
       let current = demoMode.state
       _draft = State(initialValue: current)
       _scenario = State(
@@ -231,12 +252,19 @@
                     "virtualCardScenarioOption.\(candidate.rawValue)")
               }
             } label: {
-              LabeledContent(
-                virtualCardLocalized("scenario.preset", defaultValue: "Preset")
-              ) {
+              VStack(alignment: .leading, spacing: 2) {
+                Text(
+                  virtualCardLocalized(
+                    "scenario.preset",
+                    defaultValue: "Preset"))
+                  .foregroundStyle(.primary)
                 Text(scenario.localizedName)
+                  .foregroundStyle(.primary)
               }
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .virtualCardMenuControl()
             }
+            .tint(.primary)
             .onChange(of: scenario) { _, selected in
               draft = selected.snapshot
               faultPreset = .none
@@ -284,8 +312,10 @@
               virtualCardLocalized(
                 "connection.canShort",
                 defaultValue: "CAN"),
-              text: $draft.card.cardAccessNumber)
+              text: $draft.card.cardAccessNumber,
+              axis: .vertical)
               .keyboardType(.numberPad)
+              .virtualCardEditorField()
               .padding(.leading, 1)
               .accessibilityIdentifier("virtualCardCAN")
               .accessibilityLabel(
@@ -299,19 +329,25 @@
           ) {
             TextField(
               virtualCardLocalized("identity.name", defaultValue: "Name"),
-              text: $draft.card.holderName)
+              text: $draft.card.holderName,
+              axis: .vertical)
+              .virtualCardEditorField()
               .accessibilityIdentifier("virtualCardName")
             TextField(
               virtualCardLocalized(
                 "identity.electronicClientIdentifier",
                 defaultValue: "Electronic client identifier"),
-              text: $draft.card.electronicClientIdentifier)
+              text: $draft.card.electronicClientIdentifier,
+              axis: .vertical)
+              .virtualCardEditorField()
               .accessibilityIdentifier("virtualCardElectronicIdentifier")
             TextField(
               virtualCardLocalized(
                 "identity.tokenSerial",
                 defaultValue: "Token serial"),
-              text: $draft.card.tokenSerial)
+              text: $draft.card.tokenSerial,
+              axis: .vertical)
+              .virtualCardEditorField()
               .accessibilityIdentifier("virtualCardTokenSerial")
           }
           Section(
@@ -327,12 +363,17 @@
                 Text(generation.localizedName).tag(generation)
               }
             }
+            .pickerStyle(.menu)
+            .tint(.primary)
+            .virtualCardMenuControl()
             TextField(
               virtualCardLocalized(
                 "activation.pin",
                 defaultValue: "Activation PIN"),
-              text: $draft.card.activationEntry)
+              text: $draft.card.activationEntry,
+              axis: .vertical)
               .keyboardType(.numberPad)
+              .virtualCardEditorField()
               .accessibilityIdentifier("virtualCardActivationEntry")
             Toggle(
               virtualCardLocalized(
@@ -394,6 +435,8 @@
               certificateChoices
             }
             .pickerStyle(.menu)
+            .tint(.primary)
+            .virtualCardMenuControl()
             .accessibilityIdentifier("virtualCardAuthenticationCertificate")
             Picker(
               virtualCardLocalized(
@@ -404,6 +447,8 @@
               certificateChoices
             }
             .pickerStyle(.menu)
+            .tint(.primary)
+            .virtualCardMenuControl()
             .accessibilityIdentifier("virtualCardSignatureCertificate")
           }
           Section(
@@ -415,15 +460,19 @@
               virtualCardLocalized(
                 "device.storedCan",
                 defaultValue: "Stored CAN"),
-              text: optionalBinding(\.storedCardAccessNumber))
+              text: optionalBinding(\.storedCardAccessNumber),
+              axis: .vertical)
               .keyboardType(.numberPad)
+              .virtualCardEditorField()
               .accessibilityIdentifier("virtualCardStoredCAN")
             TextField(
               virtualCardLocalized(
                 "device.connectedCan",
                 defaultValue: "Connected CAN"),
-              text: optionalBinding(\.connectedCardAccessNumber))
+              text: optionalBinding(\.connectedCardAccessNumber),
+              axis: .vertical)
               .keyboardType(.numberPad)
+              .virtualCardEditorField()
               .accessibilityIdentifier("virtualCardConnectedCAN")
             Toggle(
               virtualCardLocalized(
@@ -443,12 +492,31 @@
                 defaultValue: "Token registered"),
               isOn: $draft.device.tokenRegistered)
               .accessibilityIdentifier("virtualCardTokenRegistered")
-            Toggle(
-              virtualCardLocalized(
-                "device.signingPending",
-                defaultValue: "Signing request pending"),
-              isOn: $draft.device.pendingSigningRequest)
-              .accessibilityIdentifier("virtualCardSigningPending")
+            Button {
+              draft.device.pendingSigningRequest.toggle()
+            } label: {
+              LabeledContent(
+                virtualCardLocalized(
+                  "device.signingPending",
+                  defaultValue: "Signing request pending")
+              ) {
+                Image(
+                  systemName: draft.device.pendingSigningRequest
+                    ? "checkmark.circle.fill"
+                    : "circle")
+              }
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("virtualCardSigningPending")
+            .accessibilityValue(
+              Text(
+                virtualCardLocalized(
+                  draft.device.pendingSigningRequest
+                    ? "state.enabled"
+                    : "state.disabled",
+                  defaultValue: draft.device.pendingSigningRequest
+                    ? "Enabled"
+                    : "Disabled")))
           }
           Section(
             virtualCardLocalized(
@@ -470,15 +538,23 @@
                     "virtualCardFaultOption.\(preset.rawValue)")
               }
             } label: {
-              LabeledContent(
-                virtualCardLocalized("fault.picker", defaultValue: "Fault")
-              ) {
+              VStack(alignment: .leading, spacing: 2) {
+                Text(
+                  virtualCardLocalized(
+                    "fault.picker",
+                    defaultValue: "Fault"))
+                  .foregroundStyle(.primary)
                 Text(faultPreset.localizedName)
+                  .foregroundStyle(.primary)
               }
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .virtualCardMenuControl()
             }
+            .tint(.primary)
             .accessibilityIdentifier("virtualCardFault")
           }
         }
+        .headerProminence(.increased)
         .navigationTitle(
           virtualCardLocalized("title", defaultValue: "Virtual ID Card"))
         .accessibilityIdentifier("virtualCardEditor")
@@ -486,7 +562,7 @@
           ToolbarItem(placement: .cancellationAction) {
             Button(
               virtualCardLocalized("action.cancel", defaultValue: "Cancel")
-            ) { dismiss() }
+            ) { close() }
               .accessibilityLabel(
                 Text(
                   virtualCardLocalized(
@@ -499,7 +575,7 @@
             ) {
               draft.faults = faultPreset.faults
               demoMode.replace(with: draft)
-              dismiss()
+              close()
             }
             .accessibilityIdentifier("virtualCardApply")
             .accessibilityLabel(
@@ -521,8 +597,9 @@
       attempts: Binding<Int>
     ) -> some View {
       Section(title) {
-        TextField(valueLabel, text: value)
+        TextField(valueLabel, text: value, axis: .vertical)
           .keyboardType(.numberPad)
+          .virtualCardEditorField()
           .accessibilityIdentifier("\(identifier)Value")
         Stepper(
           attemptsLabel,
@@ -541,7 +618,10 @@
 
     private var certificateChoices: some View {
       ForEach(VirtualIDCard.CertificateState.allCases) { state in
-        Text(state.localizedName).tag(state)
+        Text(state.localizedName)
+          .tag(state)
+          .accessibilityIdentifier(
+            "virtualCardCertificateOption.\(state.rawValue)")
       }
     }
 
@@ -569,6 +649,21 @@
         set: { entered in
           draft.device[keyPath: keyPath] = entered.isEmpty ? nil : entered
         })
+    }
+  }
+
+  /// Form rows must grow with Dynamic Type instead of retaining the compact
+  /// one-line text-field height. One shared treatment keeps every editable
+  /// virtual-card value usable under the same accessibility settings.
+  private extension View {
+    func virtualCardEditorField() -> some View {
+      lineLimit(1...2)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    func virtualCardMenuControl() -> some View {
+      lineLimit(1...3)
+        .fixedSize(horizontal: false, vertical: true)
     }
   }
 

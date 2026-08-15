@@ -107,6 +107,7 @@ internal struct CardActivationSection: View {
 
   private var activationButton: some View {
     Button {
+      focus = nil
       pending = .activate
     } label: {
       Text("Activate Card")
@@ -235,6 +236,7 @@ internal struct CardActivationSection: View {
     if next < shownFields.endIndex {
       focus = shownFields[next]
     } else if isComplete {
+      focus = nil
       pending = .activate
     }
   }
