@@ -11,14 +11,17 @@ milestone.
 Audited against source 2026-08-16. Each item states only what remains;
 the resolved halves of the original wording are recorded in git history.
 
-- [ ] Replace the nearby iPhone relay's unauthenticated peer trust with
-  explicit cryptographic pairing before external TestFlight or App Store use.
+- [ ] Give the iPhone relay explicit cryptographic pairing before it ships.
+  The relay is compile-gated off by FEATURE_IPHONE_RELAY since 2026-08-16:
   `PersistentCardRelay` accepts every invitation on `refineid-rly`, persists
   no remote peer identity, and the phone serves identity and signature
-  requests from the keychain PIN 1 without per-request consent, while the
-  entitlement comments and release plan already say "holder-paired". Closing
-  it needs a pairing exchange, a persisted peer allowlist checked on both
-  sides, per-request phone consent, and accept/reject tests.
+  requests from the keychain PIN 1 without per-request consent. Re-enabling
+  needs a pairing exchange, a persisted peer allowlist checked on both
+  sides, per-request phone consent, accept/reject tests, restored network
+  entitlements and Bonjour declarations, and a decided macOS driver shape:
+  the relay build replaced the smart-card driver in the macOS extension
+  plist, so as built one macOS binary cannot serve a reader and the relay
+  at once.
 - [ ] Finish serial-binding the contactless prime store. The published
   CryptoTokenKit identity, registration, and revocation are already
   printed-serial-derived and every mint refuses a serial-less prime; still

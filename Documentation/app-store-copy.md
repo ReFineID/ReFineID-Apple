@@ -76,8 +76,7 @@ A reader for the Finnish identity card.
 
 Insert your identity card into a USB smart-card reader and sign in to
 e-services directly in Safari with the certificate on your card. Drop a
-PDF on ReFineID to sign it with a qualified signature. With ReFineID on
-your iPhone, the Mac can also sign in with the card read by the phone.
+PDF on ReFineID to sign it with a qualified signature.
 
 ReFineID is open source: github.com/ReFineID/ReFineID-Apple
 
@@ -88,8 +87,7 @@ Suomalaisen henkilökortin lukija.
 Aseta henkilökortti USB-kortinlukijaan ja kirjaudu sähköisiin
 palveluihin suoraan Safarissa kortin varmenteella. Pudota PDF
 ReFineID:hen ja allekirjoita se hyväksytyllä sähköisellä
-allekirjoituksella. Kun ReFineID on iPhonessasi, Mac voi kirjautua myös
-puhelimen lukemalla kortilla.
+allekirjoituksella.
 
 ReFineID on avointa lähdekoodia: github.com/ReFineID/ReFineID-Apple
 
@@ -99,9 +97,7 @@ En läsare för det finländska identitetskortet.
 
 Sätt identitetskortet i en USB-kortläsare och logga in på e-tjänster
 direkt i Safari med kortets certifikat. Släpp en PDF på ReFineID för
-att underteckna den med en kvalificerad elektronisk underskrift. Med
-ReFineID på din iPhone kan Macen också logga in med kortet som
-telefonen läser.
+att underteckna den med en kvalificerad elektronisk underskrift.
 
 ReFineID är öppen källkod: github.com/ReFineID/ReFineID-Apple
 

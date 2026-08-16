@@ -33,13 +33,13 @@ signing of a fictional PDF. `Documentation/virtual-id-card.md` owns
 the design; the iOS notes walk a reviewer through it, fictional
 numbers included, so no step depends on guessing a value.
 
-The macOS notes now state the app's complete network behaviour: the
+The macOS notes state the app's network behaviour as shipped: the
 outbound time-stamp and revocation fetches that an archival signature
-performs, and the local-network relay through which the Mac uses the
-card held by the holder's own iPhone. The earlier claim that the app
-binds no listening socket predates the relay and is gone. The macOS
-notes still close by offering a demonstration mode there too: nothing
-has asked for one on macOS.
+performs, and no listening socket. The iPhone credential relay is
+compile-gated off by FEATURE_IPHONE_RELAY until its peer trust is an
+explicit pairing, so the notes do not describe it; when it ships, they
+must. The macOS notes still close by offering a demonstration mode
+there too: nothing has asked for one on macOS.
 
 ## Where the notes live
 
@@ -53,8 +53,7 @@ went stale, so the text is not repeated: read it there.
 
 - Export compliance rationale: `Documentation/export-compliance.md`.
 - Sandbox and entitlement rationale: comments in
-  `Config/ReFineID.entitlements`, including the relay's network
-  client and server grants.
+  `Config/ReFineID.entitlements`.
 - ATS rationale: comments in both `Config/ReFineID-Info.plist` and
   `Config/ReFineID-iOS-Info.plist`. Both binaries make network
   requests when signing a document: the time-stamp authority and
