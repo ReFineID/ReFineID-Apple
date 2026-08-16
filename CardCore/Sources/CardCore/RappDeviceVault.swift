@@ -61,7 +61,11 @@ public final class RappDeviceVault: @unchecked Sendable {
   }
 
   private enum StoredValue {
-    static let noRetainedResult = Data()
+    /// Keychain does not reliably replace a non-empty generic-password value
+    /// with zero-length data. This non-CBOR marker gives acknowledged proxy
+    /// records one durable, portable representation without deleting their
+    /// Rust-owned journal bytes.
+    static let noRetainedResult = Data("ReFineID:RAPP:no-retained-result:v1".utf8)
   }
 
   private let accessGroup: String?
@@ -302,7 +306,9 @@ public final class RappDeviceVault: @unchecked Sendable {
         }
         return StoredProxyJournal(
           record: record,
-          retainedResult: result.isEmpty ? nil : result)
+          retainedResult: result.isEmpty || result == StoredValue.noRetainedResult
+            ? nil
+            : result)
       }
     }
   }

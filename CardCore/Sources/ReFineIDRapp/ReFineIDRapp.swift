@@ -651,7 +651,7 @@ public protocol RappOperationBridgeProtocol: AnyObject, Sendable {
     
     func completeSignature(operationId: Data, signature: Data) throws  -> RappBridgeAction
     
-    func credentialRejected(operationId: Data) throws  -> RappBridgeAction
+    func credentialRejected(operationId: Data, rejectedAtMs: UInt64) throws  -> RappBridgeAction
     
     /**
      * Deny the exact request and durably emit a stable denial.
@@ -944,12 +944,13 @@ open func completeSignature(operationId: Data, signature: Data)throws  -> RappBr
 })
 }
     
-open func credentialRejected(operationId: Data)throws  -> RappBridgeAction  {
+open func credentialRejected(operationId: Data, rejectedAtMs: UInt64)throws  -> RappBridgeAction  {
     return try  FfiConverterTypeRappBridgeAction_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
     uniffi_refineid_lib_core_fn_method_rappoperationbridge_credential_rejected(
             self.uniffiCloneHandle(),
-        FfiConverterData.lower(operationId),uniffiCallStatus
+        FfiConverterData.lower(operationId),
+        FfiConverterUInt64.lower(rejectedAtMs),uniffiCallStatus
     )
 })
 }
@@ -4923,7 +4924,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_refineid_lib_core_checksum_method_rappoperationbridge_complete_signature() != 25450) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationbridge_credential_rejected() != 64292) {
+    if (uniffi_refineid_lib_core_checksum_method_rappoperationbridge_credential_rejected() != 32888) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_refineid_lib_core_checksum_method_rappoperationbridge_deny() != 10390) {

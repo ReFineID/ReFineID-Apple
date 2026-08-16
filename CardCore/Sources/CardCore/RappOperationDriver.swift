@@ -374,7 +374,10 @@ public actor RappOperationDriver {
     }
 
     public func credentialRejected(operationID: Data) throws -> [Command] {
-        try commands(bridge.credentialRejected(operationId: operationID))
+        try commands(bridge.credentialRejected(
+            operationId: operationID,
+            rejectedAtMs: clock.monotonicMilliseconds()
+        ))
     }
 
     public func cardRemovedBeforeTransmit(operationID: Data) throws -> [Command] {

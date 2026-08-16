@@ -6,13 +6,44 @@ import Testing
 @testable import CardCore
 
 #if canImport(ReFineIDRapp)
+  import ReFineIDRapp
+
   @Suite
   internal struct RappIntegrationTests {
     private enum TestFailure: Error {
       case receiverMissing
       case pairingClosed(RappPairingCoordinator.CloseReason)
       case pairingEndedWithoutRecord
+      case connectionClosed(RappConnectionCoordinator.CloseReason)
+      case operationEndedWithoutResult
+      case operationTerminated(RappOperationDriver.TerminalReason?)
+      case unexpectedConnectionEvent
       case unexpectedTransportError
+    }
+
+    private struct PairingFixture {
+      let requesterVault: RappDeviceVault
+      let proxyVault: RappDeviceVault
+      let requesterSummary: RappPairingCoordinator.PairSummary
+      let proxySummary: RappPairingCoordinator.PairSummary
+      let requesterFrames: (frames: [Data], closeCount: Int)
+      let proxyFrames: (frames: [Data], closeCount: Int)
+      let requesterPrefix: String
+      let proxyPrefix: String
+    }
+
+    private struct ConnectionFixture {
+      let requester: RappConnectionCoordinator
+      let proxy: RappConnectionCoordinator
+      let requesterOutbound: FrameEndpoint
+      let proxyOutbound: FrameEndpoint
+    }
+
+    private struct ProxyProgress: Equatable {
+      var prerequisites = 0
+      var approvals = 0
+      var executions = 0
+      var acknowledgments = 0
     }
 
     private actor FrameEndpoint {
@@ -123,20 +154,154 @@ import Testing
 
     @Test
     internal func swiftCoordinatorsPairThroughRustAndRevocationIsDurable() async throws {
-      let profiles = [
-        "fi.eid.card-status.v1",
-        "fi.eid.authentication.v1",
-        "fi.eid.document-signing.v1",
-      ]
-      let candidateID = "apple-peer-v1.nearby"
+      let fixture = try await Self.makePairedFixture()
+      defer { Self.deleteKeychainServices(for: fixture) }
+
+      #expect(fixture.requesterSummary.pairID == fixture.proxySummary.pairID)
+      #expect(fixture.requesterSummary.role == .requester)
+      #expect(fixture.proxySummary.role == .proxy)
+      #expect(Set(fixture.requesterSummary.profiles) == Set(Self.profiles))
+      #expect(Set(fixture.proxySummary.profiles) == Set(Self.profiles))
+      #expect(fixture.requesterSummary.transportProfile == Self.transportProfile)
+      #expect(fixture.requesterSummary.candidateID == Self.candidateID)
+      #expect(try fixture.requesterVault.loadPair(
+        pairID: fixture.requesterSummary.pairID) != nil)
+      #expect(try fixture.proxyVault.loadPair(pairID: fixture.proxySummary.pairID) != nil)
+
+      #expect(!fixture.requesterFrames.frames.isEmpty)
+      #expect(!fixture.proxyFrames.frames.isEmpty)
+      #expect(fixture.requesterFrames.closeCount == 1)
+      #expect(fixture.proxyFrames.closeCount == 1)
+
+      let catalog = RappPairCatalog(vault: fixture.requesterVault)
+      try await catalog.select(pairID: fixture.requesterSummary.pairID)
+      #expect(try await catalog.selectedPair()?.pairID == fixture.requesterSummary.pairID)
+      try await catalog.revoke(pairID: fixture.requesterSummary.pairID)
+      #expect(try fixture.requesterVault.pairIsRevoked(
+        pairID: fixture.requesterSummary.pairID))
+      #expect(try await catalog.activePairs().isEmpty)
+      #expect(try await catalog.selectedPair() == nil)
+      #expect(try fixture.proxyVault.pairIsRevoked(
+        pairID: fixture.proxySummary.pairID) == false)
+    }
+
+    @Test
+    internal func authorizedBrowserAuthenticationExecutesOnceAndAcknowledgesResult() async throws {
+      let fixture = try await Self.makePairedFixture()
+      defer { Self.deleteKeychainServices(for: fixture) }
+      let connection = try await Self.makeConnection(fixture)
+      let digest = Data(repeating: 0xA5, count: 32)
+      let signature = Data([0x30, 0x06, 0x02, 0x01, 0x01, 0x02, 0x01, 0x02])
+
+      let requesterOutcome = Task {
+        try await Self.awaitBrowserAuthentication(
+          connection.requester,
+          digest: digest
+        )
+      }
+      let proxyOutcome = Task {
+        try await Self.authorizeAndCompleteBrowserAuthentication(
+          connection.proxy,
+          expectedDigest: digest,
+          signature: signature
+        )
+      }
+      defer {
+        requesterOutcome.cancel()
+        proxyOutcome.cancel()
+      }
+
+      await connection.proxy.start()
+      await connection.requester.start()
+      let result = try await requesterOutcome.value
+      let progress = try await proxyOutcome.value
+
+      #expect(result.kind == .signature)
+      #expect(result.bytes == signature)
+      #expect(progress == ProxyProgress(
+        prerequisites: 1,
+        approvals: 1,
+        executions: 1,
+        acknowledgments: 1
+      ))
+      #expect(try fixture.proxyVault.loadProxy(
+        pairID: fixture.proxySummary.pairID
+      ).allSatisfy { $0.retainedResult == nil })
+      #expect(try fixture.requesterVault.pairIsRevoked(
+        pairID: fixture.requesterSummary.pairID) == false)
+      #expect(try fixture.proxyVault.pairIsRevoked(
+        pairID: fixture.proxySummary.pairID) == false)
+
+      await connection.requester.close()
+      await connection.proxy.close()
+    }
+
+    @Test
+    internal func credentialRejectionRevokesBothPeersWithoutAnotherExecution() async throws {
+      let fixture = try await Self.makePairedFixture()
+      defer { Self.deleteKeychainServices(for: fixture) }
+      let connection = try await Self.makeConnection(fixture)
+      let digest = Data(repeating: 0x5A, count: 32)
+
+      let requesterOutcome = Task {
+        try await Self.awaitTerminalBrowserAuthentication(
+          connection.requester,
+          digest: digest
+        )
+      }
+      let proxyOutcome = Task {
+        try await Self.authorizeAndRejectBrowserAuthentication(
+          connection.proxy,
+          expectedDigest: digest
+        )
+      }
+      defer {
+        requesterOutcome.cancel()
+        proxyOutcome.cancel()
+      }
+
+      await connection.proxy.start()
+      await connection.requester.start()
+      let reason = try await requesterOutcome.value
+      let progress = try await proxyOutcome.value
+
+      #expect(reason == .credentialRejected)
+      #expect(progress == ProxyProgress(
+        prerequisites: 1,
+        approvals: 1,
+        executions: 1,
+        acknowledgments: 0
+      ))
+      #expect(try fixture.requesterVault.pairIsRevoked(
+        pairID: fixture.requesterSummary.pairID))
+      #expect(try fixture.proxyVault.pairIsRevoked(
+        pairID: fixture.proxySummary.pairID))
+      #expect(try fixture.requesterVault.loadPair(
+        pairID: fixture.requesterSummary.pairID) == nil)
+      #expect(try fixture.proxyVault.loadPair(pairID: fixture.proxySummary.pairID) == nil)
+      #expect(try fixture.requesterVault.activePairIDs().isEmpty)
+      #expect(try fixture.proxyVault.activePairIDs().isEmpty)
+    }
+
+    private static let profiles = [
+      "fi.eid.card-status.v1",
+      "fi.eid.authentication.v1",
+      "fi.eid.document-signing.v1",
+    ]
+    private static let transportProfile = "apple-peer-v1"
+    private static let candidateID = "apple-peer-v1.nearby"
+    private static let liveness = RappOperationDriver.Liveness(
+      baseIntervalMilliseconds: 60_000,
+      responseTimeoutMilliseconds: 10_000,
+      maximumIntervalMilliseconds: 60_000,
+      maximumJitterMilliseconds: 0,
+      maximumMisses: 3
+    )
+
+    private static func makePairedFixture() async throws -> PairingFixture {
       let testID = UUID().uuidString
       let requesterPrefix = "fi.refineid.tests.rapp.\(testID).requester"
       let proxyPrefix = "fi.refineid.tests.rapp.\(testID).proxy"
-      defer {
-        Self.deleteKeychainServices(prefix: requesterPrefix)
-        Self.deleteKeychainServices(prefix: proxyPrefix)
-      }
-
       let requesterVault = RappDeviceVault(
         accessGroup: nil,
         servicePrefix: requesterPrefix
@@ -159,7 +324,7 @@ import Testing
         profiles: profiles,
         candidates: [
           .init(
-            profile: "apple-peer-v1",
+            profile: transportProfile,
             candidateID: candidateID,
             parametersCBOR: Data([0xA0])
           )
@@ -183,10 +348,10 @@ import Testing
       await proxyOutbound.install { frame in await requester.receive(frame) }
 
       let requesterOutcome = Task {
-        try await Self.approveAndAwaitPair(requester, profiles: profiles)
+        try await approveAndAwaitPair(requester, profiles: profiles)
       }
       let proxyOutcome = Task {
-        try await Self.approveAndAwaitPair(proxy, profiles: profiles)
+        try await approveAndAwaitPair(proxy, profiles: profiles)
       }
       defer {
         requesterOutcome.cancel()
@@ -195,34 +360,205 @@ import Testing
 
       await proxy.transportConnected()
       await requester.transportConnected()
-      let requesterSummary = try await requesterOutcome.value
-      let proxySummary = try await proxyOutcome.value
+      return try await PairingFixture(
+        requesterVault: requesterVault,
+        proxyVault: proxyVault,
+        requesterSummary: requesterOutcome.value,
+        proxySummary: proxyOutcome.value,
+        requesterFrames: requesterOutbound.snapshot(),
+        proxyFrames: proxyOutbound.snapshot(),
+        requesterPrefix: requesterPrefix,
+        proxyPrefix: proxyPrefix
+      )
+    }
 
-      #expect(requesterSummary.pairID == proxySummary.pairID)
-      #expect(requesterSummary.role == .requester)
-      #expect(proxySummary.role == .proxy)
-      #expect(Set(requesterSummary.profiles) == Set(profiles))
-      #expect(Set(proxySummary.profiles) == Set(profiles))
-      #expect(requesterSummary.transportProfile == "apple-peer-v1")
-      #expect(requesterSummary.candidateID == candidateID)
-      #expect(try requesterVault.loadPair(pairID: requesterSummary.pairID) != nil)
-      #expect(try proxyVault.loadPair(pairID: proxySummary.pairID) != nil)
+    private static func makeConnection(
+      _ fixture: PairingFixture
+    ) async throws -> ConnectionFixture {
+      let requesterPair = try RappPairRecord.loadFromVault(
+        pairId: fixture.requesterSummary.pairID,
+        vault: fixture.requesterVault
+      )
+      let proxyPair = try RappPairRecord.loadFromVault(
+        pairId: fixture.proxySummary.pairID,
+        vault: fixture.proxyVault
+      )
+      let requesterOutbound = FrameEndpoint()
+      let proxyOutbound = FrameEndpoint()
+      let requester = try RappConnectionCoordinator(
+        role: .requester,
+        pair: requesterPair,
+        vault: fixture.requesterVault,
+        transport: RappClosureFrameTransport(
+          sender: { frame in try await requesterOutbound.send(frame) },
+          closer: { await requesterOutbound.close() }
+        ),
+        maximumLifetimeMilliseconds: 60_000,
+        liveness: liveness
+      )
+      let proxy = try RappConnectionCoordinator(
+        role: .proxy,
+        pair: proxyPair,
+        vault: fixture.proxyVault,
+        transport: RappClosureFrameTransport(
+          sender: { frame in try await proxyOutbound.send(frame) },
+          closer: { await proxyOutbound.close() }
+        ),
+        maximumLifetimeMilliseconds: 60_000,
+        liveness: liveness
+      )
+      await requesterOutbound.install { frame in await proxy.receive(frame) }
+      await proxyOutbound.install { frame in await requester.receive(frame) }
+      return ConnectionFixture(
+        requester: requester,
+        proxy: proxy,
+        requesterOutbound: requesterOutbound,
+        proxyOutbound: proxyOutbound
+      )
+    }
 
-      let requesterFrames = await requesterOutbound.snapshot()
-      let proxyFrames = await proxyOutbound.snapshot()
-      #expect(!requesterFrames.frames.isEmpty)
-      #expect(!proxyFrames.frames.isEmpty)
-      #expect(requesterFrames.closeCount == 1)
-      #expect(proxyFrames.closeCount == 1)
+    private static func awaitBrowserAuthentication(
+      _ coordinator: RappConnectionCoordinator,
+      digest: Data
+    ) async throws -> RappOperationDriver.Result {
+      for await event in coordinator.events {
+        switch event {
+        case .established:
+          try await coordinator.beginBrowserAuthentication(
+            origin: "https://example.invalid",
+            keyProfile: .ecdsaP256,
+            algorithm: .ecdsaSHA256,
+            digest: digest,
+            expiresAfterMilliseconds: 60_000
+          )
+        case let .completed(_, result):
+          return result
+        case let .terminal(_, _, reason):
+          throw TestFailure.operationTerminated(reason)
+        case let .closed(reason):
+          throw TestFailure.connectionClosed(reason)
+        case .inspectPrerequisites, .awaitUserApproval, .executeSafeRead,
+             .executeCardCommand, .advisoryCancellation, .operationFinished,
+             .peerBusy, .peerUnknownOperation:
+          throw TestFailure.unexpectedConnectionEvent
+        }
+      }
+      throw TestFailure.operationEndedWithoutResult
+    }
 
-      let catalog = RappPairCatalog(vault: requesterVault)
-      try await catalog.select(pairID: requesterSummary.pairID)
-      #expect(try await catalog.selectedPair()?.pairID == requesterSummary.pairID)
-      try await catalog.revoke(pairID: requesterSummary.pairID)
-      #expect(try requesterVault.pairIsRevoked(pairID: requesterSummary.pairID))
-      #expect(try await catalog.activePairs().isEmpty)
-      #expect(try await catalog.selectedPair() == nil)
-      #expect(try proxyVault.pairIsRevoked(pairID: proxySummary.pairID) == false)
+    private static func awaitTerminalBrowserAuthentication(
+      _ coordinator: RappConnectionCoordinator,
+      digest: Data
+    ) async throws -> RappOperationDriver.TerminalReason? {
+      for await event in coordinator.events {
+        switch event {
+        case .established:
+          try await coordinator.beginBrowserAuthentication(
+            origin: "https://example.invalid",
+            keyProfile: .ecdsaP256,
+            algorithm: .ecdsaSHA256,
+            digest: digest,
+            expiresAfterMilliseconds: 60_000
+          )
+        case let .terminal(_, _, reason):
+          return reason
+        case let .closed(reason):
+          throw TestFailure.connectionClosed(reason)
+        case .inspectPrerequisites, .awaitUserApproval, .executeSafeRead,
+             .executeCardCommand, .completed, .advisoryCancellation,
+             .operationFinished, .peerBusy, .peerUnknownOperation:
+          throw TestFailure.unexpectedConnectionEvent
+        }
+      }
+      throw TestFailure.operationEndedWithoutResult
+    }
+
+    private static func authorizeAndCompleteBrowserAuthentication(
+      _ coordinator: RappConnectionCoordinator,
+      expectedDigest: Data,
+      signature: Data
+    ) async throws -> ProxyProgress {
+      var progress = ProxyProgress()
+      for await event in coordinator.events {
+        switch event {
+        case .established:
+          break
+        case let .inspectPrerequisites(operationID, operation):
+          guard operation.kind == .browserAuthenticate,
+                operation.digest == expectedDigest else {
+            throw TestFailure.unexpectedConnectionEvent
+          }
+          progress.prerequisites += 1
+          try await coordinator.prerequisitesComplete(operationID: operationID)
+        case let .awaitUserApproval(operationID, operation):
+          guard operation.kind == .browserAuthenticate else {
+            throw TestFailure.unexpectedConnectionEvent
+          }
+          progress.approvals += 1
+          try await coordinator.approve(operationID: operationID)
+        case let .executeCardCommand(operationID, operation):
+          guard operation.kind == .browserAuthenticate else {
+            throw TestFailure.unexpectedConnectionEvent
+          }
+          progress.executions += 1
+          try await coordinator.completeSignature(
+            operationID: operationID,
+            signature: signature
+          )
+        case .operationFinished:
+          progress.acknowledgments += 1
+          return progress
+        case let .terminal(_, _, reason):
+          throw TestFailure.operationTerminated(reason)
+        case let .closed(reason):
+          throw TestFailure.connectionClosed(reason)
+        case .executeSafeRead, .completed, .advisoryCancellation,
+             .peerBusy, .peerUnknownOperation:
+          throw TestFailure.unexpectedConnectionEvent
+        }
+      }
+      throw TestFailure.operationEndedWithoutResult
+    }
+
+    private static func authorizeAndRejectBrowserAuthentication(
+      _ coordinator: RappConnectionCoordinator,
+      expectedDigest: Data
+    ) async throws -> ProxyProgress {
+      var progress = ProxyProgress()
+      for await event in coordinator.events {
+        switch event {
+        case .established:
+          break
+        case let .inspectPrerequisites(operationID, operation):
+          guard operation.kind == .browserAuthenticate,
+                operation.digest == expectedDigest else {
+            throw TestFailure.unexpectedConnectionEvent
+          }
+          progress.prerequisites += 1
+          try await coordinator.prerequisitesComplete(operationID: operationID)
+        case let .awaitUserApproval(operationID, operation):
+          guard operation.kind == .browserAuthenticate else {
+            throw TestFailure.unexpectedConnectionEvent
+          }
+          progress.approvals += 1
+          try await coordinator.approve(operationID: operationID)
+        case let .executeCardCommand(operationID, operation):
+          guard operation.kind == .browserAuthenticate else {
+            throw TestFailure.unexpectedConnectionEvent
+          }
+          progress.executions += 1
+          try await coordinator.credentialRejected(operationID: operationID)
+          return progress
+        case let .terminal(_, _, reason):
+          throw TestFailure.operationTerminated(reason)
+        case let .closed(reason):
+          throw TestFailure.connectionClosed(reason)
+        case .executeSafeRead, .completed, .advisoryCancellation,
+             .operationFinished, .peerBusy, .peerUnknownOperation:
+          throw TestFailure.unexpectedConnectionEvent
+        }
+      }
+      throw TestFailure.operationEndedWithoutResult
     }
 
     private static func approveAndAwaitPair(
@@ -244,8 +580,25 @@ import Testing
       throw TestFailure.pairingEndedWithoutRecord
     }
 
-    private static func deleteKeychainServices(prefix: String) {
-      for suffix in ["pair", "selection"] {
+    private static func deleteKeychainServices(for fixture: PairingFixture) {
+      deleteKeychainServices(
+        prefix: fixture.requesterPrefix,
+        pairID: fixture.requesterSummary.pairID
+      )
+      deleteKeychainServices(
+        prefix: fixture.proxyPrefix,
+        pairID: fixture.proxySummary.pairID
+      )
+    }
+
+    private static func deleteKeychainServices(prefix: String, pairID: Data) {
+      let pairHex = pairID.map { String(format: "%02x", $0) }.joined()
+      for suffix in [
+        "pair",
+        "selection",
+        "requester.\(pairHex)",
+        "proxy.\(pairHex)",
+      ] {
         let query: [String: Any] = [
           kSecClass as String: kSecClassGenericPassword,
           kSecAttrService as String: "\(prefix).\(suffix)",
