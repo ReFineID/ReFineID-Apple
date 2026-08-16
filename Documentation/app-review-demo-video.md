@@ -79,26 +79,47 @@ the card is being read.
    the reviewer held has no NFC antenna, and this is what it does
    instead.
 
-## Sanitization, not optional
+## What must stay off camera, and what need not
 
-`TASKS.md` requires a credential-free video, and the repository rules
-forbid publishing PINs, PUKs, full serials, and personal identifiers.
-Before filming:
+The video is credential-free, which is a narrower rule than it first
+looks. Three values are genuinely secret, and the rest are not.
 
-- Cover the printed fields on both faces of the card: photograph, name,
-  personal identity code, card number, card access number, signature,
-  and the machine-readable zone. Leave the card shape and the issuer
-  design visible so it is recognizable as the hardware.
-- Never film the card access number being typed. Cover the field, cut,
-  or film the entry from behind the phone.
-- Never film PIN 1, PIN 2, or a PUK being typed, and keep the keypad out
-  of frame while a credential is entered. The fields are masked on
-  screen; fingers on a keypad are not.
-- Blur the electronic client identifier (SATU) wherever a screen shows
-  it. The holder name may stay: it is already public as the developer of
-  record.
-- Retain no unsanitized master file. If the raw take contains anything
-  above, the raw take is deleted after the sanitized export.
+**Never filmed.** PIN 1, PIN 2, and the PUK. Enter them with the keypad
+out of frame: the fields are masked on screen, fingers on a keypad are
+not. These are the only values on the card with retry counters, and the
+only ones whose exposure costs the holder anything on its own.
+
+**Not a secret, and not treated as one.** The card access number is
+printed on the card face, has no retry counter, and is holder-visible by
+decision (`decisions.md`, 2026-07-28). It authorizes reading the card in
+a field; it does not authorize a signature, which PIN 1 still gates. The
+electronic client identifier is likewise public by construction: it sits
+in the authentication certificate that the card hands to every service
+the holder signs in to. Blurring either one would be ceremony.
+
+**The one real consideration.** The access number exists to stop remote
+skimming. Publishing this particular card's number removes the barrier
+that keeps a stranger's reader from opening a PACE channel to it while
+it sits in a pocket. That costs an attacker who has the card nothing -
+they can read the number off its face - but it does matter for a card
+carried in public. So it is the card owner's call, not a rule:
+
+- keep it simple and film the number freely, accepting that this card is
+  then skimmable at contactless range by anyone who saw the video; or
+- cover the printed number and film its entry from behind the phone,
+  keeping the barrier for this card intact.
+
+Either way the demonstration is complete: nothing in the review depends
+on the number being legible.
+
+**Worth covering anyway.** The personal identity code printed on the
+card. It is not secret either, but the electronic client identifier
+exists precisely so services need not handle it, and a public video is
+no reason to spread it. The photograph and holder name are the owner's
+choice; the name is already public as the developer of record.
+
+**Afterwards.** If the raw take shows a credential, the raw take is
+deleted once the sanitized export exists.
 
 ## Hosting
 
@@ -131,8 +152,7 @@ Filmed on a physical iPhone running exactly this build, 26.8.16 (114),
 the video shows the version in TestFlight, the initial setup with the
 card over NFC, a completed sign-in to a Finnish public e-service in
 Safari, a signed PDF, and the same card working through a USB-C reader.
-Printed card fields and personal identifiers are masked, and no card
-access number, PIN, or PUK is visible at any point.
+No PIN or PUK is visible at any point.
 
 One note on review devices: iPad has no NFC antenna, so the NFC path
 cannot run on the iPad Air used for the previous review. On iPad the
