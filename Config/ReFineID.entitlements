@@ -10,17 +10,18 @@
      digest and a certificate identifier - never a key, a PIN, or one
      byte of the document.
 
-     The network-server grant belongs to the encrypted, holder-paired
-     iPhone credential relay. The SCS loopback signing interface remains
-     independently compile-gated off by FEATURE_SCS. -->
+     There is no network-server grant: the iPhone credential relay
+     that needs one ships compile-gated off by FEATURE_IPHONE_RELAY
+     until its peer trust is an explicit pairing, and the SCS loopback
+     signing interface is independently gated off by FEATURE_SCS.
+     Restore the grant here when either feature ships - see
+     Config/Features.xcconfig. -->
 <dict>
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
 	<key>com.apple.security.smartcard</key>
 	<true/>
 	<key>com.apple.security.network.client</key>
-	<true/>
-	<key>com.apple.security.network.server</key>
 	<true/>
 	<!-- The open and save panels. A sandboxed app reaches a file the
 	     holder picked only through Powerbox, and Powerbox declines to

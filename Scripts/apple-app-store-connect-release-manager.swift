@@ -212,7 +212,6 @@ private func releaseArchiveLayout(at archive: URL) -> ReleaseArchiveLayout {
                 "com.apple.security.app-sandbox",
                 "com.apple.security.smartcard",
                 "com.apple.security.network.client",
-                "com.apple.security.network.server",
                 "com.apple.security.files.user-selected.read-write",
                 "com.apple.application-identifier",
                 "com.apple.developer.team-identifier",
@@ -466,22 +465,30 @@ private func inspectReleaseArchive(_ archive: URL) {
         }
     }
     if layout.platform == "macOS" {
+        // The iPhone relay ships compile-gated off, so the only network
+        // grant in the archive is the app's outbound client for archival
+        // time stamps and revocation data. A server grant anywhere, or
+        // any network grant on the token extension, is a relay build
+        // escaping its gate.
         let appEntitlements = releaseEntitlements(of: layout.app)
         let extensionEntitlements = releaseEntitlements(of: layout.tokenExecutable)
+        guard appEntitlements["com.apple.security.network.client"] as? Bool == true else {
+            releaseFail("\(layout.app.path): missing outbound network client entitlement")
+        }
+        guard appEntitlements["com.apple.security.network.server"] == nil else {
+            releaseFail("\(layout.app.path): carries the gated relay server entitlement")
+        }
         for entitlement in [
             "com.apple.security.network.client",
             "com.apple.security.network.server",
         ] {
-            guard appEntitlements[entitlement] as? Bool == true else {
-                releaseFail("\(layout.app.path): missing iPhone relay entitlement \(entitlement)")
-            }
-            guard extensionEntitlements[entitlement] as? Bool == true else {
+            guard extensionEntitlements[entitlement] == nil else {
                 releaseFail(
-                    "\(layout.tokenExecutable.path): missing iPhone relay entitlement \(entitlement)"
+                    "\(layout.tokenExecutable.path): carries gated network entitlement \(entitlement)"
                 )
             }
         }
-        releaseNote("app and token extension carry the reviewed iPhone relay entitlements")
+        releaseNote("network entitlements match the gated-relay shape")
     }
     releaseNote("entitlements match the reviewed allowlist")
 

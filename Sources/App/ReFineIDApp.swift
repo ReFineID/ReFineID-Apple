@@ -180,10 +180,18 @@ internal struct ReFineIDApp: App {
     // item. Nothing reads it now, so remove it on the first launch after
     // an upgrade rather than leave sensitive dead data in the keychain.
     CardCredentialStore.removeLegacySigningWindow()
-    #if os(iOS)
-      PhonePersistentTokenRelay.shared.start()
-    #elseif os(macOS)
-      MacPersistentTokenRegistry.shared.start()
+
+    // The iPhone credential relay stays out of shipping builds until its
+    // peer trust is an explicit cryptographic pairing: today the session
+    // accepts any nearby inviter, which is not the holder boundary the
+    // feature promises. Behind its flag the phone advertises nothing and
+    // the Mac asks nothing - see Config/Features.xcconfig.
+    #if FEATURE_IPHONE_RELAY
+      #if os(iOS)
+        PhonePersistentTokenRelay.shared.start()
+      #elseif os(macOS)
+        MacPersistentTokenRegistry.shared.start()
+      #endif
     #endif
 
     // A hold marks the next NFC field as its own registration field, and
