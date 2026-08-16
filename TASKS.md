@@ -18,8 +18,12 @@ the resolved halves of the original wording are recorded in git history.
   requests from the keychain PIN 1 without per-request consent. Re-enabling
   needs a pairing exchange, a persisted peer allowlist checked on both
   sides, per-request phone consent, accept/reject tests, restored network
-  entitlements and Bonjour declarations, and a decided macOS driver shape:
-  the relay build replaced the smart-card driver in the macOS extension
+  entitlements and Bonjour declarations, and a decided macOS driver shape.
+  The design is not open research: RAPP specifies the pairing, and the
+  release owner proved pairing and a remote credential operation on real
+  hardware in August 2026. What this item asks is that the proven design
+  be carried into this port. One design question does remain here: the
+  relay build replaced the smart-card driver in the macOS extension
   plist, so as built one macOS binary cannot serve a reader and the relay
   at once.
 - [ ] Finish serial-binding the contactless prime store. The published
