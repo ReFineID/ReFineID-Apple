@@ -23,7 +23,6 @@ milestone.
 
 ## 1. Product and public documentation
 
-- [ ] Add concise contribution and source-provenance guidance.
 - [ ] Publish one supported-hardware table covering card generations, key
   profiles, USB readers, iPhone NFC, and declared system consumers.
 - [ ] Reconcile public documentation with the implemented PIN 1 cache and retry
