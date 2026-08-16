@@ -9,8 +9,13 @@ import Foundation
 
 /// Stable coordinates shared by the hosting app and persistent token driver.
 public enum PersistentTokenIdentity {
+  /// The CryptoTokenKit class identifier both processes configure under.
   public static let classID = "fi.refineid.ReFineID.token"
+
+  /// Keychain object ID of the published authentication certificate.
   public static let certificateObjectID = "authentication-certificate"
+
+  /// Keychain object ID of the published authentication key.
   public static let keyObjectID = "authentication-key"
 }
 
@@ -22,15 +27,18 @@ public enum PersistentRelayCardProfile: String, Codable, Sendable {
   case rsa2048
   case rsa3072
 
+  /// Wraps a resolved card key profile for the wire.
   public init(_ profile: CardKeyProfile) {
-    self = switch profile {
-    case .ecdsaP256: .ecdsaP256
-    case .ecdsaP384: .ecdsaP384
-    case .rsa2048: .rsa2048
-    case .rsa3072: .rsa3072
-    }
+    self =
+      switch profile {
+      case .ecdsaP256: .ecdsaP256
+      case .ecdsaP384: .ecdsaP384
+      case .rsa2048: .rsa2048
+      case .rsa3072: .rsa3072
+      }
   }
 
+  /// The domain profile this wire value names.
   public var cardKeyProfile: CardKeyProfile {
     switch self {
     case .ecdsaP256: .ecdsaP256
@@ -42,7 +50,9 @@ public enum PersistentRelayCardProfile: String, Codable, Sendable {
 }
 
 /// The exact MSE:SET shape already resolved from CryptoTokenKit's algorithm
-/// chain. Only public signature parameters cross the relay.
+/// chain.
+///
+/// Only public signature parameters cross the relay.
 public enum PersistentRelaySigningAlgorithm: String, Codable, Sendable {
   case ecdsaSHA224
   case ecdsaSHA256
@@ -53,6 +63,8 @@ public enum PersistentRelaySigningAlgorithm: String, Codable, Sendable {
   case rsaPkcs1SHA512
   case rsaPssSHA256
 
+  /// Wraps a resolved signing algorithm, or nil for one the relay
+  /// does not carry.
   public init?(_ algorithm: SigningAlgorithm) {
     switch (algorithm.scheme, algorithm.hash) {
     case (.ecdsa, .sha224): self = .ecdsaSHA224
@@ -67,6 +79,7 @@ public enum PersistentRelaySigningAlgorithm: String, Codable, Sendable {
     }
   }
 
+  /// The domain algorithm this wire value names.
   public var signingAlgorithm: SigningAlgorithm {
     switch self {
     case .ecdsaSHA224: SigningAlgorithm(hash: .sha224, scheme: .ecdsa)
@@ -81,7 +94,9 @@ public enum PersistentRelaySigningAlgorithm: String, Codable, Sendable {
   }
 }
 
-/// A typed failure. Credentials and raw APDUs are deliberately absent.
+/// A typed failure.
+///
+/// Credentials and raw APDUs are deliberately absent.
 public enum PersistentRelayFailure: Codable, Equatable, Error, Sendable {
   case busy
   case cardUnavailable
@@ -109,6 +124,7 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
   case signatureResponse(id: UUID, signature: Data)
   case failure(id: UUID, reason: PersistentRelayFailure)
 
+  /// The correlation ID shared by a request and its answer.
   public var requestID: UUID {
     switch self {
     case .identityRequest(let id), .identityResponse(let id, _),
@@ -128,11 +144,13 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
 }
 
 #if canImport(MultipeerConnectivity)
+  /// Which side of the relay this process plays.
   public enum PersistentRelayRole: Sendable {
     case cardHolder
     case host
   }
 
+  /// Why the channel ended without an answer.
   public enum PersistentRelayTransportError: Error, Sendable {
     case cancelled
     case codec(String)
@@ -142,14 +160,19 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
     case timedOut
   }
 
+  /// What the channel reports to its one owner.
   public enum PersistentRelayEvent: Sendable {
     case connected
     case message(PersistentRelayMessage)
     case closed(PersistentRelayTransportError)
   }
 
-  /// A single encrypted MultipeerConnectivity channel. The phone advertises;
-  /// the Mac host or token extension browses and invites it.
+  /// A single encrypted MultipeerConnectivity channel.
+  ///
+  /// The phone advertises; the Mac host or token extension browses and
+  /// invites it. The link is encrypted but the peer trust is not yet an
+  /// explicit pairing, which is why the whole feature ships behind
+  /// FEATURE_IPHONE_RELAY.
   public final class PersistentRelaySession: NSObject, @unchecked Sendable,
     MCSessionDelegate, MCNearbyServiceAdvertiserDelegate,
     MCNearbyServiceBrowserDelegate
@@ -169,6 +192,7 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
     private var browser: MCNearbyServiceBrowser?
     private var lastFoundPeer: MCPeerID?
 
+    /// Builds a channel for one role that reports to one owner.
     public init(
       role: PersistentRelayRole,
       displayName: String,
@@ -211,6 +235,7 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
       return peer
     }
 
+    /// Advertises or browses, by role.
     public func start() {
       switch role {
       case .cardHolder:
@@ -234,6 +259,7 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
       trace("started role=\(role)")
     }
 
+    /// Sends one message to the connected peer, or throws.
     public func send(_ message: PersistentRelayMessage) throws {
       guard !session.connectedPeers.isEmpty else {
         throw PersistentRelayTransportError.disconnected
@@ -251,6 +277,7 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
       }
     }
 
+    /// Stops discovery, disconnects, and reports the channel closed.
     public func cancel() {
       advertiser?.stopAdvertisingPeer()
       browser?.stopBrowsingForPeers()
@@ -291,6 +318,7 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
       trace("invited \(peer.displayName)")
     }
 
+    /// Tracks the one connection and re-invites a lost first attempt.
     public func session(
       _: MCSession,
       peer peerID: MCPeerID,
@@ -315,6 +343,7 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
       }
     }
 
+    /// Decodes one message and hands it to the owner.
     public func session(
       _: MCSession,
       didReceive data: Data,
@@ -327,6 +356,7 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
       }
     }
 
+    /// Streams are not part of the protocol; ignored.
     public func session(
       _: MCSession,
       didReceive _: InputStream,
@@ -334,6 +364,7 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
       fromPeer _: MCPeerID
     ) {}
 
+    /// Resources are not part of the protocol; ignored.
     public func session(
       _: MCSession,
       didStartReceivingResourceWithName _: String,
@@ -341,6 +372,7 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
       with _: Progress
     ) {}
 
+    /// Resources are not part of the protocol; ignored.
     public func session(
       _: MCSession,
       didFinishReceivingResourceWithName _: String,
@@ -349,6 +381,11 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
       withError _: (any Error)?
     ) {}
 
+    /// Accepts the inviter into the encrypted session.
+    ///
+    /// Acceptance is currently unconditional: there is no pairing and
+    /// no peer allowlist yet. That gap is the release blocker keeping
+    /// FEATURE_IPHONE_RELAY out of shipping builds.
     public func advertiser(
       _: MCNearbyServiceAdvertiser,
       didReceiveInvitationFromPeer peerID: MCPeerID,
@@ -359,6 +396,7 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
       invitationHandler(true, session)
     }
 
+    /// Reports a failed advertising start as a closed channel.
     public func advertiser(
       _: MCNearbyServiceAdvertiser,
       didNotStartAdvertisingPeer error: any Error
@@ -367,6 +405,7 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
       finish(.startup(String(describing: error)))
     }
 
+    /// Invites the first advertised peer found.
     public func browser(
       _: MCNearbyServiceBrowser,
       foundPeer peerID: MCPeerID,
@@ -377,6 +416,7 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
       invite(peerID)
     }
 
+    /// Forgets a vanished peer so a stale invite is not retried.
     public func browser(_: MCNearbyServiceBrowser, lostPeer peerID: MCPeerID) {
       trace("lost \(peerID.displayName)")
       if lastFoundPeer?.displayName == peerID.displayName {
@@ -384,6 +424,7 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
       }
     }
 
+    /// Reports a failed browsing start as a closed channel.
     public func browser(
       _: MCNearbyServiceBrowser,
       didNotStartBrowsingForPeers error: any Error
@@ -401,7 +442,9 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
   }
 
   /// One synchronous request bridge for CryptoTokenKit's synchronous sign
-  /// callback. A client object is intentionally single-use.
+  /// callback.
+  ///
+  /// A client object is intentionally single-use.
   public final class PersistentRelayClient: @unchecked Sendable {
     private struct State: Sendable {
       var completed = false
@@ -420,10 +463,12 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
       self?.receive(event)
     }
 
+    /// Names the local peer; the channel starts on ``perform(_:timeout:)``.
     public init(displayName: String) {
       self.displayName = displayName
     }
 
+    /// Sends one request and blocks for its correlated answer.
     public func perform(
       _ request: PersistentRelayMessage,
       timeout: TimeInterval = 120
