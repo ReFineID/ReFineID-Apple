@@ -1,7 +1,7 @@
 # App Review notes
 
-What goes into App Store Connect's "Notes" field for the macOS
-review, and the evidence kept ready for reviewer questions. Reviewers
+What goes into App Store Connect's "Notes" field for the iOS and macOS
+reviews, and the evidence kept ready for reviewer questions. Reviewers
 have no Finnish identity card, so the notes must explain what the app
 is and what they can exercise without one.
 
@@ -17,20 +17,29 @@ removed. What replaced it says the two things the guideline turns on:
 there is no account to supply because the app has none, and the
 hardware is a legal identity document issued to one citizen, which
 cannot be duplicated or lent. The notes then list what does run
-without a card, and ask whether a demonstration mode is the expected
-remedy.
+without a card.
 
 Beta App Review approved the same binary on both platforms the same
 day. The rejection is about reviewer access, not about the build.
 
 ## The answer to it
 
-The demonstration mode the notes offered to add was added, on iPhone
-only, on 2026-08-13. The reasoning and its safety argument are in
-`Documentation/decisions.md`; the iOS notes now walk a reviewer
-through it in four steps. The macOS notes are unchanged, and still
-close by offering a demonstration mode: nothing has asked for one
-there.
+The demonstration mode the notes offered to add was added, on iOS
+only, on 2026-08-13, and grew into the Virtual ID Card: an explicit,
+fictional identity card whose state a reviewer edits through a
+floating editor, driving the production screens through activation,
+PIN changes and resets, retry refusal, fault injection, and qualified
+signing of a fictional PDF. `Documentation/virtual-id-card.md` owns
+the design; the iOS notes walk a reviewer through it, fictional
+numbers included, so no step depends on guessing a value.
+
+The macOS notes now state the app's complete network behaviour: the
+outbound time-stamp and revocation fetches that an archival signature
+performs, and the local-network relay through which the Mac uses the
+card held by the holder's own iPhone. The earlier claim that the app
+binds no listening socket predates the relay and is gone. The macOS
+notes still close by offering a demonstration mode there too: nothing
+has asked for one on macOS.
 
 ## Where the notes live
 
@@ -44,14 +53,15 @@ went stale, so the text is not repeated: read it there.
 
 - Export compliance rationale: `Documentation/export-compliance.md`.
 - Sandbox and entitlement rationale: comments in
-  `Config/ReFineID.entitlements`.
-- ATS rationale: comment in `Config/ReFineID-Info.plist` (the macOS
-  plist; the iOS build uses `Config/ReFineID-iOS-Info.plist`, which
-  declares no ATS exception because the iOS binary makes no network
-  request).
+  `Config/ReFineID.entitlements`, including the relay's network
+  client and server grants.
+- ATS rationale: comments in both `Config/ReFineID-Info.plist` and
+  `Config/ReFineID-iOS-Info.plist`. Both binaries make network
+  requests when signing a document: the time-stamp authority and
+  revocation endpoints an archival signature needs.
 
 ## Open decisions
 
 - Whether to provision a dedicated non-production card and reader
-  for the review team (TASKS.md section 12); any review PIN stays
-  out of source, issues, logs, and recordings.
+  for the review team; any review PIN stays out of source, issues,
+  logs, and recordings.

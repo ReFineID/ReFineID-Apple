@@ -1,12 +1,15 @@
-# App Store copy (draft)
+# App Store copy
 
-Status: approved, 2026-07-23.
+Status: reconciled with `Metadata/appstore.json`, 2026-08-16. The JSON is
+what `Scripts/apple-app-store-connect-release-manager.swift metadata`
+pushes; this file explains and mirrors it. If the two differ, the JSON
+is what the store shows, and the difference is a bug in this file.
 
 Character limits:
  * name 30
  * subtitle 30
  * promotional text 170
- * description 4000. 
+ * description 4000.
 
 ## Name
 
@@ -14,45 +17,93 @@ ReFineID (all languages)
 
 ## Subtitle (<=30 characters)
 
-- en: `Your ID card, in Safari`
-- fi: `Henkilökortti Safarissa`
-- sv: `Identitetskort i Safari`
+- en: `Use your identity card online`
+- fi: `Käytä henkilökorttia verkossa`
+- sv: `Använd identitetskortet online`
 
 ## Promotional text (<=170 characters)
 
-- en: `Log in services with your Finnish identity card.`
-- fi: `Kirjaudu palveluihin henkilökortilla.`
-- sv: `Logga in på tjänster med ditt identitetskort.`
+- en: `Log in to services with your identity card and sign documents.`
+- fi: `Kirjaudu palveluihin henkilökortilla ja allekirjoita asiakirjoja.`
+- sv: `Logga in på tjänster med ditt identitetskort och underteckna dokument.`
 
-## Description
+The macOS and iOS promotional texts are the same: both platforms sign
+documents since 26.8.16.
+
+## iOS description
 
 ### English
 
-ReFineID brings the Finnish identity card to iPhone.
+ReFineID brings the Finnish identity card to iPhone and iPad.
 
-Read your identity card with the iPhone's NFC antenna or a USB-C
-smart-card reader, then sign in to e-services directly in Safari with
-the certificate on your card.
+Read your card with a USB-C smart-card reader, or wirelessly on iPhone,
+then sign in to e-services directly in Safari with the certificate on
+your card. Pick a PDF in ReFineID to sign it with a qualified signature.
 
-ReFineID is open source.
+ReFineID is open source: github.com/ReFineID/ReFineID-Apple
 
 ### Suomi
 
-ReFineID tuo suomalaisen henkilökortin iPhoneen.
+ReFineID tuo suomalaisen henkilökortin iPhoneen ja iPadiin.
 
-Lue henkilökorttisi iPhonen NFC-antennilla tai USB-C-kortinlukijalla ja
+Lue korttisi USB-C-kortinlukijalla, tai iPhonessa langattomasti, ja
 kirjaudu sähköisiin palveluihin suoraan Safarissa kortin varmenteella.
+Valitse PDF ReFineID:ssä ja allekirjoita se hyväksytyllä sähköisellä
+allekirjoituksella.
 
-ReFineID on avointa lähdekoodia.
+ReFineID on avointa lähdekoodia: github.com/ReFineID/ReFineID-Apple
 
 ### Svenska
 
-ReFineID tar det finländska identitetskortet till iPhone.
+ReFineID tar det finländska identitetskortet till iPhone och iPad.
 
-Läs identitetskortet med iPhones NFC-antenn eller en USB-C-kortläsare och
-logga in på e-tjänster direkt i Safari med kortets certifikat.
+Läs kortet med en USB-C-kortläsare, eller trådlöst på iPhone, och logga
+in på e-tjänster direkt i Safari med kortets certifikat. Välj en PDF i
+ReFineID för att underteckna den med en kvalificerad elektronisk
+underskrift.
 
-ReFineID är öppen källkod.
+ReFineID är öppen källkod: github.com/ReFineID/ReFineID-Apple
+
+## macOS description
+
+Platform versions carry their own description in App Store Connect; the
+iOS text above names the iPhone and its readers, so the Mac release
+needs this one. Same rules: 4000 characters, en/fi/sv.
+
+### English
+
+A reader for the Finnish identity card.
+
+Insert your identity card into a USB smart-card reader and sign in to
+e-services directly in Safari with the certificate on your card. Drop a
+PDF on ReFineID to sign it with a qualified signature. With ReFineID on
+your iPhone, the Mac can also sign in with the card read by the phone.
+
+ReFineID is open source: github.com/ReFineID/ReFineID-Apple
+
+### Suomi
+
+Suomalaisen henkilökortin lukija.
+
+Aseta henkilökortti USB-kortinlukijaan ja kirjaudu sähköisiin
+palveluihin suoraan Safarissa kortin varmenteella. Pudota PDF
+ReFineID:hen ja allekirjoita se hyväksytyllä sähköisellä
+allekirjoituksella. Kun ReFineID on iPhonessasi, Mac voi kirjautua myös
+puhelimen lukemalla kortilla.
+
+ReFineID on avointa lähdekoodia: github.com/ReFineID/ReFineID-Apple
+
+### Svenska
+
+En läsare för det finländska identitetskortet.
+
+Sätt identitetskortet i en USB-kortläsare och logga in på e-tjänster
+direkt i Safari med kortets certifikat. Släpp en PDF på ReFineID för
+att underteckna den med en kvalificerad elektronisk underskrift. Med
+ReFineID på din iPhone kan Macen också logga in med kortet som
+telefonen läser.
+
+ReFineID är öppen källkod: github.com/ReFineID/ReFineID-Apple
 
 ## Keywords
 
@@ -60,47 +111,7 @@ ReFineID är öppen källkod.
 - fi: `henkilökortti`
 - sv: `identitetskort`
 
-## macOS description (draft, 2026-08-10)
-
-Platform versions carry their own description in App Store Connect;
-the iOS text above names the iPhone and NFC, so the Mac release needs
-this one. Same rules: 4000 characters, en/fi/sv.
-
-### English
-
-ReFineID brings the Finnish identity card to the Mac.
-
-Insert your identity card into a USB smart-card reader and sign in to
-e-services directly in Safari with the certificate on your card. Drop
-a PDF on ReFineID to sign it with a qualified signature, carrying a
-qualified timestamp and the evidence for long-term validation.
-
-ReFineID is open source: github.com/ReFineID/ReFineID-Apple
-
-### Suomi
-
-ReFineID tuo suomalaisen henkilökortin Maciin.
-
-Aseta henkilökortti USB-kortinlukijaan ja kirjaudu sähköisiin
-palveluihin suoraan Safarissa kortin varmenteella. Pudota PDF
-ReFineID:hen ja allekirjoita se hyväksytyllä sähköisellä
-allekirjoituksella, jossa on hyväksytty aikaleima ja
-pitkäaikaisvalidoinnin todisteet.
-
-ReFineID on avointa lähdekoodia: github.com/ReFineID/ReFineID-Apple
-
-### Svenska
-
-ReFineID tar det finländska identitetskortet till Macen.
-
-Sätt identitetskortet i en USB-kortläsare och logga in på e-tjänster
-direkt i Safari med kortets certifikat. Släpp en PDF på ReFineID för
-att underteckna den med en kvalificerad elektronisk underskrift, med
-kvalificerad tidsstämpel och underlag för långtidsvalidering.
-
-ReFineID är öppen källkod: github.com/ReFineID/ReFineID-Apple
-
-## App Store Connect fields (macOS)
+## App Store Connect fields
 
 The web-form values, so the record is filled from one reviewed place.
 All are public; none is a secret.
