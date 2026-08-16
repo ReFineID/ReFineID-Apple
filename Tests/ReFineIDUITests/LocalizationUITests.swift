@@ -46,7 +46,17 @@ internal final class LocalizationUITests: XCTestCase {
       // translation that outgrew its control. What is kept is what was
       // asked for.
       guard issue.auditType == Self.clipping else { return true }
-      clipped.append("\(issue.auditType): \(issue.compactDescription)")
+      let element = issue.element
+      clipped.append(
+        """
+        \(issue.auditType): \(issue.compactDescription)
+        \(issue.detailedDescription)
+        identifier=\(element?.identifier ?? "<none>")
+        label=\(element?.label ?? "<none>")
+        value=\(String(describing: element?.value))
+        frame=\(String(describing: element?.frame))
+        """
+      )
       return true
     }
     attachText(clipped.joined(separator: "\n"), named: "clipping-fi")
@@ -58,13 +68,45 @@ internal final class LocalizationUITests: XCTestCase {
 
   /// Launches in one language and reads the status window back.
   private func check(language: String) {
-    let app = UITestApp.launch(language: language)
+    let app = UITestApp.launch(
+      language: language,
+      arguments: ["--virtual-card", "absent"])
     app.activate()
+    self.applyRegisteredVirtualCard(in: app)
     XCTAssertTrue(
       app.buttons[UITestIdentifiers.pinManagementButton].waitForExistence(timeout: 10),
       "PIN Management is not exposed in \(language)"
     )
     attachScreenshot(app.screenshot(), named: "menu-\(language)")
     app.typeKey(.escape, modifierFlags: [])
+  }
+
+  /// Establishes the product state in which PIN management is intentionally
+  /// visible, using only the same editable virtual-card GUI a reviewer uses.
+  private func applyRegisteredVirtualCard(in app: XCUIApplication) {
+    let overlay = app.buttons[UITestIdentifiers.virtualCardOverlay]
+    XCTAssertTrue(overlay.waitForExistence(timeout: 10), "Virtual ID Card overlay is unavailable")
+    overlay.tap()
+
+    let editor = app.descendants(matching: .any)[UITestIdentifiers.virtualCardEditor].firstMatch
+    XCTAssertTrue(editor.waitForExistence(timeout: 10), "Virtual ID Card editor did not open")
+
+    let scenario =
+      app.descendants(matching: .any)[UITestIdentifiers.virtualCardScenario].firstMatch
+    XCTAssertTrue(scenario.waitForExistence(timeout: 10), "Virtual card scenario control is missing")
+    scenario.tap()
+
+    let registered =
+      app.descendants(matching: .any)["virtualCardScenarioOption.registered-nfc"].firstMatch
+    XCTAssertTrue(registered.waitForExistence(timeout: 10), "Registered NFC scenario is missing")
+    registered.tap()
+
+    let apply = app.buttons[UITestIdentifiers.virtualCardApply]
+    XCTAssertTrue(apply.waitForExistence(timeout: 10), "Virtual card Apply action is missing")
+    apply.tap()
+
+    XCTAssertTrue(
+      app.staticTexts[UITestIdentifiers.identityStatus].waitForExistence(timeout: 10),
+      "Registered virtual identity did not appear")
   }
 }

@@ -198,15 +198,21 @@ internal struct CardCredentialsView: View {
               synchronizeIdentityState()
               transition(.openDocumentSigning)
             } label: {
-              Label(
-                String(
+              HStack(spacing: 8) {
+                Image(systemName: "signature")
+                Text(
+                  String(
                   localized: "signing.title",
                   defaultValue: "Sign",
-                  table: "DocumentSigning"),
-                systemImage: "signature")
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
+                  table: "DocumentSigning")
+                )
+                .lineLimit(nil)
+                .fixedSize(horizontal: false, vertical: true)
+              }
+              .foregroundStyle(.white)
+              .frame(maxWidth: .infinity)
+              .multilineTextAlignment(.center)
+              .padding(.vertical, 8)
             }
             .buttonStyle(.borderedProminent)
             .accessibilityIdentifier("signDocuments")

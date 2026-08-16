@@ -207,7 +207,7 @@
       let app = UITestApp.launchVirtualCard()
       applyScenario("activated-nfc", in: app)
       let signing = app.buttons[UITestIdentifiers.signDocuments]
-      let key = app.buttons["manageCard"]
+      let key = app.buttons[UITestIdentifiers.pinManagementButton]
 
       XCTAssertTrue(
         signing.waitForExistence(timeout: Self.appearTimeout),
@@ -796,7 +796,7 @@
     }
 
     private func openManagement(in app: XCUIApplication) {
-      let key = app.buttons["manageCard"]
+      let key = app.buttons[UITestIdentifiers.pinManagementButton]
       XCTAssertTrue(key.waitForExistence(timeout: Self.appearTimeout))
       key.tap()
       XCTAssertTrue(
