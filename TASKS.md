@@ -10,11 +10,7 @@ Legend:
 
 ## 0. Decisions and repository foundation
 
-- [ ] Add `SECURITY.md` with private reporting instructions and supported
-  versions.
 - [ ] Add contribution guidance and the source/provenance policy.
-- [ ] Record architecture decisions for the pure-Swift CTK core, retry floor,
-  cache invariant, and tag-driven distribution.
 - [ ] Decide and register the final app and extension bundle identifiers.
   Decided 2026-07-22 (`Documentation/decisions.md`: `fi.refineid.ReFineID` +
   `fi.refineid.ReFineID.token`); explicit App ID registration on the release
