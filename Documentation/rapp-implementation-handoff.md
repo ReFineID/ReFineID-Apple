@@ -133,8 +133,17 @@ The following was measured before this handoff:
   not yet be described as proving every emitted action against the YAML model.
 - `swift build --package-path CardCore` passes.
 - The ReFineID Xcode scheme builds for macOS and generic iOS arm64.
-- 503 Apple unit tests in 81 suites passed on macOS. The overall invocation
-  later failed only when the UI-test runner could not enable automation mode.
+- 506 Apple unit tests in 82 suites pass on macOS. The focused RAPP adapter
+  suite drives requester and proxy pairing through the generated Rust bridge,
+  persists both pair records, verifies transport closure, selects the requester
+  pair, and proves that one revocation durably removes it from active and
+  selected state. It also exhaustively round-trips supported card profiles and
+  signature algorithms through the Apple mapping layer.
+- The RAPP vault's macOS listing path is measured against the file keychain:
+  macOS rejects a bulk `match all` query that requests both attributes and
+  secret data with `errSecParam`. The vault therefore enumerates account
+  attributes and loads each record through the supported single-item query.
+  The same 506-test run covers this persistence and enumeration path.
 - All 40 `VirtualIDCardUITests` GUI cases passed on an iPhone 17 Pro iOS 26.5
   Simulator in bounded batches. They cover card-state routing, factory and
   partial activation UI, all PIN operations, retry recovery, signing success,

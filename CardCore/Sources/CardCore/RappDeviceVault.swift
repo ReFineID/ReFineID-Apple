@@ -37,11 +37,18 @@ public final class RappDeviceVault: @unchecked Sendable {
     let revokedAtMilliseconds: UInt64?
   }
 
-  private enum Namespace {
-    static let pair = "fi.refineid.rapp.pair"
-    static let requester = "fi.refineid.rapp.requester"
-    static let proxy = "fi.refineid.rapp.proxy"
-    static let selection = "fi.refineid.rapp.selection"
+  private struct Namespace {
+    let pair: String
+    let requester: String
+    let proxy: String
+    let selection: String
+
+    init(prefix: String) {
+      pair = "\(prefix).pair"
+      requester = "\(prefix).requester"
+      proxy = "\(prefix).proxy"
+      selection = "\(prefix).selection"
+    }
   }
 
   private enum SelectionAccount {
@@ -58,12 +65,21 @@ public final class RappDeviceVault: @unchecked Sendable {
   }
 
   private let accessGroup: String?
+  private let namespace: Namespace
   private let lock = NSLock()
   private let encoder: PropertyListEncoder
   private let decoder = PropertyListDecoder()
 
-  public init(accessGroup: String? = nil) {
+  public convenience init(accessGroup: String? = nil) {
+    self.init(accessGroup: accessGroup, servicePrefix: "fi.refineid.rapp")
+  }
+
+  /// Isolates deterministic integration tests from production and from each
+  /// simulated peer. Production always enters through the public initializer.
+  internal init(accessGroup: String?, servicePrefix: String) {
+    precondition(!servicePrefix.isEmpty)
     self.accessGroup = accessGroup
+    namespace = Namespace(prefix: servicePrefix)
     encoder = PropertyListEncoder()
     encoder.outputFormat = .binary
   }
@@ -73,7 +89,7 @@ public final class RappDeviceVault: @unchecked Sendable {
       try requireIdentifier(pairID, size: IdentifierSize.pair)
       guard !record.isEmpty else { throw Failure.malformed }
       let marker = try pairMarker(state: .active, revokedAtMilliseconds: nil)
-      var item = itemQuery(service: Namespace.pair, account: pairID.hexadecimal)
+      var item = itemQuery(service: namespace.pair, account: pairID.hexadecimal)
       item[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
       item[kSecAttrGeneric as String] = marker
       item[kSecValueData as String] = record
@@ -92,7 +108,7 @@ public final class RappDeviceVault: @unchecked Sendable {
   public func loadPair(pairID: Data) throws -> Data? {
     try synchronized {
       try requireIdentifier(pairID, size: IdentifierSize.pair)
-      guard let item = try loadOne(service: Namespace.pair, account: pairID.hexadecimal) else {
+      guard let item = try loadOne(service: namespace.pair, account: pairID.hexadecimal) else {
         return nil
       }
       let marker = try decodePairMarker(item)
@@ -107,7 +123,7 @@ public final class RappDeviceVault: @unchecked Sendable {
   public func pairIsRevoked(pairID: Data) throws -> Bool {
     try synchronized {
       try requireIdentifier(pairID, size: IdentifierSize.pair)
-      guard let item = try loadOne(service: Namespace.pair, account: pairID.hexadecimal) else {
+      guard let item = try loadOne(service: namespace.pair, account: pairID.hexadecimal) else {
         return false
       }
       return try decodePairMarker(item).state == .revoked
@@ -116,7 +132,7 @@ public final class RappDeviceVault: @unchecked Sendable {
 
   public func activePairIDs() throws -> [Data] {
     try synchronized {
-      try loadAll(service: Namespace.pair).compactMap { item in
+      try loadAll(service: namespace.pair).compactMap { item in
         let marker = try decodePairMarker(item)
         guard marker.state == .active else { return nil }
         guard
@@ -135,7 +151,7 @@ public final class RappDeviceVault: @unchecked Sendable {
     try synchronized {
       guard
         let item = try loadOne(
-          service: Namespace.selection,
+          service: namespace.selection,
           account: SelectionAccount.current
         )
       else { return nil }
@@ -152,13 +168,13 @@ public final class RappDeviceVault: @unchecked Sendable {
       try requireIdentifier(pairID, size: IdentifierSize.pair)
       guard
         let item = try loadOne(
-          service: Namespace.pair,
+          service: namespace.pair,
           account: pairID.hexadecimal
         ),
         try decodePairMarker(item).state == .active
       else { throw Failure.notFound }
       try upsert(
-        service: Namespace.selection,
+        service: namespace.selection,
         account: SelectionAccount.current,
         attributes: [kSecValueData as String: pairID]
       )
@@ -168,7 +184,7 @@ public final class RappDeviceVault: @unchecked Sendable {
   public func clearSelectedPair() throws {
     try synchronized {
       let status = SecItemDelete(itemQuery(
-        service: Namespace.selection,
+        service: namespace.selection,
         account: SelectionAccount.current
       ) as CFDictionary)
       guard status == errSecSuccess || status == errSecItemNotFound else {
@@ -188,7 +204,7 @@ public final class RappDeviceVault: @unchecked Sendable {
         kSecValueData as String: Data(),
       ]
       try updateExisting(
-        service: Namespace.pair,
+        service: namespace.pair,
         account: pairID.hexadecimal,
         attributes: attributes)
     }
@@ -203,7 +219,7 @@ public final class RappDeviceVault: @unchecked Sendable {
       try requireOperationIdentifiers(pairID: pairID, operationID: operationID)
       guard !record.isEmpty else { throw Failure.malformed }
       try upsert(
-        service: operationService(namespace: Namespace.requester, pairID: pairID),
+        service: operationService(namespace: namespace.requester, pairID: pairID),
         account: operationID.hexadecimal,
         attributes: [kSecValueData as String: record])
     }
@@ -213,7 +229,7 @@ public final class RappDeviceVault: @unchecked Sendable {
     try synchronized {
       try requireIdentifier(pairID, size: IdentifierSize.pair)
       return try loadAll(
-        service: operationService(namespace: Namespace.requester, pairID: pairID)
+        service: operationService(namespace: namespace.requester, pairID: pairID)
       ).map { item in
         guard let record = item[kSecValueData as String] as? Data, !record.isEmpty else {
           throw Failure.malformed
@@ -277,7 +293,7 @@ public final class RappDeviceVault: @unchecked Sendable {
     try synchronized {
       try requireIdentifier(pairID, size: IdentifierSize.pair)
       return try loadAll(
-        service: operationService(namespace: Namespace.proxy, pairID: pairID)
+        service: operationService(namespace: namespace.proxy, pairID: pairID)
       ).map { item in
         guard let record = item[kSecAttrGeneric as String] as? Data, !record.isEmpty,
           let result = item[kSecValueData as String] as? Data
@@ -294,8 +310,8 @@ public final class RappDeviceVault: @unchecked Sendable {
   public func removeOperationRecords(pairID: Data) throws {
     try synchronized {
       try requireIdentifier(pairID, size: IdentifierSize.pair)
-      try deleteAll(service: operationService(namespace: Namespace.requester, pairID: pairID))
-      try deleteAll(service: operationService(namespace: Namespace.proxy, pairID: pairID))
+      try deleteAll(service: operationService(namespace: namespace.requester, pairID: pairID))
+      try deleteAll(service: operationService(namespace: namespace.proxy, pairID: pairID))
     }
   }
 
@@ -313,7 +329,7 @@ public final class RappDeviceVault: @unchecked Sendable {
     try synchronized {
       try requireOperationIdentifiers(pairID: pairID, operationID: operationID)
       guard !record.isEmpty else { throw Failure.malformed }
-      let service = operationService(namespace: Namespace.proxy, pairID: pairID)
+      let service = operationService(namespace: namespace.proxy, pairID: pairID)
       let account = operationID.hexadecimal
       var attributes: [String: Any] = [kSecAttrGeneric as String: record]
       switch retainedResult {
@@ -366,7 +382,8 @@ public final class RappDeviceVault: @unchecked Sendable {
     var query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
-      kSecAttrSynchronizable as String: kCFBooleanFalse as Any,
+      kSecUseDataProtectionKeychain as String: KeychainPlatform.usesDataProtection,
+      kSecAttrSynchronizable as String: false,
     ]
     if let account {
       query[kSecAttrAccount as String] = account
@@ -398,13 +415,21 @@ public final class RappDeviceVault: @unchecked Sendable {
   private func loadAll(service: String) throws -> [[String: Any]] {
     var query = itemQuery(service: service)
     query[kSecReturnAttributes as String] = kCFBooleanTrue
-    query[kSecReturnData as String] = kCFBooleanTrue
     query[kSecMatchLimit as String] = kSecMatchLimitAll
     var output: CFTypeRef?
     let status = SecItemCopyMatching(query as CFDictionary, &output)
     switch status {
     case errSecSuccess:
-      guard let items = output as? [[String: Any]] else { throw Failure.malformed }
+      guard let attributes = output as? [[String: Any]] else { throw Failure.malformed }
+      let items = try attributes.map { item in
+        guard let account = item[kSecAttrAccount as String] as? String else {
+          throw Failure.malformed
+        }
+        guard let loaded = try loadOne(service: service, account: account) else {
+          throw Failure.notFound
+        }
+        return loaded
+      }
       return items.sorted {
         ($0[kSecAttrAccount as String] as? String ?? "")
           < ($1[kSecAttrAccount as String] as? String ?? "")
