@@ -145,9 +145,10 @@
       }
     }
 
-    private var credentialSection: some View {
-      Section(text("signing.authorization", "Signature authorization")) {
-        CredentialSecretField(
+    @ViewBuilder private var credentialSection: some View {
+      if requiresRequesterPIN2 {
+        Section(text("signing.authorization", "Signature authorization")) {
+          CredentialSecretField(
           name: text("signing.pin2", "Signature (PIN 2)"),
           text: $pin2,
           revealIdentifier: "signingPIN2Reveal",
@@ -173,7 +174,8 @@
                 .accessibilityHidden(true)
             }
           }
-        )
+          )
+        }
       }
     }
 
@@ -213,7 +215,15 @@
     }
 
     private var canSign: Bool {
-      !isSigning && !inputs.isEmpty && pin2IsValid
+      !isSigning && !inputs.isEmpty && (!requiresRequesterPIN2 || pin2IsValid)
+    }
+
+    private var requiresRequesterPIN2: Bool {
+      #if os(macOS)
+        !DocumentSigner.usesRappSigning
+      #else
+        true
+      #endif
     }
 
     private func importResult(_ result: Result<[URL], Error>) {
@@ -254,13 +264,13 @@
       guard canSign else { return }
       isSigning = true
       message = nil
-      let enteredPIN2 = pin2
+      let enteredPIN2: String? = requiresRequesterPIN2 ? pin2 : nil
       defer {
         pin2 = ""
         isSigning = false
       }
       if DemoMode.shared.isActive {
-        await signWithVirtualCard(pin2: enteredPIN2)
+        await signWithVirtualCard(pin2: enteredPIN2 ?? "")
         return
       }
       do {

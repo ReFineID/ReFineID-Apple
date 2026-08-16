@@ -11,6 +11,17 @@ import Foundation
 /// one exclusive session. An NFC action therefore presents one system
 /// sheet and never opens another sheet merely to refresh counters.
 internal enum CardMaintenance {
+  #if canImport(CoreNFC) && os(iOS)
+    /// Result of one PACE-authenticated NFC hold. A rejected CAN remains
+    /// distinct because RAPP must terminate that peer session immediately;
+    /// neither a missing card nor an unrelated card failure proves rejection.
+    internal enum SecureNearFieldResult<Payload: Sendable>: Sendable {
+      case connected(Payload)
+      case failed
+      case wrongCardAccessNumber
+    }
+  #endif
+
   internal enum ConnectionSnapshotResult: Sendable {
     case connected(Snapshot)
     case failed
@@ -85,6 +96,47 @@ internal enum CardMaintenance {
       #endif
     }
   }
+
+  #if canImport(CoreNFC) && os(iOS)
+    /// Runs one RAPP card operation in one exclusive NFC hold after PACE.
+    ///
+    /// The callback receives only secure-messaging `CardOperations`. It cannot
+    /// retain the card, channel, or NFC slot. A caller therefore performs its
+    /// fresh retry probe and the one credential-bearing command in this same
+    /// callback, with no UI delay or second NFC session between them.
+    internal static func onSecureNearFieldCard<Payload: Sendable>(
+      cardAccessNumber: String,
+      message: String,
+      _ operation: @escaping @Sendable (CardOperations) -> Payload
+    ) async -> SecureNearFieldResult<Payload> {
+      guard SupportedCardTransports.offersNearField else { return .failed }
+      let held: NearFieldCardSession
+      do {
+        held = try await NearFieldCardSession.open(message: message)
+      } catch {
+        return .failed
+      }
+      defer { held.end() }
+      return await withCheckedContinuation { continuation in
+        DispatchQueue.global(qos: .userInitiated).async {
+          let answer = try? held.withCardSession { channel in
+            do {
+              let operations = try connectionOperations(
+                over: channel,
+                cardAccessNumber: cardAccessNumber
+              )
+              return SecureNearFieldResult.connected(operation(operations))
+            } catch ConnectionFailure.wrongCardAccessNumber {
+              return SecureNearFieldResult<Payload>.wrongCardAccessNumber
+            } catch {
+              return SecureNearFieldResult<Payload>.failed
+            }
+          }
+          continuation.resume(returning: answer ?? .failed)
+        }
+      }
+    }
+  #endif
 
   /// Reader-only compatibility for signing and SCS callers.
   internal static func onCard<Answer: Sendable>(

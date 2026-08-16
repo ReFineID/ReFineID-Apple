@@ -4252,7 +4252,648 @@
           }
         }
       }
+    },
+    "Allow this device": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salli tämä laite"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tillåt den här enheten"
+          }
+        }
+      }
+    },
+    "Card status": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortin tila"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortstatus"
+          }
+        }
+      }
+    },
+    "Card-holding device": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Korttia käyttävä laite"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enhet som använder kortet"
+          }
+        }
+      }
+    },
+    "Confirm the other device": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vahvista toinen laite"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bekräfta den andra enheten"
+          }
+        }
+      }
+    },
+    "Deny": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estä"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neka"
+          }
+        }
+      }
+    },
+    "Device": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laite"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enhet"
+          }
+        }
+      }
+    },
+    "Document signing": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asiakirjojen allekirjoittaminen"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokumentsignering"
+          }
+        }
+      }
+    },
+    "Establishing a secure connection": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muodostetaan suojattua yhteyttä"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upprättar en säker anslutning"
+          }
+        }
+      }
+    },
+    "Mac": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac"
+          }
+        }
+      }
+    },
+    "No paired device selected": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paritettua laitetta ei ole valittu"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingen parkopplad enhet har valts"
+          }
+        }
+      }
+    },
+    "No paired devices": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ei paritettuja laitteita"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inga parkopplade enheter"
+          }
+        }
+      }
+    },
+    "Only the listed supported access is granted to this device": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laitteelle sallitaan vain luetellut tuetut käyttöoikeudet"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enheten får endast de angivna åtkomsträttigheter som stöds"
+          }
+        }
+      }
+    },
+    "PIN management": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN-tunnuslukujen hallinta"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN-hantering"
+          }
+        }
+      }
+    },
+    "Pair a phone": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parita puhelin"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parkoppla en telefon"
+          }
+        }
+      }
+    },
+    "Paired device selected": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paritettu laite valittu"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parkopplad enhet vald"
+          }
+        }
+      }
+    },
+    "Paired devices": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paritetut laitteet"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parkopplade enheter"
+          }
+        }
+      }
+    },
+    "Pairing QR code": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parituksen QR-koodi"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "QR-kod för parkoppling"
+          }
+        }
+      }
+    },
+    "Pairing code scanner": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parituskoodin lukija"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läsare för parkopplingskod"
+          }
+        }
+      }
+    },
+    "Pairing could not be started": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paritusta ei voitu aloittaa"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parkopplingen kunde inte startas"
+          }
+        }
+      }
+    },
+    "Pairing ended before it was completed": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paritus päättyi ennen valmistumista"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parkopplingen avslutades innan den var klar"
+          }
+        }
+      }
+    },
+    "Pairing was denied": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paritus estettiin"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parkopplingen nekades"
+          }
+        }
+      }
+    },
+    "Platform": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alusta"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plattform"
+          }
+        }
+      }
+    },
+    "ReFineID Mac": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ReFineID Mac"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ReFineID Mac"
+          }
+        }
+      }
+    },
+    "ReFineID iPhone": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ReFineID iPhone"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ReFineID iPhone"
+          }
+        }
+      }
+    },
+    "Remote card connections": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Etäkorttiyhteydet"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fjärrkortanslutningar"
+          }
+        }
+      }
+    },
+    "Remove paired device": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poista paritettu laite"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort parkopplad enhet"
+          }
+        }
+      }
+    },
+    "Requested access": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pyydetyt käyttöoikeudet"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Begärd åtkomst"
+          }
+        }
+      }
+    },
+    "Requesting device": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pyytävä laite"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Begärande enhet"
+          }
+        }
+      }
+    },
+    "Scan pairing code": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skannaa parituskoodi"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skanna parkopplingskoden"
+          }
+        }
+      }
+    },
+    "Scan the code shown on the other device": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skannaa toisessa laitteessa näkyvä koodi"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skanna koden som visas på den andra enheten"
+          }
+        }
+      }
+    },
+    "Scan with ReFineID on the phone": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skannaa puhelimen ReFineID-sovelluksella"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skanna med ReFineID på telefonen"
+          }
+        }
+      }
+    },
+    "Secure connection paired": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suojattu yhteys paritettu"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Säker anslutning parkopplad"
+          }
+        }
+      }
+    },
+    "Selected": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valittu"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vald"
+          }
+        }
+      }
+    },
+    "The camera cannot scan pairing codes right now": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kamera ei voi lukea parituskoodeja juuri nyt"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kameran kan inte läsa parkopplingskoder just nu"
+          }
+        }
+      }
+    },
+    "The paired device could not be removed": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paritettua laitetta ei voitu poistaa"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den parkopplade enheten kunde inte tas bort"
+          }
+        }
+      }
+    },
+    "The paired device could not be selected": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paritettua laitetta ei voitu valita"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den parkopplade enheten kunde inte väljas"
+          }
+        }
+      }
+    },
+    "The paired device is no longer available": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paritettu laite ei ole enää käytettävissä"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den parkopplade enheten är inte längre tillgänglig"
+          }
+        }
+      }
+    },
+    "The pairing code is invalid or expired": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parituskoodi on virheellinen tai vanhentunut"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parkopplingskoden är ogiltig eller har gått ut"
+          }
+        }
+      }
+    },
+    "Unknown access": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tuntematon käyttöoikeus"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Okänd åtkomst"
+          }
+        }
+      }
+    },
+    "Waiting for the phone": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odotetaan puhelinta"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Väntar på telefonen"
+          }
+        }
+      }
     }
+
   },
   "version": "1.0"
 }

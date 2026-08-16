@@ -11,6 +11,9 @@
 
     @State private var model = ReaderIdentityModeModel()
 
+      @State private var authorizationInbox = RappAuthorizationInbox.shared
+      @State private var showsRappPairing = false
+
     internal var body: some View {
       NavigationStack {
         if model.isActive {
@@ -27,6 +30,32 @@
           model.refresh()
         }
       }
+        .toolbar {
+          ToolbarItem(placement: .topBarLeading) {
+            RappPairingButton(isPresented: $showsRappPairing)
+          }
+        }
+        .sheet(isPresented: $showsRappPairing) {
+          RappPairingView()
+        }
+        .sheet(
+          item: Binding(
+            get: { authorizationInbox.request },
+            set: { presented in
+              guard
+                presented == nil,
+                let pending = authorizationInbox.request
+              else { return }
+              authorizationInbox.deny(pending.id)
+            }
+          )
+        ) { request in
+          RappAuthorizationView(
+            request: request,
+            inbox: authorizationInbox
+          )
+          .presentationDetents([.medium, .large])
+        }
     }
   }
 

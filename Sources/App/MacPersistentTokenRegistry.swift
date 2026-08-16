@@ -21,29 +21,26 @@
       guard !isRunning, Self.needsIdentity else { return }
       isRunning = true
       Task.detached(priority: .userInitiated) {
-        let id = UUID()
-        let response: PersistentRelayMessage?
+        let certificateDER: Data?
         do {
-          response = try PersistentRelayClient(displayName: "ReFineID Mac")
-            .perform(.identityRequest(id: id))
+          let response = try RappPersistentRequesterClient(
+            displayName: "ReFineID Mac"
+          ).perform(.readAuthenticationCertificate)
+          guard case let .authenticationCertificate(certificate) = response else {
+            await MacPersistentTokenRegistry.shared.finish(nil)
+            return
+          }
+          certificateDER = certificate
         } catch {
-          response = nil
+          certificateDER = nil
         }
-        await MacPersistentTokenRegistry.shared.finish(
-          response,
-          requestID: id
-        )
+        await MacPersistentTokenRegistry.shared.finish(certificateDER)
       }
     }
 
-    private func finish(
-      _ response: PersistentRelayMessage?,
-      requestID: UUID
-    ) {
+    private func finish(_ certificateDER: Data?) {
       defer { isRunning = false }
-      guard case .identityResponse(requestID, let certificateDER) = response else {
-        return
-      }
+      guard let certificateDER else { return }
       Self.publish(certificateDER)
     }
 

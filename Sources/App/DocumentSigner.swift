@@ -2,6 +2,7 @@
 
 
 import CardCore
+import CryptoKit
 import Dispatch
 import Foundation
 import Security
@@ -64,7 +65,7 @@ internal enum DocumentSigner {
   /// Signs `document`, answering the finished bytes.
   internal static func sign(
     _ document: Data,
-    pin2: String,
+    pin2: String?,
     reason: String?,
     location: String?,
     transport: CardMaintenance.Transport = .reader,
@@ -89,7 +90,7 @@ internal enum DocumentSigner {
   /// signing.
   internal static func sign(
     _ document: Data,
-    pin2: String,
+    pin2: String?,
     reason: String?,
     location: String?,
     stamp: VisibleStamp?,
@@ -112,7 +113,7 @@ internal enum DocumentSigner {
   /// The same operation with one instant shared by the QR and PDF.
   internal static func sign(
     _ document: Data,
-    pin2: String,
+    pin2: String?,
     claim: PdfIncrementalSigner.SignatureClaim,
     stamp: VisibleStamp?,
     transport: CardMaintenance.Transport = .reader,
@@ -167,7 +168,7 @@ internal enum DocumentSigner {
   /// Reads the qualified certificate, verifies PIN2 and signs, in
   /// one exclusive card session.
   private static func cardMaterial(
-    pin2: String,
+    pin2: String?,
     document: Data,
     claim: PdfIncrementalSigner.SignatureClaim,
     stamp: VisibleStamp?,
@@ -183,6 +184,18 @@ internal enum DocumentSigner {
       throw Failure.document(error)
     }
     let digest = prepared.digest
+    #if os(macOS)
+      if await MainActor.run(body: { Self.usesRappSigning }) {
+        return try await Self.remoteCardMaterial(
+          prepared: prepared,
+          byteRangeDigest: digest,
+          expectedCertificate: stamp?.signerCertificate
+        )
+      }
+    #endif
+    guard let pin2 else {
+      throw Failure.card(.invalidEntry)
+    }
     let answer = await CardMaintenance.qualifiedSignature(
       pin2: pin2,
       expectedCertificate: stamp?.signerCertificate,
@@ -208,6 +221,110 @@ internal enum DocumentSigner {
       throw Failure.card(outcome)
     }
   }
+
+  #if os(macOS)
+    /// A selected RAPP phone is the signing device only when no local reader
+    /// card is ready. The two paths never silently retry one another after an
+    /// authenticated or credential-bearing operation has begun.
+    @MainActor internal static var usesRappSigning: Bool {
+      guard !CardPresence.shared.isReaderCardReady else { return false }
+      let selected = try? RappDeviceVault().selectedPairID()
+      return (selected ?? nil) != nil
+    }
+
+    /// Builds the same locally verified card material as the reader path while
+    /// delegating only the certificate read and PIN 2 card signature to the
+    /// explicitly paired phone.
+    private static func remoteCardMaterial(
+      prepared: PdfSignaturePlaceholder,
+      byteRangeDigest: Data,
+      expectedCertificate: Data?
+    ) async throws -> CardMaterial {
+      let product = try await Self.remoteQualifiedSignature(
+        documentName: String(
+          localized: "Document",
+          defaultValue: "Document",
+          table: "DocumentSigning"
+        ),
+        expectedCertificate: expectedCertificate
+      ) { certificate in
+        QualifiedDocumentCms.signedAttributes(
+          byteRangeDigest: byteRangeDigest,
+          signerCertificate: certificate
+        )
+      }
+      return CardMaterial(
+        placeholder: prepared,
+        signedAttributes: product.content,
+        signature: product.signature,
+        certificate: product.certificate,
+        profile: product.profile
+      )
+    }
+
+    /// Performs one remote qualified-signature operation. The requester sends
+    /// only the digest and public algorithm metadata; PIN 2 exists solely in
+    /// the phone authorization UI and its NFC card session.
+    internal static func remoteQualifiedSignature(
+      documentName: String,
+      expectedCertificate: Data?,
+      content: @escaping @Sendable (Data) -> Data
+    ) async throws -> CardMaintenance.QualifiedProduct {
+      try await Task.detached(priority: .userInitiated) {
+        let displayName = ProcessInfo.processInfo.hostName
+        let certificateClient = RappPersistentRequesterClient(displayName: displayName)
+        let certificateResponse = try certificateClient.perform(.readSignatureCertificate)
+        guard case .signatureCertificate(let certificate) = certificateResponse else {
+          throw Failure.card(.failed)
+        }
+        guard CardMaintenance.qualifiedCertificate(
+          certificate, matches: expectedCertificate
+        ) else {
+          throw Failure.stampSignerChanged
+        }
+        guard
+          let securityCertificate = SecCertificateCreateWithData(
+            nil, certificate as CFData
+          ),
+          let publicKey = SecCertificateCopyKey(securityCertificate),
+          let profile = CardKeyProfile.resolve(fromPublicKey: publicKey)
+        else {
+          throw Failure.card(.failed)
+        }
+
+        let signedContent = content(certificate)
+        let digest = Data(SHA384.hash(data: signedContent))
+        guard
+          let request = profile.qualifiedDocumentRequest(digest: digest),
+          let remoteAlgorithm = RappOperationDriver.SignatureAlgorithm(request.algorithm)
+        else {
+          throw Failure.card(.failed)
+        }
+
+        let signingClient = RappPersistentRequesterClient(displayName: displayName)
+        let signatureResponse = try signingClient.perform(
+          .documentSigning(
+            documentName: documentName,
+            keyProfile: RappOperationDriver.KeyProfile(profile),
+            algorithm: remoteAlgorithm,
+            digest: digest
+          )
+        )
+        guard
+          case .signature(let signature) = signatureResponse,
+          request.isSatisfied(by: signature, from: publicKey)
+        else {
+          throw Failure.card(.failed)
+        }
+        return CardMaintenance.QualifiedProduct(
+          signature: signature,
+          content: signedContent,
+          certificate: certificate,
+          profile: profile
+        )
+      }.value
+    }
+  #endif
 
   /// A detached raw signature over the stamp's compact claim.
   ///

@@ -3,212 +3,240 @@
 #if os(iOS) && canImport(CoreNFC)
   import CardCore
   import Foundation
+  import ReFineIDRapp
 
-  /// Keeps the phone visible on the encrypted relay and performs only the card
-  /// operation requested by the Mac. CAN and PIN 1 remain in this process.
-  @MainActor
-  internal final class PhonePersistentTokenRelay {
-    internal static let shared = PhonePersistentTokenRelay()
+    /// Owns the phone side of one mutually authenticated RAPP connection.
+    /// MultipeerConnectivity remains an opaque frame carrier; all identity,
+    /// sequencing, operation, and fail-stop decisions belong to RAPP.
+    @MainActor
+    internal final class PhonePersistentTokenRelay {
+      internal static let shared = PhonePersistentTokenRelay()
 
-    private var relay: PersistentRelaySession?
-    private var isBusy = false
-
-    private init() {}
-
-    internal func start() {
-      guard relay == nil else { return }
-      let relay = PersistentRelaySession(
-        role: .cardHolder,
-        displayName: "ReFineID iPhone"
-      ) { [weak self] event in
-        Task { @MainActor in
-          self?.receive(event)
-        }
+      private enum RelistenPolicy {
+        case automatic
+        case explicitUserActionRequired
       }
-      self.relay = relay
-      relay.start()
-    }
 
-    private func receive(_ event: PersistentRelayEvent) {
-      switch event {
-      case .connected:
-        break
-      case .message(let message):
-        serve(message)
-      case .closed:
-        relay = nil
-        isBusy = false
-        Task { @MainActor in
-          await Task.yield()
-          self.start()
-        }
-      }
-    }
+      private static let maximumPreCoordinatorFrames = 4
 
-    private func serve(_ message: PersistentRelayMessage) {
-      let id = message.requestID
-      guard !isBusy else {
-        try? relay?.send(.failure(id: id, reason: .busy))
-        return
-      }
-      let respondingRelay = relay
-      switch message {
-      case .identityRequest:
-        isBusy = true
-        Task { @MainActor in
-          let response: PersistentRelayMessage = switch await PhoneRelayCard.identity() {
-          case .success(let certificate):
-            .identityResponse(id: id, certificateDER: certificate)
-          case .failure(let reason):
-            .failure(id: id, reason: reason)
+      private let vault = RappDeviceVault()
+      private let policy = RappRequesterPolicy.interactive
+      private var relay: PersistentRelaySession?
+      private var coordinator: RappConnectionCoordinator?
+      private var dispatcher: RappPhoneProxyDispatcher?
+      private var connectionID: UUID?
+      private var preCoordinatorFrames: [Data] = []
+      private var relistenPolicy = RelistenPolicy.automatic
+
+      private init() {}
+
+      internal func start() {
+        guard relay == nil, coordinator == nil,
+          relistenPolicy == .automatic,
+          hasUsableSelectedPair()
+        else { return }
+
+        let connectionID = UUID()
+        let relay = PersistentRelaySession(
+          role: .cardHolder,
+          displayName: "ReFineID iPhone"
+        ) { [weak self] event in
+          Task { @MainActor in
+            self?.receive(event, connectionID: connectionID)
           }
-          try? respondingRelay?.send(response)
-          self.isBusy = false
         }
-      case .signatureRequest(_, let profile, let algorithm, let digest):
-        isBusy = true
-        Task { @MainActor in
-          let response: PersistentRelayMessage = switch await PhoneRelayCard.sign(
-            profile: profile,
-            algorithm: algorithm,
-            digest: digest
-          ) {
-          case .success(let signature):
-            .signatureResponse(id: id, signature: signature)
-          case .failure(let reason):
-            .failure(id: id, reason: reason)
-          }
-          try? respondingRelay?.send(response)
-          self.isBusy = false
-        }
-      case .identityResponse, .signatureResponse, .failure:
-        break
+        self.connectionID = connectionID
+        self.relay = relay
+        relay.start()
       }
-    }
-  }
 
-  /// One fresh NFC field per identity read or signature request.
-  private enum PhoneRelayCard {
-  typealias Answer<Value: Sendable> = Result<Value, PersistentRelayFailure>
+      /// Explicit UI action may call this after the user has corrected local
+      /// credentials or deliberately chosen to reconnect. It never restores a
+      /// revoked pair; the vault remains authoritative.
+      internal func resumeAfterUserAction() {
+        relistenPolicy = .automatic
+        if relay == nil, coordinator == nil { start() }
+      }
 
-    static func identity() async -> Answer<Data> {
-      await withSelectedCard(
-        message: String(localized: "Hold the identity card near the top of the iPhone.")
-      ) { operations in
+      internal func suspendForPairing() {
+        relistenPolicy = .explicitUserActionRequired
+        let coordinator = coordinator
+        relay?.cancel()
+        Task { await coordinator?.close() }
+      }
+
+      private func receive(
+        _ event: PersistentRelayEvent,
+        connectionID: UUID
+      ) {
+        guard self.connectionID == connectionID else { return }
+        switch event {
+        case .connected:
+          establish(connectionID: connectionID)
+
+        case let .frame(frame):
+          if let coordinator {
+            Task { await coordinator.receive(frame) }
+          } else if preCoordinatorFrames.count < Self.maximumPreCoordinatorFrames {
+            preCoordinatorFrames.append(frame)
+          } else {
+            relay?.cancel()
+          }
+
+        case .closed:
+          let coordinator = coordinator
+          self.coordinator = nil
+          dispatcher = nil
+          relay = nil
+          self.connectionID = nil
+          preCoordinatorFrames.removeAll(keepingCapacity: false)
+          Task { await coordinator?.transportClosed() }
+          if !hasUsableSelectedPair() {
+            relistenPolicy = .explicitUserActionRequired
+          }
+          guard relistenPolicy == .automatic else { return }
+          Task { @MainActor in
+            await Task.yield()
+            self.start()
+          }
+        }
+      }
+
+      private func establish(connectionID: UUID) {
+        guard self.connectionID == connectionID, coordinator == nil,
+          let relay
+        else { return }
+
         do {
-          return .success(try operations.readCertificate(.authentication))
-        } catch {
-          return .failure(.invalidCard)
-        }
-      }
-    }
-
-    static func sign(
-      profile: PersistentRelayCardProfile,
-      algorithm: PersistentRelaySigningAlgorithm,
-      digest: Data
-    ) async -> Answer<Data> {
-      await withSelectedCard(
-        message: String(localized: "Hold the identity card still while Safari signs in.")
-      ) { operations in
-        guard
-          let request = SignRequest.resolve(
-            profile: profile.cardKeyProfile,
-            algorithm: algorithm.signingAlgorithm,
-            digest: digest
-          )
-        else {
-          return .failure(.unsupportedAlgorithm)
-        }
-        guard let pin1 = CardCredentialStore.pin1() else {
-          return .failure(.missingPIN1)
-        }
-        do {
-          let probe = try operations.probeRetryCounter(role: .pin1)
-          guard RetryFloor.evaluate(probeOutcome: probe) == .proceed else {
-            return .failure(.pin1RetryFloor)
+          let pairIDs = try vault.activePairIDs()
+          guard !pairIDs.isEmpty else {
+            relistenPolicy = .explicitUserActionRequired
+            relay.cancel()
+            return
           }
-          try operations.verifyPin1(pin1.consumeForSingleTransmission())
-          let raw = try operations.computeAuthenticationSignature(
-            overDigest: request.digest,
-            algorithm: request.algorithm,
-            expectedSignatureLength: request.expectedSignatureLength
-          )
-          guard let signature = request.wireSignature(from: raw) else {
-            return .failure(.communication)
-          }
-          return .success(signature)
-        } catch CardOperationError.pinRejected(let remaining) {
-          CardCredentialStore.forgetPin1()
-          return .failure(.pin1Rejected(remaining: Int(remaining.attemptsRemaining)))
-        } catch CardOperationError.pinBlocked {
-          CardCredentialStore.forgetPin1()
-          return .failure(.pin1Blocked)
-        } catch CardOperationError.credentialInvalidated {
-          CardCredentialStore.forgetPin1()
-          return .failure(.pin1Blocked)
-        } catch {
-          return .failure(.communication)
-        }
-      }
-    }
-
-    private static func withSelectedCard<Value: Sendable>(
-      message: String,
-      _ operation: @escaping @Sendable (CardOperations) -> Answer<Value>
-    ) async -> Answer<Value> {
-      guard let accessNumber = CardCredentialStore.cardAccessNumber() else {
-        return .failure(.missingCardAccessNumber)
-      }
-      let session: NearFieldCardSession
-      do {
-        session = try await NearFieldCardSession.open(message: message)
-      } catch {
-        return .failure(.cardUnavailable)
-      }
-      defer { session.end() }
-      return await withCheckedContinuation { continuation in
-        DispatchQueue.global(qos: .userInitiated).async {
-          let answer: Answer<Value>
-          do {
-            answer = try session.withCardSession { channel in
-              let plain = CardOperations(channel: channel)
-              try? plain.selectMasterFile()
-              let keys: PaceSessionKeys
-              do {
-                keys = try PaceEstablishment(channel: channel).establish(
-                  with: accessNumber
-                )
-              } catch PaceEstablishment.Failure.authenticationTokenMismatch {
-                // This is an explicit CAN rejection, not a radio or reader
-                // failure. It invalidates both the visible and persistent CAN.
-                CardCredentialStore.forgetCardAccessNumber()
-                return .failure(.wrongCardAccessNumber)
-              } catch PaceEstablishment.Failure.cardRejected(.authenticationFailed) {
-                // Some card generations report a rejected final PACE token
-                // as 6300 instead of returning a token for local comparison.
-                CardCredentialStore.forgetCardAccessNumber()
-                return .failure(.wrongCardAccessNumber)
-              }
-              let operations = CardOperations(
-                channel: SecureMessagingChannel(
-                  wrapping: channel,
-                  sessionKeys: keys
-                )
-              )
-              do {
-                try operations.selectFineidApplication()
-              } catch {
-                return .failure(.invalidCard)
-              }
-              return operation(operations)
+          let pairID: Data
+          if let selected = try vault.selectedPairID() {
+            guard pairIDs.contains(selected) else {
+              try vault.clearSelectedPair()
+              relistenPolicy = .explicitUserActionRequired
+              relay.cancel()
+              return
             }
-          } catch {
-            answer = .failure(.communication)
+            pairID = selected
+          } else if pairIDs.count == 1 {
+            pairID = pairIDs[0]
+            try vault.selectPair(pairID: pairID)
+          } else {
+            relistenPolicy = .explicitUserActionRequired
+            relay.cancel()
+            return
           }
-          continuation.resume(returning: answer)
+          let pair = try RappPairRecord.loadFromVault(
+            pairId: pairID,
+            vault: vault
+          )
+          let transport = RappClosureFrameTransport(
+            sender: { [weak relay] frame in
+              guard let relay else {
+                throw PersistentRelayTransportError.disconnected
+              }
+              try relay.send(frame)
+            },
+            closer: { [weak relay] in relay?.cancel() }
+          )
+          let coordinator = try RappConnectionCoordinator(
+            role: .proxy,
+            pair: pair,
+            vault: vault,
+            transport: transport,
+            maximumLifetimeMilliseconds:
+              policy.maximumOperationLifetimeMilliseconds,
+            liveness: policy.liveness
+          )
+          let dispatcher = RappPhoneProxyDispatcher(
+            inbox: RappAuthorizationInbox.shared,
+            requireExplicitReconnect: { [weak self] in
+              self?.requireExplicitUserAction()
+            }
+          )
+          self.coordinator = coordinator
+          self.dispatcher = dispatcher
+
+          let earlyFrames = preCoordinatorFrames
+          preCoordinatorFrames.removeAll(keepingCapacity: false)
+          Task { [weak self] in
+            for await event in coordinator.events {
+              await dispatcher.receive(event, from: coordinator)
+              self?.observe(event, connectionID: connectionID)
+            }
+          }
+          Task {
+            await coordinator.start()
+            for frame in earlyFrames {
+              await coordinator.receive(frame)
+            }
+          }
+        } catch {
+          relistenPolicy = .explicitUserActionRequired
+          relay.cancel()
+        }
+      }
+
+      private func observe(
+        _ event: RappConnectionCoordinator.Event,
+        connectionID: UUID
+      ) {
+        guard self.connectionID == connectionID else { return }
+        switch event {
+        case let .terminal(_, _, reason):
+          switch reason {
+          case .credentialRejected, .cardCompletionAmbiguous:
+            relistenPolicy = .explicitUserActionRequired
+          case .userDenied, .requestExpired, .cancelled,
+               .requestInvalidOrUnsupported, .retryPolicyRefused,
+               .cardRemovedBeforeTransmit, nil:
+            break
+          }
+
+        case let .closed(reason):
+          switch reason {
+          case .handshake(.protocolFailure), .handshake(.pairRevoked),
+               .operation(.protocolFailure), .operation(.pairRevoked):
+            relistenPolicy = .explicitUserActionRequired
+          case .handshake(.localRequest), .handshake(.transportClosed),
+               .operation(.localRequest), .operation(.transportClosed),
+               .operation(.terminalFrameReleased), .transportFailure,
+               .localRequest:
+            break
+          }
+
+        case .established, .inspectPrerequisites, .awaitUserApproval,
+             .executeSafeRead, .executeCardCommand, .completed,
+             .advisoryCancellation, .operationFinished, .peerBusy,
+             .peerUnknownOperation:
+          break
+        }
+      }
+
+      private func requireExplicitUserAction() {
+        relistenPolicy = .explicitUserActionRequired
+      }
+
+      private func hasUsableSelectedPair() -> Bool {
+        guard
+          let pairIDs = try? vault.activePairIDs(),
+          !pairIDs.isEmpty
+        else { return false }
+        if let selected = try? vault.selectedPairID() {
+          return pairIDs.contains(selected)
+        }
+        guard pairIDs.count == 1 else { return false }
+        do {
+          try vault.selectPair(pairID: pairIDs[0])
+          return true
+        } catch {
+          return false
         }
       }
     }
-  }
 #endif

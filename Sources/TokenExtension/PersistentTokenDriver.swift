@@ -93,29 +93,33 @@
           algorithm,
           input: dataToSign,
           profile: persistentToken.profile
-        ),
-        let relayAlgorithm = PersistentRelaySigningAlgorithm(request.algorithm)
+        )
       else {
         throw TKError(.notImplemented)
       }
 
-      let id = UUID()
-      let response: PersistentRelayMessage
-      do {
-        response = try PersistentRelayClient(displayName: "ReFineID Token")
-          .perform(
-            .signatureRequest(
-              id: id,
-              profile: PersistentRelayCardProfile(persistentToken.profile),
-              algorithm: relayAlgorithm,
-              digest: request.digest
-            )
-          )
-      } catch {
-        throw TKError(.communicationError)
+      guard let relayAlgorithm = RappOperationDriver.SignatureAlgorithm(
+        request.algorithm
+      ) else {
+        throw TKError(.notImplemented)
       }
-
-      guard case .signatureResponse(id, let signature) = response else {
+      let signature: Data
+      do {
+        let response = try RappPersistentRequesterClient(
+          displayName: "ReFineID Token"
+        ).perform(
+          .browserAuthentication(
+            displayContext: "macOS CryptoTokenKit",
+            keyProfile: RappOperationDriver.KeyProfile(persistentToken.profile),
+            algorithm: relayAlgorithm,
+            digest: request.digest
+          )
+        )
+        guard case let .signature(receivedSignature) = response else {
+          throw RappRequesterClientError.unexpectedResult
+        }
+        signature = receivedSignature
+      } catch {
         throw TKError(.communicationError)
       }
       guard request.isSatisfied(by: signature, from: persistentToken.publicKey) else {

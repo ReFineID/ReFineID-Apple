@@ -60,7 +60,7 @@ internal enum AsicSigner {
   /// as several that happen to share a minute.
   internal static func sign(
     _ objects: [AsicContainer.DataObject],
-    pin2: String,
+    pin2: String?,
     transport: CardMaintenance.Transport = .reader,
     cardAccessNumber: String? = nil
   ) async throws -> Data {
@@ -69,6 +69,14 @@ internal enum AsicSigner {
     // signing would have spent a PIN attempt on nothing.
     guard !objects.isEmpty, AsicContainer.areNamesUsable(objects) else {
       throw Failure.unusableName
+    }
+    #if os(macOS)
+      if await MainActor.run(body: { DocumentSigner.usesRappSigning }) {
+        return try await Self.signRemotely(objects)
+      }
+    #endif
+    guard let pin2 else {
+      throw DocumentSigner.Failure.card(.invalidEntry)
     }
     let signedAt = Date()
     let answer = await CardMaintenance.qualifiedSignature(
@@ -92,6 +100,27 @@ internal enum AsicSigner {
       )
     }
   }
+
+  #if os(macOS)
+    /// Signs canonical XAdES bytes through the selected phone. PIN 2 is
+    /// entered on the authorizer and never crosses the RAPP boundary.
+    private static func signRemotely(
+      _ objects: [AsicContainer.DataObject]
+    ) async throws -> Data {
+      let signedAt = Date()
+      let product = try await DocumentSigner.remoteQualifiedSignature(
+        documentName: objects.count == 1 ? objects[0].name : "ASiC-E container",
+        expectedCertificate: nil
+      ) { certificate in
+        Self.plannedSignedInfo(
+          objects: objects, certificate: certificate, signedAt: signedAt
+        )
+      }
+      return try await Self.assembled(
+        from: product, objects: objects, signedAt: signedAt
+      )
+    }
+  #endif
 
   /// Timestamps the signature, collects the evidence, and writes the
   /// container.
