@@ -150,6 +150,40 @@ private func rappCargoTargetDirectory(at rustRoot: URL) -> URL {
     }
 }
 
+private func guardGeneratedRappCleanupDiagnostics(_ generatedSwift: URL) {
+    do {
+        let source = try String(contentsOf: generatedSwift, encoding: .utf8)
+        var guardedCount = 0
+        let output = source.split(separator: "\n", omittingEmptySubsequences: false)
+            .flatMap { substring -> [String] in
+                let line = String(substring)
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                guard trimmed.hasPrefix("print(\"Uniffi callback interface "),
+                      trimmed.hasSuffix("handle missing in uniffiFree\")") else {
+                    return [line]
+                }
+                guardedCount += 1
+                let indentation = String(line.prefix { $0 == " " || $0 == "\t" })
+                return [
+                    "\(indentation)#if DEBUG",
+                    line,
+                    "\(indentation)#endif",
+                ]
+            }
+            .joined(separator: "\n")
+        let generatedCount = source.components(separatedBy: "handle missing in uniffiFree").count - 1
+        guard generatedCount > 0, guardedCount == generatedCount else {
+            releaseFail(
+                "UniFFI cleanup diagnostics changed shape: "
+                    + "found \(generatedCount), guarded \(guardedCount)"
+            )
+        }
+        try output.write(to: generatedSwift, atomically: true, encoding: .utf8)
+    } catch {
+        releaseFail("could not guard generated RAPP diagnostics: \(error.localizedDescription)")
+    }
+}
+
 private func buildRappBindings() {
     let configuredRustRoot = ProcessInfo.processInfo.environment["REFINEID_RUST_ROOT"]
     let rustRoot = configuredRustRoot.map(URL.init(fileURLWithPath:))
@@ -235,6 +269,7 @@ private func buildRappBindings() {
             releaseFail("UniFFI did not generate \(file.lastPathComponent)")
         }
     }
+    guardGeneratedRappCleanupDiagnostics(generatedSwift)
 
     // xcodebuild's `-create-xcframework -library ... -headers ...` produces a
     // static-library XCFramework, not a framework bundle. UniFFI currently
@@ -585,7 +620,7 @@ private func inspectReleaseArchive(_ archive: URL) {
     )
 
     let forbiddenStrings =
-        #"refineid-token-extension\.log|^(sign|session|discovery|mintFromPrime|createToken|supports|beginAuth|unseal|reader|prime): |^--(diagnostics|trace|reset-card-state|set-can|forget-can|set-pin1|prime)$"#
+        #"refineid-token-extension\.log|Uniffi callback interface .*handle missing in uniffiFree|\[(persistent-relay|persistent-token)\]|^(sign|session|discovery|mintFromPrime|createToken|supports|beginAuth|unseal|reader|prime): |^--(diagnostics|trace|reset-card-state|set-can|forget-can|set-pin1|prime)$"#
     for executable in executables {
         let output = releaseRun(
             "/usr/bin/strings",

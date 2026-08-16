@@ -1307,7 +1307,9 @@ fileprivate struct UniffiCallbackInterfaceRappOperationVault {
             do {
                 try FfiConverterTypeRappOperationVault.handleMap.remove(handle: uniffiHandle)
             } catch {
+                #if DEBUG
                 print("Uniffi callback interface RappOperationVault: handle missing in uniffiFree")
+                #endif
             }
         },
         uniffiClone: { (uniffiHandle: UInt64) -> UInt64 in
@@ -1938,7 +1940,9 @@ fileprivate struct UniffiCallbackInterfaceRappPairVault {
             do {
                 try FfiConverterTypeRappPairVault.handleMap.remove(handle: uniffiHandle)
             } catch {
+                #if DEBUG
                 print("Uniffi callback interface RappPairVault: handle missing in uniffiFree")
+                #endif
             }
         },
         uniffiClone: { (uniffiHandle: UInt64) -> UInt64 in
