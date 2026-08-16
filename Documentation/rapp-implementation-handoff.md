@@ -19,7 +19,7 @@ The shared Rust repository is the protocol and state-machine authority:
 The exact Rust source revision defining the ABI of the committed Apple
 XCFramework is:
 
-- `ReFineID/ReFineID@39f49e3d8565864f7fa2662b358bffb064c3e3e6`
+- `ReFineID/ReFineID@7506979dbdf479bf0d20571c104fe36722bbe24c`
 
 That revision is pushed to the archived source repository. Do not regenerate
 or replace the XCFramework from an uncommitted Rust worktree.
@@ -129,8 +129,8 @@ The following was measured before this handoff:
 
 - `cargo test -p refineid-lib-core` passes in the Rust repository, including
   RAPP formal-state, interoperability, and operation-lifecycle tests.
-- The formal transition test covers state, event, and role legality. It should
-  not yet be described as proving every emitted action against the YAML model.
+- The formal transition tests prove state, event, and role legality and exact
+  ordered emitted-action equality against every role-qualified YAML rule.
 - `swift build --package-path CardCore` passes.
 - The ReFineID Xcode scheme builds for macOS and generic iOS arm64.
 - 510 Apple unit tests in 82 suites pass on macOS. The focused RAPP adapter
