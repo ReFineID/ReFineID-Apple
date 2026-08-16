@@ -16,6 +16,14 @@ The shared Rust repository is the protocol and state-machine authority:
 - `../ReFineID/docs/protocol/rapp-state-machine-v26.8.16.85.yaml`
 - `../ReFineID/crates/refineid-lib-core/src/rapp/`
 
+The exact Rust source revision defining the ABI of the committed Apple
+XCFramework is:
+
+- `ReFineID/ReFineID@95ac03f0a0a66cf6051fc8a3342c699988b4685a`
+
+That revision is pushed to the archived source repository. Do not regenerate
+or replace the XCFramework from an uncommitted Rust worktree.
+
 Do not independently redefine RAPP framing, transitions, role constraints,
 failure policy, or cryptography in Swift. Change the Rust protocol/model first,
 make its tests pass, regenerate the Apple binding, and then adapt the Apple
@@ -132,6 +140,10 @@ The following was measured before this handoff:
   partial activation UI, all PIN operations, retry recovery, signing success,
   signing rejection, retry-floor refusal, ambiguous/lost responses, card
   removal, injected faults, localization, and accessibility.
+- The Finnish and Swedish localization smoke tests establish a registered
+  Virtual ID Card through the reviewer-visible GUI and pass. The Finnish text
+  clipping audit also passes after making the shared Sign action grow with its
+  localized, Dynamic Type-sized label.
 - Real-card setup, priming, and Safari UI-test classes now require
   `TEST_RUNNER_REFINEID_REAL_CARD_TESTS=1`. Default simulator and Xcode Cloud
   runs skip them instead of waiting for hardware or consuming a retry.
@@ -152,13 +164,6 @@ network permission, CryptoTokenKit, or Safari system-sheet behavior.
   failure. Petri must clear the dialog in person.
 - The latest committed RAPP consolidation has not had a fresh, recorded,
   end-to-end pair/status/browser-auth/signing run on two physical devices.
-- The no-hardware localization smoke tests currently look for
-  `pinManagementButton` on the initial screen, where product state correctly
-  hides PIN management until a card is classified. They need to enter a
-  registered Virtual ID Card scenario first. This is a stale test precondition,
-  not evidence of a RAPP failure.
-- The Finnish clipping audit reported findings in an earlier broad simulator
-  run and has not been requalified after the current UI changes.
 - `test-without-building` is unreliable with the current CoreSimulator because
   its temporary UI-test bundle is removed between invocations. Normal
   incremental `xcodebuild ... test` works.
@@ -173,20 +178,17 @@ network permission, CryptoTokenKit, or Safari system-sheet behavior.
 ## Exact next step
 
 1. Petri clears the pending Enable UI Automation Touch ID dialog.
-2. Fix `LocalizationUITests.check(language:)` to launch the Virtual ID Card,
-   select a registered-card scenario through the GUI, apply it, and then assert
-   `pinManagementButton`. Run the Finnish and Swedish smoke tests separately.
-3. Build and install the committed Debug app on the cabled iPhone.
-4. Pair macOS and iPhone from a clean pairing state using the QR UI.
-5. With a known activated card and correct CAN/PIN values, record one card
+2. Build and install the committed Debug app on the cabled iPhone.
+3. Pair macOS and iPhone from a clean pairing state using the QR UI.
+4. With a known activated card and correct CAN/PIN values, record one card
    status read, one Safari browser-authentication operation, and one harmless
    document signature. Verify that macOS never asks for PIN 1 or PIN 2 and that
    the phone asks for explicit authorization.
-6. Repeat one operation after intentionally removing the card, not after
+5. Repeat one operation after intentionally removing the card, not after
    intentionally entering a wrong credential. Confirm fail-stop teardown and
    manual re-pairing. Do not spend a real credential retry without Petri's
    explicit approval.
-7. Archive the result bundle and update this document with exact build, device,
+6. Archive the result bundle and update this document with exact build, device,
    OS, and commit identifiers before making a TestFlight or production-readiness
    claim.
 
