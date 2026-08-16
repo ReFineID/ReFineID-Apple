@@ -8,18 +8,42 @@ milestone.
 
 ## 0. Release blockers
 
-- [ ] Bind every stored contactless prime to a card-unique serial after PACE;
-  never use the batch-wide ATR digest as the lasting card identity.
-- [ ] Clear credential state on every ambiguous completion and relevant
-  lifecycle boundary: card or reader removal, replacement, contention, sleep,
-  screen lock, logout, extension restart, transport failure, and card error.
-- [ ] Prove immediately before every PIN-bearing operation that zero attempts
-  means blocked, one or two means refusal, and three or more permits at most one
-  card attempt. Never deliberately exercise a real card's final attempt.
-- [ ] Replace the current nearby iPhone relay's unauthenticated peer trust with
+Audited against source 2026-08-16. Each item states only what remains;
+the resolved halves of the original wording are recorded in git history.
+
+- [ ] Replace the nearby iPhone relay's unauthenticated peer trust with
   explicit cryptographic pairing before external TestFlight or App Store use.
-- [ ] Resolve the remaining iOS trust-chain and App Review onboarding decision
-  with an App-Store-shaped build.
+  `PersistentCardRelay` accepts every invitation on `refineid-rly`, persists
+  no remote peer identity, and the phone serves identity and signature
+  requests from the keychain PIN 1 without per-request consent, while the
+  entitlement comments and release plan already say "holder-paired". Closing
+  it needs a pairing exchange, a persisted peer allowlist checked on both
+  sides, per-request phone consent, and accept/reject tests.
+- [ ] Finish serial-binding the contactless prime store. The published
+  CryptoTokenKit identity, registration, and revocation are already
+  printed-serial-derived and every mint refuses a serial-less prime; still
+  open: primes are keyed by the batch-wide ATR digest, so one prime exists
+  per card family and a second same-generation card silently supersedes the
+  first, `PrimedIdentity.tokenSerial` remains optional in the type, and no
+  test covers the wrong-card-same-ATR path.
+- [ ] Close the remaining credential-clearing boundaries. Card-error
+  revocation, extension restart, and card and reader removal are handled;
+  still open: no sleep, screen-lock, or logout handler exists, the PIN 2
+  window can survive a card error or removal for its full 60 seconds,
+  `CardCredentialStore` writes `AfterFirstUnlockThisDeviceOnly` while its
+  header claims `WhenUnlockedThisDeviceOnly`, and the macOS offered-CAN file
+  outlives a crash, sleep, or lock.
+- [ ] Make the retry floor provable. `RetryFloor` is wired into every
+  reader-path credential operation; still open: the NFC deadline path
+  transmits PIN 1 with no immediately preceding probe (documented, but this
+  wording and that exception must agree), zero attempts proceeds and
+  transmits instead of refusing as blocked (`refuseBlocked` is unreachable),
+  enforcement is caller convention rather than type, and no test proves zero
+  credential commands on a production floor refusal. Never deliberately
+  exercise a real card's final attempt.
+- [ ] Re-prove the clean-device suomi.fi login and demonstration-mode
+  onboarding on the exact App-Store-shaped candidate; the clean-VM proof and
+  the shipped demonstration mode are recorded in decisions.md and history.
 
 ## 1. Product and public documentation
 
@@ -27,11 +51,9 @@ milestone.
   profiles, USB readers, iPhone NFC, and declared system consumers.
 - [ ] Reconcile public documentation with the implemented PIN 1 cache and retry
   policy.
-- [ ] Correct App Store metadata and review notes for the current iOS demo,
-  document signing, and iPhone-backed macOS identity. Remove claims that macOS
-  has no listener or remote-card path.
-- [ ] Keep Finnish, Swedish, and English terminology consistent, including
-  visible `PIN 1` and `PIN 2` spelling.
+- [ ] Keep Finnish, Swedish, and English terminology consistent. Visible UI
+  strings already use spaced `PIN 1` and `PIN 2` throughout; the internal
+  documentation largely does not.
 
 ## 2. Repository controls
 
