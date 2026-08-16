@@ -38,6 +38,7 @@
 //   apple-app-store-connect-release-manager.swift pricing
 //   apple-app-store-connect-release-manager.swift submissions
 //   apple-app-store-connect-release-manager.swift submit <ios|macos> <versionString>
+//   apple-app-store-connect-release-manager.swift rapp-bindings
 
 import CryptoKit
 import Foundation
@@ -108,6 +109,183 @@ private let releaseFileManager = FileManager.default
 private let releaseRepositoryRoot = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
     .deletingLastPathComponent()
+
+private let rappRustTargets = [
+    "aarch64-apple-darwin",
+    "aarch64-apple-ios",
+    "aarch64-apple-ios-sim",
+]
+
+private func releaseReplace(_ destination: URL, with source: URL) {
+    do {
+        if releaseFileManager.fileExists(atPath: destination.path) {
+            try releaseFileManager.removeItem(at: destination)
+        }
+        try releaseFileManager.createDirectory(
+            at: destination.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try releaseFileManager.moveItem(at: source, to: destination)
+    } catch {
+        releaseFail("could not replace \(destination.path): \(error.localizedDescription)")
+    }
+}
+
+private func rappCargoTargetDirectory(at rustRoot: URL) -> URL {
+    let result = releaseRun(
+        "/usr/bin/env",
+        ["cargo", "metadata", "--format-version", "1", "--no-deps"],
+        currentDirectory: rustRoot,
+        capture: true
+    )
+    do {
+        guard let object = try JSONSerialization.jsonObject(with: Data(result.stdout.utf8))
+            as? [String: Any],
+            let path = object["target_directory"] as? String else {
+            releaseFail("cargo metadata did not contain target_directory")
+        }
+        return URL(fileURLWithPath: path)
+    } catch {
+        releaseFail("could not read cargo metadata: \(error.localizedDescription)")
+    }
+}
+
+private func buildRappBindings() {
+    let configuredRustRoot = ProcessInfo.processInfo.environment["REFINEID_RUST_ROOT"]
+    let rustRoot = configuredRustRoot.map(URL.init(fileURLWithPath:))
+        ?? releaseRepositoryRoot.deletingLastPathComponent().appendingPathComponent("ReFineID")
+    guard releaseIsDirectory(rustRoot) else {
+        releaseFail("RAPP Rust workspace not found at \(rustRoot.path)")
+    }
+
+    let configuration = rustRoot
+        .appendingPathComponent("crates/refineid-lib-core/uniffi.toml")
+    guard releaseFileManager.fileExists(atPath: configuration.path) else {
+        releaseFail("RAPP UniFFI configuration missing at \(configuration.path)")
+    }
+
+    releaseRun(
+        "/usr/bin/env",
+        ["rustup", "target", "add"] + rappRustTargets,
+        currentDirectory: rustRoot
+    )
+
+    for target in rappRustTargets {
+        releaseRun(
+            "/usr/bin/env",
+            [
+                "cargo", "build", "-p", "refineid-lib-core",
+                "--features", "bindings", "--release", "--target", target,
+                "--lib",
+            ],
+            currentDirectory: rustRoot
+        )
+    }
+
+    let targetDirectory = rappCargoTargetDirectory(at: rustRoot)
+    let staticLibraries = Dictionary(uniqueKeysWithValues: rappRustTargets.map { target in
+        (
+            target,
+            targetDirectory
+                .appendingPathComponent(target)
+                .appendingPathComponent("release/librefineid_lib_core.a")
+        )
+    })
+    for target in rappRustTargets {
+        guard let library = staticLibraries[target],
+              releaseFileManager.fileExists(atPath: library.path) else {
+            releaseFail("RAPP static library missing for \(target)")
+        }
+    }
+
+    let stagingRoot = releaseRepositoryRoot
+        .appendingPathComponent(".build")
+        .appendingPathComponent("RappBindings-\(UUID().uuidString)")
+    let generatedRoot = stagingRoot.appendingPathComponent("Generated")
+    do {
+        try releaseFileManager.createDirectory(
+            at: generatedRoot,
+            withIntermediateDirectories: true
+        )
+    } catch {
+        releaseFail("could not create RAPP staging directory: \(error.localizedDescription)")
+    }
+    defer { try? releaseFileManager.removeItem(at: stagingRoot) }
+
+    let bindingSource = staticLibraries["aarch64-apple-darwin"]!
+    releaseRun(
+        "/usr/bin/env",
+        [
+            "cargo", "run", "-p", "refineid-lib-core", "--features", "bindings",
+            "--release", "--bin", "refineid-uniffi-bindgen-swift", "--",
+            bindingSource.path, generatedRoot.path,
+            "--swift-sources", "--headers", "--modulemap", "--xcframework",
+            "--module-name", "ReFineIDRappFFI",
+            "--modulemap-filename", "module.modulemap",
+            "--config", configuration.path,
+        ],
+        currentDirectory: rustRoot
+    )
+
+    let generatedHeader = generatedRoot.appendingPathComponent("ReFineIDRappFFI.h")
+    let generatedModuleMap = generatedRoot.appendingPathComponent("module.modulemap")
+    let generatedSwift = generatedRoot.appendingPathComponent("ReFineIDRapp.swift")
+    for file in [generatedHeader, generatedModuleMap, generatedSwift] {
+        guard releaseFileManager.fileExists(atPath: file.path) else {
+            releaseFail("UniFFI did not generate \(file.lastPathComponent)")
+        }
+    }
+
+    // xcodebuild's `-create-xcframework -library ... -headers ...` produces a
+    // static-library XCFramework, not a framework bundle. UniFFI currently
+    // emits `framework module` for its requested module map; Clang then makes
+    // that module unavailable to SwiftPM. Normalize the generated declaration
+    // before staging it in every architecture slice.
+    do {
+        let moduleMap = try String(contentsOf: generatedModuleMap, encoding: .utf8)
+        let normalizedModuleMap = moduleMap.replacingOccurrences(
+            of: "framework module ReFineIDRappFFI",
+            with: "module ReFineIDRappFFI"
+        )
+        guard normalizedModuleMap != moduleMap else {
+            releaseFail("UniFFI module map did not contain the expected framework declaration")
+        }
+        try normalizedModuleMap.write(to: generatedModuleMap, atomically: true, encoding: .utf8)
+    } catch {
+        releaseFail("could not normalize the RAPP module map: \(error.localizedDescription)")
+    }
+
+    var createArguments = ["-create-xcframework"]
+    for target in rappRustTargets {
+        let headers = stagingRoot.appendingPathComponent("Headers/\(target)")
+        do {
+            try releaseFileManager.createDirectory(at: headers, withIntermediateDirectories: true)
+            try releaseFileManager.copyItem(
+                at: generatedHeader,
+                to: headers.appendingPathComponent(generatedHeader.lastPathComponent)
+            )
+            try releaseFileManager.copyItem(
+                at: generatedModuleMap,
+                to: headers.appendingPathComponent("module.modulemap")
+            )
+        } catch {
+            releaseFail("could not stage RAPP headers for \(target): \(error.localizedDescription)")
+        }
+        createArguments += ["-library", staticLibraries[target]!.path, "-headers", headers.path]
+    }
+
+    let stagedFramework = stagingRoot.appendingPathComponent("ReFineIDRappFFI.xcframework")
+    createArguments += ["-output", stagedFramework.path]
+    releaseRun("/usr/bin/xcodebuild", createArguments)
+
+    let frameworkDestination = releaseRepositoryRoot
+        .appendingPathComponent("CardCore/Artifacts/ReFineIDRappFFI.xcframework")
+    let swiftDestination = releaseRepositoryRoot
+        .appendingPathComponent("CardCore/Sources/ReFineIDRapp/ReFineIDRapp.swift")
+    releaseReplace(frameworkDestination, with: stagedFramework)
+    releaseReplace(swiftDestination, with: generatedSwift)
+    releaseNote("generated RAPP Swift bindings and Apple Silicon XCFramework")
+}
 
 private func releaseIsDirectory(_ url: URL) -> Bool {
     var isDirectory: ObjCBool = false
@@ -206,7 +384,7 @@ private func releaseArchiveLayout(at archive: URL) -> ReleaseArchiveLayout {
             ),
             tokenPlist: tokenBundle.appendingPathComponent("Contents/Info.plist"),
             discoveryPlist: discoveryBundle.appendingPathComponent("Contents/Info.plist"),
-            expectedArchitectures: ["arm64", "x86_64"],
+            expectedArchitectures: ["arm64"],
             hasDiscovery: false,
             allowedEntitlements: [
                 "com.apple.security.app-sandbox",
@@ -848,6 +1026,8 @@ private func printReleaseManagerUsage() {
         Usage: Scripts/apple-app-store-connect-release-manager.swift <command> [arguments]
 
         Local release commands:
+          rapp-bindings
+              Generate the mandatory Rust RAPP Swift binding and Apple XCFramework.
           candidate [ios|macos|all] [--upload]
               Archive, inspect, and export a clean-tree candidate. Upload is opt-in.
           inspect-archive <path-to-xcarchive>
@@ -868,6 +1048,9 @@ if releaseManagerArguments.isEmpty
     exit(0)
 }
 switch releaseManagerArguments[0] {
+case "rapp-bindings":
+    buildRappBindings()
+
 case "candidate":
     releaseCandidate(Array(releaseManagerArguments.dropFirst()))
     exit(0)
@@ -1660,5 +1843,6 @@ case ("export-compliance", 1): pushExportCompliance(rest[0])
 case ("pricing", 0): pushPricing()
 case ("submissions", 0): submissions()
 case ("submit", 2): submit(rest[0], rest[1])
+case ("rapp-bindings", 0): buildRappBindings()
 default: die("unknown command or wrong arguments: '\(command)'; see the header")
 }

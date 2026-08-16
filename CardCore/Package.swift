@@ -17,10 +17,29 @@ private let package = Package(
     .library(name: "CardCore", targets: ["CardCore"])
   ],
   targets: [
+    // Generated from refineid-lib-core by the Swift release manager. RAPP is
+    // a mandatory product capability; Apple targets never downgrade to the
+    // retired unauthenticated relay when these bindings are unavailable.
+    .binaryTarget(
+      name: "ReFineIDRappFFI",
+      path: "Artifacts/ReFineIDRappFFI.xcframework"),
+    .target(
+      name: "ReFineIDRapp",
+      dependencies: ["ReFineIDRappFFI"],
+      path: "Sources/ReFineIDRapp"),
     // Tests live in the Xcode project's Tests/CardCoreTests bundle target
     // so one scheme runs them locally and in Xcode Cloud.
     // They exercise the public API only.
-    .target(name: "CardCore", dependencies: ["ObjCExceptionGuard", "PcscCardReset"]),
+    .target(
+      name: "CardCore",
+      dependencies: [
+        "ObjCExceptionGuard",
+        "PcscCardReset",
+        "ReFineIDRapp",
+      ],
+      linkerSettings: [
+        .linkedFramework("Security")
+      ]),
     // Objective-C, because catching an Objective-C exception is a
     // thing only Objective-C can do.
     .target(name: "ObjCExceptionGuard"),

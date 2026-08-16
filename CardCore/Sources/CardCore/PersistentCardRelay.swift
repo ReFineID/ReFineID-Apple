@@ -134,11 +134,13 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
     }
   }
 
-  fileprivate func encoded() throws -> Data {
+  /// Encodes the temporary application message above the opaque transport.
+  public func encoded() throws -> Data {
     try JSONEncoder().encode(self)
   }
 
-  fileprivate static func decoded(_ data: Data) throws -> Self {
+  /// Decodes the temporary application message above the opaque transport.
+  public static func decoded(_ data: Data) throws -> Self {
     try JSONDecoder().decode(Self.self, from: data)
   }
 }
@@ -163,16 +165,15 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
   /// What the channel reports to its one owner.
   public enum PersistentRelayEvent: Sendable {
     case connected
-    case message(PersistentRelayMessage)
+    case frame(Data)
     case closed(PersistentRelayTransportError)
   }
 
-  /// A single encrypted MultipeerConnectivity channel.
+  /// A single encrypted MultipeerConnectivity transport.
   ///
-  /// The phone advertises; the Mac host or token extension browses and
-  /// invites it. The link is encrypted but the peer trust is not yet an
-  /// explicit pairing, which is why the whole feature ships behind
-  /// FEATURE_IPHONE_RELAY.
+  /// The transport carries opaque RAPP frames and never decodes protocol or
+  /// card-operation data. Peer authentication belongs to RAPP rather than
+  /// MultipeerConnectivity discovery.
   public final class PersistentRelaySession: NSObject, @unchecked Sendable,
     MCSessionDelegate, MCNearbyServiceAdvertiserDelegate,
     MCNearbyServiceBrowserDelegate
@@ -259,14 +260,14 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
       trace("started role=\(role)")
     }
 
-    /// Sends one message to the connected peer, or throws.
-    public func send(_ message: PersistentRelayMessage) throws {
+    /// Sends one opaque frame to the connected peer, or throws.
+    public func send(_ frame: Data) throws {
       guard !session.connectedPeers.isEmpty else {
         throw PersistentRelayTransportError.disconnected
       }
       do {
         try session.send(
-          try message.encoded(),
+          frame,
           toPeers: session.connectedPeers,
           with: .reliable
         )
@@ -343,17 +344,13 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
       }
     }
 
-    /// Decodes one message and hands it to the owner.
+    /// Hands one opaque frame to the owner without interpreting it.
     public func session(
       _: MCSession,
       didReceive data: Data,
       fromPeer _: MCPeerID
     ) {
-      do {
-        onEvent(.message(try PersistentRelayMessage.decoded(data)))
-      } catch {
-        finish(.codec(String(describing: error)))
-      }
+      onEvent(.frame(data))
     }
 
     /// Streams are not part of the protocol; ignored.
@@ -498,18 +495,23 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
       case .connected:
         guard let request = state.withLock({ $0.request }) else { return }
         do {
-          try session.send(request)
+          try session.send(try request.encoded())
         } catch let error as PersistentRelayTransportError {
           finish(error: error)
         } catch {
           finish(error: .send(String(describing: error)))
         }
-      case .message(let message):
-        guard
-          let requestID = state.withLock({ $0.request?.requestID }),
-          requestID == message.requestID
-        else { return }
-        finish(response: message)
+      case .frame(let frame):
+        do {
+          let message = try PersistentRelayMessage.decoded(frame)
+          guard
+            let requestID = state.withLock({ $0.request?.requestID }),
+            requestID == message.requestID
+          else { return }
+          finish(response: message)
+        } catch {
+          finish(error: .codec(String(describing: error)))
+        }
       case .closed(let error):
         finish(error: error)
       }
