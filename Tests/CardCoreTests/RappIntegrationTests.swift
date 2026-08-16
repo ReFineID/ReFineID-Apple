@@ -372,9 +372,6 @@ import Testing
         pairID: fixture.requesterSummary.pairID) == false)
       #expect(try fixture.proxyVault.pairIsRevoked(
         pairID: fixture.proxySummary.pairID) == false)
-      #expect(await connection.proxyOutbound.snapshot().closeCount
-        == termination.proxyTransportCloseCount)
-
       await connection.requester.close()
       await connection.proxy.close()
     }
@@ -417,6 +414,8 @@ import Testing
         pairID: fixture.requesterSummary.pairID) == false)
       #expect(try fixture.proxyVault.pairIsRevoked(
         pairID: fixture.proxySummary.pairID) == false)
+      #expect(await connection.proxyOutbound.snapshot().closeCount
+        == termination.proxyTransportCloseCount)
 
       await connection.requester.close()
       await connection.proxy.close()
