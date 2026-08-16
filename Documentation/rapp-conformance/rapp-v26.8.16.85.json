@@ -1,0 +1,128 @@
+{
+  "format": "fi.refineid.rapp.conformance-v1",
+  "protocol_document_version": "26.8.16.85",
+  "deterministic_cbor": [
+    { "name": "unsigned-zero", "value": { "kind": "unsigned", "value": 0 }, "encoded_hex": "00" },
+    { "name": "unsigned-last-immediate", "value": { "kind": "unsigned", "value": 23 }, "encoded_hex": "17" },
+    { "name": "unsigned-first-byte", "value": { "kind": "unsigned", "value": 24 }, "encoded_hex": "1818" },
+    { "name": "unsigned-last-byte", "value": { "kind": "unsigned", "value": 255 }, "encoded_hex": "18ff" },
+    { "name": "unsigned-first-u16", "value": { "kind": "unsigned", "value": 256 }, "encoded_hex": "190100" },
+    { "name": "negative-one", "value": { "kind": "negative", "value": -1 }, "encoded_hex": "20" },
+    { "name": "negative-last-immediate", "value": { "kind": "negative", "value": -24 }, "encoded_hex": "37" },
+    { "name": "negative-first-byte", "value": { "kind": "negative", "value": -25 }, "encoded_hex": "3818" },
+    { "name": "byte-string", "value": { "kind": "bytes", "hex": "0001ff" }, "encoded_hex": "430001ff" },
+    { "name": "text-string", "value": { "kind": "text", "value": "RAPP" }, "encoded_hex": "6452415050" },
+    { "name": "boolean", "value": { "kind": "bool", "value": true }, "encoded_hex": "f5" },
+    { "name": "null", "value": { "kind": "null" }, "encoded_hex": "f6" },
+    {
+      "name": "heterogeneous-array",
+      "value": {
+        "kind": "array",
+        "items": [
+          { "kind": "unsigned", "value": 1 },
+          { "kind": "text", "value": "x" },
+          { "kind": "bool", "value": false }
+        ]
+      },
+      "encoded_hex": "83016178f4"
+    },
+    {
+      "name": "rfc8949-map-key-order",
+      "value": {
+        "kind": "map",
+        "entries": [
+          { "key": "aa", "value": { "kind": "unsigned", "value": 2 } },
+          { "key": "z", "value": { "kind": "unsigned", "value": 1 } }
+        ]
+      },
+      "encoded_hex": "a2617a0162616102"
+    },
+    {
+      "name": "nested-values",
+      "value": {
+        "kind": "map",
+        "entries": [
+          {
+            "key": "a",
+            "value": {
+              "kind": "array",
+              "items": [
+                { "kind": "null" },
+                { "kind": "bytes", "hex": "0102" }
+              ]
+            }
+          }
+        ]
+      },
+      "encoded_hex": "a1616182f6420102"
+    }
+  ],
+  "identifier_derivation": [
+    {
+      "name": "zero-handshake-hash",
+      "handshake_hash_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+      "pair_id_hex": "262c3d6d9fdf7ca4c9be464259469045",
+      "session_id_hex": "e8b883f0fe4239ce73fbddf6575e94c9"
+    },
+    {
+      "name": "incrementing-handshake-hash",
+      "handshake_hash_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "pair_id_hex": "da9db64eb9c387df3e7cec15190efccf",
+      "session_id_hex": "cfb9f0c0f1bb38ed1213be9e4af20bf3"
+    }
+  ],
+  "grants_hash": [
+    {
+      "name": "authentication-only",
+      "profiles": ["fi.eid.authentication.v1"],
+      "canonical_cbor_hex": "81781866692e6569642e61757468656e7469636174696f6e2e7631",
+      "sha256_hex": "9ad9e762644d8c40ec9099907f44a4fc2845090f8133337ebab739a4e4118baa"
+    },
+    {
+      "name": "authentication-and-card-status",
+      "profiles": ["fi.eid.authentication.v1", "fi.eid.card-status.v1"],
+      "canonical_cbor_hex": "82781866692e6569642e61757468656e7469636174696f6e2e76317566692e6569642e636172642d7374617475732e7631",
+      "sha256_hex": "cc7ad6346fea138f7579ee039facf28775664c2cf345ea432a76fb8c59585132"
+    },
+    {
+      "name": "input-order-is-not-semantic",
+      "profiles": ["fi.eid.card-status.v1", "fi.eid.authentication.v1"],
+      "canonical_cbor_hex": "82781866692e6569642e61757468656e7469636174696f6e2e76317566692e6569642e636172642d7374617475732e7631",
+      "sha256_hex": "cc7ad6346fea138f7579ee039facf28775664c2cf345ea432a76fb8c59585132"
+    }
+  ],
+  "request_hash": [
+    {
+      "name": "browser-authentication",
+      "session_id_hex": "000102030405060708090a0b0c0d0e0f",
+      "operation_id_hex": "101112131415161718191a1b1c1d1e1f",
+      "profile": "fi.eid.authentication.v1",
+      "action": "authenticate",
+      "context": {
+        "kind": "map",
+        "entries": [
+          { "key": "origin", "value": { "kind": "text", "value": "https://example.test" } }
+        ]
+      },
+      "payload": {
+        "kind": "map",
+        "entries": [
+          { "key": "digest", "value": { "kind": "bytes", "hex": "deadbeef" } },
+          { "key": "algorithm", "value": { "kind": "text", "value": "ecdsa_sha256" } }
+        ]
+      },
+      "preimage_cbor_hex": "876f524150502d726571756573742d763150000102030405060708090a0b0c0d0e0f50101112131415161718191a1b1c1d1e1f781866692e6569642e61757468656e7469636174696f6e2e76316c61757468656e746963617465a1666f726967696e7468747470733a2f2f6578616d706c652e74657374a26664696765737444deadbeef69616c676f726974686d6c65636473615f736861323536",
+      "sha256_hex": "ed06172d8fcd596688db6a1c8b0931ccc113e8ff68dcfe05e2239e6a06b35d1b"
+    }
+  ],
+  "rejected_cbor": [
+    { "name": "non-minimal-integer", "encoded_hex": "1817", "error": "NonCanonical" },
+    { "name": "duplicate-map-key", "encoded_hex": "a2616101616102", "error": "DuplicateMapKey" },
+    { "name": "non-text-map-key", "encoded_hex": "a10102", "error": "NonTextMapKey" },
+    { "name": "invalid-utf8", "encoded_hex": "61ff", "error": "InvalidUtf8" },
+    { "name": "trailing-data", "encoded_hex": "0000", "error": "TrailingData" },
+    { "name": "indefinite-length", "encoded_hex": "9fff", "error": "ForbiddenCborType" },
+    { "name": "unregistered-tag", "encoded_hex": "c000", "error": "ForbiddenCborType" },
+    { "name": "excessive-nesting", "encoded_hex": "81818181818181818100", "error": "NestingTooDeep" }
+  ]
+}

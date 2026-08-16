@@ -19,7 +19,9 @@ The shared Rust repository is the protocol and state-machine authority:
 The exact Rust source revision defining the ABI of the committed Apple
 XCFramework is:
 
-- `ReFineID/ReFineID@7506979dbdf479bf0d20571c104fe36722bbe24c`
+- `ReFineID/ReFineID-backup-2026-08-10@0b95182b5d88eb2757068148e015176086048696`
+- RAPP 0.1 golden corpus: `Documentation/rapp-conformance/rapp-v26.8.16.85.json`
+  (`SHA-256 a8b41c0125b5faf37a1fc18f5deadb5570217a1853071864a3fbaab7f912acc7`)
 
 That revision is pushed to the archived source repository. Do not regenerate
 or replace the XCFramework from an uncommitted Rust worktree.
