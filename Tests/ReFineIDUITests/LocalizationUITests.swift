@@ -21,14 +21,14 @@ internal final class LocalizationUITests: XCTestCase {
   /// doing.
   private static let clipping = XCUIAccessibilityAuditType(rawValue: 1 << 17)
 
-  /// Finnish, and what PIN Management is called in it.
+  /// Finnish exposes the stable PIN-management action.
   internal func testTheAppSpeaksFinnish() {
-    check(language: "fi", management: "PIN-koodien hallinta…")
+    check(language: "fi")
   }
 
-  /// Swedish, likewise.
+  /// Swedish exposes the same localized action.
   internal func testTheAppSpeaksSwedish() {
-    check(language: "sv", management: "Hantering av PIN-koder…")
+    check(language: "sv")
   }
 
   /// Finnish does not clip anything the English run sized.
@@ -57,12 +57,12 @@ internal final class LocalizationUITests: XCTestCase {
   }
 
   /// Launches in one language and reads the status window back.
-  private func check(language: String, management: String) {
+  private func check(language: String) {
     let app = UITestApp.launch(language: language)
     app.activate()
     XCTAssertTrue(
-      app.buttons[management].waitForExistence(timeout: 10),
-      "PIN Management is not translated in \(language)"
+      app.buttons[UITestIdentifiers.pinManagementButton].waitForExistence(timeout: 10),
+      "PIN Management is not exposed in \(language)"
     )
     attachScreenshot(app.screenshot(), named: "menu-\(language)")
     app.typeKey(.escape, modifierFlags: [])

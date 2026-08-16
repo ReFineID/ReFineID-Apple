@@ -36,6 +36,18 @@ internal enum UITestEnvironment {
   /// Variable holding the text that proves the login landed.
   internal static let successMarkerVariable = "REFINEID_SAFARI_SUCCESS"
 
+  /// Explicit consent to run tests that talk to a physical identity card.
+  internal static let realCardTestsVariable = "REFINEID_REAL_CARD_TESTS"
+
+  /// Whether this invocation may use a physical card and external sites.
+  ///
+  /// Simulator and Xcode Cloud runs remain deterministic by default. The
+  /// deliberate opt-in prevents a broad UI-test invocation from consuming a
+  /// retry or waiting for hardware that is not present.
+  internal static var realCardTestsEnabled: Bool {
+    Self.value(Self.realCardTestsVariable) == "1"
+  }
+
   /// The card access number, or nil when the run was not given one.
   internal static var cardAccessNumber: String? {
     Self.digits(Self.cardAccessNumberVariable)

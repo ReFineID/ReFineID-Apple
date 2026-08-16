@@ -37,6 +37,13 @@
   /// run.
   @MainActor
   internal final class SafariCardLoginUITests: XCTestCase {
+    override internal func setUpWithError() throws {
+      try super.setUpWithError()
+      try XCTSkipUnless(
+        UITestEnvironment.realCardTestsEnabled,
+        "Set TEST_RUNNER_\(UITestEnvironment.realCardTestsVariable)=1 to run physical-card tests")
+    }
+
     /// What one watch of the screen recorded, whichever way it ended.
     private struct Observation {
       /// Whether a system sheet or alert ever appeared.

@@ -6,11 +6,17 @@ import XCTest
 /// and PIN1, then observe that the one minting action becomes available.
 ///
 /// Both values come from the test runner's environment and neither is
-/// written down here. A run given neither is not a quiet pass: it fails
-/// and names the variable that was missing, because a green setup test
-/// that never typed anything is worse than a red one.
+/// written down here. Physical-card tests require an explicit opt-in; after
+/// that opt-in a missing credential fails and names the missing variable.
 @MainActor
 internal final class CardSetupUITests: XCTestCase {
+  override internal func setUpWithError() throws {
+    try super.setUpWithError()
+    try XCTSkipUnless(
+      UITestEnvironment.realCardTestsEnabled,
+      "Set TEST_RUNNER_\(UITestEnvironment.realCardTestsVariable)=1 to run physical-card tests")
+  }
+
   /// What to say when the run was not given a value it cannot invent.
   ///
   /// The message names the exact placement, because the wrong one fails
