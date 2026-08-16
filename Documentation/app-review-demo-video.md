@@ -33,18 +33,29 @@ on an iPad the app can never open a scan sheet. A reviewer holding only
 an iPad cannot see the NFC path at any setting, and nothing in the app
 can change that. The video is the only way to show it.
 
-## Proving the version on camera
+## Which binary to film
 
-The shipping build displays no version anywhere: `BundledVersions` is
-read only by the Debug diagnostics screen, and the TestFlight and
-Release configurations exclude those sources. Do not add a version label
-for the video - that means a new build, and the video would then show a
-build that is not the one under review.
+App Review asks for "the current version of the app in use on a physical
+Apple device, not on a simulator". The contrast is the device, not a
+caption: nothing in the request asks for a version number to appear on
+screen, and the shipping build displays none anyway - `BundledVersions`
+is read only by the Debug diagnostics screen, which the TestFlight and
+Release configurations exclude. Do not add a version label for the
+video. That means a new build, and the video would then show a build
+that is not the one under review.
 
-Film the proof instead. Open TestFlight, show the ReFineID entry reading
-`26.8.16 (114)`, and launch the app from that screen without cutting.
-The internal tester group has access to every build, so 114 installs
-there without any distribution step.
+What does matter is which binary runs. Install 26.8.16 (114) from
+TestFlight and film that, not a build installed from Xcode: the
+development build is a different configuration, carries diagnostics the
+submitted binary does not, and is not the artifact under review. The
+internal tester group takes every build, so 114 is already installable
+with no distribution step.
+
+Opening TestFlight on camera first, so the entry reads `26.8.16 (114)`
+before the app launches, is optional. It costs five seconds and makes
+the claim self-evident rather than asserted, which is worth having if a
+follow-up question is cheaper to prevent than to answer. Skip it if it
+complicates the shoot.
 
 ## Shot list
 
