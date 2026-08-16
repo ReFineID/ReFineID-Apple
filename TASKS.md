@@ -48,9 +48,9 @@ milestone.
 
 ## 3. Deterministic safety verification
 
-- [ ] Add physical-transmit-count spies around every credential path and prove
-  exact command counts for success, rejection, transport ambiguity, and retry
-  refusal.
+- [ ] Add instrumented test transports around every credential path and prove
+  exact card-command counts for success, rejection, transport ambiguity, and
+  retry refusal.
 - [ ] Cover retry states unknown, malformed, zero, one, two, three, four, and
   pristine, including the wrong-at-three transition to two with no later
   credential transmission.
