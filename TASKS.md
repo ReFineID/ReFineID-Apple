@@ -78,8 +78,6 @@ milestone.
   relay rejection, reconnection, and rejection of an unpaired requester.
 - [ ] Verify reader/card removal, reinsertion, swap, contention, sleep, wake,
   extension restart, application restart, and system restart.
-- [ ] Verify supported Apple Silicon and Intel Macs while both architectures are
-  declared.
 - [ ] Retain only sanitized results tied to source commit, version, build,
   archive inspection, hardware, and approver.
 
