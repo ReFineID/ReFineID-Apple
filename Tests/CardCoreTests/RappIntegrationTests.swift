@@ -39,11 +39,101 @@ import Testing
       let proxyOutbound: FrameEndpoint
     }
 
-    private struct ProxyProgress: Equatable {
+    struct ProxyProgress: Equatable {
       var prerequisites = 0
       var approvals = 0
       var executions = 0
       var acknowledgments = 0
+    }
+
+    private enum RequestedOperation: Sendable, Equatable {
+      case browserAuthentication(origin: String, digest: Data)
+      case documentSigning(documentName: String, digest: Data)
+
+      var kind: RappOperationDriver.OperationKind {
+        switch self {
+        case .browserAuthentication: .browserAuthenticate
+        case .documentSigning: .signDocument
+        }
+      }
+
+      var displayContext: String {
+        switch self {
+        case let .browserAuthentication(origin, _): origin
+        case let .documentSigning(documentName, _): documentName
+        }
+      }
+
+      var digest: Data {
+        switch self {
+        case let .browserAuthentication(_, digest), let .documentSigning(_, digest): digest
+        }
+      }
+
+      func begin(on coordinator: RappConnectionCoordinator) async throws {
+        switch self {
+        case let .browserAuthentication(origin, digest):
+          try await coordinator.beginBrowserAuthentication(
+            origin: origin,
+            keyProfile: .ecdsaP256,
+            algorithm: .ecdsaSHA256,
+            digest: digest,
+            expiresAfterMilliseconds: 60_000
+          )
+        case let .documentSigning(documentName, digest):
+          try await coordinator.beginSignDocument(
+            documentName: documentName,
+            keyProfile: .ecdsaP256,
+            algorithm: .ecdsaSHA256,
+            digest: digest,
+            expiresAfterMilliseconds: 60_000
+          )
+        }
+      }
+
+      func matches(_ operation: RappOperationDriver.Operation) -> Bool {
+        operation.kind == kind
+          && operation.displayContext == displayContext
+          && operation.keyProfile == .ecdsaP256
+          && operation.algorithm == .ecdsaSHA256
+          && operation.digest == digest
+      }
+    }
+
+    enum ProxyTermination: CaseIterable, Sendable {
+      case userDenied
+      case retryPolicyRefused
+      case cardRemovedBeforeTransmit
+      case cardCompletionAmbiguous
+
+      var reason: RappOperationDriver.TerminalReason {
+        switch self {
+        case .userDenied: .userDenied
+        case .retryPolicyRefused: .retryPolicyRefused
+        case .cardRemovedBeforeTransmit: .cardRemovedBeforeTransmit
+        case .cardCompletionAmbiguous: .cardCompletionAmbiguous
+        }
+      }
+
+      var progress: ProxyProgress {
+        switch self {
+        case .userDenied:
+          ProxyProgress(prerequisites: 1, approvals: 1)
+        case .retryPolicyRefused:
+          ProxyProgress(prerequisites: 1)
+        case .cardRemovedBeforeTransmit:
+          ProxyProgress(prerequisites: 1, approvals: 1)
+        case .cardCompletionAmbiguous:
+          ProxyProgress(prerequisites: 1, approvals: 1, executions: 1)
+        }
+      }
+
+      var proxyTransportCloseCount: Int {
+        switch self {
+        case .retryPolicyRefused, .cardCompletionAmbiguous: 1
+        case .userDenied, .cardRemovedBeforeTransmit: 0
+        }
+      }
     }
 
     private actor FrameEndpoint {
@@ -192,17 +282,18 @@ import Testing
       let connection = try await Self.makeConnection(fixture)
       let digest = Data(repeating: 0xA5, count: 32)
       let signature = Data([0x30, 0x06, 0x02, 0x01, 0x01, 0x02, 0x01, 0x02])
+      let operation = RequestedOperation.browserAuthentication(
+        origin: "https://example.invalid",
+        digest: digest
+      )
 
       let requesterOutcome = Task {
-        try await Self.awaitBrowserAuthentication(
-          connection.requester,
-          digest: digest
-        )
+        try await Self.awaitCompletion(connection.requester, operation: operation)
       }
       let proxyOutcome = Task {
-        try await Self.authorizeAndCompleteBrowserAuthentication(
+        try await Self.authorizeAndComplete(
           connection.proxy,
-          expectedDigest: digest,
+          operation: operation,
           signature: signature
         )
       }
@@ -231,6 +322,101 @@ import Testing
         pairID: fixture.requesterSummary.pairID) == false)
       #expect(try fixture.proxyVault.pairIsRevoked(
         pairID: fixture.proxySummary.pairID) == false)
+      await connection.requester.close()
+      await connection.proxy.close()
+    }
+
+    @Test
+    internal func authorizedDocumentSigningExecutesOnceAndAcknowledgesResult() async throws {
+      let fixture = try await Self.makePairedFixture()
+      defer { Self.deleteKeychainServices(for: fixture) }
+      let connection = try await Self.makeConnection(fixture)
+      let signature = Data([0x30, 0x06, 0x02, 0x01, 0x03, 0x02, 0x01, 0x04])
+      let operation = RequestedOperation.documentSigning(
+        documentName: "Review document.pdf",
+        digest: Data(repeating: 0xC3, count: 32)
+      )
+
+      let requesterOutcome = Task {
+        try await Self.awaitCompletion(connection.requester, operation: operation)
+      }
+      let proxyOutcome = Task {
+        try await Self.authorizeAndComplete(
+          connection.proxy,
+          operation: operation,
+          signature: signature
+        )
+      }
+      defer {
+        requesterOutcome.cancel()
+        proxyOutcome.cancel()
+      }
+
+      await connection.proxy.start()
+      await connection.requester.start()
+      let result = try await requesterOutcome.value
+      let progress = try await proxyOutcome.value
+
+      #expect(result.kind == .signature)
+      #expect(result.bytes == signature)
+      #expect(progress == ProxyProgress(
+        prerequisites: 1,
+        approvals: 1,
+        executions: 1,
+        acknowledgments: 1
+      ))
+      #expect(try fixture.proxyVault.loadProxy(
+        pairID: fixture.proxySummary.pairID
+      ).allSatisfy { $0.retainedResult == nil })
+      #expect(try fixture.requesterVault.pairIsRevoked(
+        pairID: fixture.requesterSummary.pairID) == false)
+      #expect(try fixture.proxyVault.pairIsRevoked(
+        pairID: fixture.proxySummary.pairID) == false)
+      #expect(await connection.proxyOutbound.snapshot().closeCount
+        == termination.proxyTransportCloseCount)
+
+      await connection.requester.close()
+      await connection.proxy.close()
+    }
+
+    @Test(arguments: ProxyTermination.allCases)
+    internal func nonCredentialTerminalPathsRespectCommandBoundaryAndPreservePairing(
+      termination: ProxyTermination
+    ) async throws {
+      let fixture = try await Self.makePairedFixture()
+      defer { Self.deleteKeychainServices(for: fixture) }
+      let connection = try await Self.makeConnection(fixture)
+      let operation = RequestedOperation.browserAuthentication(
+        origin: "https://terminal.example.invalid",
+        digest: Data(repeating: UInt8(termination.hashValue & 0xFF), count: 32)
+      )
+
+      let requesterOutcome = Task {
+        try await Self.awaitTerminal(connection.requester, operation: operation)
+      }
+      let proxyOutcome = Task {
+        try await Self.authorizeAndTerminate(
+          connection.proxy,
+          operation: operation,
+          termination: termination
+        )
+      }
+      defer {
+        requesterOutcome.cancel()
+        proxyOutcome.cancel()
+      }
+
+      await connection.proxy.start()
+      await connection.requester.start()
+      let reason = try await requesterOutcome.value
+      let progress = try await proxyOutcome.value
+
+      #expect(reason == termination.reason)
+      #expect(progress == termination.progress)
+      #expect(try fixture.requesterVault.pairIsRevoked(
+        pairID: fixture.requesterSummary.pairID) == false)
+      #expect(try fixture.proxyVault.pairIsRevoked(
+        pairID: fixture.proxySummary.pairID) == false)
 
       await connection.requester.close()
       await connection.proxy.close()
@@ -242,17 +428,18 @@ import Testing
       defer { Self.deleteKeychainServices(for: fixture) }
       let connection = try await Self.makeConnection(fixture)
       let digest = Data(repeating: 0x5A, count: 32)
+      let operation = RequestedOperation.browserAuthentication(
+        origin: "https://example.invalid",
+        digest: digest
+      )
 
       let requesterOutcome = Task {
-        try await Self.awaitTerminalBrowserAuthentication(
-          connection.requester,
-          digest: digest
-        )
+        try await Self.awaitTerminal(connection.requester, operation: operation)
       }
       let proxyOutcome = Task {
-        try await Self.authorizeAndRejectBrowserAuthentication(
+        try await Self.authorizeAndRejectCredential(
           connection.proxy,
-          expectedDigest: digest
+          operation: operation
         )
       }
       defer {
@@ -417,20 +604,14 @@ import Testing
       )
     }
 
-    private static func awaitBrowserAuthentication(
+    private static func awaitCompletion(
       _ coordinator: RappConnectionCoordinator,
-      digest: Data
+      operation: RequestedOperation
     ) async throws -> RappOperationDriver.Result {
       for await event in coordinator.events {
         switch event {
         case .established:
-          try await coordinator.beginBrowserAuthentication(
-            origin: "https://example.invalid",
-            keyProfile: .ecdsaP256,
-            algorithm: .ecdsaSHA256,
-            digest: digest,
-            expiresAfterMilliseconds: 60_000
-          )
+          try await operation.begin(on: coordinator)
         case let .completed(_, result):
           return result
         case let .terminal(_, _, reason):
@@ -446,20 +627,14 @@ import Testing
       throw TestFailure.operationEndedWithoutResult
     }
 
-    private static func awaitTerminalBrowserAuthentication(
+    private static func awaitTerminal(
       _ coordinator: RappConnectionCoordinator,
-      digest: Data
+      operation: RequestedOperation
     ) async throws -> RappOperationDriver.TerminalReason? {
       for await event in coordinator.events {
         switch event {
         case .established:
-          try await coordinator.beginBrowserAuthentication(
-            origin: "https://example.invalid",
-            keyProfile: .ecdsaP256,
-            algorithm: .ecdsaSHA256,
-            digest: digest,
-            expiresAfterMilliseconds: 60_000
-          )
+          try await operation.begin(on: coordinator)
         case let .terminal(_, _, reason):
           return reason
         case let .closed(reason):
@@ -473,9 +648,9 @@ import Testing
       throw TestFailure.operationEndedWithoutResult
     }
 
-    private static func authorizeAndCompleteBrowserAuthentication(
+    private static func authorizeAndComplete(
       _ coordinator: RappConnectionCoordinator,
-      expectedDigest: Data,
+      operation expected: RequestedOperation,
       signature: Data
     ) async throws -> ProxyProgress {
       var progress = ProxyProgress()
@@ -484,20 +659,19 @@ import Testing
         case .established:
           break
         case let .inspectPrerequisites(operationID, operation):
-          guard operation.kind == .browserAuthenticate,
-                operation.digest == expectedDigest else {
+          guard expected.matches(operation) else {
             throw TestFailure.unexpectedConnectionEvent
           }
           progress.prerequisites += 1
           try await coordinator.prerequisitesComplete(operationID: operationID)
         case let .awaitUserApproval(operationID, operation):
-          guard operation.kind == .browserAuthenticate else {
+          guard expected.matches(operation) else {
             throw TestFailure.unexpectedConnectionEvent
           }
           progress.approvals += 1
           try await coordinator.approve(operationID: operationID)
         case let .executeCardCommand(operationID, operation):
-          guard operation.kind == .browserAuthenticate else {
+          guard expected.matches(operation) else {
             throw TestFailure.unexpectedConnectionEvent
           }
           progress.executions += 1
@@ -520,9 +694,9 @@ import Testing
       throw TestFailure.operationEndedWithoutResult
     }
 
-    private static func authorizeAndRejectBrowserAuthentication(
+    private static func authorizeAndRejectCredential(
       _ coordinator: RappConnectionCoordinator,
-      expectedDigest: Data
+      operation expected: RequestedOperation
     ) async throws -> ProxyProgress {
       var progress = ProxyProgress()
       for await event in coordinator.events {
@@ -530,24 +704,79 @@ import Testing
         case .established:
           break
         case let .inspectPrerequisites(operationID, operation):
-          guard operation.kind == .browserAuthenticate,
-                operation.digest == expectedDigest else {
+          guard expected.matches(operation) else {
             throw TestFailure.unexpectedConnectionEvent
           }
           progress.prerequisites += 1
           try await coordinator.prerequisitesComplete(operationID: operationID)
         case let .awaitUserApproval(operationID, operation):
-          guard operation.kind == .browserAuthenticate else {
+          guard expected.matches(operation) else {
             throw TestFailure.unexpectedConnectionEvent
           }
           progress.approvals += 1
           try await coordinator.approve(operationID: operationID)
         case let .executeCardCommand(operationID, operation):
-          guard operation.kind == .browserAuthenticate else {
+          guard expected.matches(operation) else {
             throw TestFailure.unexpectedConnectionEvent
           }
           progress.executions += 1
           try await coordinator.credentialRejected(operationID: operationID)
+          return progress
+        case let .terminal(_, _, reason):
+          throw TestFailure.operationTerminated(reason)
+        case let .closed(reason):
+          throw TestFailure.connectionClosed(reason)
+        case .executeSafeRead, .completed, .advisoryCancellation,
+             .operationFinished, .peerBusy, .peerUnknownOperation:
+          throw TestFailure.unexpectedConnectionEvent
+        }
+      }
+      throw TestFailure.operationEndedWithoutResult
+    }
+
+    private static func authorizeAndTerminate(
+      _ coordinator: RappConnectionCoordinator,
+      operation expected: RequestedOperation,
+      termination: ProxyTermination
+    ) async throws -> ProxyProgress {
+      var progress = ProxyProgress()
+      for await event in coordinator.events {
+        switch event {
+        case .established:
+          break
+        case let .inspectPrerequisites(operationID, operation):
+          guard expected.matches(operation) else {
+            throw TestFailure.unexpectedConnectionEvent
+          }
+          progress.prerequisites += 1
+          if termination == .retryPolicyRefused {
+            try await coordinator.retryRefused(operationID: operationID)
+            return progress
+          }
+          try await coordinator.prerequisitesComplete(operationID: operationID)
+        case let .awaitUserApproval(operationID, operation):
+          guard expected.matches(operation) else {
+            throw TestFailure.unexpectedConnectionEvent
+          }
+          progress.approvals += 1
+          if termination == .userDenied {
+            try await coordinator.deny(operationID: operationID)
+            return progress
+          }
+          try await coordinator.approve(operationID: operationID)
+        case let .executeCardCommand(operationID, operation):
+          guard expected.matches(operation) else {
+            throw TestFailure.unexpectedConnectionEvent
+          }
+          switch termination {
+          case .cardRemovedBeforeTransmit:
+            try await coordinator.cardRemovedBeforeTransmit(operationID: operationID)
+          case .cardCompletionAmbiguous:
+            progress.executions += 1
+            try await coordinator.cardCompletionAmbiguous(operationID: operationID)
+          case .userDenied, .retryPolicyRefused:
+            throw TestFailure.unexpectedConnectionEvent
+          }
           return progress
         case let .terminal(_, _, reason):
           throw TestFailure.operationTerminated(reason)
