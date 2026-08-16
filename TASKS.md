@@ -411,6 +411,8 @@ application use the card without one.
 - [ ] Produce and approve the first `macos-vYY.M.D-beta.<build>` build.
 - [ ] Exercise install, upgrade, downgrade refusal where applicable, and clean
   uninstall through TestFlight/App Store behavior.
+- [ ] Exercise iPhone pairing, iPhone-backed Safari authentication, relay
+  rejection, peer removal, and reconnection against the exact macOS build.
 - [ ] Produce the `macos-vYY.M.D-rc.<build>` candidate only after software and
   hardware gates pass.
 - [ ] Freeze the tested candidate build for App Store submission.

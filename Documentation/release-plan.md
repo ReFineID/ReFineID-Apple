@@ -51,6 +51,9 @@ User story is:
   authentication.
 - Publication of the card's PIN2 qualified-signature identity, gated behind
   a per-signature PIN2 prompt with no cache.
+- Holder-paired use of an iPhone-hosted identity through the encrypted local
+  credential relay. The Mac app and token extension carry network client and
+  server sandbox grants for this path; the card key and PIN remain on iPhone.
 - Clear no-card, unsupported-card, low-retry, locked-card, and uncertain-state
   guidance in Finnish, Swedish, and English.
 
@@ -60,8 +63,8 @@ User story is:
 - Rust libraries, Rust runtime code, helper executables, daemons, or privileged
   helpers in the App Store artifact.
 - Portrait and stored handwritten-signature display.
-- Safari extensions, browser shells, login relays, remote-card operation, NFC,
-  telemetry, analytics, accounts, and cloud services.
+- Safari extensions, browser shells, Internet relays, macOS NFC, telemetry,
+  analytics, accounts, and cloud services.
 - iOS distribution.
 
 Card management and PIN2 signing entered scope on 2026-08-04 (see

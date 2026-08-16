@@ -2,9 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <!-- The CryptoTokenKit extension is sandboxed and needs smart-card
-     access; nothing else. The application-group grant returns with
-     contactless card reading (FEATURE_CONTACTLESS), which the MVP
-     does not ship - see Config/Features.xcconfig. -->
+     access. Its network client and server grants are limited to the
+     encrypted, holder-paired iPhone credential relay. -->
 <dict>
 	<key>com.apple.security.app-sandbox</key>
 	<true/>

@@ -212,6 +212,7 @@ private func releaseArchiveLayout(at archive: URL) -> ReleaseArchiveLayout {
                 "com.apple.security.app-sandbox",
                 "com.apple.security.smartcard",
                 "com.apple.security.network.client",
+                "com.apple.security.network.server",
                 "com.apple.security.files.user-selected.read-write",
                 "com.apple.application-identifier",
                 "com.apple.developer.team-identifier",
@@ -465,13 +466,22 @@ private func inspectReleaseArchive(_ archive: URL) {
         }
     }
     if layout.platform == "macOS" {
+        let appEntitlements = releaseEntitlements(of: layout.app)
         let extensionEntitlements = releaseEntitlements(of: layout.tokenExecutable)
-        guard extensionEntitlements["com.apple.security.network.client"] == nil else {
-            releaseFail(
-                "\(layout.tokenExecutable.path): extensions must not carry a network entitlement"
-            )
+        for entitlement in [
+            "com.apple.security.network.client",
+            "com.apple.security.network.server",
+        ] {
+            guard appEntitlements[entitlement] as? Bool == true else {
+                releaseFail("\(layout.app.path): missing iPhone relay entitlement \(entitlement)")
+            }
+            guard extensionEntitlements[entitlement] as? Bool == true else {
+                releaseFail(
+                    "\(layout.tokenExecutable.path): missing iPhone relay entitlement \(entitlement)"
+                )
+            }
         }
-        releaseNote("the network entitlement is the app's alone")
+        releaseNote("app and token extension carry the reviewed iPhone relay entitlements")
     }
     releaseNote("entitlements match the reviewed allowlist")
 

@@ -39,12 +39,9 @@
 //       through. Out of the first App Store release by decision
 //       (Documentation/decisions.md, 2026-08-11): to serve HTTPS it
 //       modifies the user's certificate trust settings, which is a
-//       review risk kept out of the binary entirely. Off, no socket
-//       is bound and no trust is touched, and the
-//       com.apple.security.network.server entitlement stays out of
-//       Config/ReFineID.entitlements. When it ships it ships as a
-//       setting the holder explicitly activates; restore the
-//       entitlement then.
+//       review risk kept out of the binary entirely. Off, no SCS socket
+//       is bound and no trust is touched. The network-server entitlement
+//       remains for the separate encrypted iPhone credential relay.
 //
 // Flags are space-separated. To ship one again:
 //   REFINEID_FEATURES = FEATURE_PDF_STAMP FEATURE_CONTACTLESS FEATURE_SCS

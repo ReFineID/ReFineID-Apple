@@ -210,6 +210,8 @@ Test the exact uploaded build. At minimum, retain evidence for:
 - Reader insertion, removal, contention, sleep, wake, extension restart, app
   restart, and Mac restart.
 - Activated-card identity publication and signing.
+- Pairing with an iPhone, iPhone-backed identity publication, Safari
+  authentication, relay rejection, peer removal, and reconnection.
 - Factory-fresh card detection without activation unless that specific test is
   separately approved.
 - Retry counters before and after any credential operation.

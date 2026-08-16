@@ -10,10 +10,9 @@
      digest and a certificate identifier - never a key, a PIN, or one
      byte of the document.
 
-     There is no network-server grant: the MVP ships with the SCS
-     (the loopback signing interface, FEATURE_SCS) off, so nothing
-     binds a socket. Restore com.apple.security.network.server here
-     when that feature ships - see Config/Features.xcconfig. -->
+     The network-server grant belongs to the encrypted, holder-paired
+     iPhone credential relay. The SCS loopback signing interface remains
+     independently compile-gated off by FEATURE_SCS. -->
 <dict>
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
