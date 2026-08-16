@@ -47,6 +47,11 @@ the resolved halves of the original wording are recorded in git history.
 - [ ] Re-prove the clean-device suomi.fi login and demonstration-mode
   onboarding on the exact App-Store-shaped candidate; the clean-VM proof and
   the shipped demonstration mode are recorded in decisions.md and history.
+- [ ] Film, sanitize, host, and link the App Review demonstration video for
+  iOS 26.8.16 (114), then answer the Resolution Center message. App Review
+  asked for it under guideline 2.1 on 2026-08-16 after reviewing on an iPad
+  Air, which has no NFC antenna; the shot list, sanitization rules, notes
+  text, and reply are in `Documentation/app-review-demo-video.md`.
 
 ## 1. Product and public documentation
 
