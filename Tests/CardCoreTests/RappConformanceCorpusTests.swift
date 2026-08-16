@@ -22,7 +22,7 @@ internal struct RappConformanceCorpusTests {
   internal func corpusIdentity() throws {
     let source = try Self.corpusSource()
     let digest = Data(SHA256.hash(data: source))
-    #expect(digest.hex == "a8b41c0125b5faf37a1fc18f5deadb5570217a1853071864a3fbaab7f912acc7")
+    #expect(digest.hex == "8bb9b17d25f94b2ec056dd302e31e373ed457c197c8ff7cf81bee84cbec17dc2")
 
     let corpus = try JSONDecoder().decode(Corpus.self, from: source)
     #expect(corpus.format == "fi.refineid.rapp.conformance-v1")
