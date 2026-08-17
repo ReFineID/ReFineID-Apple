@@ -34,6 +34,13 @@
           remoteModel.refresh()
         }
       }
+      .onChange(of: authorizationInbox.request?.id) {
+        // One presenter can hold one sheet: a pending authorization takes
+        // the stage from the pairing sheet.
+        if authorizationInbox.request != nil {
+          showsRappPairing = false
+        }
+      }
       .sheet(
         isPresented: $showsRappPairing,
         onDismiss: { remoteModel.refresh() }

@@ -2388,7 +2388,7 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Paritettua laitetta ei ole valittu"
+            "value": "Laiteparia ei ole valittu"
           }
         },
         "sv": {
@@ -2404,7 +2404,7 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ei paritettuja laitteita"
+            "value": "Ei laitepareja"
           }
         },
         "sv": {
@@ -2882,7 +2882,7 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Parita puhelin"
+            "value": "Muodosta laitepari"
           }
         },
         "sv": {
@@ -2920,7 +2920,7 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Paritettu laite valittu"
+            "value": "Laitepari valittu"
           }
         },
         "sv": {
@@ -2936,7 +2936,7 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Paritetut laitteet"
+            "value": "Laiteparit"
           }
         },
         "sv": {
@@ -3508,7 +3508,7 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Poista paritettu laite"
+            "value": "Poista laitepari"
           }
         },
         "sv": {
@@ -3936,7 +3936,7 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Suojattu yhteys paritettu"
+            "value": "Suojattu laitepari muodostettu"
           }
         },
         "sv": {
@@ -4728,7 +4728,7 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Paritettua laitetta ei voitu poistaa"
+            "value": "Laiteparia ei voitu poistaa"
           }
         },
         "sv": {
@@ -4744,7 +4744,7 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Paritettua laitetta ei voitu valita"
+            "value": "Laiteparia ei voitu valita"
           }
         },
         "sv": {
@@ -4760,7 +4760,7 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Paritettu laite ei ole enää käytettävissä"
+            "value": "Laitepari ei ole enää käytettävissä"
           }
         },
         "sv": {
