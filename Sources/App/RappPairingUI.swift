@@ -599,7 +599,7 @@ internal struct RappPairingView: View {
                 .accessibilityLabel("Selected")
             }
           }
-          Button("Remove this connection", role: .destructive) {
+          Button("Remove this pairing", role: .destructive) {
             model.revoke(pair)
           }
           .accessibilityIdentifier("removePairedDevice")
@@ -671,7 +671,7 @@ internal struct RappPairingView: View {
       }
     case .paired(let pair):
       Section {
-        Label("Secure connection paired", systemImage: "checkmark.shield")
+        Label("Secure pairing established", systemImage: "checkmark.shield")
           .foregroundStyle(.green)
         Text(pair.remotePlatformLabel)
       }

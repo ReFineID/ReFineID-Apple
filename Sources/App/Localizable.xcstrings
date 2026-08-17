@@ -3552,6 +3552,16 @@
         }
       }
     },
+    "Remove this pairing": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poista laitepari"
+          }
+        }
+      }
+    },
     "Replace": {
       "extractionState": "manual",
       "localizations": {
@@ -3931,7 +3941,7 @@
         }
       }
     },
-    "Secure connection paired": {
+    "Secure pairing established": {
       "localizations": {
         "fi": {
           "stringUnit": {
