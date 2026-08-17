@@ -50,6 +50,17 @@ internal struct CardCredentialsView: View {
     @State private var primingModel = CardPrimingModel()
   #endif
 
+  #if os(iOS)
+    /// Live reader identities, when an iOS root provides them.
+    private let readerModel: ReaderIdentityModeModel?
+
+    /// Opens the remote reader connections owned by the root.
+    private let openRemoteReader: () -> Void
+
+    /// The holder names read from the live reader tokens.
+    @State private var readerHolders: [String] = []
+  #endif
+
   /// The PIN is valid for storage only inside the card's documented range.
   private var isPin1EntryComplete: Bool {
     pin1Entry.count >= Pin1.minimumDigitCount
@@ -151,6 +162,24 @@ internal struct CardCredentialsView: View {
     #endif
   }
 
+  /// Whether a connected reader's card still requires activation.
+  private var readerActivationRequired: Bool {
+    #if os(iOS)
+      return readerModel?.hasActivationRequiredCard ?? false
+    #else
+      return false
+    #endif
+  }
+
+  /// Whether an activated reader-backed identity is live.
+  private var hasReaderIdentity: Bool {
+    #if os(iOS)
+      return (readerModel?.isActive ?? false) && !readerActivationRequired
+    #else
+      return false
+    #endif
+  }
+
   /// Both credentials must be usable before minting starts.
   ///
   /// A field left empty falls back to what is stored; a field with
@@ -168,62 +197,68 @@ internal struct CardCredentialsView: View {
     return model.contents.hasCardAccessNumber && isPin1EntryComplete
   }
 
+  #if os(iOS)
+    internal init(
+      readerModel: ReaderIdentityModeModel?,
+      openRemoteReader: @escaping () -> Void
+    ) {
+      self.readerModel = readerModel
+      self.openRemoteReader = openRemoteReader
+    }
+  #endif
+
   internal var body: some View {
-    Form {
-      // While the card is against the phone, Apple's panel is the
-      // screen and everything under it is furniture behind frosted
-      // glass. Clearing it leaves the app's name, which is all a
-      // dimmed backdrop can usefully say.
-      if isHolding {
-        EmptyView()
-      } else if !offersNearField {
-        // No antenna: a reader is the only way in, and saying so is the
-        // whole screen. There is nothing to store first -- a card in a
-        // contact reader needs no access number.
-        readerOnlySection
-      } else if let identityHolder {
-        // A set identity replaces the whole setup: nothing about it is
-        // left to configure, so nothing about configuring it is shown.
-        CardIdentitySection(holder: identityHolder) {
-          showsForgetConfirmation = true
-        }
+    #if os(iOS)
+      if readerActivationRequired {
+        // A factory-fresh reader card opens activation in place of setup.
+        CardManagementView(readerCardIsPresent: true, activationRequired: true)
+          .navigationTitle("ReFineID")
+          .navigationBarTitleDisplayMode(.large)
       } else {
-        createIdentitySection
+        credentialsForm
       }
+    #else
+      credentialsForm
+    #endif
+  }
+
+  /// The screen's identity area: exactly one of the hold blank, the
+  /// live reader identity, the reader-only notice, the set identity,
+  /// or the setup form.
+  @ViewBuilder private var identityArea: some View {
+    // While the card is against the phone, Apple's panel is the
+    // screen and everything under it is furniture behind frosted
+    // glass. Clearing it leaves the app's name, which is all a
+    // dimmed backdrop can usefully say.
+    if isHolding {
+      EmptyView()
+    } else if hasReaderIdentity {
+      readerIdentitySection
+    } else if !offersNearField {
+      // No antenna: a local or remote reader is the way in. There is
+      // nothing to store first -- a card in a contact reader needs no
+      // access number.
+      remoteReaderSection
+    } else if let identityHolder {
+      // A set identity replaces the whole setup: nothing about it is
+      // left to configure, so nothing about configuring it is shown.
+      CardIdentitySection(holder: identityHolder) {
+        showsForgetConfirmation = true
+      }
+    } else {
+      createIdentitySection
+    }
+  }
+
+  /// The form and its navigation chrome, typed separately from the
+  /// event handlers so each half stays checkable on its own.
+  private var navigationChrome: some View {
+    Form {
+      identityArea
       #if os(iOS)
         if !isHolding {
-          Section(
-            String(
-              localized: "signing.document",
-              defaultValue: "Document",
-              table: "DocumentSigning")
-          ) {
-            Button {
-              synchronizeIdentityState()
-              transition(.openDocumentSigning)
-            } label: {
-              HStack(spacing: 8) {
-                Image(systemName: "signature")
-                Text(
-                  String(
-                    localized: "signing.title",
-                    defaultValue: "Sign",
-                    table: "DocumentSigning")
-                )
-                .lineLimit(nil)
-                .fixedSize(horizontal: false, vertical: true)
-              }
-              .foregroundStyle(.white)
-              .frame(maxWidth: .infinity)
-              .multilineTextAlignment(.center)
-              .padding(.vertical, 8)
-            }
-            .buttonStyle(.borderedProminent)
-            .accessibilityIdentifier("signDocuments")
-            .disabled(!isCardAccessNumberEntryComplete)
-          }
-          .listRowBackground(Color.clear)
-          .listRowInsets(EdgeInsets())
+          signingSection
+          cardSection
         }
       #endif
       #if !os(iOS)
@@ -241,195 +276,304 @@ internal struct CardCredentialsView: View {
       .listSectionSpacing(Self.sectionSpacing)
       .navigationTitle("ReFineID")
       .navigationBarTitleDisplayMode(.large)
-      .toolbar {
-        if !isHolding {
-          ToolbarItem(placement: .topBarTrailing) {
-            Button {
-              openCardManagement()
-            } label: {
-              CredentialRetryHealthKey(
-                level: retryHealth.level,
-                systemName: model.hasVerifiedCardStatus ? "key" : "key.slash")
-            }
-            .accessibilityIdentifier("manageCard")
-            .accessibilityLabel(
-              model.hasVerifiedCardStatus ? Text("Change or Reset PINs") : Text("Read card")
-            )
-            .disabled(!isCardAccessNumberEntryComplete || model.isConnecting)
-          }
-        }
-      }
       .navigationDestination(item: flowDestination) { destination in
-        switch destination {
-        case .activation:
-          #if DEBUG
-            _ = DebugConsole.emit("navigation-destination: activation")
-          #endif
-          if let activationScheme, let activationNeeds {
-            CardManagementView(
-              activationRequired: true,
-              cardAccessNumber: cardAccessNumberEntry,
-              activationScheme: activationScheme,
-              activationNeeds: activationNeeds,
-              onActivationSucceeded: activationSucceeded
-            )
-            .id(CardSetupStateMachine.Destination.activation)
-          }
-        case .pinManagement:
-          #if DEBUG
-            _ = DebugConsole.emit("navigation-destination: PIN management")
-          #endif
-          CardManagementView(
-            cardAccessNumber: managementCardAccessNumber
-          )
-          .id(CardSetupStateMachine.Destination.pinManagement)
-        case .signDocuments:
-          DocumentSigningView(
-            transport: .nearField,
-            cardAccessNumber: managementCardAccessNumber
-          )
-          .id(CardSetupStateMachine.Destination.signDocuments)
-        }
+        destinationView(destination)
       }
     #endif
-    // Pinned under every product control: what this run is, when it is
-    // anything but the shipped product doing its job.
-    .safeAreaInset(edge: .bottom) {
-      #if os(iOS)
-        let includesFooter = !demoMode.isEditorPresented
-      #else
-        let includesFooter = true
-      #endif
-      if includesFooter {
-        let hidesFooter =
-          isCardAccessNumberFieldFocused || isPin1FieldFocused
-        CardSetupFooter(isDemonstration: isDemonstration)
-          // Keep the inset structurally stable while the keyboard is present.
-          // Removing it rebuilds Form cells and strands UIKit's keyboard with
-          // no first responder. An invisible footer is also absent to touch and
-          // accessibility users, without changing the input hierarchy.
-          .opacity(hidesFooter ? 0 : 1)
-          .allowsHitTesting(!hidesFooter)
-          .accessibilityHidden(hidesFooter)
-      }
-    }
-    .onAppear {
-      model.refresh()
-      refreshRegistration()
-      showStoredCardAccessNumber()
-      synchronizeIdentityState()
-    }
-    .onChange(of: hasIdentity) { _, registered in
-      // A set identity ends the fields' job; nothing they held is worth
-      // keeping in memory once the setup they belonged to is over.
-      if registered {
-        // Registration can arrive from the visible Virtual ID Card editor as
-        // well as from a real card operation. Keep the same stored-CAN input
-        // invariant in both cases so the management key is immediately usable.
-        showStoredCardAccessNumber()
-        finishBrowserRegistration(succeeded: true)
-        clearPin1Entry()
-      } else {
-        synchronizeIdentityState()
-      }
-    }
-    .onChange(of: model.contents) { _, _ in
-      // A hold that stored the number and then broke leaves the field
-      // as it was. Seeding again here puts the stored number back in
-      // front of the holder, which is where a wrong one gets noticed.
-      showStoredCardAccessNumber()
-    }
-    #if os(iOS)
-      .onReceive(
-        NotificationCenter.default.publisher(
-          for: .virtualIDCardEditorDidDismiss)
-      ) { _ in
-        // The floating editor owns focus while it is open. Reset the bindings
-        // before returning focus to the CAN field on the next event turn.
-        isCardAccessNumberFieldFocused = false
-        isPin1FieldFocused = false
-        DispatchQueue.main.async {
-          guard shouldFocusCardAccessNumber else { return }
-          isCardAccessNumberFieldFocused = true
-        }
-      }
-    #endif
-    .onChange(of: isCardAccessNumberEntryComplete) { _, complete in
-      // A PIN entered for one complete CAN must not survive while that
-      // CAN is erased or replaced. It reappears only after the new card
-      // number is complete and the holder enters its PIN deliberately.
-      if !complete {
-        pin1Entry = ""
-        isPin1FieldFocused = false
-        #if os(iOS)
-          if isDemonstration {
-            demoMode.forgetIdentity()
-          }
-        #endif
-      }
-    }
-    .onChange(of: cardAccessNumberEntry) { _, entered in
-      model.invalidateCardStatus()
-      activationScheme = nil
-      activationNeeds = nil
-      if !entered.isEmpty {
-        model.clearFailure()
-      }
-      guard entered.isEmpty,
-        !isDemonstration,
-        model.contents.hasCardAccessNumber
-      else { return }
-      model.forgetEverything()
-    }
-    .onReceive(
-      NotificationCenter.default.publisher(
-        for: CardCredentialStore.cardAccessNumberDidInvalidate)
-    ) { _ in
-      model.refresh()
-      cardAccessNumberEntry = ""
-      clearPin1Entry()
-      activationScheme = nil
-      activationNeeds = nil
-      model.invalidateCardStatus()
-      isCardAccessNumberFieldFocused = true
-    }
-    #if os(iOS)
-      .sheet(isPresented: $isScanning) {
-        scannerSheet
-      }
-    #endif
-    .alert(
-      "Forget identity?",
-      isPresented: $showsForgetConfirmation
-    ) {
-      Button("Forget", role: .destructive) {
-        // A demonstration has nothing stored to forget: dropping its
-        // test person returns the screen to the setup form, and the run
-        // stays a demonstration.
-        #if os(iOS)
-          if isDemonstration {
-            demoMode.forgetIdentity()
-            clearEntries()
-            return
-          }
-        #endif
-        model.forgetEverything()
-        registrationReset.toggle()
-        isRegistered = false
-        synchronizeIdentityState()
-        clearEntries()
-      }
-    }
   }
 
-  /// What a device with no antenna is told instead of a setup form.
-  private var readerOnlySection: some View {
-    Section {
-      Text("Connect a card reader and insert your card.")
-        .foregroundStyle(.secondary)
-        .accessibilityIdentifier("readerOnlyNotice")
-    }
+  private var credentialsForm: some View {
+    navigationChrome
+      // Pinned under every product control: what this run is, when it is
+      // anything but the shipped product doing its job.
+      .safeAreaInset(edge: .bottom) {
+        #if os(iOS)
+          let includesFooter = !demoMode.isEditorPresented
+        #else
+          let includesFooter = true
+        #endif
+        if includesFooter {
+          let hidesFooter =
+            isCardAccessNumberFieldFocused || isPin1FieldFocused
+          CardSetupFooter(isDemonstration: isDemonstration)
+            // Keep the inset structurally stable while the keyboard is present.
+            // Removing it rebuilds Form cells and strands UIKit's keyboard with
+            // no first responder. An invisible footer is also absent to touch and
+            // accessibility users, without changing the input hierarchy.
+            .opacity(hidesFooter ? 0 : 1)
+            .allowsHitTesting(!hidesFooter)
+            .accessibilityHidden(hidesFooter)
+        }
+      }
+      .onAppear {
+        model.refresh()
+        refreshRegistration()
+        showStoredCardAccessNumber()
+        synchronizeIdentityState()
+      }
+      #if os(iOS)
+        .task(id: readerHolderReadKey) {
+          readerHolders = await readerModel?.holderNames() ?? []
+        }
+      #endif
+      .onChange(of: hasIdentity) { _, registered in
+        // A set identity ends the fields' job; nothing they held is worth
+        // keeping in memory once the setup they belonged to is over.
+        if registered {
+          // Registration can arrive from the visible Virtual ID Card editor as
+          // well as from a real card operation. Keep the same stored-CAN input
+          // invariant in both cases so the management key is immediately usable.
+          showStoredCardAccessNumber()
+          finishBrowserRegistration(succeeded: true)
+          clearPin1Entry()
+        } else {
+          synchronizeIdentityState()
+        }
+      }
+      .onChange(of: model.contents) { _, _ in
+        // A hold that stored the number and then broke leaves the field
+        // as it was. Seeding again here puts the stored number back in
+        // front of the holder, which is where a wrong one gets noticed.
+        showStoredCardAccessNumber()
+      }
+      #if os(iOS)
+        .onReceive(
+          NotificationCenter.default.publisher(
+            for: .virtualIDCardEditorDidDismiss)
+        ) { _ in
+          // The floating editor owns focus while it is open. Reset the bindings
+          // before returning focus to the CAN field on the next event turn.
+          isCardAccessNumberFieldFocused = false
+          isPin1FieldFocused = false
+          DispatchQueue.main.async {
+            guard shouldFocusCardAccessNumber else { return }
+            isCardAccessNumberFieldFocused = true
+          }
+        }
+      #endif
+      .onChange(of: isCardAccessNumberEntryComplete) { _, complete in
+        // A PIN entered for one complete CAN must not survive while that
+        // CAN is erased or replaced. It reappears only after the new card
+        // number is complete and the holder enters its PIN deliberately.
+        if !complete {
+          pin1Entry = ""
+          isPin1FieldFocused = false
+          #if os(iOS)
+            if isDemonstration {
+              demoMode.forgetIdentity()
+            }
+          #endif
+        }
+      }
+      .onChange(of: cardAccessNumberEntry) { _, entered in
+        model.invalidateCardStatus()
+        activationScheme = nil
+        activationNeeds = nil
+        if !entered.isEmpty {
+          model.clearFailure()
+        }
+        guard entered.isEmpty,
+          !isDemonstration,
+          model.contents.hasCardAccessNumber
+        else { return }
+        model.forgetEverything()
+      }
+      .onReceive(
+        NotificationCenter.default.publisher(
+          for: CardCredentialStore.cardAccessNumberDidInvalidate)
+      ) { _ in
+        model.refresh()
+        cardAccessNumberEntry = ""
+        clearPin1Entry()
+        activationScheme = nil
+        activationNeeds = nil
+        model.invalidateCardStatus()
+        isCardAccessNumberFieldFocused = true
+      }
+      #if os(iOS)
+        .sheet(isPresented: $isScanning) {
+          scannerSheet
+        }
+      #endif
+      .alert(
+        "Forget identity?",
+        isPresented: $showsForgetConfirmation
+      ) {
+        Button("Forget", role: .destructive) {
+          // A demonstration has nothing stored to forget: dropping its
+          // test person returns the screen to the setup form, and the run
+          // stays a demonstration.
+          #if os(iOS)
+            if isDemonstration {
+              demoMode.forgetIdentity()
+              clearEntries()
+              return
+            }
+          #endif
+          model.forgetEverything()
+          registrationReset.toggle()
+          isRegistered = false
+          synchronizeIdentityState()
+          clearEntries()
+        }
+      }
   }
+
+  #if os(iOS)
+    /// The identity surface of a device with no antenna and no reader:
+    /// the person is reached through a remote reader.
+    private var remoteReaderSection: some View {
+      Section("Identity") {
+        LabeledContent {
+          Button(String(localized: "Connect Remote Reader")) {
+            openRemoteReader()
+          }
+          .accessibilityIdentifier("connectRemoteReader")
+        } label: {
+          PersonRowLabel(configured: false)
+        }
+      }
+    }
+  #else
+    /// Unreachable on macOS: ``offersNearField`` is always true there.
+    private var remoteReaderSection: some View {
+      EmptyView()
+    }
+
+    /// Unreachable on macOS: ``hasReaderIdentity`` is always false there.
+    private var readerIdentitySection: some View {
+      EmptyView()
+    }
+  #endif
+
+  #if os(iOS)
+    /// The document routes, active once a card path exists.
+    ///
+    /// Each route opens its own screen, so the rows read as navigation
+    /// rather than as immediate actions.
+    private var signingSection: some View {
+      Section(
+        String(
+          localized: "signing.document",
+          defaultValue: "Document",
+          table: "DocumentSigning")
+      ) {
+        Button {
+          synchronizeIdentityState()
+          transition(.openDocumentSigning)
+        } label: {
+          navigationRow(
+            String(
+              localized: "signing.title",
+              defaultValue: "Sign",
+              table: "DocumentSigning")
+          ) {
+            Image(systemName: "signature")
+              .foregroundStyle(Color.accentColor)
+          }
+        }
+        .tint(.primary)
+        .accessibilityIdentifier("signDocuments")
+        .disabled(!hasReaderIdentity && !isCardAccessNumberEntryComplete)
+        Button {
+        } label: {
+          navigationRow(
+            String(
+              localized: "verify.title",
+              defaultValue: "Verify",
+              table: "DocumentSigning")
+          ) {
+            Image(systemName: "checkmark.seal.text.page")
+              .foregroundStyle(Color.accentColor)
+          }
+        }
+        .tint(.primary)
+        .accessibilityIdentifier("verifyDocuments")
+        .disabled(true)
+      }
+    }
+
+    /// The card's credential management route.
+    private var cardSection: some View {
+      Section("Card") {
+        Button {
+          openCardManagement()
+        } label: {
+          navigationRow(
+            String(localized: "Personal Identification Number (PIN)")
+          ) {
+            CredentialRetryHealthKey(
+              level: retryHealth.level,
+              systemName: model.hasVerifiedCardStatus || hasReaderIdentity
+                ? "key"
+                : "key.slash")
+          }
+        }
+        .tint(.primary)
+        .accessibilityIdentifier("manageCard")
+        .disabled(
+          (!isCardAccessNumberEntryComplete && !hasReaderIdentity)
+            || model.isConnecting
+        )
+      }
+    }
+
+    /// One navigation row with an aligned leading icon.
+    private func navigationRow(
+      _ title: String,
+      @ViewBuilder icon: () -> some View
+    ) -> some View {
+      HStack {
+        icon()
+          .frame(width: PersonRowLabel.iconWidth)
+          .accessibilityHidden(true)
+        Text(title)
+        Spacer()
+        Image(systemName: "chevron.forward")
+          .font(.footnote.weight(.semibold))
+          .foregroundStyle(.tertiary)
+          .accessibilityHidden(true)
+      }
+    }
+
+    /// Who the connected reader's card says they are, one row per card.
+    ///
+    /// The reader message stands in for a card whose name cannot be
+    /// read: a live token with no readable name is still a card present.
+    private var readerIdentitySection: some View {
+      Section("Identity") {
+        if readerHolders.isEmpty {
+          Text(readerMessage)
+            .foregroundStyle(.secondary)
+        } else {
+          ForEach(readerHolders, id: \.self) { holder in
+            LabeledContent {
+              Text(holder)
+                .textSelection(.enabled)
+                .accessibilityIdentifier("readerCardHolder")
+            } label: {
+              PersonRowLabel(configured: true)
+            }
+          }
+        }
+      }
+    }
+
+    /// Distinguishes one usable reader from several without exposing
+    /// card data.
+    private var readerMessage: String {
+      if (readerModel?.liveReaderTokenCount ?? 0) == 1 {
+        String(localized: "USB-C reader connected with ID card.")
+      } else {
+        String(localized: "USB-C readers connected with ID cards.")
+      }
+    }
+
+    /// Changes whenever the identities rendered by the reader rows change.
+    private var readerHolderReadKey: [String] {
+      readerModel?.holderReadKey ?? []
+    }
+  #endif
 
   private func compactSectionHeader(
     _ title: LocalizedStringKey
@@ -656,9 +800,68 @@ internal struct CardCredentialsView: View {
     classifyIdentityCard(for: .browserAuthentication(pin1: pin1))
   }
 
+  #if os(iOS)
+    /// The pushed screen for one flow destination.
+    ///
+    /// A live reader identity signs and manages over its own card
+    /// session; the wireless routes carry the entered CAN instead.
+    @ViewBuilder
+    private func destinationView(
+      _ destination: CardSetupStateMachine.Destination
+    ) -> some View {
+      switch destination {
+      case .activation:
+        #if DEBUG
+          // A result builder accepts a declaration, not a discard statement.
+          // swiftlint:disable:next redundant_discardable_let
+          let _ = DebugConsole.emit("navigation-destination: activation")
+        #endif
+        if let activationScheme, let activationNeeds {
+          CardManagementView(
+            activationRequired: true,
+            cardAccessNumber: cardAccessNumberEntry,
+            activationScheme: activationScheme,
+            activationNeeds: activationNeeds,
+            onActivationSucceeded: activationSucceeded
+          )
+          .id(CardSetupStateMachine.Destination.activation)
+        }
+      case .pinManagement:
+        #if DEBUG
+          // A result builder accepts a declaration, not a discard statement.
+          // swiftlint:disable:next redundant_discardable_let
+          let _ = DebugConsole.emit("navigation-destination: PIN management")
+        #endif
+        if hasReaderIdentity {
+          CardManagementView(readerCardIsPresent: true)
+            .id(CardSetupStateMachine.Destination.pinManagement)
+        } else {
+          CardManagementView(
+            cardAccessNumber: managementCardAccessNumber
+          )
+          .id(CardSetupStateMachine.Destination.pinManagement)
+        }
+      case .signDocuments:
+        DocumentSigningView(
+          transport: hasReaderIdentity ? .reader : .nearField,
+          cardAccessNumber: hasReaderIdentity ? nil : managementCardAccessNumber
+        )
+        .id(CardSetupStateMachine.Destination.signDocuments)
+      }
+    }
+  #endif
+
   /// A slashed key performs the prerequisite read; a verified key opens the
   /// route selected by that card state without repeating NFC work.
+  ///
+  /// A live reader identity opens management directly: its card is
+  /// already present.
   private func openCardManagement() {
+    if hasReaderIdentity {
+      synchronizeIdentityState()
+      transition(.openVerifiedManagement)
+      return
+    }
     guard isCardAccessNumberEntryComplete, !model.isConnecting else { return }
     synchronizeIdentityState()
     if let activationNeeds, activationNeeds.any {

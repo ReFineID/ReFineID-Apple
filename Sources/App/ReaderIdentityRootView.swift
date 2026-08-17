@@ -4,7 +4,8 @@
 
   import SwiftUI
 
-  /// Chooses the app's only useful surface while a reader identity is live.
+  /// Hosts the one credentials surface and the reader identity model
+  /// that lights up its reader states.
   internal struct ReaderIdentityRootView: View {
     @Environment(\.scenePhase)
     private var scenePhase
@@ -16,11 +17,10 @@
 
     internal var body: some View {
       NavigationStack {
-        if model.isActive {
-          ReaderIdentityConnectedView(model: model)
-        } else {
-          CardCredentialsView()
-        }
+        CardCredentialsView(
+          readerModel: model,
+          openRemoteReader: { showsRappPairing = true }
+        )
       }
       .onAppear {
         model.refresh()
@@ -28,11 +28,6 @@
       .onChange(of: scenePhase) {
         if scenePhase == .active {
           model.refresh()
-        }
-      }
-      .toolbar {
-        ToolbarItem(placement: .topBarLeading) {
-          RappPairingButton(isPresented: $showsRappPairing)
         }
       }
       .sheet(isPresented: $showsRappPairing) {

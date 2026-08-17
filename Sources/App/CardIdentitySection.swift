@@ -18,9 +18,11 @@ internal struct CardIdentitySection: View {
 
   internal var body: some View {
     Section("Identity") {
-      LabeledContent("Person") {
+      LabeledContent {
         Text(holder)
           .textSelection(.enabled)
+      } label: {
+        PersonRowLabel(configured: true)
       }
       .accessibilityIdentifier("identityStatus")
 
