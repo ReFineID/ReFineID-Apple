@@ -19,18 +19,18 @@ The shared Rust repository is the protocol and state-machine authority:
 The exact Rust source revision defining the ABI of the committed Apple
 XCFramework is:
 
-- `ReFineID/ReFineID-backup-2026-08-10@50de79333b38a5c623908d8941ff8d51c0c6fddb`
+- `ReFineID/ReFineID-backup-2026-08-10@21e4ebeb52b5824010319ce9f215d13ed6db430a`
 - RAPP 0.1 golden corpus: `Documentation/rapp-conformance/rapp-v26.8.16.85.json`
   (`SHA-256 a2c9e63add5aabcf6c226ca1a61e0b2efa948b4d3135c3a55dac45ca46edd94b`)
 
 The current pushed Rust source, audit, and conformance revision is:
 
-- `ReFineID/ReFineID-backup-2026-08-10@e026df1493c2fd6f2ab5345e004da8e791638422`
+- `ReFineID/ReFineID-backup-2026-08-10@21e4ebeb52b5824010319ce9f215d13ed6db430a`
 
-That later revision adds deterministic Noise and rejected-envelope vectors and
-their Rust conformance tests. It does not change compiled library code or the
-RAPP ABI, so the committed XCFramework remains accurately attributable to
-`50de79333b38a5c623908d8941ff8d51c0c6fddb`.
+This revision includes deterministic Noise and rejected-envelope vectors,
+strict pre-allocation bounds for untrusted CBOR frames and collections,
+adversarial parser tests, and a checked-in `cargo-fuzz` target. The committed
+XCFramework was regenerated from this exact revision.
 
 That revision is pushed to the archived source repository. Do not regenerate
 or replace the XCFramework from an uncommitted Rust worktree.
