@@ -213,6 +213,17 @@ The following was measured before this handoff:
 - A manual alpha path from macOS Safari through the iPhone and its NFC identity
   card succeeded earlier. Treat that as useful integration evidence, not a
   repeatable release qualification for the current commits.
+- 2026-08-17: a manual iPad-requester path succeeded end to end on the
+  ported persistent-token extension. An iPad Pro 13-inch (M5) iOS 26.5
+  Simulator paired with the physical development iPhone over the QR
+  ceremony, read the holder identity onto the Person row with one
+  authorization, published the delegated CryptoTokenKit identity, and
+  completed a Safari suomi.fi client-certificate login whose signature
+  the phone executed against the physical card. Simulator ctkd loaded
+  the extension, simulator Safari offered the persistent token, and the
+  extension ran its MultipeerConnectivity requester transport from the
+  extension process. Treat as integration evidence, not release
+  qualification; the recorded physical matrix remains open.
 
 The Virtual ID Card uses the real UI and operation orchestration while
 substituting card effects. It is not proof of Core NFC, physical card, local

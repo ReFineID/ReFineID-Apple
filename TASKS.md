@@ -54,6 +54,11 @@ extension topology, verified invariants, and known gaps in detail.
   matrix: QR pairing, card status, Safari authentication, document signing,
   denial, card removal, one synthetic authenticated fail-stop violation,
   durable revocation, and manual re-pairing.
+- 2026-08-17 integration evidence (not qualification): the iPad
+  requester role now exists, and an iPad Simulator completed QR
+  pairing, a holder-authorized identity read, persistent-token
+  publication, and a Safari suomi.fi login through the physical
+  iPhone's NFC card. See the handoff's verified-evidence section.
 - The connected development iPhone was locked during the last run. Launching
   the freshly installed Debug app failed for that reason. A macOS “Enable UI
   Automation” dialog may also require the owner to approve Touch ID. Never try
