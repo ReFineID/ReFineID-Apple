@@ -801,7 +801,7 @@ import Testing
           return summary
         case .closed(let reason):
           throw TestFailure.pairingClosed(reason)
-        case .offerReady:
+        case .offerReady, .offerRestored:
           break
         }
       }
