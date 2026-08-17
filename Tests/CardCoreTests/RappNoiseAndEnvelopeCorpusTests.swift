@@ -2,10 +2,13 @@ import CryptoKit
 import Foundation
 import XCTest
 
+private let wireVersionMajor: UInt64 = 26
+private let wireVersionMinor: UInt64 = 8
+
 final class RappNoiseAndEnvelopeCorpusTests: XCTestCase {
   func testFixedNoiseInputsProloguesAndIdentifiers() throws {
     let corpus = try loadCorpus()
-    XCTAssertEqual(corpus.noiseHandshake.count, 2)
+    XCTAssertEqual(corpus.noiseHandshake.count, 1)
 
     for vector in corpus.noiseHandshake {
       let initiatorPrivate = try Curve25519.KeyAgreement.PrivateKey(
@@ -32,23 +35,16 @@ final class RappNoiseAndEnvelopeCorpusTests: XCTestCase {
       case "pairing-xxpsk3-fixed-transcript":
         expectedPrologue = encodeArray([
           encodeText("RAPP-pairing-v1"),
-          encodeArray([encodeUnsigned(0), encodeUnsigned(1)]),
+          encodeArray([
+            encodeUnsigned(wireVersionMajor),
+            encodeUnsigned(wireVersionMinor),
+          ]),
           encodeText(vector.suite),
           encodeBytes(try XCTUnwrap(vector.offerHashHex).decodedHex()),
           encodeText(vector.transportProfile),
         ])
         expectedMessageLengths = [48, 96, 64]
         XCTAssertEqual(try XCTUnwrap(vector.testOnlyPairingSecretHex).decodedHex().count, 32)
-      case "session-kk-fixed-transcript":
-        expectedPrologue = encodeArray([
-          encodeText("RAPP-session-v1"),
-          encodeArray([encodeUnsigned(0), encodeUnsigned(1)]),
-          encodeText(vector.suite),
-          encodeBytes(vector.pairIDHex.decodedHex()),
-          encodeBytes(try XCTUnwrap(vector.grantsHashHex).decodedHex()),
-          encodeText(vector.transportProfile),
-        ])
-        expectedMessageLengths = [48, 48]
       default:
         XCTFail("Unknown Noise vector: \(vector.name)")
         continue
@@ -69,18 +65,11 @@ final class RappNoiseAndEnvelopeCorpusTests: XCTestCase {
         vector.sessionIDHex,
         vector.name
       )
-      if vector.name.hasPrefix("pairing-") {
-        XCTAssertEqual(
-          deriveIdentifier(domain: "RAPP-pair-id-v1", handshakeHash: handshakeHash),
-          vector.pairIDHex,
-          vector.name
-        )
-        XCTAssertEqual(
-          deriveIdentifier(domain: "RAPP-rendezvous-v1", handshakeHash: handshakeHash),
-          vector.rendezvousTokenHex,
-          vector.name
-        )
-      }
+      XCTAssertEqual(
+        deriveIdentifier(domain: "RAPP-pair-id-v1", handshakeHash: handshakeHash),
+        vector.pairIDHex,
+        vector.name
+      )
 
       XCTAssertEqual(vector.testOnlyInitiatorEphemeralPrivateHex.decodedHex().count, 32)
       XCTAssertEqual(vector.testOnlyResponderEphemeralPrivateHex.decodedHex().count, 32)
@@ -113,7 +102,7 @@ final class RappNoiseAndEnvelopeCorpusTests: XCTestCase {
       repositoryRoot
       .appendingPathComponent("Documentation")
       .appendingPathComponent("rapp-conformance")
-      .appendingPathComponent("rapp-v26.8.17.135.json")
+      .appendingPathComponent("rapp-v26.8.17.213.json")
     return try JSONDecoder().decode(Corpus.self, from: Data(contentsOf: url))
   }
 
@@ -145,9 +134,7 @@ private struct NoiseVector: Decodable {
   let prologueHex: String
   let pairIDHex: String
   let sessionIDHex: String
-  let rendezvousTokenHex: String?
   let offerHashHex: String?
-  let grantsHashHex: String?
   let testOnlyInitiatorEphemeralPrivateHex: String
   let testOnlyInitiatorStaticPrivateHex: String
   let testOnlyPairingSecretHex: String?
@@ -164,9 +151,7 @@ private struct NoiseVector: Decodable {
     case prologueHex = "prologue_hex"
     case pairIDHex = "pair_id_hex"
     case sessionIDHex = "session_id_hex"
-    case rendezvousTokenHex = "rendezvous_token_hex"
     case offerHashHex = "offer_hash_hex"
-    case grantsHashHex = "grants_hash_hex"
     case testOnlyInitiatorEphemeralPrivateHex = "test_only_initiator_ephemeral_private_hex"
     case testOnlyInitiatorStaticPrivateHex = "test_only_initiator_static_private_hex"
     case testOnlyPairingSecretHex = "test_only_pairing_secret_hex"
@@ -305,7 +290,9 @@ private func validateEnvelope(
     case .unsigned(let major) = parts[0],
     case .unsigned(let minor) = parts[1]
   else { return "WrongType { field: \"version\" }" }
-  guard major == 0, minor == 1 else { return "UnsupportedVersion" }
+  guard major == wireVersionMajor, minor == wireVersionMinor else {
+    return "UnsupportedVersion"
+  }
 
   guard case .bytes(let sessionID)? = envelope["session_id"] else {
     return "WrongType { field: \"session_id\" }"

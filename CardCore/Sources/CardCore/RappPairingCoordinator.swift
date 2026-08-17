@@ -84,7 +84,6 @@
       case localRequest
       case transportFailure
       case protocolFailure
-      case persistenceFailure
       case offerExpired
     }
 
@@ -115,6 +114,7 @@
       case awaitingLocalDecision
       case awaitingPeerConfirmation
       case completed
+      case handedOver
       case closed
     }
 
@@ -125,7 +125,6 @@
 
     private let role: Role
     private let bridge: RappPairingBridge
-    private let vault: RappDeviceVault
     private var transport: any RappFrameTransport
     private let candidateID: String
     private let displayName: String
@@ -148,7 +147,6 @@
       offerLifetimeMilliseconds: UInt64,
       displayName: String,
       platform: String,
-      vault: RappDeviceVault,
       transport: any RappFrameTransport,
       entropy: RappPlatformEntropy = RappPlatformEntropy(),
       clock: RappPlatformClock = RappPlatformClock()
@@ -169,7 +167,6 @@
         selectedCandidateID: selectedCandidateID,
         displayName: displayName,
         platform: platform,
-        vault: vault,
         transport: transport,
         clock: clock,
         offerDeadlineMilliseconds: deadline(
@@ -185,7 +182,6 @@
       selectedCandidateID: String,
       displayName: String,
       platform: String,
-      vault: RappDeviceVault,
       transport: any RappFrameTransport,
       clock: RappPlatformClock = RappPlatformClock()
     ) throws -> RappPairingCoordinator {
@@ -201,7 +197,6 @@
         selectedCandidateID: selectedCandidateID,
         displayName: displayName,
         platform: platform,
-        vault: vault,
         transport: transport,
         clock: clock,
         offerDeadlineMilliseconds: deadline(
@@ -218,7 +213,6 @@
       selectedCandidateID: String,
       displayName: String,
       platform: String,
-      vault: RappDeviceVault,
       transport: any RappFrameTransport,
       clock: RappPlatformClock,
       offerDeadlineMilliseconds: UInt64
@@ -229,7 +223,6 @@
       self.candidateID = selectedCandidateID
       self.displayName = displayName
       self.platform = platform
-      self.vault = vault
       self.transport = transport
       self.clock = clock
       self.offerDeadlineMilliseconds = offerDeadlineMilliseconds
@@ -380,7 +373,7 @@
           )
           try await finishIfMutuallyConfirmed()
 
-        case .offer, .completed, .closed:
+        case .offer, .completed, .handedOver, .closed:
           await fail(.protocolFailure)
         }
       } catch RappBindingError.OfferExpired {
@@ -432,6 +425,7 @@
         .awaitingLocalDecision,
         .awaitingPeerConfirmation,
         .completed,
+        .handedOver,
         .closed:
         await fail(.transportFailure)
       }
@@ -442,27 +436,40 @@
       await fail(.localRequest)
     }
 
+    /// Completes the pairing and keeps the authenticated channel open.
+    ///
+    /// The pairing channel continues as the live session, taken over with
+    /// ``continueEstablished()``. The pair keys stay inside the bridge, in
+    /// memory only, for the connection's life.
     private func finishIfMutuallyConfirmed() async throws {
       guard localConfirmationSent, peerGrantedProfiles != nil else {
         return
       }
       let record = try bridge.finishPairing(createdAtMs: clock.wallMilliseconds())
-      do {
-        try record.persistDeviceOnly(vault: vault)
-        let summary = PairSummary(try record.metadata())
-        state = .completed
-        offerExpiryTask?.cancel()
-        offerExpiryTask = nil
-        continuation.yield(.paired(summary))
-        continuation.finish()
-        await transport.close()
-      } catch {
-        await fail(.persistenceFailure)
-      }
+      let summary = PairSummary(try record.metadata())
+      state = .completed
+      offerExpiryTask?.cancel()
+      offerExpiryTask = nil
+      continuation.yield(.paired(summary))
+      continuation.finish()
+    }
+
+    /// One-shot handover of the live channel after `.paired`.
+    ///
+    /// The pairing bridge enters the operation runtime and the transport
+    /// keeps carrying the same connection. Nil before completion or after
+    /// the handover.
+    public func continueEstablished() -> (
+      pairing: RappPairingBridge, transport: any RappFrameTransport
+    )? {
+      guard state == .completed else { return nil }
+      state = .handedOver
+      return (bridge, transport)
     }
 
     private func fail(_ reason: CloseReason) async {
-      guard state != .closed, state != .completed else { return }
+      guard state != .closed, state != .completed, state != .handedOver
+      else { return }
       state = .closed
       offerExpiryTask?.cancel()
       offerExpiryTask = nil
@@ -509,6 +516,7 @@
         .awaitingLocalDecision,
         .awaitingPeerConfirmation,
         .completed,
+        .handedOver,
         .closed:
         return false
       }

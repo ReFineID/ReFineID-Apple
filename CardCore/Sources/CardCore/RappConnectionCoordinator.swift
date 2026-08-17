@@ -12,12 +12,12 @@
     func close() async
   }
 
-  /// Runs one authenticated connection from Noise setup through durable card
-  /// operations. All externally visible events are semantic and authenticated.
+  /// Runs card operations over the completed pairing's live channel. The
+  /// channel is already authenticated when this coordinator is built; every
+  /// close ends the session and the pairing together.
   public actor RappConnectionCoordinator {
-    /// Why the connection closed, attributed to the phase that closed it.
+    /// Why the connection closed.
     public enum CloseReason: Sendable, Equatable {
-      case handshake(RappSessionDriver.CloseReason)
       case operation(RappOperationDriver.CloseReason)
       case transportFailure
       case localRequest
@@ -53,13 +53,12 @@
       )
       case advisoryCancellation(operationID: Data?)
       case operationFinished(operationID: Data?)
-      case peerBusy(operationID: Data?)
+      case peerReserved(operationID: Data?)
       case peerUnknownOperation(operationID: Data?)
       case closed(CloseReason)
     }
 
     private enum Phase: Equatable {
-      case handshaking
       case operating
       case closed
     }
@@ -68,20 +67,19 @@
     nonisolated public let events: AsyncStream<Event>
 
     private let transport: any RappFrameTransport
-    private let handshake: RappSessionDriver
-    private let maximumLifetimeMilliseconds: UInt64
     private let liveness: RappOperationDriver.Liveness
     private let clock: RappPlatformClock
     private let continuation: AsyncStream<Event>.Continuation
-    private var operation: RappOperationDriver?
-    private var phase = Phase.handshaking
+    private let operation: RappOperationDriver
+    private var phase = Phase.operating
+    private var started = false
     private var livenessTask: Task<Void, Never>?
 
-    /// Prepares one connection over an established pair; ``start()`` sends
-    /// the first frame.
+    /// Enters the operation runtime on the completed pairing's channel;
+    /// ``start()`` reports the session established and arms liveness.
     public init(
-      role: RappSessionDriver.Role,
-      pair: RappPairRecord,
+      role: RappOperationDriver.Role,
+      pairing: RappPairingBridge,
       vault: RappDeviceVault,
       transport: any RappFrameTransport,
       maximumLifetimeMilliseconds: UInt64,
@@ -89,13 +87,15 @@
       clock: RappPlatformClock = RappPlatformClock()
     ) throws {
       self.transport = transport
-      self.maximumLifetimeMilliseconds = maximumLifetimeMilliseconds
       self.liveness = liveness
       self.clock = clock
-      self.handshake = try RappSessionDriver(
+      self.operation = try RappOperationDriver(
         role: role,
-        pair: pair,
+        pairing: pairing,
         vault: vault,
+        maximumLifetimeMilliseconds: maximumLifetimeMilliseconds,
+        liveness: liveness,
+        entropy: RappPlatformEntropy(),
         clock: clock
       )
 
@@ -112,26 +112,23 @@
       continuation.finish()
     }
 
-    /// Begins the Noise handshake once the transport is connected.
+    /// Reports the already-authenticated channel as the established session
+    /// and arms the liveness schedule.
     public func start() async {
-      guard phase == .handshaking else { return }
-      await handleHandshake(await handshake.start())
+      guard phase == .operating, !started else { return }
+      started = true
+      continuation.yield(.established)
+      let now = clock.monotonicMilliseconds()
+      let (deadline, overflow) = now.addingReportingOverflow(
+        liveness.baseIntervalMilliseconds
+      )
+      scheduleLiveness(at: overflow ? UInt64.max : deadline)
     }
 
     /// Delivers one complete frame received by the transport.
     public func receive(_ frame: Data) async {
-      switch phase {
-      case .handshaking:
-        await handleHandshake(await handshake.receive(frame))
-      case .operating:
-        guard let operation else {
-          await finish(.transportFailure)
-          return
-        }
-        await handleOperation(await operation.receive(frame))
-      case .closed:
-        return
-      }
+      guard phase == .operating else { return }
+      await handleOperation(await operation.receive(frame))
     }
 
     /// Starts an inspect-card operation with the given expiry window.
@@ -318,7 +315,7 @@
 
     /// Runs one liveness poll with the given scheduling jitter.
     public func pollLiveness(jitterMilliseconds: Int64) async {
-      guard phase == .operating, let operation else { return }
+      guard phase == .operating else { return }
       await handleOperation(
         await operation.pollLiveness(
           jitterMilliseconds: jitterMilliseconds
@@ -327,72 +324,22 @@
 
     /// Reports that the transport closed without a local request.
     public func transportClosed() async {
-      switch phase {
-      case .handshaking:
-        await handleHandshake(await handshake.transportClosed())
-      case .operating:
-        guard let operation else {
-          await finish(.transportFailure)
-          return
-        }
-        await handleOperation(await operation.transportClosed())
-      case .closed:
-        return
-      }
+      guard phase == .operating else { return }
+      await handleOperation(await operation.transportClosed())
     }
 
     /// Closes the connection and finishes the event stream.
     public func close() async {
-      switch phase {
-      case .handshaking:
-        _ = await handshake.close()
-      case .operating:
-        if let operation { _ = await operation.close() }
-      case .closed:
-        return
-      }
+      guard phase == .operating else { return }
+      _ = await operation.close()
       await finish(.localRequest)
     }
 
     private func operationDriver() throws -> RappOperationDriver {
-      guard phase == .operating, let operation else {
+      guard phase == .operating else {
         throw RappOperationDriver.LocalError.wrongPhase
       }
       return operation
-    }
-
-    private func handleHandshake(_ commands: [RappSessionDriver.Command]) async {
-      for command in commands where phase == .handshaking {
-        switch command {
-        case .send(let frame):
-          do {
-            try await transport.send(frame)
-          } catch {
-            _ = await handshake.transportClosed()
-            await finish(.transportFailure)
-          }
-
-        case .established:
-          do {
-            operation = try await handshake.beginOperationDriver(
-              maximumLifetimeMilliseconds: maximumLifetimeMilliseconds,
-              liveness: liveness
-            )
-            phase = .operating
-            continuation.yield(.established)
-            let now = clock.monotonicMilliseconds()
-            let (deadline, overflow) = now.addingReportingOverflow(
-              liveness.baseIntervalMilliseconds
-            )
-            scheduleLiveness(at: overflow ? UInt64.max : deadline)
-          } catch {
-            await finish(.handshake(.protocolFailure))
-          }
-
-        case .closed(let reason):
-          await finish(.handshake(reason))
-        }
-      }
     }
 
     private func handleOperation(_ commands: [RappOperationDriver.Command]) async {
@@ -401,13 +348,9 @@
         case .send(let frame, let release):
           do {
             try await transport.send(frame)
-            guard let operation else {
-              await finish(.transportFailure)
-              return
-            }
             await handleOperation(await operation.frameReleased(release, succeeded: true))
           } catch {
-            if let operation { _ = await operation.transportClosed() }
+            _ = await operation.transportClosed()
             await finish(.transportFailure)
           }
 
@@ -448,8 +391,8 @@
           continuation.yield(.advisoryCancellation(operationID: operationID))
         case .operationFinished(let operationID):
           continuation.yield(.operationFinished(operationID: operationID))
-        case .peerBusy(let operationID):
-          continuation.yield(.peerBusy(operationID: operationID))
+        case .peerReserved(let operationID):
+          continuation.yield(.peerReserved(operationID: operationID))
         case .peerUnknownOperation(let operationID):
           continuation.yield(.peerUnknownOperation(operationID: operationID))
         case .scheduleLiveness(let deadline):

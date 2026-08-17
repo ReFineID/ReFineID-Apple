@@ -39,7 +39,6 @@ import XCTest
         offerLifetimeMilliseconds: 60_000,
         displayName: "Requester",
         platform: "macOS",
-        vault: RappDeviceVault(accessGroup: nil),
         transport: firstTransport
       )
       let events = coordinator.events

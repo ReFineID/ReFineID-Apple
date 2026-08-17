@@ -13,10 +13,10 @@ claim that RAPP is production-ready.
 The shared Rust protocol engine is the protocol and state-machine authority.
 The committed Apple XCFramework and generated Swift binding are pinned to:
 
-- RAPP protocol document version `26.8.17.135`, together with the
+- RAPP protocol document version `26.8.17.213`, together with the
   state-machine YAML of the same version
 - Rust crate `refineid-rapp`, version `26.8.5`
-- RAPP golden corpus: `Documentation/rapp-conformance/rapp-v26.8.17.135.json`
+- RAPP golden corpus: `Documentation/rapp-conformance/rapp-v26.8.17.213.json`
   (`SHA-256 017557b596e6dd738d74a6b7ac9c528506654746cdbe0f024de61609b2245239`)
 
 The crate lives in the Rust workspace named by the `REFINEID_RAPP_REPO`
@@ -77,14 +77,17 @@ The handwritten Swift integration is under `CardCore/Sources/CardCore/`:
 
 - `RappPlatformPrimitives.swift` provides Apple cryptographic and persistence
   primitives required by the generated core.
-- `RappDeviceVault.swift` and `RappDeviceVault+Bindings.swift` store device and
-  pairing material using the Apple security boundary.
-- `RappPairCatalog.swift` tracks paired peers and the selected pair.
-- `RappPairingCoordinator.swift` drives the pairing ceremony.
+- `RappDeviceVault.swift` and `RappDeviceVault+Bindings.swift` store the
+  durable card-safety operation journal using the Apple security boundary.
+  Pair keys never enter it: a pairing lives only inside its connection.
+- `RappPairingCoordinator.swift` drives the pairing ceremony and, at
+  completion, hands the live authenticated channel over with
+  `continueEstablished()`; the pairing channel is the session.
 - `RappClosureFrameTransport.swift` adapts framed RAPP traffic to an Apple
   transport without moving protocol logic out of Rust.
-- `RappConnectionCoordinator.swift` owns connection-level lifecycle.
-- `RappSessionDriver.swift` drives one authenticated RAPP session.
+- `RappConnectionCoordinator.swift` runs card operations over the
+  handed-over channel; every close ends the session and the pairing
+  together.
 - `RappOperationDriver.swift` drives operation request/authorization/result
   lifecycle.
 - `RappCardOperationMapping.swift` maps Apple card operations to RAPP operation
@@ -102,11 +105,11 @@ which transition and output are legal.
 requester participate without MultipeerConnectivity. The underlay is plain
 TCP. Every frame is a 2-byte big-endian length prefix plus payload; a zero
 length is malformed and the prefix bounds every allocation. The requester
-listens and the proxy dials, for pairing and for sessions. Immediately
-after connecting, before any Noise byte, the proxy sends one plaintext
-preamble frame whose bytes come from the Rust core
-(`rappStreamPairingPreamble` / `rappStreamSessionPreamble`); Swift never
-constructs those bytes.
+listens and the proxy dials, exactly once: the pairing connection is the
+session. Immediately after connecting, before any Noise byte, the proxy
+sends the one plaintext pairing preamble frame whose bytes come from the
+Rust core (`rappStreamPairingPreamble`); Swift never constructs those
+bytes.
 
 - `CardCore/Sources/CardCore/StreamRelaySession.swift` is the TCP dialer:
   ordered endpoint attempts, preamble-first send, bounded frames, a
@@ -114,13 +117,10 @@ constructs those bytes.
   `StreamRelayFraming.swift`, `StreamRelayEndpoint.swift`,
   `StreamRelayEvent.swift`, and `StreamRelayTransportError.swift` complete
   the profile's Swift surface.
-- When the selected pair's transport profile is the stream profile,
-  `PhonePersistentTokenRelay` dials the pair's stored `streamEndpoints`
-  with the session preamble built from the pair's `rendezvousToken`
-  instead of advertising MultipeerConnectivity. The relisten policy acts
-  as the redial policy with the same explicit-user-action fail-stops;
-  automatic redials pause between attempts. MultipeerConnectivity pairs
-  keep today's behavior.
+- `PhonePersistentTokenRelay` never dials: it adopts the live channel the
+  pairing UI hands over and pumps its operations until the connection
+  closes. Every close is terminal — the pairing ends with the connection
+  and there is no redial; recovery is a fresh QR scan.
 - Pairing over the stream profile is wired through the scan flow. The
   generated bridge's `offerCandidates()` lists the scanned offer's
   transport candidates with stream endpoints decoded in Rust;
@@ -132,10 +132,9 @@ constructs those bytes.
   unchanged pairing coordinator across that connection. An offer with
   neither usable candidate fails visibly.
 
-Stored pair records are format v2: they carry the pair's rendezvous token
-and, for stream pairs, the listener endpoint list. Format v1 records fail
-to load; the pair catalog and the phone relay treat an unloadable record
-as no usable pair, so existing holders pair again. That is intended.
+Pair records are never stored: the pair keys live inside the Rust bridge
+for exactly as long as the connection they authenticate. A record kept by
+an earlier build is ignored. That is intended.
 
 ## Application wiring
 
@@ -376,6 +375,29 @@ All three were pushed to `origin/main` before this handoff was written.
   It does not replace the still-pending physical Mac-to-iPhone pairing,
   authorization, browser-authentication, signing, and fail-stop run.
 
+### 2026-08-17 single-channel collapse, protocol 26.8.17.213
+
+- RAPP draft 26.8.17.213 has exactly one handshake: the Noise_XXpsk3
+  pairing channel continues as the live session, and every close of that
+  connection ends the session and the pairing together on both peers.
+  Recovery is always a fresh QR ceremony. The wire version is `[26, 8]`
+  and is bound into the pairing prologue.
+- The regenerated binding removes `RappSessionBridge`, the pair vault,
+  `rappStreamSessionPreamble`, and the rendezvous token; the operation
+  bridge now enters from the pairing bridge. `RappPairingCoordinator`
+  hands the live channel over with `continueEstablished()`, and
+  `PhonePersistentTokenRelay` adopts it on the phone. Pair records are no
+  longer persisted anywhere.
+- The vendored conformance corpus is
+  `Documentation/rapp-conformance/rapp-v26.8.17.213.json`: single-suite
+  Noise KAT, single-purpose stream preamble vectors with the retired
+  session purpose rejected, and wire-version acceptance of exactly
+  `[26, 8]`.
+- The requester-side per-operation clients (`RappPersistentRequesterClient`
+  and its CryptoTokenKit, registry, document-signing, and iPad callers)
+  cannot open a connection from a stored pair anymore and report the
+  remote card unavailable; their connection-scoped redesign is deferred.
+
 ### 2026-08-17 stream transport and protocol 26.8.17.135
 
 - The checked-in `ReFineIDRappFFI.xcframework` and generated Swift binding
@@ -386,10 +408,10 @@ All three were pushed to `origin/main` before this handoff was written.
   `rappStreamSessionPreamble`, and `rappStreamProfileName`.
 - The stored pair record format is v2. Format v1 records fail to load and
   surface as no usable pair; affected holders pair again.
-- The vendored conformance corpus is
+- The vendored conformance corpus was
   `Documentation/rapp-conformance/rapp-v26.8.17.135.json`. The Swift corpus
-  suites additionally derive the rendezvous token and independently encode
-  the accepted stream rendezvous preambles.
+  suites additionally derived the rendezvous token and independently
+  encoded the accepted stream rendezvous preambles.
 - `StreamRelaySession` and its framing, endpoint, event, and error types
   implement the `fi.refineid.stream.v1` dialer in CardCore, proven by
   macOS unit tests against a localhost listener double.

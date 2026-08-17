@@ -3,7 +3,7 @@ import Testing
 
 @Suite("RAPP independent session conformance corpus")
 struct RappSessionConformanceCorpusTests {
-  private static let supportedWireVersion: [UInt16] = [0, 1]
+  private static let supportedWireVersion: [UInt16] = [26, 8]
 
   @Test
   func exactDirectionalSequenceAndSessionBindingMatchCorpus() throws {
@@ -73,7 +73,7 @@ struct RappSessionConformanceCorpusTests {
       repository
       .appendingPathComponent("Documentation")
       .appendingPathComponent("rapp-conformance")
-      .appendingPathComponent("rapp-v26.8.17.135.json")
+      .appendingPathComponent("rapp-v26.8.17.213.json")
     let decoder = JSONDecoder()
     decoder.keyDecodingStrategy = .convertFromSnakeCase
     return try decoder.decode(SessionCorpus.self, from: Data(contentsOf: url))

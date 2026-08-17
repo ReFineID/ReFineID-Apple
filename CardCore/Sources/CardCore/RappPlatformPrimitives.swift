@@ -26,11 +26,6 @@
       try bytes(count: rappRandomByteCounts().pairingSecret)
     }
 
-    /// Returns a fresh session-ready nonce.
-    public func sessionReadyNonce() throws -> Data {
-      try bytes(count: rappRandomByteCounts().sessionReadyNonce)
-    }
-
     /// Returns a fresh operation identifier.
     public func operationID() throws -> Data {
       try bytes(count: rappRandomByteCounts().operationId)

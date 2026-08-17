@@ -222,15 +222,11 @@ internal enum DocumentSigner {
   }
 
   #if os(macOS)
-    /// A selected RAPP phone is the signing device only when no local reader
-    /// card is ready.
-    ///
-    /// The two paths never silently retry one another after an
-    /// authenticated or credential-bearing operation has begun.
+    /// A pairing lives only inside its connection, and no requester-side
+    /// holder keeps one for document signing yet, so the local reader is
+    /// the only signing device.
     @MainActor internal static var usesRappSigning: Bool {
-      guard !CardPresence.shared.isReaderCardReady else { return false }
-      let selected = try? RappDeviceVault().selectedPairID()
-      return (selected) != nil
+      false
     }
 
     /// Builds the same locally verified card material as the reader path while

@@ -8,15 +8,10 @@
   /// connection. It sees no wire frames and owns no transport capability.
   internal actor RappPhoneProxyDispatcher {
     private let inbox: RappAuthorizationInbox
-    private let requireExplicitReconnect: @MainActor @Sendable () -> Void
     private var pin2ByOperation: [Data: String] = [:]
 
-    internal init(
-      inbox: RappAuthorizationInbox,
-      requireExplicitReconnect: @escaping @MainActor @Sendable () -> Void
-    ) {
+    internal init(inbox: RappAuthorizationInbox) {
       self.inbox = inbox
-      self.requireExplicitReconnect = requireExplicitReconnect
     }
 
     internal func receive(
@@ -57,19 +52,16 @@
               ?? String(localized: "Paired device"),
             action: action
           )
-          switch await inbox.ask(request) {
-          case .approved:
-            try await coordinator.approve(operationID: operationID)
-          case .approvedDocumentSignature(let pin2):
-            guard operation.kind == .signDocument else {
-              try await coordinator.requestInvalidOrUnsupported(
-                operationID: operationID)
-              return
-            }
-            pin2ByOperation[operationID] = pin2
-            try await coordinator.approve(operationID: operationID)
-          case .denied:
-            try await coordinator.deny(operationID: operationID)
+          // The prompt blocks until the holder answers. A child task keeps
+          // the event pump free, so a session close still reaches the inbox
+          // and cancels the visible request.
+          Task {
+            await self.resolveApproval(
+              request,
+              operationID: operationID,
+              operation: operation,
+              coordinator: coordinator
+            )
           }
 
         case .executeSafeRead(let operationID, let operation):
@@ -94,7 +86,7 @@
         case .terminal(let operationID, _, _):
           await cancel(operationID)
 
-        case .peerBusy:
+        case .peerReserved:
           return
 
         case .completed:
@@ -111,13 +103,38 @@
       }
     }
 
-    /// The remembered name of the selected pair's requesting device.
-    private static func requesterName() async -> String? {
-      let catalog = RappPairCatalog(vault: RappDeviceVault())
-      guard let selected = try? await catalog.selectedPair() else {
-        return nil
+    /// Waits for the holder's decision and applies it to the coordinator.
+    private func resolveApproval(
+      _ request: RappAuthorizationRequest,
+      operationID: Data,
+      operation: RappOperationDriver.Operation,
+      coordinator: RappConnectionCoordinator
+    ) async {
+      do {
+        switch await inbox.ask(request) {
+        case .approved:
+          try await coordinator.approve(operationID: operationID)
+        case .approvedDocumentSignature(let pin2):
+          guard operation.kind == .signDocument else {
+            try await coordinator.requestInvalidOrUnsupported(
+              operationID: operationID)
+            return
+          }
+          pin2ByOperation[operationID] = pin2
+          try await coordinator.approve(operationID: operationID)
+        case .denied:
+          try await coordinator.deny(operationID: operationID)
+        }
+      } catch {
+        pin2ByOperation.removeAll(keepingCapacity: false)
+        await inbox.cancelAll()
+        await coordinator.close()
       }
-      return RappPairNames.name(forPairID: selected.pairID)
+    }
+
+    /// The reviewed name of the live pairing's requesting device.
+    private static func requesterName() async -> String? {
+      await MainActor.run { PhonePersistentTokenRelay.shared.livePeerName }
     }
 
     private func prerequisitesExist(
@@ -261,7 +278,6 @@
         }
       case .wrongCardAccessNumber:
         CardCredentialStore.forgetAll()
-        await requireExplicitReconnect()
         try? await coordinator.credentialRejected(operationID: operationID)
       case .failed:
         try? await coordinator.cardRemovedBeforeTransmit(operationID: operationID)
@@ -346,7 +362,6 @@
         case .credential(.pin2, _), .credential(.puk, _):
           break
         }
-        await requireExplicitReconnect()
         try? await coordinator.credentialRejected(operationID: operationID)
       case .refusedBeforeCredentialTransmit(let refusal):
         switch refusal {
@@ -360,7 +375,6 @@
             operationID: operationID)
         }
       case .completionAmbiguous:
-        await requireExplicitReconnect()
         try? await coordinator.cardCompletionAmbiguous(operationID: operationID)
       }
     }

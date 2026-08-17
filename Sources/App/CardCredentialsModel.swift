@@ -205,19 +205,14 @@ internal final class CardCredentialsModel {
     }
   }
 
-  /// Revokes every pair, drops the selection, and forgets all names.
+  /// Ends the live pairing and forgets all remembered peer names.
   ///
-  /// Revocation erases each pair's key material and leaves a tombstone,
-  /// so a replayed pair record can never come back to life.
+  /// A pairing exists only inside its connection; closing it drops the
+  /// pair keys on both peers.
   private static func removeAllRappConfiguration() async {
-    let vault = RappDeviceVault()
-    let catalog = RappPairCatalog(vault: vault)
-    if let pairs = try? await catalog.activePairs() {
-      for pair in pairs {
-        try? await catalog.revoke(pairID: pair.pairID)
-      }
-    }
-    try? vault.clearSelectedPair()
+    #if os(iOS) && canImport(CoreNFC)
+      await MainActor.run { PhonePersistentTokenRelay.shared.endLivePairing() }
+    #endif
     RappPairNames.forgetAll()
   }
 }

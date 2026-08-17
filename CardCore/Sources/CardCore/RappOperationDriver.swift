@@ -5,6 +5,12 @@
   /// Owns one established RAPP operation runtime and translates generated binding
   /// records into Sendable Apple-side values. It never performs card I/O itself.
   public actor RappOperationDriver {
+    /// Which side of the pair this driver speaks for.
+    public enum Role: Sendable {
+      case requester
+      case proxy
+    }
+
     /// Local misuse of the driver or a bridge action missing a required field.
     public enum LocalError: Error, Sendable {
       case wrongPhase
@@ -236,11 +242,14 @@
     }
 
     /// Reason the operation session closed permanently.
+    ///
+    /// Every close ends the pairing with the session; the pair keys live
+    /// only for the connection's life.
     public enum CloseReason: Sendable, Equatable {
       case localRequest
       case transportClosed
       case protocolFailure
-      case pairRevoked
+      case pairEnded
       case terminalFrameReleased
     }
 
@@ -263,7 +272,7 @@
       case terminal(operationID: Data?, state: String?, reason: TerminalReason?)
       case advisoryCancellation(operationID: Data?)
       case operationFinished(operationID: Data?)
-      case peerBusy(operationID: Data?)
+      case peerReserved(operationID: Data?)
       case peerUnknownOperation(operationID: Data?)
       case scheduleLiveness(atMonotonicMilliseconds: UInt64)
       case closed(CloseReason)
@@ -274,9 +283,10 @@
     private let clock: RappPlatformClock
     private var closed = false
 
+    /// Enters the operation runtime on the completed pairing's live channel.
     init(
-      role: RappSessionDriver.Role,
-      session: RappSessionBridge,
+      role: Role,
+      pairing: RappPairingBridge,
       vault: RappDeviceVault,
       maximumLifetimeMilliseconds: UInt64,
       liveness: Liveness,
@@ -289,7 +299,7 @@
       switch role {
       case .requester:
         bridge = try RappOperationBridge.beginRequester(
-          session: session,
+          pairing: pairing,
           vault: vault,
           maximumLifetimeMs: maximumLifetimeMilliseconds,
           liveness: liveness.binding,
@@ -297,7 +307,7 @@
         )
       case .proxy:
         bridge = try RappOperationBridge.beginProxy(
-          session: session,
+          pairing: pairing,
           vault: vault,
           maximumLifetimeMs: maximumLifetimeMilliseconds,
           liveness: liveness.binding,
@@ -425,11 +435,7 @@
 
     /// Reports that the card rejected the presented credential.
     public func credentialRejected(operationID: Data) throws -> [Command] {
-      try commands(
-        bridge.credentialRejected(
-          operationId: operationID,
-          rejectedAtMs: clock.monotonicMilliseconds()
-        ))
+      try commands(bridge.credentialRejected(operationId: operationID))
     }
 
     /// Reports that the card left the reader before the command was sent.
@@ -594,16 +600,16 @@
         return scheduled([.advisoryCancellation(operationID: operationID)], for: action)
       case .resultAcknowledged:
         return scheduled([.operationFinished(operationID: operationID)], for: action)
-      case .peerBusy:
-        return scheduled([.peerBusy(operationID: operationID)], for: action)
+      case .peerReserved:
+        return scheduled([.peerReserved(operationID: operationID)], for: action)
       case .peerUnknownOperation:
         return scheduled([.peerUnknownOperation(operationID: operationID)], for: action)
       case .sessionClosed:
         closed = true
         return [.closed(.protocolFailure)]
-      case .pairRevoked:
+      case .pairEnded:
         closed = true
-        return [.closed(.pairRevoked)]
+        return [.closed(.pairEnded)]
       case .sendFrame, .resultAcknowledgment:
         throw LocalError.missingFrame
       case .completed:
