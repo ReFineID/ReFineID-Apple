@@ -137,12 +137,22 @@ internal struct CredentialChangeSection: View {
     )
   }
 
+  /// The action named with the credential's everyday term.
+  private var changeTitle: LocalizedStringKey {
+    switch credential {
+    case .pin1:
+      "Change Basic PIN 1"
+    case .pin2:
+      "Change Signature PIN 2"
+    }
+  }
+
   private var changeButton: some View {
     Button {
       focus = nil
       pending = .change(role)
     } label: {
-      Text("Change \(credential.name)")
+      Text(changeTitle)
         #if os(iOS)
           .frame(maxWidth: .infinity)
         #endif

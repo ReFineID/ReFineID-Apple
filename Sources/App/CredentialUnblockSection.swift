@@ -95,12 +95,17 @@ internal struct CredentialUnblockSection: View {
     )
   }
 
+  /// The action named with the credential's everyday term.
+  private var resetTitle: LocalizedStringKey {
+    target == .pin2 ? "Reset Signature PIN 2" : "Reset Basic PIN 1"
+  }
+
   private var resetButton: some View {
     Button {
       focus = nil
       pending = .unblock(target)
     } label: {
-      Text("Reset \(targetName)")
+      Text(resetTitle)
         #if os(iOS)
           .frame(maxWidth: .infinity)
         #endif

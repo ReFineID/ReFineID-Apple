@@ -62,6 +62,9 @@ internal struct CardCredentialsView: View {
 
     /// The holder names read from the live reader tokens.
     @State private var readerHolders: [String] = []
+
+    /// Whether the document verification screen is pushed.
+    @State private var showsDocumentVerify = false
   #endif
 
   /// The PIN is valid for storage only inside the card's documented range.
@@ -284,6 +287,9 @@ internal struct CardCredentialsView: View {
       .navigationDestination(item: flowDestination) { destination in
         destinationView(destination)
       }
+      .navigationDestination(isPresented: $showsDocumentVerify) {
+        VerifyDocumentView()
+      }
     #endif
   }
 
@@ -495,6 +501,7 @@ internal struct CardCredentialsView: View {
         .accessibilityIdentifier("signDocuments")
         .disabled(!hasReaderIdentity && !isCardAccessNumberEntryComplete)
         Button {
+          showsDocumentVerify = true
         } label: {
           navigationRow(
             String(
@@ -508,7 +515,6 @@ internal struct CardCredentialsView: View {
         }
         .tint(.primary)
         .accessibilityIdentifier("verifyDocuments")
-        .disabled(true)
       } header: {
         compactSectionHeader(
           verbatim: String(
