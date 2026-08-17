@@ -526,9 +526,10 @@ internal struct CardCredentialsView: View {
         }
         .tint(.primary)
         .accessibilityIdentifier("remoteCard")
-        // A card holder serves a remote card only from a primed
-        // identity; a requesting device consumes one and needs none.
-        .disabled(offersNearField && !hasIdentity)
+        // A card holder serves a remote card from a primed identity or
+        // a live reader identity; a requesting device consumes one and
+        // needs none.
+        .disabled(offersNearField && !hasIdentity && !hasReaderIdentity)
       }
     }
 
