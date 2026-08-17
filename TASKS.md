@@ -158,12 +158,5 @@ the resolved halves of the original wording are recorded in git history.
 
 ## 8. RAPP
 
-- [ ] Specify Remote Authorization Proxy Protocol roles, typed operations,
-  credential profiles, transport profiles, threat model, and privacy model.
-- [ ] Design cross-platform high-entropy pairing, end-to-end authenticated
-  sessions, replay protection, request expiry, explicit phone consent, and an
-  untrusted Internet rendezvous relay.
-- [ ] Define the protocol and application state machines in machine-readable
-  form and verify implementation transitions against them.
-- [ ] Prototype interoperable Apple and non-Apple requesters and authorizers only
-  after the current Apple release baseline is frozen.
+- [ ] Prototype interoperable non-Apple requesters and authorizers against the
+  current Apple implementation after the Apple release baseline is frozen.

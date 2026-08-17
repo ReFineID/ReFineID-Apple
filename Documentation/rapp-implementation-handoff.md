@@ -188,9 +188,10 @@ network permission, CryptoTokenKit, or Safari system-sheet behavior.
 
 ## Known gaps and blockers
 
-- Physical-device XCUITest currently stops while macOS asks Petri to authorize
-  Enable UI Automation with Touch ID. Do not diagnose this as an application
-  failure. Petri must clear the dialog in person.
+- The latest physical-device XCUITest preflight reached the cabled iPhone but
+  stopped because the phone was locked. The device must be unlocked in person;
+  if macOS subsequently asks for Enable UI Automation authorization, Petri must
+  also clear that Touch ID dialog. Neither condition is an application failure.
 - The latest committed RAPP consolidation has not had a fresh, recorded,
   end-to-end pair/status/browser-auth/signing run on two physical devices.
 - `test-without-building` is unreliable with the current CoreSimulator because
@@ -206,7 +207,8 @@ network permission, CryptoTokenKit, or Safari system-sheet behavior.
 
 ## Exact next step
 
-1. Petri clears the pending Enable UI Automation Touch ID dialog.
+1. Petri unlocks the cabled iPhone and clears an Enable UI Automation Touch ID
+   dialog if macOS presents one.
 2. Build and install the committed Debug app on the cabled iPhone. Physical
    iOS UI-test shards use the dedicated `ReFineID-iOS-UI` scheme so they do not
    build unrelated macOS unit-test products:
@@ -250,3 +252,4 @@ All three were pushed to `origin/main` before this handoff was written.
 - The shared Rust bridge retains the requester's original live offer and deadline after unauthenticated handshake garbage, while proxy candidates and authenticated or cancelled attempts remain terminal. Apple rebuilds the candidate transport around that retained offer and ignores stale transport callbacks.
 - Apple commit `746f45a` contains the regenerated artifact, requester recovery coordinator/UI integration, and dedicated recovery tests. Commit `7fc1ff5` updates the integration harness for the restored-offer event.
 - `cargo test -p refineid-lib-core rapp` passes 15 focused Rust tests. Independent macOS runs of `RappPairingRecoveryTests`, `RappOfferExpiryTests`, and `RappIntegrationTests` all pass. A combined Apple invocation can stall while Xcode finalizes its test record, so these suites are intentionally recorded from separate successful runs.
+- The complete `refineid-lib-core` Rust test suite and the complete non-UI Apple `CardCoreTests` plus `ReFineIDTests` suites pass on the source-pinned revisions.
