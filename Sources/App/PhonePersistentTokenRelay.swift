@@ -7,8 +7,10 @@
 
   /// Owns the phone side of one mutually authenticated RAPP connection.
   ///
-  /// MultipeerConnectivity remains an opaque frame carrier; all identity,
-  /// sequencing, operation, and fail-stop decisions belong to RAPP.
+  /// The transport is an opaque frame carrier chosen by the selected pair:
+  /// MultipeerConnectivity advertises nearby, while the stream profile dials
+  /// the requester's stored listener endpoints. All identity, sequencing,
+  /// operation, and fail-stop decisions belong to RAPP.
   @MainActor
   internal final class PhonePersistentTokenRelay {
     internal static let shared = PhonePersistentTokenRelay()
@@ -19,10 +21,13 @@
     }
 
     private static let maximumPreCoordinatorFrames = 4
+    /// Pause between stream dial attempts while redialing is automatic.
+    private static let streamRedialDelayMilliseconds = 2_000
 
     private let vault = RappDeviceVault()
     private let policy = RappRequesterPolicy.interactive
     private var relay: PersistentRelaySession?
+    private var streamRelay: StreamRelaySession?
     private var coordinator: RappConnectionCoordinator?
     private var dispatcher: RappPhoneProxyDispatcher?
     private var connectionID: UUID?
@@ -35,10 +40,15 @@
       // A proxy without an antenna is not a proxy: only near-field
       // devices advertise as the card holder.
       guard SupportedCardTransports.offersNearField else { return }
-      guard relay == nil, coordinator == nil,
+      guard relay == nil, streamRelay == nil, coordinator == nil,
         relistenPolicy == .automatic,
         hasUsableSelectedPair()
       else { return }
+
+      if let context = PhoneStreamPairContext.resolve(vault: vault) {
+        startStream(context)
+        return
+      }
 
       let connectionID = UUID()
       let relay = PersistentRelaySession(
@@ -54,19 +64,37 @@
       relay.start()
     }
 
+    /// The stream profile dials the requester's stored listener endpoints
+    /// with the pair's session preamble instead of advertising nearby.
+    private func startStream(_ context: PhoneStreamPairContext) {
+      let streamConnectionID = UUID()
+      let stream = StreamRelaySession(
+        endpointLiterals: context.endpoints,
+        preamble: context.preamble
+      ) { [weak self] event in
+        Task { @MainActor in
+          self?.receiveStream(event, connectionID: streamConnectionID)
+        }
+      }
+      connectionID = streamConnectionID
+      streamRelay = stream
+      stream.start()
+    }
+
     /// Explicit UI action may call this after the user has corrected local
     /// credentials or deliberately chosen to reconnect.
     ///
     /// It never restores a revoked pair; the vault remains authoritative.
     internal func resumeAfterUserAction() {
       relistenPolicy = .automatic
-      if relay == nil, coordinator == nil { start() }
+      if relay == nil, streamRelay == nil, coordinator == nil { start() }
     }
 
     internal func suspendForPairing() {
       relistenPolicy = .explicitUserActionRequired
       let coordinator = coordinator
       relay?.cancel()
+      streamRelay?.cancel()
       Task { await coordinator?.close() }
     }
 
@@ -89,21 +117,58 @@
         }
 
       case .closed:
-        let coordinator = coordinator
-        self.coordinator = nil
-        dispatcher = nil
-        relay = nil
-        self.connectionID = nil
-        preCoordinatorFrames.removeAll(keepingCapacity: false)
-        Task { await coordinator?.transportClosed() }
-        if !hasUsableSelectedPair() {
-          relistenPolicy = .explicitUserActionRequired
+        handleTransportClosed(redialDelayMilliseconds: 0)
+      }
+    }
+
+    private func receiveStream(
+      _ event: StreamRelayEvent,
+      connectionID: UUID
+    ) {
+      guard self.connectionID == connectionID else { return }
+      switch event {
+      case .connected:
+        establishStream(connectionID: connectionID)
+
+      case .frame(let frame):
+        if let coordinator {
+          Task { await coordinator.receive(frame) }
+        } else if preCoordinatorFrames.count < Self.maximumPreCoordinatorFrames {
+          preCoordinatorFrames.append(frame)
+        } else {
+          streamRelay?.cancel()
         }
-        guard relistenPolicy == .automatic else { return }
-        Task { @MainActor in
+
+      case .closed:
+        handleTransportClosed(
+          redialDelayMilliseconds: Self.streamRedialDelayMilliseconds
+        )
+      }
+    }
+
+    /// Tears down the closed connection and reconnects while automatic,
+    /// yielding immediately for the nearby relay and pausing between
+    /// stream dial attempts.
+    private func handleTransportClosed(redialDelayMilliseconds: Int) {
+      let closingCoordinator = coordinator
+      coordinator = nil
+      dispatcher = nil
+      relay = nil
+      streamRelay = nil
+      connectionID = nil
+      preCoordinatorFrames.removeAll(keepingCapacity: false)
+      Task { await closingCoordinator?.transportClosed() }
+      if !hasUsableSelectedPair() {
+        relistenPolicy = .explicitUserActionRequired
+      }
+      guard relistenPolicy == .automatic else { return }
+      Task { @MainActor in
+        if redialDelayMilliseconds > 0 {
+          try? await Task.sleep(for: .milliseconds(redialDelayMilliseconds))
+        } else {
           await Task.yield()
-          self.start()
         }
+        self.start()
       }
     }
 
@@ -112,43 +177,60 @@
         let relay
       else { return }
 
-      do {
-        let pairIDs = try vault.activePairIDs()
-        guard !pairIDs.isEmpty else {
-          relistenPolicy = .explicitUserActionRequired
-          relay.cancel()
-          return
-        }
-        let pairID: Data
-        if let selected = try vault.selectedPairID() {
-          guard pairIDs.contains(selected) else {
-            try vault.clearSelectedPair()
-            relistenPolicy = .explicitUserActionRequired
-            relay.cancel()
-            return
+      let transport = RappClosureFrameTransport(
+        sender: { [weak relay] frame in
+          guard let relay else {
+            throw PersistentRelayTransportError.disconnected
           }
-          pairID = selected
-        } else if pairIDs.count == 1 {
-          pairID = pairIDs[0]
-          try vault.selectPair(pairID: pairID)
-        } else {
+          try relay.send(frame)
+        },
+        closer: { [weak relay] in relay?.cancel() }
+      )
+      establishCoordinator(
+        connectionID: connectionID,
+        transport: transport
+      ) { [weak relay] in
+        relay?.cancel()
+      }
+    }
+
+    private func establishStream(connectionID: UUID) {
+      guard self.connectionID == connectionID, coordinator == nil,
+        let streamRelay
+      else { return }
+
+      let transport = RappClosureFrameTransport(
+        sender: { [weak streamRelay] frame in
+          guard let streamRelay else {
+            throw StreamRelayTransportError.notConnected
+          }
+          try await streamRelay.send(frame)
+        },
+        closer: { [weak streamRelay] in streamRelay?.cancel() }
+      )
+      establishCoordinator(
+        connectionID: connectionID,
+        transport: transport
+      ) { [weak streamRelay] in
+        streamRelay?.cancel()
+      }
+    }
+
+    private func establishCoordinator(
+      connectionID: UUID,
+      transport: RappClosureFrameTransport,
+      failTransport: () -> Void
+    ) {
+      do {
+        guard
+          let pair = try PhoneProxyPairSelection.resolveSelectedPair(
+            vault: vault
+          )
+        else {
           relistenPolicy = .explicitUserActionRequired
-          relay.cancel()
+          failTransport()
           return
         }
-        let pair = try RappPairRecord.loadFromVault(
-          pairId: pairID,
-          vault: vault
-        )
-        let transport = RappClosureFrameTransport(
-          sender: { [weak relay] frame in
-            guard let relay else {
-              throw PersistentRelayTransportError.disconnected
-            }
-            try relay.send(frame)
-          },
-          closer: { [weak relay] in relay?.cancel() }
-        )
         let coordinator = try RappConnectionCoordinator(
           role: .proxy,
           pair: pair,
@@ -182,7 +264,7 @@
         }
       } catch {
         relistenPolicy = .explicitUserActionRequired
-        relay.cancel()
+        failTransport()
       }
     }
 
@@ -191,34 +273,8 @@
       connectionID: UUID
     ) {
       guard self.connectionID == connectionID else { return }
-      switch event {
-      case .terminal(_, _, let reason):
-        switch reason {
-        case .credentialRejected, .cardCompletionAmbiguous:
-          relistenPolicy = .explicitUserActionRequired
-        case .userDenied, .requestExpired, .cancelled,
-          .requestInvalidOrUnsupported, .retryPolicyRefused,
-          .cardRemovedBeforeTransmit, nil:
-          break
-        }
-
-      case .closed(let reason):
-        switch reason {
-        case .handshake(.protocolFailure), .handshake(.pairRevoked),
-          .operation(.protocolFailure), .operation(.pairRevoked):
-          relistenPolicy = .explicitUserActionRequired
-        case .handshake(.localRequest), .handshake(.transportClosed),
-          .operation(.localRequest), .operation(.transportClosed),
-          .operation(.terminalFrameReleased), .transportFailure,
-          .localRequest:
-          break
-        }
-
-      case .established, .inspectPrerequisites, .awaitUserApproval,
-        .executeSafeRead, .executeCardCommand, .completed,
-        .advisoryCancellation, .operationFinished, .peerBusy,
-        .peerUnknownOperation:
-        break
+      if PhoneRelayFailStops.requireExplicitUserAction(event) {
+        relistenPolicy = .explicitUserActionRequired
       }
     }
 
@@ -227,20 +283,7 @@
     }
 
     private func hasUsableSelectedPair() -> Bool {
-      guard
-        let pairIDs = try? vault.activePairIDs(),
-        !pairIDs.isEmpty
-      else { return false }
-      if let selected = try? vault.selectedPairID() {
-        return pairIDs.contains(selected)
-      }
-      guard pairIDs.count == 1 else { return false }
-      do {
-        try vault.selectPair(pairID: pairIDs[0])
-        return true
-      } catch {
-        return false
-      }
+      (try? PhoneProxyPairSelection.resolveSelectedPair(vault: vault)) != nil
     }
   }
 #endif

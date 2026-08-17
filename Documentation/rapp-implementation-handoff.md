@@ -10,30 +10,19 @@ claim that RAPP is production-ready.
 
 ## Protocol authority
 
-The shared Rust repository is the protocol and state-machine authority:
+The shared Rust protocol engine is the protocol and state-machine authority.
+The committed Apple XCFramework and generated Swift binding are pinned to:
 
-- `../ReFineID/docs/protocol/rapp-v26.8.16.85.md`
-- `../ReFineID/docs/protocol/rapp-state-machine-v26.8.16.85.yaml`
-- `../ReFineID/crates/refineid-lib-core/src/rapp/`
+- RAPP protocol document version `26.8.17.135`, together with the
+  state-machine YAML of the same version
+- Rust crate `refineid-rapp`, version `26.8.5`
+- RAPP golden corpus: `Documentation/rapp-conformance/rapp-v26.8.17.135.json`
+  (`SHA-256 017557b596e6dd738d74a6b7ac9c528506654746cdbe0f024de61609b2245239`)
 
-The exact Rust source revision defining the ABI of the committed Apple
-XCFramework is:
-
-- `ReFineID/ReFineID-backup-2026-08-10@c745bb0cbab18b82877ddfa1143690c9fb4ce0ab`
-- RAPP 0.1 golden corpus: `Documentation/rapp-conformance/rapp-v26.8.16.85.json`
-  (`SHA-256 a2c9e63add5aabcf6c226ca1a61e0b2efa948b4d3135c3a55dac45ca46edd94b`)
-
-The current pushed Rust source, audit, and conformance revision is:
-
-- `ReFineID/ReFineID-backup-2026-08-10@c745bb0cbab18b82877ddfa1143690c9fb4ce0ab`
-
-This revision includes deterministic Noise and rejected-envelope vectors,
-strict pre-allocation bounds for untrusted CBOR frames and collections,
-adversarial parser tests, and a checked-in `cargo-fuzz` target. The committed
-XCFramework was regenerated from this exact revision.
-
-That revision is pushed to the archived source repository. Do not regenerate
-or replace the XCFramework from an uncommitted Rust worktree.
+The crate lives in the Rust workspace named by the `REFINEID_RAPP_REPO`
+environment variable at regeneration time. Regenerate only from crate
+sources whose `cargo clippy -p refineid-rapp --all-targets --all-features`
+and `cargo test -p refineid-rapp --features bindings` both pass.
 
 Do not independently redefine RAPP framing, transitions, role constraints,
 failure policy, or cryptography in Swift. Change the Rust protocol/model first,
@@ -67,12 +56,14 @@ artifact to CardCore.
 Regenerate both from the Apple repository root with:
 
 ```sh
-swift Scripts/apple-app-store-connect-release-manager.swift rapp-bindings
+REFINEID_RAPP_REPO=<rust-workspace> \
+  swift Scripts/apple-app-store-connect-release-manager.swift rapp-bindings
 ```
 
-The command expects the Rust repository at `../ReFineID`. The generated files
-must be committed together with the Rust revision that defines their ABI. Do
-not hand-edit generated bindings or leave a regenerated XCFramework untracked.
+The command requires `REFINEID_RAPP_REPO` to point at the Rust workspace
+containing `crates/refineid-rapp`. The generated files must be committed
+together with the protocol document and crate version pins above. Do not
+hand-edit generated bindings or leave a regenerated XCFramework untracked.
 
 The static libraries are currently about 55 MB per slice. GitHub accepts them
 but warns because they exceed its recommended 50 MB size. They remain below
@@ -104,6 +95,47 @@ The handwritten Swift integration is under `CardCore/Sources/CardCore/`:
 `PersistentCardRelay.swift` is connected to this layer. Keep transport and
 card-operation effects outside the Rust state machine, but let Rust decide
 which transition and output are legal.
+
+## Stream transport
+
+`fi.refineid.stream.v1` (protocol document section 16.1) lets a non-Apple
+requester participate without MultipeerConnectivity. The underlay is plain
+TCP. Every frame is a 2-byte big-endian length prefix plus payload; a zero
+length is malformed and the prefix bounds every allocation. The requester
+listens and the proxy dials, for pairing and for sessions. Immediately
+after connecting, before any Noise byte, the proxy sends one plaintext
+preamble frame whose bytes come from the Rust core
+(`rappStreamPairingPreamble` / `rappStreamSessionPreamble`); Swift never
+constructs those bytes.
+
+- `CardCore/Sources/CardCore/StreamRelaySession.swift` is the TCP dialer:
+  ordered endpoint attempts, preamble-first send, bounded frames, a
+  generation-guarded event surface, and clean cancel.
+  `StreamRelayFraming.swift`, `StreamRelayEndpoint.swift`,
+  `StreamRelayEvent.swift`, and `StreamRelayTransportError.swift` complete
+  the profile's Swift surface.
+- When the selected pair's transport profile is the stream profile,
+  `PhonePersistentTokenRelay` dials the pair's stored `streamEndpoints`
+  with the session preamble built from the pair's `rendezvousToken`
+  instead of advertising MultipeerConnectivity. The relisten policy acts
+  as the redial policy with the same explicit-user-action fail-stops;
+  automatic redials pause between attempts. MultipeerConnectivity pairs
+  keep today's behavior.
+- Pairing over the stream profile is wired through the scan flow. The
+  generated bridge's `offerCandidates()` lists the scanned offer's
+  transport candidates with stream endpoints decoded in Rust;
+  `RappScannedOffer.candidates` wraps it in CardCore and destroys the
+  decoding bridge before returning. The phone selects the Apple-peer
+  candidate when the offer carries one, else the first stream candidate
+  with endpoints; for stream it dials those endpoints with
+  `rappStreamPairingPreamble()` over `StreamRelaySession` and runs the
+  unchanged pairing coordinator across that connection. An offer with
+  neither usable candidate fails visibly.
+
+Stored pair records are format v2: they carry the pair's rendezvous token
+and, for stream pairs, the listener endpoint list. Format v1 records fail
+to load; the pair catalog and the phone relay treat an unloadable record
+as no usable pair, so existing holders pair again. That is intended.
 
 ## Application wiring
 
@@ -343,3 +375,25 @@ All three were pushed to `origin/main` before this handoff was written.
 - This proves the production artifact topology and static security boundary.
   It does not replace the still-pending physical Mac-to-iPhone pairing,
   authorization, browser-authentication, signing, and fail-stop run.
+
+### 2026-08-17 stream transport and protocol 26.8.17.135
+
+- The checked-in `ReFineIDRappFFI.xcframework` and generated Swift binding
+  were rebuilt from crate `refineid-rapp` version `26.8.5`, whose clippy
+  and `--features bindings` test gates passed before regeneration. The
+  binding adds `rendezvousToken` and `streamEndpoints` to
+  `RappPairMetadata` and the free functions `rappStreamPairingPreamble`,
+  `rappStreamSessionPreamble`, and `rappStreamProfileName`.
+- The stored pair record format is v2. Format v1 records fail to load and
+  surface as no usable pair; affected holders pair again.
+- The vendored conformance corpus is
+  `Documentation/rapp-conformance/rapp-v26.8.17.135.json`. The Swift corpus
+  suites additionally derive the rendezvous token and independently encode
+  the accepted stream rendezvous preambles.
+- `StreamRelaySession` and its framing, endpoint, event, and error types
+  implement the `fi.refineid.stream.v1` dialer in CardCore, proven by
+  macOS unit tests against a localhost listener double.
+- `PhonePersistentTokenRelay` dials stream pairs for sessions, and the
+  scan flow pairs over the stream profile through the bridge's
+  scanned-offer candidate listing, as recorded in the stream transport
+  section above.

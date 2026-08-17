@@ -4,6 +4,7 @@ import CardCore
 import CoreImage
 import Foundation
 import Observation
+import ReFineIDRapp
 import SwiftUI
 
 #if os(iOS)
@@ -90,6 +91,8 @@ internal final class RappPairingModel {
   @ObservationIgnored private let vault: RappDeviceVault
   @ObservationIgnored private let catalog: RappPairCatalog
   private var relay: PersistentRelaySession?
+  private var streamRelay: StreamRelaySession?
+  private var streamEverConnected = false
   private var relayGeneration: UUID?
   private var coordinator: RappPairingCoordinator?
   private var eventTask: Task<Void, Never>?
@@ -164,21 +167,105 @@ internal final class RappPairingModel {
     internal func acceptScannedOffer(_ uri: String) {
       guard phase == .scanning else { return }
       phase = .connecting
-      let relay = makeRelay(role: .cardHolder)
-      let transport = makeTransport(relay: relay)
       do {
-        let coordinator = try RappPairingCoordinator.proxy(
-          scannedOfferURI: uri,
-          selectedCandidateID: RappApplePeerProfile.candidateID,
-          displayName: UIDevice.current.name,
-          platform: "iOS",
-          vault: vault,
-          transport: transport
-        )
-        install(coordinator: coordinator, relay: relay)
-        relay.start()
+        let candidates = try RappScannedOffer.candidates(scannedOfferURI: uri)
+        if let applePeer = candidates.first(where: { candidate in
+          candidate.profile == RappApplePeerProfile.name
+        }) {
+          try startApplePeerPairing(uri: uri, candidateID: applePeer.candidateID)
+        } else if let stream = candidates.first(where: { candidate in
+          candidate.profile == rappStreamProfileName()
+            && !candidate.streamEndpoints.isEmpty
+        }) {
+          try startStreamPairing(uri: uri, candidate: stream)
+        } else {
+          fail(String(localized: "The pairing code is invalid or expired"))
+        }
       } catch {
         fail(String(localized: "The pairing code is invalid or expired"))
+      }
+    }
+
+    private func startApplePeerPairing(uri: String, candidateID: String) throws {
+      let relay = makeRelay(role: .cardHolder)
+      let transport = makeTransport(relay: relay)
+      let coordinator = try RappPairingCoordinator.proxy(
+        scannedOfferURI: uri,
+        selectedCandidateID: candidateID,
+        displayName: UIDevice.current.name,
+        platform: "iOS",
+        vault: vault,
+        transport: transport
+      )
+      install(coordinator: coordinator, relay: relay)
+      relay.start()
+    }
+
+    /// Dials the stream candidate's listener endpoints with the pairing
+    /// preamble and runs the pairing ceremony over that connection.
+    private func startStreamPairing(
+      uri: String,
+      candidate: RappScannedOffer.Candidate
+    ) throws {
+      let generation = UUID()
+      relayGeneration = generation
+      streamEverConnected = false
+      let stream = StreamRelaySession(
+        endpointLiterals: candidate.streamEndpoints,
+        preamble: rappStreamPairingPreamble()
+      ) { [weak self] event in
+        Task { @MainActor in
+          self?.receiveStream(event, generation: generation)
+        }
+      }
+      let transport = RappClosureFrameTransport(
+        sender: { [weak stream] frame in
+          guard let stream else {
+            throw StreamRelayTransportError.notConnected
+          }
+          try await stream.send(frame)
+        },
+        closer: { [weak stream] in stream?.cancel() }
+      )
+      let coordinator = try RappPairingCoordinator.proxy(
+        scannedOfferURI: uri,
+        selectedCandidateID: candidate.candidateID,
+        displayName: UIDevice.current.name,
+        platform: "iOS",
+        vault: vault,
+        transport: transport
+      )
+      self.coordinator = coordinator
+      streamRelay = stream
+      eventTask = Task { [weak self] in
+        for await event in coordinator.events {
+          self?.receive(event, from: coordinator)
+        }
+      }
+      stream.start()
+    }
+
+    private func receiveStream(_ event: StreamRelayEvent, generation: UUID) {
+      guard generation == relayGeneration else { return }
+      guard let coordinator else { return }
+      switch event {
+      case .connected:
+        streamEverConnected = true
+        Task { await coordinator.transportConnected() }
+      case .frame(let frame):
+        Task { await coordinator.receive(frame) }
+      case .closed:
+        guard !isFinished else {
+          finishAttempt()
+          return
+        }
+        // A dial that never connected leaves the coordinator in its offer
+        // state, where transport closure is not an event.
+        guard streamEverConnected else {
+          fail(String(localized: "Pairing ended before it was completed"))
+          return
+        }
+        Task { await coordinator.transportClosed() }
       }
     }
   #endif
@@ -257,6 +344,7 @@ internal final class RappPairingModel {
   internal func cancel() {
     let coordinator = coordinator
     relay?.cancel()
+    streamRelay?.cancel()
     finishAttempt()
     phase = .idle
     Task { await coordinator?.close() }
@@ -398,6 +486,7 @@ internal final class RappPairingModel {
     let coordinator = coordinator
     phase = .failed(message)
     relay?.cancel()
+    streamRelay?.cancel()
     finishAttempt()
     Task { await coordinator?.close() }
     resumeRegularRelay()
@@ -405,6 +494,7 @@ internal final class RappPairingModel {
 
   private func finishAttempt() {
     relay = nil
+    streamRelay = nil
     relayGeneration = nil
     coordinator = nil
     eventTask?.cancel()
@@ -414,6 +504,7 @@ internal final class RappPairingModel {
   private func resetAttempt() {
     let coordinator = coordinator
     relay?.cancel()
+    streamRelay?.cancel()
     finishAttempt()
     phase = .idle
     Task { await coordinator?.close() }
