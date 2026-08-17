@@ -411,15 +411,12 @@
       app.buttons[UITestIdentifiers.signingCommit].tap()
 
       XCTAssertTrue(
-        app.descendants(matching: .any)[UITestIdentifiers.signingSuccess]
+        app.buttons[UITestIdentifiers.signDocuments]
           .waitForExistence(timeout: Self.appearTimeout),
-        "virtual document signing did not reach its completed state")
+        "successful signing did not return to the front page")
       XCTAssertFalse(
-        app.buttons["signingSave"].exists,
-        "successful signing retained a redundant save button")
-      XCTAssertFalse(
-        app.buttons["Sign other documents"].exists,
-        "successful signing retained duplicate navigation")
+        app.buttons[UITestIdentifiers.signingCommit].exists,
+        "the signing screen remained after success")
     }
 
     internal func testWrongSignaturePINConsumesOneAttemptThroughGUI() {

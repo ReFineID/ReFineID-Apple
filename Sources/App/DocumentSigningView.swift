@@ -43,6 +43,8 @@
     internal let transport: CardMaintenance.Transport
     internal let cardAccessNumber: String?
 
+    @Environment(\.dismiss) private var dismiss
+
     @State private var inputs: [Input] = []
     @State private var format: SignatureFormat = .pades
     @State private var pin2 = ""
@@ -50,22 +52,16 @@
     @State private var exportsDocument = false
     @State private var isSigning = false
     @State private var output: Output?
-    @State private var completed = false
-    @State private var completionMessage: String?
     @State private var message: String?
     @State private var messageTone: CredentialOutcomeText.Tone = .failure
 
     internal var body: some View {
       Form {
-        if !completed {
-          documentSection
-          if !inputs.isEmpty {
-            formatSection
-            credentialSection
-            actionSection
-          }
-        } else {
-          completedSection
+        documentSection
+        if !inputs.isEmpty {
+          formatSection
+          credentialSection
+          actionSection
         }
         if let message {
           Section {
@@ -88,7 +84,10 @@
         contentType: output?.contentType ?? .data,
         defaultFilename: output?.name ?? "signed"
       ) { result in
-        if case .failure = result {
+        switch result {
+        case .success:
+          dismiss()
+        case .failure:
           showFailure(
             text("error.export", "The signed file could not be saved."))
         }
@@ -206,17 +205,6 @@
       }
     }
 
-    private var completedSection: some View {
-      Section {
-        CredentialOutcomeText(
-          message: completionMessage
-            ?? text("signing.success", "Documents signed"),
-          tone: .success
-        )
-        .accessibilityIdentifier("signingSuccess")
-      }
-    }
-
     private var pin2IsValid: Bool {
       Pin2(digits: pin2) != nil
     }
@@ -309,7 +297,7 @@
           contentType: format == .pades
             ? .pdf
             : (UTType(filenameExtension: "asice") ?? .zip))
-        finishSuccessfully(text("signing.success", "Documents signed"))
+        finishSuccessfully()
       } catch {
         showFailure(DocumentSigningMessage.message(for: error))
       }
@@ -319,10 +307,7 @@
       let result = await DemoMode.shared.authorizeQualifiedSignature(pin2: pin2)
       switch result {
       case .success:
-        finishSuccessfully(
-          text(
-            "demo.success",
-            "Virtual card approved the signing request"))
+        finishSuccessfully()
       case .invalidEntry:
         showFailure(
           text("error.pin2Format", "PIN 2 must contain 6 to 12 digits."))
@@ -380,11 +365,15 @@
       message = value
     }
 
-    private func finishSuccessfully(_ value: String) {
-      completed = true
-      completionMessage = value
+    /// A saved or demonstrated signature returns to the front page;
+    /// only a failure keeps this screen, with its message.
+    private func finishSuccessfully() {
       message = nil
-      exportsDocument = output != nil
+      if output != nil {
+        exportsDocument = true
+      } else {
+        dismiss()
+      }
     }
 
     private func text(
