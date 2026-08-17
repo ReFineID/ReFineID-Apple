@@ -263,10 +263,13 @@ internal struct CardManagementView: View {
               Text(candidate.name).tag(candidate)
             }
           }
+          // Every task name gets a full-width line of its own: the
+          // floating menu and the segmented bar both truncated the
+          // longer localizations.
           #if os(iOS)
-            .pickerStyle(.menu)
+            .pickerStyle(.inline)
           #else
-            .pickerStyle(.segmented)
+            .pickerStyle(.radioGroup)
           #endif
           .labelsHidden()
           .accessibilityIdentifier("managementTask")
