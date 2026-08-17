@@ -248,7 +248,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Signature authorization"
+            "value": "PIN"
           }
         },
         "fi": {
@@ -260,7 +260,7 @@
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Godkännande av signering"
+            "value": "PIN-kod"
           }
         }
       }
@@ -270,7 +270,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Signature (PIN 2)"
+            "value": "Signature PIN 2"
           }
         },
         "fi": {
@@ -282,7 +282,7 @@
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Signatur (PIN 2)"
+            "value": "Signaturkod (PIN 2)"
           }
         }
       }
