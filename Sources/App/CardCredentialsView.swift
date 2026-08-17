@@ -515,6 +515,17 @@ internal struct CardCredentialsView: View {
           (!isCardAccessNumberEntryComplete && !hasReaderIdentity)
             || model.isConnecting
         )
+        Button {
+          openRemoteReader()
+        } label: {
+          navigationRow(String(localized: "Remote Card")) {
+            Image(systemName: "link")
+              .foregroundStyle(Color.accentColor)
+              .accessibilityHidden(true)
+          }
+        }
+        .tint(.primary)
+        .accessibilityIdentifier("remoteCard")
       }
     }
 

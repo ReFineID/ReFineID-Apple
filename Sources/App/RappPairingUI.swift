@@ -545,21 +545,6 @@ internal struct RappPairingView: View {
       Section("Confirm the other device") {
         LabeledContent("Device", value: peer.displayName)
         LabeledContent("Platform", value: peer.platform)
-        Text("Requested access")
-          .font(.headline)
-        ForEach(model.requestedProfiles(for: peer), id: \.self) { profile in
-          Label(
-            model.profileLabel(profile),
-            systemImage: model.profileIsSupported(profile)
-              ? "checkmark.shield"
-              : "xmark.shield"
-          )
-          .foregroundStyle(
-            model.profileIsSupported(profile) ? .primary : .secondary
-          )
-        }
-        Text("Only the listed supported access is granted to this device")
-          .foregroundStyle(.secondary)
         Button("Allow this device") { model.approvePeer() }
           .buttonStyle(.borderedProminent)
         Button("Deny", role: .destructive) { model.denyPeer() }
