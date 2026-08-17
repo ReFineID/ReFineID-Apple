@@ -304,3 +304,26 @@ All three were pushed to `origin/main` before this handoff was written.
   Debug builds pass. Physical macOS-to-iPhone pairing and fail-stop
   qualification remain the exact next step and are not implied by these build
   results.
+
+### 2026-08-17 production archive qualification
+
+- Apple release-engineering revision `a27825f` is pushed to `origin/main`.
+  It makes archive inspection require the separate macOS RAPP persistent-token
+  extension, reject that extension from iOS, and validate both CryptoTokenKit
+  driver identities and role-specific entitlements.
+- The RAPP requester extension has local-network client and server access but
+  no smart-card entitlement. The direct-reader extension has smart-card access
+  but no network entitlement. The containing macOS app owns the required local
+  network and Bonjour declarations.
+- The sole public Swift release CLI produced and inspected local, non-uploaded
+  TestFlight-configuration candidates for both platforms from commit
+  `a27825f`: version `26.8.17 (60)`.
+- The macOS archive passed with one app, the direct-reader extension, and the
+  RAPP persistent-token extension. The iOS archive passed with one app, the
+  reader and discovery extensions, and no macOS RAPP extension. Both archives
+  passed architecture, diagnostic-string, coverage, entitlement, signing-team,
+  version, privacy, quarantine, and strict code-signing gates and exported
+  successfully.
+- This proves the production artifact topology and static security boundary.
+  It does not replace the still-pending physical Mac-to-iPhone pairing,
+  authorization, browser-authentication, signing, and fail-stop run.
