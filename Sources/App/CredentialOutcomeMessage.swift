@@ -51,6 +51,23 @@ internal enum CredentialOutcomeMessage {
         localized: "Use another software or reset \(credentialName).")
   }
 
+  /// Which credentials have spent attempts, and the way back to the
+  /// full allowance: one correct entry.
+  internal static func spentAttemptsNotice(
+    _ spent: [(name: String, remaining: RetryCount)]
+  ) -> String {
+    let full = Int(RetryCount.pristineAllowance)
+    let lines = spent.map { entry in
+      String(
+        localized:
+          "\(entry.name): \(Int(entry.remaining.attemptsRemaining)) of \(full) attempts left."
+      )
+    }
+    return lines.joined(separator: "\n")
+      + "\n"
+      + String(localized: "A correct entry restores the full count.")
+  }
+
   internal static func recoveryGuidance(for role: CredentialRole) -> String {
     switch role {
     case .pin1:

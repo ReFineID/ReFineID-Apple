@@ -339,9 +339,35 @@ internal struct CardManagementView: View {
             tone: .failure)
         }
       case nil:
-        EmptyView()
+        spentAttemptsSection
       }
     }
+  }
+
+  /// The yellow key's explanation: which codes have spent attempts,
+  /// how many remain, and that one correct entry restores them all.
+  @ViewBuilder private var spentAttemptsSection: some View {
+    if retryHealth.level == .warning, let report = retryHealth.report {
+      let spent = Self.spentAttempts(report)
+      if !spent.isEmpty {
+        Section {
+          CredentialOutcomeText(
+            message: CredentialOutcomeMessage.spentAttemptsNotice(spent),
+            tone: .notice)
+        }
+      }
+    }
+  }
+
+  private static func spentAttempts(
+    _ report: CredentialProbeReport
+  ) -> [(name: String, remaining: RetryCount)] {
+    [("PIN 1", report.pin1), ("PIN 2", report.pin2), ("PUK", report.puk)]
+      .compactMap { name, outcome in
+        guard case .remaining(let count) = outcome, !count.isPristine
+        else { return nil }
+        return (name, count)
+      }
   }
 
   private func activationCompleted() {

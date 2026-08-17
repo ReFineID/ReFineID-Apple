@@ -56,6 +56,28 @@
         }
       }
     },
+    "%@: %lld of %lld attempts left.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@: %2$lld of %3$lld attempts left."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@: %2$lld/%3$lld yritystä jäljellä."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@: %2$lld av %3$lld försök kvar."
+          }
+        }
+      }
+    },
     "%lld documents": {
       "localizations": {
         "fi": {
@@ -137,6 +159,94 @@
         }
       }
     },
+    "A correct entry restores the full count.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A correct entry restores the full count."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oikea koodi palauttaa kaikki yritykset."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rätt kod återställer alla försök."
+          }
+        }
+      }
+    },
+    "A credential has fewer than five attempts remaining": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yhdellä tunnusluvulla on alle viisi yritystä jäljellä"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En kod har färre än fem försök kvar"
+          }
+        }
+      }
+    },
+    "A credential is blocked or has at most two attempts remaining": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tunnusluku on lukittu tai sillä on enintään kaksi yritystä jäljellä"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En kod är spärrad eller har högst två försök kvar"
+          }
+        }
+      }
+    },
+    "A wrong %@ spends one attempt. %lld attempts remain. Exhausting the %@ cannot be undone by software.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Väärä %1$@ kuluttaa yhden yrityksen. Yrityksiä on jäljellä %2$lld. Loppuun kulunutta koodia %3$@ ei voi palauttaa ohjelmistolla."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En felaktig %1$@ förbrukar ett försök. %2$lld försök återstår. En förbrukad %3$@ kan inte återställas med programvara."
+          }
+        }
+      }
+    },
+    "A wrong current %@ spends one attempt. %lld attempts remain.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Väärä nykyinen %1$@ kuluttaa yhden yrityksen. Yrityksiä on jäljellä %2$lld."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En felaktig nuvarande %1$@ förbrukar ett försök. %2$lld försök återstår."
+          }
+        }
+      }
+    },
     "Action": {
       "localizations": {
         "fi": {
@@ -201,174 +311,36 @@
         }
       }
     },
-    "Enable": {
+    "Activation PIN is incorrect.": {
+      "extractionState": "manual",
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ota käyttöön"
+            "value": "Aktivointitunnusluku on väärä."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aktivera"
+            "value": "Aktiveringskoden är felaktig."
           }
         }
       }
     },
-    "Connect Identity Card": {
+    "Activation code is incorrect.": {
+      "extractionState": "manual",
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yhdistä henkilökortti"
+            "value": "Aktivointikoodi on väärä."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Anslut identitetskortet"
-          }
-        }
-      }
-    },
-    "The Card Access Number (CAN) is incorrect.": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kortin käyttönumero (CAN) on väärä."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kortets åtkomstnummer (CAN) är felaktigt."
-          }
-        }
-      }
-    },
-    "Change or Reset PINs": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vaihda tai palauta PIN-koodit"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ändra eller återställ PIN-koder"
-          }
-        }
-      }
-    },
-    "Identity": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Identiteetti"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Identitet"
-          }
-        }
-      }
-    },
-    "Manage": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hallinta"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hantera"
-          }
-        }
-      }
-    },
-    "Personal Identification Numbers": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PINs"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tunnusluvut"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PIN-koder"
-          }
-        }
-      }
-    },
-    "Personal Identification Numbers (PINs)": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PINs"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tunnusluvut"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PIN-koder"
-          }
-        }
-      }
-    },
-    "Invalid entry": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Virheellinen arvo"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ogiltigt värde"
-          }
-        }
-      }
-    },
-    "Valid entry": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kelvollinen arvo"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Giltigt värde"
+            "value": "Aktiveringskoden är felaktig."
           }
         }
       }
@@ -453,6 +425,23 @@
         }
       }
     },
+    "All credential attempts are available": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaikki tunnuslukuyritykset ovat käytettävissä"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alla kodförsök är tillgängliga"
+          }
+        }
+      }
+    },
     "Allow reactivation": {
       "localizations": {
         "fi": {
@@ -465,6 +454,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tillåt omaktivering"
+          }
+        }
+      }
+    },
+    "Allow this device": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salli tämä laite"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tillåt den här enheten"
           }
         }
       }
@@ -518,393 +523,18 @@
         }
       }
     },
-    "PIN 1 requires recovery": {
-      "extractionState": "manual",
+    "Browser authentication": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "PIN 1 on palautettava"
+            "value": "Selaintunnistautuminen"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "PIN 1 måste återställas"
-          }
-        }
-      }
-    },
-    "Reset PIN 1 with your PUK.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Palauta PIN 1 PUK-koodilla."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Återställ PIN 1 med din PUK-kod."
-          }
-        }
-      }
-    },
-    "PIN 2 requires recovery": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PIN 2 on palautettava"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PIN 2 måste återställas"
-          }
-        }
-      }
-    },
-    "Reset PIN 2 with your PUK.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Palauta PIN 2 PUK-koodilla."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Återställ PIN 2 med din PUK-kod."
-          }
-        }
-      }
-    },
-    "Use other software to recover the card": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Palauta kortti toisella ohjelmistolla"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Återställ kortet med annan programvara"
-          }
-        }
-      }
-    },
-    "ReFineID will not use either of the final two PUK attempts.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ReFineID ei käytä kumpaakaan kahdesta viimeisestä PUK-yrityksestä."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ReFineID använder inte något av de två sista PUK-försöken."
-          }
-        }
-      }
-    },
-    "The PUK is blocked": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PUK on lukittu"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PUK-koden är spärrad"
-          }
-        }
-      }
-    },
-    "This card cannot be recovered with software.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tätä korttia ei voi palauttaa ohjelmistolla."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kortet kan inte återställas med programvara."
-          }
-        }
-      }
-    },
-    "PIN 1 is incorrect.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PIN 1 on väärä."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PIN 1 är felaktig."
-          }
-        }
-      }
-    },
-    "PIN 2 is incorrect.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PIN 2 on väärä."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PIN 2 är felaktig."
-          }
-        }
-      }
-    },
-    "PUK is incorrect.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PUK on väärä."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PUK är felaktig."
-          }
-        }
-      }
-    },
-    "Activation code is incorrect.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aktivointikoodi on väärä."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aktiveringskoden är felaktig."
-          }
-        }
-      }
-    },
-    "Activation PIN is incorrect.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aktivointitunnusluku on väärä."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aktiveringskoden är felaktig."
-          }
-        }
-      }
-    },
-    "You have %u attempts remaining.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sinulla on %u yritystä jäljellä."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Du har %u försök kvar."
-          }
-        }
-      }
-    },
-    "A credential has fewer than five attempts remaining": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Yhdellä tunnusluvulla on alle viisi yritystä jäljellä"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "En kod har färre än fem försök kvar"
-          }
-        }
-      }
-    },
-    "A credential is blocked or has at most two attempts remaining": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tunnusluku on lukittu tai sillä on enintään kaksi yritystä jäljellä"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "En kod är spärrad eller har högst två försök kvar"
-          }
-        }
-      }
-    },
-    "All credential attempts are available": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kaikki tunnuslukuyritykset ovat käytettävissä"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alla kodförsök är tillgängliga"
-          }
-        }
-      }
-    },
-    "Credential retry status unavailable": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tunnuslukuyritysten tila ei ole saatavilla"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kodförsökens status är inte tillgänglig"
-          }
-        }
-      }
-    },
-    "Operation refused": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Toimintoa ei suoritettu"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Åtgärden avvisades"
-          }
-        }
-      }
-    },
-    "Only 1 attempt remains for %@.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vain 1 yritys on jäljellä koodille %@."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Endast 1 försök återstår för %@."
-          }
-        }
-      }
-    },
-    "Only %u attempts remain for %@.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vain %1$u yritystä on jäljellä koodille %2$@."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Endast %1$u försök återstår för %2$@."
-          }
-        }
-      }
-    },
-    "Use another software or reset %@.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Käytä toista ohjelmistoa tai palauta %@."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Använd en annan programvara eller återställ %@."
-          }
-        }
-      }
-    },
-    "PIN 1 is blocked": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PIN 1 on lukittu"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PIN 1 är spärrad"
+            "value": "Webbläsarinloggning"
           }
         }
       }
@@ -973,22 +603,6 @@
         }
       }
     },
-    "Card activation": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kortin käyttöönotto"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kortaktivering"
-          }
-        }
-      }
-    },
     "Card Access Number (CAN)": {
       "localizations": {
         "fi": {
@@ -1018,6 +632,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kortets åtkomstkod"
+          }
+        }
+      }
+    },
+    "Card activation": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortin käyttöönotto"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortaktivering"
           }
         }
       }
@@ -1168,6 +798,22 @@
         }
       }
     },
+    "Card status": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortin tila"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortstatus"
+          }
+        }
+      }
+    },
     "Card type": {
       "extractionState": "manual",
       "localizations": {
@@ -1181,6 +827,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Korttyp"
+          }
+        }
+      }
+    },
+    "Card-holding device": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Korttia käyttävä laite"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enhet som använder kortet"
           }
         }
       }
@@ -1277,6 +939,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Byt signaturkod (PIN 2)"
+          }
+        }
+      }
+    },
+    "Change or Reset PINs": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vaihda tai palauta PIN-koodit"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ändra eller återställ PIN-koder"
           }
         }
       }
@@ -1407,6 +1085,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rensar endast ReFineID:s diagnostikspår."
+          }
+        }
+      }
+    },
+    "Confirm %@ change?": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vahvistetaanko koodin %@ vaihto?"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bekräfta byte av %@?"
+          }
+        }
+      }
+    },
+    "Confirm %@ reset?": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vahvistetaanko koodin %@ palautus?"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bekräfta återställning av %@?"
+          }
+        }
+      }
+    },
+    "Confirm card activation?": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vahvistetaanko kortin käyttöönotto?"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bekräfta kortaktivering?"
+          }
+        }
+      }
+    },
+    "Confirm the other device": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vahvista toinen laite"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bekräfta den andra enheten"
+          }
+        }
+      }
+    },
+    "Connect Identity Card": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yhdistä henkilökortti"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anslut identitetskortet"
           }
         }
       }
@@ -1589,6 +1347,23 @@
         }
       }
     },
+    "Credential retry status unavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tunnuslukuyritysten tila ei ole saatavilla"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kodförsökens status är inte tillgänglig"
+          }
+        }
+      }
+    },
     "Current %@": {
       "localizations": {
         "fi": {
@@ -1653,6 +1428,38 @@
         }
       }
     },
+    "Deny": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estä"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neka"
+          }
+        }
+      }
+    },
+    "Device": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laite"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enhet"
+          }
+        }
+      }
+    },
     "Diagnostic logs cleared.": {
       "localizations": {
         "fi": {
@@ -1697,6 +1504,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Diagnostik"
+          }
+        }
+      }
+    },
+    "Document signing": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asiakirjojen allekirjoittaminen"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokumentsignering"
           }
         }
       }
@@ -1799,18 +1622,34 @@
         }
       }
     },
-    "Browser authentication": {
+    "Enable": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Selaintunnistautuminen"
+            "value": "Ota käyttöön"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Webbläsarinloggning"
+            "value": "Aktivera"
+          }
+        }
+      }
+    },
+    "Establishing a secure connection": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muodostetaan suojattua yhteyttä"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upprättar en säker anslutning"
           }
         }
       }
@@ -1896,6 +1735,22 @@
         }
       }
     },
+    "Hide %@": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Piilota %@"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dölj %@"
+          }
+        }
+      }
+    },
     "Hold the card on the top back of the phone.": {
       "localizations": {
         "fi": {
@@ -1908,6 +1763,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Håll kortet mot telefonens övre baksida."
+          }
+        }
+      }
+    },
+    "Identity": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identiteetti"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identitet"
           }
         }
       }
@@ -1994,6 +1865,22 @@
         }
       }
     },
+    "Invalid entry": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Virheellinen arvo"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ogiltigt värde"
+          }
+        }
+      }
+    },
     "Invalidated - see recovery instructions": {
       "extractionState": "stale",
       "localizations": {
@@ -2024,6 +1911,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Låst - se återställningsanvisningarna"
+          }
+        }
+      }
+    },
+    "Mac": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac"
+          }
+        }
+      }
+    },
+    "Manage": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hallinta"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hantera"
           }
         }
       }
@@ -2156,6 +2075,38 @@
         }
       }
     },
+    "No paired device selected": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paritettua laitetta ei ole valittu"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingen parkopplad enhet har valts"
+          }
+        }
+      }
+    },
+    "No paired devices": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ei paritettuja laitteita"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inga parkopplade enheter"
+          }
+        }
+      }
+    },
     "No readable card.": {
       "localizations": {
         "fi": {
@@ -2255,6 +2206,56 @@
         }
       }
     },
+    "Only %u attempts remain for %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vain %1$u yritystä on jäljellä koodille %2$@."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Endast %1$u försök återstår för %2$@."
+          }
+        }
+      }
+    },
+    "Only 1 attempt remains for %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vain 1 yritys on jäljellä koodille %@."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Endast 1 försök återstår för %@."
+          }
+        }
+      }
+    },
+    "Only the listed supported access is granted to this device": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laitteelle sallitaan vain luetellut tuetut käyttöoikeudet"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enheten får endast de angivna åtkomsträttigheter som stöds"
+          }
+        }
+      }
+    },
     "Opening a connection to the card.": {
       "localizations": {
         "fi": {
@@ -2267,6 +2268,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Öppnar anslutning till kortet."
+          }
+        }
+      }
+    },
+    "Operation refused": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toimintoa ei suoritettu"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åtgärden avvisades"
           }
         }
       }
@@ -2319,6 +2337,57 @@
         }
       }
     },
+    "PIN 1 is blocked": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 1 on lukittu"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 1 är spärrad"
+          }
+        }
+      }
+    },
+    "PIN 1 is incorrect.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 1 on väärä."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 1 är felaktig."
+          }
+        }
+      }
+    },
+    "PIN 1 requires recovery": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 1 on palautettava"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 1 måste återställas"
+          }
+        }
+      }
+    },
     "PIN 2": {
       "localizations": {
         "fi": {
@@ -2351,6 +2420,56 @@
         }
       }
     },
+    "PIN 2 is incorrect.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 2 on väärä."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 2 är felaktig."
+          }
+        }
+      }
+    },
+    "PIN 2 requires recovery": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 2 on palautettava"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 2 måste återställas"
+          }
+        }
+      }
+    },
+    "PIN management": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN-tunnuslukujen hallinta"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN-hantering"
+          }
+        }
+      }
+    },
     "PUK": {
       "localizations": {
         "fi": {
@@ -2363,6 +2482,151 @@
           "stringUnit": {
             "state": "translated",
             "value": "PUK"
+          }
+        }
+      }
+    },
+    "PUK is incorrect.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PUK on väärä."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PUK är felaktig."
+          }
+        }
+      }
+    },
+    "Pair a phone": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parita puhelin"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parkoppla en telefon"
+          }
+        }
+      }
+    },
+    "Paired device selected": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paritettu laite valittu"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parkopplad enhet vald"
+          }
+        }
+      }
+    },
+    "Paired devices": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paritetut laitteet"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parkopplade enheter"
+          }
+        }
+      }
+    },
+    "Pairing QR code": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laitekoodi"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "QR-kod för parkoppling"
+          }
+        }
+      }
+    },
+    "Pairing code scanner": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laitekoodin lukija"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läsare för parkopplingskod"
+          }
+        }
+      }
+    },
+    "Pairing could not be started": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laiteparin muodostusta ei voitu aloittaa"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parkopplingen kunde inte startas"
+          }
+        }
+      }
+    },
+    "Pairing ended before it was completed": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laiteparin muodostus päättyi kesken"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parkopplingen avslutades innan den var klar"
+          }
+        }
+      }
+    },
+    "Pairing was denied": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laitepari hylättiin"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parkopplingen nekades"
           }
         }
       }
@@ -2395,6 +2659,66 @@
           "stringUnit": {
             "state": "translated",
             "value": "Person"
+          }
+        }
+      }
+    },
+    "Personal Identification Numbers": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PINs"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tunnusluvut"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN-koder"
+          }
+        }
+      }
+    },
+    "Personal Identification Numbers (PINs)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PINs"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tunnusluvut"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN-koder"
+          }
+        }
+      }
+    },
+    "Platform": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alusta"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plattform"
           }
         }
       }
@@ -2479,6 +2803,55 @@
         }
       }
     },
+    "ReFineID Mac": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ReFineID Mac"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ReFineID Mac"
+          }
+        }
+      }
+    },
+    "ReFineID does not use either of the last two attempts.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ReFineID ei käytä kumpaakaan kahdesta viimeisestä yrityksestä."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ReFineID använder inte något av de två sista försöken."
+          }
+        }
+      }
+    },
+    "ReFineID iPhone": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ReFineID iPhone"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ReFineID iPhone"
+          }
+        }
+      }
+    },
     "ReFineID will not use a credential with one or two attempts left. Restore it with other software, or unblock it here once the card has blocked it.": {
       "localizations": {
         "fi": {
@@ -2491,6 +2864,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "ReFineID använder inte en kod med ett eller två försök kvar. Återställ den med annan programvara, eller lås upp den här när kortet har låst den."
+          }
+        }
+      }
+    },
+    "ReFineID will not use either of the final two PUK attempts.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ReFineID ei käytä kumpaakaan kahdesta viimeisestä PUK-yrityksestä."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ReFineID använder inte något av de två sista PUK-försöken."
           }
         }
       }
@@ -2524,22 +2914,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kortläsare"
-          }
-        }
-      }
-    },
-    "Remote Card": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Etäkortti"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fjärrkort"
           }
         }
       }
@@ -2641,6 +3015,38 @@
         }
       }
     },
+    "Remote Card": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Etäkortti"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fjärrkort"
+          }
+        }
+      }
+    },
+    "Remote card connections": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Etäkorttiyhteydet"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fjärrkortanslutningar"
+          }
+        }
+      }
+    },
     "Remove %@": {
       "localizations": {
         "fi": {
@@ -2653,6 +3059,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ta bort %@"
+          }
+        }
+      }
+    },
+    "Remove paired device": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poista paritettu laite"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort parkopplad enhet"
           }
         }
       }
@@ -2739,6 +3161,38 @@
         }
       }
     },
+    "Requested access": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pyydetyt käyttöoikeudet"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Begärd åtkomst"
+          }
+        }
+      }
+    },
+    "Requesting device": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pyytävä laite"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Begärande enhet"
+          }
+        }
+      }
+    },
     "Reset": {
       "localizations": {
         "fi": {
@@ -2783,6 +3237,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Återställ grundläggande kod (PIN 1)"
+          }
+        }
+      }
+    },
+    "Reset PIN 1 with your PUK.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Palauta PIN 1 PUK-koodilla."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återställ PIN 1 med din PUK-kod."
+          }
+        }
+      }
+    },
+    "Reset PIN 2 with your PUK.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Palauta PIN 2 PUK-koodilla."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återställ PIN 2 med din PUK-kod."
           }
         }
       }
@@ -2917,6 +3405,54 @@
         }
       }
     },
+    "Scan pairing code": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lue laitekoodi"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skanna parkopplingskoden"
+          }
+        }
+      }
+    },
+    "Scan the code shown on the other device": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skannaa toisessa laitteessa näkyvä koodi"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skanna koden som visas på den andra enheten"
+          }
+        }
+      }
+    },
+    "Scan with ReFineID on the phone": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skannaa puhelimen ReFineID-sovelluksella"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skanna med ReFineID på telefonen"
+          }
+        }
+      }
+    },
     "Secure channel": {
       "localizations": {
         "fi": {
@@ -2929,6 +3465,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Skyddad kanal"
+          }
+        }
+      }
+    },
+    "Secure connection paired": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suojattu yhteys paritettu"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Säker anslutning parkopplad"
+          }
+        }
+      }
+    },
+    "Selected": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valittu"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vald"
           }
         }
       }
@@ -3010,6 +3578,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dela rapporten"
+          }
+        }
+      }
+    },
+    "Show %@": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Näytä %@"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visa %@"
           }
         }
       }
@@ -3291,6 +3875,55 @@
         }
       }
     },
+    "The Card Access Number (CAN) is incorrect.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortin käyttönumero (CAN) on väärä."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortets åtkomstnummer (CAN) är felaktigt."
+          }
+        }
+      }
+    },
+    "The PUK is blocked": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PUK on lukittu"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PUK-koden är spärrad"
+          }
+        }
+      }
+    },
+    "The camera cannot scan pairing codes right now": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kamera ei voi lukea laitekoodeja juuri nyt"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kameran kan inte läsa parkopplingskoder just nu"
+          }
+        }
+      }
+    },
     "The card could not be read. Hold it still and try again.": {
       "localizations": {
         "fi": {
@@ -3468,6 +4101,23 @@
         }
       }
     },
+    "The new PIN must differ from the current PIN.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uuden PIN-koodin on oltava eri kuin nykyisen PIN-koodin."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den nya PIN-koden måste skilja sig från den nuvarande PIN-koden."
+          }
+        }
+      }
+    },
     "The new entries differ.": {
       "localizations": {
         "fi": {
@@ -3480,6 +4130,87 @@
           "stringUnit": {
             "state": "translated",
             "value": "De nya inmatningarna skiljer sig åt."
+          }
+        }
+      }
+    },
+    "The operation was not sent.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toimintoa ei lähetetty."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åtgärden skickades inte."
+          }
+        }
+      }
+    },
+    "The paired device could not be removed": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paritettua laitetta ei voitu poistaa"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den parkopplade enheten kunde inte tas bort"
+          }
+        }
+      }
+    },
+    "The paired device could not be selected": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paritettua laitetta ei voitu valita"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den parkopplade enheten kunde inte väljas"
+          }
+        }
+      }
+    },
+    "The paired device is no longer available": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paritettu laite ei ole enää käytettävissä"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den parkopplade enheten är inte längre tillgänglig"
+          }
+        }
+      }
+    },
+    "The pairing code is invalid or expired": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laitekoodi on virheellinen tai vanhentunut"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parkopplingskoden är ogiltig eller har gått ut"
           }
         }
       }
@@ -3576,6 +4307,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Systemet är klart"
+          }
+        }
+      }
+    },
+    "This card cannot be recovered with software.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tätä korttia ei voi palauttaa ohjelmistolla."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortet kan inte återställas med programvara."
           }
         }
       }
@@ -3778,6 +4526,22 @@
         }
       }
     },
+    "Unknown access": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tuntematon käyttöoikeus"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Okänd åtkomst"
+          }
+        }
+      }
+    },
     "Unknown card": {
       "localizations": {
         "fi": {
@@ -3811,6 +4575,40 @@
         }
       }
     },
+    "Use another software or reset %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Käytä toista ohjelmistoa tai palauta %@."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Använd en annan programvara eller återställ %@."
+          }
+        }
+      }
+    },
+    "Use other software to recover the card": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Palauta kortti toisella ohjelmistolla"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återställ kortet med annan programvara"
+          }
+        }
+      }
+    },
     "Username": {
       "localizations": {
         "fi": {
@@ -3823,6 +4621,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Användarnamn"
+          }
+        }
+      }
+    },
+    "Valid entry": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kelvollinen arvo"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giltigt värde"
           }
         }
       }
@@ -3856,6 +4670,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Synlig PDF-stämpel"
+          }
+        }
+      }
+    },
+    "Waiting for the phone": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odotetaan puhelinta"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Väntar på telefonen"
           }
         }
       }
@@ -3904,6 +4734,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Skriv ett namn framför signeringstiden."
+          }
+        }
+      }
+    },
+    "You have %u attempts remaining.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sinulla on %u yritystä jäljellä."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du har %u försök kvar."
           }
         }
       }
@@ -4112,809 +4959,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "verifierad under den här sessionen"
-          }
-        }
-      }
-    },
-    "Confirm %@ change?": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vahvistetaanko koodin %@ vaihto?"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bekräfta byte av %@?"
-          }
-        }
-      }
-    },
-    "Confirm %@ reset?": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vahvistetaanko koodin %@ palautus?"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bekräfta återställning av %@?"
-          }
-        }
-      }
-    },
-    "Confirm card activation?": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vahvistetaanko kortin käyttöönotto?"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bekräfta kortaktivering?"
-          }
-        }
-      }
-    },
-    "A wrong current %@ spends one attempt. %lld attempts remain.": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Väärä nykyinen %1$@ kuluttaa yhden yrityksen. Yrityksiä on jäljellä %2$lld."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "En felaktig nuvarande %1$@ förbrukar ett försök. %2$lld försök återstår."
-          }
-        }
-      }
-    },
-    "A wrong %@ spends one attempt. %lld attempts remain. Exhausting the %@ cannot be undone by software.": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Väärä %1$@ kuluttaa yhden yrityksen. Yrityksiä on jäljellä %2$lld. Loppuun kulunutta koodia %3$@ ei voi palauttaa ohjelmistolla."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "En felaktig %1$@ förbrukar ett försök. %2$lld försök återstår. En förbrukad %3$@ kan inte återställas med programvara."
-          }
-        }
-      }
-    },
-    "The new PIN must differ from the current PIN.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Uuden PIN-koodin on oltava eri kuin nykyisen PIN-koodin."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Den nya PIN-koden måste skilja sig från den nuvarande PIN-koden."
-          }
-        }
-      }
-    },
-    "The operation was not sent.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Toimintoa ei lähetetty."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Åtgärden skickades inte."
-          }
-        }
-      }
-    },
-    "ReFineID does not use either of the last two attempts.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ReFineID ei käytä kumpaakaan kahdesta viimeisestä yrityksestä."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ReFineID använder inte något av de två sista försöken."
-          }
-        }
-      }
-    },
-    "Hide %@": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Piilota %@"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dölj %@"
-          }
-        }
-      }
-    },
-    "Show %@": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Näytä %@"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Visa %@"
-          }
-        }
-      }
-    },
-    "Allow this device": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Salli tämä laite"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tillåt den här enheten"
-          }
-        }
-      }
-    },
-    "Card status": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kortin tila"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kortstatus"
-          }
-        }
-      }
-    },
-    "Card-holding device": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Korttia käyttävä laite"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enhet som använder kortet"
-          }
-        }
-      }
-    },
-    "Confirm the other device": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vahvista toinen laite"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bekräfta den andra enheten"
-          }
-        }
-      }
-    },
-    "Deny": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Estä"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Neka"
-          }
-        }
-      }
-    },
-    "Device": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Laite"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enhet"
-          }
-        }
-      }
-    },
-    "Document signing": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Asiakirjojen allekirjoittaminen"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dokumentsignering"
-          }
-        }
-      }
-    },
-    "Establishing a secure connection": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Muodostetaan suojattua yhteyttä"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Upprättar en säker anslutning"
-          }
-        }
-      }
-    },
-    "Mac": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mac"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mac"
-          }
-        }
-      }
-    },
-    "No paired device selected": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Paritettua laitetta ei ole valittu"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ingen parkopplad enhet har valts"
-          }
-        }
-      }
-    },
-    "No paired devices": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ei paritettuja laitteita"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Inga parkopplade enheter"
-          }
-        }
-      }
-    },
-    "Only the listed supported access is granted to this device": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Laitteelle sallitaan vain luetellut tuetut käyttöoikeudet"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enheten får endast de angivna åtkomsträttigheter som stöds"
-          }
-        }
-      }
-    },
-    "PIN management": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PIN-tunnuslukujen hallinta"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PIN-hantering"
-          }
-        }
-      }
-    },
-    "Pair a phone": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Parita puhelin"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Parkoppla en telefon"
-          }
-        }
-      }
-    },
-    "Paired device selected": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Paritettu laite valittu"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Parkopplad enhet vald"
-          }
-        }
-      }
-    },
-    "Paired devices": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Paritetut laitteet"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Parkopplade enheter"
-          }
-        }
-      }
-    },
-    "Pairing QR code": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Laitekoodi"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "QR-kod för parkoppling"
-          }
-        }
-      }
-    },
-    "Pairing code scanner": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Laitekoodin lukija"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Läsare för parkopplingskod"
-          }
-        }
-      }
-    },
-    "Pairing could not be started": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Laiteparin muodostusta ei voitu aloittaa"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Parkopplingen kunde inte startas"
-          }
-        }
-      }
-    },
-    "Pairing ended before it was completed": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Laiteparin muodostus päättyi kesken"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Parkopplingen avslutades innan den var klar"
-          }
-        }
-      }
-    },
-    "Pairing was denied": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Laitepari hylättiin"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Parkopplingen nekades"
-          }
-        }
-      }
-    },
-    "Platform": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alusta"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Plattform"
-          }
-        }
-      }
-    },
-    "ReFineID Mac": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ReFineID Mac"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ReFineID Mac"
-          }
-        }
-      }
-    },
-    "ReFineID iPhone": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ReFineID iPhone"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ReFineID iPhone"
-          }
-        }
-      }
-    },
-    "Remote card connections": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Etäkorttiyhteydet"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fjärrkortanslutningar"
-          }
-        }
-      }
-    },
-    "Remove paired device": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Poista paritettu laite"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ta bort parkopplad enhet"
-          }
-        }
-      }
-    },
-    "Requested access": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pyydetyt käyttöoikeudet"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Begärd åtkomst"
-          }
-        }
-      }
-    },
-    "Requesting device": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pyytävä laite"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Begärande enhet"
-          }
-        }
-      }
-    },
-    "Scan pairing code": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lue laitekoodi"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Skanna parkopplingskoden"
-          }
-        }
-      }
-    },
-    "Scan the code shown on the other device": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Skannaa toisessa laitteessa näkyvä koodi"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Skanna koden som visas på den andra enheten"
-          }
-        }
-      }
-    },
-    "Scan with ReFineID on the phone": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Skannaa puhelimen ReFineID-sovelluksella"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Skanna med ReFineID på telefonen"
-          }
-        }
-      }
-    },
-    "Secure connection paired": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Suojattu yhteys paritettu"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Säker anslutning parkopplad"
-          }
-        }
-      }
-    },
-    "Selected": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Valittu"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vald"
-          }
-        }
-      }
-    },
-    "The camera cannot scan pairing codes right now": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kamera ei voi lukea laitekoodeja juuri nyt"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kameran kan inte läsa parkopplingskoder just nu"
-          }
-        }
-      }
-    },
-    "The paired device could not be removed": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Paritettua laitetta ei voitu poistaa"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Den parkopplade enheten kunde inte tas bort"
-          }
-        }
-      }
-    },
-    "The paired device could not be selected": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Paritettua laitetta ei voitu valita"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Den parkopplade enheten kunde inte väljas"
-          }
-        }
-      }
-    },
-    "The paired device is no longer available": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Paritettu laite ei ole enää käytettävissä"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Den parkopplade enheten är inte längre tillgänglig"
-          }
-        }
-      }
-    },
-    "The pairing code is invalid or expired": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Laitekoodi on virheellinen tai vanhentunut"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Parkopplingskoden är ogiltig eller har gått ut"
-          }
-        }
-      }
-    },
-    "Unknown access": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tuntematon käyttöoikeus"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Okänd åtkomst"
-          }
-        }
-      }
-    },
-    "Waiting for the phone": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Odotetaan puhelinta"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Väntar på telefonen"
           }
         }
       }

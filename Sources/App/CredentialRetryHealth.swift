@@ -61,6 +61,10 @@ internal final class CredentialRetryHealth {
   internal private(set) var level: Level?
   internal private(set) var recovery: Recovery?
 
+  /// The accepted report behind the level, so the management screen
+  /// can name the exact counters the color came from.
+  internal private(set) var report: CredentialProbeReport?
+
   @ObservationIgnored private var readerRefresh: Task<Void, Never>?
   @ObservationIgnored private var refreshGeneration = 0
 
@@ -73,6 +77,7 @@ internal final class CredentialRetryHealth {
   internal func refreshFromReader() {
     cancelReaderRefresh()
     level = nil
+    report = nil
     let generation = refreshGeneration
     readerRefresh = Task { [weak self] in
       let report = await CardMaintenance.credentialReport(
@@ -106,6 +111,7 @@ internal final class CredentialRetryHealth {
     else {
       recovery = nil
       level = nil
+      self.report = nil
       return
     }
 
@@ -113,8 +119,10 @@ internal final class CredentialRetryHealth {
     guard attempts.allSatisfy({ $0 <= RetryCount.pristineAllowance }) else {
       recovery = nil
       level = nil
+      self.report = nil
       return
     }
+    self.report = report
     if attempts.contains(where: { $0 <= 2 }) {
       if puk == 0 {
         recovery = .unrecoverable
@@ -141,6 +149,7 @@ internal final class CredentialRetryHealth {
     cancelReaderRefresh()
     recovery = nil
     level = nil
+    report = nil
   }
 
   private func cancelReaderRefresh() {
