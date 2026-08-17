@@ -65,6 +65,24 @@ internal final class RappPairingModel {
     static let offerLifetimeMilliseconds: UInt64 = 180_000
   }
 
+  /// The in-protocol name the reviewing peer sees for this requester.
+  private static var requesterDisplayName: String {
+    #if os(macOS)
+      Host.current().localizedName ?? String(localized: "Mac")
+    #else
+      UIDevice.current.name
+    #endif
+  }
+
+  /// The in-protocol platform name for this requester.
+  private static var requesterPlatform: String {
+    #if os(macOS)
+      "macOS"
+    #else
+      "iOS"
+    #endif
+  }
+
   internal private(set) var phase = Phase.idle
   internal private(set) var pairs: [RappPairingCoordinator.PairSummary] = []
   internal private(set) var selectedPairID: Data?
@@ -93,40 +111,41 @@ internal final class RappPairingModel {
     }
   }
 
-  #if os(macOS)
-    internal func createOffer() {
-      resetAttempt()
-      let relay = makeRelay(role: .host)
-      let transport = makeTransport(relay: relay)
-      do {
-        let coordinator = try RappPairingCoordinator.requester(
-          profiles: RappApplePeerProfile.supportedCredentialProfiles,
-          candidates: [
-            .init(
-              profile: RappApplePeerProfile.name,
-              candidateID: RappApplePeerProfile.candidateID,
-              parametersCBOR: RappApplePeerProfile.candidateParameters
-            )
-          ],
-          selectedCandidateID: RappApplePeerProfile.candidateID,
-          offerLifetimeMilliseconds: Policy.offerLifetimeMilliseconds,
-          displayName: Host.current().localizedName ?? String(localized: "Mac"),
-          platform: "macOS",
-          vault: vault,
-          transport: transport
-        )
-        install(coordinator: coordinator, relay: relay)
-        Task { [weak self] in
-          await coordinator.publishOffer()
-          guard let self, self.coordinator === coordinator, !isFinished
-          else { return }
-          relay.start()
-        }
-      } catch {
-        fail(String(localized: "Pairing could not be started"))
+  internal func createOffer() {
+    resetAttempt()
+    #if os(iOS)
+      PhonePersistentTokenRelay.shared.suspendForPairing()
+    #endif
+    let relay = makeRelay(role: .host)
+    let transport = makeTransport(relay: relay)
+    do {
+      let coordinator = try RappPairingCoordinator.requester(
+        profiles: RappApplePeerProfile.supportedCredentialProfiles,
+        candidates: [
+          .init(
+            profile: RappApplePeerProfile.name,
+            candidateID: RappApplePeerProfile.candidateID,
+            parametersCBOR: RappApplePeerProfile.candidateParameters
+          )
+        ],
+        selectedCandidateID: RappApplePeerProfile.candidateID,
+        offerLifetimeMilliseconds: Policy.offerLifetimeMilliseconds,
+        displayName: Self.requesterDisplayName,
+        platform: Self.requesterPlatform,
+        vault: vault,
+        transport: transport
+      )
+      install(coordinator: coordinator, relay: relay)
+      Task { [weak self] in
+        await coordinator.publishOffer()
+        guard let self, self.coordinator === coordinator, !isFinished
+        else { return }
+        relay.start()
       }
+    } catch {
+      fail(String(localized: "Pairing could not be started"))
     }
-  #endif
+  }
 
   #if os(iOS)
     internal func scanOffer() {
@@ -240,7 +259,11 @@ internal final class RappPairingModel {
     let displayName: String
     switch role {
     case .host:
-      displayName = String(localized: "ReFineID Mac")
+      #if os(macOS)
+        displayName = String(localized: "ReFineID Mac")
+      #else
+        displayName = String(localized: "ReFineID iPad")
+      #endif
     case .cardHolder:
       displayName = String(localized: "ReFineID iPhone")
     }
@@ -333,25 +356,21 @@ internal final class RappPairingModel {
     coordinator: RappPairingCoordinator
   ) {
     phase = .offer(uri)
-    #if os(macOS)
-      relay?.cancel()
-      let replacement = makeRelay(role: .host)
-      let replacementTransport = makeTransport(relay: replacement)
-      relay = replacement
-      Task { @MainActor [weak self] in
-        guard await coordinator.replaceTransport(replacementTransport),
-          let self,
-          self.coordinator === coordinator,
-          !isFinished
-        else {
-          self?.fail(String(localized: "Pairing could not be started"))
-          return
-        }
-        replacement.start()
+    relay?.cancel()
+    let replacement = makeRelay(role: .host)
+    let replacementTransport = makeTransport(relay: replacement)
+    relay = replacement
+    Task { @MainActor [weak self] in
+      guard await coordinator.replaceTransport(replacementTransport),
+        let self,
+        self.coordinator === coordinator,
+        !isFinished
+      else {
+        self?.fail(String(localized: "Pairing could not be started"))
+        return
       }
-    #else
-      fail(String(localized: "Pairing ended before it was completed"))
-    #endif
+      replacement.start()
+    }
   }
 
   private var isFinished: Bool {
@@ -480,8 +499,16 @@ internal struct RappPairingView: View {
           model.createOffer()
         }
       #else
-        Button("Scan pairing code", systemImage: "qrcode.viewfinder") {
-          model.scanOffer()
+        // A device with an antenna holds the card and scans; a device
+        // without one requests and shows the code to scan.
+        if UIDevice.current.userInterfaceIdiom == .pad {
+          Button("Pair a phone", systemImage: "qrcode") {
+            model.createOffer()
+          }
+        } else {
+          Button("Scan pairing code", systemImage: "qrcode.viewfinder") {
+            model.scanOffer()
+          }
         }
       #endif
     }

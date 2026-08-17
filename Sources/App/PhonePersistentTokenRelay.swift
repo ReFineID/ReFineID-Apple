@@ -32,6 +32,9 @@
     private init() {}
 
     internal func start() {
+      // A proxy without an antenna is not a proxy: only near-field
+      // devices advertise as the card holder.
+      guard SupportedCardTransports.offersNearField else { return }
       guard relay == nil, coordinator == nil,
         relistenPolicy == .automatic,
         hasUsableSelectedPair()
