@@ -93,6 +93,7 @@ internal final class RappPairingModel {
   private var relayGeneration: UUID?
   private var coordinator: RappPairingCoordinator?
   private var eventTask: Task<Void, Never>?
+  private var reviewedPeerName: String?
 
   internal init(vault: RappDeviceVault = RappDeviceVault()) {
     self.vault = vault
@@ -237,11 +238,20 @@ internal final class RappPairingModel {
     Task {
       do {
         try await catalog.revoke(pairID: pair.pairID)
+        RappPairNames.forget(pairID: pair.pairID)
         refresh()
       } catch {
         fail(String(localized: "The paired device could not be removed"))
       }
     }
+  }
+
+  /// The paired device's reviewed name, or its role when the pair
+  /// predates remembered names.
+  internal func displayName(
+    for pair: RappPairingCoordinator.PairSummary
+  ) -> String {
+    RappPairNames.name(forPairID: pair.pairID) ?? pair.remotePlatformLabel
   }
 
   internal func cancel() {
@@ -333,10 +343,14 @@ internal final class RappPairingModel {
     case .offerRestored(let uri):
       restoreRequesterOffer(uri, coordinator: coordinator)
     case .reviewPeer(let peer):
+      reviewedPeerName = peer.displayName
       phase = .review(peer)
     case .paired(let pair):
       do {
         try vault.selectPair(pairID: pair.pairID)
+        if let reviewedPeerName {
+          RappPairNames.remember(reviewedPeerName, pairID: pair.pairID)
+        }
         selectedPairID = pair.pairID
         phase = .paired(pair)
         refresh()
@@ -470,7 +484,10 @@ internal struct RappPairingView: View {
             Button {
               model.select(pair)
             } label: {
-              Label(pair.remotePlatformLabel, systemImage: pair.remotePlatformSymbol)
+              Label(
+                model.displayName(for: pair),
+                systemImage: pair.remotePlatformSymbol
+              )
             }
             .buttonStyle(.plain)
             Spacer()
