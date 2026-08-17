@@ -1277,6 +1277,28 @@
         }
       }
     },
+    "verify.revoked": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revoked"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mitätöity"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spärrat"
+          }
+        }
+      }
+    },
     "verify.signature": {
       "localizations": {
         "en": {

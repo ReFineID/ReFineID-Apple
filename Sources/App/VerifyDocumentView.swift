@@ -159,7 +159,10 @@
             CredentialValidationIndicator(valid: true)
           }
         case .revoked:
-          CredentialValidationIndicator(valid: false)
+          HStack {
+            Text(text("verify.revoked", "Revoked"))
+            CredentialValidationIndicator(valid: false)
+          }
         case .unavailable:
           Text(text("verify.notChecked", "Not checked"))
             .foregroundStyle(.secondary)
