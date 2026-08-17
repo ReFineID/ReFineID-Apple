@@ -78,8 +78,10 @@ public enum PdfSignatureReader {
     else {
       throw Failure.malformedByteRange
     }
+    // The declared spans end where this signature's revision ended;
+    // later revisions are not covered and must not be digested.
     let placeholder = PdfSignaturePlaceholder(
-      document: document,
+      document: document.prefix(holeEnd + tailLength),
       contentsOpen: holeStart,
       secondSpanStart: holeEnd,
       capacity: 0
@@ -93,7 +95,8 @@ public enum PdfSignatureReader {
     )
   }
 
-  /// The declared /SubFilter name, empty when absent or unreadable.
+  /// The declared /SubFilter name without its solidus, empty when
+  /// absent or unreadable.
   private static func subFilterName(in body: String) -> String {
     guard
       let syntax = try? PdfValidationStore.DictionarySyntax(body),
@@ -101,7 +104,9 @@ public enum PdfSignatureReader {
     else {
       return ""
     }
-    return syntax.value(of: entry)
+    let value = syntax.value(of: entry)
+    guard value.hasPrefix("/") else { return value }
+    return String(value.dropFirst())
   }
 
   /// Decodes the hex string filling the hole and trims it to the one

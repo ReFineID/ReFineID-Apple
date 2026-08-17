@@ -21,8 +21,8 @@
             ProgressView(String(localized: "Verifying"))
               .frame(maxWidth: .infinity)
           }
-        case .report(let rows):
-          reportSections(rows)
+        case .report(let rows, let documentTimestampedAt):
+          reportSections(rows, documentTimestampedAt: documentTimestampedAt)
         case .failed(let message):
           Section {
             CredentialOutcomeText(message: message, tone: .failure)
@@ -57,12 +57,21 @@
 
     @ViewBuilder
     private func reportSections(
-      _ rows: [VerifyDocumentModel.SignatureRow]
+      _ rows: [VerifyDocumentModel.SignatureRow],
+      documentTimestampedAt: [Date]
     ) -> some View {
       Section {
         LabeledContent(String(localized: "Document")) {
           Text(model.documentName)
             .multilineTextAlignment(.trailing)
+        }
+        ForEach(documentTimestampedAt, id: \.self) { stamped in
+          LabeledContent(String(localized: "Document timestamp")) {
+            HStack {
+              Text(stamped.formatted(date: .abbreviated, time: .shortened))
+              CredentialValidationIndicator(valid: true)
+            }
+          }
         }
       }
       ForEach(rows) { row in

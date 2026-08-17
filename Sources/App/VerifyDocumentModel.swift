@@ -32,7 +32,7 @@
     internal enum Phase {
       case idle
       case verifying
-      case report([SignatureRow])
+      case report([SignatureRow], documentTimestampedAt: [Date])
       case failed(String)
     }
 
@@ -100,11 +100,12 @@
           return
         }
         do {
-          let reports = try DocumentVerification.verify(document: document)
-          let rows = reports.enumerated().map { index, report in
-            SignatureRow(id: index, report: report, revocation: .checking)
+          let report = try DocumentVerification.verify(document: document)
+          let rows = report.signatures.enumerated().map { index, signature in
+            SignatureRow(id: index, report: signature, revocation: .checking)
           }
-          await self?.finish(.report(rows))
+          await self?.finish(
+            .report(rows, documentTimestampedAt: report.documentTimestampedAt))
           await self?.checkRevocation(of: rows)
         } catch let failure as DocumentVerification.Failure {
           await self?.finish(.failed(Self.message(for: failure)))
@@ -128,11 +129,11 @@
     private func checkRevocation(of rows: [SignatureRow]) async {
       for row in rows {
         let outcome = await Self.liveRevocation(of: row.report)
-        guard case .report(var current) = phase else { return }
+        guard case .report(var current, let stamped) = phase else { return }
         guard let index = current.firstIndex(where: { $0.id == row.id })
         else { continue }
         current[index].revocation = outcome
-        phase = .report(current)
+        phase = .report(current, documentTimestampedAt: stamped)
       }
     }
 

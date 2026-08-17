@@ -64,14 +64,26 @@ public enum DocumentVerification {
     case unsupportedProfile
   }
 
-  /// The subfilter of the one CMS profile this verifier reads.
-  private static let supportedSubFilter = "ETSI.CAdES.detached"
+  /// The complete verification of one document.
+  public struct DocumentReport: Sendable {
+    /// Every signature's verified facts, in document order.
+    public let signatures: [SignatureReport]
 
-  /// Verifies every signature of the document.
+    /// The generation times of the verified document timestamps.
+    public let documentTimestampedAt: [Date]
+  }
+
+  /// The subfilter of the one CMS signature profile this verifier reads.
+  private static let signatureSubFilter = "ETSI.CAdES.detached"
+
+  /// The subfilter of a PAdES document timestamp.
+  private static let documentTimestampSubFilter = "ETSI.RFC3161"
+
+  /// Verifies every signature and document timestamp of the document.
   public static func verify(
     document: Data,
     bundle: Bundle = .main
-  ) throws -> [SignatureReport] {
+  ) throws -> DocumentReport {
     let found: [PdfSignatureReader.FoundSignature]
     do {
       found = try PdfSignatureReader.signatures(in: document)
@@ -80,13 +92,37 @@ public enum DocumentVerification {
     } catch {
       throw Failure.unreadable
     }
-    guard !found.isEmpty else { throw Failure.noSignatures }
-    return try found.map { signature in
-      guard signature.subFilter == Self.supportedSubFilter else {
-        throw Failure.unsupportedProfile
-      }
-      return try report(of: signature, bundle: bundle)
+    let signatures =
+      try found
+      .filter { $0.subFilter == Self.signatureSubFilter }
+      .map { try report(of: $0, bundle: bundle) }
+    guard !signatures.isEmpty else {
+      throw found.isEmpty ? Failure.noSignatures : Failure.unsupportedProfile
     }
+    let timestamps =
+      found
+      .filter { $0.subFilter == Self.documentTimestampSubFilter }
+      .compactMap(documentTimestamp(of:))
+    return DocumentReport(
+      signatures: signatures,
+      documentTimestampedAt: timestamps
+    )
+  }
+
+  /// The generation time of one verified document timestamp whose
+  /// imprint matches the byte ranges it covers.
+  private static func documentTimestamp(
+    of signature: PdfSignatureReader.FoundSignature
+  ) -> Date? {
+    guard
+      let verified = try? TimestampTokenVerifier.verify(signature.cms),
+      let contents = try? RfcTimestamp.contents(in: signature.cms),
+      let binding = try? RfcTimestamp.binding(in: contents.tstInfo),
+      binding.digest == signature.byteRangeDigest
+    else {
+      return nil
+    }
+    return verified.generatedAt
   }
 
   private static func report(
