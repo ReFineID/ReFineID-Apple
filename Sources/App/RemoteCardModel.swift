@@ -62,6 +62,9 @@
           let identifier = DistinguishedName.identifier(
             inName: facts.subjectName)
           holder = identifier.map { "\(name) \($0)" } ?? name
+          // The same answered certificate becomes the Safari identity;
+          // the holder is asked exactly once for both.
+          await PersistentTokenRegistry.publish(certificateDER: der)
         } else {
           holder = nil
         }

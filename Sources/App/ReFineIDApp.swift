@@ -187,7 +187,7 @@ internal struct ReFineIDApp: App {
     #if os(iOS)
       PhonePersistentTokenRelay.shared.start()
     #elseif os(macOS)
-      MacPersistentTokenRegistry.shared.start()
+      PersistentTokenRegistry.shared.start()
     #endif
 
     // A hold marks the next NFC field as its own registration field, and

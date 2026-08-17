@@ -454,7 +454,7 @@ private func releaseArchiveLayout(at archive: URL) -> ReleaseArchiveLayout {
         rappPlist: rappBundle.appendingPathComponent("Info.plist"),
         discoveryPlist: discoveryBundle.appendingPathComponent("Info.plist"),
         expectedArchitectures: ["arm64"],
-        hasRapp: false,
+        hasRapp: true,
         hasDiscovery: true
     )
 }

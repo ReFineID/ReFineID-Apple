@@ -142,17 +142,22 @@ extensions:
 - `ReFineIDTokenExtension.appex` remains the direct smart-card reader driver.
   It uses the existing smart-card token identity and has no RAPP network
   entitlement.
-- `ReFineIDRappTokenExtension.appex` is the macOS-only persistent-token
-  requester. Its CryptoTokenKit class identifier is
+- `ReFineIDRappTokenExtension.appex` is the persistent-token requester on
+  macOS and iOS. Its CryptoTokenKit class identifier is
   `fi.refineid.ReFineID.rapp-token`, and its driver class is
   `PersistentTokenDriver`. It is the only token extension that owns the RAPP
   requester transport.
 
-The iOS application embeds the reader token extension and discovery extension,
-but never the macOS RAPP persistent-token extension. The containing application
-declares the local-network usage text and `_refineid-rly._tcp` Bonjour service;
-those declarations do not belong in the extension Info plists. This separation
-prevents RAPP from replacing or changing the direct-reader token driver.
+The iOS application embeds the reader token extension, the discovery
+extension, and the RAPP persistent-token extension (2026-08-17; the
+extension was macOS-only before the iOS requester role existed). The
+containing applications declare the local-network usage text and
+`_refineid-rly._tcp` Bonjour service; the RAPP extension's Info.plist
+carries the same declarations for its own iOS process. macOS publishes
+the delegated identity at launch through `PersistentTokenRegistry`; iOS
+publishes it from the explicit remote connect, which already holds the
+holder-approved certificate. The reader/RAPP separation is unchanged:
+neither extension may claim the other's token class or capability.
 
 ## Verified evidence
 

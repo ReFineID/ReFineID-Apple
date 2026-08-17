@@ -27,8 +27,7 @@
 		6D0000000000000000000013 /* fineid-intermediate-03-organisation-g4r.pem in Resources */ = {isa = PBXBuildFile; fileRef = 2D0000000000000000000012 /* fineid-intermediate-03-organisation-g4r.pem */; };
 		6D0000000000000000000014 /* fineid-intermediate-03-organisation-g4r.pem in Resources */ = {isa = PBXBuildFile; fileRef = 2D0000000000000000000012 /* fineid-intermediate-03-organisation-g4r.pem */; };
 		BD0000000000000000000008 /* CardCore in Frameworks */ = {isa = PBXBuildFile; productRef = AD0000000000000000000006 /* CardCore */; };
-		C0D55EF1BBDA422006E00F92 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 85AF5D787A0E16847C3D58F4 /* Cocoa.framework */; };
-		D8D396B5E12DA372E43BD5D3 /* ReFineIDRappTokenExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5ADED64532B13872419C7B30 /* ReFineIDRappTokenExtension.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		D8D396B5E12DA372E43BD5D3 /* ReFineIDRappTokenExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5ADED64532B13872419C7B30 /* ReFineIDRappTokenExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		DC4E6B27DAEFC74447BC438F /* CardCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7298DA08AF9815CC40D89601 /* CardCore */; };
 		FE9FF60F2BD451120817294F /* CryptoTokenKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2D0000000000000000000003 /* CryptoTokenKit.framework */; };
 /* End PBXBuildFile section */
@@ -109,7 +108,6 @@
 		2D0000000000000000000013 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
 		2D0000000000000000000014 /* ReFineID-iOS-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "ReFineID-iOS-Info.plist"; sourceTree = "<group>"; };
 		5ADED64532B13872419C7B30 /* ReFineIDRappTokenExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ReFineIDRappTokenExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		85AF5D787A0E16847C3D58F4 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/System/Library/Frameworks/Cocoa.framework; sourceTree = DEVELOPER_DIR; };
 		BD0000000000000000000001 /* ReFineIDTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ReFineIDTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -212,7 +210,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C0D55EF1BBDA422006E00F92 /* Cocoa.framework in Frameworks */,
 				DC4E6B27DAEFC74447BC438F /* CardCore in Frameworks */,
 				FE9FF60F2BD451120817294F /* CryptoTokenKit.framework in Frameworks */,
 			);
@@ -300,7 +297,6 @@
 		40AD1C83C8A2CAF26AFF31A1 /* OS X */ = {
 			isa = PBXGroup;
 			children = (
-				85AF5D787A0E16847C3D58F4 /* Cocoa.framework */,
 			);
 			name = "OS X";
 			sourceTree = "<group>";
@@ -624,9 +620,6 @@
 		1191EA78C0F70C629152DE1A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = ReFineIDRappTokenExtension;
-			platformFilters = (
-				macos,
-			);
 			target = 806E99C31A2DA667E67A9153 /* ReFineIDRappTokenExtension */;
 			targetProxy = 711598C8D01A878109DA1CFC /* PBXContainerItemProxy */;
 		};
@@ -656,7 +649,8 @@
 		0B412E731403BEF31DD5CDFB /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = Config/RappTokenExtension.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "Config/RappTokenExtension-iOS.entitlements";
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Config/RappTokenExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_APP_SANDBOX = YES;
@@ -677,9 +671,10 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "fi.refineid.ReFineID.rapp-token";
 				PRODUCT_MODULE_NAME = ReFineIDRappTokenExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
+				SDKROOT = auto;
 				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = macosx;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				TARGETED_DEVICE_FAMILY = "1,2";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 			};
 			name = Release;
@@ -1487,7 +1482,8 @@
 		9576927223F0C9E413EFAF85 /* Profile */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = Config/RappTokenExtension.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "Config/RappTokenExtension-iOS.entitlements";
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Config/RappTokenExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_APP_SANDBOX = YES;
@@ -1508,9 +1504,10 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "fi.refineid.ReFineID.rapp-token";
 				PRODUCT_MODULE_NAME = ReFineIDRappTokenExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
+				SDKROOT = auto;
 				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = macosx;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				TARGETED_DEVICE_FAMILY = "1,2";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 			};
@@ -1519,7 +1516,8 @@
 		98430C436484FE80C43B1861 /* TestFlight */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = Config/RappTokenExtension.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "Config/RappTokenExtension-iOS.entitlements";
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Config/RappTokenExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_APP_SANDBOX = YES;
@@ -1540,9 +1538,10 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "fi.refineid.ReFineID.rapp-token";
 				PRODUCT_MODULE_NAME = ReFineIDRappTokenExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
+				SDKROOT = auto;
 				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = macosx;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				TARGETED_DEVICE_FAMILY = "1,2";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 			};
 			name = TestFlight;
@@ -1602,7 +1601,8 @@
 		DC12509A50C90C9EF4EDCA1C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = Config/RappTokenExtension.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "Config/RappTokenExtension-iOS.entitlements";
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Config/RappTokenExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_APP_SANDBOX = YES;
@@ -1623,9 +1623,10 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "fi.refineid.ReFineID.rapp-token";
 				PRODUCT_MODULE_NAME = ReFineIDRappTokenExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
+				SDKROOT = auto;
 				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = macosx;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				TARGETED_DEVICE_FAMILY = "1,2";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 			};
 			name = Debug;

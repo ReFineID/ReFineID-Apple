@@ -29,7 +29,7 @@ struct RappShippingConfigurationTests {
     #expect(rappAttributes["com.apple.ctk.token-type"] == nil)
   }
 
-  @Test("RAPP extension is a distinct macOS-only embedded product")
+  @Test("RAPP extension is a distinct embedded product on every platform")
   func separateRappExtensionTarget() throws {
     let project = try String(
       contentsOf: Self.root.appending(path: "ReFineID.xcodeproj/project.pbxproj"),
@@ -37,17 +37,27 @@ struct RappShippingConfigurationTests {
     #expect(project.contains("ReFineIDRappTokenExtension"))
     #expect(project.contains(Self.classID))
     #expect(project.contains("RappTokenExtension"))
-    #expect(project.contains("platformFilters = ("))
+    #expect(project.contains("Config/RappTokenExtension-iOS.entitlements"))
+    #expect(!project.contains("ReFineIDRappTokenExtension.appex */; platformFilters"))
   }
 
   @Test("RAPP network declarations are present in shipping containers")
   func networkDeclarations() throws {
-    for path in ["Config/ReFineID-Info.plist", "Config/ReFineID-iOS-Info.plist"] {
+    for path in [
+      "Config/ReFineID-Info.plist",
+      "Config/ReFineID-iOS-Info.plist",
+      "Config/RappTokenExtension-Info.plist",
+    ] {
       let plist = try Self.plist(path)
       #expect(plist["NSLocalNetworkUsageDescription"] is String)
       let services = try #require(plist["NSBonjourServices"] as? [String])
       #expect(services.contains(Self.service))
     }
+
+    let rappIOS = try Self.plist("Config/RappTokenExtension-iOS.entitlements")
+    #expect(rappIOS["keychain-access-groups"] is [Any])
+    #expect(rappIOS["com.apple.security.smartcard"] == nil)
+    #expect(rappIOS["com.apple.security.network.client"] == nil)
 
     for path in ["Config/ReFineID.entitlements", "Config/RappTokenExtension.entitlements"] {
       let entitlements = try Self.plist(path)
