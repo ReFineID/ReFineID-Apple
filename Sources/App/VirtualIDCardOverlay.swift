@@ -6,7 +6,7 @@
   import SwiftUI
   import UIKit
 
-  internal extension Notification.Name {
+  extension Notification.Name {
     static let virtualIDCardEditorDidDismiss = Notification.Name(
       "fi.refineid.virtual-id-card-editor-did-dismiss")
   }
@@ -21,8 +21,8 @@
       table: "VirtualIDCard")
   }
 
-  private extension VirtualIDCard.Scenario {
-    var localizedName: String {
+  extension VirtualIDCard.Scenario {
+    fileprivate var localizedName: String {
       switch self {
       case .factoryFreshNearField:
         virtualCardLocalized(
@@ -70,8 +70,8 @@
     }
   }
 
-  private extension VirtualIDCard.Generation {
-    var localizedName: String {
+  extension VirtualIDCard.Generation {
+    fileprivate var localizedName: String {
       switch self {
       case .activationCodeIsPuk:
         virtualCardLocalized(
@@ -85,8 +85,8 @@
     }
   }
 
-  private extension VirtualIDCard.CertificateState {
-    var localizedName: String {
+  extension VirtualIDCard.CertificateState {
+    fileprivate var localizedName: String {
       switch self {
       case .valid:
         virtualCardLocalized("certificate.valid", defaultValue: "Valid")
@@ -102,8 +102,8 @@
     }
   }
 
-  private extension VirtualIDCard.FaultPreset {
-    var localizedName: String {
+  extension VirtualIDCard.FaultPreset {
+    fileprivate var localizedName: String {
       switch self {
       case .none:
         virtualCardLocalized("fault.none", defaultValue: "None")
@@ -150,6 +150,7 @@
   /// Floating access to the editable card while a demonstration is active.
   internal struct VirtualIDCardOverlay: View {
     /// White text on the system red fill does not meet normal-text contrast.
+    ///
     /// Keep the diagnostic meaning red while meeting the accessibility audit.
     private static let accessibleRed = Color(red: 0.65, green: 0, blue: 0)
 
@@ -177,13 +178,15 @@
       .tint(Self.accessibleRed)
       .accessibilityIdentifier("virtualCardOverlay")
       .accessibilityLabel(
-        Text(virtualCardLocalized("title", defaultValue: "Virtual ID Card")))
+        Text(virtualCardLocalized("title", defaultValue: "Virtual ID Card"))
+      )
       .accessibilityValue(Text(statusDescription))
       .accessibilityHint(
         Text(
           virtualCardLocalized(
             "openHint",
-            defaultValue: "Opens the virtual card settings.")))
+            defaultValue: "Opens the virtual card settings."))
+      )
       .padding(.trailing, 12)
       .padding(.bottom, 64)
     }
@@ -222,13 +225,14 @@
     internal init(demoMode: DemoMode, close: @escaping () -> Void) {
       self.demoMode = demoMode
       self.close = close
-      let current = demoMode.state
+      let current = Self.deviceScoped(demoMode.state)
       _draft = State(initialValue: current)
       _scenario = State(
         initialValue: VirtualIDCard.Scenario.allCases.first { candidate in
-          candidate.snapshot.card == current.card
-            && candidate.snapshot.device == current.device
-        } ?? .factoryFreshNearField)
+          let scoped = Self.deviceScoped(candidate.snapshot)
+          return scoped.card == current.card
+            && scoped.device == current.device
+        } ?? DemoMode.defaultScenario)
       _faultPreset = State(
         initialValue: VirtualIDCard.FaultPreset.allCases.first { preset in
           preset.faults == current.faults
@@ -242,7 +246,7 @@
             virtualCardLocalized("section.scenario", defaultValue: "Scenario")
           ) {
             Menu {
-              ForEach(VirtualIDCard.Scenario.allCases) { candidate in
+              ForEach(Self.offeredScenarios) { candidate in
                 Button {
                   scenario = candidate
                 } label: {
@@ -252,16 +256,17 @@
                     Text(candidate.localizedName)
                   }
                 }
-                  .accessibilityIdentifier(
-                    "virtualCardScenarioOption.\(candidate.rawValue)")
+                .accessibilityIdentifier(
+                  "virtualCardScenarioOption.\(candidate.rawValue)")
               }
             } label: {
               VStack(alignment: .leading, spacing: 2) {
                 Text(
                   virtualCardLocalized(
                     "scenario.preset",
-                    defaultValue: "Preset"))
-                  .foregroundStyle(.primary)
+                    defaultValue: "Preset")
+                )
+                .foregroundStyle(.primary)
                 Text(scenario.localizedName)
                   .foregroundStyle(.primary)
               }
@@ -270,7 +275,7 @@
             }
             .tint(.primary)
             .onChange(of: scenario) { _, selected in
-              draft = selected.snapshot
+              draft = Self.deviceScoped(selected.snapshot)
               faultPreset = .none
             }
             .pickerStyle(.menu)
@@ -284,40 +289,47 @@
           Section(
             virtualCardLocalized("section.connection", defaultValue: "Connection")
           ) {
-            Picker(
-              virtualCardLocalized(
-                "connection.transport",
-                defaultValue: "Transport"),
-              selection: $draft.card.transport
-            ) {
-              Text(virtualCardLocalized("transport.nfc", defaultValue: "NFC"))
-                .tag(VirtualIDCard.Transport.nearField)
-              Text(
+            if DemoMode.offersNearField {
+              Picker(
                 virtualCardLocalized(
-                  "transport.reader",
-                  defaultValue: "Card reader"))
+                  "connection.transport",
+                  defaultValue: "Transport"),
+                selection: $draft.card.transport
+              ) {
+                Text(virtualCardLocalized("transport.nfc", defaultValue: "NFC"))
+                  .tag(VirtualIDCard.Transport.nearField)
+                Text(
+                  virtualCardLocalized(
+                    "transport.reader",
+                    defaultValue: "Card reader")
+                )
                 .tag(VirtualIDCard.Transport.reader)
+              }
+              .pickerStyle(.segmented)
+              .accessibilityIdentifier("virtualCardTransport")
             }
-            .pickerStyle(.segmented)
-            .accessibilityIdentifier("virtualCardTransport")
             Toggle(
               virtualCardLocalized(
                 "connection.readerConnected",
                 defaultValue: "Reader connected"),
-              isOn: $draft.card.readerConnected)
-              .accessibilityIdentifier("virtualCardReaderConnected")
+              isOn: $draft.card.readerConnected
+            )
+            .accessibilityIdentifier("virtualCardReaderConnected")
             Toggle(
               virtualCardLocalized(
                 "connection.cardPresent",
                 defaultValue: "Card present"),
-              isOn: $draft.card.cardPresent)
-              .accessibilityIdentifier("virtualCardPresent")
-            TextField(
-              virtualCardLocalized(
-                "connection.canShort",
-                defaultValue: "CAN"),
-              text: $draft.card.cardAccessNumber,
-              axis: .vertical)
+              isOn: $draft.card.cardPresent
+            )
+            .accessibilityIdentifier("virtualCardPresent")
+            if DemoMode.offersNearField {
+              TextField(
+                virtualCardLocalized(
+                  "connection.canShort",
+                  defaultValue: "CAN"),
+                text: $draft.card.cardAccessNumber,
+                axis: .vertical
+              )
               .keyboardType(.numberPad)
               .virtualCardEditorField()
               .padding(.leading, 1)
@@ -327,6 +339,7 @@
                   virtualCardLocalized(
                     "connection.can",
                     defaultValue: "Card Access Number (CAN)")))
+            }
           }
           Section(
             virtualCardLocalized("section.identity", defaultValue: "Identity")
@@ -334,25 +347,28 @@
             TextField(
               virtualCardLocalized("identity.name", defaultValue: "Name"),
               text: $draft.card.holderName,
-              axis: .vertical)
-              .virtualCardEditorField()
-              .accessibilityIdentifier("virtualCardName")
+              axis: .vertical
+            )
+            .virtualCardEditorField()
+            .accessibilityIdentifier("virtualCardName")
             TextField(
               virtualCardLocalized(
                 "identity.electronicClientIdentifier",
                 defaultValue: "Electronic client identifier"),
               text: $draft.card.electronicClientIdentifier,
-              axis: .vertical)
-              .virtualCardEditorField()
-              .accessibilityIdentifier("virtualCardElectronicIdentifier")
+              axis: .vertical
+            )
+            .virtualCardEditorField()
+            .accessibilityIdentifier("virtualCardElectronicIdentifier")
             TextField(
               virtualCardLocalized(
                 "identity.tokenSerial",
                 defaultValue: "Token serial"),
               text: $draft.card.tokenSerial,
-              axis: .vertical)
-              .virtualCardEditorField()
-              .accessibilityIdentifier("virtualCardTokenSerial")
+              axis: .vertical
+            )
+            .virtualCardEditorField()
+            .accessibilityIdentifier("virtualCardTokenSerial")
           }
           Section(
             virtualCardLocalized("section.activation", defaultValue: "Activation")
@@ -375,22 +391,25 @@
                 "activation.pin",
                 defaultValue: "Activation PIN"),
               text: $draft.card.activationEntry,
-              axis: .vertical)
-              .keyboardType(.numberPad)
-              .virtualCardEditorField()
-              .accessibilityIdentifier("virtualCardActivationEntry")
+              axis: .vertical
+            )
+            .keyboardType(.numberPad)
+            .virtualCardEditorField()
+            .accessibilityIdentifier("virtualCardActivationEntry")
             Toggle(
               virtualCardLocalized(
                 "activation.pin1Factory",
                 defaultValue: "PIN 1 is in factory state"),
-              isOn: $draft.card.pin1.isFactoryValue)
-              .accessibilityIdentifier("virtualCardPIN1Factory")
+              isOn: $draft.card.pin1.isFactoryValue
+            )
+            .accessibilityIdentifier("virtualCardPIN1Factory")
             Toggle(
               virtualCardLocalized(
                 "activation.pin2Factory",
                 defaultValue: "PIN 2 is in factory state"),
-              isOn: $draft.card.pin2.isFactoryValue)
-              .accessibilityIdentifier("virtualCardPIN2Factory")
+              isOn: $draft.card.pin2.isFactoryValue
+            )
+            .accessibilityIdentifier("virtualCardPIN2Factory")
           }
           credentialSection(
             virtualCardLocalized("credential.pin1", defaultValue: "PIN 1"),
@@ -460,42 +479,49 @@
               "section.deviceState",
               defaultValue: "Device state")
           ) {
-            TextField(
-              virtualCardLocalized(
-                "device.storedCan",
-                defaultValue: "Stored CAN"),
-              text: optionalBinding(\.storedCardAccessNumber),
-              axis: .vertical)
+            if DemoMode.offersNearField {
+              TextField(
+                virtualCardLocalized(
+                  "device.storedCan",
+                  defaultValue: "Stored CAN"),
+                text: optionalBinding(\.storedCardAccessNumber),
+                axis: .vertical
+              )
               .keyboardType(.numberPad)
               .virtualCardEditorField()
               .accessibilityIdentifier("virtualCardStoredCAN")
-            TextField(
-              virtualCardLocalized(
-                "device.connectedCan",
-                defaultValue: "Connected CAN"),
-              text: optionalBinding(\.connectedCardAccessNumber),
-              axis: .vertical)
+              TextField(
+                virtualCardLocalized(
+                  "device.connectedCan",
+                  defaultValue: "Connected CAN"),
+                text: optionalBinding(\.connectedCardAccessNumber),
+                axis: .vertical
+              )
               .keyboardType(.numberPad)
               .virtualCardEditorField()
               .accessibilityIdentifier("virtualCardConnectedCAN")
+            }
             Toggle(
               virtualCardLocalized(
                 "device.pin1Stored",
                 defaultValue: "PIN 1 stored"),
-              isOn: $draft.device.hasPin1)
-              .accessibilityIdentifier("virtualCardPIN1Stored")
+              isOn: $draft.device.hasPin1
+            )
+            .accessibilityIdentifier("virtualCardPIN1Stored")
             Toggle(
               virtualCardLocalized(
                 "device.identityCached",
                 defaultValue: "Identity cached"),
-              isOn: $draft.device.cachedIdentity)
-              .accessibilityIdentifier("virtualCardIdentityCached")
+              isOn: $draft.device.cachedIdentity
+            )
+            .accessibilityIdentifier("virtualCardIdentityCached")
             Toggle(
               virtualCardLocalized(
                 "device.tokenRegistered",
                 defaultValue: "Token registered"),
-              isOn: $draft.device.tokenRegistered)
-              .accessibilityIdentifier("virtualCardTokenRegistered")
+              isOn: $draft.device.tokenRegistered
+            )
+            .accessibilityIdentifier("virtualCardTokenRegistered")
             Button {
               draft.device.pendingSigningRequest.toggle()
             } label: {
@@ -528,7 +554,7 @@
               defaultValue: "Next deterministic fault")
           ) {
             Menu {
-              ForEach(VirtualIDCard.FaultPreset.allCases) { preset in
+              ForEach(Self.offeredFaultPresets) { preset in
                 Button {
                   faultPreset = preset
                 } label: {
@@ -538,16 +564,17 @@
                     Text(preset.localizedName)
                   }
                 }
-                  .accessibilityIdentifier(
-                    "virtualCardFaultOption.\(preset.rawValue)")
+                .accessibilityIdentifier(
+                  "virtualCardFaultOption.\(preset.rawValue)")
               }
             } label: {
               VStack(alignment: .leading, spacing: 2) {
                 Text(
                   virtualCardLocalized(
                     "fault.picker",
-                    defaultValue: "Fault"))
-                  .foregroundStyle(.primary)
+                    defaultValue: "Fault")
+                )
+                .foregroundStyle(.primary)
                 Text(faultPreset.localizedName)
                   .foregroundStyle(.primary)
               }
@@ -560,18 +587,19 @@
         }
         .headerProminence(.increased)
         .navigationTitle(
-          virtualCardLocalized("title", defaultValue: "Virtual ID Card"))
+          virtualCardLocalized("title", defaultValue: "Virtual ID Card")
+        )
         .accessibilityIdentifier("virtualCardEditor")
         .toolbar {
           ToolbarItem(placement: .cancellationAction) {
             Button(
               virtualCardLocalized("action.cancel", defaultValue: "Cancel")
             ) { close() }
-              .accessibilityLabel(
-                Text(
-                  virtualCardLocalized(
-                    "action.cancelAccessibilityLabel",
-                    defaultValue: "Cancel virtual card changes")))
+            .accessibilityLabel(
+              Text(
+                virtualCardLocalized(
+                  "action.cancelAccessibilityLabel",
+                  defaultValue: "Cancel virtual card changes")))
           }
           ToolbarItem(placement: .confirmationAction) {
             Button(
@@ -592,6 +620,30 @@
       }
     }
 
+    /// The scenarios a demonstration on this device class can offer.
+    private static var offeredScenarios: [VirtualIDCard.Scenario] {
+      VirtualIDCard.Scenario.allCases.filter { scenario in
+        DemoMode.offersNearField || !scenario.usesNearField
+      }
+    }
+
+    /// The faults a demonstration on this device class can offer.
+    private static var offeredFaultPresets: [VirtualIDCard.FaultPreset] {
+      VirtualIDCard.FaultPreset.allCases.filter { preset in
+        DemoMode.offersNearField || !preset.usesNearField
+      }
+    }
+
+    /// Clamps a snapshot to the transports this device class offers.
+    private static func deviceScoped(
+      _ snapshot: VirtualIDCard.Snapshot
+    ) -> VirtualIDCard.Snapshot {
+      guard !DemoMode.offersNearField else { return snapshot }
+      var snapshot = snapshot
+      snapshot.card.transport = .reader
+      return snapshot
+    }
+
     private func credentialSection(
       _ title: String,
       identifier: String,
@@ -606,17 +658,21 @@
           .virtualCardEditorField()
           .accessibilityIdentifier("\(identifier)Value")
         Stepper(
-          attemptsLabel,
           value: attempts,
-          in: 0...Int(RetryCount.pristineAllowance))
-          .accessibilityIdentifier("\(identifier)Attempts")
-          .accessibilityValue(
-            Text(
-              String.localizedStringWithFormat(
-                virtualCardLocalized(
-                  "credential.attemptsRemaining",
-                  defaultValue: "%lld attempts remaining"),
-                attempts.wrappedValue)))
+          in: 0...Int(RetryCount.pristineAllowance)
+        ) {
+          LabeledContent(attemptsLabel) {
+            Text(String(attempts.wrappedValue))
+          }
+        }
+        .accessibilityIdentifier("\(identifier)Attempts")
+        .accessibilityValue(
+          Text(
+            String.localizedStringWithFormat(
+              virtualCardLocalized(
+                "credential.attemptsRemaining",
+                defaultValue: "%lld attempts remaining"),
+              attempts.wrappedValue)))
       }
     }
 
@@ -628,7 +684,6 @@
             "virtualCardCertificateOption.\(state.rawValue)")
       }
     }
-
 
     private func attemptsBinding(
       _ keyPath: WritableKeyPath<
@@ -659,13 +714,13 @@
   /// Form rows must grow with Dynamic Type instead of retaining the compact
   /// one-line text-field height. One shared treatment keeps every editable
   /// virtual-card value usable under the same accessibility settings.
-  private extension View {
-    func virtualCardEditorField() -> some View {
+  extension View {
+    fileprivate func virtualCardEditorField() -> some View {
       lineLimit(1...2)
         .fixedSize(horizontal: false, vertical: true)
     }
 
-    func virtualCardMenuControl() -> some View {
+    fileprivate func virtualCardMenuControl() -> some View {
       lineLimit(1...3)
         .fixedSize(horizontal: false, vertical: true)
     }

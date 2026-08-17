@@ -8,20 +8,28 @@
 /// global switch lives in CardCore: a caller must explicitly construct and
 /// retain an instance.
 public actor VirtualIDCard {
+  /// How the simulated device reaches the card.
   public enum Transport: String, CaseIterable, Identifiable, Sendable {
     case nearField
     case reader
 
+    /// The value itself as its stable identity.
     public var id: Self { self }
   }
 
+  /// The card generation, which decides what the activation entry is.
+  ///
+  /// Legacy cards accept their PUK as the activation code; current cards
+  /// ship a preset activation PIN.
   public enum Generation: String, CaseIterable, Identifiable, Sendable {
     case activationCodeIsPuk
     case presetActivationPIN
 
+    /// The value itself as its stable identity.
     public var id: Self { self }
   }
 
+  /// The condition of one on-card certificate as reads report it.
   public enum CertificateState: String, CaseIterable, Identifiable, Sendable {
     case valid
     case expired
@@ -29,14 +37,20 @@ public actor VirtualIDCard {
     case unreadable
     case missing
 
+    /// The value itself as its stable identity.
     public var id: Self { self }
   }
 
+  /// One PIN or PUK as stored on the simulated card.
   public struct CredentialState: Equatable, Sendable {
+    /// The digits the card currently accepts.
     public var value: String
+    /// Attempts left before the credential blocks.
     public var attemptsRemaining: UInt8
+    /// True while the credential still holds its factory value.
     public var isFactoryValue: Bool
 
+    /// Creates a credential with the given digits and retry allowance.
     public init(
       value: String,
       attemptsRemaining: UInt8,
@@ -48,22 +62,38 @@ public actor VirtualIDCard {
     }
   }
 
+  /// The card-side state: what a physical card itself stores and reports.
   public struct CardState: Equatable, Sendable {
+    /// The transport this card connects over.
     public var transport: Transport
+    /// True when a contact reader is attached.
     public var readerConnected: Bool
+    /// True while the card is present on its transport.
     public var cardPresent: Bool
+    /// The activation scheme generation of this card.
     public var generation: Generation
+    /// The six-digit CAN printed on the card.
     public var cardAccessNumber: String
+    /// The entry the card accepts when activating factory credentials.
     public var activationEntry: String
+    /// PIN 1, the authentication credential.
     public var pin1: CredentialState
+    /// PIN 2, the qualified-signature credential.
     public var pin2: CredentialState
+    /// The PUK that recovers blocked PINs.
     public var puk: CredentialState
+    /// The holder's name as printed on the card.
     public var holderName: String
+    /// The identifier that names the holder in electronic services.
     public var electronicClientIdentifier: String
+    /// The card serial used to name the token.
     public var tokenSerial: String
+    /// The condition of the authentication certificate.
     public var authenticationCertificate: CertificateState
+    /// The condition of the qualified signature certificate.
     public var signatureCertificate: CertificateState
 
+    /// Creates a fully specified card state.
     public init(
       transport: Transport,
       readerConnected: Bool,
@@ -97,14 +127,22 @@ public actor VirtualIDCard {
     }
   }
 
+  /// What the simulated device remembers independently of the card.
   public struct DeviceState: Equatable, Sendable {
+    /// The CAN saved on the device for future near-field connections.
     public var storedCardAccessNumber: String?
+    /// The CAN in use on the currently open near-field connection.
     public var connectedCardAccessNumber: String?
+    /// True once PIN 1 has been taken into use on this device.
     public var hasPin1: Bool
+    /// True once the device has cached the holder's identity.
     public var cachedIdentity: Bool
+    /// True once the device has published the card as a token.
     public var tokenRegistered: Bool
+    /// True while a signature authorization is in flight.
     public var pendingSigningRequest: Bool
 
+    /// Creates device state; every field defaults to a fresh device.
     public init(
       storedCardAccessNumber: String? = nil,
       connectedCardAccessNumber: String? = nil,
@@ -122,11 +160,16 @@ public actor VirtualIDCard {
     }
   }
 
+  /// One observable moment: card state, device state, and queued faults.
   public struct Snapshot: Equatable, Sendable {
+    /// The card-side state.
     public var card: CardState
+    /// The device-side state.
     public var device: DeviceState
+    /// Transport faults waiting to fire, in queue order.
     public var faults: [Fault]
 
+    /// Creates a snapshot, with no faults queued by default.
     public init(
       card: CardState,
       device: DeviceState,
@@ -138,6 +181,7 @@ public actor VirtualIDCard {
     }
   }
 
+  /// A preset snapshot the virtual card can start from or reset to.
   public enum Scenario: String, CaseIterable, Identifiable, Sendable {
     case factoryFreshNearField = "factory-fresh-nfc"
     case legacyFactoryFreshNearField = "legacy-factory-fresh-nfc"
@@ -151,8 +195,29 @@ public actor VirtualIDCard {
     case pukRecoveryRefusedReader = "puk-recovery-refused-reader"
     case absent
 
+    /// The value itself as its stable identity.
     public var id: Self { self }
 
+    /// Whether the scenario connects over the near-field transport.
+    public var usesNearField: Bool {
+      switch self {
+      case .factoryFreshNearField,
+        .legacyFactoryFreshNearField,
+        .partialActivationNearField,
+        .activatedNearField,
+        .registeredNearField:
+        true
+      case .factoryFreshReader,
+        .activatedReader,
+        .pin1RecoveryReader,
+        .pin2RecoveryReader,
+        .pukRecoveryRefusedReader,
+        .absent:
+        false
+      }
+    }
+
+    /// The card and device state this scenario begins with.
     public var snapshot: Snapshot {
       let accessNumber = "123456"
       let activationPIN = "1234567"
@@ -177,7 +242,7 @@ public actor VirtualIDCard {
           attemptsRemaining: RetryCount.pristineAllowance),
         holderName: "DOE JANE",
         electronicClientIdentifier: "12345678N",
-        tokenSerial: "VIRTUAL-ID-CARD-0001",
+        tokenSerial: "XA1234567",
         authenticationCertificate: .valid,
         signatureCertificate: .valid)
       var device = DeviceState()
@@ -251,6 +316,7 @@ public actor VirtualIDCard {
     }
   }
 
+  /// A card operation that a queued fault can intercept.
   public enum Operation: String, CaseIterable, Identifiable, Sendable {
     case any
     case connect
@@ -266,16 +332,24 @@ public actor VirtualIDCard {
     case authenticateSignature
     case qualifiedSignature
 
+    /// The value itself as its stable identity.
     public var id: Self { self }
   }
 
+  /// The point within an operation at which a fault fires.
+  ///
+  /// A fault before the command prevents the card from acting; a fault
+  /// after card execution loses only the response, leaving the card's
+  /// state change in place.
   public enum FaultPhase: String, CaseIterable, Identifiable, Sendable {
     case beforeCommand
     case afterCardExecution
 
+    /// The value itself as its stable identity.
     public var id: Self { self }
   }
 
+  /// The failure surfaced to the caller when a fault fires.
   public enum FaultEffect: String, CaseIterable, Identifiable, Sendable {
     case connectionLost
     case readerDisconnected
@@ -284,15 +358,22 @@ public actor VirtualIDCard {
     case malformedResponse
     case tokenNotPublished
 
+    /// The value itself as its stable identity.
     public var id: Self { self }
   }
 
+  /// A deterministic transport failure queued against one operation.
   public struct Fault: Equatable, Sendable {
+    /// The operation this fault intercepts.
     public var operation: Operation
+    /// The phase at which the fault fires.
     public var phase: FaultPhase
+    /// The failure surfaced when the fault fires.
     public var effect: FaultEffect
+    /// How many more times the fault fires before it expires.
     public var remainingOccurrences: Int
 
+    /// Creates a fault that fires at least once.
     public init(
       operation: Operation,
       phase: FaultPhase,
@@ -306,6 +387,7 @@ public actor VirtualIDCard {
     }
   }
 
+  /// A named fault queue for common failure demonstrations.
   public enum FaultPreset: String, CaseIterable, Identifiable, Sendable {
     case none
     case nfcDisconnectBeforeConnection
@@ -318,8 +400,15 @@ public actor VirtualIDCard {
     case cardRemovedDuringSignature
     case responseLostAfterSignature
 
+    /// The value itself as its stable identity.
     public var id: Self { self }
 
+    /// Whether the fault can only occur on the near-field transport.
+    public var usesNearField: Bool {
+      self == .nfcDisconnectBeforeConnection
+    }
+
+    /// The fault queue this preset enqueues.
     public var faults: [Fault] {
       switch self {
       case .none:
@@ -386,17 +475,23 @@ public actor VirtualIDCard {
     }
   }
 
+  /// The outcome of connecting to the card.
   public enum ConnectionResult: Equatable, Sendable {
     case connected(Snapshot)
     case incorrectCardAccessNumber
     case unavailable(FaultEffect)
   }
 
+  /// Attempts remaining for each credential, read without side effects.
   public struct RetryReport: Equatable, Sendable {
+    /// Attempts remaining for PIN 1.
     public let pin1: UInt8
+    /// Attempts remaining for PIN 2.
     public let pin2: UInt8
+    /// Attempts remaining for the PUK.
     public let puk: UInt8
 
+    /// Creates a report from the three counters.
     public init(pin1: UInt8, pin2: UInt8, puk: UInt8) {
       self.pin1 = pin1
       self.pin2 = pin2
@@ -404,12 +499,17 @@ public actor VirtualIDCard {
     }
   }
 
+  /// The outcome of probing the retry counters.
   public enum ProbeResult: Equatable, Sendable {
     case report(RetryReport)
     case unreadable
     case unavailable(FaultEffect)
   }
 
+  /// The outcome of one credential operation at the card boundary.
+  ///
+  /// The retry floor refuses verification outright at one or two remaining
+  /// attempts rather than risk blocking the credential.
   public enum CredentialOutcome: Equatable, Sendable {
     case success
     case alreadyActivated
@@ -420,21 +520,30 @@ public actor VirtualIDCard {
     case transportFailure(FaultEffect)
   }
 
+  /// A credential outcome paired with the snapshot it produced.
   public struct MutationResult: Equatable, Sendable {
+    /// The outcome at the card boundary.
     public let outcome: CredentialOutcome
+    /// The state after the operation.
     public let snapshot: Snapshot
 
+    /// Pairs an outcome with the resulting snapshot.
     public init(outcome: CredentialOutcome, snapshot: Snapshot) {
       self.outcome = outcome
       self.snapshot = snapshot
     }
   }
 
+  /// The entry and new PINs offered to activate factory credentials.
   public struct ActivationRequest: Equatable, Sendable {
+    /// The activation code offered to the card.
     public let entry: String
+    /// The new PIN 1 to set, when PIN 1 needs activation.
     public let newPIN1: String?
+    /// The new PIN 2 to set, when PIN 2 needs activation.
     public let newPIN2: String?
 
+    /// Creates a request from the entry and the optional new PINs.
     public init(entry: String, newPIN1: String?, newPIN2: String?) {
       self.entry = entry
       self.newPIN1 = newPIN1
@@ -442,11 +551,16 @@ public actor VirtualIDCard {
     }
   }
 
+  /// Per-PIN activation outcomes with the snapshot they produced.
   public struct ActivationResult: Equatable, Sendable {
+    /// The outcome for PIN 1.
     public let pin1: CredentialOutcome
+    /// The outcome for PIN 2, or nil when PIN 2 was never attempted.
     public let pin2: CredentialOutcome?
+    /// The state after the activation attempt.
     public let snapshot: Snapshot
 
+    /// Pairs the per-PIN outcomes with the resulting snapshot.
     public init(
       pin1: CredentialOutcome,
       pin2: CredentialOutcome?,
@@ -458,6 +572,7 @@ public actor VirtualIDCard {
     }
   }
 
+  /// The outcome of authenticating with PIN 1.
   public enum AuthenticationResult: Equatable, Sendable {
     case success(Snapshot)
     case invalidEntry
@@ -482,38 +597,50 @@ public actor VirtualIDCard {
 
   private var current: Snapshot
 
+  /// Creates a card preset to the given scenario.
   public init(scenario: Scenario = .factoryFreshNearField) {
     current = scenario.snapshot
   }
 
+  /// Creates a card holding exactly the given snapshot.
   public init(snapshot: Snapshot) {
     current = snapshot
   }
 
+  /// Reads the current snapshot without changing anything.
   public func inspect() -> Snapshot {
     current
   }
 
+  /// Replaces the entire snapshot, queued faults included.
   public func replace(with snapshot: Snapshot) {
     current = snapshot
   }
 
+  /// Discards all state and starts over from the scenario's snapshot.
   public func reset(to scenario: Scenario) {
     current = scenario.snapshot
   }
 
+  /// Queues a fault to fire on its next matching operation.
   public func enqueue(_ fault: Fault) {
     current.faults.append(fault)
   }
 
+  /// Discards every queued fault.
   public func clearFaults() {
     current.faults = []
   }
 
+  /// Restores the simulated device to a fresh state, leaving the card as is.
   public func forgetDeviceState() {
     current.device = DeviceState()
   }
 
+  /// Opens a connection, checking the CAN on the near-field transport.
+  ///
+  /// A successful near-field connection to an activated card also stores
+  /// the CAN on the device.
   public func connect(cardAccessNumber: String) -> ConnectionResult {
     if let failure = reachabilityFailure() {
       current.device.connectedCardAccessNumber = nil
@@ -524,10 +651,10 @@ public actor VirtualIDCard {
       return .unavailable(fault)
     }
     if current.card.transport == .nearField,
-      (!digitsAreValid(
+      !digitsAreValid(
         cardAccessNumber,
         within: CardAccessNumber.digitCount...CardAccessNumber.digitCount)
-        || cardAccessNumber != current.card.cardAccessNumber)
+        || cardAccessNumber != current.card.cardAccessNumber
     {
       current.device.connectedCardAccessNumber = nil
       return .incorrectCardAccessNumber
@@ -546,6 +673,7 @@ public actor VirtualIDCard {
     return .connected(current)
   }
 
+  /// Reads the three retry counters without spending an attempt.
   public func probeCredentials() -> ProbeResult {
     if let failure = operationFailure() {
       return .unavailable(failure)
@@ -566,6 +694,7 @@ public actor VirtualIDCard {
     return .report(report)
   }
 
+  /// Changes PIN 1 after verifying the current PIN 1.
   public func changePIN1(current entered: String, new: String) -> MutationResult {
     change(
       role: .pin1,
@@ -574,6 +703,7 @@ public actor VirtualIDCard {
       new: new)
   }
 
+  /// Changes PIN 2 after verifying the current PIN 2.
   public func changePIN2(current entered: String, new: String) -> MutationResult {
     change(
       role: .pin2,
@@ -582,14 +712,20 @@ public actor VirtualIDCard {
       new: new)
   }
 
+  /// Sets a new PIN 1 after verifying the PUK.
   public func resetPIN1(puk: String, new: String) -> MutationResult {
     reset(role: .pin1, operation: .resetPIN1, puk: puk, new: new)
   }
 
+  /// Sets a new PIN 2 after verifying the PUK.
   public func resetPIN2(puk: String, new: String) -> MutationResult {
     reset(role: .pin2, operation: .resetPIN2, puk: puk, new: new)
   }
 
+  /// Activates factory PINs using the card's activation entry.
+  ///
+  /// PIN 1 is activated first and PIN 2 only after PIN 1 succeeds; on
+  /// legacy cards the PUK's retry counter guards the entry.
   public func activate(_ request: ActivationRequest) -> ActivationResult {
     let needsPIN1 = current.card.pin1.isFactoryValue
     let needsPIN2 = current.card.pin2.isFactoryValue
@@ -599,9 +735,10 @@ public actor VirtualIDCard {
         pin2: nil,
         snapshot: current)
     }
-    guard digitsAreValid(
-      request.entry,
-      within: activationEntryDigitCount...activationEntryDigitCount)
+    guard
+      digitsAreValid(
+        request.entry,
+        within: activationEntryDigitCount...activationEntryDigitCount)
     else {
       return ActivationResult(
         pin1: .invalidEntry,
@@ -648,11 +785,13 @@ public actor VirtualIDCard {
         entry: request.entry,
         new: newPIN2)
     }
-    let pin1Completed = pin1Outcome == .success
+    let pin1Completed =
+      pin1Outcome == .success
       || pin1Outcome == .alreadyActivated
-    let pin2Completed = pin2Outcome.map {
-      $0 == .success || $0 == .alreadyActivated
-    } ?? true
+    let pin2Completed =
+      pin2Outcome.map {
+        $0 == .success || $0 == .alreadyActivated
+      } ?? true
     if current.card.transport == .nearField,
       !activationRequired,
       pin1Completed,
@@ -668,6 +807,7 @@ public actor VirtualIDCard {
       snapshot: current)
   }
 
+  /// Authenticates with PIN 1 and registers the card's token on the device.
   public func authenticate(pin1: String) -> AuthenticationResult {
     guard credentialIsValid(pin1, for: .pin1) else { return .invalidEntry }
     if let failure = operationFailure() {
@@ -847,9 +987,10 @@ public actor VirtualIDCard {
     puk enteredPUK: String,
     new: String
   ) -> MutationResult {
-    guard digitsAreValid(
-      enteredPUK,
-      within: Puk.minimumDigitCount...Puk.maximumDigitCount),
+    guard
+      digitsAreValid(
+        enteredPUK,
+        within: Puk.minimumDigitCount...Puk.maximumDigitCount),
       credentialIsValid(new, for: role)
     else {
       return MutationResult(outcome: .invalidEntry, snapshot: current)

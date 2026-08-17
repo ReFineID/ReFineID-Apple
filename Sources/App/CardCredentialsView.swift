@@ -57,12 +57,14 @@ internal struct CardCredentialsView: View {
   }
 
   /// The point at which operations using the printed card number can be
-  /// offered. Until all six digits exist, PIN1 has no card to belong to.
+  /// offered.
+  ///
+  /// Until all six digits exist, PIN1 has no card to belong to.
   private var isCardAccessNumberEntryComplete: Bool {
     cardAccessNumberEntry.count == CardAccessNumber.digitCount
   }
 
-    /// CAN receives initial focus as the first input of an unconfigured card.
+  /// CAN receives initial focus as the first input of an unconfigured card.
   private var shouldFocusCardAccessNumber: Bool {
     !hasIdentity
       && offersNearField
@@ -138,10 +140,12 @@ internal struct CardCredentialsView: View {
   /// An iPad has none, and runs the same binary as an iPhone. Offering
   /// it a card setup it can never finish -- two fields to fill and a
   /// button that only ever stays grey -- describes the app as broken
-  /// rather than the device as different.
+  /// rather than the device as different. A demonstration fakes the
+  /// antenna, never the device class.
   private var offersNearField: Bool {
     #if canImport(CoreNFC) && os(iOS)
-      return primingModel.allowsNearField || isDemonstration
+      return primingModel.allowsNearField
+        || (isDemonstration && DemoMode.offersNearField)
     #else
       return true
     #endif
@@ -157,9 +161,9 @@ internal struct CardCredentialsView: View {
   /// never falls back to credentials stored for a physical identity.
   private var canPrepareIdentity: Bool {
     #if os(iOS)
-    if isDemonstration {
-      return demoMode.hasValidatedConnection && isPin1EntryComplete
-    }
+      if isDemonstration {
+        return demoMode.hasValidatedConnection && isPin1EntryComplete
+      }
     #endif
     return model.contents.hasCardAccessNumber && isPin1EntryComplete
   }
@@ -202,9 +206,9 @@ internal struct CardCredentialsView: View {
                 Image(systemName: "signature")
                 Text(
                   String(
-                  localized: "signing.title",
-                  defaultValue: "Sign",
-                  table: "DocumentSigning")
+                    localized: "signing.title",
+                    defaultValue: "Sign",
+                    table: "DocumentSigning")
                 )
                 .lineLimit(nil)
                 .fixedSize(horizontal: false, vertical: true)
@@ -249,7 +253,8 @@ internal struct CardCredentialsView: View {
             }
             .accessibilityIdentifier("manageCard")
             .accessibilityLabel(
-              model.hasVerifiedCardStatus ? Text("Change or Reset PINs") : Text("Read card"))
+              model.hasVerifiedCardStatus ? Text("Change or Reset PINs") : Text("Read card")
+            )
             .disabled(!isCardAccessNumberEntryComplete || model.isConnecting)
           }
         }
@@ -257,30 +262,33 @@ internal struct CardCredentialsView: View {
       .navigationDestination(item: flowDestination) { destination in
         switch destination {
         case .activation:
-#if DEBUG
-          let _ = DebugConsole.emit("navigation-destination: activation")
-#endif
+          #if DEBUG
+            _ = DebugConsole.emit("navigation-destination: activation")
+          #endif
           if let activationScheme, let activationNeeds {
             CardManagementView(
               activationRequired: true,
               cardAccessNumber: cardAccessNumberEntry,
               activationScheme: activationScheme,
               activationNeeds: activationNeeds,
-              onActivationSucceeded: activationSucceeded)
-              .id(CardSetupStateMachine.Destination.activation)
+              onActivationSucceeded: activationSucceeded
+            )
+            .id(CardSetupStateMachine.Destination.activation)
           }
         case .pinManagement:
-#if DEBUG
-          let _ = DebugConsole.emit("navigation-destination: PIN management")
-#endif
+          #if DEBUG
+            _ = DebugConsole.emit("navigation-destination: PIN management")
+          #endif
           CardManagementView(
-            cardAccessNumber: managementCardAccessNumber)
-            .id(CardSetupStateMachine.Destination.pinManagement)
+            cardAccessNumber: managementCardAccessNumber
+          )
+          .id(CardSetupStateMachine.Destination.pinManagement)
         case .signDocuments:
           DocumentSigningView(
             transport: .nearField,
-            cardAccessNumber: managementCardAccessNumber)
-            .id(CardSetupStateMachine.Destination.signDocuments)
+            cardAccessNumber: managementCardAccessNumber
+          )
+          .id(CardSetupStateMachine.Destination.signDocuments)
         }
       }
     #endif
@@ -350,14 +358,14 @@ internal struct CardCredentialsView: View {
       // A PIN entered for one complete CAN must not survive while that
       // CAN is erased or replaced. It reappears only after the new card
       // number is complete and the holder enters its PIN deliberately.
-        if !complete {
-          pin1Entry = ""
-          isPin1FieldFocused = false
-          #if os(iOS)
+      if !complete {
+        pin1Entry = ""
+        isPin1FieldFocused = false
+        #if os(iOS)
           if isDemonstration {
             demoMode.forgetIdentity()
           }
-          #endif
+        #endif
       }
     }
     .onChange(of: cardAccessNumberEntry) { _, entered in
@@ -432,19 +440,19 @@ internal struct CardCredentialsView: View {
   }
 
   /// One operation, in its actual order: credentials and then minting.
-    @ViewBuilder private var createIdentitySection: some View {
-      Section {
-        cardAccessNumberRow
-      } header: {
-        compactSectionHeader("Connect Identity Card")
-      }
-      Section {
-        pin1Row
-      } header: {
-        compactSectionHeader("Browser authentication")
-      }
-      if hasConfiguredCard {
-        #if os(iOS)
+  @ViewBuilder private var createIdentitySection: some View {
+    Section {
+      cardAccessNumberRow
+    } header: {
+      compactSectionHeader("Connect Identity Card")
+    }
+    Section {
+      pin1Row
+    } header: {
+      compactSectionHeader("Browser authentication")
+    }
+    if hasConfiguredCard {
+      #if os(iOS)
         // Its own section and its own visual weight: the credential rows
         // collect input, this is the screen's one primary action.
         Section {
@@ -481,12 +489,13 @@ internal struct CardCredentialsView: View {
         } label: {
           BrowserAuthenticationEnableLabel()
         }
-          .buttonStyle(.borderedProminent)
-          .disabled(
-            !isCardAccessNumberEntryComplete
-              || !isPin1EntryComplete
-              || model.isConnecting)
-          .accessibilityIdentifier("connectCard")
+        .buttonStyle(.borderedProminent)
+        .disabled(
+          !isCardAccessNumberEntryComplete
+            || !isPin1EntryComplete
+            || model.isConnecting
+        )
+        .accessibilityIdentifier("connectCard")
       }
       .listRowBackground(Color.clear)
       .listRowInsets(EdgeInsets())
@@ -504,25 +513,26 @@ internal struct CardCredentialsView: View {
       HStack {
         TextField(
           "Card Access Number (CAN)",
-          text: $cardAccessNumberEntry)
-          .font(.body)
-          .keyboardType(.numberPad)
-          .textContentType(nil)
-          .focused($isCardAccessNumberFieldFocused)
-          .accessibilityIdentifier("cardAccessNumberField")
-          .onAppear {
-            // This row is the entire first-use interaction. Request focus only
-            // after the actual field has joined the hierarchy, on the next
-            // event turn, so the request cannot create a keyboard without a
-            // surviving first responder.
-            DispatchQueue.main.async {
-              guard shouldFocusCardAccessNumber else { return }
-              isCardAccessNumberFieldFocused = true
-            }
+          text: $cardAccessNumberEntry
+        )
+        .font(.body)
+        .keyboardType(.numberPad)
+        .textContentType(nil)
+        .focused($isCardAccessNumberFieldFocused)
+        .accessibilityIdentifier("cardAccessNumberField")
+        .onAppear {
+          // This row is the entire first-use interaction. Request focus only
+          // after the actual field has joined the hierarchy, on the next
+          // event turn, so the request cannot create a keyboard without a
+          // surviving first responder.
+          DispatchQueue.main.async {
+            guard shouldFocusCardAccessNumber else { return }
+            isCardAccessNumberFieldFocused = true
           }
-          .onChange(of: cardAccessNumberEntry) { _, typed in
-            cardAccessNumberEntry = LimitedDigits.cardAccessNumber(typed)
-          }
+        }
+        .onChange(of: cardAccessNumberEntry) { _, typed in
+          cardAccessNumberEntry = LimitedDigits.cardAccessNumber(typed)
+        }
         if CardAccessNumberScanner.isAvailable {
           Button {
             scannerTorchEnabled = false
@@ -540,12 +550,13 @@ internal struct CardCredentialsView: View {
     #else
       TextField(
         "Card Access Number (CAN)",
-        text: $cardAccessNumberEntry)
-        .font(.body)
-        .accessibilityIdentifier("cardAccessNumberField")
-        .onChange(of: cardAccessNumberEntry) { _, typed in
-          cardAccessNumberEntry = LimitedDigits.cardAccessNumber(typed)
-        }
+        text: $cardAccessNumberEntry
+      )
+      .font(.body)
+      .accessibilityIdentifier("cardAccessNumberField")
+      .onChange(of: cardAccessNumberEntry) { _, typed in
+        cardAccessNumberEntry = LimitedDigits.cardAccessNumber(typed)
+      }
     #endif
   }
 
@@ -604,11 +615,11 @@ internal struct CardCredentialsView: View {
   /// for a physical identity cannot appear beside a fictional holder.
   private func showStoredCardAccessNumber() {
     #if os(iOS)
-    if isDemonstration {
-      guard cardAccessNumberEntry.isEmpty else { return }
-      cardAccessNumberEntry = demoMode.displayedCardAccessNumber ?? ""
-      return
-    }
+      if isDemonstration {
+        guard cardAccessNumberEntry.isEmpty else { return }
+        cardAccessNumberEntry = demoMode.displayedCardAccessNumber ?? ""
+        return
+      }
     #endif
     guard cardAccessNumberEntry.isEmpty, let stored = model.storedCardAccessNumber else {
       return
@@ -720,8 +731,8 @@ internal struct CardCredentialsView: View {
               pin1: pin1,
               model: primingModel,
               storeVerifiedPin1: storeVerifiedPin1,
-              clearPin1Entry: clearPin1Entry,
-              markRegistered: { isRegistered = true })
+              clearPin1Entry: clearPin1Entry
+            ) { isRegistered = true }
             finishBrowserRegistration(succeeded: succeeded)
           #endif
         }
@@ -761,8 +772,10 @@ internal struct CardCredentialsView: View {
     transition(.activationSucceeded)
   }
 
-  /// SwiftUI navigation is a projection of the formal flow state. A pop is
-  /// fed back as an event so origin restoration is modeled as well.
+  /// SwiftUI navigation is a projection of the formal flow state.
+  ///
+  /// A pop is fed back as an event so origin restoration is modeled as
+  /// well.
   private var flowDestination: Binding<CardSetupStateMachine.Destination?> {
     Binding(
       get: { flowState.destination },
@@ -798,8 +811,10 @@ internal struct CardCredentialsView: View {
   }
 
   /// Completes registration from the operation result instead of waiting for
-  /// SwiftUI to observe a separate identity mutation. The observation may run
-  /// before or after the callback, so success is deliberately idempotent.
+  /// SwiftUI to observe a separate identity mutation.
+  ///
+  /// The observation may run before or after the callback, so success is
+  /// deliberately idempotent.
   private func finishBrowserRegistration(succeeded: Bool) {
     if flowState == .registeringBrowser {
       transition(succeeded ? .registrationSucceeded : .registrationFailed)

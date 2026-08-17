@@ -5,6 +5,7 @@
   import CardCore
   import Foundation
   import Observation
+  import UIKit
 
   /// Process-scoped demonstration and UI-test environment.
   ///
@@ -18,13 +19,22 @@
 
     internal static let launchArgument = "--virtual-card"
 
+    /// A demonstration fakes the antenna, never the device class: only
+    /// an iPhone is offered near-field states.
+    internal static let offersNearField =
+      UIDevice.current.userInterfaceIdiom == .phone
+
+    /// The scenario a demonstration starts from on this device class.
+    internal static var defaultScenario: VirtualIDCard.Scenario {
+      offersNearField ? .factoryFreshNearField : .factoryFreshReader
+    }
+
     internal private(set) var isActive = false
-    internal private(set) var state =
-      VirtualIDCard.Scenario.factoryFreshNearField.snapshot
+    internal private(set) var state = DemoMode.defaultScenario.snapshot
     internal private(set) var revision = 0
     internal private(set) var isEditorPresented = false
 
-    private var card = VirtualIDCard(scenario: .factoryFreshNearField)
+    private var card = VirtualIDCard(scenario: DemoMode.defaultScenario)
 
     internal var isHolding: Bool { false }
 
@@ -67,7 +77,7 @@
     }
 
     internal func activate(
-      scenario: VirtualIDCard.Scenario = .factoryFreshNearField
+      scenario: VirtualIDCard.Scenario = DemoMode.defaultScenario
     ) {
       isActive = true
       state = scenario.snapshot
