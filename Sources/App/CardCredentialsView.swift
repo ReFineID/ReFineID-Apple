@@ -54,6 +54,9 @@ internal struct CardCredentialsView: View {
     /// Live reader identities, when an iOS root provides them.
     private let readerModel: ReaderIdentityModeModel?
 
+    /// The requester's view of the selected remote card.
+    private let remoteModel: RemoteCardModel
+
     /// Opens the remote reader connections owned by the root.
     private let openRemoteReader: () -> Void
 
@@ -200,9 +203,11 @@ internal struct CardCredentialsView: View {
   #if os(iOS)
     internal init(
       readerModel: ReaderIdentityModeModel?,
+      remoteModel: RemoteCardModel,
       openRemoteReader: @escaping () -> Void
     ) {
       self.readerModel = readerModel
+      self.remoteModel = remoteModel
       self.openRemoteReader = openRemoteReader
     }
   #endif
@@ -425,12 +430,29 @@ internal struct CardCredentialsView: View {
     private var remoteReaderSection: some View {
       Section("Identity") {
         LabeledContent {
-          Button(String(localized: "Connect Remote Reader")) {
-            openRemoteReader()
+          switch remoteModel.phase {
+          case .connecting:
+            ProgressView()
+          case .identity(let holder):
+            Text(holder)
+              .textSelection(.enabled)
+              .accessibilityIdentifier("remoteCardHolder")
+          case .idle, .failed:
+            Button(String(localized: "Connect Remote Reader")) {
+              if remoteModel.hasPair {
+                remoteModel.connect()
+              } else {
+                openRemoteReader()
+              }
+            }
+            .accessibilityIdentifier("connectRemoteReader")
           }
-          .accessibilityIdentifier("connectRemoteReader")
         } label: {
-          PersonRowLabel(configured: false)
+          PersonRowLabel(configured: remoteModel.holder != nil)
+        }
+        if remoteModel.phase == .failed {
+          Text("The remote card could not be read.")
+            .foregroundStyle(.secondary)
         }
       }
     }
@@ -497,25 +519,6 @@ internal struct CardCredentialsView: View {
     private var cardSection: some View {
       Section("Card") {
         Button {
-          openCardManagement()
-        } label: {
-          navigationRow(
-            String(localized: "Personal Identification Number (PIN)")
-          ) {
-            CredentialRetryHealthKey(
-              level: retryHealth.level,
-              systemName: model.hasVerifiedCardStatus || hasReaderIdentity
-                ? "key"
-                : "key.slash")
-          }
-        }
-        .tint(.primary)
-        .accessibilityIdentifier("manageCard")
-        .disabled(
-          (!isCardAccessNumberEntryComplete && !hasReaderIdentity)
-            || model.isConnecting
-        )
-        Button {
           openRemoteReader()
         } label: {
           navigationRow(String(localized: "Remote Card")) {
@@ -530,6 +533,25 @@ internal struct CardCredentialsView: View {
         // a live reader identity; a requesting device consumes one and
         // needs none.
         .disabled(offersNearField && !hasIdentity && !hasReaderIdentity)
+        Button {
+          openCardManagement()
+        } label: {
+          navigationRow(
+            String(localized: "Personal Identification Numbers (PINs)")
+          ) {
+            CredentialRetryHealthKey(
+              level: retryHealth.level,
+              systemName: model.hasVerifiedCardStatus || hasReaderIdentity
+                ? "key"
+                : "key.slash")
+          }
+        }
+        .tint(.primary)
+        .accessibilityIdentifier("manageCard")
+        .disabled(
+          (!isCardAccessNumberEntryComplete && !hasReaderIdentity)
+            || model.isConnecting
+        )
       }
     }
 

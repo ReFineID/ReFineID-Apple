@@ -11,6 +11,7 @@
     private var scenePhase
 
     @State private var model = ReaderIdentityModeModel()
+    @State private var remoteModel = RemoteCardModel()
 
     @State private var authorizationInbox = RappAuthorizationInbox.shared
     @State private var showsRappPairing = false
@@ -19,18 +20,24 @@
       NavigationStack {
         CardCredentialsView(
           readerModel: model,
+          remoteModel: remoteModel,
           openRemoteReader: { showsRappPairing = true }
         )
       }
       .onAppear {
         model.refresh()
+        remoteModel.refresh()
       }
       .onChange(of: scenePhase) {
         if scenePhase == .active {
           model.refresh()
+          remoteModel.refresh()
         }
       }
-      .sheet(isPresented: $showsRappPairing) {
+      .sheet(
+        isPresented: $showsRappPairing,
+        onDismiss: { remoteModel.refresh() }
+      ) {
         RappPairingView()
       }
       .sheet(
