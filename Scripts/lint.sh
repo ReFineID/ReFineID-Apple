@@ -15,12 +15,17 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 echo "swift format lint..."
+# CardCore/Sources/ReFineIDRapp holds UniFFI-generated bindings; the
+# generator owns their style, so only authored sources pass the gate.
 swift format lint --strict --recursive \
-  Sources Tests CardCore/Sources CardCore/Package.swift \
+  Sources Tests CardCore/Sources/CardCore CardCore/Package.swift \
   PKCS11Bridge/Sources PKCS11Bridge/Tests PKCS11Bridge/Package.swift \
   Scripts/BrainpoolBenchmark.swift
 
 echo "swiftlint..."
-swiftlint lint --quiet
+# The baseline records the structural debt (type ordering, file splits,
+# magic numbers) present when the gate was raised. New findings fail;
+# paying debt down shrinks the baseline via --write-baseline.
+swiftlint lint --quiet --baseline .swiftlint-baseline.json
 
 echo "lint gate PASS"

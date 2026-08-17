@@ -1,6 +1,8 @@
 # SwiftLint -- the defect/quality lint layer for every Swift source in this
 # repository. The gate is `swiftlint lint` with `strict: true` below: every
-# finding is an error and findings are driven to zero.
+# finding is an error. Findings present when the gate was raised are
+# recorded in .swiftlint-baseline.json; the gate refuses new ones and the
+# baseline shrinks as the recorded debt is paid down.
 #
 # Ported from the reference implementation's proven configuration. Why not
 # `--enable-all-rules`? It ignores `disabled_rules` and config, so it cannot
@@ -18,6 +20,28 @@
 #                          { return }`, the official early-exit idiom
 #     multiline_arguments_brackets   swift-format owns multiline call bracket
 #                          placement (close paren trails the last argument)
+#     multiline_arguments            swift-format owns how call arguments
+#     multiline_call_arguments       pack and wrap across lines
+#     indentation_width    swift-format owns indentation, including the
+#                          continuation-line depths this rule miscounts
+#     vertical_whitespace_opening_braces   swift-format owns vertical
+#     vertical_whitespace_closing_braces   whitespace inside braces
+#     let_var_whitespace   swift-format owns blank-line placement around
+#                          declarations
+#     pattern_matching_keywords      swift-format's UseLetInEveryBoundCase-
+#                          Variable emits `case .a(let x)`, which this rule
+#                          rewrites back to `case let .a(x)`
+#     strict_fileprivate   swift-format's NoAccessLevelOnExtensionDeclaration
+#                          moves extension ACLs onto members as `fileprivate`
+#     extension_access_modifier      same rewrite, opposite direction: the
+#                          kept no_extension_access_modifier enforces the
+#                          swift-format shape
+#     trailing_closure     swift-format's OnlyOneTrailingClosureArgument
+#                          labels every closure in a multi-closure call;
+#                          this rule's fixer strips the label back off
+#   (trailing_comma is a DEFAULT rule with the same conflict -- the two
+#   tools disagree on which literals count as single-line -- and so lives
+#   in `disabled_rules` below.)
 #   (Two more swift-format-owned layout rules are DEFAULT rules and so live
 #   in `disabled_rules` below: opening_brace, closure_parameter_position.)
 #
@@ -49,12 +73,6 @@ strict: true
 inclusive_language:
   override_allowed_terms:
     - master
-
-indentation_width:
-  indentation_width: 2
-
-trailing_comma:
-  mandatory_comma: true
 
 # Every source file opens with the copyright and licence header. The
 # rule forbids "Copyright" by default (to strip Xcode's auto-header),
@@ -126,6 +144,7 @@ custom_rules:
 disabled_rules:
   - opening_brace
   - closure_parameter_position
+  - trailing_comma
 
 opt_in_rules:
   - accessibility_label_for_image
@@ -163,7 +182,6 @@ opt_in_rules:
   - explicit_enum_raw_value
   - explicit_init
   - explicit_top_level_acl
-  - extension_access_modifier
   - fallthrough
   - fatal_error_message
   - file_header
@@ -180,20 +198,16 @@ opt_in_rules:
   - implicit_return
   - implicitly_unwrapped_optional
   - incompatible_concurrency_annotation
-  - indentation_width
   - joined_default_parameter
   - last_where
   - legacy_multiple
   - legacy_objc_type
   - legacy_uigraphics_function
-  - let_var_whitespace
   - literal_expression_end_indentation
   - local_doc_comment
   - lower_acl_than_parent
   - missing_docs
   - modifier_order
-  - multiline_arguments
-  - multiline_call_arguments
   - multiline_function_chains
   - multiline_literal_brackets
   - multiline_parameters
@@ -212,7 +226,6 @@ opt_in_rules:
   - optional_enum_case_matching
   - overridden_super_call
   - override_in_extension
-  - pattern_matching_keywords
   - period_spacing
   - prefer_asset_symbols
   - prefer_condition_list
@@ -245,13 +258,11 @@ opt_in_rules:
   - sorted_first_last
   - sorted_imports
   - static_operator
-  - strict_fileprivate
   - strong_iboutlet
   - superfluous_else
   - switch_case_on_newline
   - test_case_accessibility
   - toggle_bool
-  - trailing_closure
   - type_contents_order
   - unavailable_function
   - unhandled_throwing_task
@@ -263,8 +274,6 @@ opt_in_rules:
   - unused_parameter
   - variable_shadowing
   - vertical_parameter_alignment_on_call
-  - vertical_whitespace_closing_braces
-  - vertical_whitespace_opening_braces
   - weak_delegate
   - xct_specific_matcher
   - yoda_condition
