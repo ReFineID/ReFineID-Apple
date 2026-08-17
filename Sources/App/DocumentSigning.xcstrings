@@ -78,7 +78,7 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Asiakirjoja"
+            "value": "Asiakirjat"
           }
         },
         "sv": {
@@ -254,7 +254,7 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Allekirjoituksen hyväksyntä"
+            "value": "Tunnusluku"
           }
         },
         "sv": {
@@ -276,7 +276,7 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Allekirjoitus (PIN 2)"
+            "value": "Allekirjoitustunnusluku (PIN 2)"
           }
         },
         "sv": {
