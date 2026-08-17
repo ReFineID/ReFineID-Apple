@@ -1266,13 +1266,13 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sulkutieto"
+            "value": "Sulkulista"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Spärrstatus"
+            "value": "Spärrlista"
           }
         }
       }
