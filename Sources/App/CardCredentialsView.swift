@@ -530,6 +530,15 @@ internal struct CardCredentialsView: View {
         && !model.isConnecting
     }
 
+    /// Whether the remote card route can be taken right now.
+    ///
+    /// A card holder serves a remote card from a primed identity or
+    /// a live reader identity; a requesting device consumes one and
+    /// needs none.
+    private var remoteCardAvailable: Bool {
+      !offersNearField || hasIdentity || hasReaderIdentity
+    }
+
     /// The card's credential management route.
     private var cardSection: some View {
       Section {
@@ -537,17 +546,22 @@ internal struct CardCredentialsView: View {
           openRemoteReader()
         } label: {
           navigationRow(String(localized: "Remote Card")) {
-            Image(systemName: "link")
-              .foregroundStyle(Color.accentColor)
-              .accessibilityHidden(true)
+            Image(
+              systemName: remoteCardAvailable
+                ? "key.radiowaves.forward"
+                : "key.radiowaves.forward.slash"
+            )
+            .foregroundStyle(
+              remoteCardAvailable
+                ? AnyShapeStyle(Color.accentColor)
+                : AnyShapeStyle(.foreground)
+            )
+            .accessibilityHidden(true)
           }
         }
         .tint(.primary)
         .accessibilityIdentifier("remoteCard")
-        // A card holder serves a remote card from a primed identity or
-        // a live reader identity; a requesting device consumes one and
-        // needs none.
-        .disabled(offersNearField && !hasIdentity && !hasReaderIdentity)
+        .disabled(!remoteCardAvailable)
         Button {
           openCardManagement()
         } label: {
@@ -558,7 +572,8 @@ internal struct CardCredentialsView: View {
             // wears a blocked key.
             CredentialRetryHealthKey(
               level: retryHealth.level,
-              systemName: managementAvailable ? "key" : "key.slash")
+              systemName: managementAvailable ? "key.2.on.ring" : "key.slash",
+              routeAvailable: managementAvailable)
           }
         }
         .tint(.primary)

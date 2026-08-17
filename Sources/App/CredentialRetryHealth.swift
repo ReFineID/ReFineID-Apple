@@ -165,15 +165,24 @@ internal final class CredentialRetryHealth {
 internal struct CredentialRetryHealthKey: View {
   internal let level: CredentialRetryHealth.Level?
   internal let systemName: String
+
+  /// Whether the route this key opens can be taken right now.
+  ///
+  /// An unprobed key on an open route is green -- no known issue --
+  /// while a closed route keeps the neutral foreground.
+  internal let routeAvailable: Bool
+
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var animationTrigger = false
 
   internal init(
     level: CredentialRetryHealth.Level?,
-    systemName: String = "key"
+    systemName: String = "key",
+    routeAvailable: Bool = true
   ) {
     self.level = level
     self.systemName = systemName
+    self.routeAvailable = routeAvailable
   }
 
   internal var body: some View {
@@ -192,7 +201,12 @@ internal struct CredentialRetryHealthKey: View {
           .contentTransition(
             .symbolEffect(
               .replace.magic(fallback: .offUp.byLayer),
-              options: .nonRepeating))
+              options: .nonRepeating)
+          )
+          .foregroundStyle(
+            routeAvailable
+              ? AnyShapeStyle(.green)
+              : AnyShapeStyle(.foreground))
       }
     }
     .accessibilityElement(children: .ignore)
