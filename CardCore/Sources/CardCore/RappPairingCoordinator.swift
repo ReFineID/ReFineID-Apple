@@ -74,6 +74,9 @@ public actor RappPairingCoordinator {
         /// Secret-bearing text intended only for a QR renderer. It must never be
         /// logged, persisted, copied to analytics, or synchronized.
         case offerReady(uri: String)
+        /// The same unconsumed requester offer is ready after an
+        /// unauthenticated candidate failed. A fresh transport is required.
+        case offerRestored(uri: String)
         case reviewPeer(Peer)
         case paired(PairSummary)
         case closed(CloseReason)
@@ -102,7 +105,7 @@ public actor RappPairingCoordinator {
     private let role: Role
     private let bridge: RappPairingBridge
     private let vault: RappDeviceVault
-    private let transport: any RappFrameTransport
+    private var transport: any RappFrameTransport
     private let candidateID: String
     private let displayName: String
     private let platform: String
@@ -227,6 +230,16 @@ public actor RappPairingCoordinator {
         scheduleOfferExpiry()
     }
 
+    /// Installs the transport for the next candidate after the requester
+    /// retained its still-live offer. Replacement is legal only while the
+    /// coordinator projects `offer_active`.
+    @discardableResult
+    public func replaceTransport(_ replacement: any RappFrameTransport) -> Bool {
+        guard state == .offer else { return false }
+        transport = replacement
+        return true
+    }
+
     /// Consumes the offer only after the selected candidate is connected.
     public func transportConnected() async {
         guard state == .offer else {
@@ -252,7 +265,7 @@ public actor RappPairingCoordinator {
         } catch RappBindingError.OfferExpired {
             await fail(.offerExpired)
         } catch {
-            await fail(.transportFailure)
+            await recoverOrFail(.transportFailure, closeCandidate: true)
         }
     }
 
@@ -281,7 +294,7 @@ public actor RappPairingCoordinator {
                 guard try bridge.handshakeComplete(
                     nowMonotonicMs: clock.monotonicMilliseconds()
                 ) else {
-                    await fail(.protocolFailure)
+                    await recoverOrFail(.protocolFailure, closeCandidate: true)
                     return
                 }
                 try bridge.enterConfirmation(
@@ -302,7 +315,7 @@ public actor RappPairingCoordinator {
                 guard try bridge.handshakeComplete(
                     nowMonotonicMs: clock.monotonicMilliseconds()
                 ) else {
-                    await fail(.protocolFailure)
+                    await recoverOrFail(.protocolFailure, closeCandidate: true)
                     return
                 }
                 try bridge.enterConfirmation(
@@ -343,7 +356,7 @@ public actor RappPairingCoordinator {
         } catch RappBindingError.OfferExpired {
             await fail(.offerExpired)
         } catch {
-            await fail(.protocolFailure)
+            await recoverOrFail(.protocolFailure, closeCandidate: true)
         }
     }
 
@@ -374,7 +387,20 @@ public actor RappPairingCoordinator {
     }
 
     public func transportClosed() async {
-        await fail(.transportFailure)
+        switch state {
+        case .offer:
+            return
+        case .awaitingRequesterHandshake,
+             .awaitingResponderHandshake,
+             .awaitingFinalRequesterHandshake:
+            await recoverOrFail(.transportFailure, closeCandidate: false)
+        case .awaitingPeerHello,
+             .awaitingLocalDecision,
+             .awaitingPeerConfirmation,
+             .completed,
+             .closed:
+            await fail(.transportFailure)
+        }
     }
 
     public func close() async {
@@ -405,9 +431,60 @@ public actor RappPairingCoordinator {
         state = .closed
         offerExpiryTask?.cancel()
         offerExpiryTask = nil
+        try? bridge.cancelPairing()
         await transport.close()
         continuation.yield(.closed(reason))
         continuation.finish()
+    }
+
+    private func recoverOrFail(
+        _ terminalReason: CloseReason,
+        closeCandidate: Bool
+    ) async {
+        do {
+            if try await restoreRequesterOffer(closeCandidate: closeCandidate) {
+                return
+            }
+        } catch RappBindingError.OfferExpired {
+            await fail(.offerExpired)
+            return
+        } catch {
+            // A state that cannot expose the original live offer is terminal.
+        }
+        await fail(terminalReason)
+    }
+
+    private func restoreRequesterOffer(closeCandidate: Bool) async throws -> Bool {
+        guard case .requester = role else { return false }
+        let now = clock.monotonicMilliseconds()
+        switch state {
+        case .offer:
+            break
+        case .awaitingRequesterHandshake,
+             .awaitingResponderHandshake,
+             .awaitingFinalRequesterHandshake:
+            do {
+                guard try bridge.candidateFailed(nowMonotonicMs: now) else {
+                    return false
+                }
+            } catch RappBindingError.WrongPhase {
+                // Frame processing already restored the offer atomically.
+            }
+        case .awaitingPeerHello,
+             .awaitingLocalDecision,
+             .awaitingPeerConfirmation,
+             .completed,
+             .closed:
+            return false
+        }
+        let uri = try bridge.offerUri(nowMonotonicMs: now)
+        state = .offer
+        if closeCandidate {
+            await transport.close()
+        }
+        continuation.yield(.offerRestored(uri: uri))
+        scheduleOfferExpiry()
+        return true
     }
 
     private func scheduleOfferExpiry() {

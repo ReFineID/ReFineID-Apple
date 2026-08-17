@@ -2147,6 +2147,18 @@ public protocol RappPairingBridgeProtocol: AnyObject, Sendable {
     func begin(candidateId: String, nowMonotonicMs: UInt64) throws 
     
     /**
+     * Cancel pairing and destroy every in-progress offer or handshake secret.
+     */
+    func cancelPairing() throws 
+    
+    /**
+     * Discard one unauthenticated transport candidate. A requester retains
+     * the same still-live offer and absolute deadline; a proxy discards its
+     * scanned copy. Returns whether the requester offer remains reusable.
+     */
+    func candidateFailed(nowMonotonicMs: UInt64) throws  -> Bool
+    
+    /**
      * Destroy the QR bearer secret and enter authenticated human
      * confirmation after Noise completes.
      */
@@ -2304,6 +2316,32 @@ open func begin(candidateId: String, nowMonotonicMs: UInt64)throws   {try rustCa
         FfiConverterUInt64.lower(nowMonotonicMs),uniffiCallStatus
     )
 }
+}
+    
+    /**
+     * Cancel pairing and destroy every in-progress offer or handshake secret.
+     */
+open func cancelPairing()throws   {try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
+        uniffiCallStatus in
+    uniffi_refineid_lib_core_fn_method_rapppairingbridge_cancel_pairing(
+            self.uniffiCloneHandle(),uniffiCallStatus
+    )
+}
+}
+    
+    /**
+     * Discard one unauthenticated transport candidate. A requester retains
+     * the same still-live offer and absolute deadline; a proxy discards its
+     * scanned copy. Returns whether the requester offer remains reusable.
+     */
+open func candidateFailed(nowMonotonicMs: UInt64)throws  -> Bool  {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
+        uniffiCallStatus in
+    uniffi_refineid_lib_core_fn_method_rapppairingbridge_candidate_failed(
+            self.uniffiCloneHandle(),
+        FfiConverterUInt64.lower(nowMonotonicMs),uniffiCallStatus
+    )
+})
 }
     
     /**
@@ -4840,6 +4878,12 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_begin() != 2219) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_cancel_pairing() != 23462) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_candidate_failed() != 37327) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_enter_confirmation() != 5160) {

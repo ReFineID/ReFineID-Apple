@@ -70,6 +70,7 @@
     @ObservationIgnored private let vault: RappDeviceVault
     @ObservationIgnored private let catalog: RappPairCatalog
     private var relay: PersistentRelaySession?
+    private var relayGeneration: UUID?
     private var coordinator: RappPairingCoordinator?
     private var eventTask: Task<Void, Never>?
 
@@ -232,6 +233,8 @@
     }
 
     private func makeRelay(role: PersistentRelayRole) -> PersistentRelaySession {
+      let generation = UUID()
+      relayGeneration = generation
       let displayName: String
       switch role {
       case .host:
@@ -243,7 +246,7 @@
         role: role,
         displayName: displayName
       ) { [weak self] event in
-        Task { @MainActor in self?.receive(event) }
+        Task { @MainActor in self?.receive(event, generation: generation) }
       }
     }
 
@@ -274,7 +277,11 @@
       }
     }
 
-    private func receive(_ event: PersistentRelayEvent) {
+    private func receive(
+      _ event: PersistentRelayEvent,
+      generation: UUID
+    ) {
+      guard generation == relayGeneration else { return }
       guard let coordinator else { return }
       switch event {
       case .connected:
@@ -298,6 +305,8 @@
       switch event {
       case let .offerReady(uri):
         phase = .offer(uri)
+      case let .offerRestored(uri):
+        restoreRequesterOffer(uri, coordinator: coordinator)
       case let .reviewPeer(peer):
         phase = .review(peer)
       case let .paired(pair):
@@ -315,6 +324,32 @@
         guard !isFinished else { return }
         fail(String(localized: "Pairing ended before it was completed"))
       }
+    }
+
+    private func restoreRequesterOffer(
+      _ uri: String,
+      coordinator: RappPairingCoordinator
+    ) {
+      phase = .offer(uri)
+      #if os(macOS)
+        relay?.cancel()
+        let replacement = makeRelay(role: .host)
+        let replacementTransport = makeTransport(relay: replacement)
+        relay = replacement
+        Task { @MainActor [weak self] in
+          guard await coordinator.replaceTransport(replacementTransport),
+            let self,
+            self.coordinator === coordinator,
+            !self.isFinished
+          else {
+            self?.fail(String(localized: "Pairing could not be started"))
+            return
+          }
+          replacement.start()
+        }
+      #else
+        fail(String(localized: "Pairing ended before it was completed"))
+      #endif
     }
 
     private var isFinished: Bool {
@@ -335,6 +370,7 @@
 
     private func finishAttempt() {
       relay = nil
+      relayGeneration = nil
       coordinator = nil
       eventTask?.cancel()
       eventTask = nil
