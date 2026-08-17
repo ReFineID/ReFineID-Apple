@@ -483,6 +483,11 @@ internal struct CardCredentialsView: View {
     ///
     /// Each route opens its own screen, so the rows read as navigation
     /// rather than as immediate actions.
+    /// Whether a qualified signature can start right now.
+    private var signingAvailable: Bool {
+      hasReaderIdentity || isCardAccessNumberEntryComplete
+    }
+
     private var signingSection: some View {
       Section {
         Button {
@@ -496,12 +501,15 @@ internal struct CardCredentialsView: View {
               table: "DocumentSigning")
           ) {
             Image(systemName: "signature")
-              .foregroundStyle(Color.accentColor)
+              .foregroundStyle(
+                signingAvailable
+                  ? AnyShapeStyle(Color.accentColor)
+                  : AnyShapeStyle(.foreground))
           }
         }
         .tint(.primary)
         .accessibilityIdentifier("signDocuments")
-        .disabled(!hasReaderIdentity && !isCardAccessNumberEntryComplete)
+        .disabled(!signingAvailable)
         Button {
           showsDocumentVerify = true
         } label: {
