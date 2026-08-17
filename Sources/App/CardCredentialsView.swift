@@ -277,7 +277,9 @@ internal struct CardCredentialsView: View {
         }
       #endif
       identityArea
-      if let failure = model.failure {
+      // A message about the previous attempt has nothing to say
+      // while a new scan is already running behind the panel.
+      if let failure = model.failure, !isHolding {
         Section {
           CredentialOutcomeText(message: failure, tone: .failure)
         }
