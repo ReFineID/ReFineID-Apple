@@ -261,8 +261,10 @@ internal struct CardCredentialsView: View {
   /// The form and its navigation chrome, typed separately from the
   /// event handlers so each half stays checkable on its own.
   private var navigationChrome: some View {
+    // Ordered by how little the holder needs: verification asks for
+    // nothing and leads, the card routes follow, and the identity --
+    // the only part with any setup -- closes the page.
     Form {
-      identityArea
       #if os(iOS)
         if !isHolding {
           signingSection
@@ -274,6 +276,7 @@ internal struct CardCredentialsView: View {
           managementSection
         }
       #endif
+      identityArea
       if let failure = model.failure {
         Section {
           CredentialOutcomeText(message: failure, tone: .failure)
@@ -489,7 +492,23 @@ internal struct CardCredentialsView: View {
     }
 
     private var signingSection: some View {
+      // Verification asks for no card and no identity, so it leads.
       Section {
+        Button {
+          showsDocumentVerify = true
+        } label: {
+          navigationRow(
+            String(
+              localized: "verify.title",
+              defaultValue: "Verify",
+              table: "DocumentSigning")
+          ) {
+            Image(systemName: "checkmark.seal.text.page")
+              .foregroundStyle(Color.accentColor)
+          }
+        }
+        .tint(.primary)
+        .accessibilityIdentifier("verifyDocuments")
         Button {
           synchronizeIdentityState()
           transition(.openDocumentSigning)
@@ -510,21 +529,6 @@ internal struct CardCredentialsView: View {
         .tint(.primary)
         .accessibilityIdentifier("signDocuments")
         .disabled(!signingAvailable)
-        Button {
-          showsDocumentVerify = true
-        } label: {
-          navigationRow(
-            String(
-              localized: "verify.title",
-              defaultValue: "Verify",
-              table: "DocumentSigning")
-          ) {
-            Image(systemName: "checkmark.seal.text.page")
-              .foregroundStyle(Color.accentColor)
-          }
-        }
-        .tint(.primary)
-        .accessibilityIdentifier("verifyDocuments")
       } header: {
         compactSectionHeader(
           verbatim: String(
