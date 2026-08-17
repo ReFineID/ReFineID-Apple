@@ -556,21 +556,17 @@ internal struct CardCredentialsView: View {
           openRemoteReader()
         } label: {
           navigationRow(String(localized: "Remote Card")) {
-            // The same key glyph as the PIN row below keeps the two
-            // keyholes on one vertical line; the waves sit beside it
-            // instead of inside one wider, off-center symbol.
-            Image(systemName: remoteCardAvailable ? "key" : "key.slash")
-              .overlay(alignment: .topTrailing) {
-                Image(systemName: "wave.3.forward")
-                  .font(.system(size: 9, weight: .semibold))
-                  .offset(x: 10)
-              }
-              .foregroundStyle(
-                remoteCardAvailable
-                  ? AnyShapeStyle(Color.accentColor)
-                  : AnyShapeStyle(.secondary)
-              )
-              .accessibilityHidden(true)
+            Image(
+              systemName: remoteCardAvailable
+                ? "key.radiowaves.forward"
+                : "key.radiowaves.forward.slash"
+            )
+            .foregroundStyle(
+              remoteCardAvailable
+                ? AnyShapeStyle(Color.accentColor)
+                : AnyShapeStyle(.secondary)
+            )
+            .accessibilityHidden(true)
           }
         }
         .tint(.primary)
@@ -582,11 +578,11 @@ internal struct CardCredentialsView: View {
           navigationRow(
             String(localized: "Personal Identification Numbers (PINs)")
           ) {
-            // The slash mirrors availability: a reachable route never
-            // wears a blocked key.
+            // A closed route greys the keys; health color returns
+            // with availability.
             CredentialRetryHealthKey(
               level: retryHealth.level,
-              systemName: managementAvailable ? "key.2.on.ring" : "key.slash",
+              systemName: "key.2.on.ring",
               routeAvailable: managementAvailable)
           }
         }

@@ -221,12 +221,12 @@ internal struct CredentialRetryHealthKey: View {
     }
   }
 
-  /// A slashed key means the card has not been verified in this session.
+  /// A closed route never wears a cached health level.
   ///
-  /// A cached retry report must not decorate that unavailable state as
-  /// healthy, warning, or critical.
+  /// The keys grey out with their row until the card is verified
+  /// again, whatever the last report said.
   private var displayedLevel: CredentialRetryHealth.Level? {
-    systemName == "key.slash" ? nil : level
+    routeAvailable ? level : nil
   }
 
   @ViewBuilder private func statusBadge(
