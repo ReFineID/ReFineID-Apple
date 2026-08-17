@@ -428,7 +428,7 @@ internal struct CardCredentialsView: View {
     /// The identity surface of a device with no antenna and no reader:
     /// the person is reached through a remote reader.
     private var remoteReaderSection: some View {
-      Section("Identity") {
+      Section {
         LabeledContent {
           switch remoteModel.phase {
           case .connecting:
@@ -454,6 +454,8 @@ internal struct CardCredentialsView: View {
           Text("The remote card could not be read.")
             .foregroundStyle(.secondary)
         }
+      } header: {
+        compactSectionHeader("Identity")
       }
     }
   #else
@@ -474,12 +476,7 @@ internal struct CardCredentialsView: View {
     /// Each route opens its own screen, so the rows read as navigation
     /// rather than as immediate actions.
     private var signingSection: some View {
-      Section(
-        String(
-          localized: "signing.document",
-          defaultValue: "Document",
-          table: "DocumentSigning")
-      ) {
+      Section {
         Button {
           synchronizeIdentityState()
           transition(.openDocumentSigning)
@@ -512,12 +509,24 @@ internal struct CardCredentialsView: View {
         .tint(.primary)
         .accessibilityIdentifier("verifyDocuments")
         .disabled(true)
+      } header: {
+        compactSectionHeader(
+          verbatim: String(
+            localized: "signing.document",
+            defaultValue: "Document",
+            table: "DocumentSigning"))
       }
+    }
+
+    /// Whether the credential management route can be taken right now.
+    private var managementAvailable: Bool {
+      (isCardAccessNumberEntryComplete || hasReaderIdentity)
+        && !model.isConnecting
     }
 
     /// The card's credential management route.
     private var cardSection: some View {
-      Section("Card") {
+      Section {
         Button {
           openRemoteReader()
         } label: {
@@ -539,19 +548,18 @@ internal struct CardCredentialsView: View {
           navigationRow(
             String(localized: "Personal Identification Numbers (PINs)")
           ) {
+            // The slash mirrors availability: a reachable route never
+            // wears a blocked key.
             CredentialRetryHealthKey(
               level: retryHealth.level,
-              systemName: model.hasVerifiedCardStatus || hasReaderIdentity
-                ? "key"
-                : "key.slash")
+              systemName: managementAvailable ? "key" : "key.slash")
           }
         }
         .tint(.primary)
         .accessibilityIdentifier("manageCard")
-        .disabled(
-          (!isCardAccessNumberEntryComplete && !hasReaderIdentity)
-            || model.isConnecting
-        )
+        .disabled(!managementAvailable)
+      } header: {
+        compactSectionHeader("Card")
       }
     }
 
@@ -578,7 +586,7 @@ internal struct CardCredentialsView: View {
     /// The reader message stands in for a card whose name cannot be
     /// read: a live token with no readable name is still a card present.
     private var readerIdentitySection: some View {
-      Section("Identity") {
+      Section {
         if readerHolders.isEmpty {
           Text(readerMessage)
             .foregroundStyle(.secondary)
@@ -593,6 +601,8 @@ internal struct CardCredentialsView: View {
             }
           }
         }
+      } header: {
+        compactSectionHeader("Identity")
       }
     }
 
@@ -615,6 +625,12 @@ internal struct CardCredentialsView: View {
   private func compactSectionHeader(
     _ title: LocalizedStringKey
   ) -> some View {
+    Text(title)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .listRowInsets(EdgeInsets())
+  }
+
+  private func compactSectionHeader(verbatim title: String) -> some View {
     Text(title)
       .frame(maxWidth: .infinity, alignment: .leading)
       .listRowInsets(EdgeInsets())

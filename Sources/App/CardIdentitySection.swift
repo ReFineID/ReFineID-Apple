@@ -17,7 +17,7 @@ internal struct CardIdentitySection: View {
   internal let forget: () -> Void
 
   internal var body: some View {
-    Section("Identity") {
+    Section {
       LabeledContent {
         Text(holder)
           .textSelection(.enabled)
@@ -38,6 +38,10 @@ internal struct CardIdentitySection: View {
       .listRowBackground(Color.clear)
       .listRowInsets(EdgeInsets())
       .accessibilityIdentifier("forgetCardIdentityButton")
+    } header: {
+      Text("Identity")
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .listRowInsets(EdgeInsets())
     }
   }
 }
