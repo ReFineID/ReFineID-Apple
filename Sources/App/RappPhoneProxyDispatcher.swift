@@ -10,6 +10,7 @@
     private let inbox: RappAuthorizationInbox
     private let requireExplicitReconnect: @MainActor @Sendable () -> Void
     private var pin2ByOperation: [Data: String] = [:]
+    private var safeReadsConsented = false
 
     internal init(
       inbox: RappAuthorizationInbox,
@@ -49,9 +50,14 @@
               ?? String(localized: "Paired device"),
             action: action
           )
-          let decision = await inbox.ask(request)
-          switch decision {
+          let safeRead = operation.kind.isSafeRead
+          if safeRead, safeReadsConsented {
+            try await coordinator.approve(operationID: operationID)
+            return
+          }
+          switch await inbox.ask(request) {
           case .approved:
+            if safeRead { safeReadsConsented = true }
             try await coordinator.approve(operationID: operationID)
           case .approvedDocumentSignature(let pin2):
             guard operation.kind == .signDocument else {
