@@ -1,6 +1,6 @@
 # Apple release task list
 
-Last reviewed: 2026-08-16
+Last reviewed: 2026-08-17
 
 Completed work is removed. This file contains only concrete outcomes that are
 still required for an Apple beta, App Store release, or the next protocol
@@ -11,21 +11,14 @@ milestone.
 Audited against source 2026-08-16. Each item states only what remains;
 the resolved halves of the original wording are recorded in git history.
 
-- [ ] Give the iPhone relay explicit cryptographic pairing before it ships.
-  The relay is compile-gated off by FEATURE_IPHONE_RELAY since 2026-08-16:
-  `PersistentCardRelay` accepts every invitation on `refineid-rly`, persists
-  no remote peer identity, and the phone serves identity and signature
-  requests from the keychain PIN 1 without per-request consent. Re-enabling
-  needs a pairing exchange, a persisted peer allowlist checked on both
-  sides, per-request phone consent, accept/reject tests, restored network
-  entitlements and Bonjour declarations, and a decided macOS driver shape.
-  The design is not open research: RAPP specifies the pairing, and the
-  release owner proved pairing and a remote credential operation on real
-  hardware in August 2026. What this item asks is that the proven design
-  be carried into this port. One design question does remain here: the
-  relay build replaced the smart-card driver in the macOS extension
-  plist, so as built one macOS binary cannot serve a reader and the relay
-  at once.
+- [ ] Qualify the committed RAPP candidate on physical macOS and iPhone
+  hardware. Record clean pairing, status, Safari authentication, document
+  signing, user denial, card removal, one authenticated fail-stop teardown,
+  and manual re-pairing against exact commits. Do not spend a real credential
+  retry. The protocol, explicit pairing, per-operation authorization, durable
+  one-violation revocation, and separate direct-reader and persistent-token
+  extension topology are implemented; this item is release evidence, not a
+  design placeholder.
 - [ ] Finish serial-binding the contactless prime store. The published
   CryptoTokenKit identity, registration, and revocation are already
   printed-serial-derived and every mint refuses a serial-less prime; still

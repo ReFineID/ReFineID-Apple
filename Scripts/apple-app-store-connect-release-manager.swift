@@ -379,15 +379,17 @@ private struct ReleaseArchiveLayout {
     let appResources: URL
     let plugins: URL
     let tokenBundle: URL
+    let rappBundle: URL
     let discoveryBundle: URL
     let tokenExecutable: URL
+    let rappExecutable: URL
     let discoveryExecutable: URL
     let tokenPlist: URL
+    let rappPlist: URL
     let discoveryPlist: URL
     let expectedArchitectures: Set<String>
+    let hasRapp: Bool
     let hasDiscovery: Bool
-    let allowedEntitlements: Set<String>
-    let requiredEntitlements: Set<String>
 }
 
 private func releaseArchiveLayout(at archive: URL) -> ReleaseArchiveLayout {
@@ -403,6 +405,7 @@ private func releaseArchiveLayout(at archive: URL) -> ReleaseArchiveLayout {
     if releaseIsDirectory(contents) {
         let plugins = contents.appendingPathComponent("PlugIns")
         let tokenBundle = plugins.appendingPathComponent("ReFineIDTokenExtension.appex")
+        let rappBundle = plugins.appendingPathComponent("ReFineIDRappTokenExtension.appex")
         let discoveryBundle = plugins.appendingPathComponent("ReFineIDDiscoveryExtension.appex")
         return ReleaseArchiveLayout(
             platform: "macOS",
@@ -412,33 +415,27 @@ private func releaseArchiveLayout(at archive: URL) -> ReleaseArchiveLayout {
             appResources: contents.appendingPathComponent("Resources"),
             plugins: plugins,
             tokenBundle: tokenBundle,
+            rappBundle: rappBundle,
             discoveryBundle: discoveryBundle,
             tokenExecutable: tokenBundle.appendingPathComponent("Contents/MacOS/ReFineIDTokenExtension"),
+            rappExecutable: rappBundle.appendingPathComponent(
+                "Contents/MacOS/ReFineIDRappTokenExtension"
+            ),
             discoveryExecutable: discoveryBundle.appendingPathComponent(
                 "Contents/MacOS/ReFineIDDiscoveryExtension"
             ),
             tokenPlist: tokenBundle.appendingPathComponent("Contents/Info.plist"),
+            rappPlist: rappBundle.appendingPathComponent("Contents/Info.plist"),
             discoveryPlist: discoveryBundle.appendingPathComponent("Contents/Info.plist"),
             expectedArchitectures: ["arm64"],
-            hasDiscovery: false,
-            allowedEntitlements: [
-                "com.apple.security.app-sandbox",
-                "com.apple.security.smartcard",
-                "com.apple.security.network.client",
-                "com.apple.security.files.user-selected.read-write",
-                "com.apple.application-identifier",
-                "com.apple.developer.team-identifier",
-                "com.apple.security.get-task-allow",
-            ],
-            requiredEntitlements: [
-                "com.apple.security.app-sandbox",
-                "com.apple.security.smartcard",
-            ]
+            hasRapp: true,
+            hasDiscovery: false
         )
     }
 
     let plugins = app.appendingPathComponent("PlugIns")
     let tokenBundle = plugins.appendingPathComponent("ReFineIDTokenExtension.appex")
+    let rappBundle = plugins.appendingPathComponent("ReFineIDRappTokenExtension.appex")
     let discoveryBundle = plugins.appendingPathComponent("ReFineIDDiscoveryExtension.appex")
     return ReleaseArchiveLayout(
         platform: "iOS",
@@ -448,21 +445,17 @@ private func releaseArchiveLayout(at archive: URL) -> ReleaseArchiveLayout {
         appResources: app,
         plugins: plugins,
         tokenBundle: tokenBundle,
+        rappBundle: rappBundle,
         discoveryBundle: discoveryBundle,
         tokenExecutable: tokenBundle.appendingPathComponent("ReFineIDTokenExtension"),
+        rappExecutable: rappBundle.appendingPathComponent("ReFineIDRappTokenExtension"),
         discoveryExecutable: discoveryBundle.appendingPathComponent("ReFineIDDiscoveryExtension"),
         tokenPlist: tokenBundle.appendingPathComponent("Info.plist"),
+        rappPlist: rappBundle.appendingPathComponent("Info.plist"),
         discoveryPlist: discoveryBundle.appendingPathComponent("Info.plist"),
         expectedArchitectures: ["arm64"],
-        hasDiscovery: true,
-        allowedEntitlements: [
-            "keychain-access-groups",
-            "com.apple.developer.nfc.readersession.formats",
-            "application-identifier",
-            "com.apple.developer.team-identifier",
-            "get-task-allow",
-        ],
-        requiredEntitlements: ["keychain-access-groups"]
+        hasRapp: false,
+        hasDiscovery: true
     )
 }
 
@@ -512,12 +505,31 @@ private func releaseDeclaresAID(_ plistURL: URL) -> Bool {
     return attributes?["com.apple.ctk.aid"] != nil
 }
 
+private func releaseExtensionConfiguration(
+    at plistURL: URL
+) -> (point: String, attributes: [String: Any]) {
+    let plist = releasePlist(at: plistURL)
+    guard let extensionDictionary = plist["NSExtension"] as? [String: Any],
+          let point = extensionDictionary["NSExtensionPointIdentifier"] as? String,
+          let attributes = extensionDictionary["NSExtensionAttributes"] as? [String: Any] else {
+        releaseFail("\(plistURL.path): incomplete NSExtension configuration")
+    }
+    return (point, attributes)
+}
+
 private func inspectReleaseArchive(_ archive: URL) {
     let layout = releaseArchiveLayout(at: archive)
     releaseNote("archive is \(layout.platform)")
 
     guard releaseIsDirectory(layout.tokenBundle) else {
         releaseFail("embedded extension missing: \(layout.tokenBundle.path)")
+    }
+    if layout.hasRapp {
+        guard releaseIsDirectory(layout.rappBundle) else {
+            releaseFail("embedded extension missing: \(layout.rappBundle.path)")
+        }
+    } else if releaseIsDirectory(layout.rappBundle) {
+        releaseFail("RAPP persistent-token extension is macOS-only: \(layout.rappBundle.path)")
     }
     if layout.hasDiscovery {
         guard releaseIsDirectory(layout.discoveryBundle) else {
@@ -527,18 +539,22 @@ private func inspectReleaseArchive(_ archive: URL) {
         releaseFail("discovery extension is iOS-only: \(layout.discoveryBundle.path)")
     }
 
-    let executables = layout.hasDiscovery
-        ? [layout.appExecutable, layout.tokenExecutable, layout.discoveryExecutable]
-        : [layout.appExecutable, layout.tokenExecutable]
-    let bundles = layout.hasDiscovery
-        ? [layout.app, layout.tokenBundle, layout.discoveryBundle]
-        : [layout.app, layout.tokenBundle]
-    let extensions = layout.hasDiscovery
-        ? [layout.tokenBundle, layout.discoveryBundle]
-        : [layout.tokenBundle]
-    let extensionPlists = layout.hasDiscovery
-        ? [layout.tokenPlist, layout.discoveryPlist]
-        : [layout.tokenPlist]
+    var executables = [layout.appExecutable, layout.tokenExecutable]
+    var bundles = [layout.app, layout.tokenBundle]
+    var extensions = [layout.tokenBundle]
+    var extensionPlists = [layout.tokenPlist]
+    if layout.hasRapp {
+        executables.append(layout.rappExecutable)
+        bundles.append(layout.rappBundle)
+        extensions.append(layout.rappBundle)
+        extensionPlists.append(layout.rappPlist)
+    }
+    if layout.hasDiscovery {
+        executables.append(layout.discoveryExecutable)
+        bundles.append(layout.discoveryBundle)
+        extensions.append(layout.discoveryBundle)
+        extensionPlists.append(layout.discoveryPlist)
+    }
 
     let products = archive.appendingPathComponent("Products")
     let appCount = releaseDescendants(of: products).filter { url in
@@ -561,7 +577,7 @@ private func inspectReleaseArchive(_ archive: URL) {
     } catch {
         releaseFail("could not inspect \(layout.plugins.path): \(error.localizedDescription)")
     }
-    let expectedPluginCount = layout.hasDiscovery ? 2 : 1
+    let expectedPluginCount = 1 + (layout.hasRapp ? 1 : 0) + (layout.hasDiscovery ? 1 : 0)
     guard pluginCount == expectedPluginCount else {
         releaseFail("expected \(expectedPluginCount) plug-in(s), found \(pluginCount)")
     }
@@ -660,48 +676,111 @@ private func inspectReleaseArchive(_ archive: URL) {
     }
     releaseNote("no coverage instrumentation")
 
-    for bundle in bundles {
-        let entitlements = releaseEntitlements(of: bundle)
+    let entitlementRules: [(bundle: URL, allowed: Set<String>, required: Set<String>)]
+    if layout.platform == "macOS" {
+        let signingEntitlements: Set<String> = [
+            "com.apple.application-identifier",
+            "com.apple.developer.team-identifier",
+            "com.apple.security.get-task-allow",
+        ]
+        entitlementRules = [
+            (
+                layout.app,
+                signingEntitlements.union([
+                    "com.apple.security.app-sandbox",
+                    "com.apple.security.files.user-selected.read-write",
+                    "com.apple.security.network.client",
+                    "com.apple.security.network.server",
+                    "com.apple.security.smartcard",
+                ]),
+                [
+                    "com.apple.security.app-sandbox",
+                    "com.apple.security.files.user-selected.read-write",
+                    "com.apple.security.network.client",
+                    "com.apple.security.network.server",
+                    "com.apple.security.smartcard",
+                ]
+            ),
+            (
+                layout.tokenBundle,
+                signingEntitlements.union([
+                    "com.apple.security.app-sandbox",
+                    "com.apple.security.smartcard",
+                ]),
+                [
+                    "com.apple.security.app-sandbox",
+                    "com.apple.security.smartcard",
+                ]
+            ),
+            (
+                layout.rappBundle,
+                signingEntitlements.union([
+                    "com.apple.security.app-sandbox",
+                    "com.apple.security.network.client",
+                    "com.apple.security.network.server",
+                ]),
+                [
+                    "com.apple.security.app-sandbox",
+                    "com.apple.security.network.client",
+                    "com.apple.security.network.server",
+                ]
+            ),
+        ]
+    } else {
+        let allowed: Set<String> = [
+            "keychain-access-groups",
+            "com.apple.developer.nfc.readersession.formats",
+            "application-identifier",
+            "com.apple.developer.team-identifier",
+            "get-task-allow",
+        ]
+        entitlementRules = bundles.map {
+            ($0, allowed, ["keychain-access-groups"])
+        }
+    }
+    for rule in entitlementRules {
+        let entitlements = releaseEntitlements(of: rule.bundle)
         let keys = Set(entitlements.keys)
-        let missing = layout.requiredEntitlements.subtracting(keys)
+        let missing = rule.required.subtracting(keys)
         guard missing.isEmpty else {
             releaseFail(
-                "\(bundle.path): missing \(missing.sorted().joined(separator: ", ")) entitlement"
+                "\(rule.bundle.path): missing \(missing.sorted().joined(separator: ", ")) entitlement"
             )
         }
-        let stray = keys.subtracting(layout.allowedEntitlements)
+        let stray = keys.subtracting(rule.allowed)
         guard stray.isEmpty else {
             releaseFail(
-                "\(bundle.path): unreviewed entitlements:\n"
+                "\(rule.bundle.path): unreviewed entitlements:\n"
                     + stray.sorted().joined(separator: "\n")
             )
         }
     }
     if layout.platform == "macOS" {
-        // The iPhone relay ships compile-gated off, so the only network
-        // grant in the archive is the app's outbound client for archival
-        // time stamps and revocation data. A server grant anywhere, or
-        // any network grant on the token extension, is a relay build
-        // escaping its gate.
         let appEntitlements = releaseEntitlements(of: layout.app)
-        let extensionEntitlements = releaseEntitlements(of: layout.tokenExecutable)
-        guard appEntitlements["com.apple.security.network.client"] as? Bool == true else {
-            releaseFail("\(layout.app.path): missing outbound network client entitlement")
-        }
-        guard appEntitlements["com.apple.security.network.server"] == nil else {
-            releaseFail("\(layout.app.path): carries the gated relay server entitlement")
-        }
+        let readerEntitlements = releaseEntitlements(of: layout.tokenBundle)
+        let rappEntitlements = releaseEntitlements(of: layout.rappBundle)
         for entitlement in [
             "com.apple.security.network.client",
             "com.apple.security.network.server",
         ] {
-            guard extensionEntitlements[entitlement] == nil else {
+            guard appEntitlements[entitlement] as? Bool == true else {
+                releaseFail("\(layout.app.path): missing RAPP entitlement \(entitlement)")
+            }
+            guard rappEntitlements[entitlement] as? Bool == true else {
                 releaseFail(
-                    "\(layout.tokenExecutable.path): carries gated network entitlement \(entitlement)"
+                    "\(layout.rappBundle.path): missing RAPP entitlement \(entitlement)"
+                )
+            }
+            guard readerEntitlements[entitlement] == nil else {
+                releaseFail(
+                    "\(layout.tokenBundle.path): direct-reader driver carries \(entitlement)"
                 )
             }
         }
-        releaseNote("network entitlements match the gated-relay shape")
+        guard rappEntitlements["com.apple.security.smartcard"] == nil else {
+            releaseFail("\(layout.rappBundle.path): RAPP requester carries direct-card access")
+        }
+        releaseNote("RAPP and direct-reader entitlements are separated")
     }
     releaseNote("entitlements match the reviewed allowlist")
 
@@ -743,6 +822,39 @@ private func inspectReleaseArchive(_ archive: URL) {
     }
     releaseNote("app and embedded extensions are version \(appVersion) (\(appBuild))")
 
+    guard let localNetworkUsage = appPlist["NSLocalNetworkUsageDescription"] as? String,
+          !localNetworkUsage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        releaseFail("NSLocalNetworkUsageDescription missing from the containing app")
+    }
+    guard let bonjourServices = appPlist["NSBonjourServices"] as? [String],
+          bonjourServices.contains("_refineid-rly._tcp") else {
+        releaseFail("NSBonjourServices does not declare _refineid-rly._tcp")
+    }
+    releaseNote("RAPP local-network privacy and Bonjour declarations are present")
+
+    let readerConfiguration = releaseExtensionConfiguration(at: layout.tokenPlist)
+    guard readerConfiguration.point == "com.apple.ctk-tokens",
+          readerConfiguration.attributes["com.apple.ctk.class-id"] as? String
+            == "fi.refineid.ReFineID.token",
+          readerConfiguration.attributes["com.apple.ctk.driver-class"] as? String
+            == "ReFineIDTokenExtension.TokenDriver",
+          readerConfiguration.attributes["com.apple.ctk.token-type"] as? String
+            == "smartcard" else {
+        releaseFail("direct-reader CryptoTokenKit extension configuration is incorrect")
+    }
+    if layout.hasRapp {
+        let rappConfiguration = releaseExtensionConfiguration(at: layout.rappPlist)
+        guard rappConfiguration.point == "com.apple.ctk-tokens",
+              rappConfiguration.attributes["com.apple.ctk.class-id"] as? String
+                == "fi.refineid.ReFineID.rapp-token",
+              rappConfiguration.attributes["com.apple.ctk.driver-class"] as? String
+                == "ReFineIDRappTokenExtension.PersistentTokenDriver",
+              rappConfiguration.attributes["com.apple.ctk.token-type"] == nil else {
+            releaseFail("RAPP persistent-token extension configuration is incorrect")
+        }
+        releaseNote("reader and RAPP CryptoTokenKit drivers are distinct")
+    }
+
     if layout.platform == "iOS" {
         guard let usesNonExemptEncryption =
             appPlist["ITSAppUsesNonExemptEncryption"] as? Bool else {
@@ -772,6 +884,9 @@ private func inspectReleaseArchive(_ archive: URL) {
     }
     guard !releaseDeclaresAID(layout.tokenPlist) else {
         releaseFail("token extension declares com.apple.ctk.aid; the token will never be minted")
+    }
+    if layout.hasRapp, releaseDeclaresAID(layout.rappPlist) {
+        releaseFail("RAPP persistent-token extension must not declare a card AID")
     }
     if layout.hasDiscovery {
         releaseNote("AID declared by the discovery extension only")

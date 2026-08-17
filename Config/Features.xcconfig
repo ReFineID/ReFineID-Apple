@@ -33,25 +33,6 @@
 //       invisible - the non-rendering signature structures only - and
 //       no stamp UI is offered.
 //
-//   FEATURE_IPHONE_RELAY
-//       The nearby iPhone credential relay: the Mac fetches the card's
-//       public certificate from the holder's iPhone, publishes it as a
-//       persistent CryptoTokenKit identity, and delegates each signature
-//       to the phone. Out of shipping builds until the relay's peer
-//       trust is an explicit cryptographic pairing; today the session
-//       accepts any nearby inviter. Off, the phone advertises no
-//       service, the Mac requests nothing, and the network-server
-//       entitlement stays out of Config/ReFineID.entitlements and both
-//       network entitlements out of Config/TokenExtension.entitlements.
-//
-//       The flag alone is not enough to test the relay locally: a local
-//       build must also restore those entitlements, the NSBonjourServices
-//       and NSLocalNetworkUsageDescription entries removed from the app
-//       Info.plists, and the macOS token-extension plist selecting
-//       ReFineIDTokenExtension.PersistentTokenDriver - which replaces
-//       the smart-card driver for that build, so a relay build serves
-//       no reader.
-//
 //   FEATURE_SCS
 //       The Signature Creation Service: the loopback HTTPS server
 //       (127.0.0.1:53952, DVV spec v1.3) that web pages sign

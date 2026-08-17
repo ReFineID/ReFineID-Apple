@@ -33,13 +33,13 @@ signing of a fictional PDF. `Documentation/virtual-id-card.md` owns
 the design; the iOS notes walk a reviewer through it, fictional
 numbers included, so no step depends on guessing a value.
 
-The macOS notes state the app's network behaviour as shipped: the
-outbound time-stamp and revocation fetches that an archival signature
-performs, and no listening socket. The iPhone credential relay is
-compile-gated off by FEATURE_IPHONE_RELAY until its peer trust is an
-explicit pairing, so the notes do not describe it; when it ships, they
-must. The macOS notes still close by offering a demonstration mode
-there too: nothing has asked for one on macOS.
+The macOS notes state the app's network behaviour as shipped: outbound
+time-stamp and revocation fetches plus the local-network RAPP service used only
+with a cryptographically paired iPhone. They explain that each remote card
+operation needs explicit approval on the phone and that CAN, PIN 1, and PIN 2
+never cross to the Mac. There is no cloud relay or ReFineID backend. The macOS
+notes still close by offering a demonstration mode there too: nothing has
+asked for one on macOS.
 
 ## Where the notes live
 

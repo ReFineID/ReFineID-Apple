@@ -1,6 +1,6 @@
 # macOS App Store release plan
 
-Last reviewed: 2026-07-23
+Last reviewed: 2026-08-17
 
 This document defines the product, security, validation, and distribution gates
 for the Swift macOS ReFineID release. [TASKS.md](../TASKS.md) is the
@@ -22,8 +22,9 @@ in its TestFlight and App Store builds. Its scope is controlled by
 
 Ship a small, trustworthy macOS App Store product named **ReFineID**.
 
-The application contains the CryptoTokenKit smart-card extension that
-xOS loads for a supported card.
+The application contains the CryptoTokenKit smart-card extension that macOS
+loads for a supported card and a separate persistent-token extension for a
+RAPP-paired iPhone authorizer.
 
 User story is:
 
@@ -40,6 +41,9 @@ User story is:
 
 - A sandboxed, native Swift macOS application.
 - A native Swift CryptoTokenKit smart-card token extension embedded in the app.
+- A separate macOS persistent-token extension that delegates explicitly
+  authorized card operations to a cryptographically paired iPhone through
+  RAPP without transferring CAN, PIN 1, or PIN 2 to the Mac.
 - Supported-card, reader, extension, and application version status.
 - Display of PIN1, PIN2, and PUK attempts remaining.
 - Publication of the card's PIN1 authentication identity to macOS.
@@ -60,10 +64,6 @@ User story is:
 - Rust libraries, Rust runtime code, helper executables, daemons, or privileged
   helpers in the App Store artifact.
 - Portrait and stored handwritten-signature display.
-- The iPhone credential relay: compile-gated off by FEATURE_IPHONE_RELAY
-  until its peer trust is an explicit cryptographic pairing (TASKS.md
-  section 0). Off, the app and extension carry no network-server grant
-  and the phone advertises no service.
 - Safari extensions, browser shells, Internet relays, macOS NFC, telemetry,
   analytics, accounts, and cloud services.
 
@@ -81,13 +81,14 @@ implementation.
 
 ## Architecture
 
-The production archive has one containing application and one embedded app
-extension:
+The production archive has one containing application and two separate
+embedded macOS app extensions:
 
 ```text
 ReFineID.app
 |-- Contents/MacOS/ReFineID
 |-- Contents/PlugIns/ReFineIDTokenExtension.appex
+|-- Contents/PlugIns/ReFineIDRappTokenExtension.appex
 `-- Contents/Resources/...
 ```
 

@@ -50,6 +50,26 @@ struct RappShippingConfigurationTests {
       #expect(entitlements["com.apple.security.network.client"] as? Bool == true)
       #expect(entitlements["com.apple.security.network.server"] as? Bool == true)
     }
+
+    let reader = try Self.plist("Config/TokenExtension.entitlements")
+    #expect(reader["com.apple.security.smartcard"] as? Bool == true)
+    #expect(reader["com.apple.security.network.client"] == nil)
+    #expect(reader["com.apple.security.network.server"] == nil)
+
+    let rapp = try Self.plist("Config/RappTokenExtension.entitlements")
+    #expect(rapp["com.apple.security.smartcard"] == nil)
+  }
+
+  @Test("Release inspection enforces the separate RAPP archive topology")
+  func releaseInspectionTopology() throws {
+    let source = try String(
+      contentsOf: Self.root.appending(
+        path: "Scripts/apple-app-store-connect-release-manager.swift"),
+      encoding: .utf8)
+    #expect(source.contains("ReFineIDRappTokenExtension.appex"))
+    #expect(source.contains("fi.refineid.ReFineID.rapp-token"))
+    #expect(source.contains("RAPP and direct-reader entitlements are separated"))
+    #expect(!source.contains("network entitlements match the gated-relay shape"))
   }
 
   private static var root: URL {
