@@ -10,6 +10,12 @@ import SwiftUI
 /// before the keychain can answer for it, and minting one over near field
 /// opens a scan sheet on a screen nobody asked to scan from.
 internal struct CardIdentitySection: View {
+  /// The minimum comfortable tap target.
+  private static let tapTargetSide: CGFloat = 44
+
+  /// Pulls the tap target's slack back out of the row's layout.
+  private static let tapTargetOverflow: CGFloat = -10
+
   /// The complete holder name read from the primed identity certificate.
   internal let holder: String
 
@@ -19,8 +25,22 @@ internal struct CardIdentitySection: View {
   internal var body: some View {
     Section {
       LabeledContent {
-        Text(holder)
-          .textSelection(.enabled)
+        HStack {
+          Text(holder)
+            .textSelection(.enabled)
+          // The forget action lives on the row it removes; the
+          // confirmation dialog still stands in front of it.
+          Button(role: .destructive, action: forget) {
+            Image(systemName: "minus.circle")
+              .foregroundStyle(.red)
+          }
+          .buttonStyle(.plain)
+          .frame(width: Self.tapTargetSide, height: Self.tapTargetSide)
+          .contentShape(Rectangle())
+          .padding(Self.tapTargetOverflow)
+          .accessibilityLabel(Text("Forget identity"))
+          .accessibilityIdentifier("forgetCardIdentityButton")
+        }
       } label: {
         PersonRowLabel(configured: true)
       }
@@ -29,17 +49,6 @@ internal struct CardIdentitySection: View {
       Text("Identity")
         .frame(maxWidth: .infinity, alignment: .leading)
         .listRowInsets(EdgeInsets())
-    }
-
-    // A quiet destructive row, the way Settings signs out: red text
-    // centered in its own card, with the confirmation dialog still
-    // in front of the action itself.
-    Section {
-      Button(role: .destructive, action: forget) {
-        Text("Forget identity")
-          .frame(maxWidth: .infinity)
-      }
-      .accessibilityIdentifier("forgetCardIdentityButton")
     }
   }
 }
