@@ -295,6 +295,28 @@
         }
       }
     },
+    "Activate this card first, then try setup again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activate this card first, then try setup again."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivoi kortti ensin, yritä sitten uudelleen."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivera kortet först, försök sedan igen."
+          }
+        }
+      }
+    },
     "Activation PIN": {
       "localizations": {
         "fi": {
@@ -503,6 +525,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Försök kvar:"
+          }
+        }
+      }
+    },
+    "Basic (PIN 1)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basic (PIN 1)"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Perustunnusluku (PIN 1)"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baskod (PIN 1)"
           }
         }
       }
@@ -800,6 +844,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kort i läsaren"
+          }
+        }
+      }
+    },
+    "Card reader": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Card reader"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortinlukija"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortläsare"
           }
         }
       }
@@ -1187,6 +1253,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Anslut identitetskortet"
+          }
+        }
+      }
+    },
+    "Connect Remote Reader": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect Remote Reader"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yhdistä etälukija"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anslut fjärrläsare"
           }
         }
       }
@@ -1773,6 +1861,28 @@
         }
       }
     },
+    "Hold the card near the top of the iPhone.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold the card near the top of the iPhone."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pidä korttia iPhonen yläosan lähellä."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Håll kortet nära den övre delen av iPhone."
+          }
+        }
+      }
+    },
     "Hold the card on the top back of the phone.": {
       "localizations": {
         "fi": {
@@ -1785,6 +1895,160 @@
           "stringUnit": {
             "state": "translated",
             "value": "Håll kortet mot telefonens övre baksida."
+          }
+        }
+      }
+    },
+    "Hold the card still while PIN 1 is changed.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold the card still while PIN 1 is changed."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pidä korttia paikallaan, kun perustunnusluku (PIN 1) vaihdetaan."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Håll kortet stilla medan baskoden (PIN 1) byts."
+          }
+        }
+      }
+    },
+    "Hold the card still while PIN 1 is reset.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold the card still while PIN 1 is reset."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pidä korttia paikallaan, kun perustunnusluku (PIN 1) palautetaan."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Håll kortet stilla medan baskoden (PIN 1) återställs."
+          }
+        }
+      }
+    },
+    "Hold the card still while PIN 2 is changed.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold the card still while PIN 2 is changed."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pidä korttia paikallaan, kun allekirjoitustunnusluku (PIN 2) vaihdetaan."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Håll kortet stilla medan signaturkoden (PIN 2) byts."
+          }
+        }
+      }
+    },
+    "Hold the card still while PIN 2 is reset.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold the card still while PIN 2 is reset."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pidä korttia paikallaan, kun allekirjoitustunnusluku (PIN 2) palautetaan."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Håll kortet stilla medan signaturkoden (PIN 2) återställs."
+          }
+        }
+      }
+    },
+    "Hold the card still while activation is checked.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold the card still while activation is checked."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pidä korttia paikallaan, kun aktivointi tarkistetaan."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Håll kortet stilla medan aktiveringen kontrolleras."
+          }
+        }
+      }
+    },
+    "Hold the card still while it is activated.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold the card still while it is activated."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pidä korttia paikallaan, kun se aktivoidaan."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Håll kortet stilla medan det aktiveras."
+          }
+        }
+      }
+    },
+    "Hold your identity card near the top of the iPhone.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold your identity card near the top of the iPhone."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pidä henkilökorttia iPhonen yläosan lähellä."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Håll identitetskortet nära den övre delen av iPhone."
           }
         }
       }
@@ -1965,6 +2229,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hantera"
+          }
+        }
+      }
+    },
+    "NFC": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NFC"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NFC"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NFC"
           }
         }
       }
@@ -2359,6 +2645,50 @@
         }
       }
     },
+    "PIN 1 could not be verified safely.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 1 could not be verified safely."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Perustunnuslukua (PIN 1) ei voitu tarkistaa turvallisesti."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baskoden (PIN 1) kunde inte kontrolleras säkert."
+          }
+        }
+      }
+    },
+    "PIN 1 does not fit its digit rules.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 1 does not fit its digit rules."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Perustunnusluvussa (PIN 1) on väärä määrä numeroita."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baskoden (PIN 1) har fel antal siffror."
+          }
+        }
+      }
+    },
     "PIN 1 is blocked": {
       "extractionState": "manual",
       "localizations": {
@@ -2372,6 +2702,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "PIN 1 är spärrad"
+          }
+        }
+      }
+    },
+    "PIN 1 is blocked.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 1 is blocked."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Perustunnusluku (PIN 1) on lukittu."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baskoden (PIN 1) är spärrad."
           }
         }
       }
@@ -2537,6 +2889,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Parkoppla en telefon"
+          }
+        }
+      }
+    },
+    "Paired device": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paired device"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laitepari"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parkopplad enhet"
           }
         }
       }
@@ -2858,6 +3232,28 @@
         }
       }
     },
+    "ReFineID iPad": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ReFineID iPad"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ReFineID iPad"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ReFineID iPad"
+          }
+        }
+      }
+    },
     "ReFineID iPhone": {
       "localizations": {
         "fi": {
@@ -2936,6 +3332,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kortläsare"
+          }
+        }
+      }
+    },
+    "Reading card capabilities": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading card capabilities"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Luetaan kortin ominaisuuksia"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läser kortets egenskaper"
           }
         }
       }
@@ -3362,6 +3780,28 @@
         }
       }
     },
+    "Safari setup did not finish. Try again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Safari setup did not finish. Try again."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Safari-käyttöönotto ei valmistunut. Yritä uudelleen."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Safari-konfigurationen slutfördes inte. Försök igen."
+          }
+        }
+      }
+    },
     "Save": {
       "extractionState": "manual",
       "localizations": {
@@ -3632,6 +4072,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Signera"
+          }
+        }
+      }
+    },
+    "Signature (PIN 2)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signature (PIN 2)"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allekirjoitustunnusluku (PIN 2)"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signaturkod (PIN 2)"
           }
         }
       }
@@ -3968,6 +4430,28 @@
         }
       }
     },
+    "The card certificate could not be read.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The card certificate could not be read."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortin varmennetta ei voitu lukea."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortets certifikat kunde inte läsas."
+          }
+        }
+      }
+    },
     "The card could not be read. Hold it still and try again.": {
       "localizations": {
         "fi": {
@@ -4125,6 +4609,50 @@
           "stringUnit": {
             "state": "translated",
             "value": "Namnteckningen kunde inte läsas; ingen synlig stämpel lades till."
+          }
+        }
+      }
+    },
+    "The identity card could not be classified. Try again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The identity card could not be classified. Try again."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henkilökorttia ei voitu tunnistaa. Yritä uudelleen."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identitetskortet kunde inte identifieras. Försök igen."
+          }
+        }
+      }
+    },
+    "The identity card could not be read. Try again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The identity card could not be read. Try again."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henkilökorttia ei voitu lukea. Yritä uudelleen."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identitetskortet kunde inte läsas. Försök igen."
           }
         }
       }
@@ -4432,6 +4960,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tidsstämplingstjänster, används i den här ordningen"
+          }
+        }
+      }
+    },
+    "Timing the secure channel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Timing the secure channel"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mitataan suojattua yhteyttä"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mäter den säkra anslutningen"
           }
         }
       }
