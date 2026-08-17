@@ -193,9 +193,9 @@
             Text(
               isSigning
                 ? text("signing.progress", "Signing")
-                : String(
-                  localized: "signing.commitCount \(inputs.count)",
-                  table: "DocumentSigning")
+                : inputs.count == 1
+                  ? text("signing.commitOne", "Sign document")
+                  : text("signing.commit", "Sign documents")
             )
             .bold()
             Spacer()

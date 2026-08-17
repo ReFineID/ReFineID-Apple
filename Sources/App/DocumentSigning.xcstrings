@@ -309,64 +309,6 @@
         }
       }
     },
-    "signing.commitCount %lld": {
-      "localizations": {
-        "en": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Sign document"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Sign documents"
-                }
-              }
-            }
-          }
-        },
-        "fi": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Allekirjoita asiakirja"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Allekirjoita asiakirjat"
-                }
-              }
-            }
-          }
-        },
-        "sv": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Signera dokument"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Signera dokument"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "signing.success": {
       "localizations": {
         "en": {
@@ -1067,6 +1009,50 @@
           "stringUnit": {
             "state": "translated",
             "value": "Den signerade QR-bilden kunde inte skapas. Ingenting skrevs."
+          }
+        }
+      }
+    },
+    "signing.commit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign documents"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allekirjoita asiakirjat"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signera dokument"
+          }
+        }
+      }
+    },
+    "signing.commitOne": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign document"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allekirjoita asiakirja"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signera dokument"
           }
         }
       }
