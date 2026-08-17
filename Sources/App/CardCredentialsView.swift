@@ -1022,6 +1022,12 @@ internal struct CardCredentialsView: View {
         activationNeeds = needs
         transition(.classificationActivationRequired)
       case .wrongCardAccessNumber:
+        // A primed identity whose stored CAN the card refuses is
+        // facing a different card: every authority is removed and
+        // setup starts over from the access number.
+        if !isDemonstration, hasIdentity {
+          model.forgetEverythingAfterCardMismatch()
+        }
         cardAccessNumberEntry = ""
         isCardAccessNumberFieldFocused = true
         clearPin1Entry()

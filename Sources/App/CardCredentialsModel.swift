@@ -189,4 +189,16 @@ internal final class CardCredentialsModel {
       failure = outcome.summary
     }
   }
+
+  /// Forgets everything after the card refused the stored CAN.
+  ///
+  /// The refusal message set by the failed connection stays visible:
+  /// it is the only account of why the identity is gone.
+  internal func forgetEverythingAfterCardMismatch() {
+    let explanation = failure
+    forgetEverything()
+    if failure == nil {
+      failure = explanation
+    }
+  }
 }
