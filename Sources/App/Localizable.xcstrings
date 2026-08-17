@@ -318,13 +318,13 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Henkilökohtaiset tunnusluvut (PIN-koodit)"
+            "value": "Henkilökohtaiset tunnusluvut (PIN)"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Personliga identifieringsnummer (PIN-koder)"
+            "value": "Personliga identifieringsnummer (PIN)"
           }
         }
       }
