@@ -58,6 +58,12 @@
             "state": "translated",
             "value": "Tarkasta"
           }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verifiera"
+          }
         }
       }
     },
