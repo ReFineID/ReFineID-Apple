@@ -31,19 +31,14 @@ internal struct CardIdentitySection: View {
         .listRowInsets(EdgeInsets())
     }
 
-    // Its own section: sharing the person row's section would square
-    // that bubble's bottom corners against this cleared background.
+    // A quiet destructive row, the way Settings signs out: red text
+    // centered in its own card, with the confirmation dialog still
+    // in front of the action itself.
     Section {
-      Button(action: forget) {
-        Label("Forget identity", systemImage: "person.badge.minus")
-          .foregroundStyle(.white)
+      Button(role: .destructive, action: forget) {
+        Text("Forget identity")
           .frame(maxWidth: .infinity)
-          .padding(.vertical, 8)
       }
-      .buttonStyle(.borderedProminent)
-      .tint(Color(red: 0.65, green: 0, blue: 0))
-      .listRowBackground(Color.clear)
-      .listRowInsets(EdgeInsets())
       .accessibilityIdentifier("forgetCardIdentityButton")
     }
   }
