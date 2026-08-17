@@ -18,7 +18,7 @@
           chooseSection
         case .verifying:
           Section {
-            ProgressView(String(localized: "Verifying"))
+            ProgressView(text("verify.progress", "Verifying"))
               .frame(maxWidth: .infinity)
           }
         case .report(let rows, let documentTimestampedAt):
@@ -30,12 +30,7 @@
           chooseSection
         }
       }
-      .navigationTitle(
-        String(
-          localized: "verify.title",
-          defaultValue: "Verify",
-          table: "DocumentSigning")
-      )
+      .navigationTitle(text("verify.title", "Verify"))
       .fileImporter(
         isPresented: $importing,
         allowedContentTypes: [.pdf]
@@ -48,7 +43,7 @@
 
     private var chooseSection: some View {
       Section {
-        Button(String(localized: "Choose a signed document")) {
+        Button(text("verify.choose", "Choose a signed document")) {
           importing = true
         }
         .accessibilityIdentifier("verifyChooseDocument")
@@ -61,12 +56,12 @@
       documentTimestampedAt: [Date]
     ) -> some View {
       Section {
-        LabeledContent(String(localized: "Document")) {
+        LabeledContent(text("signing.document", "Document")) {
           Text(model.documentName)
             .multilineTextAlignment(.trailing)
         }
         ForEach(documentTimestampedAt, id: \.self) { stamped in
-          LabeledContent(String(localized: "Document timestamp")) {
+          LabeledContent(text("verify.documentTimestamp", "Document timestamp")) {
             HStack {
               Text(stamped.formatted(date: .abbreviated, time: .shortened))
               CredentialValidationIndicator(valid: true)
@@ -78,7 +73,7 @@
         signatureSection(row)
       }
       Section {
-        Button(String(localized: "Verify another document")) {
+        Button(text("verify.another", "Verify another document")) {
           model.reset()
           importing = true
         }
@@ -99,21 +94,21 @@
           PersonRowLabel(configured: row.report.isValid)
         }
         factRow(
-          String(localized: "Document intact"),
+          text("verify.intact", "Document intact"),
           holds: row.report.documentIntact
         )
         factRow(
-          String(localized: "Signature"),
+          text("verify.signature", "Signature"),
           holds: row.report.signatureValid
         )
         factRow(
-          String(localized: "Certificate chain"),
+          text("verify.chain", "Certificate chain"),
           holds: row.report.chainVerified
         )
         timestampRow(row.report)
         revocationRow(row.revocation)
       } header: {
-        Text(String(localized: "Signature"))
+        Text(text("verify.signature", "Signature"))
           .frame(maxWidth: .infinity, alignment: .leading)
           .listRowInsets(EdgeInsets())
       }
@@ -136,7 +131,7 @@
     private func timestampRow(
       _ report: DocumentVerification.SignatureReport
     ) -> some View {
-      LabeledContent(String(localized: "Timestamp")) {
+      LabeledContent(text("verify.timestamp", "Timestamp")) {
         HStack {
           if let timestampedAt = report.timestampedAt {
             Text(
@@ -152,7 +147,7 @@
     private func revocationRow(
       _ revocation: VerifyDocumentModel.Revocation
     ) -> some View {
-      LabeledContent(String(localized: "Revocation")) {
+      LabeledContent(text("verify.revocation", "Revocation")) {
         switch revocation {
         case .checking:
           ProgressView()
@@ -166,10 +161,17 @@
         case .revoked:
           CredentialValidationIndicator(valid: false)
         case .unavailable:
-          Text(String(localized: "Not checked"))
+          Text(text("verify.notChecked", "Not checked"))
             .foregroundStyle(.secondary)
         }
       }
+    }
+
+    private func text(
+      _ key: StaticString,
+      _ fallback: String.LocalizationValue
+    ) -> String {
+      String(localized: key, defaultValue: fallback, table: "DocumentSigning")
     }
   }
 

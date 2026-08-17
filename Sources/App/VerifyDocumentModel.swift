@@ -37,7 +37,7 @@
     }
 
     private static var unreadableMessage: String {
-      String(localized: "The document could not be read.")
+      text("verify.errorUnreadable", "The document could not be read.")
     }
 
     internal private(set) var phase = Phase.idle
@@ -50,14 +50,21 @@
     ) -> String {
       switch failure {
       case .notAPdf:
-        String(localized: "The file is not a PDF.")
+        text("error.notPDF", "The selected file is not a PDF.")
       case .unreadable:
         Self.unreadableMessage
       case .noSignatures:
-        String(localized: "The document carries no signatures.")
+        text("verify.errorNoSignatures", "The document carries no signatures.")
       case .unsupportedProfile:
-        String(localized: "The signature profile is not supported.")
+        text("verify.errorUnsupported", "The signature profile is not supported.")
       }
+    }
+
+    private static func text(
+      _ key: StaticString,
+      _ fallback: String.LocalizationValue
+    ) -> String {
+      String(localized: key, defaultValue: fallback, table: "DocumentSigning")
     }
 
     private static func liveRevocation(

@@ -1,380 +1,6 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "signing.nfcHold": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hold your identity card near the top of the iPhone."
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pidä henkilökorttia iPhonen yläosan lähellä."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Håll identitetskortet nära den övre delen av iPhone."
-          }
-        }
-      }
-    },
-    "signing.title": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sign"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Allekirjoita"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Signera"
-          }
-        }
-      }
-    },
-    "verify.title": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Verify"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tarkasta"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Verifiera"
-          }
-        }
-      }
-    },
-    "signing.section": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Documents"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Asiakirjat"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dokument"
-          }
-        }
-      }
-    },
-    "signing.document": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Document"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Asiakirja"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dokument"
-          }
-        }
-      }
-    },
-    "signing.remove": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Remove document"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Poista asiakirja"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ta bort dokument"
-          }
-        }
-      }
-    },
-    "signing.choose": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Choose documents"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Valitse asiakirjoja"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Välj dokument"
-          }
-        }
-      }
-    },
-    "signing.add": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add documents"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lisää asiakirjoja"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lägg till dokument"
-          }
-        }
-      }
-    },
-    "signing.format": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Signing method"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Allekirjoitustapa"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Signeringssätt"
-          }
-        }
-      }
-    },
-    "format.pades": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Separately (PDF)"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Yksittäin (PDF)"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Separat (PDF)"
-          }
-        }
-      }
-    },
-    "format.asice": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "As a package (ASiC-E)"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pakettina (ASiC-E)"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Som paket (ASiC-E)"
-          }
-        }
-      }
-    },
-    "signing.authorization": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PIN"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tunnusluku"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PIN-kod"
-          }
-        }
-      }
-    },
-    "signing.pin2": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Signature PIN 2"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Allekirjoitustunnusluku (PIN 2)"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Signaturkod (PIN 2)"
-          }
-        }
-      }
-    },
-    "signing.progress": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Signing"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Allekirjoitetaan"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Signerar"
-          }
-        }
-      }
-    },
-    "signing.success": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Documents signed"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Asiakirjat allekirjoitettu"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dokumenten är signerade"
-          }
-        }
-      }
-    },
-    "output.multiple": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Signed documents"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Allekirjoitetut asiakirjat"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Signerade dokument"
-          }
-        }
-      }
-    },
-    "output.signed": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "signed"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "allekirjoitettu"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "signerad"
-          }
-        }
-      }
-    },
     "demo.document": {
       "localizations": {
         "en": {
@@ -419,68 +45,24 @@
         }
       }
     },
-    "error.export": {
+    "error.attempts": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The signed file could not be saved."
+            "value": "You have %d attempts remaining."
           }
         },
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Allekirjoitettua tiedostoa ei voitu tallentaa."
+            "value": "Yrityksiä on jäljellä %d."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Den signerade filen kunde inte sparas."
-          }
-        }
-      }
-    },
-    "error.import": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The selected documents could not be read."
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Valittuja asiakirjoja ei voitu lukea."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "De valda dokumenten kunde inte läsas."
-          }
-        }
-      }
-    },
-    "error.network": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "A timestamp or revocation service could not be reached. Nothing was written."
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aikaleima- tai sulkupalveluun ei saatu yhteyttä. Mitään ei kirjoitettu."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tidsstämpel- eller spärrtjänsten kunde inte nås. Ingenting skrevs."
+            "value": "Du har %d försök kvar."
           }
         }
       }
@@ -507,160 +89,6 @@
         }
       }
     },
-    "error.container": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The signed container could not be written."
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Allekirjoitussäiliötä ei voitu kirjoittaa."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Den signerade behållaren kunde inte skrivas."
-          }
-        }
-      }
-    },
-    "error.unexpectedSignature": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The card signed unexpected data. Nothing was written."
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kortti allekirjoitti odottamatonta tietoa. Mitään ei kirjoitettu."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kortet signerade oväntade data. Ingenting skrevs."
-          }
-        }
-      }
-    },
-    "error.names": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Two documents have the same name, or a name is reserved. Rename one and try again."
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kahdella asiakirjalla on sama nimi tai nimi on varattu. Nimeä toinen uudelleen ja yritä uudelleen."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Två dokument har samma namn eller ett namn är reserverat. Byt namn och försök igen."
-          }
-        }
-      }
-    },
-    "error.generic": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The documents could not be signed."
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Asiakirjoja ei voitu allekirjoittaa."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dokumenten kunde inte signeras."
-          }
-        }
-      }
-    },
-    "error.pin2Blocked": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PIN 2 is blocked. Reset it in PIN settings."
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PIN 2 on lukittu. Palauta se PIN-asetuksissa."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PIN 2 är spärrad. Återställ den i PIN-inställningarna."
-          }
-        }
-      }
-    },
-    "error.notActivated": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The signature PIN is not activated. Activate the card first."
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Allekirjoituksen PIN-koodia ei ole aktivoitu. Aktivoi kortti ensin."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Signaturkoden är inte aktiverad. Aktivera kortet först."
-          }
-        }
-      }
-    },
-    "error.noCard": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No readable identity card was found."
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Luettavaa henkilökorttia ei löytynyt."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Inget läsbart identitetskort hittades."
-          }
-        }
-      }
-    },
     "error.cardRefused": {
       "localizations": {
         "en": {
@@ -679,116 +107,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Identitetskortet avvisade signeringen."
-          }
-        }
-      }
-    },
-    "error.notPDF": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The selected file is not a PDF."
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Valittu tiedosto ei ole PDF."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Den valda filen är inte en PDF."
-          }
-        }
-      }
-    },
-    "error.encryptedPDF": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "That PDF is encrypted and cannot be modified."
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PDF on salattu eikä sitä voi muokata."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PDF-filen är krypterad och kan inte ändras."
-          }
-        }
-      }
-    },
-    "error.pdfEncoding": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "That PDF uses an unsupported cross-reference encoding."
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PDF käyttää ristiviittausten koodausta, jota ei tueta."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PDF-filen använder en korsreferenskodning som inte stöds."
-          }
-        }
-      }
-    },
-    "error.signatureTooLarge": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The signature did not fit in the PDF."
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Allekirjoitus ei mahtunut PDF-tiedostoon."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Signaturen fick inte plats i PDF-filen."
-          }
-        }
-      }
-    },
-    "error.pdfStructure": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "That PDF structure could not be read."
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PDF-tiedoston rakennetta ei voitu lukea."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PDF-filens struktur kunde inte läsas."
           }
         }
       }
@@ -815,46 +133,332 @@
         }
       }
     },
-    "error.timestampRevoked": {
+    "error.connection": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The timestamp service certificate is revoked."
+            "value": "The card connection was lost."
           }
         },
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aikaleimapalvelun varmenne on suljettu."
+            "value": "Yhteys korttiin katkesi."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tidsstämpeltjänstens certifikat är spärrat."
+            "value": "Anslutningen till kortet bröts."
           }
         }
       }
     },
-    "error.validation": {
+    "error.container": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Authenticated certificate and revocation evidence could not be collected."
+            "value": "The signed container could not be written."
           }
         },
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Varmennettua varmenne- ja sulkutietoa ei voitu kerätä."
+            "value": "Allekirjoitussäiliötä ei voitu kirjoittaa."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Verifierade certifikat- och spärruppgifter kunde inte samlas in."
+            "value": "Den signerade behållaren kunde inte skrivas."
+          }
+        }
+      }
+    },
+    "error.encryptedPDF": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That PDF is encrypted and cannot be modified."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF on salattu eikä sitä voi muokata."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF-filen är krypterad och kan inte ändras."
+          }
+        }
+      }
+    },
+    "error.export": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The signed file could not be saved."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allekirjoitettua tiedostoa ei voitu tallentaa."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den signerade filen kunde inte sparas."
+          }
+        }
+      }
+    },
+    "error.generic": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The documents could not be signed."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asiakirjoja ei voitu allekirjoittaa."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokumenten kunde inte signeras."
+          }
+        }
+      }
+    },
+    "error.import": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The selected documents could not be read."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valittuja asiakirjoja ei voitu lukea."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De valda dokumenten kunde inte läsas."
+          }
+        }
+      }
+    },
+    "error.names": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Two documents have the same name, or a name is reserved. Rename one and try again."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kahdella asiakirjalla on sama nimi tai nimi on varattu. Nimeä toinen uudelleen ja yritä uudelleen."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Två dokument har samma namn eller ett namn är reserverat. Byt namn och försök igen."
+          }
+        }
+      }
+    },
+    "error.network": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A timestamp or revocation service could not be reached. Nothing was written."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aikaleima- tai sulkupalveluun ei saatu yhteyttä. Mitään ei kirjoitettu."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tidsstämpel- eller spärrtjänsten kunde inte nås. Ingenting skrevs."
+          }
+        }
+      }
+    },
+    "error.noCard": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No readable identity card was found."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Luettavaa henkilökorttia ei löytynyt."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inget läsbart identitetskort hittades."
+          }
+        }
+      }
+    },
+    "error.notActivated": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The signature PIN is not activated. Activate the card first."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allekirjoituksen PIN-koodia ei ole aktivoitu. Aktivoi kortti ensin."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signaturkoden är inte aktiverad. Aktivera kortet först."
+          }
+        }
+      }
+    },
+    "error.notPDF": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The selected file is not a PDF."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valittu tiedosto ei ole PDF."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den valda filen är inte en PDF."
+          }
+        }
+      }
+    },
+    "error.operationRefused": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Operation refused"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toiminto estettiin"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åtgärden nekades"
+          }
+        }
+      }
+    },
+    "error.pdfEncoding": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That PDF uses an unsupported cross-reference encoding."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF käyttää ristiviittausten koodausta, jota ei tueta."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF-filen använder en korsreferenskodning som inte stöds."
+          }
+        }
+      }
+    },
+    "error.pdfStructure": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That PDF structure could not be read."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF-tiedoston rakennetta ei voitu lukea."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF-filens struktur kunde inte läsas."
+          }
+        }
+      }
+    },
+    "error.pin2Blocked": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 2 is blocked. Reset it in PIN settings."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 2 on lukittu. Palauta se PIN-asetuksissa."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN 2 är spärrad. Återställ den i PIN-inställningarna."
           }
         }
       }
@@ -903,50 +507,6 @@
         }
       }
     },
-    "error.attempts": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You have %d attempts remaining."
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Yrityksiä on jäljellä %d."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Du har %d försök kvar."
-          }
-        }
-      }
-    },
-    "error.operationRefused": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Operation refused"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Toiminto estettiin"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Åtgärden nekades"
-          }
-        }
-      }
-    },
     "error.signatureCertificate": {
       "localizations": {
         "en": {
@@ -969,24 +529,24 @@
         }
       }
     },
-    "error.connection": {
+    "error.signatureTooLarge": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The card connection was lost."
+            "value": "The signature did not fit in the PDF."
           }
         },
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yhteys korttiin katkesi."
+            "value": "Allekirjoitus ei mahtunut PDF-tiedostoon."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Anslutningen till kortet bröts."
+            "value": "Signaturen fick inte plats i PDF-filen."
           }
         }
       }
@@ -1009,6 +569,226 @@
           "stringUnit": {
             "state": "translated",
             "value": "Den signerade QR-bilden kunde inte skapas. Ingenting skrevs."
+          }
+        }
+      }
+    },
+    "error.timestampRevoked": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The timestamp service certificate is revoked."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aikaleimapalvelun varmenne on suljettu."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tidsstämpeltjänstens certifikat är spärrat."
+          }
+        }
+      }
+    },
+    "error.unexpectedSignature": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The card signed unexpected data. Nothing was written."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortti allekirjoitti odottamatonta tietoa. Mitään ei kirjoitettu."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortet signerade oväntade data. Ingenting skrevs."
+          }
+        }
+      }
+    },
+    "error.validation": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Authenticated certificate and revocation evidence could not be collected."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Varmennettua varmenne- ja sulkutietoa ei voitu kerätä."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verifierade certifikat- och spärruppgifter kunde inte samlas in."
+          }
+        }
+      }
+    },
+    "format.asice": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "As a package (ASiC-E)"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pakettina (ASiC-E)"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Som paket (ASiC-E)"
+          }
+        }
+      }
+    },
+    "format.pades": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Separately (PDF)"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yksittäin (PDF)"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Separat (PDF)"
+          }
+        }
+      }
+    },
+    "output.multiple": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signed documents"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allekirjoitetut asiakirjat"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signerade dokument"
+          }
+        }
+      }
+    },
+    "output.signed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "signed"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "allekirjoitettu"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "signerad"
+          }
+        }
+      }
+    },
+    "signing.add": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add documents"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lisää asiakirjoja"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till dokument"
+          }
+        }
+      }
+    },
+    "signing.authorization": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tunnusluku"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN-kod"
+          }
+        }
+      }
+    },
+    "signing.choose": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose documents"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valitse asiakirjoja"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Välj dokument"
           }
         }
       }
@@ -1053,6 +833,512 @@
           "stringUnit": {
             "state": "translated",
             "value": "Signera dokument"
+          }
+        }
+      }
+    },
+    "signing.document": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Document"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asiakirja"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokument"
+          }
+        }
+      }
+    },
+    "signing.format": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signing method"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allekirjoitustapa"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signeringssätt"
+          }
+        }
+      }
+    },
+    "signing.nfcHold": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold your identity card near the top of the iPhone."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pidä henkilökorttia iPhonen yläosan lähellä."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Håll identitetskortet nära den övre delen av iPhone."
+          }
+        }
+      }
+    },
+    "signing.pin2": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signature PIN 2"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allekirjoitustunnusluku (PIN 2)"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signaturkod (PIN 2)"
+          }
+        }
+      }
+    },
+    "signing.progress": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signing"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allekirjoitetaan"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signerar"
+          }
+        }
+      }
+    },
+    "signing.remove": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove document"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poista asiakirja"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort dokument"
+          }
+        }
+      }
+    },
+    "signing.section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Documents"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asiakirjat"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokument"
+          }
+        }
+      }
+    },
+    "signing.success": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Documents signed"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asiakirjat allekirjoitettu"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokumenten är signerade"
+          }
+        }
+      }
+    },
+    "signing.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allekirjoita"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signera"
+          }
+        }
+      }
+    },
+    "verify.another": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verify another document"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarkasta toinen asiakirja"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verifiera ett annat dokument"
+          }
+        }
+      }
+    },
+    "verify.chain": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certificate chain"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Varmenneketju"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certifikatkedja"
+          }
+        }
+      }
+    },
+    "verify.choose": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a signed document"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valitse allekirjoitettu asiakirja"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Välj ett signerat dokument"
+          }
+        }
+      }
+    },
+    "verify.documentTimestamp": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Document timestamp"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asiakirjan aikaleima"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokumentets tidsstämpel"
+          }
+        }
+      }
+    },
+    "verify.errorNoSignatures": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The document carries no signatures."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asiakirjassa ei ole allekirjoituksia."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokumentet saknar signaturer."
+          }
+        }
+      }
+    },
+    "verify.errorUnreadable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The document could not be read."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asiakirjaa ei voitu lukea."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokumentet kunde inte läsas."
+          }
+        }
+      }
+    },
+    "verify.errorUnsupported": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The signature profile is not supported."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allekirjoituksen muotoa ei tueta."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signaturformatet stöds inte."
+          }
+        }
+      }
+    },
+    "verify.intact": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Document intact"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asiakirja muuttumaton"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokumentet oförändrat"
+          }
+        }
+      }
+    },
+    "verify.notChecked": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not checked"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ei tarkistettu"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inte kontrollerad"
+          }
+        }
+      }
+    },
+    "verify.progress": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verifying"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarkastetaan"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verifierar"
+          }
+        }
+      }
+    },
+    "verify.revocation": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revocation"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sulkutieto"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spärrstatus"
+          }
+        }
+      }
+    },
+    "verify.signature": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signature"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allekirjoitus"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signatur"
+          }
+        }
+      }
+    },
+    "verify.timestamp": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Timestamp"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aikaleima"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tidsstämpel"
+          }
+        }
+      }
+    },
+    "verify.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verify"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarkasta"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verifiera"
           }
         }
       }
