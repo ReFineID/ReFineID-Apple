@@ -169,7 +169,7 @@ internal struct CredentialRetryHealthKey: View {
   /// Whether the route this key opens can be taken right now.
   ///
   /// An unprobed key on an open route is green -- no known issue --
-  /// while a closed route keeps the neutral foreground.
+  /// while a closed route greys out like its row.
   internal let routeAvailable: Bool
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -206,7 +206,7 @@ internal struct CredentialRetryHealthKey: View {
           .foregroundStyle(
             routeAvailable
               ? AnyShapeStyle(.green)
-              : AnyShapeStyle(.foreground))
+              : AnyShapeStyle(.secondary))
       }
     }
     .accessibilityElement(children: .ignore)

@@ -504,7 +504,7 @@ internal struct CardCredentialsView: View {
               .foregroundStyle(
                 signingAvailable
                   ? AnyShapeStyle(Color.accentColor)
-                  : AnyShapeStyle(.foreground))
+                  : AnyShapeStyle(.secondary))
           }
         }
         .tint(.primary)
@@ -564,7 +564,7 @@ internal struct CardCredentialsView: View {
             .foregroundStyle(
               remoteCardAvailable
                 ? AnyShapeStyle(Color.accentColor)
-                : AnyShapeStyle(.foreground)
+                : AnyShapeStyle(.secondary)
             )
             .accessibilityHidden(true)
           }
