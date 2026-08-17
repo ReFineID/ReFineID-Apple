@@ -1,6 +1,6 @@
 # RAPP Apple implementation handoff
 
-Status date: 2026-08-16
+Status date: 2026-08-17
 
 This document is the implementation handoff for Remote Authorization Proxy
 Protocol (RAPP) support in ReFineID on Apple platforms. It describes what is
@@ -120,8 +120,8 @@ The application layer is under `Sources/App/`:
   requests and now enters RAPP rather than a credential-bearing shortcut.
 - `MacPersistentTokenRegistry.swift` connects macOS requester registration to
   the selected RAPP pair.
-- `PersistentTokenDriver.swift` connects CryptoTokenKit requester work to the
-  RAPP client.
+- `Sources/RappTokenExtension/PersistentTokenDriver.swift` connects macOS
+  CryptoTokenKit requester work to the RAPP client.
 - `ReFineIDApp.swift`, `ReaderIdentityRootView.swift`, and `StatusView.swift`
   expose pairing and RAPP state in the existing application UI.
 
@@ -134,6 +134,26 @@ or ASiC-E result locally before presenting it as successful.
 Pairing selection is persisted device-only. Pairing teardown is durable and is
 not automatically repaired after a fail-stop event. A holder must pair again.
 
+### CryptoTokenKit shipping topology
+
+The macOS application embeds two deliberately separate CryptoTokenKit
+extensions:
+
+- `ReFineIDTokenExtension.appex` remains the direct smart-card reader driver.
+  It uses the existing smart-card token identity and has no RAPP network
+  entitlement.
+- `ReFineIDRappTokenExtension.appex` is the macOS-only persistent-token
+  requester. Its CryptoTokenKit class identifier is
+  `fi.refineid.ReFineID.rapp-token`, and its driver class is
+  `PersistentTokenDriver`. It is the only token extension that owns the RAPP
+  requester transport.
+
+The iOS application embeds the reader token extension and discovery extension,
+but never the macOS RAPP persistent-token extension. The containing application
+declares the local-network usage text and `_refineid-rly._tcp` Bonjour service;
+those declarations do not belong in the extension Info plists. This separation
+prevents RAPP from replacing or changing the direct-reader token driver.
+
 ## Verified evidence
 
 The following was measured before this handoff:
@@ -144,6 +164,13 @@ The following was measured before this handoff:
   ordered emitted-action equality against every role-qualified YAML rule.
 - `swift build --package-path CardCore` passes.
 - The ReFineID Xcode scheme builds for macOS and generic iOS arm64.
+- The current macOS Debug application graph builds with both
+  `ReFineIDTokenExtension.appex` and `ReFineIDRappTokenExtension.appex`
+  embedded. The current arm64 iOS device application graph builds with the
+  reader and discovery extensions and without the macOS-only RAPP extension.
+- `RappShippingConfigurationTests` passes and checks the distinct
+  CryptoTokenKit class identifiers and drivers, macOS-only product filtering,
+  local-network declarations, and network-entitlement separation.
 - 510 Apple unit tests in 82 suites pass on macOS. The focused RAPP adapter
   suite drives requester and proxy pairing through the generated Rust bridge,
   persists both pair records, verifies transport closure, selects the requester
@@ -204,6 +231,10 @@ network permission, CryptoTokenKit, or Safari system-sheet behavior.
   for production.
 - Cross-platform Android, Windows, Linux, and FreeBSD interoperability remains
   protocol intent, not implemented Apple evidence.
+- A generic universal iOS Simulator build still requests an x86_64 Rust binary
+  slice that the intentionally arm64-only committed XCFramework does not
+  contain. The supported arm64 physical-device graph builds; this is not a
+  claim of universal Simulator support.
 
 ## Exact next step
 
@@ -253,3 +284,23 @@ All three were pushed to `origin/main` before this handoff was written.
 - Apple commit `746f45a` contains the regenerated artifact, requester recovery coordinator/UI integration, and dedicated recovery tests. Commit `7fc1ff5` updates the integration harness for the restored-offer event.
 - `cargo test -p refineid-lib-core rapp` passes 15 focused Rust tests. Independent macOS runs of `RappPairingRecoveryTests`, `RappOfferExpiryTests`, and `RappIntegrationTests` all pass. A combined Apple invocation can stall while Xcode finalizes its test record, so these suites are intentionally recorded from separate successful runs.
 - The complete `refineid-lib-core` Rust test suite and the complete non-UI Apple `CardCoreTests` plus `ReFineIDTests` suites pass on the source-pinned revisions.
+
+### 2026-08-17 separate persistent-token shipping topology
+
+- Rust RAPP ABI source revision:
+  `c745bb0cbab18b82877ddfa1143690c9fb4ce0ab`, pushed to the Rust repository's
+  `origin/main`. The tracked source includes
+  `crates/refineid-lib-core/src/rapp/`, the Cargo manifests and lockfile, the
+  library export, and the formal RAPP state-machine YAML used by conformance
+  tests.
+- Apple implementation revision:
+  `14b1c715d2ae13f5ca45246d7c7a649d9a9701ae`, pushed to the Apple repository's
+  `origin/main`.
+- That Apple revision adds a separate macOS-only
+  `ReFineIDRappTokenExtension`, keeps `ReFineIDTokenExtension` as the direct
+  smart-card reader driver, declares the containing app's local-network and
+  Bonjour metadata, and adds static shipping-configuration regression tests.
+- Standalone RAPP-extension Debug, full macOS Debug, and full arm64 iOS-device
+  Debug builds pass. Physical macOS-to-iPhone pairing and fail-stop
+  qualification remain the exact next step and are not implied by these build
+  results.
