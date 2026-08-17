@@ -40,10 +40,20 @@ internal struct CredentialUnblockSection: View {
   }
 
   /// The full everyday name, written to sit inside a longer label.
+  ///
+  /// The task title above the form already carries the (PIN n)
+  /// suffix; repeating it in every field made the labels truncate.
   private var everydayTargetName: String {
     target == .pin2
-      ? String(localized: "signature code (PIN 2)")
-      : String(localized: "basic code (PIN 1)")
+      ? String(localized: "signature code")
+      : String(localized: "basic code")
+  }
+
+  /// The repeat field's whole label.
+  private var everydayTargetNameRepeated: String {
+    target == .pin2
+      ? String(localized: "Signature code again")
+      : String(localized: "Basic code again")
   }
   @State private var puk = ""
   @State private var new = ""
@@ -186,11 +196,11 @@ internal struct CredentialUnblockSection: View {
       }
     )
     CredentialSecretField(
-      name: String(localized: "New \(everydayTargetName) again"),
+      name: everydayTargetNameRepeated,
       text: $repeated,
       revealIdentifier: "managementReset\(identifierName)RepeatReveal",
       field: {
-        SecureField("New \(everydayTargetName) again", text: $repeated)
+        SecureField(everydayTargetNameRepeated, text: $repeated)
           .textContentType(.oneTimeCode)
           #if os(iOS)
             .keyboardType(.numberPad)

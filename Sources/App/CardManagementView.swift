@@ -255,6 +255,9 @@ internal struct CardManagementView: View {
       .formStyle(.grouped)
     } else {
       Form {
+        // The card's problem is the first thing on the page; the
+        // forms to solve it follow.
+        recoveryGuidanceSection
         connectionSection
         let tasks = availableTasks
         if !tasks.isEmpty {
@@ -278,7 +281,6 @@ internal struct CardManagementView: View {
           }
         }
         CardOutcomeSection(model: model)
-        recoveryGuidanceSection
       }
       .formStyle(.grouped)
       .disabled(model.working)

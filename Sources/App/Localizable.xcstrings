@@ -523,6 +523,28 @@
         }
       }
     },
+    "Basic code again": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basic code again"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Perustunnusluku uudestaan"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baskod igen"
+          }
+        }
+      }
+    },
     "Browser authentication": {
       "localizations": {
         "fi": {
@@ -3614,6 +3636,28 @@
         }
       }
     },
+    "Signature code again": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signature code again"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allekirjoitustunnusluku uudestaan"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signaturkod igen"
+          }
+        }
+      }
+    },
     "Signature, name and SATU": {
       "localizations": {
         "fi": {
@@ -4755,24 +4799,24 @@
         }
       }
     },
-    "basic code (PIN 1)": {
+    "basic code": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Basic Code (PIN 1)"
+            "value": "basic code"
           }
         },
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "perustunnusluku (PIN 1)"
+            "value": "perustunnusluku"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "baskod (PIN 1)"
+            "value": "baskod"
           }
         }
       }
@@ -4905,24 +4949,24 @@
         }
       }
     },
-    "signature code (PIN 2)": {
+    "signature code": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Signature PIN 2"
+            "value": "signature code"
           }
         },
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "allekirjoitustunnusluku (PIN 2)"
+            "value": "allekirjoitustunnusluku"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "signaturkod (PIN 2)"
+            "value": "signaturkod"
           }
         }
       }
