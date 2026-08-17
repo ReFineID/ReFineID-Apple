@@ -84,6 +84,212 @@ extension topology, verified invariants, and known gaps in detail.
 5. Commit and push each coherent increment. Update the handoff and this status
    block whenever the pinned Rust ABI revision or verified evidence changes.
 
+### RAPP completion project plan
+
+Execute these phases in order. A later phase may start early only when it does
+not weaken, bypass, or duplicate the production protocol path established by an
+earlier phase.
+
+#### Phase A: preserve a reproducible protocol baseline
+
+Outcome: every shipped Apple artifact is auditable back to pushed Rust source.
+
+- Confirm the pinned Rust and Apple revisions above are reachable from their
+  remotes and both worktrees are clean before making changes.
+- Rebuild RAPP Swift bindings and `ReFineIDRappFFI.xcframework` only through the
+  repository-owned Swift release manager. Never hand-edit generated bindings.
+- If Rust ABI or wire behavior changes, first commit and push Rust, rebuild the
+  Apple artifact, then update its pinned Rust hash and handoff in the same Apple
+  commit series.
+- Keep the Rust conformance corpus and formal state-machine data authoritative.
+  Swift tests must consume that corpus rather than restating protocol rules.
+
+Acceptance criteria:
+
+- A clean checkout can reproduce the checked-in framework from the documented
+  Rust revision.
+- The release manager rejects a framework whose recorded source revision,
+  slices, symbols, or extension topology does not match the candidate.
+- Rust and Apple non-UI RAPP suites pass before UI harness work begins.
+
+#### Phase B: create the hardware-free RAPP system-test seam
+
+Outcome: tests can drive the complete authenticated protocol without a camera,
+local network, NFC antenna, or mutable physical card.
+
+- Introduce narrow dependency seams for peer transport and card effects. The
+  production defaults remain `PersistentRelaySession` and the NFC/card
+  executor; test implementations are compiled or enabled only for Debug/UI
+  testing.
+- Build an in-memory duplex transport that connects two real
+  `RappPairingCoordinator`/`RappConnectionCoordinator` peers and carries the
+  exact Rust-generated frames. It may schedule disconnects, duplication,
+  reordering, corruption, and expiry, but must not synthesize semantic success.
+- Adapt the existing Virtual ID Card as the card-effects implementation. It
+  owns card generation, activation state, identity, certificates, CAN, PINs,
+  retry counters, card presence, and deterministic injected failures. The
+  dispatcher must consume its outcomes through the same result types as NFC.
+- Use injectable monotonic time and deterministic test entropy only at the
+  protocol test boundary. Production continues using the operating system's
+  secure entropy and clock.
+- Ensure a test cannot accidentally reach a real reader, NFC session, Keychain
+  pairing, or credential store unless that specific integration test opts in.
+
+Acceptance criteria:
+
+- One test process can pair two real protocol peers, persist/select the pair,
+  establish a session, request an operation, ask the real authorization inbox,
+  execute one virtual card effect, acknowledge it, and close normally.
+- Wire/frame mutation reaches the real parser and produces the production
+  fail-stop/revocation behavior.
+- No test-only branch directly assigns a paired, approved, completed, failed,
+  or revoked SwiftUI state.
+
+#### Phase C: expose a Debug-only, accessible UI-test driver
+
+Outcome: XCUITest and a human in Virtual ID Card demonstration mode can drive
+the same RAPP behavior.
+
+- Add documented launch arguments/environment for an isolated RAPP test vault,
+  in-memory peer transport, deterministic peer fixture, and selected Virtual
+  ID Card scenario. Reject these controls in non-Debug builds.
+- Let UI tests initiate pairing through the visible pairing controls. QR camera
+  input may be replaced by a test scanner source, but the scanned URI must be a
+  genuine offer emitted by the other real coordinator.
+- Keep the floating Virtual ID Card editor localized in Finnish, Swedish, and
+  English. Every value, connection mode, failure injection, and card state must
+  have stable accessibility labels, values, hints, traits, and identifiers.
+- Make authorization sheets fully operable with VoiceOver, Switch Control,
+  keyboard focus, Dynamic Type, increased contrast, and reduced motion. Never
+  expose CAN, PIN 1, PIN 2, PUK, digests, keys, or raw frames in accessibility
+  text.
+- Split UI tests by scenario family so no shard approaches the physical-device
+  UI-test timeout. Each test starts with an isolated vault and deterministic
+  card state.
+
+Acceptance criteria:
+
+- A human can configure the Virtual ID Card, pair, approve or deny requests,
+  inspect revocation, and re-pair using only VoiceOver.
+- The release manager proves the driver, floating card, launch controls, test
+  credentials, and diagnostics are absent from App Store archives.
+
+#### Phase D: complete the deterministic RAPP behavior matrix
+
+Outcome: all formal states and terminal transitions have application-level
+evidence, not only unit-level evidence.
+
+Pairing shards:
+
+- Valid offer, explicit two-sided review, approval, persistence, selection, and
+  reconnect.
+- Denial, cancel, malformed offer, expired offer, unsupported profile, peer
+  mismatch, transport loss at each pairing phase, and requester offer restore.
+- Pair removal from each device, durable revocation, and manual re-pairing with
+  new keys.
+
+Operation shards:
+
+- Card status and identity read with explicit approval and denial.
+- Browser authentication with one approval, one card command, one result, and
+  one acknowledgement.
+- Document signing with PIN 2 entered only on the phone, cleared after every
+  outcome, exactly one card command, and exactly one acknowledgement.
+- Busy/concurrent request handling, user cancellation, request expiry, card
+  removal before transmit, completion ambiguity, and safe reconnect behavior.
+
+Fail-stop shards:
+
+- Invalid CAN, PIN 1, or PIN 2, authenticated frame corruption, replay,
+  sequence violation, peer identity mismatch, impossible transition, and
+  unsupported credential request each terminate the current operation as the
+  protocol specifies.
+- Every authenticated protocol violation immediately and durably revokes the
+  pairing on the first incident. There is no warning strike, retry, automatic
+  repair, or silent re-pair.
+- Credential rejection clears the corresponding local credential state,
+  closes the relay/extension operation, and requires explicit user recovery.
+- Activation and PIN management requests are rejected because RAPP 0.1 never
+  proxies those operations.
+
+Acceptance criteria:
+
+- Every formal transition has at least one positive test and every forbidden
+  transition has a rejection/fail-stop test.
+- Physical-card-command counters prove zero, one, or the specified exact count
+  for every terminal path. Retry-floor refusal always proves zero credential
+  transmissions.
+- Tests assert durable state after process restart, not merely the final
+  in-memory event.
+
+#### Phase E: qualify the exact build on physical Apple hardware
+
+Outcome: the same candidate proven in automation works across real Apple
+frameworks, radios, extensions, Safari, NFC, and smart-card hardware.
+
+- Record Apple and Rust commit hashes, version/build, archive identifiers,
+  macOS/iOS versions, device models, card generation, reader model, and
+  sanitized start state before testing.
+- Pair the Mac and iPhone through the visible QR flow; confirm both sides show
+  the same reviewed peer and granted profiles.
+- Prove status/identity, Safari authentication, document signing, explicit
+  denial, card removal before transmit, relay loss, application restart,
+  extension restart, peer removal, one synthetic non-credential fail-stop
+  violation, durable revocation, and manual re-pairing.
+- Exercise the direct-reader and RAPP CryptoTokenKit extensions separately and
+  confirm they never claim each other's token class or entitlement capability.
+- Capture only sanitized evidence. Do not intentionally submit a wrong real
+  CAN, PIN 1, PIN 2, activation PIN, or PUK, and never test a final retry.
+
+Acceptance criteria:
+
+- The exact archived candidate passes the complete recorded physical matrix.
+- No result depends on a development-only entitlement, retained pairing,
+  retained credential, debugger attachment, or manually launched extension.
+
+#### Phase F: independent interoperability and security review
+
+Outcome: RAPP is demonstrably a portable protocol rather than an Apple-only
+implementation detail.
+
+- Implement one minimal independent requester or authorizer from the published
+  protocol and conformance corpus without importing the shared Rust library.
+- Cross-run positive, negative, expiry, replay, transcript-binding, revocation,
+  and fail-stop vectors against the Apple implementation.
+- Obtain external review of cryptography, key lifecycle, pairing ceremony,
+  QR/bootstrap authenticity, transcript binding, sequence/replay protection,
+  privacy metadata, denial of service, local-network exposure, and extension
+  teardown behavior.
+- Resolve every high-severity finding before TestFlight; record accepted lower
+  risks with owner, rationale, and an explicit review date.
+
+Acceptance criteria:
+
+- The independent implementation interoperates without Apple-private behavior
+  or undocumented assumptions.
+- Protocol and threat-model documents match the code and conformance corpus.
+
+#### Phase G: freeze and distribute the release candidate
+
+Outcome: TestFlight/App Store receives exactly the candidate that passed all
+required gates.
+
+- Run full Rust, Swift, UI, accessibility, archive, privacy, localization, and
+  physical-hardware gates through the Swift release manager.
+- Generate TestFlight “What to Test” notes from the exact diff and include the
+  pairing, approval, revocation, and Virtual ID Card reviewer walkthrough.
+- Upload only after a human reviews the notes and recorded evidence. Never
+  rebuild between qualification and upload.
+- Record build identifiers, source revisions, generated-artifact provenance,
+  tester groups, review notes, and rollback decision in the release evidence.
+
+Acceptance criteria:
+
+- Uploaded binaries hash-identically match the qualified exports.
+- App Store archives contain no Debug harness, diagnostics, logs, credential
+  traces, test credentials, or Virtual ID Card implementation not intended for
+  review/demo distribution.
+
 ## 0. Release blockers
 
 Audited against source 2026-08-16. Each item states only what remains;
