@@ -556,17 +556,21 @@ internal struct CardCredentialsView: View {
           openRemoteReader()
         } label: {
           navigationRow(String(localized: "Remote Card")) {
-            Image(
-              systemName: remoteCardAvailable
-                ? "key.radiowaves.forward"
-                : "key.radiowaves.forward.slash"
-            )
-            .foregroundStyle(
-              remoteCardAvailable
-                ? AnyShapeStyle(Color.accentColor)
-                : AnyShapeStyle(.secondary)
-            )
-            .accessibilityHidden(true)
+            // The same key glyph as the PIN row below keeps the two
+            // keyholes on one vertical line; the waves sit beside it
+            // instead of inside one wider, off-center symbol.
+            Image(systemName: remoteCardAvailable ? "key" : "key.slash")
+              .overlay(alignment: .topTrailing) {
+                Image(systemName: "wave.3.forward")
+                  .font(.system(size: 9, weight: .semibold))
+                  .offset(x: 10)
+              }
+              .foregroundStyle(
+                remoteCardAvailable
+                  ? AnyShapeStyle(Color.accentColor)
+                  : AnyShapeStyle(.secondary)
+              )
+              .accessibilityHidden(true)
           }
         }
         .tint(.primary)
