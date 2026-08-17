@@ -38,6 +38,13 @@ internal struct CredentialUnblockSection: View {
   private var identifierName: String {
     targetName.replacingOccurrences(of: " ", with: "")
   }
+
+  /// The full everyday name, written to sit inside a longer label.
+  private var everydayTargetName: String {
+    target == .pin2
+      ? String(localized: "signature code (PIN 2)")
+      : String(localized: "basic code (PIN 1)")
+  }
   @State private var puk = ""
   @State private var new = ""
   @State private var repeated = ""
@@ -115,6 +122,9 @@ internal struct CredentialUnblockSection: View {
       .controlSize(.large)
       .listRowInsets(EdgeInsets())
       .listRowBackground(Color.clear)
+    #else
+      .frame(maxWidth: .infinity)
+      .listRowBackground(Color.clear)
     #endif
     .keyboardShortcut(.defaultAction)
     .disabled(
@@ -153,11 +163,11 @@ internal struct CredentialUnblockSection: View {
       }
     )
     CredentialSecretField(
-      name: String(localized: "New \(targetName)"),
+      name: String(localized: "New \(everydayTargetName)"),
       text: $new,
       revealIdentifier: "managementReset\(identifierName)NewReveal",
       field: {
-        SecureField("New \(targetName)", text: $new)
+        SecureField("New \(everydayTargetName)", text: $new)
           .textContentType(.oneTimeCode)
           #if os(iOS)
             .keyboardType(.numberPad)
@@ -176,11 +186,11 @@ internal struct CredentialUnblockSection: View {
       }
     )
     CredentialSecretField(
-      name: String(localized: "New \(targetName) again"),
+      name: String(localized: "New \(everydayTargetName) again"),
       text: $repeated,
       revealIdentifier: "managementReset\(identifierName)RepeatReveal",
       field: {
-        SecureField("New \(targetName) again", text: $repeated)
+        SecureField("New \(everydayTargetName) again", text: $repeated)
           .textContentType(.oneTimeCode)
           #if os(iOS)
             .keyboardType(.numberPad)

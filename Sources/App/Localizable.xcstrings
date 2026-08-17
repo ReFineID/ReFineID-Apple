@@ -4755,6 +4755,28 @@
         }
       }
     },
+    "basic code (PIN 1)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basic Code (PIN 1)"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "perustunnusluku (PIN 1)"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "baskod (PIN 1)"
+          }
+        }
+      }
+    },
     "blocked": {
       "localizations": {
         "fi": {
@@ -4879,6 +4901,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "adressen kan inte användas"
+          }
+        }
+      }
+    },
+    "signature code (PIN 2)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signature PIN 2"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "allekirjoitustunnusluku (PIN 2)"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "signaturkod (PIN 2)"
           }
         }
       }

@@ -74,20 +74,38 @@ internal struct CredentialSecretField<Field: View, Validation: View>: View {
 
   internal var body: some View {
     HStack {
-      if revealsValue {
-        TextField(name, text: $text)
-          .textContentType(.oneTimeCode)
-          #if os(iOS)
-            .keyboardType(.numberPad)
-          #endif
-          .autocorrectionDisabled()
-          .lineLimit(1)
-          .onChange(of: text) { _, value in
-            text = LimitedDigits.puk(value)
-          }
-      } else {
-        field()
+      Group {
+        if revealsValue {
+          TextField(name, text: $text)
+            .textContentType(.oneTimeCode)
+            #if os(iOS)
+              .keyboardType(.numberPad)
+            #endif
+            .autocorrectionDisabled()
+            .lineLimit(1)
+            .onChange(of: text) { _, value in
+              text = LimitedDigits.puk(value)
+            }
+        } else {
+          field()
+        }
       }
+      // A Form on macOS turns the field's title into a leading label
+      // and shrinks the editable area to a small trailing box. The
+      // plain, label-free field spans the whole line instead, with
+      // the name shown inside it the way iOS shows it.
+      #if os(macOS)
+        .textFieldStyle(.plain)
+        .labelsHidden()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(alignment: .leading) {
+          if text.isEmpty {
+            Text(name)
+            .foregroundStyle(.secondary)
+            .allowsHitTesting(false)
+          }
+        }
+      #endif
       Button {
         revealsValue.toggle()
       } label: {

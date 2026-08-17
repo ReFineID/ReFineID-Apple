@@ -35,6 +35,16 @@ internal struct CredentialChangeSection: View {
       name.replacingOccurrences(of: " ", with: "")
     }
 
+    /// The full everyday name, written to sit inside a longer label.
+    internal var everydayName: String {
+      switch self {
+      case .pin1:
+        String(localized: "basic code (PIN 1)")
+      case .pin2:
+        String(localized: "signature code (PIN 2)")
+      }
+    }
+
     /// The entry bounds of this PIN.
     internal var digitBounds: ClosedRange<Int> {
       switch self {
@@ -162,6 +172,9 @@ internal struct CredentialChangeSection: View {
       .controlSize(.large)
       .listRowInsets(EdgeInsets())
       .listRowBackground(Color.clear)
+    #else
+      .frame(maxWidth: .infinity)
+      .listRowBackground(Color.clear)
     #endif
     .keyboardShortcut(.defaultAction)
     .disabled(
@@ -176,11 +189,11 @@ internal struct CredentialChangeSection: View {
   /// The three secret fields, threaded for Return.
   @ViewBuilder private var entryRows: some View {
     CredentialSecretField(
-      name: String(localized: "Current \(credential.name)"),
+      name: String(localized: "Current \(credential.everydayName)"),
       text: $current,
       revealIdentifier: "managementChange\(credential.identifierName)CurrentReveal",
       field: {
-        SecureField("Current \(credential.name)", text: $current)
+        SecureField("Current \(credential.everydayName)", text: $current)
           .textContentType(.oneTimeCode)
           #if os(iOS)
             .keyboardType(.numberPad)
@@ -200,11 +213,11 @@ internal struct CredentialChangeSection: View {
       }
     )
     CredentialSecretField(
-      name: String(localized: "New \(credential.name)"),
+      name: String(localized: "New \(credential.everydayName)"),
       text: $new,
       revealIdentifier: "managementChange\(credential.identifierName)NewReveal",
       field: {
-        SecureField("New \(credential.name)", text: $new)
+        SecureField("New \(credential.everydayName)", text: $new)
           .textContentType(.oneTimeCode)
           #if os(iOS)
             .keyboardType(.numberPad)
@@ -224,11 +237,11 @@ internal struct CredentialChangeSection: View {
       }
     )
     CredentialSecretField(
-      name: String(localized: "New \(credential.name) again"),
+      name: String(localized: "New \(credential.everydayName) again"),
       text: $repeated,
       revealIdentifier: "managementChange\(credential.identifierName)RepeatReveal",
       field: {
-        SecureField("New \(credential.name) again", text: $repeated)
+        SecureField("New \(credential.everydayName) again", text: $repeated)
           .textContentType(.oneTimeCode)
           #if os(iOS)
             .keyboardType(.numberPad)
