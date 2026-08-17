@@ -13,10 +13,14 @@ internal struct PersonRowLabel: View {
 
   internal var body: some View {
     HStack {
-      Image(systemName: configured ? "person.badge.key" : "person.fill")
-        .foregroundStyle(Color.accentColor)
-        .frame(width: Self.iconWidth)
-        .accessibilityHidden(true)
+      Image(
+        systemName: configured
+          ? "person.fill.checkmark"
+          : "person.fill.questionmark"
+      )
+      .foregroundStyle(Color.accentColor)
+      .frame(width: Self.iconWidth)
+      .accessibilityHidden(true)
       Text("Person")
     }
   }
