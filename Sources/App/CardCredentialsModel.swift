@@ -177,13 +177,16 @@ internal final class CardCredentialsModel {
   /// Forgets everything this device knows about the card.
   ///
   /// This clears credentials, card-directory entries, primed identities,
-  /// Safari registration, and diagnostic logs without authentication.
-  /// Nothing is disclosed; authority is removed.
-  internal func forgetEverything() {
+  /// Safari registration, diagnostic logs, and the whole RAPP
+  /// configuration without authentication. Nothing is disclosed;
+  /// authority is removed, and remote devices start over with the
+  /// pairing ceremony.
+  internal func forgetEverything() async {
     failure = nil
     invalidateCardStatus()
     let outcome = CardStateReset.perform()
     CardCredentialStore.forgetAll()
+    await Self.removeAllRappConfiguration()
     refresh()
     if !outcome.succeeded {
       failure = outcome.summary
@@ -194,11 +197,27 @@ internal final class CardCredentialsModel {
   ///
   /// The refusal message set by the failed connection stays visible:
   /// it is the only account of why the identity is gone.
-  internal func forgetEverythingAfterCardMismatch() {
+  internal func forgetEverythingAfterCardMismatch() async {
     let explanation = failure
-    forgetEverything()
+    await forgetEverything()
     if failure == nil {
       failure = explanation
     }
+  }
+
+  /// Revokes every pair, drops the selection, and forgets all names.
+  ///
+  /// Revocation erases each pair's key material and leaves a tombstone,
+  /// so a replayed pair record can never come back to life.
+  private static func removeAllRappConfiguration() async {
+    let vault = RappDeviceVault()
+    let catalog = RappPairCatalog(vault: vault)
+    if let pairs = try? await catalog.activePairs() {
+      for pair in pairs {
+        try? await catalog.revoke(pairID: pair.pairID)
+      }
+    }
+    try? vault.clearSelectedPair()
+    RappPairNames.forgetAll()
   }
 }

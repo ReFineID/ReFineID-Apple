@@ -29,6 +29,11 @@ internal enum RappPairNames {
     UserDefaults.standard.set(names, forKey: key)
   }
 
+  /// Drops every remembered name, orphans included.
+  internal static func forgetAll() {
+    UserDefaults.standard.removeObject(forKey: key)
+  }
+
   private static func stored() -> [String: String] {
     UserDefaults.standard.dictionary(forKey: key) as? [String: String] ?? [:]
   }

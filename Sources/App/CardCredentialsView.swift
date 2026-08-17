@@ -387,7 +387,7 @@ internal struct CardCredentialsView: View {
           !isDemonstration,
           model.contents.hasCardAccessNumber
         else { return }
-        model.forgetEverything()
+        Task { await model.forgetEverything() }
       }
       .onReceive(
         NotificationCenter.default.publisher(
@@ -421,11 +421,13 @@ internal struct CardCredentialsView: View {
               return
             }
           #endif
-          model.forgetEverything()
-          registrationReset.toggle()
-          isRegistered = false
-          synchronizeIdentityState()
-          clearEntries()
+          Task {
+            await model.forgetEverything()
+            registrationReset.toggle()
+            isRegistered = false
+            synchronizeIdentityState()
+            clearEntries()
+          }
         }
       }
   }
@@ -1026,7 +1028,7 @@ internal struct CardCredentialsView: View {
         // facing a different card: every authority is removed and
         // setup starts over from the access number.
         if !isDemonstration, hasIdentity {
-          model.forgetEverythingAfterCardMismatch()
+          await model.forgetEverythingAfterCardMismatch()
         }
         cardAccessNumberEntry = ""
         isCardAccessNumberFieldFocused = true
