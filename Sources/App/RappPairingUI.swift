@@ -285,7 +285,17 @@ internal final class RappPairingModel {
   }
 
   internal func approvePeer() {
-    guard case .review(let peer) = phase, let coordinator else { return }
+    guard case .review(let peer) = phase else { return }
+    confirmPeer(peer)
+  }
+
+  /// Grants exactly the requested, supported profiles and proceeds to store
+  /// the pairing.
+  ///
+  /// Used by the requester's manual confirmation and by the proxy's automatic
+  /// confirmation.
+  private func confirmPeer(_ peer: RappPairingCoordinator.Peer) {
+    guard let coordinator else { return }
     let grantSet = requestedProfiles(for: peer).filter(
       RappApplePeerProfile.isSupported)
     guard !grantSet.isEmpty else {
@@ -432,7 +442,16 @@ internal final class RappPairingModel {
       restoreRequesterOffer(uri, coordinator: coordinator)
     case .reviewPeer(let peer):
       reviewedPeerName = peer.displayName
-      phase = .review(peer)
+      // The scan of the offer QR, carrying its 256-bit bearer secret, is the
+      // human consent that authorizes this pairing and its public reads. A
+      // peer that lists requested profiles is the requester, so this device is
+      // the proxy and confirms automatically with the requested grant set. The
+      // requester still confirms the scanned proxy explicitly.
+      if peer.requestedProfiles != nil {
+        confirmPeer(peer)
+      } else {
+        phase = .review(peer)
+      }
     case .paired(let pair):
       do {
         try vault.selectPair(pairID: pair.pairID)

@@ -10,7 +10,6 @@
     private let inbox: RappAuthorizationInbox
     private let requireExplicitReconnect: @MainActor @Sendable () -> Void
     private var pin2ByOperation: [Data: String] = [:]
-    private var safeReadsConsented = false
 
     internal init(
       inbox: RappAuthorizationInbox,
@@ -43,6 +42,14 @@
               operationID: operationID)
             return
           }
+          // The QR scan that paired this device, carrying the offer's 256-bit
+          // bearer secret, is the human consent that authorizes this session's
+          // public reads, so a safe read proceeds without another prompt. Only
+          // a PIN-consuming credential command still asks per operation.
+          if operation.kind.isSafeRead {
+            try await coordinator.approve(operationID: operationID)
+            return
+          }
           let request = RappAuthorizationRequest(
             id: operationID.base64EncodedString(),
             requester: await Self.requesterName()
@@ -50,14 +57,8 @@
               ?? String(localized: "Paired device"),
             action: action
           )
-          let safeRead = operation.kind.isSafeRead
-          if safeRead, safeReadsConsented {
-            try await coordinator.approve(operationID: operationID)
-            return
-          }
           switch await inbox.ask(request) {
           case .approved:
-            if safeRead { safeReadsConsented = true }
             try await coordinator.approve(operationID: operationID)
           case .approvedDocumentSignature(let pin2):
             guard operation.kind == .signDocument else {
