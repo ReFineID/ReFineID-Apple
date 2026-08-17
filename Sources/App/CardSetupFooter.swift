@@ -11,6 +11,17 @@ import SwiftUI
 internal struct CardSetupFooter: View {
   private static let padding: CGFloat = 12
 
+  #if DEBUG
+    /// Read from the bundle at run time: the stamp scripts renumber
+    /// every install, and a hardcoded copy would trail them.
+    private static let diagnosticsTitle: String = {
+      let info = Bundle.main.infoDictionary
+      let version = info?["CFBundleShortVersionString"] as? String ?? ""
+      let build = info?["CFBundleVersion"] as? String ?? ""
+      return String(localized: "Diagnostics") + " - \(version) (\(build))"
+    }()
+  #endif
+
   /// Whether this run is demonstrating the flow without a card.
   internal let isDemonstration: Bool
 
@@ -48,13 +59,14 @@ internal struct CardSetupFooter: View {
     #endif
   }
 
-  /// The route into diagnostics, in development builds only.
+  /// The route into diagnostics, in development builds only, named
+  /// with the exact build it belongs to.
   @ViewBuilder private var development: some View {
     #if DEBUG
       NavigationLink {
         DiagnosticsView()
       } label: {
-        Label("Diagnostics", systemImage: "stethoscope")
+        Label(Self.diagnosticsTitle, systemImage: "stethoscope")
       }
       .accessibilityIdentifier("diagnosticsButton")
       .padding(.vertical, Self.padding)
