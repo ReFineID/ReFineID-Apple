@@ -24,27 +24,28 @@ internal struct CardIdentitySection: View {
 
   internal var body: some View {
     Section {
-      LabeledContent {
-        HStack {
+      HStack {
+        LabeledContent {
           Text(holder)
             .textSelection(.enabled)
-          // The forget action lives on the row it removes; the
-          // confirmation dialog still stands in front of it.
-          Button(role: .destructive, action: forget) {
-            Image(systemName: "minus.circle")
-              .foregroundStyle(.red)
-          }
-          .buttonStyle(.plain)
-          .frame(width: Self.tapTargetSide, height: Self.tapTargetSide)
-          .contentShape(Rectangle())
-          .padding(Self.tapTargetOverflow)
-          .accessibilityLabel(Text("Forget identity"))
-          .accessibilityIdentifier("forgetCardIdentityButton")
+        } label: {
+          PersonRowLabel(configured: true)
         }
-      } label: {
-        PersonRowLabel(configured: true)
+        .accessibilityIdentifier("identityStatus")
+        // The forget action lives on the row it removes, pinned to
+        // the trailing edge and centered in the row's height; the
+        // confirmation dialog still stands in front of it.
+        Button(role: .destructive, action: forget) {
+          Image(systemName: "minus.circle")
+            .foregroundStyle(.red)
+        }
+        .buttonStyle(.plain)
+        .frame(width: Self.tapTargetSide, height: Self.tapTargetSide)
+        .contentShape(Rectangle())
+        .padding(Self.tapTargetOverflow)
+        .accessibilityLabel(Text("Forget identity"))
+        .accessibilityIdentifier("forgetCardIdentityButton")
       }
-      .accessibilityIdentifier("identityStatus")
     } header: {
       Text("Identity")
         .frame(maxWidth: .infinity, alignment: .leading)
