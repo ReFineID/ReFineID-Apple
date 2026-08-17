@@ -6,6 +6,84 @@ Completed work is removed. This file contains only concrete outcomes that are
 still required for an Apple beta, App Store release, or the next protocol
 milestone.
 
+## Current RAPP handoff
+
+This is the restart point for a fresh agent. Read
+`Documentation/rapp-implementation-handoff.md` before changing RAPP. The
+handoff describes the protocol boundary, generated-artifact provenance, Apple
+extension topology, verified invariants, and known gaps in detail.
+
+### Pushed baseline
+
+- Rust protocol/core repository: `~/src/ReFineID` at
+  `c745bb0cbab18b82877ddfa1143690c9fb4ce0ab`. `HEAD` and `origin/main` match.
+  All 25 files under `crates/refineid-lib-core/src/rapp/`, the crate manifests,
+  lockfile, library export, and formal state-machine data are tracked and
+  pushed.
+- Apple repository: `~/src/ReFineID-Apple` at
+  `ca3fab2fb9daeeed179d36816c1c55ed91131d28`. `HEAD` and `origin/main` match.
+  The checked-in `ReFineIDRappFFI.xcframework` and generated Swift bindings are
+  explicitly pinned in the handoff to the Rust revision above.
+- Do not replace the checked-in framework without rebuilding it from a pushed
+  Rust revision and updating the pinned revision in the same commit series.
+
+### Implemented and verified
+
+- RAPP pairing, authenticated operation transport, explicit phone-holder
+  authorization, browser authentication, document signing, acknowledgements,
+  durable peer selection/revocation, and immediate durable revocation after one
+  authenticated protocol violation are implemented through the shared Rust
+  core. Activation and PIN management are deliberately not remote RAPP
+  operations.
+- macOS ships separate direct-reader and RAPP CryptoTokenKit extensions. The
+  reader extension has smart-card access and no network entitlement; the RAPP
+  extension has local-network client/server access and no smart-card
+  entitlement.
+- `cargo test -p refineid-lib-core` passed at the pinned Rust revision.
+- The full non-UI Apple suite passed 518 tests in 84 suites, including paired
+  browser authentication, document signing, denial, terminal paths, and
+  credential-rejection revocation.
+- The Swift release manager produced and inspected local iOS and macOS
+  production candidates `26.8.17 (60)`. Both passed architecture, signing,
+  entitlement, extension-topology, privacy, logging, coverage, quarantine, and
+  export gates. These were qualification artifacts, not uploaded releases.
+
+### Not yet proved
+
+- The exact pushed baseline has not completed the recorded physical two-device
+  matrix: QR pairing, card status, Safari authentication, document signing,
+  denial, card removal, one synthetic authenticated fail-stop violation,
+  durable revocation, and manual re-pairing.
+- The connected development iPhone was locked during the last run. Launching
+  the freshly installed Debug app failed for that reason. A macOS “Enable UI
+  Automation” dialog may also require the owner to approve Touch ID. Never try
+  to bypass either protection.
+- A hardware-free RAPP UI qualification harness is still missing. It must run
+  the real Rust pairing and authorization coordinators and may virtualize only
+  transport and card effects. Do not satisfy this by injecting a fake visible
+  SwiftUI state.
+- Independent implementation/interoperability and external security review are
+  still missing.
+
+### Exact next work
+
+1. Confirm both repositories are clean and still at the revisions above.
+2. If the owner has unlocked the development iPhone and approved UI automation,
+   run the physical matrix in section 0 and record sanitized evidence against
+   both exact commits. Do not intentionally consume a real CAN, PIN 1, PIN 2,
+   activation, or PUK retry.
+3. Otherwise continue the hardware-free UI harness. Start at
+   `Sources/App/RappPairingUI.swift`, `RappAuthorizationInbox.swift`,
+   `RappPhoneProxyDispatcher.swift`, `PhonePersistentTokenRelay.swift`, and the
+   existing Virtual ID Card/UI-test launch environment. Preserve the real Rust
+   protocol path; inject below the semantic dispatcher/card boundary.
+4. Add bounded iOS UI-test shards for pairing review, approve/deny, PIN 2
+   authorization, one-violation fail-stop, revocation/re-pairing, VoiceOver
+   labels, Dynamic Type, and Finnish/Swedish/English strings. Keep each shard
+   below the device UI-test timeout.
+5. Commit and push each coherent increment. Update the handoff and this status
+   block whenever the pinned Rust ABI revision or verified evidence changes.
+
 ## 0. Release blockers
 
 Audited against source 2026-08-16. Each item states only what remains;
