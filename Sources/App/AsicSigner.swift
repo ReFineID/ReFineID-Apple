@@ -1,6 +1,5 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-
 import CardCore
 import Foundation
 import Security
@@ -102,8 +101,10 @@ internal enum AsicSigner {
   }
 
   #if os(macOS)
-    /// Signs canonical XAdES bytes through the selected phone. PIN 2 is
-    /// entered on the authorizer and never crosses the RAPP boundary.
+    /// Signs canonical XAdES bytes through the selected phone.
+    ///
+    /// PIN 2 is entered on the authorizer and never crosses the RAPP
+    /// boundary.
     private static func signRemotely(
       _ objects: [AsicContainer.DataObject]
     ) async throws -> Data {

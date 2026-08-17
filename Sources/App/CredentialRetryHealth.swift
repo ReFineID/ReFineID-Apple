@@ -67,6 +67,7 @@ internal final class CredentialRetryHealth {
   private init() {}
 
   /// Starts one non-blocking retry probe for the newly inserted reader card.
+  ///
   /// A replacement or removal invalidates the generation, so a late answer can
   /// never color the key for a card that is no longer present.
   internal func refreshFromReader() {
@@ -81,16 +82,17 @@ internal final class CredentialRetryHealth {
       guard
         !Task.isCancelled,
         let self,
-        self.refreshGeneration == generation
+        refreshGeneration == generation
       else { return }
-      self.readerRefresh = nil
-      self.apply(report)
+      readerRefresh = nil
+      apply(report)
     }
   }
 
-  /// Accepts only a complete and plausible report. A locked result is the
-  /// card's semantic zero; every other non-counter outcome makes the status
-  /// unavailable rather than inviting a guess.
+  /// Accepts only a complete and plausible report.
+  ///
+  /// A locked result is the card's semantic zero; every other non-counter
+  /// outcome makes the status unavailable rather than inviting a guess.
   internal func update(_ report: CredentialProbeReport?) {
     cancelReaderRefresh()
     apply(report)
@@ -181,7 +183,8 @@ internal struct CredentialRetryHealthKey: View {
           .contentTransition(
             .symbolEffect(
               .replace.magic(fallback: .offUp.byLayer),
-              options: .nonRepeating))
+              options: .nonRepeating)
+          )
           .foregroundStyle(level.color)
         statusBadge(level)
       } else {
@@ -196,7 +199,8 @@ internal struct CredentialRetryHealthKey: View {
     .accessibilityLabel(Text("Change or Reset PINs"))
     .accessibilityValue(
       displayedLevel?.accessibilityValue
-        ?? String(localized: "Credential retry status unavailable"))
+        ?? String(localized: "Credential retry status unavailable")
+    )
     .onAppear { animateIfNeeded(displayedLevel) }
     .onChange(of: displayedLevel) { _, newLevel in
       animateIfNeeded(newLevel)
@@ -204,6 +208,7 @@ internal struct CredentialRetryHealthKey: View {
   }
 
   /// A slashed key means the card has not been verified in this session.
+  ///
   /// A cached retry report must not decorate that unavailable state as
   /// healthy, warning, or critical.
   private var displayedLevel: CredentialRetryHealth.Level? {
@@ -232,12 +237,14 @@ internal struct CredentialRetryHealthKey: View {
       .background(.background, in: Circle())
   }
 
-  /// Motion calls attention only to degraded states. Yielding one render pass
-  /// lets an initially degraded badge exist before its effect begins. Yellow
-  /// pulses once; red repeats until the state changes. There is no timing
-  /// constant, and Reduce Motion suppresses both. UI automation also opts
-  /// out: XCTest waits for animation quiescence before taps, while the red
-  /// state intentionally never becomes quiescent for a holder.
+  /// Motion calls attention only to degraded states.
+  ///
+  /// Yielding one render pass lets an initially degraded badge exist
+  /// before its effect begins. Yellow pulses once; red repeats until the
+  /// state changes. There is no timing constant, and Reduce Motion
+  /// suppresses both. UI automation also opts out: XCTest waits for
+  /// animation quiescence before taps, while the red state intentionally
+  /// never becomes quiescent for a holder.
   private func animateIfNeeded(_ level: CredentialRetryHealth.Level?) {
     guard
       !reduceMotion,

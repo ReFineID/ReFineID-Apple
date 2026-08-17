@@ -75,7 +75,7 @@ internal struct CredentialSecretField<Field: View, Validation: View>: View {
       field()
         .foregroundStyle(revealsValue && !text.isEmpty ? Color.clear : Color.primary)
         .overlay(alignment: .leading) {
-          if revealsValue && !text.isEmpty {
+          if revealsValue, !text.isEmpty {
             Text(verbatim: text)
               .foregroundStyle(.primary)
               .lineLimit(1)
@@ -105,7 +105,8 @@ internal struct CredentialSecretField<Field: View, Validation: View>: View {
   }
 
   private var revealAccessibilityLabel: String {
-    let format = revealsValue
+    let format =
+      revealsValue
       ? String(localized: "Hide %@")
       : String(localized: "Show %@")
     return String.localizedStringWithFormat(format, name)
@@ -123,8 +124,7 @@ extension CredentialSecretField where Validation == EmptyView {
       name: name,
       text: text,
       revealIdentifier: revealIdentifier,
-      field: field,
-      validation: { EmptyView() }
-    )
+      field: field
+    ) { EmptyView() }
   }
 }

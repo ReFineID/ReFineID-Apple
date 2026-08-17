@@ -194,6 +194,7 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
     private var lastFoundPeer: MCPeerID?
 
     /// Builds a channel for one role that reports to one owner.
+    @preconcurrency
     public init(
       role: PersistentRelayRole,
       displayName: String,

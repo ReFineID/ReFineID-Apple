@@ -93,8 +93,10 @@ internal struct CredentialChangeSection: View {
   }
 
   /// A card write that replaces a PIN with the same value has no useful
-  /// effect. Flag every completed row so the holder can see that the form as
-  /// a whole, rather than one particular entry, needs to change.
+  /// effect.
+  ///
+  /// Flag every completed row so the holder can see that the form as a
+  /// whole, rather than one particular entry, needs to change.
   private var newPinMatchesCurrent: Bool {
     currentIsValid && repeatedIsValid && current == new
   }
@@ -130,10 +132,9 @@ internal struct CredentialChangeSection: View {
     .confirmCredentialOperation(
       $pending,
       report: model.report,
-      reject: { _ in clearEntries() }
-    ) { _ in
-      change()
-    }
+      reject: { _ in clearEntries() },
+      confirm: { _ in change() }
+    )
   }
 
   private var changeButton: some View {
@@ -157,7 +158,8 @@ internal struct CredentialChangeSection: View {
       !isComplete
         || !model.canContactCard
         || !model.allowsCredentialOperation(spending: role)
-        || model.cardOperationInProgress)
+        || model.cardOperationInProgress
+    )
     .accessibilityIdentifier("managementChange\(credential.identifierName)")
   }
 

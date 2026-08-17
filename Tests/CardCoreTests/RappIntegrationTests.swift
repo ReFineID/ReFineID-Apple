@@ -3,6 +3,7 @@
 import Foundation
 import Security
 import Testing
+
 @testable import CardCore
 
 #if canImport(ReFineIDRapp)
@@ -59,20 +60,20 @@ import Testing
 
       var displayContext: String {
         switch self {
-        case let .browserAuthentication(origin, _): origin
-        case let .documentSigning(documentName, _): documentName
+        case .browserAuthentication(let origin, _): origin
+        case .documentSigning(let documentName, _): documentName
         }
       }
 
       var digest: Data {
         switch self {
-        case let .browserAuthentication(_, digest), let .documentSigning(_, digest): digest
+        case .browserAuthentication(_, let digest), .documentSigning(_, let digest): digest
         }
       }
 
       func begin(on coordinator: RappConnectionCoordinator) async throws {
         switch self {
-        case let .browserAuthentication(origin, digest):
+        case .browserAuthentication(let origin, let digest):
           try await coordinator.beginBrowserAuthentication(
             origin: origin,
             keyProfile: .ecdsaP256,
@@ -80,7 +81,7 @@ import Testing
             digest: digest,
             expiresAfterMilliseconds: 60_000
           )
-        case let .documentSigning(documentName, digest):
+        case .documentSigning(let documentName, let digest):
           try await coordinator.beginSignDocument(
             documentName: documentName,
             keyProfile: .ecdsaP256,
@@ -234,12 +235,14 @@ import Testing
         #expect(mapped.signingAlgorithm.scheme == algorithm.scheme)
       }
 
-      #expect(RappOperationDriver.SignatureAlgorithm(
-        SigningAlgorithm(hash: .sha224, scheme: .rsaPkcs1)
-      ) == nil)
-      #expect(RappOperationDriver.SignatureAlgorithm(
-        SigningAlgorithm(hash: .sha384, scheme: .rsaPss)
-      ) == nil)
+      #expect(
+        RappOperationDriver.SignatureAlgorithm(
+          SigningAlgorithm(hash: .sha224, scheme: .rsaPkcs1)
+        ) == nil)
+      #expect(
+        RappOperationDriver.SignatureAlgorithm(
+          SigningAlgorithm(hash: .sha384, scheme: .rsaPss)
+        ) == nil)
     }
 
     @Test
@@ -254,8 +257,9 @@ import Testing
       #expect(Set(fixture.proxySummary.profiles) == Set(Self.profiles))
       #expect(fixture.requesterSummary.transportProfile == Self.transportProfile)
       #expect(fixture.requesterSummary.candidateID == Self.candidateID)
-      #expect(try fixture.requesterVault.loadPair(
-        pairID: fixture.requesterSummary.pairID) != nil)
+      #expect(
+        try fixture.requesterVault.loadPair(
+          pairID: fixture.requesterSummary.pairID) != nil)
       #expect(try fixture.proxyVault.loadPair(pairID: fixture.proxySummary.pairID) != nil)
 
       #expect(!fixture.requesterFrames.frames.isEmpty)
@@ -267,12 +271,14 @@ import Testing
       try await catalog.select(pairID: fixture.requesterSummary.pairID)
       #expect(try await catalog.selectedPair()?.pairID == fixture.requesterSummary.pairID)
       try await catalog.revoke(pairID: fixture.requesterSummary.pairID)
-      #expect(try fixture.requesterVault.pairIsRevoked(
-        pairID: fixture.requesterSummary.pairID))
+      #expect(
+        try fixture.requesterVault.pairIsRevoked(
+          pairID: fixture.requesterSummary.pairID))
       #expect(try await catalog.activePairs().isEmpty)
       #expect(try await catalog.selectedPair() == nil)
-      #expect(try fixture.proxyVault.pairIsRevoked(
-        pairID: fixture.proxySummary.pairID) == false)
+      #expect(
+        try fixture.proxyVault.pairIsRevoked(
+          pairID: fixture.proxySummary.pairID) == false)
     }
 
     @Test
@@ -309,19 +315,24 @@ import Testing
 
       #expect(result.kind == .signature)
       #expect(result.bytes == signature)
-      #expect(progress == ProxyProgress(
-        prerequisites: 1,
-        approvals: 1,
-        executions: 1,
-        acknowledgments: 1
-      ))
-      #expect(try fixture.proxyVault.loadProxy(
-        pairID: fixture.proxySummary.pairID
-      ).allSatisfy { $0.retainedResult == nil })
-      #expect(try fixture.requesterVault.pairIsRevoked(
-        pairID: fixture.requesterSummary.pairID) == false)
-      #expect(try fixture.proxyVault.pairIsRevoked(
-        pairID: fixture.proxySummary.pairID) == false)
+      #expect(
+        progress
+          == ProxyProgress(
+            prerequisites: 1,
+            approvals: 1,
+            executions: 1,
+            acknowledgments: 1
+          ))
+      #expect(
+        try fixture.proxyVault.loadProxy(
+          pairID: fixture.proxySummary.pairID
+        ).allSatisfy { $0.retainedResult == nil })
+      #expect(
+        try fixture.requesterVault.pairIsRevoked(
+          pairID: fixture.requesterSummary.pairID) == false)
+      #expect(
+        try fixture.proxyVault.pairIsRevoked(
+          pairID: fixture.proxySummary.pairID) == false)
       await connection.requester.close()
       await connection.proxy.close()
     }
@@ -359,19 +370,24 @@ import Testing
 
       #expect(result.kind == .signature)
       #expect(result.bytes == signature)
-      #expect(progress == ProxyProgress(
-        prerequisites: 1,
-        approvals: 1,
-        executions: 1,
-        acknowledgments: 1
-      ))
-      #expect(try fixture.proxyVault.loadProxy(
-        pairID: fixture.proxySummary.pairID
-      ).allSatisfy { $0.retainedResult == nil })
-      #expect(try fixture.requesterVault.pairIsRevoked(
-        pairID: fixture.requesterSummary.pairID) == false)
-      #expect(try fixture.proxyVault.pairIsRevoked(
-        pairID: fixture.proxySummary.pairID) == false)
+      #expect(
+        progress
+          == ProxyProgress(
+            prerequisites: 1,
+            approvals: 1,
+            executions: 1,
+            acknowledgments: 1
+          ))
+      #expect(
+        try fixture.proxyVault.loadProxy(
+          pairID: fixture.proxySummary.pairID
+        ).allSatisfy { $0.retainedResult == nil })
+      #expect(
+        try fixture.requesterVault.pairIsRevoked(
+          pairID: fixture.requesterSummary.pairID) == false)
+      #expect(
+        try fixture.proxyVault.pairIsRevoked(
+          pairID: fixture.proxySummary.pairID) == false)
       await connection.requester.close()
       await connection.proxy.close()
     }
@@ -410,12 +426,15 @@ import Testing
 
       #expect(reason == termination.reason)
       #expect(progress == termination.progress)
-      #expect(try fixture.requesterVault.pairIsRevoked(
-        pairID: fixture.requesterSummary.pairID) == false)
-      #expect(try fixture.proxyVault.pairIsRevoked(
-        pairID: fixture.proxySummary.pairID) == false)
-      #expect(await connection.proxyOutbound.snapshot().closeCount
-        == termination.proxyTransportCloseCount)
+      #expect(
+        try fixture.requesterVault.pairIsRevoked(
+          pairID: fixture.requesterSummary.pairID) == false)
+      #expect(
+        try fixture.proxyVault.pairIsRevoked(
+          pairID: fixture.proxySummary.pairID) == false)
+      #expect(
+        await connection.proxyOutbound.snapshot().closeCount
+          == termination.proxyTransportCloseCount)
 
       await connection.requester.close()
       await connection.proxy.close()
@@ -452,18 +471,23 @@ import Testing
       let progress = try await proxyOutcome.value
 
       #expect(reason == .credentialRejected)
-      #expect(progress == ProxyProgress(
-        prerequisites: 1,
-        approvals: 1,
-        executions: 1,
-        acknowledgments: 0
-      ))
-      #expect(try fixture.requesterVault.pairIsRevoked(
-        pairID: fixture.requesterSummary.pairID))
-      #expect(try fixture.proxyVault.pairIsRevoked(
-        pairID: fixture.proxySummary.pairID))
-      #expect(try fixture.requesterVault.loadPair(
-        pairID: fixture.requesterSummary.pairID) == nil)
+      #expect(
+        progress
+          == ProxyProgress(
+            prerequisites: 1,
+            approvals: 1,
+            executions: 1,
+            acknowledgments: 0
+          ))
+      #expect(
+        try fixture.requesterVault.pairIsRevoked(
+          pairID: fixture.requesterSummary.pairID))
+      #expect(
+        try fixture.proxyVault.pairIsRevoked(
+          pairID: fixture.proxySummary.pairID))
+      #expect(
+        try fixture.requesterVault.loadPair(
+          pairID: fixture.requesterSummary.pairID) == nil)
       #expect(try fixture.proxyVault.loadPair(pairID: fixture.proxySummary.pairID) == nil)
       #expect(try fixture.requesterVault.activePairIDs().isEmpty)
       #expect(try fixture.proxyVault.activePairIDs().isEmpty)
@@ -611,15 +635,15 @@ import Testing
         switch event {
         case .established:
           try await operation.begin(on: coordinator)
-        case let .completed(_, result):
+        case .completed(_, let result):
           return result
-        case let .terminal(_, _, reason):
+        case .terminal(_, _, let reason):
           throw TestFailure.operationTerminated(reason)
-        case let .closed(reason):
+        case .closed(let reason):
           throw TestFailure.connectionClosed(reason)
         case .inspectPrerequisites, .awaitUserApproval, .executeSafeRead,
-             .executeCardCommand, .advisoryCancellation, .operationFinished,
-             .peerBusy, .peerUnknownOperation:
+          .executeCardCommand, .advisoryCancellation, .operationFinished,
+          .peerBusy, .peerUnknownOperation:
           throw TestFailure.unexpectedConnectionEvent
         }
       }
@@ -634,13 +658,13 @@ import Testing
         switch event {
         case .established:
           try await operation.begin(on: coordinator)
-        case let .terminal(_, _, reason):
+        case .terminal(_, _, let reason):
           return reason
-        case let .closed(reason):
+        case .closed(let reason):
           throw TestFailure.connectionClosed(reason)
         case .inspectPrerequisites, .awaitUserApproval, .executeSafeRead,
-             .executeCardCommand, .completed, .advisoryCancellation,
-             .operationFinished, .peerBusy, .peerUnknownOperation:
+          .executeCardCommand, .completed, .advisoryCancellation,
+          .operationFinished, .peerBusy, .peerUnknownOperation:
           throw TestFailure.unexpectedConnectionEvent
         }
       }
@@ -657,19 +681,19 @@ import Testing
         switch event {
         case .established:
           break
-        case let .inspectPrerequisites(operationID, operation):
+        case .inspectPrerequisites(let operationID, let operation):
           guard expected.matches(operation) else {
             throw TestFailure.unexpectedConnectionEvent
           }
           progress.prerequisites += 1
           try await coordinator.prerequisitesComplete(operationID: operationID)
-        case let .awaitUserApproval(operationID, operation):
+        case .awaitUserApproval(let operationID, let operation):
           guard expected.matches(operation) else {
             throw TestFailure.unexpectedConnectionEvent
           }
           progress.approvals += 1
           try await coordinator.approve(operationID: operationID)
-        case let .executeCardCommand(operationID, operation):
+        case .executeCardCommand(let operationID, let operation):
           guard expected.matches(operation) else {
             throw TestFailure.unexpectedConnectionEvent
           }
@@ -681,12 +705,12 @@ import Testing
         case .operationFinished:
           progress.acknowledgments += 1
           return progress
-        case let .terminal(_, _, reason):
+        case .terminal(_, _, let reason):
           throw TestFailure.operationTerminated(reason)
-        case let .closed(reason):
+        case .closed(let reason):
           throw TestFailure.connectionClosed(reason)
         case .executeSafeRead, .completed, .advisoryCancellation,
-             .peerBusy, .peerUnknownOperation:
+          .peerBusy, .peerUnknownOperation:
           throw TestFailure.unexpectedConnectionEvent
         }
       }
@@ -702,31 +726,31 @@ import Testing
         switch event {
         case .established:
           break
-        case let .inspectPrerequisites(operationID, operation):
+        case .inspectPrerequisites(let operationID, let operation):
           guard expected.matches(operation) else {
             throw TestFailure.unexpectedConnectionEvent
           }
           progress.prerequisites += 1
           try await coordinator.prerequisitesComplete(operationID: operationID)
-        case let .awaitUserApproval(operationID, operation):
+        case .awaitUserApproval(let operationID, let operation):
           guard expected.matches(operation) else {
             throw TestFailure.unexpectedConnectionEvent
           }
           progress.approvals += 1
           try await coordinator.approve(operationID: operationID)
-        case let .executeCardCommand(operationID, operation):
+        case .executeCardCommand(let operationID, let operation):
           guard expected.matches(operation) else {
             throw TestFailure.unexpectedConnectionEvent
           }
           progress.executions += 1
           try await coordinator.credentialRejected(operationID: operationID)
           return progress
-        case let .terminal(_, _, reason):
+        case .terminal(_, _, let reason):
           throw TestFailure.operationTerminated(reason)
-        case let .closed(reason):
+        case .closed(let reason):
           throw TestFailure.connectionClosed(reason)
         case .executeSafeRead, .completed, .advisoryCancellation,
-             .operationFinished, .peerBusy, .peerUnknownOperation:
+          .operationFinished, .peerBusy, .peerUnknownOperation:
           throw TestFailure.unexpectedConnectionEvent
         }
       }
@@ -743,7 +767,7 @@ import Testing
         switch event {
         case .established:
           break
-        case let .inspectPrerequisites(operationID, operation):
+        case .inspectPrerequisites(let operationID, let operation):
           guard expected.matches(operation) else {
             throw TestFailure.unexpectedConnectionEvent
           }
@@ -753,7 +777,7 @@ import Testing
             return progress
           }
           try await coordinator.prerequisitesComplete(operationID: operationID)
-        case let .awaitUserApproval(operationID, operation):
+        case .awaitUserApproval(let operationID, let operation):
           guard expected.matches(operation) else {
             throw TestFailure.unexpectedConnectionEvent
           }
@@ -763,7 +787,7 @@ import Testing
             return progress
           }
           try await coordinator.approve(operationID: operationID)
-        case let .executeCardCommand(operationID, operation):
+        case .executeCardCommand(let operationID, let operation):
           guard expected.matches(operation) else {
             throw TestFailure.unexpectedConnectionEvent
           }
@@ -777,12 +801,12 @@ import Testing
             throw TestFailure.unexpectedConnectionEvent
           }
           return progress
-        case let .terminal(_, _, reason):
+        case .terminal(_, _, let reason):
           throw TestFailure.operationTerminated(reason)
-        case let .closed(reason):
+        case .closed(let reason):
           throw TestFailure.connectionClosed(reason)
         case .executeSafeRead, .completed, .advisoryCancellation,
-             .operationFinished, .peerBusy, .peerUnknownOperation:
+          .operationFinished, .peerBusy, .peerUnknownOperation:
           throw TestFailure.unexpectedConnectionEvent
         }
       }

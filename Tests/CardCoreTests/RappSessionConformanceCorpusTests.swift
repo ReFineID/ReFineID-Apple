@@ -39,7 +39,8 @@ struct RappSessionConformanceCorpusTests {
   @Test
   func visibleWireVersionRejectsDowngradesAndUnknownUpgrades() throws {
     for vector in try Self.corpus().wireVersion {
-      let decision = vector.version == Self.supportedWireVersion
+      let decision =
+        vector.version == Self.supportedWireVersion
         ? "accepted"
         : "unsupported_version"
       #expect(decision == vector.expected, "\(vector.name): wire version decision")
@@ -49,7 +50,8 @@ struct RappSessionConformanceCorpusTests {
   @Test
   func operationProfilesCannotExceedAuthenticatedPairingGrants() throws {
     for vector in try Self.corpus().grantEnforcement {
-      let decision = Set(vector.grantedProfiles).contains(vector.requestedProfile)
+      let decision =
+        Set(vector.grantedProfiles).contains(vector.requestedProfile)
         ? "accepted"
         : "profile_not_granted"
       #expect(decision == vector.expected, "\(vector.name): grant decision")
@@ -61,7 +63,8 @@ struct RappSessionConformanceCorpusTests {
       .deletingLastPathComponent()
       .deletingLastPathComponent()
       .deletingLastPathComponent()
-    let url = repository
+    let url =
+      repository
       .appendingPathComponent("Documentation")
       .appendingPathComponent("rapp-conformance")
       .appendingPathComponent("rapp-v26.8.16.85.json")
@@ -122,8 +125,8 @@ private struct IndependentSequenceGuard {
   }
 }
 
-private extension Data {
-  init(sessionHex value: String) throws {
+extension Data {
+  fileprivate init(sessionHex value: String) throws {
     guard value.count == 32, value.count.isMultiple(of: 2) else {
       throw SessionCorpusError.invalidHex
     }

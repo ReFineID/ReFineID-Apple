@@ -194,8 +194,10 @@ extension CardMaintenance {
   }
 
   /// Applies the shared `{1, 2}` refusal set immediately before one
-  /// activation write. This probe is credential state, not a certificate
-  /// read, and each PIN receives its own fresh decision.
+  /// activation write.
+  ///
+  /// This probe is credential state, not a certificate read, and each
+  /// PIN receives its own fresh decision.
   private static func activationFloorRefusal(
     _ operations: CardOperations,
     role: CredentialRole

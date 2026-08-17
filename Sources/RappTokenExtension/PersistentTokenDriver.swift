@@ -7,7 +7,9 @@
   import Security
 
   /// Generic persistent-token principal selected by the macOS extension
-  /// plist. The iOS build continues to select the existing smart-card driver.
+  /// plist.
+  ///
+  /// The iOS build continues to select the existing smart-card driver.
   internal final class PersistentTokenDriver: TKTokenDriver,
     TKTokenDriverDelegate
   {
@@ -50,6 +52,9 @@
       delegate = self
     }
 
+    /// The @objc delegate requirement fixes the throwing signature even
+    /// though this implementation cannot fail.
+    // swiftlint:disable:next unneeded_throws_rethrows
     fileprivate func createSession(_: TKToken) throws -> TKTokenSession {
       PersistentTokenSession(token: self)
     }
@@ -58,11 +63,10 @@
   private final class PersistentTokenSession: TKTokenSession,
     TKTokenSessionDelegate
   {
-    private var persistentToken: PersistentToken {
-      token as! PersistentToken
-    }
+    private let persistentToken: PersistentToken
 
-    override fileprivate init(token: TKToken) {
+    fileprivate init(token: PersistentToken) {
+      persistentToken = token
       super.init(token: token)
       delegate = self
     }
@@ -98,9 +102,11 @@
         throw TKError(.notImplemented)
       }
 
-      guard let relayAlgorithm = RappOperationDriver.SignatureAlgorithm(
-        request.algorithm
-      ) else {
+      guard
+        let relayAlgorithm = RappOperationDriver.SignatureAlgorithm(
+          request.algorithm
+        )
+      else {
         throw TKError(.notImplemented)
       }
       let signature: Data
@@ -115,7 +121,7 @@
             digest: request.digest
           )
         )
-        guard case let .signature(receivedSignature) = response else {
+        guard case .signature(let receivedSignature) = response else {
           throw RappRequesterClientError.unexpectedResult
         }
         signature = receivedSignature

@@ -69,19 +69,22 @@ internal struct CredentialOperationConfirmation: ViewModifier {
   /// The affirmative action, derived from the existing localized question so
   /// all supported languages retain their translations without duplicating keys.
   private static func actionTitle(of operation: Operation) -> String {
-    let title: String = switch operation {
-    case .change(let role):
-      String(localized: "Confirm \(Self.name(of: role)) change?")
-    case .unblock(let role):
-      String(localized: "Confirm \(Self.name(of: role)) reset?")
-    case .activate:
-      String(localized: "Confirm card activation?")
-    }
+    let title: String =
+      switch operation {
+      case .change(let role):
+        String(localized: "Confirm \(Self.name(of: role)) change?")
+      case .unblock(let role):
+        String(localized: "Confirm \(Self.name(of: role)) reset?")
+      case .activate:
+        String(localized: "Confirm card activation?")
+      }
     return title.last == "?" ? String(title.dropLast()) : title
   }
 
-  /// Warns only after the counter has fallen to four or three. Five is
-  /// pristine and needs no commentary; one and two are refused by policy.
+  /// Warns only after the counter has fallen to four or three.
+  ///
+  /// Five is pristine and needs no commentary; one and two are refused
+  /// by policy.
   private static func warning(
     for operation: Operation,
     report: CredentialProbeReport?
@@ -91,7 +94,7 @@ internal struct CredentialOperationConfirmation: ViewModifier {
     let pristine = Int(RetryCount.pristineAllowance)
     guard
       let remaining = operation.spends.flatMap({ role in
-      Self.remaining(for: role, in: report)
+        Self.remaining(for: role, in: report)
       }),
       remaining >= minimum,
       remaining < pristine

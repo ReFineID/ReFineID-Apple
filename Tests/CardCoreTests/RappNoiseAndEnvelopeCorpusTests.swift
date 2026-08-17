@@ -104,7 +104,8 @@ final class RappNoiseAndEnvelopeCorpusTests: XCTestCase {
       .deletingLastPathComponent()
       .deletingLastPathComponent()
       .deletingLastPathComponent()
-    let url = repositoryRoot
+    let url =
+      repositoryRoot
       .appendingPathComponent("Documentation")
       .appendingPathComponent("rapp-conformance")
       .appendingPathComponent("rapp-v26.8.16.85.json")
@@ -184,8 +185,8 @@ private enum CBORValue: Equatable {
   case unsigned(UInt64)
   case bytes(Data)
   case text(String)
-  case array([CBORValue])
-  case map([String: CBORValue])
+  case array([Self])
+  case map([String: Self])
 }
 
 private enum CBORDecodeError: Error {
@@ -230,7 +231,7 @@ private struct BoundedCBORDecoder {
       guard count <= 128 else { throw CBORDecodeError.limitExceeded }
       var result: [String: CBORValue] = [:]
       for _ in 0..<Int(count) {
-        guard case let .text(key) = try decode(depth: depth + 1) else {
+        guard case .text(let key) = try decode(depth: depth + 1) else {
           throw CBORDecodeError.unsupported
         }
         guard result[key] == nil else { throw CBORDecodeError.duplicateKey }
@@ -287,19 +288,19 @@ private func validateEnvelope(
   _ value: CBORValue,
   supportedCritical: Set<String>
 ) -> String? {
-  guard case let .map(envelope) = value else { return "WrongType { field: \"envelope\" }" }
+  guard case .map(let envelope) = value else { return "WrongType { field: \"envelope\" }" }
   let allowed = Set(["version", "session_id", "sequence", "type", "body", "critical", "extensions"])
   guard Set(envelope.keys).isSubset(of: allowed) else { return "UnknownField" }
 
   guard let version = envelope["version"] else { return "MissingField { field: \"version\" }" }
-  guard case let .array(parts) = version,
-        parts.count == 2,
-        case let .unsigned(major) = parts[0],
-        case let .unsigned(minor) = parts[1]
+  guard case .array(let parts) = version,
+    parts.count == 2,
+    case .unsigned(let major) = parts[0],
+    case .unsigned(let minor) = parts[1]
   else { return "WrongType { field: \"version\" }" }
   guard major == 0, minor == 1 else { return "UnsupportedVersion" }
 
-  guard case let .bytes(sessionID)? = envelope["session_id"] else {
+  guard case .bytes(let sessionID)? = envelope["session_id"] else {
     return "WrongType { field: \"session_id\" }"
   }
   guard sessionID.count == 16 else {
@@ -308,24 +309,24 @@ private func validateEnvelope(
   guard case .unsigned? = envelope["sequence"] else {
     return "WrongType { field: \"sequence\" }"
   }
-  guard case let .text(type)? = envelope["type"] else {
+  guard case .text(let type)? = envelope["type"] else {
     return "WrongType { field: \"type\" }"
   }
   guard type == "liveness.ping" else { return "UnknownMessageType" }
-  guard case let .map(body)? = envelope["body"] else {
+  guard case .map(let body)? = envelope["body"] else {
     return "WrongType { field: \"body\" }"
   }
-  guard case let .bytes(challenge)? = body["challenge"], challenge.count == 32,
-        case .unsigned? = body["last_received_sequence"]
+  guard case .bytes(let challenge)? = body["challenge"], challenge.count == 32,
+    case .unsigned? = body["last_received_sequence"]
   else { return "WrongType { field: \"body\" }" }
 
   var critical: [String] = []
   if let criticalValue = envelope["critical"] {
-    guard case let .array(entries) = criticalValue else {
+    guard case .array(let entries) = criticalValue else {
       return "WrongType { field: \"critical\" }"
     }
     for entry in entries {
-      guard case let .text(name) = entry else {
+      guard case .text(let name) = entry else {
         return "WrongType { field: \"critical\" }"
       }
       critical.append(name)
@@ -334,7 +335,7 @@ private func validateEnvelope(
 
   var extensions: [String: CBORValue] = [:]
   if let extensionsValue = envelope["extensions"] {
-    guard case let .map(entries) = extensionsValue else {
+    guard case .map(let entries) = extensionsValue else {
       return "WrongType { field: \"extensions\" }"
     }
     extensions = entries
@@ -387,7 +388,7 @@ private func encodeMajor(_ major: UInt8, value: UInt64) -> Data {
   }
 }
 
-private func decodeHex(_ value: String) throws -> Data {
+private func decodeHex(_ value: String) -> Data {
   value.decodedHex()
 }
 
@@ -395,8 +396,8 @@ private func encodeHex(_ value: Data) -> String {
   value.map { String(format: "%02x", $0) }.joined()
 }
 
-private extension String {
-  func decodedHex() -> Data {
+extension String {
+  fileprivate func decodedHex() -> Data {
     precondition(count.isMultiple(of: 2), "Odd hex length")
     var result = Data()
     result.reserveCapacity(count / 2)

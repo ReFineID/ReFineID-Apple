@@ -99,10 +99,9 @@ internal struct CardActivationSection: View {
     .confirmCredentialOperation(
       $pending,
       report: model.report,
-      reject: { _ in clearEntries() }
-    ) { _ in
-      activate()
-    }
+      reject: { _ in clearEntries() },
+      confirm: { _ in activate() }
+    )
   }
 
   private var activationButton: some View {
@@ -125,7 +124,8 @@ internal struct CardActivationSection: View {
       !isComplete
         || !model.canContactCard
         || !model.allowsActivationOperation
-        || model.cardOperationInProgress)
+        || model.cardOperationInProgress
+    )
     .accessibilityIdentifier("managementActivate")
   }
 

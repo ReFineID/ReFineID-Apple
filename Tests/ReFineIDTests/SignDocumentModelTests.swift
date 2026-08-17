@@ -49,12 +49,13 @@ internal struct SignDocumentModelTests {
     )
 
     #expect(
-      message == String(
-        localized: "error.validation",
-        defaultValue:
-          "Authenticated certificate and revocation evidence could not be collected.",
-        table: "DocumentSigning"
-      )
+      message
+        == String(
+          localized: "error.validation",
+          defaultValue:
+            "Authenticated certificate and revocation evidence could not be collected.",
+          table: "DocumentSigning"
+        )
     )
   }
 
@@ -252,11 +253,12 @@ internal struct SignDocumentModelTests {
     )
 
     #expect(
-      message == String(
-        localized: "error.cardChanged",
-        defaultValue: "The signing card changed. Nothing was written.",
-        table: "DocumentSigning"
-      )
+      message
+        == String(
+          localized: "error.cardChanged",
+          defaultValue: "The signing card changed. Nothing was written.",
+          table: "DocumentSigning"
+        )
     )
   }
 }

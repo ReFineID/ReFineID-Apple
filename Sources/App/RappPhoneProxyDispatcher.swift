@@ -28,7 +28,7 @@
         case .established:
           return
 
-        case let .inspectPrerequisites(operationID, operation):
+        case .inspectPrerequisites(let operationID, let operation):
           guard prerequisitesExist(for: operation) else {
             try await coordinator.requestInvalidOrUnsupported(
               operationID: operationID)
@@ -36,7 +36,7 @@
           }
           try await coordinator.prerequisitesComplete(operationID: operationID)
 
-        case let .awaitUserApproval(operationID, operation):
+        case .awaitUserApproval(let operationID, let operation):
           guard let action = action(for: operation.kind) else {
             try await coordinator.requestInvalidOrUnsupported(
               operationID: operationID)
@@ -52,7 +52,7 @@
           switch decision {
           case .approved:
             try await coordinator.approve(operationID: operationID)
-          case let .approvedDocumentSignature(pin2):
+          case .approvedDocumentSignature(let pin2):
             guard operation.kind == .signDocument else {
               try await coordinator.requestInvalidOrUnsupported(
                 operationID: operationID)
@@ -64,23 +64,23 @@
             try await coordinator.deny(operationID: operationID)
           }
 
-        case let .executeSafeRead(operationID, operation):
+        case .executeSafeRead(let operationID, let operation):
           await executeSafeRead(
             operationID: operationID,
             operation: operation,
             coordinator: coordinator
           )
 
-        case let .executeCardCommand(operationID, operation):
+        case .executeCardCommand(let operationID, let operation):
           await executeCardCommand(
             operationID: operationID,
             operation: operation,
             coordinator: coordinator
           )
 
-        case let .advisoryCancellation(operationID),
-             let .operationFinished(operationID),
-             let .peerUnknownOperation(operationID):
+        case .advisoryCancellation(let operationID),
+          .operationFinished(let operationID),
+          .peerUnknownOperation(let operationID):
           await cancel(operationID)
 
         case .terminal(let operationID, _, _):
@@ -110,7 +110,7 @@
       guard stored.hasCardAccessNumber else { return false }
       switch operation.kind {
       case .inspectCard, .readIdentity, .readAuthenticationCertificate,
-           .readSignatureCertificate:
+        .readSignatureCertificate:
         return operation.keyProfile == nil
           && operation.algorithm == nil
           && operation.digest.isEmpty
@@ -138,7 +138,7 @@
       case .signDocument:
         .documentSignature
       case .inspectCard, .readIdentity, .readAuthenticationCertificate,
-           .readSignatureCertificate:
+        .readSignatureCertificate:
         .shareCardInformation
       }
     }
@@ -203,7 +203,7 @@
           digest: operation.digest
         )
       case .inspectCard, .readIdentity, .readAuthenticationCertificate,
-           .readSignatureCertificate:
+        .readSignatureCertificate:
         await invalid(operationID, coordinator: coordinator)
         return
       }
@@ -225,7 +225,7 @@
       switch await CardMaintenance.connectionSnapshot(
         cardAccessNumber: accessNumber
       ) {
-      case let .connected(snapshot):
+      case .connected(let snapshot):
         guard let activation = snapshot.activationNeeds else {
           await invalid(operationID, coordinator: coordinator)
           return
@@ -263,7 +263,7 @@
         cardAccessNumber: accessNumber,
         signatureCertificate: false
       )
-      guard case let .result(der) = outcome,
+      guard case .result(let der) = outcome,
         let facts = CertificateFacts(der: der),
         let name = DistinguishedName.personalName(inName: facts.subjectName)
           ?? DistinguishedName.commonName(inName: facts.subjectName)
@@ -287,7 +287,7 @@
       operationID: Data,
       coordinator: RappConnectionCoordinator
     ) async {
-      if case let .result(bytes) = outcome {
+      if case .result(let bytes) = outcome {
         try? await coordinator.completeCertificate(
           operationID: operationID,
           der: bytes
@@ -302,7 +302,7 @@
       operationID: Data,
       coordinator: RappConnectionCoordinator
     ) async {
-      if case let .result(signature) = outcome {
+      if case .result(let signature) = outcome {
         try? await coordinator.completeSignature(
           operationID: operationID,
           signature: signature
@@ -320,7 +320,7 @@
       switch outcome {
       case .result:
         await coordinator.close()
-      case let .rejected(rejection):
+      case .rejected(let rejection):
         switch rejection {
         case .cardAccessNumber:
           CardCredentialStore.forgetAll()
@@ -331,14 +331,14 @@
         }
         await requireExplicitReconnect()
         try? await coordinator.credentialRejected(operationID: operationID)
-      case let .refusedBeforeCredentialTransmit(refusal):
+      case .refusedBeforeCredentialTransmit(let refusal):
         switch refusal {
         case .cardUnavailable:
           try? await coordinator.cardRemovedBeforeTransmit(operationID: operationID)
         case .credentialBlocked, .credentialInvalidated, .retryFloor:
           try? await coordinator.retryRefused(operationID: operationID)
         case .certificateUnavailable, .invalidCredential,
-             .keyOrAlgorithmMismatch:
+          .keyOrAlgorithmMismatch:
           try? await coordinator.requestInvalidOrUnsupported(
             operationID: operationID)
         }
@@ -367,7 +367,7 @@
 
     private func attempts(_ outcome: RetryProbeOutcome?) -> UInt8? {
       switch outcome {
-      case let .remaining(count): count.attemptsRemaining
+      case .remaining(let count): count.attemptsRemaining
       case .locked: 0
       case .invalidated, .noInformation, .other, .verified, nil: nil
       }

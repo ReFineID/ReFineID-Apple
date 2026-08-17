@@ -102,7 +102,8 @@ internal struct RappConformanceCorpusTests {
       .deletingLastPathComponent()
       .deletingLastPathComponent()
     return try Data(
-      contentsOf: repositoryRoot
+      contentsOf:
+        repositoryRoot
         .appendingPathComponent("Documentation/rapp-conformance/rapp-v26.8.16.85.json")
     )
   }
@@ -209,7 +210,7 @@ private indirect enum CorpusValue: Decodable {
   case negative(Int64)
   case bytes(Data)
   case text(String)
-  case array([CorpusValue])
+  case array([Self])
   case map([CorpusMapEntry])
   case bool(Bool)
   case null
@@ -221,7 +222,7 @@ private indirect enum CorpusValue: Decodable {
     case "negative": self = .negative(try container.decode(Int64.self, forKey: .value))
     case "bytes": self = .bytes(try Data(hex: container.decode(String.self, forKey: .hex)))
     case "text": self = .text(try container.decode(String.self, forKey: .value))
-    case "array": self = .array(try container.decode([CorpusValue].self, forKey: .items))
+    case "array": self = .array(try container.decode([Self].self, forKey: .items))
     case "map": self = .map(try container.decode([CorpusMapEntry].self, forKey: .entries))
     case "bool": self = .bool(try container.decode(Bool.self, forKey: .value))
     case "null": self = .null
@@ -251,21 +252,21 @@ private struct CorpusMapEntry: Decodable {
 private enum DeterministicCBOR {
   static func encode(_ value: CorpusValue) throws -> Data {
     switch value {
-    case let .unsigned(number):
+    case .unsigned(let number):
       return header(major: 0, value: number)
-    case let .negative(number):
+    case .negative(let number):
       guard number < 0 else { throw CorpusError.invalidNegative }
       return header(major: 1, value: UInt64(-(number + 1)))
-    case let .bytes(bytes):
+    case .bytes(let bytes):
       return header(major: 2, value: UInt64(bytes.count)) + bytes
-    case let .text(text):
+    case .text(let text):
       let bytes = Data(text.utf8)
       return header(major: 3, value: UInt64(bytes.count)) + bytes
-    case let .array(items):
+    case .array(let items):
       return try items.reduce(header(major: 4, value: UInt64(items.count))) {
         $0 + (try encode($1))
       }
-    case let .map(entries):
+    case .map(let entries):
       var seen = Set<Data>()
       let encodedEntries = try entries.map { entry -> (Data, Data) in
         let key = try encode(.text(entry.key))
@@ -277,7 +278,7 @@ private enum DeterministicCBOR {
       return encodedEntries.reduce(header(major: 5, value: UInt64(entries.count))) {
         $0 + $1.0 + $1.1
       }
-    case let .bool(value):
+    case .bool(let value):
       return Data([value ? 0xF5 : 0xF4])
     case .null:
       return Data([0xF6])
@@ -287,14 +288,14 @@ private enum DeterministicCBOR {
   private static func header(major: UInt8, value: UInt64) -> Data {
     let prefix = major << 5
     switch value {
-    case 0 ... 23:
+    case 0...23:
       return Data([prefix | UInt8(value)])
-    case 24 ... UInt64(UInt8.max):
+    case 24...UInt64(UInt8.max):
       return Data([prefix | 24, UInt8(value)])
-    case 0 ... UInt64(UInt16.max):
+    case 0...UInt64(UInt16.max):
       var integer = UInt16(value).bigEndian
       return Data([prefix | 25]) + withUnsafeBytes(of: &integer) { Data($0) }
-    case 0 ... UInt64(UInt32.max):
+    case 0...UInt64(UInt32.max):
       var integer = UInt32(value).bigEndian
       return Data([prefix | 26]) + withUnsafeBytes(of: &integer) { Data($0) }
     default:
@@ -310,8 +311,8 @@ private enum CorpusError: Error {
   case duplicateMapKey
 }
 
-private extension Data {
-  init(hex: String) throws {
+extension Data {
+  fileprivate init(hex: String) throws {
     let characters = Array(hex.utf8)
     guard characters.count.isMultiple(of: 2) else { throw CorpusError.invalidHex }
     self.init()
@@ -325,15 +326,15 @@ private extension Data {
     }
   }
 
-  var hex: String {
+  fileprivate var hex: String {
     map { String(format: "%02x", $0) }.joined()
   }
 
-  static func hexNibble(_ byte: UInt8) -> UInt8? {
+  fileprivate static func hexNibble(_ byte: UInt8) -> UInt8? {
     switch byte {
-    case 48 ... 57: byte - 48
-    case 65 ... 70: byte - 55
-    case 97 ... 102: byte - 87
+    case 48...57: byte - 48
+    case 65...70: byte - 55
+    case 97...102: byte - 87
     default: nil
     }
   }

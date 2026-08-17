@@ -116,9 +116,9 @@ internal struct CardManagementView: View {
 
   private var readerCardIsPresent: Bool {
     #if os(iOS)
-    if DemoMode.shared.isActive {
-      return DemoMode.shared.isReaderCardPresent
-    }
+      if DemoMode.shared.isActive {
+        return DemoMode.shared.isReaderCardPresent
+      }
     #endif
     return cardPresence.hasCompletedInitialScan
       ? cardPresence.isReaderCardPresent
@@ -127,9 +127,9 @@ internal struct CardManagementView: View {
 
   private var readerCardIsReady: Bool {
     #if os(iOS)
-    if DemoMode.shared.isActive {
-      return DemoMode.shared.isReaderCardPresent
-    }
+      if DemoMode.shared.isActive {
+        return DemoMode.shared.isReaderCardPresent
+      }
     #endif
     return cardPresence.hasCompletedInitialScan && cardPresence.isReaderCardReady
   }
@@ -148,7 +148,8 @@ internal struct CardManagementView: View {
         .frame(minWidth: windowWidth)
       #else
         .navigationTitle(
-          awaitsActivation ? "ReFineID" : "Personal Identification Numbers")
+          awaitsActivation ? "ReFineID" : "Personal Identification Numbers"
+        )
         .navigationBarTitleDisplayMode(awaitsActivation ? .large : .inline)
       #endif
       #if os(macOS)
@@ -262,11 +263,11 @@ internal struct CardManagementView: View {
               Text(candidate.name).tag(candidate)
             }
           }
-    #if os(iOS)
-          .pickerStyle(.menu)
-    #else
-          .pickerStyle(.segmented)
-    #endif
+          #if os(iOS)
+            .pickerStyle(.menu)
+          #else
+            .pickerStyle(.segmented)
+          #endif
           .labelsHidden()
           .accessibilityIdentifier("managementTask")
           if model.notice == nil, tasks.contains(task) {
@@ -392,14 +393,15 @@ internal struct CardManagementView: View {
   /// Opens on what the card needs, until the holder chooses.
   private func suggestTask(from report: CredentialProbeReport?) {
     guard !awaitsActivation, let report else { return }
-    let recoveryTask: ManagementTask? = switch retryHealth.recovery {
-    case .resetPin1:
-      .resetPin1
-    case .resetPin2:
-      .resetPin2
-    case .useOtherSoftware, .unrecoverable, nil:
-      nil
-    }
+    let recoveryTask: ManagementTask? =
+      switch retryHealth.recovery {
+      case .resetPin1:
+        .resetPin1
+      case .resetPin2:
+        .resetPin2
+      case .useOtherSoftware, .unrecoverable, nil:
+        nil
+      }
     if let recoveryTask {
       if !availableTasks.contains(task)
         || (!hasChosenTask && model.notice == nil)

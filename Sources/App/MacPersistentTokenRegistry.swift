@@ -8,8 +8,9 @@
   import Security
 
   /// Fetches the public authentication certificate once and publishes it as a
-  /// per-user persistent CryptoTokenKit identity. Private-key operations stay
-  /// delegated to the iPhone relay.
+  /// per-user persistent CryptoTokenKit identity.
+  ///
+  /// Private-key operations stay delegated to the iPhone relay.
   @MainActor
   internal final class MacPersistentTokenRegistry {
     internal static let shared = MacPersistentTokenRegistry()
@@ -26,15 +27,15 @@
           let response = try RappPersistentRequesterClient(
             displayName: "ReFineID Mac"
           ).perform(.readAuthenticationCertificate)
-          guard case let .authenticationCertificate(certificate) = response else {
-            await MacPersistentTokenRegistry.shared.finish(nil)
+          guard case .authenticationCertificate(let certificate) = response else {
+            await Self.shared.finish(nil)
             return
           }
           certificateDER = certificate
         } catch {
           certificateDER = nil
         }
-        await MacPersistentTokenRegistry.shared.finish(certificateDER)
+        await Self.shared.finish(certificateDER)
       }
     }
 
@@ -74,7 +75,9 @@
         return
       }
 
-      let instanceID = "iphone-nfc-" + SHA256.hash(data: certificateDER)
+      let instanceID =
+        "iphone-nfc-"
+        + SHA256.hash(data: certificateDER)
         .map { String(format: "%02x", $0) }
         .joined()
       let configuration = driver.addTokenConfiguration(for: instanceID)

@@ -62,12 +62,12 @@
       switch mode {
       case .activationProbe:
         #if os(iOS)
-        let report = await CardMaintenance.debugActivationSignals()
-        DebugConsole.emit(report.lines)
-        DebugConsole.finish(succeeded: report.succeeded)
+          let report = await CardMaintenance.debugActivationSignals()
+          DebugConsole.emit(report.lines)
+          DebugConsole.finish(succeeded: report.succeeded)
         #else
-        DebugConsole.emit("activation-probe: NFC is unavailable on macOS")
-        DebugConsole.finish(succeeded: false)
+          DebugConsole.emit("activation-probe: NFC is unavailable on macOS")
+          DebugConsole.finish(succeeded: false)
         #endif
       case .ctkSignProbe:
         let report = await Self.offMainThread(CtkSignProbe.report)

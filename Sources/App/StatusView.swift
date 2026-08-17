@@ -44,7 +44,7 @@
     @State private var accessNumber = ""
     @State private var isTargeted = false
     @State private var format = SignatureFormat.pades
-      @State private var showsRappPairing = false
+    @State private var showsRappPairing = false
     @FocusState private var pinFocused: Bool
 
     #if FEATURE_CONTACTLESS
@@ -88,10 +88,10 @@
           Text(verbatim: "ReFineID")
             .font(.largeTitle.bold())
           Spacer()
-            RappPairingButton(isPresented: $showsRappPairing)
-              .buttonStyle(.bordered)
-              .buttonBorderShape(.circle)
-              .controlSize(.large)
+          RappPairingButton(isPresented: $showsRappPairing)
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.circle)
+            .controlSize(.large)
           if availability == .ready {
             SettingsLink {
               CredentialRetryHealthKey(level: retryHealth.level)
@@ -120,8 +120,8 @@
             // semantic result. It outranks derived token readiness and
             // publishes no identity or signing keys.
             CardActivationSection(
-              model: activation.management,
-              onActivated: { model.refresh() })
+              model: activation.management
+            ) { model.refresh() }
             CardOutcomeSection(model: activation.management)
           } else if availability == .ready {
             // Signing belongs exclusively to a published identity. No
@@ -214,9 +214,9 @@
         react(to: .noCard)
       }
       .onDisappear { activation.stop() }
-        .sheet(isPresented: $showsRappPairing) {
-          RappPairingView()
-        }
+      .sheet(isPresented: $showsRappPairing) {
+        RappPairingView()
+      }
       // Signing is what this window is for, and its answer arrived in
       // silence: focus stays on Sign, and the outcome is drawn below it.
       .announcesOutcome(signing.failure)
@@ -277,7 +277,8 @@
     /// document is waiting.
     @ViewBuilder private var signatureSection: some View {
       if signing.pending != nil {
-        let pinTitle = pin2Cache.isWarm
+        let pinTitle =
+          pin2Cache.isWarm
           ? String(localized: "PIN 2 (remembered)")
           : String(localized: "PIN 2")
         Section {
@@ -338,6 +339,7 @@
     }
 
     /// Ready stands recovery down and a removed card resets its budget.
+    ///
     /// The activation watch owns the unready path so inspection and
     /// recovery remain serialized.
     private func react(to availability: LoginIdentityModel.Availability) {

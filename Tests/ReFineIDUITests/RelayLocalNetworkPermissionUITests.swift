@@ -2,9 +2,10 @@
 
 import XCTest
 
-  /// Grants only the system Local Network prompt needed by the encrypted
-  /// iPhone-to-Mac card relay. The test is idempotent after permission has
-  /// already been decided.
+/// Grants only the system Local Network prompt needed by the encrypted
+/// iPhone-to-Mac card relay.
+///
+/// The test is idempotent after permission has already been decided.
 @MainActor
 internal final class RelayLocalNetworkPermissionUITests: XCTestCase {
   internal func testGrantsRelayPermissionIfPresented() {

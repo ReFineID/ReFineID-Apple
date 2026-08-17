@@ -42,9 +42,11 @@ public enum CardExchangeTrace {
       + " sw=" + (status ?? Self.unknown)
       + " ms=" + TraceTiming.milliseconds(elapsed)
     let instruction = Self.instruction(of: request)
-    let named = "apdu ins=" + (instruction.map {
-      String(format: Self.byteFormat, $0)
-    } ?? Self.unknown)
+    let named =
+      "apdu ins="
+      + (instruction.map {
+        String(format: Self.byteFormat, $0)
+      } ?? Self.unknown)
     #if DEBUG
       let rawResponse = response.map(Self.hex) ?? Self.unknown
       return named

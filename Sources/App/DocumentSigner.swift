@@ -1,6 +1,5 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-
 import CardCore
 import CryptoKit
 import Dispatch
@@ -224,12 +223,14 @@ internal enum DocumentSigner {
 
   #if os(macOS)
     /// A selected RAPP phone is the signing device only when no local reader
-    /// card is ready. The two paths never silently retry one another after an
+    /// card is ready.
+    ///
+    /// The two paths never silently retry one another after an
     /// authenticated or credential-bearing operation has begun.
     @MainActor internal static var usesRappSigning: Bool {
       guard !CardPresence.shared.isReaderCardReady else { return false }
       let selected = try? RappDeviceVault().selectedPairID()
-      return (selected ?? nil) != nil
+      return (selected) != nil
     }
 
     /// Builds the same locally verified card material as the reader path while
@@ -262,9 +263,11 @@ internal enum DocumentSigner {
       )
     }
 
-    /// Performs one remote qualified-signature operation. The requester sends
-    /// only the digest and public algorithm metadata; PIN 2 exists solely in
-    /// the phone authorization UI and its NFC card session.
+    /// Performs one remote qualified-signature operation.
+    ///
+    /// The requester sends only the digest and public algorithm metadata;
+    /// PIN 2 exists solely in the phone authorization UI and its NFC card
+    /// session.
     internal static func remoteQualifiedSignature(
       documentName: String,
       expectedCertificate: Data?,
@@ -277,9 +280,11 @@ internal enum DocumentSigner {
         guard case .signatureCertificate(let certificate) = certificateResponse else {
           throw Failure.card(.failed)
         }
-        guard CardMaintenance.qualifiedCertificate(
-          certificate, matches: expectedCertificate
-        ) else {
+        guard
+          CardMaintenance.qualifiedCertificate(
+            certificate, matches: expectedCertificate
+          )
+        else {
           throw Failure.stampSignerChanged
         }
         guard

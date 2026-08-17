@@ -90,10 +90,9 @@ internal struct CredentialUnblockSection: View {
     .confirmCredentialOperation(
       $pending,
       report: model.report,
-      reject: { _ in clearEntries() }
-    ) { _ in
-      unblock()
-    }
+      reject: { _ in clearEntries() },
+      confirm: { _ in unblock() }
+    )
   }
 
   private var resetButton: some View {
@@ -117,7 +116,8 @@ internal struct CredentialUnblockSection: View {
       !isComplete
         || !model.canContactCard
         || !model.allowsCredentialOperation(spending: .puk)
-        || model.cardOperationInProgress)
+        || model.cardOperationInProgress
+    )
     .accessibilityIdentifier("managementReset\(identifierName)")
   }
 

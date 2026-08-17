@@ -112,8 +112,9 @@ internal final class VirtualIDCardSigningTests: XCTestCase {
 
     for state in states {
       let card = VirtualIDCard(snapshot: state)
-      guard case .transportFailure = await card.authorizeQualifiedSignature(
-        pin2: state.card.pin2.value)
+      guard
+        case .transportFailure = await card.authorizeQualifiedSignature(
+          pin2: state.card.pin2.value)
       else {
         XCTFail("unreachable virtual card did not fail at its boundary")
         continue

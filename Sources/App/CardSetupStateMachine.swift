@@ -53,12 +53,6 @@ internal enum CardSetupStateMachine {
     internal let source: State
     internal let event: Event
     internal let target: State
-
-    internal init(source: State, event: Event, target: State) {
-      self.source = source
-      self.event = event
-      self.target = target
-    }
   }
 
   internal enum Reduction: Equatable, Sendable {
@@ -82,28 +76,52 @@ internal enum CardSetupStateMachine {
     .init(source: .home, event: .openDocumentSigning, target: .documentSigningHome),
 
     .init(source: .identityHome, event: .identityForgotten, target: .home),
-    .init(source: .identityHome, event: .startManagementClassification, target: .classifyingManagementIdentity),
+    .init(
+      source: .identityHome, event: .startManagementClassification,
+      target: .classifyingManagementIdentity),
     .init(source: .identityHome, event: .openKnownActivation, target: .activationIdentity),
     .init(source: .identityHome, event: .openVerifiedManagement, target: .pinManagementIdentity),
     .init(source: .identityHome, event: .openDocumentSigning, target: .documentSigningIdentity),
 
-    .init(source: .classifyingBrowser, event: .classificationActivated, target: .registeringBrowser),
-    .init(source: .classifyingBrowser, event: .classificationRecoveryRequired, target: .pinManagementHome),
-    .init(source: .classifyingBrowser, event: .classificationActivationRequired, target: .activationHome),
+    .init(
+      source: .classifyingBrowser, event: .classificationActivated, target: .registeringBrowser),
+    .init(
+      source: .classifyingBrowser, event: .classificationRecoveryRequired,
+      target: .pinManagementHome),
+    .init(
+      source: .classifyingBrowser, event: .classificationActivationRequired, target: .activationHome
+    ),
     .init(source: .classifyingBrowser, event: .classificationWrongCardAccessNumber, target: .home),
     .init(source: .classifyingBrowser, event: .classificationFailed, target: .home),
 
-    .init(source: .classifyingManagementHome, event: .classificationActivated, target: .pinManagementHome),
-    .init(source: .classifyingManagementHome, event: .classificationRecoveryRequired, target: .pinManagementHome),
-    .init(source: .classifyingManagementHome, event: .classificationActivationRequired, target: .activationHome),
-    .init(source: .classifyingManagementHome, event: .classificationWrongCardAccessNumber, target: .home),
+    .init(
+      source: .classifyingManagementHome, event: .classificationActivated,
+      target: .pinManagementHome),
+    .init(
+      source: .classifyingManagementHome, event: .classificationRecoveryRequired,
+      target: .pinManagementHome),
+    .init(
+      source: .classifyingManagementHome, event: .classificationActivationRequired,
+      target: .activationHome),
+    .init(
+      source: .classifyingManagementHome, event: .classificationWrongCardAccessNumber, target: .home
+    ),
     .init(source: .classifyingManagementHome, event: .classificationFailed, target: .home),
 
-    .init(source: .classifyingManagementIdentity, event: .classificationActivated, target: .pinManagementIdentity),
-    .init(source: .classifyingManagementIdentity, event: .classificationRecoveryRequired, target: .pinManagementIdentity),
-    .init(source: .classifyingManagementIdentity, event: .classificationActivationRequired, target: .activationIdentity),
-    .init(source: .classifyingManagementIdentity, event: .classificationWrongCardAccessNumber, target: .identityHome),
-    .init(source: .classifyingManagementIdentity, event: .classificationFailed, target: .identityHome),
+    .init(
+      source: .classifyingManagementIdentity, event: .classificationActivated,
+      target: .pinManagementIdentity),
+    .init(
+      source: .classifyingManagementIdentity, event: .classificationRecoveryRequired,
+      target: .pinManagementIdentity),
+    .init(
+      source: .classifyingManagementIdentity, event: .classificationActivationRequired,
+      target: .activationIdentity),
+    .init(
+      source: .classifyingManagementIdentity, event: .classificationWrongCardAccessNumber,
+      target: .identityHome),
+    .init(
+      source: .classifyingManagementIdentity, event: .classificationFailed, target: .identityHome),
 
     .init(source: .registeringBrowser, event: .registrationSucceeded, target: .identityHome),
     .init(source: .registeringBrowser, event: .registrationFailed, target: .home),

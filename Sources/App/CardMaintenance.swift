@@ -12,9 +12,11 @@ import Foundation
 /// sheet and never opens another sheet merely to refresh counters.
 internal enum CardMaintenance {
   #if canImport(CoreNFC) && os(iOS)
-    /// Result of one PACE-authenticated NFC hold. A rejected CAN remains
-    /// distinct because RAPP must terminate that peer session immediately;
-    /// neither a missing card nor an unrelated card failure proves rejection.
+    /// Result of one PACE-authenticated NFC hold.
+    ///
+    /// A rejected CAN remains distinct because RAPP must terminate that
+    /// peer session immediately; neither a missing card nor an unrelated
+    /// card failure proves rejection.
     internal enum SecureNearFieldResult<Payload: Sendable>: Sendable {
       case connected(Payload)
       case failed
@@ -224,7 +226,9 @@ internal enum CardMaintenance {
 
     #if DEBUG
       /// Reads every input to activation classification from the live NFC
-      /// card. This probe is deliberately observation-only: PACE plus GET
+      /// card.
+      ///
+      /// This probe is deliberately observation-only: PACE plus GET
       /// DATA/VERIFY-without-data commands, never a PIN-bearing mutation.
       internal static func debugActivationSignals() async -> DebugModeReport {
         guard let cardAccessNumber = CardCredentialStore.displayedCardAccessNumber() else {
@@ -296,9 +300,13 @@ internal enum CardMaintenance {
       }
     #endif
   #else
-    /// The first wireless connection is an iOS-only operation. Keeping the
-    /// unavailable implementation explicit lets shared UI models compile for
-    /// macOS without pretending that a reader session is an NFC setup flow.
+    /// The first wireless connection is an iOS-only operation.
+    ///
+    /// Keeping the unavailable implementation explicit lets shared UI
+    /// models compile for macOS without pretending that a reader session
+    /// is an NFC setup flow. The signature stays async so shared callers
+    /// await one shape on both platforms.
+    // swiftlint:disable:next async_without_await
     internal static func connectionSnapshot(
       cardAccessNumber _: String
     ) async -> ConnectionSnapshotResult {

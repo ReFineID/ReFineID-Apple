@@ -45,6 +45,7 @@ internal final class CardCredentialsModel {
   internal private(set) var hasVerifiedCardStatus = false
 
   /// Establishes PACE with an entered CAN and classifies the live card.
+  ///
   /// Nothing is persisted and no credential-changing command is sent.
   internal func connect(cardAccessNumber: String) async -> ConnectionResult? {
     guard !isConnecting,

@@ -3,6 +3,7 @@
 import SwiftUI
 
 /// The single presentation of the browser-authentication enable action.
+///
 /// Both configured and first-use card paths use this view so their icon,
 /// foreground treatment, and accessibility label cannot diverge.
 internal struct BrowserAuthenticationEnableLabel: View {

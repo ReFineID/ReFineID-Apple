@@ -30,9 +30,11 @@ internal final class CardManagementModel {
   internal var transport: CardMaintenance.Transport {
     didSet {
       guard transport != oldValue else { return }
-#if DEBUG
-      DebugConsole.emit("card-management: transport changed from \(oldValue) to \(transport); clearing activation offer")
-#endif
+      #if DEBUG
+        DebugConsole.emit(
+          "card-management: transport changed from \(oldValue) to \(transport); clearing activation offer"
+        )
+      #endif
       activeRefreshIdentifier = nil
       report = nil
       if !activationRequired {
@@ -80,19 +82,19 @@ internal final class CardManagementModel {
     }
     self.cardAccessNumber =
       cardAccessNumber ?? CardCredentialStore.displayedCardAccessNumber() ?? ""
-#if DEBUG
-    DebugConsole.emit(
-      "card-management: initialized activationRequired=\(activationRequired) "
-        + "needs=\(String(describing: activationNeeds)) "
-        + "offersActivation=\(offersActivation) transport=\(self.transport)"
-    )
-#endif
+    #if DEBUG
+      DebugConsole.emit(
+        "card-management: initialized activationRequired=\(activationRequired) "
+          + "needs=\(String(describing: activationNeeds)) "
+          + "offersActivation=\(offersActivation) transport=\(self.transport)"
+      )
+    #endif
   }
 
   internal func cardRemoved() {
-#if DEBUG
-    DebugConsole.emit("card-management: card removed; clearing activation offer")
-#endif
+    #if DEBUG
+      DebugConsole.emit("card-management: card removed; clearing activation offer")
+    #endif
     activeRefreshIdentifier = nil
     report = nil
     if !activationRequired {
@@ -104,20 +106,23 @@ internal final class CardManagementModel {
   }
 
   /// Reads only the card generation needed to validate an activation PIN.
+  ///
   /// No retry counter is queried and the form remains interactive while
   /// the ATR or certificate classification completes.
   internal func detectActivationScheme() async {
-    guard (activationRequired || offersActivation), transport == .reader else { return }
+    guard activationRequired || offersActivation, transport == .reader else { return }
     let detected = await CardMaintenance.readerActivationScheme()
-    guard (activationRequired || offersActivation), transport == .reader else { return }
+    guard activationRequired || offersActivation, transport == .reader else { return }
     activationScheme = detected
   }
 
   internal func refresh() async {
     guard !cardOperationInProgress, canContactCard else { return }
-#if DEBUG
-    DebugConsole.emit("card-management: refresh started; offersActivation=\(offersActivation) transport=\(transport)")
-#endif
+    #if DEBUG
+      DebugConsole.emit(
+        "card-management: refresh started; offersActivation=\(offersActivation) transport=\(transport)"
+      )
+    #endif
     nextRefreshIdentifier &+= 1
     let refreshIdentifier = nextRefreshIdentifier
     activeRefreshIdentifier = refreshIdentifier
@@ -130,9 +135,9 @@ internal final class CardManagementModel {
     guard activeRefreshIdentifier == refreshIdentifier else { return }
     activeRefreshIdentifier = nil
     guard let result else {
-#if DEBUG
-      DebugConsole.emit("card-management: refresh failed; clearing activation offer")
-#endif
+      #if DEBUG
+        DebugConsole.emit("card-management: refresh failed; clearing activation offer")
+      #endif
       report = nil
       if !activationRequired {
         offersActivation = false
@@ -241,12 +246,12 @@ internal final class CardManagementModel {
     } else {
       offersActivation = false
     }
-#if DEBUG
-    DebugConsole.emit(
-      "card-management: applied snapshot needs=\(String(describing: snapshot.activationNeeds)) "
-        + "offersActivation=\(offersActivation)"
-    )
-#endif
+    #if DEBUG
+      DebugConsole.emit(
+        "card-management: applied snapshot needs=\(String(describing: snapshot.activationNeeds)) "
+          + "offersActivation=\(offersActivation)"
+      )
+    #endif
     if !preservingOutcome {
       failure = nil
       notice = nil

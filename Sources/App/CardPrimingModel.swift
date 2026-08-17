@@ -76,7 +76,7 @@
       if outcome.cancelled {
         lastRunResult = .notRun
         failure = nil
-      } else if outcome.stored && outcome.registered {
+      } else if outcome.stored, outcome.registered {
         lastRunResult = .succeeded
         failure = nil
       } else {
@@ -127,6 +127,6 @@
         failure = String(localized: "The identity card could not be read. Try again.")
       }
     }
-}
+  }
 
 #endif

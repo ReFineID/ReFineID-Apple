@@ -118,10 +118,10 @@ internal struct ReFineIDApp: App {
             DemoMode.shared.setEditorPresented(true)
             showsVirtualCardEditor = true
           }
-            // Keep the overlay's hit-test surface on the floating control;
-            // the parent overlay otherwise accepts the root view's full
-            // proposal and can shield the product UI underneath it.
-            .fixedSize()
+          // Keep the overlay's hit-test surface on the floating control;
+          // the parent overlay otherwise accepts the root view's full
+          // proposal and can shield the product UI underneath it.
+          .fixedSize()
         }
       }
       .accessibilityHidden(showsVirtualCardEditor)
@@ -133,12 +133,13 @@ internal struct ReFineIDApp: App {
           NotificationCenter.default.post(
             name: .virtualIDCardEditorDidDismiss,
             object: nil)
+        },
+        content: {
+          VirtualIDCardEditor(demoMode: DemoMode.shared) {
+            showsVirtualCardEditor = false
+          }
         }
-      ) {
-        VirtualIDCardEditor(demoMode: DemoMode.shared) {
-          showsVirtualCardEditor = false
-        }
-      }
+      )
     #endif
   }
 
@@ -183,11 +184,11 @@ internal struct ReFineIDApp: App {
 
     // RAPP authenticates the selected peer above the opaque transport. There
     // is deliberately no legacy protocol downgrade when RAPP is unavailable.
-      #if os(iOS)
-        PhonePersistentTokenRelay.shared.start()
-      #elseif os(macOS)
-        MacPersistentTokenRegistry.shared.start()
-      #endif
+    #if os(iOS)
+      PhonePersistentTokenRelay.shared.start()
+    #elseif os(macOS)
+      MacPersistentTokenRegistry.shared.start()
+    #endif
 
     // A hold marks the next NFC field as its own registration field, and
     // clears the mark when it ends. A hold that never ends -- the app

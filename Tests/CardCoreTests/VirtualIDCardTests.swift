@@ -33,7 +33,8 @@ internal final class VirtualIDCardTests: XCTestCase {
     let result = await card.connect(cardAccessNumber: "123456")
 
     guard case .connected(let connected) = result else {
-      return XCTFail("connection classification depended on a certificate")
+      XCTFail("connection classification depended on a certificate")
+      return
     }
     XCTAssertTrue(connected.card.pin1.isFactoryValue)
     XCTAssertTrue(connected.card.pin2.isFactoryValue)
@@ -245,14 +246,15 @@ internal final class VirtualIDCardTests: XCTestCase {
     let result = await card.authenticate(pin1: "1234")
 
     guard case .success(let state) = result else {
-      return XCTFail("authentication did not succeed")
+      XCTFail("authentication did not succeed")
+      return
     }
     XCTAssertTrue(state.device.hasPin1)
     XCTAssertTrue(state.device.cachedIdentity)
     XCTAssertTrue(state.device.tokenRegistered)
   }
 
-  internal func testEveryScenarioAndFaultPresetBuildsDeterministicState() async {
+  internal func testEveryScenarioAndFaultPresetBuildsDeterministicState() {
     for scenario in VirtualIDCard.Scenario.allCases {
       let first = scenario.snapshot
       let second = scenario.snapshot
@@ -336,7 +338,8 @@ internal final class VirtualIDCardTests: XCTestCase {
 
     await card.reset(to: .activatedReader)
     guard case .connected = await card.connect(cardAccessNumber: "not-a-CAN") else {
-      return XCTFail("reader connection incorrectly required a wireless CAN")
+      XCTFail("reader connection incorrectly required a wireless CAN")
+      return
     }
     let reader = await card.inspect()
     XCTAssertNil(reader.device.connectedCardAccessNumber)
@@ -618,7 +621,8 @@ internal final class VirtualIDCardTests: XCTestCase {
     let successful = VirtualIDCard(snapshot: state)
     guard case .success(let result) = await successful.authenticate(pin1: "1234")
     else {
-      return XCTFail("a safe correct PIN 1 was rejected")
+      XCTFail("a safe correct PIN 1 was rejected")
+      return
     }
     XCTAssertEqual(
       result.card.pin1.attemptsRemaining,
@@ -646,10 +650,12 @@ internal final class VirtualIDCardTests: XCTestCase {
     state.card.signatureCertificate = .revoked
     state.faults = VirtualIDCard.FaultPreset.tokenPublicationFailure.faults
     let publication = VirtualIDCard(snapshot: state)
-    guard case .tokenPublicationFailed(let failed) =
-      await publication.authenticate(pin1: "1234")
+    guard
+      case .tokenPublicationFailed(let failed) =
+        await publication.authenticate(pin1: "1234")
     else {
-      return XCTFail("token publication fault was not surfaced")
+      XCTFail("token publication fault was not surfaced")
+      return
     }
     XCTAssertTrue(failed.device.hasPin1)
     XCTAssertTrue(failed.device.cachedIdentity)
@@ -689,7 +695,8 @@ internal final class VirtualIDCardTests: XCTestCase {
     let consumed = await card.inspect()
     XCTAssertTrue(consumed.faults.isEmpty)
     guard case .connected = await card.connect(cardAccessNumber: "123456") else {
-      return XCTFail("consumed wildcard fault remained active")
+      XCTFail("consumed wildcard fault remained active")
+      return
     }
   }
 }

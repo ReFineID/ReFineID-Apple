@@ -38,8 +38,7 @@
     internal static let shared = RappAuthorizationInbox()
 
     internal private(set) var request: RappAuthorizationRequest?
-    private var continuation:
-      CheckedContinuation<RappAuthorizationDecision, Never>?
+    private var continuation: CheckedContinuation<RappAuthorizationDecision, Never>?
 
     private init() {}
 
@@ -69,8 +68,9 @@
       complete(requestID, with: .denied)
     }
 
-    /// Cancels only the operation the protocol named. A late cancellation
-    /// cannot dismiss or decide a newer request.
+    /// Cancels only the operation the protocol named.
+    ///
+    /// A late cancellation cannot dismiss or decide a newer request.
     internal func cancel(_ requestID: String) {
       complete(requestID, with: .denied)
     }
@@ -91,8 +91,10 @@
     }
   }
 
-  /// System-modal holder authorization. It uses the app's shared secret-field
-  /// control and native buttons; no parallel visual language is introduced.
+  /// System-modal holder authorization.
+  ///
+  /// It uses the app's shared secret-field control and native buttons;
+  /// no parallel visual language is introduced.
   internal struct RappAuthorizationView: View {
     internal let request: RappAuthorizationRequest
     internal let inbox: RappAuthorizationInbox

@@ -94,7 +94,9 @@ internal final class TokenDriver: TKSmartCardTokenDriver, TKSmartCardTokenDriver
   }
 
   /// Converts the card's semantic activation result into an empty
-  /// token. Transport failures still escape so the existing retry and
+  /// token.
+  ///
+  /// Transport failures still escape so the existing retry and
   /// CryptoTokenKit recovery paths retain their meaning.
   private static func readerTokenOnce(
     smartCard: TKSmartCard,

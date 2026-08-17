@@ -27,6 +27,7 @@ internal enum CredentialOutcomeMessage {
   }
 
   /// A retry-floor refusal when the card supplied the exact counter.
+  ///
   /// Keeping the count here lets every credential flow use the same wording
   /// and the same two-line visual hierarchy instead of calling it a vague
   /// safety failure.

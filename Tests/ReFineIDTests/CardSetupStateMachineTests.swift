@@ -2,6 +2,7 @@
 
 import Foundation
 import XCTest
+
 @testable import ReFineID
 
 final class CardSetupStateMachineTests: XCTestCase {
@@ -46,7 +47,7 @@ final class CardSetupStateMachineTests: XCTestCase {
         XCTAssertLessThanOrEqual(expected.count, 1, "Grammar is ambiguous for \(state), \(event)")
 
         switch (expected.first, CardSetupStateMachine.reduce(state: state, event: event)) {
-        case let (.some(transition), .transitioned(target)):
+        case (.some(let transition), .transitioned(let target)):
           XCTAssertEqual(target, transition.target, "Mismatch for \(state), \(event)")
         case (.none, .rejected):
           break
@@ -98,13 +99,17 @@ final class CardSetupStateMachineTests: XCTestCase {
   func testCardOutcomeRoutesRespectPurpose() {
     assertTransition(.classifyingBrowser, .classificationActivated, .registeringBrowser)
     assertTransition(.classifyingManagementHome, .classificationActivated, .pinManagementHome)
-    assertTransition(.classifyingManagementIdentity, .classificationActivated, .pinManagementIdentity)
+    assertTransition(
+      .classifyingManagementIdentity, .classificationActivated, .pinManagementIdentity)
     assertTransition(.classifyingBrowser, .classificationRecoveryRequired, .pinManagementHome)
-    assertTransition(.classifyingManagementHome, .classificationRecoveryRequired, .pinManagementHome)
-    assertTransition(.classifyingManagementIdentity, .classificationRecoveryRequired, .pinManagementIdentity)
+    assertTransition(
+      .classifyingManagementHome, .classificationRecoveryRequired, .pinManagementHome)
+    assertTransition(
+      .classifyingManagementIdentity, .classificationRecoveryRequired, .pinManagementIdentity)
     assertTransition(.classifyingBrowser, .classificationActivationRequired, .activationHome)
     assertTransition(.classifyingManagementHome, .classificationActivationRequired, .activationHome)
-    assertTransition(.classifyingManagementIdentity, .classificationActivationRequired, .activationIdentity)
+    assertTransition(
+      .classifyingManagementIdentity, .classificationActivationRequired, .activationIdentity)
   }
 
   func testDestinationDismissalPreservesIdentityOrigin() {
@@ -162,14 +167,16 @@ final class CardSetupStateMachineTests: XCTestCase {
       .deletingLastPathComponent()
       .deletingLastPathComponent()
       .deletingLastPathComponent()
-    let url = repositoryRoot
+    let url =
+      repositoryRoot
       .appendingPathComponent("Documentation")
       .appendingPathComponent("card-setup-state-machine.scxml")
     let parser = XMLParser(contentsOf: url)
     let delegate = GrammarParserDelegate()
     parser?.delegate = delegate
 
-    XCTAssertTrue(parser?.parse() == true, parser?.parserError?.localizedDescription ?? "SCXML parse failed")
+    XCTAssertTrue(
+      parser?.parse() == true, parser?.parserError?.localizedDescription ?? "SCXML parse failed")
     XCTAssertTrue(delegate.errors.isEmpty, delegate.errors.joined(separator: "\n"))
 
     return ParsedGrammar(
@@ -198,7 +205,7 @@ private final class GrammarParserDelegate: NSObject, XMLParserDelegate {
     switch elementName {
     case "scxml":
       guard let rawInitial = attributeDict["initial"],
-            let initial = CardSetupStateMachine.State(rawValue: rawInitial)
+        let initial = CardSetupStateMachine.State(rawValue: rawInitial)
       else {
         errors.append("Unknown or missing SCXML initial state")
         return
@@ -207,7 +214,7 @@ private final class GrammarParserDelegate: NSObject, XMLParserDelegate {
 
     case "state":
       guard let rawState = attributeDict["id"],
-            let state = CardSetupStateMachine.State(rawValue: rawState)
+        let state = CardSetupStateMachine.State(rawValue: rawState)
       else {
         errors.append("Unknown or missing SCXML state id")
         return
@@ -219,10 +226,10 @@ private final class GrammarParserDelegate: NSObject, XMLParserDelegate {
 
     case "transition":
       guard let source = currentState,
-            let rawEvent = attributeDict["event"],
-            let event = CardSetupStateMachine.Event(rawValue: rawEvent),
-            let rawTarget = attributeDict["target"],
-            let target = CardSetupStateMachine.State(rawValue: rawTarget)
+        let rawEvent = attributeDict["event"],
+        let event = CardSetupStateMachine.Event(rawValue: rawEvent),
+        let rawTarget = attributeDict["target"],
+        let target = CardSetupStateMachine.State(rawValue: rawTarget)
       else {
         errors.append("Unknown or incomplete transition \(attributeDict)")
         return

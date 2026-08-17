@@ -23,13 +23,13 @@
 
       init(data: Data) { self.data = data }
 
-      init(configuration: ReadConfiguration) throws {
+      init(configuration: ReadConfiguration) {
         data = configuration.file.regularFileContents ?? Data()
       }
 
       func fileWrapper(
         configuration _: WriteConfiguration
-      ) throws -> FileWrapper {
+      ) -> FileWrapper {
         FileWrapper(regularFileWithContents: data)
       }
     }
@@ -80,7 +80,8 @@
         isPresented: $importsDocuments,
         allowedContentTypes: [.item],
         allowsMultipleSelection: true,
-        onCompletion: importResult)
+        onCompletion: importResult
+      )
       .fileExporter(
         isPresented: $exportsDocument,
         document: output?.document,
@@ -149,13 +150,14 @@
       if requiresRequesterPIN2 {
         Section(text("signing.authorization", "Signature authorization")) {
           CredentialSecretField(
-          name: text("signing.pin2", "Signature (PIN 2)"),
-          text: $pin2,
-          revealIdentifier: "signingPIN2Reveal",
-          field: {
-            SecureField(
-              text("signing.pin2", "Signature (PIN 2)"),
-              text: $pin2)
+            name: text("signing.pin2", "Signature (PIN 2)"),
+            text: $pin2,
+            revealIdentifier: "signingPIN2Reveal",
+            field: {
+              SecureField(
+                text("signing.pin2", "Signature (PIN 2)"),
+                text: $pin2
+              )
               .keyboardType(.numberPad)
               .textContentType(.oneTimeCode)
               .accessibilityIdentifier("signingPIN2")
@@ -163,17 +165,18 @@
                 pin2 = String(
                   value.filter(\.isNumber).prefix(Pin2.maximumDigitCount))
               }
-          },
-          validation: {
-            if !pin2.isEmpty {
-              Image(
-                systemName: pin2IsValid
-                  ? "checkmark.circle.fill"
-                  : "xmark.circle.fill")
+            },
+            validation: {
+              if !pin2.isEmpty {
+                Image(
+                  systemName: pin2IsValid
+                    ? "checkmark.circle.fill"
+                    : "xmark.circle.fill"
+                )
                 .foregroundStyle(pin2IsValid ? .green : .red)
                 .accessibilityHidden(true)
+              }
             }
-          }
           )
         }
       }
@@ -190,8 +193,9 @@
             Text(
               isSigning
                 ? text("signing.progress", "Signing")
-                : text("signing.commit", "Sign documents"))
-              .bold()
+                : text("signing.commit", "Sign documents")
+            )
+            .bold()
             Spacer()
           }
         }
@@ -205,8 +209,9 @@
         CredentialOutcomeText(
           message: completionMessage
             ?? text("signing.success", "Documents signed"),
-          tone: .success)
-          .accessibilityIdentifier("signingSuccess")
+          tone: .success
+        )
+        .accessibilityIdentifier("signingSuccess")
       }
     }
 

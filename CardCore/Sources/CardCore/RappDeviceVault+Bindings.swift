@@ -5,6 +5,7 @@
   import ReFineIDRapp
 
   extension RappDeviceVault: RappPairVault {
+    /// Rust-core binding for ``insertPair(pairID:record:)``.
     public func insertDeviceOnly(pairId: Data, record: Data) throws {
       do {
         try insertPair(pairID: pairId, record: record)
@@ -13,6 +14,7 @@
       }
     }
 
+    /// Rust-core binding for ``loadPair(pairID:)``.
     public func loadDeviceOnly(pairId: Data) throws -> Data? {
       do {
         return try loadPair(pairID: pairId)
@@ -21,6 +23,7 @@
       }
     }
 
+    /// Rust-core binding for ``revokePair(pairID:revokedAtMilliseconds:)``.
     public func revokeDeviceOnly(pairId: Data, revokedAtMs: UInt64) throws {
       do {
         try revokePair(pairID: pairId, revokedAtMilliseconds: revokedAtMs)
@@ -29,6 +32,7 @@
       }
     }
 
+    /// Rust-core binding for ``pairIsRevoked(pairID:)``.
     public func isRevoked(pairId: Data) throws -> Bool {
       do {
         return try pairIsRevoked(pairID: pairId)
@@ -39,6 +43,7 @@
   }
 
   extension RappDeviceVault: RappOperationVault {
+    /// Rust-core binding for ``persistRequester(pairID:operationID:record:)``.
     public func persistRequester(
       pairId: Data,
       operationId: Data,
@@ -51,6 +56,7 @@
       }
     }
 
+    /// Rust-core binding for ``loadRequester(pairID:)``.
     public func loadRequester(pairId: Data) throws -> [Data] {
       do {
         return try loadRequester(pairID: pairId)
@@ -59,6 +65,7 @@
       }
     }
 
+    /// Rust-core binding for ``persistProxy(pairID:operationID:record:)``.
     public func persistProxy(
       pairId: Data,
       operationId: Data,
@@ -71,6 +78,8 @@
       }
     }
 
+    /// Rust-core binding for
+    /// ``persistProxyResult(pairID:operationID:record:result:)``.
     public func persistProxyResult(
       pairId: Data,
       operationId: Data,
@@ -88,6 +97,8 @@
       }
     }
 
+    /// Rust-core binding for
+    /// ``retainProxyUncertain(pairID:operationID:record:)``.
     public func retainProxyUncertain(
       pairId: Data,
       operationId: Data,
@@ -100,6 +111,8 @@
       }
     }
 
+    /// Rust-core binding for
+    /// ``acknowledgeProxyResult(pairID:operationID:record:)``.
     public func acknowledgeProxyResult(
       pairId: Data,
       operationId: Data,
@@ -112,6 +125,7 @@
       }
     }
 
+    /// Rust-core binding for ``loadProxy(pairID:)``.
     public func loadProxy(pairId: Data) throws -> [RappStoredProxyJournal] {
       do {
         return try loadProxy(pairID: pairId).map { stored in

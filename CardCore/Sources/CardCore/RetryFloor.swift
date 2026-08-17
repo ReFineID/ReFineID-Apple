@@ -4,8 +4,10 @@
 /// side-effect-free, and this rule decides whether the operation may proceed.
 public enum RetryFloor {
   /// An unblocked operation proceeds only when at least this many attempts
-  /// remain. Zero also proceeds because a blocked credential has no attempt
-  /// left for the operation to consume.
+  /// remain.
+  ///
+  /// Zero also proceeds because a blocked credential has no attempt left
+  /// for the operation to consume.
   public static let minimumAttemptsToProceed: UInt8 = 3
 
   /// Decides from one fresh reading.

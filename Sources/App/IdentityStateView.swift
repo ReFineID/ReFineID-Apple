@@ -14,9 +14,10 @@
   /// settles and only warns once the state has lasted long enough to
   /// mean something.
   internal struct IdentityStateView: View {
-    /// One tracked event. Token-list movement matters only while an
-    /// identity is published, because only then is there a holder name
-    /// to re-read.
+    /// One tracked event.
+    ///
+    /// Token-list movement matters only while an identity is published,
+    /// because only then is there a holder name to re-read.
     private enum TrackKey: Equatable {
       case availability(LoginIdentityModel.Availability)
       case ready(generation: Int)
@@ -36,8 +37,10 @@
     internal let availability: LoginIdentityModel.Availability
 
     /// A completed activation check and recovery found no usable
-    /// identity. Until that event, absence means that the card is still
-    /// being read rather than that it failed.
+    /// identity.
+    ///
+    /// Until that event, absence means that the card is still being
+    /// read rather than that it failed.
     internal let warnsUnavailableCard: Bool
 
     /// The model, watched so a token event re-reads the name even
@@ -93,8 +96,9 @@
       }
     }
 
-    /// Follows one availability and reads the name when ready. The name
-    /// is read off the main actor and never blocks the row.
+    /// Follows one availability and reads the name when ready.
+    ///
+    /// The name is read off the main actor and never blocks the row.
     private func track() async {
       #if DEBUG
         Self.log.info("track: \(String(describing: self.availability))")

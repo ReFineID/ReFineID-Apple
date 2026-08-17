@@ -93,7 +93,8 @@ internal final class LocalizationUITests: XCTestCase {
 
     let scenario =
       app.descendants(matching: .any)[UITestIdentifiers.virtualCardScenario].firstMatch
-    XCTAssertTrue(scenario.waitForExistence(timeout: 10), "Virtual card scenario control is missing")
+    XCTAssertTrue(
+      scenario.waitForExistence(timeout: 10), "Virtual card scenario control is missing")
     scenario.tap()
 
     let registered =

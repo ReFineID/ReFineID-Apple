@@ -269,20 +269,23 @@ extension CardMaintenance {
   }
 
   /// A successful CHANGE REFERENCE DATA or RESET RETRY COUNTER restores the
-  /// target credential's retry allowance. Never turn the command status word
-  /// into a success notice when the card's immediate state contradicts it.
+  /// target credential's retry allowance.
+  ///
+  /// Never turn the command status word into a success notice when the
+  /// card's immediate state contradicts it.
   private static func confirmsRestored(
     _ role: CredentialRole,
     in snapshot: Snapshot
   ) -> Bool {
-    let outcome: RetryProbeOutcome? = switch role {
-    case .pin1:
-      snapshot.report?.pin1
-    case .pin2:
-      snapshot.report?.pin2
-    case .puk:
-      snapshot.report?.puk
-    }
+    let outcome: RetryProbeOutcome? =
+      switch role {
+      case .pin1:
+        snapshot.report?.pin1
+      case .pin2:
+        snapshot.report?.pin2
+      case .puk:
+        snapshot.report?.puk
+      }
     return switch outcome {
     case .remaining(let count):
       count.attemptsRemaining == RetryCount.pristineAllowance

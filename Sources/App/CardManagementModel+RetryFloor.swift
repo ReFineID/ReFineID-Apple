@@ -13,8 +13,10 @@ extension CardManagementModel {
     return RetryFloor.evaluate(probeOutcome: outcome) == .proceed
   }
 
-  /// Activation may write either PIN independently. Every PIN still awaiting
-  /// its factory-state write must be above the same retry floor.
+  /// Activation may write either PIN independently.
+  ///
+  /// Every PIN still awaiting its factory-state write must be above the
+  /// same retry floor.
   internal var allowsActivationOperation: Bool {
     (!activationNeeds.pin1 || allowsCredentialOperation(spending: .pin1))
       && (!activationNeeds.pin2 || allowsCredentialOperation(spending: .pin2))

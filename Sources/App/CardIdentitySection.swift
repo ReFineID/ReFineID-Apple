@@ -30,12 +30,12 @@ internal struct CardIdentitySection: View {
           .frame(maxWidth: .infinity)
           .padding(.vertical, 8)
       }
-        .buttonStyle(.borderedProminent)
-        .tint(Color(red: 0.65, green: 0, blue: 0))
-        .padding(.top, 24)
-        .listRowBackground(Color.clear)
-        .listRowInsets(EdgeInsets())
-        .accessibilityIdentifier("forgetCardIdentityButton")
+      .buttonStyle(.borderedProminent)
+      .tint(Color(red: 0.65, green: 0, blue: 0))
+      .padding(.top, 24)
+      .listRowBackground(Color.clear)
+      .listRowInsets(EdgeInsets())
+      .accessibilityIdentifier("forgetCardIdentityButton")
     }
   }
 }

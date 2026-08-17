@@ -100,8 +100,8 @@
             pin1: pin1,
             model: model,
             storeVerifiedPin1: storeVerifiedPin1,
-            clearPin1Entry: clearPin1Entry,
-            markRegistered: { isRegistered = true })
+            clearPin1Entry: clearPin1Entry
+          ) { isRegistered = true }
           onRegistrationFinished(succeeded)
         }
       } label: {

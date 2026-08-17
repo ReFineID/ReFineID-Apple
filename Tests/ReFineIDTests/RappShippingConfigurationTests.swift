@@ -18,10 +18,14 @@ struct RappShippingConfigurationTests {
     let readerAttributes = try #require(Self.extensionAttributes(reader))
     let rappAttributes = try #require(Self.extensionAttributes(rapp))
     #expect(readerAttributes["com.apple.ctk.class-id"] as? String == "fi.refineid.ReFineID.token")
-    #expect(readerAttributes["com.apple.ctk.driver-class"] as? String == "ReFineIDTokenExtension.TokenDriver")
+    #expect(
+      readerAttributes["com.apple.ctk.driver-class"] as? String
+        == "ReFineIDTokenExtension.TokenDriver")
     #expect(readerAttributes["com.apple.ctk.token-type"] as? String == "smartcard")
     #expect(rappAttributes["com.apple.ctk.class-id"] as? String == Self.classID)
-    #expect(rappAttributes["com.apple.ctk.driver-class"] as? String == "$(PRODUCT_MODULE_NAME).PersistentTokenDriver")
+    #expect(
+      rappAttributes["com.apple.ctk.driver-class"] as? String
+        == "$(PRODUCT_MODULE_NAME).PersistentTokenDriver")
     #expect(rappAttributes["com.apple.ctk.token-type"] == nil)
   }
 
@@ -40,7 +44,7 @@ struct RappShippingConfigurationTests {
   func networkDeclarations() throws {
     for path in ["Config/ReFineID-Info.plist", "Config/ReFineID-iOS-Info.plist"] {
       let plist = try Self.plist(path)
-      #expect(plist["NSLocalNetworkUsageDescription"] as? String != nil)
+      #expect(plist["NSLocalNetworkUsageDescription"] is String)
       let services = try #require(plist["NSBonjourServices"] as? [String])
       #expect(services.contains(Self.service))
     }

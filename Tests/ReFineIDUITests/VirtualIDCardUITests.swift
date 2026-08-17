@@ -156,10 +156,10 @@
       assertVirtualCardEditorLocalization(language: "sv")
     }
 
-      internal func testFactoryFreshNFCCardActivatesThroughGUI() {
-        let app = UITestApp.launchVirtualCard()
-        applyScenario("factory-fresh-nfc", in: app)
-        connect(accessNumber: "123456", pin1: "1234", in: app)
+    internal func testFactoryFreshNFCCardActivatesThroughGUI() {
+      let app = UITestApp.launchVirtualCard()
+      applyScenario("factory-fresh-nfc", in: app)
+      connect(accessNumber: "123456", pin1: "1234", in: app)
 
       fillSecure("managementActivationEntry", with: "1234567", in: app)
       fillSecure("managementActivationPin1", with: "4567", in: app)
@@ -185,12 +185,12 @@
             + "feedback=\(visibleFeedback); "
             + "PIN 1 factory=\(String(describing: pin1Factory.value)), "
             + "PIN 2 factory=\(String(describing: pin2Factory.value))")
-          return
-        }
-        XCTAssertEqual(
-          pin1.value as? String,
-          "Basic Code (PIN 1)",
-          "PIN 1 entered before factory-card classification was retained")
+        return
+      }
+      XCTAssertEqual(
+        pin1.value as? String,
+        "Basic Code (PIN 1)",
+        "PIN 1 entered before factory-card classification was retained")
     }
 
     internal func testCardAccessNumberAcceptsDirectGUIInput() {
@@ -255,20 +255,20 @@
     }
 
     internal func testActivatedNFCCardRevealsAuthenticationThroughGUI() {
-        let app = UITestApp.launchVirtualCard()
-        applyScenario("activated-nfc", in: app)
+      let app = UITestApp.launchVirtualCard()
+      applyScenario("activated-nfc", in: app)
 
-        XCTAssertTrue(
-          app.secureTextFields[UITestIdentifiers.pin1Field]
-            .waitForExistence(timeout: Self.appearTimeout),
-          "initial setup did not offer PIN 1 with CAN")
-        connect(accessNumber: "123456", pin1: "1234", in: app)
+      XCTAssertTrue(
+        app.secureTextFields[UITestIdentifiers.pin1Field]
+          .waitForExistence(timeout: Self.appearTimeout),
+        "initial setup did not offer PIN 1 with CAN")
+      connect(accessNumber: "123456", pin1: "1234", in: app)
 
-        XCTAssertTrue(
-          app.staticTexts["Identity"]
-            .waitForExistence(timeout: Self.appearTimeout),
-          "activated card did not continue directly through authentication")
-        XCTAssertTrue(
+      XCTAssertTrue(
+        app.staticTexts["Identity"]
+          .waitForExistence(timeout: Self.appearTimeout),
+        "activated card did not continue directly through authentication")
+      XCTAssertTrue(
         app.buttons[UITestIdentifiers.signDocuments]
           .waitForExistence(timeout: Self.appearTimeout),
         "validated NFC card did not reveal document signing")
@@ -314,11 +314,11 @@
           .waitForExistence(timeout: Self.appearTimeout))
     }
 
-      internal func testPartialActivationRequestsOnlyPIN2ThroughGUI() {
-        let app = UITestApp.launchVirtualCard()
-        applyScenario("partial-activation-nfc", in: app)
+    internal func testPartialActivationRequestsOnlyPIN2ThroughGUI() {
+      let app = UITestApp.launchVirtualCard()
+      applyScenario("partial-activation-nfc", in: app)
 
-        connect(accessNumber: "123456", pin1: "1234", in: app)
+      connect(accessNumber: "123456", pin1: "1234", in: app)
 
       XCTAssertTrue(
         app.secureTextFields["managementActivationPin2"]
@@ -764,34 +764,35 @@
         menu.waitForExistence(timeout: Self.appearTimeout),
         "\(identifier) menu is missing")
       menu.tap()
-      let choice = optionIdentifier.map {
-        app.descendants(matching: .any)[$0].firstMatch
-      } ?? app.buttons[option].firstMatch
+      let choice =
+        optionIdentifier.map {
+          app.descendants(matching: .any)[$0].firstMatch
+        } ?? app.buttons[option].firstMatch
       XCTAssertTrue(
         choice.waitForExistence(timeout: Self.appearTimeout),
         "\(option) menu choice is missing")
       choice.tap()
     }
 
-      private func connect(
-        accessNumber: String,
-        pin1: String,
-        in app: XCUIApplication
-      ) {
-        let field = app.textFields[UITestIdentifiers.cardAccessNumberField]
-        XCTAssertTrue(field.waitForExistence(timeout: Self.appearTimeout))
-        focusAndType(field, value: accessNumber, in: app)
-        let pin1Field = app.secureTextFields[UITestIdentifiers.pin1Field]
-        XCTAssertTrue(pin1Field.waitForExistence(timeout: Self.appearTimeout))
-        focusAndType(pin1Field, value: pin1, in: app)
-        let connect = app.buttons["connectCard"]
+    private func connect(
+      accessNumber: String,
+      pin1: String,
+      in app: XCUIApplication
+    ) {
+      let field = app.textFields[UITestIdentifiers.cardAccessNumberField]
+      XCTAssertTrue(field.waitForExistence(timeout: Self.appearTimeout))
+      focusAndType(field, value: accessNumber, in: app)
+      let pin1Field = app.secureTextFields[UITestIdentifiers.pin1Field]
+      XCTAssertTrue(pin1Field.waitForExistence(timeout: Self.appearTimeout))
+      focusAndType(pin1Field, value: pin1, in: app)
+      let connect = app.buttons["connectCard"]
       let enabled = XCTNSPredicateExpectation(
         predicate: NSPredicate(format: "enabled == true"),
         object: connect)
       XCTAssertEqual(
-          XCTWaiter.wait(for: [enabled], timeout: Self.appearTimeout),
-          .completed,
-          "Connect is disabled for complete CAN and PIN 1 entries")
+        XCTWaiter.wait(for: [enabled], timeout: Self.appearTimeout),
+        .completed,
+        "Connect is disabled for complete CAN and PIN 1 entries")
       connect.tap()
     }
 
@@ -859,10 +860,12 @@
       snapshot.name = "Confirmation accessibility snapshot"
       snapshot.lifetime = .deleteOnSuccess
       add(snapshot)
-      guard let center = accessibilityFrameCenter(
-        of: UITestIdentifiers.managementConfirm,
-        in: hierarchy
-      ) else {
+      guard
+        let center = accessibilityFrameCenter(
+          of: UITestIdentifiers.managementConfirm,
+          in: hierarchy
+        )
+      else {
         XCTFail("\(identifier) did not present its confirmation")
         return
       }
@@ -878,10 +881,12 @@
         .tap()
     }
 
-    private func accessibilityFrameCenter(of identifier: String, in hierarchy: String) -> CGVector? {
+    private func accessibilityFrameCenter(of identifier: String, in hierarchy: String) -> CGVector?
+    {
       let number = #"-?[0-9]+(?:\.[0-9]+)?"#
       let escapedIdentifier = NSRegularExpression.escapedPattern(for: identifier)
-      let pattern = #"\{\{("# + number + #"), ("# + number + #")\}, \{("#
+      let pattern =
+        #"\{\{("# + number + #"), ("# + number + #")\}, \{("#
         + number + #"), ("# + number + #")\}\}, identifier: '"#
         + escapedIdentifier + #"'"#
       guard

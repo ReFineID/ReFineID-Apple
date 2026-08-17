@@ -10,6 +10,7 @@ import Security
 /// records and retained results share one item so result transitions remain
 /// atomic without decoding Rust-owned journal bytes.
 public final class RappDeviceVault: @unchecked Sendable {
+  /// Storage failures surfaced by vault operations.
   public enum Failure: Error, Equatable, Sendable {
     case duplicate
     case malformed
@@ -17,10 +18,14 @@ public final class RappDeviceVault: @unchecked Sendable {
     case unavailable(OSStatus)
   }
 
+  /// One proxy operation journal and its optionally retained result.
   public struct StoredProxyJournal: Equatable, Sendable {
+    /// Rust-owned journal bytes for the proxy operation.
     public let record: Data
+    /// Result bytes retained for redelivery; absent once acknowledged.
     public let retainedResult: Data?
 
+    /// Creates a snapshot pairing journal bytes with a retained result.
     public init(record: Data, retainedResult: Data?) {
       self.record = record
       self.retainedResult = retainedResult
@@ -62,9 +67,11 @@ public final class RappDeviceVault: @unchecked Sendable {
 
   private enum StoredValue {
     /// Keychain does not reliably replace a non-empty generic-password value
-    /// with zero-length data. This non-CBOR marker gives acknowledged proxy
-    /// records one durable, portable representation without deleting their
-    /// Rust-owned journal bytes.
+    /// with zero-length data.
+    ///
+    /// This non-CBOR marker gives acknowledged proxy records one durable,
+    /// portable representation without deleting their Rust-owned journal
+    /// bytes.
     static let noRetainedResult = Data("ReFineID:RAPP:no-retained-result:v1".utf8)
   }
 
@@ -74,12 +81,15 @@ public final class RappDeviceVault: @unchecked Sendable {
   private let encoder: PropertyListEncoder
   private let decoder = PropertyListDecoder()
 
+  /// Opens the production vault, optionally shared via an access group.
   public convenience init(accessGroup: String? = nil) {
     self.init(accessGroup: accessGroup, servicePrefix: "fi.refineid.rapp")
   }
 
   /// Isolates deterministic integration tests from production and from each
-  /// simulated peer. Production always enters through the public initializer.
+  /// simulated peer.
+  ///
+  /// Production always enters through the public initializer.
   internal init(accessGroup: String?, servicePrefix: String) {
     precondition(!servicePrefix.isEmpty)
     self.accessGroup = accessGroup
@@ -88,6 +98,7 @@ public final class RappDeviceVault: @unchecked Sendable {
     encoder.outputFormat = .binary
   }
 
+  /// Stores a new active pair record under its pair identifier.
   public func insertPair(pairID: Data, record: Data) throws {
     try synchronized {
       try requireIdentifier(pairID, size: IdentifierSize.pair)
@@ -109,6 +120,7 @@ public final class RappDeviceVault: @unchecked Sendable {
     }
   }
 
+  /// Returns the pair record, or nil when it is absent or revoked.
   public func loadPair(pairID: Data) throws -> Data? {
     try synchronized {
       try requireIdentifier(pairID, size: IdentifierSize.pair)
@@ -124,6 +136,7 @@ public final class RappDeviceVault: @unchecked Sendable {
     }
   }
 
+  /// Reports whether a revocation tombstone exists for the pair.
   public func pairIsRevoked(pairID: Data) throws -> Bool {
     try synchronized {
       try requireIdentifier(pairID, size: IdentifierSize.pair)
@@ -134,6 +147,7 @@ public final class RappDeviceVault: @unchecked Sendable {
     }
   }
 
+  /// Lists the identifiers of stored pairs that are not revoked.
   public func activePairIDs() throws -> [Data] {
     try synchronized {
       try loadAll(service: namespace.pair).compactMap { item in
@@ -151,6 +165,7 @@ public final class RappDeviceVault: @unchecked Sendable {
     }
   }
 
+  /// Returns the identifier of the currently selected pair, if any.
   public func selectedPairID() throws -> Data? {
     try synchronized {
       guard
@@ -167,6 +182,7 @@ public final class RappDeviceVault: @unchecked Sendable {
     }
   }
 
+  /// Marks an active pair as the current selection.
   public func selectPair(pairID: Data) throws {
     try synchronized {
       try requireIdentifier(pairID, size: IdentifierSize.pair)
@@ -185,18 +201,21 @@ public final class RappDeviceVault: @unchecked Sendable {
     }
   }
 
+  /// Removes the current pair selection, if any.
   public func clearSelectedPair() throws {
     try synchronized {
-      let status = SecItemDelete(itemQuery(
-        service: namespace.selection,
-        account: SelectionAccount.current
-      ) as CFDictionary)
+      let status = SecItemDelete(
+        itemQuery(
+          service: namespace.selection,
+          account: SelectionAccount.current
+        ) as CFDictionary)
       guard status == errSecSuccess || status == errSecItemNotFound else {
         throw Failure.unavailable(status)
       }
     }
   }
 
+  /// Erases the pair's key material and installs a revocation tombstone.
   public func revokePair(pairID: Data, revokedAtMilliseconds: UInt64) throws {
     try synchronized {
       try requireIdentifier(pairID, size: IdentifierSize.pair)
@@ -214,6 +233,7 @@ public final class RappDeviceVault: @unchecked Sendable {
     }
   }
 
+  /// Writes or replaces one requester journal record for the operation.
   public func persistRequester(
     pairID: Data,
     operationID: Data,
@@ -229,6 +249,7 @@ public final class RappDeviceVault: @unchecked Sendable {
     }
   }
 
+  /// Returns all requester journal records stored for the pair.
   public func loadRequester(pairID: Data) throws -> [Data] {
     try synchronized {
       try requireIdentifier(pairID, size: IdentifierSize.pair)
@@ -243,6 +264,7 @@ public final class RappDeviceVault: @unchecked Sendable {
     }
   }
 
+  /// Writes the proxy journal record with no retained result.
   public func persistProxy(
     pairID: Data,
     operationID: Data,
@@ -255,6 +277,7 @@ public final class RappDeviceVault: @unchecked Sendable {
       retainedResult: .replace(nil))
   }
 
+  /// Writes the proxy journal record together with its retained result.
   public func persistProxyResult(
     pairID: Data,
     operationID: Data,
@@ -269,6 +292,7 @@ public final class RappDeviceVault: @unchecked Sendable {
       retainedResult: .replace(result))
   }
 
+  /// Updates an existing proxy record, preserving its retained result.
   public func retainProxyUncertain(
     pairID: Data,
     operationID: Data,
@@ -281,6 +305,7 @@ public final class RappDeviceVault: @unchecked Sendable {
       retainedResult: .preserve)
   }
 
+  /// Replaces the proxy record and discards its retained result.
   public func acknowledgeProxyResult(
     pairID: Data,
     operationID: Data,
@@ -293,6 +318,7 @@ public final class RappDeviceVault: @unchecked Sendable {
       retainedResult: .replace(nil))
   }
 
+  /// Returns every stored proxy journal for the pair.
   public func loadProxy(pairID: Data) throws -> [StoredProxyJournal] {
     try synchronized {
       try requireIdentifier(pairID, size: IdentifierSize.pair)
@@ -313,6 +339,7 @@ public final class RappDeviceVault: @unchecked Sendable {
     }
   }
 
+  /// Deletes all requester and proxy journal records for the pair.
   public func removeOperationRecords(pairID: Data) throws {
     try synchronized {
       try requireIdentifier(pairID, size: IdentifierSize.pair)
@@ -506,10 +533,10 @@ public final class RappDeviceVault: @unchecked Sendable {
   }
 }
 
-private extension Data {
+extension Data {
   private static let hexadecimalDigitsPerByte = 2
 
-  init?(strictHexadecimal value: String) {
+  fileprivate init?(strictHexadecimal value: String) {
     guard value.count.isMultiple(of: Self.hexadecimalDigitsPerByte) else { return nil }
     var bytes: [UInt8] = []
     bytes.reserveCapacity(value.count / Self.hexadecimalDigitsPerByte)
@@ -523,7 +550,7 @@ private extension Data {
     self.init(bytes)
   }
 
-  var hexadecimal: String {
+  fileprivate var hexadecimal: String {
     map { String(format: "%02x", $0) }.joined()
   }
 }

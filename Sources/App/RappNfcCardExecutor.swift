@@ -107,13 +107,15 @@
       qualified: Bool
     ) async -> Outcome {
       await withCard(cardAccessNumber: cardAccessNumber) { operations in
-        guard let identity = identity(
-          operations: operations,
-          slot: slot,
-          keyProfile: keyProfile,
-          algorithm: algorithm,
-          digest: digest
-        ) else {
+        guard
+          let identity = identity(
+            operations: operations,
+            slot: slot,
+            keyProfile: keyProfile,
+            algorithm: algorithm,
+            digest: digest
+          )
+        else {
           return .refusedBeforeCredentialTransmit(.keyOrAlgorithmMismatch)
         }
 
@@ -162,17 +164,18 @@
         if let verified { return verified }
 
         do {
-          let raw = try qualified
+          let raw =
+            try qualified
             ? operations.computeQualifiedSignature(
-                overDigest: identity.request.digest,
-                algorithm: identity.request.algorithm,
-                expectedSignatureLength: identity.request.expectedSignatureLength
-              )
+              overDigest: identity.request.digest,
+              algorithm: identity.request.algorithm,
+              expectedSignatureLength: identity.request.expectedSignatureLength
+            )
             : operations.computeAuthenticationSignature(
-                overDigest: identity.request.digest,
-                algorithm: identity.request.algorithm,
-                expectedSignatureLength: identity.request.expectedSignatureLength
-              )
+              overDigest: identity.request.digest,
+              algorithm: identity.request.algorithm,
+              expectedSignatureLength: identity.request.expectedSignatureLength
+            )
           guard
             let signature = identity.request.wireSignature(from: raw),
             identity.request.isSatisfied(by: signature, from: identity.publicKey)
@@ -186,8 +189,10 @@
       }
     }
 
-    /// Nil means VERIFY succeeded. Every other value is terminal for this
-    /// operation and no caller may automatically resend the PIN.
+    /// Nil means VERIFY succeeded.
+    ///
+    /// Every other value is terminal for this operation and no caller
+    /// may automatically resend the PIN.
     private static func verifyPin1(
       _ pin: consuming Pin1,
       with operations: CardOperations

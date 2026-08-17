@@ -50,6 +50,7 @@ extension Token {
   }
 
   /// Revokes the live and stored token after this card rejects PIN2.
+  ///
   /// PIN2 is never persisted, and a PIN2 rejection does not invalidate
   /// the independently proven CAN or PIN1 credentials.
   internal func revokeIdentityAfterPin2Rejection(
@@ -73,6 +74,7 @@ extension Token {
   }
 
   /// Removes every persistent and live capability of this automatic token.
+  ///
   /// A bad CAN also removes PIN1 because neither secret may remain attached
   /// to an identity whose physical card could not be authenticated.
   private func revokeStoredAutomaticIdentity(

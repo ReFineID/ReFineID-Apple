@@ -275,15 +275,18 @@ public final class SecureMessagingChannel: CardChannel {
     return response
   }
 
-  /// DO'85' or DO'87' for a command data field. DO'85' carries ciphertext
-  /// directly for odd instructions; DO'87' prefixes it with the padding
-  /// indicator for even instructions. An empty data field emits no object.
+  /// DO'85' or DO'87' for a command data field.
+  ///
+  /// DO'85' carries ciphertext directly for odd instructions; DO'87'
+  /// prefixes it with the padding indicator for even instructions. An
+  /// empty data field emits no object.
   private func cryptogramObject(
     for data: Data,
     hasOddInstruction: Bool
   ) throws -> Data {
     guard !data.isEmpty else { return Data() }
-    var value = hasOddInstruction
+    var value =
+      hasOddInstruction
       ? Data()
       : Data([PaceValues.paddingContentIndicator])
     value.append(
@@ -293,7 +296,8 @@ public final class SecureMessagingChannel: CardChannel {
         plaintext: Self.padded(data)
       )
     )
-    let tag = hasOddInstruction
+    let tag =
+      hasOddInstruction
       ? PaceValues.oddInstructionCryptogramTag
       : PaceValues.cryptogramTag
     guard let object = DerTlvRecord.encoded(tag: tag, value: value)

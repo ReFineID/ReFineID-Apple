@@ -172,9 +172,10 @@ internal enum PaceValues {
   internal static let classSecureMessagingBit: UInt8 = 0x0C
 
   /// Secure-messaging DO'85': the cryptogram used for command or response
-  /// data when the original instruction byte is odd. Unlike DO'87', its
-  /// value does not carry a padding-content indicator (ISO 7816-4 section
-  /// 5.6.3 Table 22).
+  /// data when the original instruction byte is odd.
+  ///
+  /// Unlike DO'87', its value does not carry a padding-content indicator
+  /// (ISO 7816-4 section 5.6.3 Table 22).
   internal static let oddInstructionCryptogramTag: UInt8 = 0x85
 
   /// Secure-messaging DO'87': padding-content indicator byte followed by

@@ -59,8 +59,9 @@
       state == .reading || state == .awaitsActivation
     }
 
-    /// Kept for the identity view's API. Transport outcomes are never
-    /// definitive semantic errors.
+    /// Kept for the identity view's API.
+    ///
+    /// Transport outcomes are never definitive semantic errors.
     internal var warnsUnavailableCard: Bool { false }
 
     internal init() {
@@ -69,9 +70,10 @@
       watcher.setInsertionHandler(Self.insertionHandler(for: self))
     }
 
-    /// CryptoTokenKit calls this block on its private XPC queue. Build
-    /// the block outside MainActor isolation, then cross actors only by
-    /// scheduling the state mutation explicitly.
+    /// CryptoTokenKit calls this block on its private XPC queue.
+    ///
+    /// Build the block outside MainActor isolation, then cross actors
+    /// only by scheduling the state mutation explicitly.
     nonisolated private static func insertionHandler(
       for watch: ActivationWatch
     ) -> @Sendable (String) -> Void {
@@ -127,9 +129,11 @@
       reconcile()
     }
 
-    /// The complete transition table. Token presence outranks raw slot
-    /// absence because CCID protocol resets can emit the latter while
-    /// the logical token remains present.
+    /// The complete transition table.
+    ///
+    /// Token presence outranks raw slot absence because CCID protocol
+    /// resets can emit the latter while the logical token remains
+    /// present.
     private func reconcile() {
       guard !paused else {
         stopManagementRefresh()
@@ -154,6 +158,7 @@
 
     /// The activation token is inserted only after the extension has
     /// finished its read, so this read no longer races token creation.
+    ///
     /// It merely populates the activation form and never changes a PIN.
     private func startManagementRefreshIfNeeded() {
       guard managementRefresh == nil else { return }
@@ -161,9 +166,9 @@
       let id = managementRefreshID
       managementRefresh = Task { @MainActor [weak self] in
         guard let self else { return }
-        await self.management.refresh()
-        guard self.managementRefreshID == id, !Task.isCancelled else { return }
-        self.managementRefresh = nil
+        await management.refresh()
+        guard managementRefreshID == id, !Task.isCancelled else { return }
+        managementRefresh = nil
       }
     }
 
