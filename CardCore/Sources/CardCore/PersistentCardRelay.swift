@@ -10,7 +10,7 @@ import Foundation
 /// Stable coordinates shared by the hosting app and persistent token driver.
 public enum PersistentTokenIdentity {
   /// The CryptoTokenKit class identifier both processes configure under.
-  public static let classID = "fi.refineid.ReFineID.token"
+  public static let classID = "fi.refineid.ReFineID.rapp-token"
 
   /// Keychain object ID of the published authentication certificate.
   public static let certificateObjectID = "authentication-certificate"

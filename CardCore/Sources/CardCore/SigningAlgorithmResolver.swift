@@ -1,13 +1,11 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-// swiftlint:disable:next attributes
-@_spi(TokenExtension) import CardCore
 import CryptoTokenKit
 import Foundation
 import Security
 
 /// Maps a live CryptoTokenKit algorithm chain to the pure CardCore resolver.
-internal enum SigningAlgorithmResolver {
+@_spi(TokenExtension) public enum SigningAlgorithmResolver {
   /// Known candidates used only to make the live CTK request legible.
   private static let knownAlgorithms: [(String, SecKeyAlgorithm)] = [
     ("ecdsaDigestSHA224", .ecdsaSignatureDigestX962SHA224),
@@ -30,7 +28,7 @@ internal enum SigningAlgorithmResolver {
   ]
 
   /// Whether the token should advertise this live CTK algorithm.
-  internal static func advertises(
+  public static func advertises(
     _ algorithm: TKTokenKeyAlgorithm,
     profile: CardKeyProfile
   ) -> Bool {
@@ -38,7 +36,7 @@ internal enum SigningAlgorithmResolver {
   }
 
   /// Names target and associated-chain matches for device traces.
-  internal static func describe(_ algorithm: TKTokenKeyAlgorithm) -> String {
+  public static func describe(_ algorithm: TKTokenKeyAlgorithm) -> String {
     let targets = Self.knownAlgorithms
       .filter { candidate in
         algorithm.isAlgorithm(candidate.1)
@@ -55,12 +53,12 @@ internal enum SigningAlgorithmResolver {
   }
 
   /// Whether this certificate profile can publish a sign-capable key.
-  internal static func supportsSigning(_ profile: CardKeyProfile) -> Bool {
+  public static func supportsSigning(_ profile: CardKeyProfile) -> Bool {
     !CardSignRequestResolver.exactAlgorithms(for: profile).isEmpty
   }
 
   /// Resolves one live CTK request, including Apple's raw-RSA adapter.
-  internal static func resolve(
+  public static func resolve(
     _ algorithm: TKTokenKeyAlgorithm,
     input: Data,
     profile: CardKeyProfile

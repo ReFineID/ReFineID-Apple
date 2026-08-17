@@ -2,15 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- iOS only; the macOS build uses ReFineID-Info.plist.
-
-	     Document signing follows certificate-declared RFC 3161, OCSP,
-	     and CRL endpoints. Some public PKI endpoints still use HTTP,
-	     so ATS permits those fetches. SigningNetwork remains the
-	     enforcement boundary: it accepts only HTTP(S), rejects local
-	     and private destinations, pins resolved public addresses,
-	     bounds redirects and response sizes, and cryptographically
-	     verifies every fetched artifact before use. -->
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>en</string>
@@ -26,15 +17,14 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_refineid-rly._tcp</string>
+	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>ReFineID reads the access number printed on your card so you do not have to type it.</string>
-	<!-- Press and hold the icon to run the setup flow against a test
-	     person instead of a card, for someone who has no Finnish
-	     identity card to present. Declared here rather than registered
-	     at runtime so it is on the icon before the app has ever been
-	     launched. The title is the key its translations are looked up
-	     under in Sources/App/InfoPlist.xcstrings; the type is what
-	     DemoModeShortcut matches. -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>ReFineID uses the local network to connect your devices securely for identity-card operations.</string>
 	<key>UIApplicationShortcutItems</key>
 	<array>
 		<dict>
