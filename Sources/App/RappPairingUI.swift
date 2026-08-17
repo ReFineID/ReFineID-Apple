@@ -437,7 +437,7 @@ internal struct RappPairingButton: View {
       Image(systemName: hasSelectedPair ? "link" : "link.badge.plus")
         .contentTransition(.symbolEffect(.replace))
     }
-    .accessibilityLabel("Remote card connections")
+    .accessibilityLabel("Remote Card")
     .accessibilityValue(
       hasSelectedPair ? "Paired device selected" : "No paired device selected"
     )
@@ -459,7 +459,7 @@ internal struct RappPairingView: View {
         pairingAction
         pairingProgress
       }
-      .navigationTitle("Remote card connections")
+      .navigationTitle("Remote Card")
       .toolbar {
         ToolbarItem(placement: .confirmationAction) {
           Button("Close") { dismiss() }
@@ -474,60 +474,53 @@ internal struct RappPairingView: View {
   }
 
   @ViewBuilder private var pairedDevices: some View {
-    Section("Paired devices") {
-      if model.pairs.isEmpty {
-        Text("No paired devices")
-          .foregroundStyle(.secondary)
-      } else {
+    if !model.pairs.isEmpty {
+      Section("Paired devices") {
         ForEach(model.pairs, id: \.pairID) { pair in
           HStack {
-            Button {
-              model.select(pair)
-            } label: {
-              Label(
-                model.displayName(for: pair),
-                systemImage: pair.remotePlatformSymbol
-              )
-            }
-            .buttonStyle(.plain)
+            Label(
+              model.displayName(for: pair),
+              systemImage: pair.remotePlatformSymbol
+            )
             Spacer()
             if model.selectedPairID == pair.pairID {
               Image(systemName: "checkmark")
                 .foregroundStyle(Color.accentColor)
                 .accessibilityLabel("Selected")
             }
-            Button(role: .destructive) {
-              model.revoke(pair)
-            } label: {
-              Image(systemName: "trash")
-            }
-            .buttonStyle(.borderless)
-            .accessibilityLabel("Remove paired device")
           }
+          Button("Remove this connection", role: .destructive) {
+            model.revoke(pair)
+          }
+          .accessibilityIdentifier("removePairedDevice")
         }
       }
     }
   }
 
+  /// One connection at a time: pairing is offered only while no
+  /// paired device exists.
   @ViewBuilder private var pairingAction: some View {
-    Section {
-      #if os(macOS)
-        Button("Pair a phone", systemImage: "qrcode") {
-          model.createOffer()
-        }
-      #else
-        // A device with an antenna holds the card and scans; a device
-        // without one requests and shows the code to scan.
-        if UIDevice.current.userInterfaceIdiom == .pad {
+    if model.pairs.isEmpty {
+      Section {
+        #if os(macOS)
           Button("Pair a phone", systemImage: "qrcode") {
             model.createOffer()
           }
-        } else {
-          Button("Scan pairing code", systemImage: "qrcode.viewfinder") {
-            model.scanOffer()
+        #else
+          // A device with an antenna holds the card and scans; a device
+          // without one requests and shows the code to scan.
+          if UIDevice.current.userInterfaceIdiom == .pad {
+            Button("Pair a phone", systemImage: "qrcode") {
+              model.createOffer()
+            }
+          } else {
+            Button("Scan pairing code", systemImage: "qrcode.viewfinder") {
+              model.scanOffer()
+            }
           }
-        }
-      #endif
+        #endif
+      }
     }
   }
 
