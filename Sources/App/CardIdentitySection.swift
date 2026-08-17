@@ -37,6 +37,7 @@ internal struct CardIdentitySection: View {
         // confirmation dialog still stands in front of it.
         Button(role: .destructive, action: forget) {
           Image(systemName: "minus.circle")
+            .font(.title3)
             .foregroundStyle(.red)
         }
         .buttonStyle(.plain)
