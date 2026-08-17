@@ -23,6 +23,15 @@ XCFramework is:
 - RAPP 0.1 golden corpus: `Documentation/rapp-conformance/rapp-v26.8.16.85.json`
   (`SHA-256 8bb9b17d25f94b2ec056dd302e31e373ed457c197c8ff7cf81bee84cbec17dc2`)
 
+The current pushed Rust audit and conformance revision is:
+
+- `ReFineID/ReFineID-backup-2026-08-10@e026df1493c2fd6f2ab5345e004da8e791638422`
+
+That later revision adds deterministic Noise and rejected-envelope vectors and
+their Rust conformance tests. It does not change compiled library code or the
+RAPP ABI, so the committed XCFramework remains accurately attributable to
+`50de79333b38a5c623908d8941ff8d51c0c6fddb`.
+
 That revision is pushed to the archived source repository. Do not regenerate
 or replace the XCFramework from an uncommitted Rust worktree.
 
