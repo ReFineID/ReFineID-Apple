@@ -107,7 +107,7 @@ public actor RappPairingCoordinator {
     private let displayName: String
     private let platform: String
     private let clock: RappPlatformClock
-    private let offerLifetimeMilliseconds: UInt64?
+    private let offerDeadlineMilliseconds: UInt64
     private let continuation: AsyncStream<Event>.Continuation
     private var state = State.offer
     private var peer: Peer?
@@ -127,24 +127,29 @@ public actor RappPairingCoordinator {
         entropy: RappPlatformEntropy = RappPlatformEntropy(),
         clock: RappPlatformClock = RappPlatformClock()
     ) throws -> RappPairingCoordinator {
+        let startedAtMonotonicMilliseconds = clock.monotonicMilliseconds()
         let bridge = try RappPairingBridge.createRequesterOffer(
             offerId: entropy.offerID(),
             pairingSecret: entropy.pairingSecret(),
             profiles: profiles,
             transports: candidates.map(\.binding),
-            offerTtlMs: offerLifetimeMilliseconds
+            offerTtlMs: offerLifetimeMilliseconds,
+            startedAtMonotonicMs: startedAtMonotonicMilliseconds
         )
         return try RappPairingCoordinator(
             role: .requester,
             bridge: bridge,
-            offerURI: bridge.offerUri(),
+            offerURI: bridge.offerUri(nowMonotonicMs: startedAtMonotonicMilliseconds),
             selectedCandidateID: selectedCandidateID,
             displayName: displayName,
             platform: platform,
             vault: vault,
             transport: transport,
             clock: clock,
-            offerLifetimeMilliseconds: offerLifetimeMilliseconds
+            offerDeadlineMilliseconds: deadline(
+                startedAt: startedAtMonotonicMilliseconds,
+                lifetime: offerLifetimeMilliseconds
+            )
         )
     }
 
@@ -157,9 +162,14 @@ public actor RappPairingCoordinator {
         transport: any RappFrameTransport,
         clock: RappPlatformClock = RappPlatformClock()
     ) throws -> RappPairingCoordinator {
-        try RappPairingCoordinator(
+        let startedAtMonotonicMilliseconds = clock.monotonicMilliseconds()
+        let bridge = try RappPairingBridge.fromScannedOffer(
+            uri: scannedOfferURI,
+            startedAtMonotonicMs: startedAtMonotonicMilliseconds
+        )
+        return try RappPairingCoordinator(
             role: .proxy,
-            bridge: RappPairingBridge.fromScannedOffer(uri: scannedOfferURI),
+            bridge: bridge,
             offerURI: nil,
             selectedCandidateID: selectedCandidateID,
             displayName: displayName,
@@ -167,7 +177,10 @@ public actor RappPairingCoordinator {
             vault: vault,
             transport: transport,
             clock: clock,
-            offerLifetimeMilliseconds: nil
+            offerDeadlineMilliseconds: deadline(
+                startedAt: startedAtMonotonicMilliseconds,
+                lifetime: try bridge.offerTtlMs()
+            )
         )
     }
 
@@ -181,7 +194,7 @@ public actor RappPairingCoordinator {
         vault: RappDeviceVault,
         transport: any RappFrameTransport,
         clock: RappPlatformClock,
-        offerLifetimeMilliseconds: UInt64?
+        offerDeadlineMilliseconds: UInt64
     ) throws {
         self.role = role
         self.bridge = bridge
@@ -192,7 +205,7 @@ public actor RappPairingCoordinator {
         self.vault = vault
         self.transport = transport
         self.clock = clock
-        self.offerLifetimeMilliseconds = offerLifetimeMilliseconds
+        self.offerDeadlineMilliseconds = offerDeadlineMilliseconds
 
         var capturedContinuation: AsyncStream<Event>.Continuation?
         self.events = AsyncStream { capturedContinuation = $0 }
@@ -220,18 +233,24 @@ public actor RappPairingCoordinator {
             await fail(.protocolFailure)
             return
         }
-        offerExpiryTask?.cancel()
-        offerExpiryTask = nil
+        scheduleOfferExpiry()
         do {
-            try bridge.begin(candidateId: candidateID)
+            try bridge.begin(
+                candidateId: candidateID,
+                nowMonotonicMs: clock.monotonicMilliseconds()
+            )
             switch role {
             case .requester:
-                let frame = try bridge.writeHandshakeFrame()
+                let frame = try bridge.writeHandshakeFrame(
+                    nowMonotonicMs: clock.monotonicMilliseconds()
+                )
                 state = .awaitingResponderHandshake
                 try await transport.send(frame)
             case .proxy:
                 state = .awaitingRequesterHandshake
             }
+        } catch RappBindingError.OfferExpired {
+            await fail(.offerExpired)
         } catch {
             await fail(.transportFailure)
         }
@@ -241,31 +260,56 @@ public actor RappPairingCoordinator {
         do {
             switch state {
             case .awaitingRequesterHandshake:
-                try bridge.readHandshakeFrame(bytes: frame)
-                let response = try bridge.writeHandshakeFrame()
+                try bridge.readHandshakeFrame(
+                    bytes: frame,
+                    nowMonotonicMs: clock.monotonicMilliseconds()
+                )
+                let response = try bridge.writeHandshakeFrame(
+                    nowMonotonicMs: clock.monotonicMilliseconds()
+                )
                 state = .awaitingFinalRequesterHandshake
                 try await transport.send(response)
 
             case .awaitingResponderHandshake:
-                try bridge.readHandshakeFrame(bytes: frame)
-                let finalHandshake = try bridge.writeHandshakeFrame()
-                guard try bridge.handshakeComplete() else {
+                try bridge.readHandshakeFrame(
+                    bytes: frame,
+                    nowMonotonicMs: clock.monotonicMilliseconds()
+                )
+                let finalHandshake = try bridge.writeHandshakeFrame(
+                    nowMonotonicMs: clock.monotonicMilliseconds()
+                )
+                guard try bridge.handshakeComplete(
+                    nowMonotonicMs: clock.monotonicMilliseconds()
+                ) else {
                     await fail(.protocolFailure)
                     return
                 }
-                try bridge.enterConfirmation()
+                try bridge.enterConfirmation(
+                    nowMonotonicMs: clock.monotonicMilliseconds()
+                )
+                offerExpiryTask?.cancel()
+                offerExpiryTask = nil
                 let hello = try bridge.sendHello(displayName: displayName, platform: platform)
                 state = .awaitingPeerHello
                 try await transport.send(finalHandshake)
                 try await transport.send(hello)
 
             case .awaitingFinalRequesterHandshake:
-                try bridge.readHandshakeFrame(bytes: frame)
-                guard try bridge.handshakeComplete() else {
+                try bridge.readHandshakeFrame(
+                    bytes: frame,
+                    nowMonotonicMs: clock.monotonicMilliseconds()
+                )
+                guard try bridge.handshakeComplete(
+                    nowMonotonicMs: clock.monotonicMilliseconds()
+                ) else {
                     await fail(.protocolFailure)
                     return
                 }
-                try bridge.enterConfirmation()
+                try bridge.enterConfirmation(
+                    nowMonotonicMs: clock.monotonicMilliseconds()
+                )
+                offerExpiryTask?.cancel()
+                offerExpiryTask = nil
                 let hello = try bridge.sendHello(displayName: displayName, platform: platform)
                 state = .awaitingPeerHello
                 try await transport.send(hello)
@@ -296,6 +340,8 @@ public actor RappPairingCoordinator {
             case .offer, .completed, .closed:
                 await fail(.protocolFailure)
             }
+        } catch RappBindingError.OfferExpired {
+            await fail(.offerExpired)
         } catch {
             await fail(.protocolFailure)
         }
@@ -365,8 +411,12 @@ public actor RappPairingCoordinator {
     }
 
     private func scheduleOfferExpiry() {
-        guard let offerLifetimeMilliseconds, offerExpiryTask == nil else { return }
-        let (nanoseconds, overflow) = offerLifetimeMilliseconds.multipliedReportingOverflow(
+        guard offerExpiryTask == nil else { return }
+        let now = clock.monotonicMilliseconds()
+        let remainingMilliseconds = offerDeadlineMilliseconds > now
+            ? offerDeadlineMilliseconds - now
+            : 0
+        let (nanoseconds, overflow) = remainingMilliseconds.multipliedReportingOverflow(
             by: 1_000_000
         )
         let delay = overflow ? UInt64.max : nanoseconds
@@ -382,8 +432,17 @@ public actor RappPairingCoordinator {
     }
 
     private func expireOffer() async {
-        guard state == .offer else { return }
+        guard state == .offer
+            || state == .awaitingRequesterHandshake
+            || state == .awaitingResponderHandshake
+            || state == .awaitingFinalRequesterHandshake
+        else { return }
         await fail(.offerExpired)
+    }
+
+    private static func deadline(startedAt: UInt64, lifetime: UInt64) -> UInt64 {
+        let (deadline, overflow) = startedAt.addingReportingOverflow(lifetime)
+        return overflow ? UInt64.max : deadline
     }
 }
 #endif

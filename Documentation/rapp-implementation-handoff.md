@@ -19,13 +19,13 @@ The shared Rust repository is the protocol and state-machine authority:
 The exact Rust source revision defining the ABI of the committed Apple
 XCFramework is:
 
-- `ReFineID/ReFineID-backup-2026-08-10@21e4ebeb52b5824010319ce9f215d13ed6db430a`
+- `ReFineID/ReFineID-backup-2026-08-10@d37219a4f33a95ae9a425e388ba2cc691e59a546`
 - RAPP 0.1 golden corpus: `Documentation/rapp-conformance/rapp-v26.8.16.85.json`
   (`SHA-256 a2c9e63add5aabcf6c226ca1a61e0b2efa948b4d3135c3a55dac45ca46edd94b`)
 
 The current pushed Rust source, audit, and conformance revision is:
 
-- `ReFineID/ReFineID-backup-2026-08-10@21e4ebeb52b5824010319ce9f215d13ed6db430a`
+- `ReFineID/ReFineID-backup-2026-08-10@d37219a4f33a95ae9a425e388ba2cc691e59a546`
 
 This revision includes deterministic Noise and rejected-envelope vectors,
 strict pre-allocation bounds for untrusted CBOR frames and collections,
@@ -242,3 +242,9 @@ The initial Apple RAPP implementation was committed on `main` as:
 - `d987e71` - Make hardware UI tests explicit opt-in
 
 All three were pushed to `origin/main` before this handoff was written.
+
+### 2026-08-17 monotonic offer-expiry ABI refresh
+
+- Checked-in `ReFineIDRappFFI.xcframework` and generated Swift bindings were rebuilt from Rust revision `d37219a4f33a95ae9a425e388ba2cc691e59a546` using the Swift release manager's `rapp-bindings` command.
+- The shared Rust bridge now enforces the one-use offer's monotonic deadline before transport selection, throughout Noise XXpsk3, and before authenticated confirmation. Apple keeps its visible expiry task active over the same phases and maps core expiry to `offerExpired`.
+- Rust deadline tests pass. Apple build integration and the two dedicated `RappOfferExpiryTests` pass; the broader focused test invocation was interrupted after Xcode's runner stopped finalizing, so it is not recorded as a complete green run.

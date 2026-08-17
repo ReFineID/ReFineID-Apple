@@ -2144,13 +2144,13 @@ public protocol RappPairingBridgeProtocol: AnyObject, Sendable {
      * Consume the offer for exactly one selected transport candidate and
      * start mandatory Noise XXpsk3 with fresh pair-specific static keys.
      */
-    func begin(candidateId: String) throws 
+    func begin(candidateId: String, nowMonotonicMs: UInt64) throws 
     
     /**
      * Destroy the QR bearer secret and enter authenticated human
      * confirmation after Noise completes.
      */
-    func enterConfirmation() throws 
+    func enterConfirmation(nowMonotonicMs: UInt64) throws 
     
     /**
      * Complete equal human confirmation and retain the resulting pair record
@@ -2161,18 +2161,23 @@ public protocol RappPairingBridgeProtocol: AnyObject, Sendable {
     /**
      * Whether the role-specific three-message Noise exchange has completed.
      */
-    func handshakeComplete() throws  -> Bool
+    func handshakeComplete(nowMonotonicMs: UInt64) throws  -> Bool
+    
+    /**
+     * Advertised lifetime used by the platform to schedule visible expiry.
+     */
+    func offerTtlMs() throws  -> UInt64
     
     /**
      * Secret-bearing QR text. Available only while the requester owns the
      * unconsumed offer.
      */
-    func offerUri() throws  -> String
+    func offerUri(nowMonotonicMs: UInt64) throws  -> String
     
     /**
      * Consume the next role-specific Noise handshake frame.
      */
-    func readHandshakeFrame(bytes: Data) throws 
+    func readHandshakeFrame(bytes: Data, nowMonotonicMs: UInt64) throws 
     
     /**
      * Verify and return the peer's exact grant set.
@@ -2197,7 +2202,7 @@ public protocol RappPairingBridgeProtocol: AnyObject, Sendable {
     /**
      * Produce the next role-specific Noise handshake frame.
      */
-    func writeHandshakeFrame() throws  -> Data
+    func writeHandshakeFrame(nowMonotonicMs: UInt64) throws  -> Data
     
 }
 /**
@@ -2258,7 +2263,7 @@ open class RappPairingBridge: RappPairingBridgeProtocol, @unchecked Sendable {
      * Construct the requester-owned one-use QR offer from platform CSPRNG
      * bytes. The bearer secret is retained only inside this object.
      */
-public static func createRequesterOffer(offerId: Data, pairingSecret: Data, profiles: [String], transports: [RappTransportCandidate], offerTtlMs: UInt64)throws  -> RappPairingBridge  {
+public static func createRequesterOffer(offerId: Data, pairingSecret: Data, profiles: [String], transports: [RappTransportCandidate], offerTtlMs: UInt64, startedAtMonotonicMs: UInt64)throws  -> RappPairingBridge  {
     return try  FfiConverterTypeRappPairingBridge_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
     uniffi_refineid_lib_core_fn_constructor_rapppairingbridge_create_requester_offer(
@@ -2266,7 +2271,8 @@ public static func createRequesterOffer(offerId: Data, pairingSecret: Data, prof
         FfiConverterData.lower(pairingSecret),
         FfiConverterSequenceString.lower(profiles),
         FfiConverterSequenceTypeRappTransportCandidate.lower(transports),
-        FfiConverterUInt64.lower(offerTtlMs),uniffiCallStatus
+        FfiConverterUInt64.lower(offerTtlMs),
+        FfiConverterUInt64.lower(startedAtMonotonicMs),uniffiCallStatus
     )
 })
 }
@@ -2274,11 +2280,12 @@ public static func createRequesterOffer(offerId: Data, pairingSecret: Data, prof
     /**
      * Decode a scanned one-use QR offer for the authorization proxy.
      */
-public static func fromScannedOffer(uri: String)throws  -> RappPairingBridge  {
+public static func fromScannedOffer(uri: String, startedAtMonotonicMs: UInt64)throws  -> RappPairingBridge  {
     return try  FfiConverterTypeRappPairingBridge_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
     uniffi_refineid_lib_core_fn_constructor_rapppairingbridge_from_scanned_offer(
-        FfiConverterString.lower(uri),uniffiCallStatus
+        FfiConverterString.lower(uri),
+        FfiConverterUInt64.lower(startedAtMonotonicMs),uniffiCallStatus
     )
 })
 }
@@ -2289,11 +2296,12 @@ public static func fromScannedOffer(uri: String)throws  -> RappPairingBridge  {
      * Consume the offer for exactly one selected transport candidate and
      * start mandatory Noise XXpsk3 with fresh pair-specific static keys.
      */
-open func begin(candidateId: String)throws   {try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
+open func begin(candidateId: String, nowMonotonicMs: UInt64)throws   {try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
     uniffi_refineid_lib_core_fn_method_rapppairingbridge_begin(
             self.uniffiCloneHandle(),
-        FfiConverterString.lower(candidateId),uniffiCallStatus
+        FfiConverterString.lower(candidateId),
+        FfiConverterUInt64.lower(nowMonotonicMs),uniffiCallStatus
     )
 }
 }
@@ -2302,10 +2310,11 @@ open func begin(candidateId: String)throws   {try rustCallWithError(FfiConverter
      * Destroy the QR bearer secret and enter authenticated human
      * confirmation after Noise completes.
      */
-open func enterConfirmation()throws   {try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
+open func enterConfirmation(nowMonotonicMs: UInt64)throws   {try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
     uniffi_refineid_lib_core_fn_method_rapppairingbridge_enter_confirmation(
-            self.uniffiCloneHandle(),uniffiCallStatus
+            self.uniffiCloneHandle(),
+        FfiConverterUInt64.lower(nowMonotonicMs),uniffiCallStatus
     )
 }
 }
@@ -2327,10 +2336,23 @@ open func finishPairing(createdAtMs: UInt64)throws  -> RappPairRecord  {
     /**
      * Whether the role-specific three-message Noise exchange has completed.
      */
-open func handshakeComplete()throws  -> Bool  {
+open func handshakeComplete(nowMonotonicMs: UInt64)throws  -> Bool  {
     return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
     uniffi_refineid_lib_core_fn_method_rapppairingbridge_handshake_complete(
+            self.uniffiCloneHandle(),
+        FfiConverterUInt64.lower(nowMonotonicMs),uniffiCallStatus
+    )
+})
+}
+    
+    /**
+     * Advertised lifetime used by the platform to schedule visible expiry.
+     */
+open func offerTtlMs()throws  -> UInt64  {
+    return try  FfiConverterUInt64.lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
+        uniffiCallStatus in
+    uniffi_refineid_lib_core_fn_method_rapppairingbridge_offer_ttl_ms(
             self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
@@ -2340,11 +2362,12 @@ open func handshakeComplete()throws  -> Bool  {
      * Secret-bearing QR text. Available only while the requester owns the
      * unconsumed offer.
      */
-open func offerUri()throws  -> String  {
+open func offerUri(nowMonotonicMs: UInt64)throws  -> String  {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
     uniffi_refineid_lib_core_fn_method_rapppairingbridge_offer_uri(
-            self.uniffiCloneHandle(),uniffiCallStatus
+            self.uniffiCloneHandle(),
+        FfiConverterUInt64.lower(nowMonotonicMs),uniffiCallStatus
     )
 })
 }
@@ -2352,11 +2375,12 @@ open func offerUri()throws  -> String  {
     /**
      * Consume the next role-specific Noise handshake frame.
      */
-open func readHandshakeFrame(bytes: Data)throws   {try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
+open func readHandshakeFrame(bytes: Data, nowMonotonicMs: UInt64)throws   {try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
     uniffi_refineid_lib_core_fn_method_rapppairingbridge_read_handshake_frame(
             self.uniffiCloneHandle(),
-        FfiConverterData.lower(bytes),uniffiCallStatus
+        FfiConverterData.lower(bytes),
+        FfiConverterUInt64.lower(nowMonotonicMs),uniffiCallStatus
     )
 }
 }
@@ -2419,11 +2443,12 @@ open func sendHello(displayName: String, platform: String)throws  -> Data  {
     /**
      * Produce the next role-specific Noise handshake frame.
      */
-open func writeHandshakeFrame()throws  -> Data  {
+open func writeHandshakeFrame(nowMonotonicMs: UInt64)throws  -> Data  {
     return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
     uniffi_refineid_lib_core_fn_method_rapppairingbridge_write_handshake_frame(
-            self.uniffiCloneHandle(),uniffiCallStatus
+            self.uniffiCloneHandle(),
+        FfiConverterUInt64.lower(nowMonotonicMs),uniffiCallStatus
     )
 })
 }
@@ -3495,6 +3520,10 @@ enum RappBindingError: Swift.Error, Equatable, Hashable, Foundation.LocalizedErr
      */
     case WrongPhase
     /**
+     * The one-use pairing offer reached its monotonic deadline.
+     */
+    case OfferExpired
+    /**
      * Authenticated protocol or cryptographic processing failed.
      */
     case ProtocolFailure
@@ -3537,9 +3566,10 @@ public struct FfiConverterTypeRappBindingError: FfiConverterRustBuffer {
         
         case 1: return .InvalidInput
         case 2: return .WrongPhase
-        case 3: return .ProtocolFailure
-        case 4: return .LocalStateFailure
-        case 5: return .PairNotFound
+        case 3: return .OfferExpired
+        case 4: return .ProtocolFailure
+        case 5: return .LocalStateFailure
+        case 6: return .PairNotFound
 
          default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -3560,16 +3590,20 @@ public struct FfiConverterTypeRappBindingError: FfiConverterRustBuffer {
             writeInt(&buf, Int32(2))
         
         
-        case .ProtocolFailure:
+        case .OfferExpired:
             writeInt(&buf, Int32(3))
         
         
-        case .LocalStateFailure:
+        case .ProtocolFailure:
             writeInt(&buf, Int32(4))
         
         
-        case .PairNotFound:
+        case .LocalStateFailure:
             writeInt(&buf, Int32(5))
+        
+        
+        case .PairNotFound:
+            writeInt(&buf, Int32(6))
         
         }
     }
@@ -4805,22 +4839,25 @@ private let initializationResult: InitializationResult = {
     if (uniffi_refineid_lib_core_checksum_method_rapppairvault_is_revoked() != 41694) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_begin() != 10763) {
+    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_begin() != 2219) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_enter_confirmation() != 2337) {
+    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_enter_confirmation() != 5160) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_finish_pairing() != 19094) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_handshake_complete() != 15554) {
+    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_handshake_complete() != 55854) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_offer_uri() != 57802) {
+    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_offer_ttl_ms() != 8360) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_read_handshake_frame() != 55575) {
+    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_offer_uri() != 13984) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_read_handshake_frame() != 12904) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_receive_confirmation() != 11525) {
@@ -4835,7 +4872,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_send_hello() != 9213) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_write_handshake_frame() != 9377) {
+    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_write_handshake_frame() != 24873) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_refineid_lib_core_checksum_method_rappsessionbridge_close_session() != 9462) {
@@ -4952,10 +4989,10 @@ private let initializationResult: InitializationResult = {
     if (uniffi_refineid_lib_core_checksum_constructor_rapppairrecord_load_from_vault() != 18897) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_constructor_rapppairingbridge_create_requester_offer() != 47140) {
+    if (uniffi_refineid_lib_core_checksum_constructor_rapppairingbridge_create_requester_offer() != 15284) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_constructor_rapppairingbridge_from_scanned_offer() != 3037) {
+    if (uniffi_refineid_lib_core_checksum_constructor_rapppairingbridge_from_scanned_offer() != 30524) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_refineid_lib_core_checksum_constructor_rappsessionbridge_begin_proxy() != 20846) {
