@@ -302,19 +302,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "PIN"
+            "value": "PINs"
           }
         },
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tunnusluku"
+            "value": "Tunnusluvut"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "PIN-kod"
+            "value": "PIN-koder"
           }
         }
       }
@@ -324,19 +324,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "PIN"
+            "value": "PINs"
           }
         },
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tunnusluku"
+            "value": "Tunnusluvut"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "PIN-kod"
+            "value": "PIN-koder"
           }
         }
       }
@@ -4919,7 +4919,6 @@
         }
       }
     }
-
   },
   "version": "1.0"
 }
