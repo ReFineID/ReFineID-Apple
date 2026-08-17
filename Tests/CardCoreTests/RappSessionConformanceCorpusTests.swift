@@ -7,7 +7,9 @@ struct RappSessionConformanceCorpusTests {
 
   @Test
   func exactDirectionalSequenceAndSessionBindingMatchCorpus() throws {
-    for vector in try Self.corpus().sequenceGuard {
+    let vectors = try Self.corpus().sequenceGuard
+    #expect(vectors.count == 6)
+    for vector in vectors {
       let guardSessionID = try Data(sessionHex: vector.guardSessionIdHex)
       var guardState = IndependentSequenceGuard(sessionID: guardSessionID)
 
@@ -38,7 +40,9 @@ struct RappSessionConformanceCorpusTests {
 
   @Test
   func visibleWireVersionRejectsDowngradesAndUnknownUpgrades() throws {
-    for vector in try Self.corpus().wireVersion {
+    let vectors = try Self.corpus().wireVersion
+    #expect(vectors.count == 4)
+    for vector in vectors {
       let decision =
         vector.version == Self.supportedWireVersion
         ? "accepted"
@@ -49,7 +53,9 @@ struct RappSessionConformanceCorpusTests {
 
   @Test
   func operationProfilesCannotExceedAuthenticatedPairingGrants() throws {
-    for vector in try Self.corpus().grantEnforcement {
+    let vectors = try Self.corpus().grantEnforcement
+    #expect(vectors.count == 3)
+    for vector in vectors {
       let decision =
         Set(vector.grantedProfiles).contains(vector.requestedProfile)
         ? "accepted"
@@ -67,7 +73,7 @@ struct RappSessionConformanceCorpusTests {
       repository
       .appendingPathComponent("Documentation")
       .appendingPathComponent("rapp-conformance")
-      .appendingPathComponent("rapp-v26.8.16.85.json")
+      .appendingPathComponent("rapp-v26.8.17.135.json")
     let decoder = JSONDecoder()
     decoder.keyDecodingStrategy = .convertFromSnakeCase
     return try decoder.decode(SessionCorpus.self, from: Data(contentsOf: url))

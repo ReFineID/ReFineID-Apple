@@ -75,6 +75,11 @@ final class RappNoiseAndEnvelopeCorpusTests: XCTestCase {
           vector.pairIDHex,
           vector.name
         )
+        XCTAssertEqual(
+          deriveIdentifier(domain: "RAPP-rendezvous-v1", handshakeHash: handshakeHash),
+          vector.rendezvousTokenHex,
+          vector.name
+        )
       }
 
       XCTAssertEqual(vector.testOnlyInitiatorEphemeralPrivateHex.decodedHex().count, 32)
@@ -108,7 +113,7 @@ final class RappNoiseAndEnvelopeCorpusTests: XCTestCase {
       repositoryRoot
       .appendingPathComponent("Documentation")
       .appendingPathComponent("rapp-conformance")
-      .appendingPathComponent("rapp-v26.8.16.85.json")
+      .appendingPathComponent("rapp-v26.8.17.135.json")
     return try JSONDecoder().decode(Corpus.self, from: Data(contentsOf: url))
   }
 
@@ -140,6 +145,7 @@ private struct NoiseVector: Decodable {
   let prologueHex: String
   let pairIDHex: String
   let sessionIDHex: String
+  let rendezvousTokenHex: String?
   let offerHashHex: String?
   let grantsHashHex: String?
   let testOnlyInitiatorEphemeralPrivateHex: String
@@ -158,6 +164,7 @@ private struct NoiseVector: Decodable {
     case prologueHex = "prologue_hex"
     case pairIDHex = "pair_id_hex"
     case sessionIDHex = "session_id_hex"
+    case rendezvousTokenHex = "rendezvous_token_hex"
     case offerHashHex = "offer_hash_hex"
     case grantsHashHex = "grants_hash_hex"
     case testOnlyInitiatorEphemeralPrivateHex = "test_only_initiator_ephemeral_private_hex"

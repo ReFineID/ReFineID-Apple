@@ -185,15 +185,20 @@ private func guardGeneratedRappCleanupDiagnostics(_ generatedSwift: URL) {
 }
 
 private func buildRappBindings() {
-    let configuredRustRoot = ProcessInfo.processInfo.environment["REFINEID_RUST_ROOT"]
-    let rustRoot = configuredRustRoot.map(URL.init(fileURLWithPath:))
-        ?? releaseRepositoryRoot.deletingLastPathComponent().appendingPathComponent("ReFineID")
+    guard let configuredRustRoot = ProcessInfo.processInfo.environment["REFINEID_RAPP_REPO"],
+          !configuredRustRoot.isEmpty else {
+        releaseFail(
+            "REFINEID_RAPP_REPO is not set. Point it at the Rust workspace "
+                + "containing crates/refineid-rapp, then rerun rapp-bindings."
+        )
+    }
+    let rustRoot = URL(fileURLWithPath: configuredRustRoot)
     guard releaseIsDirectory(rustRoot) else {
         releaseFail("RAPP Rust workspace not found at \(rustRoot.path)")
     }
 
     let configuration = rustRoot
-        .appendingPathComponent("crates/refineid-lib-core/uniffi.toml")
+        .appendingPathComponent("crates/refineid-rapp/uniffi.toml")
     guard releaseFileManager.fileExists(atPath: configuration.path) else {
         releaseFail("RAPP UniFFI configuration missing at \(configuration.path)")
     }
@@ -208,7 +213,7 @@ private func buildRappBindings() {
         releaseRun(
             "/usr/bin/env",
             [
-                "cargo", "build", "-p", "refineid-lib-core",
+                "cargo", "build", "-p", "refineid-rapp",
                 "--features", "bindings", "--release", "--target", target,
                 "--lib",
             ],
@@ -222,7 +227,7 @@ private func buildRappBindings() {
             target,
             targetDirectory
                 .appendingPathComponent(target)
-                .appendingPathComponent("release/librefineid_lib_core.a")
+                .appendingPathComponent("release/librefineid_rapp.a")
         )
     })
     for target in rappRustTargets {
@@ -250,7 +255,7 @@ private func buildRappBindings() {
     releaseRun(
         "/usr/bin/env",
         [
-            "cargo", "run", "-p", "refineid-lib-core", "--features", "bindings",
+            "cargo", "run", "-p", "refineid-rapp", "--features", "bindings",
             "--release", "--bin", "refineid-uniffi-bindgen-swift", "--",
             bindingSource.path, generatedRoot.path,
             "--swift-sources", "--headers", "--modulemap", "--xcframework",
@@ -1435,6 +1440,8 @@ private func printReleaseManagerUsage() {
         Local release commands:
           rapp-bindings
               Generate the mandatory Rust RAPP Swift binding and Apple XCFramework.
+              Requires REFINEID_RAPP_REPO to point at the Rust workspace
+              containing crates/refineid-rapp.
           candidate [ios|macos|all] [--upload]
               Archive, inspect, and export a clean-tree candidate. Upload is opt-in.
           inspect-archive <path-to-xcarchive>

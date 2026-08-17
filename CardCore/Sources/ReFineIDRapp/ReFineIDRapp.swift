@@ -25,13 +25,13 @@ fileprivate extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_refineid_lib_core_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_refineid_rapp_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_refineid_lib_core_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_refineid_rapp_rustbuffer_free(self, $0) }
     }
 }
 
@@ -327,7 +327,7 @@ private func makeRustCall<T, E: Swift.Error>(
     _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
     errorHandler: ((RustBuffer) throws -> E)?
 ) throws -> T {
-    uniffiEnsureRefineidLibCoreInitialized()
+    uniffiEnsureRefineidRappInitialized()
     var callStatus = RustCallStatus.init()
     let returnedVal = callback(&callStatus)
     try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
@@ -615,71 +615,186 @@ public protocol RappOperationBridgeProtocol: AnyObject, Sendable {
     /**
      * Deliver a completed requester result only after its acknowledgment was
      * successfully released to transport and durably recorded.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input or the wrong protocol phase.
      */
     func acknowledgmentReleased(operationId: Data) throws  -> RappOperationResult
     
     /**
      * Approve exactly the request displayed by the authorizer UI.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input or the wrong protocol phase.
      */
     func approve(operationId: Data, approvedAtMs: UInt64) throws  -> RappBridgeAction
     
+    /**
+     * Begin a browser authentication over an already-hashed challenge.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input, an ungranted profile, or the
+     * wrong protocol phase.
+     */
     func beginBrowserAuthentication(operationId: Data, origin: String, keyProfile: RappCardKeyProfile, algorithm: RappSignatureAlgorithm, digest: Data, localStartMs: UInt64, expiresAfterMs: UInt64) throws  -> RappBridgeAction
     
+    /**
+     * Begin a card and retry-state inspection.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input, an ungranted profile, or the
+     * wrong protocol phase.
+     */
     func beginInspectCard(operationId: Data, localStartMs: UInt64, expiresAfterMs: UInt64) throws  -> RappBridgeAction
     
+    /**
+     * Begin a certificate read; owned by the profile whose key the
+     * certificate serves.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input, an ungranted profile, or the
+     * wrong protocol phase.
+     */
     func beginReadCertificate(operationId: Data, signatureCertificate: Bool, localStartMs: UInt64, expiresAfterMs: UInt64) throws  -> RappBridgeAction
     
+    /**
+     * Begin a cardholder identity read.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input, an ungranted profile, or the
+     * wrong protocol phase.
+     */
     func beginReadIdentity(operationId: Data, localStartMs: UInt64, expiresAfterMs: UInt64) throws  -> RappBridgeAction
     
+    /**
+     * Begin a document signature over a document digest.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input, an ungranted profile, or the
+     * wrong protocol phase.
+     */
     func beginSignDocument(operationId: Data, documentName: String, keyProfile: RappCardKeyProfile, algorithm: RappSignatureAlgorithm, digest: Data, localStartMs: UInt64, expiresAfterMs: UInt64) throws  -> RappBridgeAction
     
+    /**
+     * Mark the operation ambiguous; the card command is never repeated.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input or the wrong protocol phase.
+     */
     func cardCompletionAmbiguous(operationId: Data) throws  -> RappBridgeAction
     
+    /**
+     * Cancel the operation after the card left before transmission provably
+     * began.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input or the wrong protocol phase.
+     */
     func cardRemovedBeforeTransmit(operationId: Data) throws  -> RappBridgeAction
     
     /**
      * Close the ephemeral session, classify every in-flight operation, and
      * retain pairing unless an authenticated violation already revoked it.
+     *
+     * # Errors
+     * [`RappBindingError::LocalStateFailure`] when the durable close
+     * classification fails.
      */
     func closeSession() throws  -> RappBridgeAction
     
+    /**
+     * Complete a certificate read with the certificate bytes.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input or the wrong protocol phase.
+     */
     func completeCertificate(operationId: Data, der: Data) throws  -> RappBridgeAction
     
+    /**
+     * Complete an identity read with the cardholder name and identifier.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input or the wrong protocol phase.
+     */
     func completeIdentity(operationId: Data, displayName: String, personId: String) throws  -> RappBridgeAction
     
+    /**
+     * Complete a card inspection with factory and retry state.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input or the wrong protocol phase.
+     */
     func completeInspection(operationId: Data, pin1Factory: Bool, pin2Factory: Bool, pin1Attempts: UInt8?, pin2Attempts: UInt8?, pukAttempts: UInt8?) throws  -> RappBridgeAction
     
+    /**
+     * Complete a signing operation with the signature bytes.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input or the wrong protocol phase.
+     */
     func completeSignature(operationId: Data, signature: Data) throws  -> RappBridgeAction
     
+    /**
+     * Record a CAN, PIN 1, or PIN 2 rejection: emit the bounded result,
+     * revoke the pairing, and close the session.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input, the wrong protocol phase, or a
+     * failed durable revocation.
+     */
     func credentialRejected(operationId: Data, rejectedAtMs: UInt64) throws  -> RappBridgeAction
     
     /**
      * Deny the exact request and durably emit a stable denial.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input or the wrong protocol phase.
      */
     func deny(operationId: Data) throws  -> RappBridgeAction
     
     /**
      * Advance authenticated liveness using platform monotonic time, CSPRNG
      * challenge bytes, and bounded caller-generated jitter.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid challenge bytes or a protocol
+     * failure.
      */
     func pollLiveness(nowMs: UInt64, challenge: Data, jitterMs: Int64) throws  -> RappBridgeAction
     
     /**
      * Mark bounded card-status/certificate prerequisites complete.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input or the wrong protocol phase.
      */
     func prerequisitesComplete(operationId: Data) throws  -> RappBridgeAction
     
     /**
      * Decrypt, authenticate, schema-check, and dispatch one opaque frame.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input, a protocol failure, or a
+     * poisoned local state.
      */
     func receiveFrame(bytes: Data, nowMs: UInt64) throws  -> RappBridgeAction
     
     /**
      * Reject a request whose authenticated descriptor is unsupported or
      * contradicts the live card's certificate/profile.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input or the wrong protocol phase.
      */
     func requestInvalidOrUnsupported(operationId: Data) throws  -> RappBridgeAction
     
+    /**
+     * Reject the operation because fewer than three attempts remain on the
+     * decrementable counter.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input or the wrong protocol phase.
+     */
     func retryRefused(operationId: Data) throws  -> RappBridgeAction
     
 }
@@ -723,7 +838,7 @@ open class RappOperationBridge: RappOperationBridgeProtocol, @unchecked Sendable
     @_documentation(visibility: private)
 #endif
     public func uniffiCloneHandle() -> UInt64 {
-        return try! rustCall { uniffi_refineid_lib_core_fn_clone_rappoperationbridge(self.handle, $0) }
+        return try! rustCall { uniffi_refineid_rapp_fn_clone_rappoperationbridge(self.handle, $0) }
     }
     // No primary constructor declared for this class.
 
@@ -733,14 +848,22 @@ open class RappOperationBridge: RappOperationBridgeProtocol, @unchecked Sendable
             return
         }
 
-        try! rustCall { uniffi_refineid_lib_core_fn_free_rappoperationbridge(handle, $0) }
+        try! rustCall { uniffi_refineid_rapp_fn_free_rappoperationbridge(handle, $0) }
     }
 
     
+    /**
+     * Take the established session as the proxy and recover the durable
+     * operation engine from the vault.
+     *
+     * # Errors
+     * [`RappBindingError`] on an invalid lifetime or liveness policy, a
+     * session that is not established, or a failed journal recovery.
+     */
 public static func beginProxy(session: RappSessionBridge, vault: RappOperationVault, maximumLifetimeMs: UInt64, liveness: RappLivenessConfiguration, nowMs: UInt64)throws  -> RappOperationBridge  {
     return try  FfiConverterTypeRappOperationBridge_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_constructor_rappoperationbridge_begin_proxy(
+    uniffi_refineid_rapp_fn_constructor_rappoperationbridge_begin_proxy(
         FfiConverterTypeRappSessionBridge_lower(session),
         FfiConverterTypeRappOperationVault_lower(vault),
         FfiConverterUInt64.lower(maximumLifetimeMs),
@@ -750,10 +873,18 @@ public static func beginProxy(session: RappSessionBridge, vault: RappOperationVa
 })
 }
     
+    /**
+     * Take the established session as the requester and recover the
+     * durable operation engine from the vault.
+     *
+     * # Errors
+     * [`RappBindingError`] on an invalid lifetime or liveness policy, a
+     * session that is not established, or a failed journal recovery.
+     */
 public static func beginRequester(session: RappSessionBridge, vault: RappOperationVault, maximumLifetimeMs: UInt64, liveness: RappLivenessConfiguration, nowMs: UInt64)throws  -> RappOperationBridge  {
     return try  FfiConverterTypeRappOperationBridge_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_constructor_rappoperationbridge_begin_requester(
+    uniffi_refineid_rapp_fn_constructor_rappoperationbridge_begin_requester(
         FfiConverterTypeRappSessionBridge_lower(session),
         FfiConverterTypeRappOperationVault_lower(vault),
         FfiConverterUInt64.lower(maximumLifetimeMs),
@@ -768,11 +899,14 @@ public static func beginRequester(session: RappSessionBridge, vault: RappOperati
     /**
      * Deliver a completed requester result only after its acknowledgment was
      * successfully released to transport and durably recorded.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input or the wrong protocol phase.
      */
 open func acknowledgmentReleased(operationId: Data)throws  -> RappOperationResult  {
     return try  FfiConverterTypeRappOperationResult_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationbridge_acknowledgment_released(
+    uniffi_refineid_rapp_fn_method_rappoperationbridge_acknowledgment_released(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(operationId),uniffiCallStatus
     )
@@ -781,11 +915,14 @@ open func acknowledgmentReleased(operationId: Data)throws  -> RappOperationResul
     
     /**
      * Approve exactly the request displayed by the authorizer UI.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input or the wrong protocol phase.
      */
 open func approve(operationId: Data, approvedAtMs: UInt64)throws  -> RappBridgeAction  {
     return try  FfiConverterTypeRappBridgeAction_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationbridge_approve(
+    uniffi_refineid_rapp_fn_method_rappoperationbridge_approve(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(operationId),
         FfiConverterUInt64.lower(approvedAtMs),uniffiCallStatus
@@ -793,10 +930,17 @@ open func approve(operationId: Data, approvedAtMs: UInt64)throws  -> RappBridgeA
 })
 }
     
+    /**
+     * Begin a browser authentication over an already-hashed challenge.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input, an ungranted profile, or the
+     * wrong protocol phase.
+     */
 open func beginBrowserAuthentication(operationId: Data, origin: String, keyProfile: RappCardKeyProfile, algorithm: RappSignatureAlgorithm, digest: Data, localStartMs: UInt64, expiresAfterMs: UInt64)throws  -> RappBridgeAction  {
     return try  FfiConverterTypeRappBridgeAction_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationbridge_begin_browser_authentication(
+    uniffi_refineid_rapp_fn_method_rappoperationbridge_begin_browser_authentication(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(operationId),
         FfiConverterString.lower(origin),
@@ -809,10 +953,17 @@ open func beginBrowserAuthentication(operationId: Data, origin: String, keyProfi
 })
 }
     
+    /**
+     * Begin a card and retry-state inspection.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input, an ungranted profile, or the
+     * wrong protocol phase.
+     */
 open func beginInspectCard(operationId: Data, localStartMs: UInt64, expiresAfterMs: UInt64)throws  -> RappBridgeAction  {
     return try  FfiConverterTypeRappBridgeAction_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationbridge_begin_inspect_card(
+    uniffi_refineid_rapp_fn_method_rappoperationbridge_begin_inspect_card(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(operationId),
         FfiConverterUInt64.lower(localStartMs),
@@ -821,10 +972,18 @@ open func beginInspectCard(operationId: Data, localStartMs: UInt64, expiresAfter
 })
 }
     
+    /**
+     * Begin a certificate read; owned by the profile whose key the
+     * certificate serves.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input, an ungranted profile, or the
+     * wrong protocol phase.
+     */
 open func beginReadCertificate(operationId: Data, signatureCertificate: Bool, localStartMs: UInt64, expiresAfterMs: UInt64)throws  -> RappBridgeAction  {
     return try  FfiConverterTypeRappBridgeAction_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationbridge_begin_read_certificate(
+    uniffi_refineid_rapp_fn_method_rappoperationbridge_begin_read_certificate(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(operationId),
         FfiConverterBool.lower(signatureCertificate),
@@ -834,10 +993,17 @@ open func beginReadCertificate(operationId: Data, signatureCertificate: Bool, lo
 })
 }
     
+    /**
+     * Begin a cardholder identity read.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input, an ungranted profile, or the
+     * wrong protocol phase.
+     */
 open func beginReadIdentity(operationId: Data, localStartMs: UInt64, expiresAfterMs: UInt64)throws  -> RappBridgeAction  {
     return try  FfiConverterTypeRappBridgeAction_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationbridge_begin_read_identity(
+    uniffi_refineid_rapp_fn_method_rappoperationbridge_begin_read_identity(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(operationId),
         FfiConverterUInt64.lower(localStartMs),
@@ -846,10 +1012,17 @@ open func beginReadIdentity(operationId: Data, localStartMs: UInt64, expiresAfte
 })
 }
     
+    /**
+     * Begin a document signature over a document digest.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input, an ungranted profile, or the
+     * wrong protocol phase.
+     */
 open func beginSignDocument(operationId: Data, documentName: String, keyProfile: RappCardKeyProfile, algorithm: RappSignatureAlgorithm, digest: Data, localStartMs: UInt64, expiresAfterMs: UInt64)throws  -> RappBridgeAction  {
     return try  FfiConverterTypeRappBridgeAction_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationbridge_begin_sign_document(
+    uniffi_refineid_rapp_fn_method_rappoperationbridge_begin_sign_document(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(operationId),
         FfiConverterString.lower(documentName),
@@ -862,20 +1035,33 @@ open func beginSignDocument(operationId: Data, documentName: String, keyProfile:
 })
 }
     
+    /**
+     * Mark the operation ambiguous; the card command is never repeated.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input or the wrong protocol phase.
+     */
 open func cardCompletionAmbiguous(operationId: Data)throws  -> RappBridgeAction  {
     return try  FfiConverterTypeRappBridgeAction_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationbridge_card_completion_ambiguous(
+    uniffi_refineid_rapp_fn_method_rappoperationbridge_card_completion_ambiguous(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(operationId),uniffiCallStatus
     )
 })
 }
     
+    /**
+     * Cancel the operation after the card left before transmission provably
+     * began.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input or the wrong protocol phase.
+     */
 open func cardRemovedBeforeTransmit(operationId: Data)throws  -> RappBridgeAction  {
     return try  FfiConverterTypeRappBridgeAction_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationbridge_card_removed_before_transmit(
+    uniffi_refineid_rapp_fn_method_rappoperationbridge_card_removed_before_transmit(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(operationId),uniffiCallStatus
     )
@@ -885,20 +1071,30 @@ open func cardRemovedBeforeTransmit(operationId: Data)throws  -> RappBridgeActio
     /**
      * Close the ephemeral session, classify every in-flight operation, and
      * retain pairing unless an authenticated violation already revoked it.
+     *
+     * # Errors
+     * [`RappBindingError::LocalStateFailure`] when the durable close
+     * classification fails.
      */
 open func closeSession()throws  -> RappBridgeAction  {
     return try  FfiConverterTypeRappBridgeAction_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationbridge_close_session(
+    uniffi_refineid_rapp_fn_method_rappoperationbridge_close_session(
             self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
 }
     
+    /**
+     * Complete a certificate read with the certificate bytes.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input or the wrong protocol phase.
+     */
 open func completeCertificate(operationId: Data, der: Data)throws  -> RappBridgeAction  {
     return try  FfiConverterTypeRappBridgeAction_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationbridge_complete_certificate(
+    uniffi_refineid_rapp_fn_method_rappoperationbridge_complete_certificate(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(operationId),
         FfiConverterData.lower(der),uniffiCallStatus
@@ -906,10 +1102,16 @@ open func completeCertificate(operationId: Data, der: Data)throws  -> RappBridge
 })
 }
     
+    /**
+     * Complete an identity read with the cardholder name and identifier.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input or the wrong protocol phase.
+     */
 open func completeIdentity(operationId: Data, displayName: String, personId: String)throws  -> RappBridgeAction  {
     return try  FfiConverterTypeRappBridgeAction_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationbridge_complete_identity(
+    uniffi_refineid_rapp_fn_method_rappoperationbridge_complete_identity(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(operationId),
         FfiConverterString.lower(displayName),
@@ -918,10 +1120,16 @@ open func completeIdentity(operationId: Data, displayName: String, personId: Str
 })
 }
     
+    /**
+     * Complete a card inspection with factory and retry state.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input or the wrong protocol phase.
+     */
 open func completeInspection(operationId: Data, pin1Factory: Bool, pin2Factory: Bool, pin1Attempts: UInt8?, pin2Attempts: UInt8?, pukAttempts: UInt8?)throws  -> RappBridgeAction  {
     return try  FfiConverterTypeRappBridgeAction_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationbridge_complete_inspection(
+    uniffi_refineid_rapp_fn_method_rappoperationbridge_complete_inspection(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(operationId),
         FfiConverterBool.lower(pin1Factory),
@@ -933,10 +1141,16 @@ open func completeInspection(operationId: Data, pin1Factory: Bool, pin2Factory: 
 })
 }
     
+    /**
+     * Complete a signing operation with the signature bytes.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input or the wrong protocol phase.
+     */
 open func completeSignature(operationId: Data, signature: Data)throws  -> RappBridgeAction  {
     return try  FfiConverterTypeRappBridgeAction_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationbridge_complete_signature(
+    uniffi_refineid_rapp_fn_method_rappoperationbridge_complete_signature(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(operationId),
         FfiConverterData.lower(signature),uniffiCallStatus
@@ -944,10 +1158,18 @@ open func completeSignature(operationId: Data, signature: Data)throws  -> RappBr
 })
 }
     
+    /**
+     * Record a CAN, PIN 1, or PIN 2 rejection: emit the bounded result,
+     * revoke the pairing, and close the session.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input, the wrong protocol phase, or a
+     * failed durable revocation.
+     */
 open func credentialRejected(operationId: Data, rejectedAtMs: UInt64)throws  -> RappBridgeAction  {
     return try  FfiConverterTypeRappBridgeAction_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationbridge_credential_rejected(
+    uniffi_refineid_rapp_fn_method_rappoperationbridge_credential_rejected(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(operationId),
         FfiConverterUInt64.lower(rejectedAtMs),uniffiCallStatus
@@ -957,11 +1179,14 @@ open func credentialRejected(operationId: Data, rejectedAtMs: UInt64)throws  -> 
     
     /**
      * Deny the exact request and durably emit a stable denial.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input or the wrong protocol phase.
      */
 open func deny(operationId: Data)throws  -> RappBridgeAction  {
     return try  FfiConverterTypeRappBridgeAction_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationbridge_deny(
+    uniffi_refineid_rapp_fn_method_rappoperationbridge_deny(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(operationId),uniffiCallStatus
     )
@@ -971,11 +1196,15 @@ open func deny(operationId: Data)throws  -> RappBridgeAction  {
     /**
      * Advance authenticated liveness using platform monotonic time, CSPRNG
      * challenge bytes, and bounded caller-generated jitter.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid challenge bytes or a protocol
+     * failure.
      */
 open func pollLiveness(nowMs: UInt64, challenge: Data, jitterMs: Int64)throws  -> RappBridgeAction  {
     return try  FfiConverterTypeRappBridgeAction_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationbridge_poll_liveness(
+    uniffi_refineid_rapp_fn_method_rappoperationbridge_poll_liveness(
             self.uniffiCloneHandle(),
         FfiConverterUInt64.lower(nowMs),
         FfiConverterData.lower(challenge),
@@ -986,11 +1215,14 @@ open func pollLiveness(nowMs: UInt64, challenge: Data, jitterMs: Int64)throws  -
     
     /**
      * Mark bounded card-status/certificate prerequisites complete.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input or the wrong protocol phase.
      */
 open func prerequisitesComplete(operationId: Data)throws  -> RappBridgeAction  {
     return try  FfiConverterTypeRappBridgeAction_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationbridge_prerequisites_complete(
+    uniffi_refineid_rapp_fn_method_rappoperationbridge_prerequisites_complete(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(operationId),uniffiCallStatus
     )
@@ -999,11 +1231,15 @@ open func prerequisitesComplete(operationId: Data)throws  -> RappBridgeAction  {
     
     /**
      * Decrypt, authenticate, schema-check, and dispatch one opaque frame.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input, a protocol failure, or a
+     * poisoned local state.
      */
 open func receiveFrame(bytes: Data, nowMs: UInt64)throws  -> RappBridgeAction  {
     return try  FfiConverterTypeRappBridgeAction_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationbridge_receive_frame(
+    uniffi_refineid_rapp_fn_method_rappoperationbridge_receive_frame(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(bytes),
         FfiConverterUInt64.lower(nowMs),uniffiCallStatus
@@ -1014,21 +1250,31 @@ open func receiveFrame(bytes: Data, nowMs: UInt64)throws  -> RappBridgeAction  {
     /**
      * Reject a request whose authenticated descriptor is unsupported or
      * contradicts the live card's certificate/profile.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input or the wrong protocol phase.
      */
 open func requestInvalidOrUnsupported(operationId: Data)throws  -> RappBridgeAction  {
     return try  FfiConverterTypeRappBridgeAction_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationbridge_request_invalid_or_unsupported(
+    uniffi_refineid_rapp_fn_method_rappoperationbridge_request_invalid_or_unsupported(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(operationId),uniffiCallStatus
     )
 })
 }
     
+    /**
+     * Reject the operation because fewer than three attempts remain on the
+     * decrementable counter.
+     *
+     * # Errors
+     * [`RappBindingError`] on invalid input or the wrong protocol phase.
+     */
 open func retryRefused(operationId: Data)throws  -> RappBridgeAction  {
     return try  FfiConverterTypeRappBridgeAction_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationbridge_retry_refused(
+    uniffi_refineid_rapp_fn_method_rappoperationbridge_retry_refused(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(operationId),uniffiCallStatus
     )
@@ -1096,37 +1342,58 @@ public protocol RappOperationVault: AnyObject, Sendable {
     
     /**
      * Persist the complete requester record before releasing its next frame.
+     *
+     * # Errors
+     * [`RappVaultError`] when the atomic storage transaction fails.
      */
     func persistRequester(pairId: Data, operationId: Data, record: Data) throws 
     
     /**
      * Load all requester records for one pair during fail-closed recovery.
+     *
+     * # Errors
+     * [`RappVaultError`] when the atomic storage transaction fails.
      */
     func loadRequester(pairId: Data) throws  -> [Data]
     
     /**
      * Persist the complete proxy record before the corresponding transition.
+     *
+     * # Errors
+     * [`RappVaultError`] when the atomic storage transaction fails.
      */
     func persistProxy(pairId: Data, operationId: Data, record: Data) throws 
     
     /**
      * Atomically persist proxy `result_pending` and its complete result before
      * releasing the result frame.
+     *
+     * # Errors
+     * [`RappVaultError`] when the atomic storage transaction fails.
      */
     func persistProxyResult(pairId: Data, operationId: Data, record: Data, result: Data) throws 
     
     /**
      * Atomically retain the result while marking delivery uncertain.
+     *
+     * # Errors
+     * [`RappVaultError`] when the atomic storage transaction fails.
      */
     func retainProxyUncertain(pairId: Data, operationId: Data, record: Data) throws 
     
     /**
      * Atomically mark completion and erase the retained result body.
+     *
+     * # Errors
+     * [`RappVaultError`] when the atomic storage transaction fails.
      */
     func acknowledgeProxyResult(pairId: Data, operationId: Data, record: Data) throws 
     
     /**
      * Load all proxy records and retained results for one pair.
+     *
+     * # Errors
+     * [`RappVaultError`] when the atomic storage transaction fails.
      */
     func loadProxy(pairId: Data) throws  -> [RappStoredProxyJournal]
     
@@ -1175,7 +1442,7 @@ open class RappOperationVaultImpl: RappOperationVault, @unchecked Sendable {
     @_documentation(visibility: private)
 #endif
     public func uniffiCloneHandle() -> UInt64 {
-        return try! rustCall { uniffi_refineid_lib_core_fn_clone_rappoperationvault(self.handle, $0) }
+        return try! rustCall { uniffi_refineid_rapp_fn_clone_rappoperationvault(self.handle, $0) }
     }
     // No primary constructor declared for this class.
 
@@ -1185,7 +1452,7 @@ open class RappOperationVaultImpl: RappOperationVault, @unchecked Sendable {
             return
         }
 
-        try! rustCall { uniffi_refineid_lib_core_fn_free_rappoperationvault(handle, $0) }
+        try! rustCall { uniffi_refineid_rapp_fn_free_rappoperationvault(handle, $0) }
     }
 
     
@@ -1193,10 +1460,13 @@ open class RappOperationVaultImpl: RappOperationVault, @unchecked Sendable {
     
     /**
      * Persist the complete requester record before releasing its next frame.
+     *
+     * # Errors
+     * [`RappVaultError`] when the atomic storage transaction fails.
      */
 open func persistRequester(pairId: Data, operationId: Data, record: Data)throws   {try rustCallWithError(FfiConverterTypeRappVaultError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationvault_persist_requester(
+    uniffi_refineid_rapp_fn_method_rappoperationvault_persist_requester(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(pairId),
         FfiConverterData.lower(operationId),
@@ -1207,11 +1477,14 @@ open func persistRequester(pairId: Data, operationId: Data, record: Data)throws 
     
     /**
      * Load all requester records for one pair during fail-closed recovery.
+     *
+     * # Errors
+     * [`RappVaultError`] when the atomic storage transaction fails.
      */
 open func loadRequester(pairId: Data)throws  -> [Data]  {
     return try  FfiConverterSequenceData.lift(try rustCallWithError(FfiConverterTypeRappVaultError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationvault_load_requester(
+    uniffi_refineid_rapp_fn_method_rappoperationvault_load_requester(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(pairId),uniffiCallStatus
     )
@@ -1220,10 +1493,13 @@ open func loadRequester(pairId: Data)throws  -> [Data]  {
     
     /**
      * Persist the complete proxy record before the corresponding transition.
+     *
+     * # Errors
+     * [`RappVaultError`] when the atomic storage transaction fails.
      */
 open func persistProxy(pairId: Data, operationId: Data, record: Data)throws   {try rustCallWithError(FfiConverterTypeRappVaultError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationvault_persist_proxy(
+    uniffi_refineid_rapp_fn_method_rappoperationvault_persist_proxy(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(pairId),
         FfiConverterData.lower(operationId),
@@ -1235,10 +1511,13 @@ open func persistProxy(pairId: Data, operationId: Data, record: Data)throws   {t
     /**
      * Atomically persist proxy `result_pending` and its complete result before
      * releasing the result frame.
+     *
+     * # Errors
+     * [`RappVaultError`] when the atomic storage transaction fails.
      */
 open func persistProxyResult(pairId: Data, operationId: Data, record: Data, result: Data)throws   {try rustCallWithError(FfiConverterTypeRappVaultError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationvault_persist_proxy_result(
+    uniffi_refineid_rapp_fn_method_rappoperationvault_persist_proxy_result(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(pairId),
         FfiConverterData.lower(operationId),
@@ -1250,10 +1529,13 @@ open func persistProxyResult(pairId: Data, operationId: Data, record: Data, resu
     
     /**
      * Atomically retain the result while marking delivery uncertain.
+     *
+     * # Errors
+     * [`RappVaultError`] when the atomic storage transaction fails.
      */
 open func retainProxyUncertain(pairId: Data, operationId: Data, record: Data)throws   {try rustCallWithError(FfiConverterTypeRappVaultError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationvault_retain_proxy_uncertain(
+    uniffi_refineid_rapp_fn_method_rappoperationvault_retain_proxy_uncertain(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(pairId),
         FfiConverterData.lower(operationId),
@@ -1264,10 +1546,13 @@ open func retainProxyUncertain(pairId: Data, operationId: Data, record: Data)thr
     
     /**
      * Atomically mark completion and erase the retained result body.
+     *
+     * # Errors
+     * [`RappVaultError`] when the atomic storage transaction fails.
      */
 open func acknowledgeProxyResult(pairId: Data, operationId: Data, record: Data)throws   {try rustCallWithError(FfiConverterTypeRappVaultError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationvault_acknowledge_proxy_result(
+    uniffi_refineid_rapp_fn_method_rappoperationvault_acknowledge_proxy_result(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(pairId),
         FfiConverterData.lower(operationId),
@@ -1278,11 +1563,14 @@ open func acknowledgeProxyResult(pairId: Data, operationId: Data, record: Data)t
     
     /**
      * Load all proxy records and retained results for one pair.
+     *
+     * # Errors
+     * [`RappVaultError`] when the atomic storage transaction fails.
      */
 open func loadProxy(pairId: Data)throws  -> [RappStoredProxyJournal]  {
     return try  FfiConverterSequenceTypeRappStoredProxyJournal.lift(try rustCallWithError(FfiConverterTypeRappVaultError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappoperationvault_load_proxy(
+    uniffi_refineid_rapp_fn_method_rappoperationvault_load_proxy(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(pairId),uniffiCallStatus
     )
@@ -1532,7 +1820,7 @@ fileprivate struct UniffiCallbackInterfaceRappOperationVault {
 }
 
 private func uniffiCallbackInitRappOperationVault() {
-    uniffi_refineid_lib_core_fn_init_callback_vtable_rappoperationvault(UniffiCallbackInterfaceRappOperationVault.vtablePtr)
+    uniffi_refineid_rapp_fn_init_callback_vtable_rappoperationvault(UniffiCallbackInterfaceRappOperationVault.vtablePtr)
 }
 
 #if swift(>=5.8)
@@ -1603,12 +1891,19 @@ public protocol RappPairRecordProtocol: AnyObject, Sendable {
     
     /**
      * Read non-secret metadata suitable for confirmation and connection UI.
+     *
+     * # Errors
+     * [`RappBindingError`] when the record was already revoked or the lock
+     * is poisoned.
      */
     func metadata() throws  -> RappPairMetadata
     
     /**
      * Persist the complete pair record through a platform adapter that must
      * use non-synchronizing, device-only storage excluded from backup.
+     *
+     * # Errors
+     * [`RappBindingError`] on a revoked record or a storage failure.
      */
     func persistDeviceOnly(vault: RappPairVault) throws 
     
@@ -1616,6 +1911,10 @@ public protocol RappPairRecordProtocol: AnyObject, Sendable {
      * Irreversibly delete active secret material and retain only a local
      * tombstone. The in-memory private key is dropped only after the vault
      * confirms deletion.
+     *
+     * # Errors
+     * [`RappBindingError`] on an already-revoked record or a storage
+     * failure.
      */
     func revoke(vault: RappPairVault, revokedAtMs: UInt64) throws 
     
@@ -1661,7 +1960,7 @@ open class RappPairRecord: RappPairRecordProtocol, @unchecked Sendable {
     @_documentation(visibility: private)
 #endif
     public func uniffiCloneHandle() -> UInt64 {
-        return try! rustCall { uniffi_refineid_lib_core_fn_clone_rapppairrecord(self.handle, $0) }
+        return try! rustCall { uniffi_refineid_rapp_fn_clone_rapppairrecord(self.handle, $0) }
     }
     // No primary constructor declared for this class.
 
@@ -1671,17 +1970,21 @@ open class RappPairRecord: RappPairRecordProtocol, @unchecked Sendable {
             return
         }
 
-        try! rustCall { uniffi_refineid_lib_core_fn_free_rapppairrecord(handle, $0) }
+        try! rustCall { uniffi_refineid_rapp_fn_free_rapppairrecord(handle, $0) }
     }
 
     
     /**
      * Load an active pair record from platform device-only storage.
+     *
+     * # Errors
+     * [`RappBindingError`] on an invalid identifier, a revoked or absent
+     * pair, or a storage failure.
      */
 public static func loadFromVault(pairId: Data, vault: RappPairVault)throws  -> RappPairRecord  {
     return try  FfiConverterTypeRappPairRecord_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_constructor_rapppairrecord_load_from_vault(
+    uniffi_refineid_rapp_fn_constructor_rapppairrecord_load_from_vault(
         FfiConverterData.lower(pairId),
         FfiConverterTypeRappPairVault_lower(vault),uniffiCallStatus
     )
@@ -1692,11 +1995,15 @@ public static func loadFromVault(pairId: Data, vault: RappPairVault)throws  -> R
     
     /**
      * Read non-secret metadata suitable for confirmation and connection UI.
+     *
+     * # Errors
+     * [`RappBindingError`] when the record was already revoked or the lock
+     * is poisoned.
      */
 open func metadata()throws  -> RappPairMetadata  {
     return try  FfiConverterTypeRappPairMetadata_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rapppairrecord_metadata(
+    uniffi_refineid_rapp_fn_method_rapppairrecord_metadata(
             self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
@@ -1705,10 +2012,13 @@ open func metadata()throws  -> RappPairMetadata  {
     /**
      * Persist the complete pair record through a platform adapter that must
      * use non-synchronizing, device-only storage excluded from backup.
+     *
+     * # Errors
+     * [`RappBindingError`] on a revoked record or a storage failure.
      */
 open func persistDeviceOnly(vault: RappPairVault)throws   {try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rapppairrecord_persist_device_only(
+    uniffi_refineid_rapp_fn_method_rapppairrecord_persist_device_only(
             self.uniffiCloneHandle(),
         FfiConverterTypeRappPairVault_lower(vault),uniffiCallStatus
     )
@@ -1719,10 +2029,14 @@ open func persistDeviceOnly(vault: RappPairVault)throws   {try rustCallWithError
      * Irreversibly delete active secret material and retain only a local
      * tombstone. The in-memory private key is dropped only after the vault
      * confirms deletion.
+     *
+     * # Errors
+     * [`RappBindingError`] on an already-revoked record or a storage
+     * failure.
      */
 open func revoke(vault: RappPairVault, revokedAtMs: UInt64)throws   {try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rapppairrecord_revoke(
+    uniffi_refineid_rapp_fn_method_rapppairrecord_revoke(
             self.uniffiCloneHandle(),
         FfiConverterTypeRappPairVault_lower(vault),
         FfiConverterUInt64.lower(revokedAtMs),uniffiCallStatus
@@ -1791,21 +2105,33 @@ public protocol RappPairVault: AnyObject, Sendable {
     
     /**
      * Atomically insert a new secret-bearing opaque record.
+     *
+     * # Errors
+     * [`RappVaultError`] on a reused identifier or unavailable storage.
      */
     func insertDeviceOnly(pairId: Data, record: Data) throws 
     
     /**
      * Load one opaque record into process memory for a fresh session.
+     *
+     * # Errors
+     * [`RappVaultError`] when storage is unavailable.
      */
     func loadDeviceOnly(pairId: Data) throws  -> Data?
     
     /**
      * Atomically destroy the record and retain a non-secret tombstone.
+     *
+     * # Errors
+     * [`RappVaultError`] on an absent pair or unavailable storage.
      */
     func revokeDeviceOnly(pairId: Data, revokedAtMs: UInt64) throws 
     
     /**
      * Check the permanent local tombstone before accepting a pair identifier.
+     *
+     * # Errors
+     * [`RappVaultError`] when storage is unavailable.
      */
     func isRevoked(pairId: Data) throws  -> Bool
     
@@ -1854,7 +2180,7 @@ open class RappPairVaultImpl: RappPairVault, @unchecked Sendable {
     @_documentation(visibility: private)
 #endif
     public func uniffiCloneHandle() -> UInt64 {
-        return try! rustCall { uniffi_refineid_lib_core_fn_clone_rapppairvault(self.handle, $0) }
+        return try! rustCall { uniffi_refineid_rapp_fn_clone_rapppairvault(self.handle, $0) }
     }
     // No primary constructor declared for this class.
 
@@ -1864,7 +2190,7 @@ open class RappPairVaultImpl: RappPairVault, @unchecked Sendable {
             return
         }
 
-        try! rustCall { uniffi_refineid_lib_core_fn_free_rapppairvault(handle, $0) }
+        try! rustCall { uniffi_refineid_rapp_fn_free_rapppairvault(handle, $0) }
     }
 
     
@@ -1872,10 +2198,13 @@ open class RappPairVaultImpl: RappPairVault, @unchecked Sendable {
     
     /**
      * Atomically insert a new secret-bearing opaque record.
+     *
+     * # Errors
+     * [`RappVaultError`] on a reused identifier or unavailable storage.
      */
 open func insertDeviceOnly(pairId: Data, record: Data)throws   {try rustCallWithError(FfiConverterTypeRappVaultError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rapppairvault_insert_device_only(
+    uniffi_refineid_rapp_fn_method_rapppairvault_insert_device_only(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(pairId),
         FfiConverterData.lower(record),uniffiCallStatus
@@ -1885,11 +2214,14 @@ open func insertDeviceOnly(pairId: Data, record: Data)throws   {try rustCallWith
     
     /**
      * Load one opaque record into process memory for a fresh session.
+     *
+     * # Errors
+     * [`RappVaultError`] when storage is unavailable.
      */
 open func loadDeviceOnly(pairId: Data)throws  -> Data?  {
     return try  FfiConverterOptionData.lift(try rustCallWithError(FfiConverterTypeRappVaultError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rapppairvault_load_device_only(
+    uniffi_refineid_rapp_fn_method_rapppairvault_load_device_only(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(pairId),uniffiCallStatus
     )
@@ -1898,10 +2230,13 @@ open func loadDeviceOnly(pairId: Data)throws  -> Data?  {
     
     /**
      * Atomically destroy the record and retain a non-secret tombstone.
+     *
+     * # Errors
+     * [`RappVaultError`] on an absent pair or unavailable storage.
      */
 open func revokeDeviceOnly(pairId: Data, revokedAtMs: UInt64)throws   {try rustCallWithError(FfiConverterTypeRappVaultError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rapppairvault_revoke_device_only(
+    uniffi_refineid_rapp_fn_method_rapppairvault_revoke_device_only(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(pairId),
         FfiConverterUInt64.lower(revokedAtMs),uniffiCallStatus
@@ -1911,11 +2246,14 @@ open func revokeDeviceOnly(pairId: Data, revokedAtMs: UInt64)throws   {try rustC
     
     /**
      * Check the permanent local tombstone before accepting a pair identifier.
+     *
+     * # Errors
+     * [`RappVaultError`] when storage is unavailable.
      */
 open func isRevoked(pairId: Data)throws  -> Bool  {
     return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeRappVaultError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rapppairvault_is_revoked(
+    uniffi_refineid_rapp_fn_method_rapppairvault_is_revoked(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(pairId),uniffiCallStatus
     )
@@ -2072,7 +2410,7 @@ fileprivate struct UniffiCallbackInterfaceRappPairVault {
 }
 
 private func uniffiCallbackInitRappPairVault() {
-    uniffi_refineid_lib_core_fn_init_callback_vtable_rapppairvault(UniffiCallbackInterfaceRappPairVault.vtablePtr)
+    uniffi_refineid_rapp_fn_init_callback_vtable_rapppairvault(UniffiCallbackInterfaceRappPairVault.vtablePtr)
 }
 
 #if swift(>=5.8)
@@ -2142,12 +2480,19 @@ public protocol RappPairingBridgeProtocol: AnyObject, Sendable {
     
     /**
      * Consume the offer for exactly one selected transport candidate and
-     * start mandatory Noise XXpsk3 with fresh pair-specific static keys.
+     * start mandatory Noise `XXpsk3` with fresh pair-specific static keys.
+     *
+     * # Errors
+     * [`RappBindingError`] on an expired offer, the wrong phase, or a
+     * handshake-construction failure that returns the live offer.
      */
     func begin(candidateId: String, nowMonotonicMs: UInt64) throws 
     
     /**
      * Cancel pairing and destroy every in-progress offer or handshake secret.
+     *
+     * # Errors
+     * [`RappBindingError::WrongPhase`] after the pairing completed.
      */
     func cancelPairing() throws 
     
@@ -2155,64 +2500,121 @@ public protocol RappPairingBridgeProtocol: AnyObject, Sendable {
      * Discard one unauthenticated transport candidate. A requester retains
      * the same still-live offer and absolute deadline; a proxy discards its
      * scanned copy. Returns whether the requester offer remains reusable.
+     *
+     * # Errors
+     * [`RappBindingError`] on an expired offer or the wrong phase.
      */
     func candidateFailed(nowMonotonicMs: UInt64) throws  -> Bool
     
     /**
      * Destroy the QR bearer secret and enter authenticated human
      * confirmation after Noise completes.
+     *
+     * # Errors
+     * [`RappBindingError`] on an expired offer, the wrong phase, or an
+     * incomplete handshake.
      */
     func enterConfirmation(nowMonotonicMs: UInt64) throws 
     
     /**
      * Complete equal human confirmation and retain the resulting pair record
      * in an opaque Rust object. No private key bytes are returned to Swift.
+     *
+     * # Errors
+     * [`RappBindingError`] on the wrong phase or incomplete or unequal
+     * confirmations.
      */
     func finishPairing(createdAtMs: UInt64) throws  -> RappPairRecord
     
     /**
      * Whether the role-specific three-message Noise exchange has completed.
+     *
+     * # Errors
+     * [`RappBindingError`] on an expired offer or the wrong phase.
      */
     func handshakeComplete(nowMonotonicMs: UInt64) throws  -> Bool
     
     /**
+     * Transport candidates of the live offer, for the proxy's candidate
+     * selection. Stream candidates carry their decoded listener endpoints;
+     * a stream candidate whose parameters fail validation is omitted, and
+     * other profiles pass through with no endpoints. The platform selects
+     * exactly one candidate and hands its identifier to [`Self::begin`].
+     *
+     * # Errors
+     * [`RappBindingError::WrongPhase`] outside the offer phase.
+     */
+    func offerCandidates() throws  -> [RappOfferCandidate]
+    
+    /**
      * Advertised lifetime used by the platform to schedule visible expiry.
+     *
+     * # Errors
+     * [`RappBindingError::WrongPhase`] outside the offer phase.
      */
     func offerTtlMs() throws  -> UInt64
     
     /**
      * Secret-bearing QR text. Available only while the requester owns the
      * unconsumed offer.
+     *
+     * # Errors
+     * [`RappBindingError`] on an expired offer, the wrong phase, or an
+     * encoding failure.
      */
     func offerUri(nowMonotonicMs: UInt64) throws  -> String
     
     /**
      * Consume the next role-specific Noise handshake frame.
+     *
+     * # Errors
+     * [`RappBindingError`] on an expired offer, the wrong phase, an
+     * oversized frame, or a failed handshake.
      */
     func readHandshakeFrame(bytes: Data, nowMonotonicMs: UInt64) throws 
     
     /**
      * Verify and return the peer's exact grant set.
+     *
+     * # Errors
+     * [`RappBindingError`] on the wrong phase, an oversized frame, or a
+     * confirmation that fails verification.
      */
     func receiveConfirmation(bytes: Data, nowMs: UInt64) throws  -> [String]
     
     /**
      * Verify the peer's authenticated label and exact parameter echo.
+     *
+     * # Errors
+     * [`RappBindingError`] on the wrong phase, an oversized frame, or a
+     * hello that fails verification.
      */
     func receiveHello(bytes: Data, nowMs: UInt64) throws  -> RappPeerHello
     
     /**
      * Send the exact locally approved grant set.
+     *
+     * # Errors
+     * [`RappBindingError`] on the wrong phase, an invalid grant set, or a
+     * grant mismatch.
      */
     func sendConfirmation(grantedProfiles: [String]) throws  -> Data
     
     /**
      * Send the authenticated peer label and exact negotiated-parameter echo.
+     *
+     * # Errors
+     * [`RappBindingError`] on the wrong phase or a duplicate or failed
+     * hello.
      */
     func sendHello(displayName: String, platform: String) throws  -> Data
     
     /**
      * Produce the next role-specific Noise handshake frame.
+     *
+     * # Errors
+     * [`RappBindingError`] on an expired offer, the wrong phase, or a
+     * failed handshake.
      */
     func writeHandshakeFrame(nowMonotonicMs: UInt64) throws  -> Data
     
@@ -2257,7 +2659,7 @@ open class RappPairingBridge: RappPairingBridgeProtocol, @unchecked Sendable {
     @_documentation(visibility: private)
 #endif
     public func uniffiCloneHandle() -> UInt64 {
-        return try! rustCall { uniffi_refineid_lib_core_fn_clone_rapppairingbridge(self.handle, $0) }
+        return try! rustCall { uniffi_refineid_rapp_fn_clone_rapppairingbridge(self.handle, $0) }
     }
     // No primary constructor declared for this class.
 
@@ -2267,18 +2669,22 @@ open class RappPairingBridge: RappPairingBridgeProtocol, @unchecked Sendable {
             return
         }
 
-        try! rustCall { uniffi_refineid_lib_core_fn_free_rapppairingbridge(handle, $0) }
+        try! rustCall { uniffi_refineid_rapp_fn_free_rapppairingbridge(handle, $0) }
     }
 
     
     /**
      * Construct the requester-owned one-use QR offer from platform CSPRNG
      * bytes. The bearer secret is retained only inside this object.
+     *
+     * # Errors
+     * [`RappBindingError::InvalidInput`] on wrong-size bytes or an offer
+     * that fails validation.
      */
 public static func createRequesterOffer(offerId: Data, pairingSecret: Data, profiles: [String], transports: [RappTransportCandidate], offerTtlMs: UInt64, startedAtMonotonicMs: UInt64)throws  -> RappPairingBridge  {
     return try  FfiConverterTypeRappPairingBridge_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_constructor_rapppairingbridge_create_requester_offer(
+    uniffi_refineid_rapp_fn_constructor_rapppairingbridge_create_requester_offer(
         FfiConverterData.lower(offerId),
         FfiConverterData.lower(pairingSecret),
         FfiConverterSequenceString.lower(profiles),
@@ -2291,11 +2697,15 @@ public static func createRequesterOffer(offerId: Data, pairingSecret: Data, prof
     
     /**
      * Decode a scanned one-use QR offer for the authorization proxy.
+     *
+     * # Errors
+     * [`RappBindingError::InvalidInput`] on a URI that fails structural or
+     * policy validation.
      */
 public static func fromScannedOffer(uri: String, startedAtMonotonicMs: UInt64)throws  -> RappPairingBridge  {
     return try  FfiConverterTypeRappPairingBridge_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_constructor_rapppairingbridge_from_scanned_offer(
+    uniffi_refineid_rapp_fn_constructor_rapppairingbridge_from_scanned_offer(
         FfiConverterString.lower(uri),
         FfiConverterUInt64.lower(startedAtMonotonicMs),uniffiCallStatus
     )
@@ -2306,11 +2716,15 @@ public static func fromScannedOffer(uri: String, startedAtMonotonicMs: UInt64)th
     
     /**
      * Consume the offer for exactly one selected transport candidate and
-     * start mandatory Noise XXpsk3 with fresh pair-specific static keys.
+     * start mandatory Noise `XXpsk3` with fresh pair-specific static keys.
+     *
+     * # Errors
+     * [`RappBindingError`] on an expired offer, the wrong phase, or a
+     * handshake-construction failure that returns the live offer.
      */
 open func begin(candidateId: String, nowMonotonicMs: UInt64)throws   {try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rapppairingbridge_begin(
+    uniffi_refineid_rapp_fn_method_rapppairingbridge_begin(
             self.uniffiCloneHandle(),
         FfiConverterString.lower(candidateId),
         FfiConverterUInt64.lower(nowMonotonicMs),uniffiCallStatus
@@ -2320,10 +2734,13 @@ open func begin(candidateId: String, nowMonotonicMs: UInt64)throws   {try rustCa
     
     /**
      * Cancel pairing and destroy every in-progress offer or handshake secret.
+     *
+     * # Errors
+     * [`RappBindingError::WrongPhase`] after the pairing completed.
      */
 open func cancelPairing()throws   {try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rapppairingbridge_cancel_pairing(
+    uniffi_refineid_rapp_fn_method_rapppairingbridge_cancel_pairing(
             self.uniffiCloneHandle(),uniffiCallStatus
     )
 }
@@ -2333,11 +2750,14 @@ open func cancelPairing()throws   {try rustCallWithError(FfiConverterTypeRappBin
      * Discard one unauthenticated transport candidate. A requester retains
      * the same still-live offer and absolute deadline; a proxy discards its
      * scanned copy. Returns whether the requester offer remains reusable.
+     *
+     * # Errors
+     * [`RappBindingError`] on an expired offer or the wrong phase.
      */
 open func candidateFailed(nowMonotonicMs: UInt64)throws  -> Bool  {
     return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rapppairingbridge_candidate_failed(
+    uniffi_refineid_rapp_fn_method_rapppairingbridge_candidate_failed(
             self.uniffiCloneHandle(),
         FfiConverterUInt64.lower(nowMonotonicMs),uniffiCallStatus
     )
@@ -2347,10 +2767,14 @@ open func candidateFailed(nowMonotonicMs: UInt64)throws  -> Bool  {
     /**
      * Destroy the QR bearer secret and enter authenticated human
      * confirmation after Noise completes.
+     *
+     * # Errors
+     * [`RappBindingError`] on an expired offer, the wrong phase, or an
+     * incomplete handshake.
      */
 open func enterConfirmation(nowMonotonicMs: UInt64)throws   {try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rapppairingbridge_enter_confirmation(
+    uniffi_refineid_rapp_fn_method_rapppairingbridge_enter_confirmation(
             self.uniffiCloneHandle(),
         FfiConverterUInt64.lower(nowMonotonicMs),uniffiCallStatus
     )
@@ -2360,11 +2784,15 @@ open func enterConfirmation(nowMonotonicMs: UInt64)throws   {try rustCallWithErr
     /**
      * Complete equal human confirmation and retain the resulting pair record
      * in an opaque Rust object. No private key bytes are returned to Swift.
+     *
+     * # Errors
+     * [`RappBindingError`] on the wrong phase or incomplete or unequal
+     * confirmations.
      */
 open func finishPairing(createdAtMs: UInt64)throws  -> RappPairRecord  {
     return try  FfiConverterTypeRappPairRecord_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rapppairingbridge_finish_pairing(
+    uniffi_refineid_rapp_fn_method_rapppairingbridge_finish_pairing(
             self.uniffiCloneHandle(),
         FfiConverterUInt64.lower(createdAtMs),uniffiCallStatus
     )
@@ -2373,11 +2801,14 @@ open func finishPairing(createdAtMs: UInt64)throws  -> RappPairRecord  {
     
     /**
      * Whether the role-specific three-message Noise exchange has completed.
+     *
+     * # Errors
+     * [`RappBindingError`] on an expired offer or the wrong phase.
      */
 open func handshakeComplete(nowMonotonicMs: UInt64)throws  -> Bool  {
     return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rapppairingbridge_handshake_complete(
+    uniffi_refineid_rapp_fn_method_rapppairingbridge_handshake_complete(
             self.uniffiCloneHandle(),
         FfiConverterUInt64.lower(nowMonotonicMs),uniffiCallStatus
     )
@@ -2385,12 +2816,34 @@ open func handshakeComplete(nowMonotonicMs: UInt64)throws  -> Bool  {
 }
     
     /**
+     * Transport candidates of the live offer, for the proxy's candidate
+     * selection. Stream candidates carry their decoded listener endpoints;
+     * a stream candidate whose parameters fail validation is omitted, and
+     * other profiles pass through with no endpoints. The platform selects
+     * exactly one candidate and hands its identifier to [`Self::begin`].
+     *
+     * # Errors
+     * [`RappBindingError::WrongPhase`] outside the offer phase.
+     */
+open func offerCandidates()throws  -> [RappOfferCandidate]  {
+    return try  FfiConverterSequenceTypeRappOfferCandidate.lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
+        uniffiCallStatus in
+    uniffi_refineid_rapp_fn_method_rapppairingbridge_offer_candidates(
+            self.uniffiCloneHandle(),uniffiCallStatus
+    )
+})
+}
+    
+    /**
      * Advertised lifetime used by the platform to schedule visible expiry.
+     *
+     * # Errors
+     * [`RappBindingError::WrongPhase`] outside the offer phase.
      */
 open func offerTtlMs()throws  -> UInt64  {
     return try  FfiConverterUInt64.lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rapppairingbridge_offer_ttl_ms(
+    uniffi_refineid_rapp_fn_method_rapppairingbridge_offer_ttl_ms(
             self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
@@ -2399,11 +2852,15 @@ open func offerTtlMs()throws  -> UInt64  {
     /**
      * Secret-bearing QR text. Available only while the requester owns the
      * unconsumed offer.
+     *
+     * # Errors
+     * [`RappBindingError`] on an expired offer, the wrong phase, or an
+     * encoding failure.
      */
 open func offerUri(nowMonotonicMs: UInt64)throws  -> String  {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rapppairingbridge_offer_uri(
+    uniffi_refineid_rapp_fn_method_rapppairingbridge_offer_uri(
             self.uniffiCloneHandle(),
         FfiConverterUInt64.lower(nowMonotonicMs),uniffiCallStatus
     )
@@ -2412,10 +2869,14 @@ open func offerUri(nowMonotonicMs: UInt64)throws  -> String  {
     
     /**
      * Consume the next role-specific Noise handshake frame.
+     *
+     * # Errors
+     * [`RappBindingError`] on an expired offer, the wrong phase, an
+     * oversized frame, or a failed handshake.
      */
 open func readHandshakeFrame(bytes: Data, nowMonotonicMs: UInt64)throws   {try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rapppairingbridge_read_handshake_frame(
+    uniffi_refineid_rapp_fn_method_rapppairingbridge_read_handshake_frame(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(bytes),
         FfiConverterUInt64.lower(nowMonotonicMs),uniffiCallStatus
@@ -2425,11 +2886,15 @@ open func readHandshakeFrame(bytes: Data, nowMonotonicMs: UInt64)throws   {try r
     
     /**
      * Verify and return the peer's exact grant set.
+     *
+     * # Errors
+     * [`RappBindingError`] on the wrong phase, an oversized frame, or a
+     * confirmation that fails verification.
      */
 open func receiveConfirmation(bytes: Data, nowMs: UInt64)throws  -> [String]  {
     return try  FfiConverterSequenceString.lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rapppairingbridge_receive_confirmation(
+    uniffi_refineid_rapp_fn_method_rapppairingbridge_receive_confirmation(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(bytes),
         FfiConverterUInt64.lower(nowMs),uniffiCallStatus
@@ -2439,11 +2904,15 @@ open func receiveConfirmation(bytes: Data, nowMs: UInt64)throws  -> [String]  {
     
     /**
      * Verify the peer's authenticated label and exact parameter echo.
+     *
+     * # Errors
+     * [`RappBindingError`] on the wrong phase, an oversized frame, or a
+     * hello that fails verification.
      */
 open func receiveHello(bytes: Data, nowMs: UInt64)throws  -> RappPeerHello  {
     return try  FfiConverterTypeRappPeerHello_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rapppairingbridge_receive_hello(
+    uniffi_refineid_rapp_fn_method_rapppairingbridge_receive_hello(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(bytes),
         FfiConverterUInt64.lower(nowMs),uniffiCallStatus
@@ -2453,11 +2922,15 @@ open func receiveHello(bytes: Data, nowMs: UInt64)throws  -> RappPeerHello  {
     
     /**
      * Send the exact locally approved grant set.
+     *
+     * # Errors
+     * [`RappBindingError`] on the wrong phase, an invalid grant set, or a
+     * grant mismatch.
      */
 open func sendConfirmation(grantedProfiles: [String])throws  -> Data  {
     return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rapppairingbridge_send_confirmation(
+    uniffi_refineid_rapp_fn_method_rapppairingbridge_send_confirmation(
             self.uniffiCloneHandle(),
         FfiConverterSequenceString.lower(grantedProfiles),uniffiCallStatus
     )
@@ -2466,11 +2939,15 @@ open func sendConfirmation(grantedProfiles: [String])throws  -> Data  {
     
     /**
      * Send the authenticated peer label and exact negotiated-parameter echo.
+     *
+     * # Errors
+     * [`RappBindingError`] on the wrong phase or a duplicate or failed
+     * hello.
      */
 open func sendHello(displayName: String, platform: String)throws  -> Data  {
     return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rapppairingbridge_send_hello(
+    uniffi_refineid_rapp_fn_method_rapppairingbridge_send_hello(
             self.uniffiCloneHandle(),
         FfiConverterString.lower(displayName),
         FfiConverterString.lower(platform),uniffiCallStatus
@@ -2480,11 +2957,15 @@ open func sendHello(displayName: String, platform: String)throws  -> Data  {
     
     /**
      * Produce the next role-specific Noise handshake frame.
+     *
+     * # Errors
+     * [`RappBindingError`] on an expired offer, the wrong phase, or a
+     * failed handshake.
      */
 open func writeHandshakeFrame(nowMonotonicMs: UInt64)throws  -> Data  {
     return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rapppairingbridge_write_handshake_frame(
+    uniffi_refineid_rapp_fn_method_rapppairingbridge_write_handshake_frame(
             self.uniffiCloneHandle(),
         FfiConverterUInt64.lower(nowMonotonicMs),uniffiCallStatus
     )
@@ -2548,47 +3029,78 @@ public protocol RappSessionBridgeProtocol: AnyObject, Sendable {
     
     /**
      * Close only the ephemeral session while retaining the pairing.
+     *
+     * # Errors
+     * [`RappBindingError::LocalStateFailure`] when the lock is poisoned.
      */
     func closeSession() throws 
     
     /**
      * Enter exact bilateral `session.ready` authentication.
+     *
+     * # Errors
+     * [`RappBindingError`] on the wrong phase or an incomplete handshake.
      */
     func enterAuthentication() throws 
     
     /**
      * Promote the mutually authenticated channel to healthy established use.
+     *
+     * # Errors
+     * [`RappBindingError`] on the wrong phase or incomplete ready
+     * verification.
      */
     func enterEstablished() throws 
     
     /**
      * Whether the two-message Noise KK exchange has completed.
+     *
+     * # Errors
+     * [`RappBindingError::WrongPhase`] outside the handshake phase.
      */
     func handshakeComplete() throws  -> Bool
     
     /**
      * Whether exact bilateral ready verification produced a healthy session.
+     *
+     * # Errors
+     * [`RappBindingError::LocalStateFailure`] when the lock is poisoned.
      */
     func isEstablished() throws  -> Bool
     
     /**
      * Consume the next role-specific Noise KK frame.
+     *
+     * # Errors
+     * [`RappBindingError`] on the wrong phase, an oversized frame, or a
+     * failed handshake.
      */
     func readHandshakeFrame(bytes: Data) throws 
     
     /**
      * Verify the peer's exact authenticated session parameters. The first
      * attributable violation synchronously revokes device-only pair keys.
+     *
+     * # Errors
+     * [`RappBindingError`] on the wrong phase, an oversized frame, or an
+     * echo that fails verification.
      */
     func receiveReady(bytes: Data, nowMs: UInt64) throws 
     
     /**
      * Send the exact session parameters with a platform-CSPRNG nonce.
+     *
+     * # Errors
+     * [`RappBindingError`] on a wrong-size nonce, the wrong phase, or a
+     * duplicate or failed ready.
      */
     func sendReady(nonce: Data) throws  -> Data
     
     /**
      * Produce the next role-specific Noise KK frame.
+     *
+     * # Errors
+     * [`RappBindingError`] on the wrong phase or a failed handshake.
      */
     func writeHandshakeFrame() throws  -> Data
     
@@ -2633,7 +3145,7 @@ open class RappSessionBridge: RappSessionBridgeProtocol, @unchecked Sendable {
     @_documentation(visibility: private)
 #endif
     public func uniffiCloneHandle() -> UInt64 {
-        return try! rustCall { uniffi_refineid_lib_core_fn_clone_rappsessionbridge(self.handle, $0) }
+        return try! rustCall { uniffi_refineid_rapp_fn_clone_rappsessionbridge(self.handle, $0) }
     }
     // No primary constructor declared for this class.
 
@@ -2643,17 +3155,21 @@ open class RappSessionBridge: RappSessionBridgeProtocol, @unchecked Sendable {
             return
         }
 
-        try! rustCall { uniffi_refineid_lib_core_fn_free_rappsessionbridge(handle, $0) }
+        try! rustCall { uniffi_refineid_rapp_fn_free_rappsessionbridge(handle, $0) }
     }
 
     
     /**
      * Begin the proxy response to one incoming transport candidate.
+     *
+     * # Errors
+     * [`RappBindingError`] on a revoked or absent pair, a role mismatch, or
+     * a handshake-construction failure.
      */
 public static func beginProxy(pair: RappPairRecord, vault: RappPairVault)throws  -> RappSessionBridge  {
     return try  FfiConverterTypeRappSessionBridge_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_constructor_rappsessionbridge_begin_proxy(
+    uniffi_refineid_rapp_fn_constructor_rappsessionbridge_begin_proxy(
         FfiConverterTypeRappPairRecord_lower(pair),
         FfiConverterTypeRappPairVault_lower(vault),uniffiCallStatus
     )
@@ -2662,11 +3178,15 @@ public static func beginProxy(pair: RappPairRecord, vault: RappPairVault)throws 
     
     /**
      * Begin a requester session only after a fresh local user action.
+     *
+     * # Errors
+     * [`RappBindingError`] on a revoked or absent pair, a role mismatch, or
+     * a handshake-construction failure.
      */
 public static func beginRequester(pair: RappPairRecord, vault: RappPairVault)throws  -> RappSessionBridge  {
     return try  FfiConverterTypeRappSessionBridge_lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_constructor_rappsessionbridge_begin_requester(
+    uniffi_refineid_rapp_fn_constructor_rappsessionbridge_begin_requester(
         FfiConverterTypeRappPairRecord_lower(pair),
         FfiConverterTypeRappPairVault_lower(vault),uniffiCallStatus
     )
@@ -2677,10 +3197,13 @@ public static func beginRequester(pair: RappPairRecord, vault: RappPairVault)thr
     
     /**
      * Close only the ephemeral session while retaining the pairing.
+     *
+     * # Errors
+     * [`RappBindingError::LocalStateFailure`] when the lock is poisoned.
      */
 open func closeSession()throws   {try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappsessionbridge_close_session(
+    uniffi_refineid_rapp_fn_method_rappsessionbridge_close_session(
             self.uniffiCloneHandle(),uniffiCallStatus
     )
 }
@@ -2688,10 +3211,13 @@ open func closeSession()throws   {try rustCallWithError(FfiConverterTypeRappBind
     
     /**
      * Enter exact bilateral `session.ready` authentication.
+     *
+     * # Errors
+     * [`RappBindingError`] on the wrong phase or an incomplete handshake.
      */
 open func enterAuthentication()throws   {try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappsessionbridge_enter_authentication(
+    uniffi_refineid_rapp_fn_method_rappsessionbridge_enter_authentication(
             self.uniffiCloneHandle(),uniffiCallStatus
     )
 }
@@ -2699,10 +3225,14 @@ open func enterAuthentication()throws   {try rustCallWithError(FfiConverterTypeR
     
     /**
      * Promote the mutually authenticated channel to healthy established use.
+     *
+     * # Errors
+     * [`RappBindingError`] on the wrong phase or incomplete ready
+     * verification.
      */
 open func enterEstablished()throws   {try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappsessionbridge_enter_established(
+    uniffi_refineid_rapp_fn_method_rappsessionbridge_enter_established(
             self.uniffiCloneHandle(),uniffiCallStatus
     )
 }
@@ -2710,11 +3240,14 @@ open func enterEstablished()throws   {try rustCallWithError(FfiConverterTypeRapp
     
     /**
      * Whether the two-message Noise KK exchange has completed.
+     *
+     * # Errors
+     * [`RappBindingError::WrongPhase`] outside the handshake phase.
      */
 open func handshakeComplete()throws  -> Bool  {
     return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappsessionbridge_handshake_complete(
+    uniffi_refineid_rapp_fn_method_rappsessionbridge_handshake_complete(
             self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
@@ -2722,11 +3255,14 @@ open func handshakeComplete()throws  -> Bool  {
     
     /**
      * Whether exact bilateral ready verification produced a healthy session.
+     *
+     * # Errors
+     * [`RappBindingError::LocalStateFailure`] when the lock is poisoned.
      */
 open func isEstablished()throws  -> Bool  {
     return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappsessionbridge_is_established(
+    uniffi_refineid_rapp_fn_method_rappsessionbridge_is_established(
             self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
@@ -2734,10 +3270,14 @@ open func isEstablished()throws  -> Bool  {
     
     /**
      * Consume the next role-specific Noise KK frame.
+     *
+     * # Errors
+     * [`RappBindingError`] on the wrong phase, an oversized frame, or a
+     * failed handshake.
      */
 open func readHandshakeFrame(bytes: Data)throws   {try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappsessionbridge_read_handshake_frame(
+    uniffi_refineid_rapp_fn_method_rappsessionbridge_read_handshake_frame(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(bytes),uniffiCallStatus
     )
@@ -2747,10 +3287,14 @@ open func readHandshakeFrame(bytes: Data)throws   {try rustCallWithError(FfiConv
     /**
      * Verify the peer's exact authenticated session parameters. The first
      * attributable violation synchronously revokes device-only pair keys.
+     *
+     * # Errors
+     * [`RappBindingError`] on the wrong phase, an oversized frame, or an
+     * echo that fails verification.
      */
 open func receiveReady(bytes: Data, nowMs: UInt64)throws   {try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappsessionbridge_receive_ready(
+    uniffi_refineid_rapp_fn_method_rappsessionbridge_receive_ready(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(bytes),
         FfiConverterUInt64.lower(nowMs),uniffiCallStatus
@@ -2760,11 +3304,15 @@ open func receiveReady(bytes: Data, nowMs: UInt64)throws   {try rustCallWithErro
     
     /**
      * Send the exact session parameters with a platform-CSPRNG nonce.
+     *
+     * # Errors
+     * [`RappBindingError`] on a wrong-size nonce, the wrong phase, or a
+     * duplicate or failed ready.
      */
 open func sendReady(nonce: Data)throws  -> Data  {
     return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappsessionbridge_send_ready(
+    uniffi_refineid_rapp_fn_method_rappsessionbridge_send_ready(
             self.uniffiCloneHandle(),
         FfiConverterData.lower(nonce),uniffiCallStatus
     )
@@ -2773,11 +3321,14 @@ open func sendReady(nonce: Data)throws  -> Data  {
     
     /**
      * Produce the next role-specific Noise KK frame.
+     *
+     * # Errors
+     * [`RappBindingError`] on the wrong phase or a failed handshake.
      */
 open func writeHandshakeFrame()throws  -> Data  {
     return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_method_rappsessionbridge_write_handshake_frame(
+    uniffi_refineid_rapp_fn_method_rappsessionbridge_write_handshake_frame(
             self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
@@ -2836,18 +3387,66 @@ public func FfiConverterTypeRappSessionBridge_lower(_ value: RappSessionBridge) 
  * opaque ciphertext. Operation data is a closed semantic descriptor.
  */
 public struct RappBridgeAction: Equatable, Hashable {
+    /**
+     * Bounded action to execute.
+     */
     public let kind: RappBridgeActionKind
+    /**
+     * Referenced operation identifier bytes.
+     */
     public let operationId: Data?
+    /**
+     * Closed semantic descriptor of the operation.
+     */
     public let operation: RappOperationDescriptor?
+    /**
+     * Opaque encrypted frame for the transport.
+     */
     public let frame: Data?
+    /**
+     * Journaled terminal state name.
+     */
     public let terminalState: String?
+    /**
+     * Stable terminal reason.
+     */
     public let terminalReason: RappTerminalReason?
+    /**
+     * The session must close after this frame is delivered.
+     */
     public let closeSessionAfterSend: Bool
+    /**
+     * Monotonic time of the next required liveness poll.
+     */
     public let nextPollAtMs: UInt64?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(kind: RappBridgeActionKind, operationId: Data?, operation: RappOperationDescriptor?, frame: Data?, terminalState: String?, terminalReason: RappTerminalReason?, closeSessionAfterSend: Bool, nextPollAtMs: UInt64?) {
+    public init(
+        /**
+         * Bounded action to execute.
+         */kind: RappBridgeActionKind, 
+        /**
+         * Referenced operation identifier bytes.
+         */operationId: Data?, 
+        /**
+         * Closed semantic descriptor of the operation.
+         */operation: RappOperationDescriptor?, 
+        /**
+         * Opaque encrypted frame for the transport.
+         */frame: Data?, 
+        /**
+         * Journaled terminal state name.
+         */terminalState: String?, 
+        /**
+         * Stable terminal reason.
+         */terminalReason: RappTerminalReason?, 
+        /**
+         * The session must close after this frame is delivered.
+         */closeSessionAfterSend: Bool, 
+        /**
+         * Monotonic time of the next required liveness poll.
+         */nextPollAtMs: UInt64?) {
         self.kind = kind
         self.operationId = operationId
         self.operation = operation
@@ -2917,15 +3516,45 @@ public func FfiConverterTypeRappBridgeAction_lower(_ value: RappBridgeAction) ->
  * Injected monotonic liveness policy without hidden timing constants.
  */
 public struct RappLivenessConfiguration: Equatable, Hashable {
+    /**
+     * Interval between probes while healthy.
+     */
     public let baseIntervalMs: UInt64
+    /**
+     * Deadline for the exact challenge echo.
+     */
     public let responseTimeoutMs: UInt64
+    /**
+     * Upper bound of the backoff interval.
+     */
     public let maximumIntervalMs: UInt64
+    /**
+     * Upper bound of caller-generated jitter.
+     */
     public let maximumJitterMs: UInt64
+    /**
+     * Consecutive misses closing the session.
+     */
     public let maximumMisses: UInt8
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(baseIntervalMs: UInt64, responseTimeoutMs: UInt64, maximumIntervalMs: UInt64, maximumJitterMs: UInt64, maximumMisses: UInt8) {
+    public init(
+        /**
+         * Interval between probes while healthy.
+         */baseIntervalMs: UInt64, 
+        /**
+         * Deadline for the exact challenge echo.
+         */responseTimeoutMs: UInt64, 
+        /**
+         * Upper bound of the backoff interval.
+         */maximumIntervalMs: UInt64, 
+        /**
+         * Upper bound of caller-generated jitter.
+         */maximumJitterMs: UInt64, 
+        /**
+         * Consecutive misses closing the session.
+         */maximumMisses: UInt8) {
         self.baseIntervalMs = baseIntervalMs
         self.responseTimeoutMs = responseTimeoutMs
         self.maximumIntervalMs = maximumIntervalMs
@@ -2983,18 +3612,129 @@ public func FfiConverterTypeRappLivenessConfiguration_lower(_ value: RappLivenes
 
 
 /**
+ * One transport candidate of a live offer, for proxy-side selection.
+ */
+public struct RappOfferCandidate: Equatable, Hashable {
+    /**
+     * Registered transport profile.
+     */
+    public let profile: String
+    /**
+     * Opaque identifier echoed after peer authentication.
+     */
+    public let candidateId: String
+    /**
+     * Decoded listener endpoints of a stream candidate; absent on other
+     * profiles.
+     */
+    public let streamEndpoints: [String]?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * Registered transport profile.
+         */profile: String, 
+        /**
+         * Opaque identifier echoed after peer authentication.
+         */candidateId: String, 
+        /**
+         * Decoded listener endpoints of a stream candidate; absent on other
+         * profiles.
+         */streamEndpoints: [String]?) {
+        self.profile = profile
+        self.candidateId = candidateId
+        self.streamEndpoints = streamEndpoints
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension RappOfferCandidate: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeRappOfferCandidate: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RappOfferCandidate {
+        return
+            try RappOfferCandidate(
+                profile: FfiConverterString.read(from: &buf), 
+                candidateId: FfiConverterString.read(from: &buf), 
+                streamEndpoints: FfiConverterOptionSequenceString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: RappOfferCandidate, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.profile, into: &buf)
+        FfiConverterString.write(value.candidateId, into: &buf)
+        FfiConverterOptionSequenceString.write(value.streamEndpoints, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeRappOfferCandidate_lift(_ buf: RustBuffer) throws -> RappOfferCandidate {
+    return try FfiConverterTypeRappOfferCandidate.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeRappOfferCandidate_lower(_ value: RappOfferCandidate) -> RustBuffer {
+    return FfiConverterTypeRappOfferCandidate.lower(value)
+}
+
+
+/**
  * Exact user-visible or card-adapter operation, without local credentials.
  */
 public struct RappOperationDescriptor: Equatable, Hashable {
+    /**
+     * Registered operation name.
+     */
     public let kind: RappOperationKind
+    /**
+     * Requester-asserted origin or document name shown to the authorizer.
+     */
     public let displayContext: String?
+    /**
+     * Expected key profile of the selected certificate.
+     */
     public let keyProfile: RappCardKeyProfile?
+    /**
+     * Exact signature algorithm.
+     */
     public let algorithm: RappSignatureAlgorithm?
+    /**
+     * Already-hashed input of the registered length.
+     */
     public let digest: Data
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(kind: RappOperationKind, displayContext: String?, keyProfile: RappCardKeyProfile?, algorithm: RappSignatureAlgorithm?, digest: Data) {
+    public init(
+        /**
+         * Registered operation name.
+         */kind: RappOperationKind, 
+        /**
+         * Requester-asserted origin or document name shown to the authorizer.
+         */displayContext: String?, 
+        /**
+         * Expected key profile of the selected certificate.
+         */keyProfile: RappCardKeyProfile?, 
+        /**
+         * Exact signature algorithm.
+         */algorithm: RappSignatureAlgorithm?, 
+        /**
+         * Already-hashed input of the registered length.
+         */digest: Data) {
         self.kind = kind
         self.displayContext = displayContext
         self.keyProfile = keyProfile
@@ -3051,20 +3791,77 @@ public func FfiConverterTypeRappOperationDescriptor_lower(_ value: RappOperation
 }
 
 
+/**
+ * Profile-defined result body in a stable generated-binding shape.
+ */
 public struct RappOperationResult: Equatable, Hashable {
+    /**
+     * Registered result shape.
+     */
     public let kind: RappResultKind
+    /**
+     * Whether PIN 1 is still in factory state.
+     */
     public let pin1Factory: Bool?
+    /**
+     * Whether PIN 2 is still in factory state.
+     */
     public let pin2Factory: Bool?
+    /**
+     * Remaining PIN 1 try counter.
+     */
     public let pin1Attempts: UInt8?
+    /**
+     * Remaining PIN 2 try counter.
+     */
     public let pin2Attempts: UInt8?
+    /**
+     * Remaining PUK try counter.
+     */
     public let pukAttempts: UInt8?
+    /**
+     * Cardholder display name.
+     */
     public let displayName: String?
+    /**
+     * Cardholder person identifier.
+     */
     public let personId: String?
+    /**
+     * Certificate or signature bytes.
+     */
     public let bytes: Data
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(kind: RappResultKind, pin1Factory: Bool?, pin2Factory: Bool?, pin1Attempts: UInt8?, pin2Attempts: UInt8?, pukAttempts: UInt8?, displayName: String?, personId: String?, bytes: Data) {
+    public init(
+        /**
+         * Registered result shape.
+         */kind: RappResultKind, 
+        /**
+         * Whether PIN 1 is still in factory state.
+         */pin1Factory: Bool?, 
+        /**
+         * Whether PIN 2 is still in factory state.
+         */pin2Factory: Bool?, 
+        /**
+         * Remaining PIN 1 try counter.
+         */pin1Attempts: UInt8?, 
+        /**
+         * Remaining PIN 2 try counter.
+         */pin2Attempts: UInt8?, 
+        /**
+         * Remaining PUK try counter.
+         */pukAttempts: UInt8?, 
+        /**
+         * Cardholder display name.
+         */displayName: String?, 
+        /**
+         * Cardholder person identifier.
+         */personId: String?, 
+        /**
+         * Certificate or signature bytes.
+         */bytes: Data) {
         self.kind = kind
         self.pin1Factory = pin1Factory
         self.pin2Factory = pin2Factory
@@ -3158,6 +3955,14 @@ public struct RappPairMetadata: Equatable, Hashable {
      */
     public let candidateId: String
     /**
+     * Pair-specific transport rendezvous token bytes.
+     */
+    public let rendezvousToken: Data
+    /**
+     * Stored stream-profile listener endpoints; absent on other transports.
+     */
+    public let streamEndpoints: [String]?
+    /**
      * Pair-record creation time supplied by the platform wall clock.
      */
     public let createdAtMs: UInt64
@@ -3181,6 +3986,12 @@ public struct RappPairMetadata: Equatable, Hashable {
          * Bound candidate identifier.
          */candidateId: String, 
         /**
+         * Pair-specific transport rendezvous token bytes.
+         */rendezvousToken: Data, 
+        /**
+         * Stored stream-profile listener endpoints; absent on other transports.
+         */streamEndpoints: [String]?, 
+        /**
          * Pair-record creation time supplied by the platform wall clock.
          */createdAtMs: UInt64) {
         self.pairId = pairId
@@ -3188,6 +3999,8 @@ public struct RappPairMetadata: Equatable, Hashable {
         self.profiles = profiles
         self.transportProfile = transportProfile
         self.candidateId = candidateId
+        self.rendezvousToken = rendezvousToken
+        self.streamEndpoints = streamEndpoints
         self.createdAtMs = createdAtMs
     }
 
@@ -3212,6 +4025,8 @@ public struct FfiConverterTypeRappPairMetadata: FfiConverterRustBuffer {
                 profiles: FfiConverterSequenceString.read(from: &buf), 
                 transportProfile: FfiConverterString.read(from: &buf), 
                 candidateId: FfiConverterString.read(from: &buf), 
+                rendezvousToken: FfiConverterData.read(from: &buf), 
+                streamEndpoints: FfiConverterOptionSequenceString.read(from: &buf), 
                 createdAtMs: FfiConverterUInt64.read(from: &buf)
         )
     }
@@ -3222,6 +4037,8 @@ public struct FfiConverterTypeRappPairMetadata: FfiConverterRustBuffer {
         FfiConverterSequenceString.write(value.profiles, into: &buf)
         FfiConverterString.write(value.transportProfile, into: &buf)
         FfiConverterString.write(value.candidateId, into: &buf)
+        FfiConverterData.write(value.rendezvousToken, into: &buf)
+        FfiConverterOptionSequenceString.write(value.streamEndpoints, into: &buf)
         FfiConverterUInt64.write(value.createdAtMs, into: &buf)
     }
 }
@@ -3325,15 +4142,45 @@ public func FfiConverterTypeRappPeerHello_lower(_ value: RappPeerHello) -> RustB
  * Exact platform-CSPRNG byte counts required by generated bindings.
  */
 public struct RappRandomByteCounts: Equatable, Hashable {
+    /**
+     * Offer identifier length in bytes.
+     */
     public let offerId: UInt64
+    /**
+     * Pairing secret length in bytes.
+     */
     public let pairingSecret: UInt64
+    /**
+     * Session-ready nonce length in bytes.
+     */
     public let sessionReadyNonce: UInt64
+    /**
+     * Operation identifier length in bytes.
+     */
     public let operationId: UInt64
+    /**
+     * Liveness challenge length in bytes.
+     */
     public let livenessChallenge: UInt64
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(offerId: UInt64, pairingSecret: UInt64, sessionReadyNonce: UInt64, operationId: UInt64, livenessChallenge: UInt64) {
+    public init(
+        /**
+         * Offer identifier length in bytes.
+         */offerId: UInt64, 
+        /**
+         * Pairing secret length in bytes.
+         */pairingSecret: UInt64, 
+        /**
+         * Session-ready nonce length in bytes.
+         */sessionReadyNonce: UInt64, 
+        /**
+         * Operation identifier length in bytes.
+         */operationId: UInt64, 
+        /**
+         * Liveness challenge length in bytes.
+         */livenessChallenge: UInt64) {
         self.offerId = offerId
         self.pairingSecret = pairingSecret
         self.sessionReadyNonce = sessionReadyNonce
@@ -3669,22 +4516,73 @@ public func FfiConverterTypeRappBindingError_lower(_ value: RappBindingError) ->
 
 public enum RappBridgeActionKind: Equatable, Hashable {
     
+    /**
+     * Deliver one opaque encrypted frame to the transport.
+     */
     case sendFrame
+    /**
+     * Perform the profile's safe prerequisite inspection.
+     */
     case inspectPrerequisites
+    /**
+     * Present the descriptor and wait for the human authorizer.
+     */
     case awaitUserApproval
+    /**
+     * Execute the described safe read; no consequential command.
+     */
     case executeSafeRead
+    /**
+     * Execute the single authorized card command.
+     */
     case executeCardCommand
+    /**
+     * Frame carrying the acknowledgment of a completed result.
+     */
     case resultAcknowledgment
+    /**
+     * Operation reached its completed terminal state.
+     */
     case completed
+    /**
+     * Operation reached the named terminal state.
+     */
     case terminal
+    /**
+     * Operation was safely cancelled.
+     */
     case cancelled
+    /**
+     * Post-commit cancel recorded; the operation continues.
+     */
     case advisoryCancellation
+    /**
+     * Peer acknowledged the completed result.
+     */
     case resultAcknowledged
+    /**
+     * Peer already serves a live session for this pairing.
+     */
     case peerBusy
+    /**
+     * Peer answered a stale reference; a normal race.
+     */
     case peerUnknownOperation
+    /**
+     * Duplicate commit matching the committed hash was discarded.
+     */
     case ignoredDuplicate
+    /**
+     * Nothing to execute.
+     */
     case noAction
+    /**
+     * Session closed; the pairing remains stored.
+     */
     case sessionClosed
+    /**
+     * Pairing was revoked and its keys destroyed.
+     */
     case pairRevoked
 
 
@@ -3843,9 +4741,21 @@ public func FfiConverterTypeRappBridgeActionKind_lower(_ value: RappBridgeAction
 
 public enum RappCardKeyProfile: Equatable, Hashable {
     
+    /**
+     * ECDSA P-256 key.
+     */
     case ecdsaP256
+    /**
+     * ECDSA P-384 key.
+     */
     case ecdsaP384
+    /**
+     * RSA 2048-bit key.
+     */
     case rsa2048
+    /**
+     * RSA 3072-bit key.
+     */
     case rsa3072
 
 
@@ -4001,11 +4911,29 @@ public func FfiConverterTypeRappEndpointRole_lower(_ value: RappEndpointRole) ->
 
 public enum RappOperationKind: Equatable, Hashable {
     
+    /**
+     * Inspect supported card and retry state; no consequential command.
+     */
     case inspectCard
+    /**
+     * Read the cardholder identity; no consequential command.
+     */
     case readIdentity
+    /**
+     * Read the authentication certificate; a safe read.
+     */
     case readAuthenticationCertificate
+    /**
+     * Read the signature certificate; a safe read.
+     */
     case readSignatureCertificate
+    /**
+     * PIN 1 verify and private-key operation over a hashed challenge.
+     */
     case browserAuthenticate
+    /**
+     * PIN 2 verify and private-key operation over a document digest.
+     */
     case signDocument
 
 
@@ -4098,9 +5026,21 @@ public func FfiConverterTypeRappOperationKind_lower(_ value: RappOperationKind) 
 
 public enum RappResultKind: Equatable, Hashable {
     
+    /**
+     * Card and retry-state inspection.
+     */
     case inspection
+    /**
+     * Cardholder identity read.
+     */
     case identity
+    /**
+     * Certificate read.
+     */
     case certificate
+    /**
+     * Private-key signature.
+     */
     case signature
 
 
@@ -4181,13 +5121,37 @@ public func FfiConverterTypeRappResultKind_lower(_ value: RappResultKind) -> Rus
 
 public enum RappSignatureAlgorithm: Equatable, Hashable {
     
+    /**
+     * ECDSA over a 28-byte SHA-224 digest.
+     */
     case ecdsaSha224
+    /**
+     * ECDSA over a 32-byte SHA-256 digest.
+     */
     case ecdsaSha256
+    /**
+     * ECDSA over a 48-byte SHA-384 digest.
+     */
     case ecdsaSha384
+    /**
+     * ECDSA over a 64-byte SHA-512 digest.
+     */
     case ecdsaSha512
+    /**
+     * RSA PKCS#1 v1.5 over a 32-byte SHA-256 digest.
+     */
     case rsaPkcs1Sha256
+    /**
+     * RSA PKCS#1 v1.5 over a 48-byte SHA-384 digest.
+     */
     case rsaPkcs1Sha384
+    /**
+     * RSA PKCS#1 v1.5 over a 64-byte SHA-512 digest.
+     */
     case rsaPkcs1Sha512
+    /**
+     * RSA PSS over a 32-byte SHA-256 digest.
+     */
     case rsaPssSha256
 
 
@@ -4292,13 +5256,37 @@ public func FfiConverterTypeRappSignatureAlgorithm_lower(_ value: RappSignatureA
 
 public enum RappTerminalReason: Equatable, Hashable {
     
+    /**
+     * Human authorizer denied the operation.
+     */
     case userDenied
+    /**
+     * Local monotonic request expiry elapsed.
+     */
     case requestExpired
+    /**
+     * Cancellation proven before physical transmission.
+     */
     case cancelled
+    /**
+     * Request failed validation or is unsupported.
+     */
     case requestInvalidOrUnsupported
+    /**
+     * Fewer than three attempts remained on the decrementable counter.
+     */
     case retryPolicyRefused
+    /**
+     * Card rejected the CAN, PIN 1, or PIN 2.
+     */
     case credentialRejected
+    /**
+     * Card left before transmission provably began.
+     */
     case cardRemovedBeforeTransmit
+    /**
+     * Card completion cannot be proven; retry forbidden.
+     */
     case cardCompletionAmbiguous
 
 
@@ -4784,6 +5772,31 @@ fileprivate struct FfiConverterSequenceData: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterSequenceTypeRappOfferCandidate: FfiConverterRustBuffer {
+    typealias SwiftType = [RappOfferCandidate]
+
+    public static func write(_ value: [RappOfferCandidate], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeRappOfferCandidate.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [RappOfferCandidate] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [RappOfferCandidate]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeRappOfferCandidate.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeRappStoredProxyJournal: FfiConverterRustBuffer {
     typealias SwiftType = [RappStoredProxyJournal]
 
@@ -4830,10 +5843,49 @@ fileprivate struct FfiConverterSequenceTypeRappTransportCandidate: FfiConverterR
         return seq
     }
 }
+/**
+ * Exact byte counts the platform CSPRNG must supply.
+ */
 public func rappRandomByteCounts() -> RappRandomByteCounts  {
     return try!  FfiConverterTypeRappRandomByteCounts_lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_refineid_lib_core_fn_func_rapp_random_byte_counts(uniffiCallStatus
+    uniffi_refineid_rapp_fn_func_rapp_random_byte_counts(uniffiCallStatus
+    )
+})
+}
+/**
+ * Preamble frame payload the dialing proxy sends to reach the listener's
+ * active pairing offer on the stream profile.
+ */
+public func rappStreamPairingPreamble() -> Data  {
+    return try!  FfiConverterData.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_refineid_rapp_fn_func_rapp_stream_pairing_preamble(uniffiCallStatus
+    )
+})
+}
+/**
+ * Registered stream transport profile name.
+ */
+public func rappStreamProfileName() -> String  {
+    return try!  FfiConverterString.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_refineid_rapp_fn_func_rapp_stream_profile_name(uniffiCallStatus
+    )
+})
+}
+/**
+ * Preamble frame payload the dialing proxy sends to open a fresh session
+ * for the stored pairing this rendezvous token names.
+ *
+ * # Errors
+ * [`RappBindingError`] on a wrong-size token or an encoding failure.
+ */
+public func rappStreamSessionPreamble(rendezvousToken: Data)throws  -> Data  {
+    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeRappBindingError_lift) {
+        uniffiCallStatus in
+    uniffi_refineid_rapp_fn_func_rapp_stream_session_preamble(
+        FfiConverterData.lower(rendezvousToken),uniffiCallStatus
     )
 })
 }
@@ -4849,206 +5901,218 @@ private let initializationResult: InitializationResult = {
     // Get the bindings contract version from our ComponentInterface
     let bindings_contract_version = 30
     // Get the scaffolding contract version by calling the into the dylib
-    let scaffolding_contract_version = ffi_refineid_lib_core_uniffi_contract_version()
+    let scaffolding_contract_version = ffi_refineid_rapp_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_func_rapp_random_byte_counts() != 10746) {
+    if (uniffi_refineid_rapp_checksum_func_rapp_random_byte_counts() != 14631) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairrecord_metadata() != 14496) {
+    if (uniffi_refineid_rapp_checksum_func_rapp_stream_pairing_preamble() != 30680) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairrecord_persist_device_only() != 17254) {
+    if (uniffi_refineid_rapp_checksum_func_rapp_stream_profile_name() != 9609) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairrecord_revoke() != 15684) {
+    if (uniffi_refineid_rapp_checksum_func_rapp_stream_session_preamble() != 60342) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairvault_insert_device_only() != 24656) {
+    if (uniffi_refineid_rapp_checksum_method_rapppairrecord_metadata() != 57069) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairvault_load_device_only() != 54005) {
+    if (uniffi_refineid_rapp_checksum_method_rapppairrecord_persist_device_only() != 31465) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairvault_revoke_device_only() != 37013) {
+    if (uniffi_refineid_rapp_checksum_method_rapppairrecord_revoke() != 17792) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairvault_is_revoked() != 41694) {
+    if (uniffi_refineid_rapp_checksum_method_rapppairvault_insert_device_only() != 62435) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_begin() != 2219) {
+    if (uniffi_refineid_rapp_checksum_method_rapppairvault_load_device_only() != 30784) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_cancel_pairing() != 23462) {
+    if (uniffi_refineid_rapp_checksum_method_rapppairvault_revoke_device_only() != 59789) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_candidate_failed() != 37327) {
+    if (uniffi_refineid_rapp_checksum_method_rapppairvault_is_revoked() != 15813) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_enter_confirmation() != 5160) {
+    if (uniffi_refineid_rapp_checksum_method_rapppairingbridge_begin() != 23678) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_finish_pairing() != 19094) {
+    if (uniffi_refineid_rapp_checksum_method_rapppairingbridge_cancel_pairing() != 15880) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_handshake_complete() != 55854) {
+    if (uniffi_refineid_rapp_checksum_method_rapppairingbridge_candidate_failed() != 1658) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_offer_ttl_ms() != 8360) {
+    if (uniffi_refineid_rapp_checksum_method_rapppairingbridge_enter_confirmation() != 38289) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_offer_uri() != 13984) {
+    if (uniffi_refineid_rapp_checksum_method_rapppairingbridge_finish_pairing() != 57505) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_read_handshake_frame() != 12904) {
+    if (uniffi_refineid_rapp_checksum_method_rapppairingbridge_handshake_complete() != 4080) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_receive_confirmation() != 11525) {
+    if (uniffi_refineid_rapp_checksum_method_rapppairingbridge_offer_candidates() != 45895) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_receive_hello() != 60731) {
+    if (uniffi_refineid_rapp_checksum_method_rapppairingbridge_offer_ttl_ms() != 506) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_send_confirmation() != 64106) {
+    if (uniffi_refineid_rapp_checksum_method_rapppairingbridge_offer_uri() != 41467) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_send_hello() != 9213) {
+    if (uniffi_refineid_rapp_checksum_method_rapppairingbridge_read_handshake_frame() != 92) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rapppairingbridge_write_handshake_frame() != 24873) {
+    if (uniffi_refineid_rapp_checksum_method_rapppairingbridge_receive_confirmation() != 58595) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappsessionbridge_close_session() != 9462) {
+    if (uniffi_refineid_rapp_checksum_method_rapppairingbridge_receive_hello() != 18787) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappsessionbridge_enter_authentication() != 51207) {
+    if (uniffi_refineid_rapp_checksum_method_rapppairingbridge_send_confirmation() != 8730) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappsessionbridge_enter_established() != 15511) {
+    if (uniffi_refineid_rapp_checksum_method_rapppairingbridge_send_hello() != 32612) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappsessionbridge_handshake_complete() != 55729) {
+    if (uniffi_refineid_rapp_checksum_method_rapppairingbridge_write_handshake_frame() != 42392) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappsessionbridge_is_established() != 10180) {
+    if (uniffi_refineid_rapp_checksum_method_rappsessionbridge_close_session() != 58067) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappsessionbridge_read_handshake_frame() != 65373) {
+    if (uniffi_refineid_rapp_checksum_method_rappsessionbridge_enter_authentication() != 55747) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappsessionbridge_receive_ready() != 25647) {
+    if (uniffi_refineid_rapp_checksum_method_rappsessionbridge_enter_established() != 50692) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappsessionbridge_send_ready() != 32236) {
+    if (uniffi_refineid_rapp_checksum_method_rappsessionbridge_handshake_complete() != 14073) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappsessionbridge_write_handshake_frame() != 9632) {
+    if (uniffi_refineid_rapp_checksum_method_rappsessionbridge_is_established() != 37189) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationvault_persist_requester() != 14625) {
+    if (uniffi_refineid_rapp_checksum_method_rappsessionbridge_read_handshake_frame() != 12243) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationvault_load_requester() != 28314) {
+    if (uniffi_refineid_rapp_checksum_method_rappsessionbridge_receive_ready() != 249) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationvault_persist_proxy() != 2626) {
+    if (uniffi_refineid_rapp_checksum_method_rappsessionbridge_send_ready() != 14196) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationvault_persist_proxy_result() != 19471) {
+    if (uniffi_refineid_rapp_checksum_method_rappsessionbridge_write_handshake_frame() != 55438) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationvault_retain_proxy_uncertain() != 38903) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationvault_persist_requester() != 30980) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationvault_acknowledge_proxy_result() != 64807) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationvault_load_requester() != 3494) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationvault_load_proxy() != 40667) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationvault_persist_proxy() != 1251) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationbridge_acknowledgment_released() != 65211) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationvault_persist_proxy_result() != 58045) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationbridge_approve() != 43256) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationvault_retain_proxy_uncertain() != 45358) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationbridge_begin_browser_authentication() != 34434) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationvault_acknowledge_proxy_result() != 41305) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationbridge_begin_inspect_card() != 2549) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationvault_load_proxy() != 14620) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationbridge_begin_read_certificate() != 33162) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationbridge_acknowledgment_released() != 44738) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationbridge_begin_read_identity() != 58778) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationbridge_approve() != 64237) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationbridge_begin_sign_document() != 38707) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationbridge_begin_browser_authentication() != 37500) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationbridge_card_completion_ambiguous() != 26697) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationbridge_begin_inspect_card() != 48416) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationbridge_card_removed_before_transmit() != 21925) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationbridge_begin_read_certificate() != 34989) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationbridge_close_session() != 22127) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationbridge_begin_read_identity() != 41515) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationbridge_complete_certificate() != 12808) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationbridge_begin_sign_document() != 24644) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationbridge_complete_identity() != 17398) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationbridge_card_completion_ambiguous() != 56318) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationbridge_complete_inspection() != 51947) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationbridge_card_removed_before_transmit() != 48350) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationbridge_complete_signature() != 25450) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationbridge_close_session() != 52949) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationbridge_credential_rejected() != 32888) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationbridge_complete_certificate() != 2527) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationbridge_deny() != 10390) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationbridge_complete_identity() != 7297) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationbridge_poll_liveness() != 8856) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationbridge_complete_inspection() != 28740) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationbridge_prerequisites_complete() != 29106) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationbridge_complete_signature() != 20102) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationbridge_receive_frame() != 28241) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationbridge_credential_rejected() != 41465) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationbridge_request_invalid_or_unsupported() != 6313) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationbridge_deny() != 32796) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_method_rappoperationbridge_retry_refused() != 7042) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationbridge_poll_liveness() != 65389) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_constructor_rapppairrecord_load_from_vault() != 18897) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationbridge_prerequisites_complete() != 12502) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_constructor_rapppairingbridge_create_requester_offer() != 15284) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationbridge_receive_frame() != 38009) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_constructor_rapppairingbridge_from_scanned_offer() != 30524) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationbridge_request_invalid_or_unsupported() != 52144) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_constructor_rappsessionbridge_begin_proxy() != 20846) {
+    if (uniffi_refineid_rapp_checksum_method_rappoperationbridge_retry_refused() != 39828) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_constructor_rappsessionbridge_begin_requester() != 19232) {
+    if (uniffi_refineid_rapp_checksum_constructor_rapppairrecord_load_from_vault() != 50878) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_constructor_rappoperationbridge_begin_proxy() != 23479) {
+    if (uniffi_refineid_rapp_checksum_constructor_rapppairingbridge_create_requester_offer() != 42853) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_refineid_lib_core_checksum_constructor_rappoperationbridge_begin_requester() != 43592) {
+    if (uniffi_refineid_rapp_checksum_constructor_rapppairingbridge_from_scanned_offer() != 57209) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_refineid_rapp_checksum_constructor_rappsessionbridge_begin_proxy() != 46788) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_refineid_rapp_checksum_constructor_rappsessionbridge_begin_requester() != 60310) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_refineid_rapp_checksum_constructor_rappoperationbridge_begin_proxy() != 58931) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_refineid_rapp_checksum_constructor_rappoperationbridge_begin_requester() != 55835) {
         return InitializationResult.apiChecksumMismatch
     }
 
@@ -5059,7 +6123,7 @@ private let initializationResult: InitializationResult = {
 
 // Make the ensure init function public so that other modules which have external type references to
 // our types can call it.
-public func uniffiEnsureRefineidLibCoreInitialized() {
+public func uniffiEnsureRefineidRappInitialized() {
     switch initializationResult {
     case .ok:
         break
