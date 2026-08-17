@@ -1134,7 +1134,10 @@ private func releaseEnsureIOSProfiles(
         "GET",
         "/v1/profiles?filter[profileType]=IOS_APP_STORE&include=bundleId"
             + "&fields[bundleIds]=identifier"
-            + "&fields[profiles]=name,uuid,profileState,profileContent&limit=200",
+            // bundleId must be listed as a field: naming any fields
+            // strips every relationship that is not named with them.
+            + "&fields[profiles]=name,uuid,profileState,profileContent,bundleId"
+            + "&limit=200",
         credentials: credentials)
     var identifierByRecord: [String: String] = [:]
     for entry in listing["included"] as? [[String: Any]] ?? []
