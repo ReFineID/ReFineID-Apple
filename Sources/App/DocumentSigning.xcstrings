@@ -45,6 +45,22 @@
         }
       }
     },
+    "verify.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verify"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarkasta"
+          }
+        }
+      }
+    },
     "signing.section": {
       "localizations": {
         "en": {

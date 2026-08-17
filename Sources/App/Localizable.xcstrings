@@ -2528,6 +2528,16 @@
         }
       }
     },
+    "Remote Card": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Etäkortti"
+          }
+        }
+      }
+    },
     "Reading report": {
       "localizations": {
         "fi": {
