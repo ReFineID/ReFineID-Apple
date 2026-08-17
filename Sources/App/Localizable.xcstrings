@@ -299,32 +299,44 @@
     },
     "Personal Identification Numbers": {
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN"
+          }
+        },
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Henkilökohtaiset tunnusluvut"
+            "value": "Tunnusluku"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Personliga identifieringsnummer"
+            "value": "PIN-kod"
           }
         }
       }
     },
     "Personal Identification Numbers (PINs)": {
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN"
+          }
+        },
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Henkilökohtaiset tunnusluvut (PIN)"
+            "value": "Tunnusluku"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Personliga identifieringsnummer (PIN)"
+            "value": "PIN-kod"
           }
         }
       }
