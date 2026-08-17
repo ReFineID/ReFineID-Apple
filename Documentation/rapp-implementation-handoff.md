@@ -207,7 +207,19 @@ network permission, CryptoTokenKit, or Safari system-sheet behavior.
 ## Exact next step
 
 1. Petri clears the pending Enable UI Automation Touch ID dialog.
-2. Build and install the committed Debug app on the cabled iPhone.
+2. Build and install the committed Debug app on the cabled iPhone. Physical
+   iOS UI-test shards use the dedicated `ReFineID-iOS-UI` scheme so they do not
+   build unrelated macOS unit-test products:
+
+   ```sh
+   xcodebuild test -project ReFineID.xcodeproj \
+     -scheme ReFineID-iOS-UI \
+     -destination 'platform=iOS,id=<device-identifier>' \
+     -only-testing:ReFineIDUITests/<test-class>/<test-method>
+   ```
+
+   The project declares macOS `arm64` in every configuration because the
+   committed RAPP XCFramework intentionally has no Intel slice.
 3. Pair macOS and iPhone from a clean pairing state using the QR UI.
 4. With a known activated card and correct CAN/PIN values, record one card
    status read, one Safari browser-authentication operation, and one harmless
