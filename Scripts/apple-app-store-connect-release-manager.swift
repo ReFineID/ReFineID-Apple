@@ -985,20 +985,21 @@ private func releaseEnvironment() -> [String: String] {
     return environment
 }
 
-private func releaseUploadCredentials() -> ReleaseUploadCredentials {
+/// The credentials when the environment carries a complete set, nil
+/// otherwise. Profile assurance wants them even on a local export;
+/// only an upload hard-requires them.
+private func releaseUploadCredentialsIfAvailable() -> ReleaseUploadCredentials? {
     let environment = releaseEnvironment()
-    guard let keyID = environment["ASC_KEY_ID"], !keyID.isEmpty else {
-        releaseFail("ASC_KEY_ID is required for --upload")
-    }
-    guard let issuerID = environment["ASC_ISSUER_ID"], !issuerID.isEmpty else {
-        releaseFail("ASC_ISSUER_ID is required for --upload")
+    guard let keyID = environment["ASC_KEY_ID"], !keyID.isEmpty,
+          let issuerID = environment["ASC_ISSUER_ID"], !issuerID.isEmpty else {
+        return nil
     }
     let defaultPath = releaseFileManager.homeDirectoryForCurrentUser
         .appendingPathComponent(".appstoreconnect/private_keys/AuthKey_\(keyID).p8")
         .path
     let privateKeyPath = environment["ASC_PRIVATE_KEY_PATH"] ?? defaultPath
     guard releaseFileManager.fileExists(atPath: privateKeyPath) else {
-        releaseFail("App Store Connect private key is missing at \(privateKeyPath)")
+        return nil
     }
     return ReleaseUploadCredentials(
         keyID: keyID,
@@ -1007,12 +1008,255 @@ private func releaseUploadCredentials() -> ReleaseUploadCredentials {
     )
 }
 
-private func releaseWriteExportOptions(to destination: URL, upload: Bool) {
+private func releaseUploadCredentials() -> ReleaseUploadCredentials {
+    guard let credentials = releaseUploadCredentialsIfAvailable() else {
+        releaseFail(
+            "ASC_KEY_ID, ASC_ISSUER_ID and the .p8 under "
+                + "~/.appstoreconnect/private_keys are required for --upload")
+    }
+    return credentials
+}
+
+// MARK: - App Store Connect calls for release engineering
+
+/// A short-lived ES256 token for the team API key.
+private func releaseAPIToken(_ credentials: ReleaseUploadCredentials) -> String {
+    guard let pem = try? String(contentsOfFile: credentials.privateKeyPath, encoding: .utf8),
+          let key = try? P256.Signing.PrivateKey(pemRepresentation: pem) else {
+        releaseFail("the .p8 at \(credentials.privateKeyPath) is not a readable P-256 key")
+    }
+    func base64URL(_ data: Data) -> String {
+        data.base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+    }
+    let now = Int(Date().timeIntervalSince1970)
+    let header = ["alg": "ES256", "kid": credentials.keyID, "typ": "JWT"]
+    let payload: [String: Any] = [
+        "iss": credentials.issuerID, "iat": now, "exp": now + 1200,
+        "aud": "appstoreconnect-v1",
+    ]
+    let headerData = try! JSONSerialization.data(withJSONObject: header)
+    let payloadData = try! JSONSerialization.data(withJSONObject: payload)
+    let signingInput = "\(base64URL(headerData)).\(base64URL(payloadData))"
+    let signature = try! key.signature(for: Data(signingInput.utf8))
+    return "\(signingInput).\(base64URL(signature.rawRepresentation))"
+}
+
+/// One synchronous JSON call; anything but success fails the release.
+private func releaseAPI(
+    _ method: String,
+    _ path: String,
+    body: [String: Any]? = nil,
+    credentials: ReleaseUploadCredentials
+) -> [String: Any] {
+    var request = URLRequest(
+        url: URL(string: "https://api.appstoreconnect.apple.com\(path)")!)
+    request.httpMethod = method
+    request.setValue(
+        "Bearer \(releaseAPIToken(credentials))", forHTTPHeaderField: "Authorization")
+    if let body {
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try! JSONSerialization.data(withJSONObject: body)
+    }
+    let waiter = DispatchSemaphore(value: 0)
+    var received: (data: Data?, status: Int) = (nil, 0)
+    URLSession.shared.dataTask(with: request) { data, response, _ in
+        received = (data, (response as? HTTPURLResponse)?.statusCode ?? 0)
+        waiter.signal()
+    }.resume()
+    waiter.wait()
+    guard (200..<300).contains(received.status) else {
+        let detail = received.data.flatMap { String(data: $0, encoding: .utf8) } ?? ""
+        releaseFail("HTTP \(received.status) on \(method) \(path): \(detail)")
+    }
+    guard let data = received.data, !data.isEmpty,
+          let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+        return [:]
+    }
+    return object
+}
+
+/// The app's and every embedded extension's bundle identifier.
+private func releaseBundleIdentifiers(inArchive archive: URL) -> [String] {
+    let applications = archive.appendingPathComponent("Products/Applications")
+    guard
+        let entries = try? releaseFileManager.contentsOfDirectory(
+            at: applications, includingPropertiesForKeys: nil),
+        let app = entries.first(where: { $0.pathExtension == "app" })
+    else {
+        releaseFail("no application inside \(applications.path)")
+    }
+    var plists = [app.appendingPathComponent("Info.plist")]
+    let plugins = app.appendingPathComponent("PlugIns")
+    let extensions = (try? releaseFileManager.contentsOfDirectory(
+        at: plugins, includingPropertiesForKeys: nil)) ?? []
+    for appex in extensions where appex.pathExtension == "appex" {
+        plists.append(appex.appendingPathComponent("Info.plist"))
+    }
+    return plists.compactMap {
+        NSDictionary(contentsOf: $0)?["CFBundleIdentifier"] as? String
+    }
+}
+
+/// Writes one profile where both current Xcode and the older tooling
+/// location look for installed profiles.
+private func releaseInstallProfile(content: String, uuid: String) {
+    guard let blob = Data(base64Encoded: content) else {
+        releaseFail("profile \(uuid) did not decode")
+    }
+    let home = releaseFileManager.homeDirectoryForCurrentUser
+    for directory in [
+        home.appendingPathComponent("Library/Developer/Xcode/UserData/Provisioning Profiles"),
+        home.appendingPathComponent("Library/MobileDevice/Provisioning Profiles"),
+    ] {
+        try? releaseFileManager.createDirectory(
+            at: directory, withIntermediateDirectories: true)
+        try? blob.write(
+            to: directory.appendingPathComponent("\(uuid).mobileprovision"),
+            options: .atomic)
+    }
+}
+
+/// Ensures every bundle in the iOS archive has an ACTIVE App Store
+/// profile - registering App IDs and minting profiles for first-time
+/// targets - installs them, and returns the export signing map.
+///
+/// This exists because cloud signing refuses to create a profile for
+/// this API key, while the very same key may create one by name.
+private func releaseEnsureIOSProfiles(
+    archive: URL,
+    credentials: ReleaseUploadCredentials
+) -> [String: String] {
+    let identifiers = releaseBundleIdentifiers(inArchive: archive)
+    let listing = releaseAPI(
+        "GET",
+        "/v1/profiles?filter[profileType]=IOS_APP_STORE&include=bundleId"
+            + "&fields[bundleIds]=identifier"
+            + "&fields[profiles]=name,uuid,profileState,profileContent&limit=200",
+        credentials: credentials)
+    var identifierByRecord: [String: String] = [:]
+    for entry in listing["included"] as? [[String: Any]] ?? []
+    where entry["type"] as? String == "bundleIds" {
+        if let id = entry["id"] as? String,
+           let identifier = (entry["attributes"] as? [String: Any])?["identifier"] as? String {
+            identifierByRecord[id] = identifier
+        }
+    }
+    struct StoredProfile { let name: String; let uuid: String; let content: String }
+    var existing: [String: StoredProfile] = [:]
+    for entry in listing["data"] as? [[String: Any]] ?? [] {
+        let attributes = entry["attributes"] as? [String: Any] ?? [:]
+        guard attributes["profileState"] as? String == "ACTIVE",
+              let name = attributes["name"] as? String,
+              let uuid = attributes["uuid"] as? String,
+              let content = attributes["profileContent"] as? String,
+              let relationship = ((entry["relationships"] as? [String: Any])?["bundleId"]
+                as? [String: Any])?["data"] as? [String: Any],
+              let record = relationship["id"] as? String,
+              let identifier = identifierByRecord[record]
+        else { continue }
+        existing[identifier] = StoredProfile(name: name, uuid: uuid, content: content)
+    }
+
+    var certificateID: String?
+    func distributionCertificate() -> String {
+        if let certificateID { return certificateID }
+        let certificates = releaseAPI(
+            "GET", "/v1/certificates?filter[certificateType]=DISTRIBUTION&limit=1",
+            credentials: credentials)["data"] as? [[String: Any]] ?? []
+        guard let id = certificates.first?["id"] as? String else {
+            releaseFail("the team has no Apple Distribution certificate")
+        }
+        certificateID = id
+        return id
+    }
+
+    func ensureBundleRecord(_ identifier: String) -> String {
+        let matches = releaseAPI(
+            "GET", "/v1/bundleIds?filter[identifier]=\(identifier)",
+            credentials: credentials)["data"] as? [[String: Any]] ?? []
+        if let record = matches.first(where: {
+            ($0["attributes"] as? [String: Any])?["identifier"] as? String == identifier
+        })?["id"] as? String {
+            return record
+        }
+        let name = identifier.map { $0.isLetter || $0.isNumber ? $0 : " " }
+            .reduce(into: "") { $0.append($1) }
+        let created = releaseAPI(
+            "POST", "/v1/bundleIds",
+            body: ["data": [
+                "type": "bundleIds",
+                "attributes": [
+                    "identifier": identifier, "name": name, "platform": "UNIVERSAL",
+                ],
+            ]],
+            credentials: credentials)
+        guard let record = (created["data"] as? [String: Any])?["id"] as? String else {
+            releaseFail("registering the App ID \(identifier) returned no record")
+        }
+        releaseNote("registered App ID \(identifier)")
+        return record
+    }
+
+    var map: [String: String] = [:]
+    for identifier in identifiers {
+        if let profile = existing[identifier] {
+            releaseInstallProfile(content: profile.content, uuid: profile.uuid)
+            map[identifier] = profile.name
+            releaseNote("App Store profile present for \(identifier)")
+            continue
+        }
+        let record = ensureBundleRecord(identifier)
+        let created = releaseAPI(
+            "POST", "/v1/profiles",
+            body: ["data": [
+                "type": "profiles",
+                "attributes": [
+                    "name": "ReFineID App Store \(identifier)",
+                    "profileType": "IOS_APP_STORE",
+                ],
+                "relationships": [
+                    "bundleId": ["data": ["type": "bundleIds", "id": record]],
+                    "certificates": ["data": [
+                        ["type": "certificates", "id": distributionCertificate()]
+                    ]],
+                ],
+            ]],
+            credentials: credentials)
+        guard let attributes = (created["data"] as? [String: Any])?["attributes"]
+                as? [String: Any],
+              let name = attributes["name"] as? String,
+              let uuid = attributes["uuid"] as? String,
+              let content = attributes["profileContent"] as? String
+        else {
+            releaseFail("creating the profile for \(identifier) returned no content")
+        }
+        releaseInstallProfile(content: content, uuid: uuid)
+        map[identifier] = name
+        releaseNote("minted App Store profile for \(identifier)")
+    }
+    return map
+}
+
+private func releaseWriteExportOptions(
+    to destination: URL,
+    upload: Bool,
+    provisioningProfiles: [String: String]? = nil
+) {
     let source = releaseRepositoryRoot
         .appendingPathComponent("Config/ExportOptions-AppStore.plist")
     var options = releasePlist(at: source)
     if upload {
         options["destination"] = "upload"
+    }
+    // Named profiles the key just assured sign deterministically;
+    // automatic signing cannot mint one for a first-time target.
+    if let provisioningProfiles {
+        options["signingStyle"] = "manual"
+        options["signingCertificate"] = "Apple Distribution"
+        options["provisioningProfiles"] = provisioningProfiles
     }
     do {
         let data = try PropertyListSerialization.data(
@@ -1088,7 +1332,9 @@ private func releaseCandidate(_ arguments: [String]) {
     default:
         platforms = [.ios, .macos]
     }
-    let credentials = upload ? releaseUploadCredentials() : nil
+    let credentials = upload
+        ? releaseUploadCredentials()
+        : releaseUploadCredentialsIfAvailable()
     let outputRoot = releaseRepositoryRoot.appendingPathComponent("build/testflight")
     do {
         try releaseFileManager.createDirectory(
@@ -1143,7 +1389,15 @@ private func releaseCandidate(_ arguments: [String]) {
         )
 
         inspectReleaseArchive(archive)
-        releaseWriteExportOptions(to: exportOptions, upload: upload)
+        var provisioningProfiles: [String: String]?
+        if platform == .ios, let credentials {
+            provisioningProfiles = releaseEnsureIOSProfiles(
+                archive: archive, credentials: credentials)
+        }
+        releaseWriteExportOptions(
+            to: exportOptions,
+            upload: upload,
+            provisioningProfiles: provisioningProfiles)
 
         var exportArguments = [
             "-exportArchive",
