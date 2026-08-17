@@ -44,7 +44,8 @@
           }
           let request = RappAuthorizationRequest(
             id: operationID.base64EncodedString(),
-            requester: operation.displayContext
+            requester: await Self.requesterName()
+              ?? operation.displayContext
               ?? String(localized: "Paired device"),
             action: action
           )
@@ -101,6 +102,15 @@
         await inbox.cancelAll()
         await coordinator.close()
       }
+    }
+
+    /// The remembered name of the selected pair's requesting device.
+    private static func requesterName() async -> String? {
+      let catalog = RappPairCatalog(vault: RappDeviceVault())
+      guard let selected = try? await catalog.selectedPair() else {
+        return nil
+      }
+      return RappPairNames.name(forPairID: selected.pairID)
     }
 
     private func prerequisitesExist(
