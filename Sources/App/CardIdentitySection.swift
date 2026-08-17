@@ -25,7 +25,15 @@ internal struct CardIdentitySection: View {
         PersonRowLabel(configured: true)
       }
       .accessibilityIdentifier("identityStatus")
+    } header: {
+      Text("Identity")
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .listRowInsets(EdgeInsets())
+    }
 
+    // Its own section: sharing the person row's section would square
+    // that bubble's bottom corners against this cleared background.
+    Section {
       Button(action: forget) {
         Label("Forget identity", systemImage: "person.badge.minus")
           .foregroundStyle(.white)
@@ -34,14 +42,9 @@ internal struct CardIdentitySection: View {
       }
       .buttonStyle(.borderedProminent)
       .tint(Color(red: 0.65, green: 0, blue: 0))
-      .padding(.top, 24)
       .listRowBackground(Color.clear)
       .listRowInsets(EdgeInsets())
       .accessibilityIdentifier("forgetCardIdentityButton")
-    } header: {
-      Text("Identity")
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .listRowInsets(EdgeInsets())
     }
   }
 }
