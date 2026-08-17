@@ -9,6 +9,10 @@
   fix belongs in the git commit message, not the source.
 - Commit often when compiles and lint is clean.
 - Push when feature is ready.
+- Reusable agent workflows are Skills under `.claude/skills/`, committed to
+  the repo so every agent and contributor shares them. Not memory, not
+  local-only. Keep them public-clean: no device ids, personal paths, or
+  secrets.
 - Verify from specifications, don't wild guess.
   `Documentation/references.md` indexes which one governs what.
   Cite what a source proves, and say what it does not.
