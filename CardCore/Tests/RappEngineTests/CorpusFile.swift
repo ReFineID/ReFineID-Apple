@@ -6,6 +6,8 @@ import Foundation
 internal enum CorpusFile {
   private static let conformanceName = "rapp-v26.8.17.233.json"
   private static let transportName = "rapp-transport-v26.8.17.233.json"
+  private static let flowName = "rapp-flow-v26.8.17.233.json"
+  private static let operationName = "rapp-operation-v26.8.17.233.json"
 
   /// Test sources sit four directories below the repository root.
   private static let depthBelowRepositoryRoot = 4
@@ -18,6 +20,15 @@ internal enum CorpusFile {
   internal static func transport(filePath: String) throws -> TransportCorpus {
     try JSONDecoder().decode(
       TransportCorpus.self, from: try data(named: transportName, filePath: filePath))
+  }
+
+  internal static func flow(filePath: String) throws -> FlowCorpus {
+    try JSONDecoder().decode(FlowCorpus.self, from: try data(named: flowName, filePath: filePath))
+  }
+
+  internal static func operation(filePath: String) throws -> OperationCorpus {
+    try JSONDecoder().decode(
+      OperationCorpus.self, from: try data(named: operationName, filePath: filePath))
   }
 
   private static func repositoryRoot(from filePath: String) -> URL {
