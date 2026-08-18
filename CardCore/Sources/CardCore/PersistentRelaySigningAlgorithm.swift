@@ -16,6 +16,28 @@ public enum PersistentRelaySigningAlgorithm: String, Codable, Sendable {
   case rsaPkcs1SHA512
   case rsaPssSHA256
 
+  /// The domain algorithm this wire value names.
+  public var signingAlgorithm: SigningAlgorithm {
+    switch self {
+    case .ecdsaSHA224:
+      SigningAlgorithm(hash: .sha224, scheme: .ecdsa)
+    case .ecdsaSHA256:
+      SigningAlgorithm(hash: .sha256, scheme: .ecdsa)
+    case .ecdsaSHA384:
+      SigningAlgorithm(hash: .sha384, scheme: .ecdsa)
+    case .ecdsaSHA512:
+      SigningAlgorithm(hash: .sha512, scheme: .ecdsa)
+    case .rsaPkcs1SHA256:
+      SigningAlgorithm(hash: .sha256, scheme: .rsaPkcs1)
+    case .rsaPkcs1SHA384:
+      SigningAlgorithm(hash: .sha384, scheme: .rsaPkcs1)
+    case .rsaPkcs1SHA512:
+      SigningAlgorithm(hash: .sha512, scheme: .rsaPkcs1)
+    case .rsaPssSHA256:
+      SigningAlgorithm(hash: .sha256, scheme: .rsaPss)
+    }
+  }
+
   /// Wraps a resolved signing algorithm, or nil for one the relay
   /// does not carry.
   public init?(_ algorithm: SigningAlgorithm) {
@@ -38,28 +60,6 @@ public enum PersistentRelaySigningAlgorithm: String, Codable, Sendable {
       self = .rsaPssSHA256
     default:
       return nil
-    }
-  }
-
-  /// The domain algorithm this wire value names.
-  public var signingAlgorithm: SigningAlgorithm {
-    switch self {
-    case .ecdsaSHA224:
-      SigningAlgorithm(hash: .sha224, scheme: .ecdsa)
-    case .ecdsaSHA256:
-      SigningAlgorithm(hash: .sha256, scheme: .ecdsa)
-    case .ecdsaSHA384:
-      SigningAlgorithm(hash: .sha384, scheme: .ecdsa)
-    case .ecdsaSHA512:
-      SigningAlgorithm(hash: .sha512, scheme: .ecdsa)
-    case .rsaPkcs1SHA256:
-      SigningAlgorithm(hash: .sha256, scheme: .rsaPkcs1)
-    case .rsaPkcs1SHA384:
-      SigningAlgorithm(hash: .sha384, scheme: .rsaPkcs1)
-    case .rsaPkcs1SHA512:
-      SigningAlgorithm(hash: .sha512, scheme: .rsaPkcs1)
-    case .rsaPssSHA256:
-      SigningAlgorithm(hash: .sha256, scheme: .rsaPss)
     }
   }
 }

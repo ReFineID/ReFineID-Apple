@@ -2,6 +2,11 @@
 
 #if os(iOS)
 
+  /// How many lines a document name may wrap to in the list.
+  private enum Layout {
+    static let fileNameLines = 2
+  }
+
   import CardCore
   import Foundation
   import SwiftUI
@@ -98,12 +103,12 @@
       }
     }
 
-    private var documentSection: some View {
-      Section(text("signing.section", "Documents")) {
+  private var documentSection: some View {
+    Section(text("signing.section", "Documents")) {
         ForEach(inputs) { input in
           HStack {
             Image(systemName: input.isPDF ? "doc.richtext" : "doc")
-            Text(input.name).lineLimit(2)
+            Text(input.name).lineLimit(Layout.fileNameLines)
             Spacer()
             Button(role: .destructive) {
               inputs.removeAll { $0.id == input.id }

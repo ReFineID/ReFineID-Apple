@@ -13,6 +13,9 @@ import SwiftUI
 /// the card face and is the holder's to see.
 @MainActor
 internal final class CardCredentialsModel: ObservableObject {
+
+  // MARK: Nested Types
+
   internal enum ConnectionResult: Sendable {
     case activated
     case activationRequired(
@@ -21,6 +24,8 @@ internal final class CardCredentialsModel: ObservableObject {
     case wrongCardAccessNumber
     case failed
   }
+
+  // MARK: Properties
 
   /// What the device currently holds.
   @Published internal private(set) var contents = CardCredentialStore.contents()
@@ -43,6 +48,8 @@ internal final class CardCredentialsModel: ObservableObject {
   /// activated card, obtained a complete credential retry report.
   @Published internal private(set) var hasVerifiedCardStatus = false
 
+  // MARK: Static Functions
+
   /// Revokes every pair, drops the selection, and forgets all names.
   ///
   /// Revocation erases each pair's key material and leaves a tombstone,
@@ -58,6 +65,8 @@ internal final class CardCredentialsModel: ObservableObject {
     try? vault.clearSelectedPair()
     RappPairNames.forgetAll()
   }
+
+  // MARK: Functions
 
   /// Establishes PACE with an entered CAN and classifies the live card.
   ///
@@ -219,4 +228,5 @@ internal final class CardCredentialsModel: ObservableObject {
       failure = explanation
     }
   }
+
 }

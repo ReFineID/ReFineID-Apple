@@ -6,6 +6,9 @@ import Testing
 
 @Suite
 internal struct CardExchangeTraceTests {
+
+  // MARK: Static Properties
+
   /// A SELECT command APDU: CLA INS P1 P2 Lc, with a two-byte body.
   private static let selectRequest = Data([0x00, 0xA4, 0x04, 0x0C, 0x02, 0x3F, 0x00])
 
@@ -18,9 +21,45 @@ internal struct CardExchangeTraceTests {
   private static let replacementPinDigits = "5678"
   private static let pukDigits = "12345678"
 
+  // MARK: Static Functions
+
   private static func hex(_ bytes: Data) -> String {
     bytes.map { String(format: "%02X", $0) }.joined()
   }
+
+  /// Production construction of CHANGE REFERENCE DATA for PIN 1.
+  private static func changeReferenceDataRequest() -> Data {
+    guard
+      let current = Pin1(digits: Self.currentPinDigits),
+      let replacement = Pin1(digits: Self.replacementPinDigits)
+    else {
+      fatalError("test PINs must satisfy production validation")
+    }
+    let command = CredentialBearingCommand.changePin1(
+      current: current.consumeForSingleTransmission(),
+      new: replacement.consumeForSingleTransmission(),
+      references: .citizen
+    )
+    return command.intoTransportPayload()
+  }
+
+  /// Production construction of RESET RETRY COUNTER for PIN 1.
+  private static func resetRetryCounterRequest() -> Data {
+    guard
+      let puk = Puk(digits: Self.pukDigits),
+      let replacement = Pin1(digits: Self.replacementPinDigits)
+    else {
+      fatalError("test PUK and PIN must satisfy production validation")
+    }
+    let command = CredentialBearingCommand.unblockPin1(
+      puk: puk.consumeForSingleTransmission(),
+      new: replacement.consumeForSingleTransmission(),
+      references: .citizen
+    )
+    return command.intoTransportPayload()
+  }
+
+  // MARK: Functions
 
   @Test
   internal func namesInstructionSizesAndStatus() {
@@ -79,38 +118,6 @@ internal struct CardExchangeTraceTests {
     }
   }
 
-  /// Production construction of CHANGE REFERENCE DATA for PIN 1.
-  private static func changeReferenceDataRequest() -> Data {
-    guard
-      let current = Pin1(digits: Self.currentPinDigits),
-      let replacement = Pin1(digits: Self.replacementPinDigits)
-    else {
-      fatalError("test PINs must satisfy production validation")
-    }
-    let command = CredentialBearingCommand.changePin1(
-      current: current.consumeForSingleTransmission(),
-      new: replacement.consumeForSingleTransmission(),
-      references: .citizen
-    )
-    return command.intoTransportPayload()
-  }
-
-  /// Production construction of RESET RETRY COUNTER for PIN 1.
-  private static func resetRetryCounterRequest() -> Data {
-    guard
-      let puk = Puk(digits: Self.pukDigits),
-      let replacement = Pin1(digits: Self.replacementPinDigits)
-    else {
-      fatalError("test PUK and PIN must satisfy production validation")
-    }
-    let command = CredentialBearingCommand.unblockPin1(
-      puk: puk.consumeForSingleTransmission(),
-      new: replacement.consumeForSingleTransmission(),
-      references: .citizen
-    )
-    return command.intoTransportPayload()
-  }
-
   @Test
   internal func survivesAnAnswerlessExchange() {
     let line = CardExchangeTrace.line(
@@ -134,4 +141,5 @@ internal struct CardExchangeTraceTests {
       #expect(line.contains("response=9000"))
     #endif
   }
+
 }

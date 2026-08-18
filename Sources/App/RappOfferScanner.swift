@@ -14,47 +14,16 @@ import SwiftUI
 #endif
 
 #if os(iOS)
-  internal struct RappOfferScanner: UIViewControllerRepresentable {
-    let onScan: @MainActor @Sendable (String) -> Void
-
-    func makeCoordinator() -> Coordinator { Coordinator(onScan: onScan) }
-
-    func makeUIViewController(context: Context) -> DataScannerViewController {
-      let scanner = DataScannerViewController(
-        recognizedDataTypes: [.barcode(symbologies: [.qr])],
-        qualityLevel: .balanced,
-        recognizesMultipleItems: false,
-        isHighFrameRateTrackingEnabled: false,
-        isPinchToZoomEnabled: true,
-        isGuidanceEnabled: true,
-        isHighlightingEnabled: true
-      )
-      scanner.delegate = context.coordinator
-      DispatchQueue.main.async { try? scanner.startScanning() }
-      return scanner
-    }
-
-    func updateUIViewController(
-      _: DataScannerViewController,
-      context _: Context
-    ) {}
-
-    static func dismantleUIViewController(
-      _ scanner: DataScannerViewController,
-      coordinator _: Coordinator
-    ) {
-      scanner.stopScanning()
-    }
-
-    final class Coordinator: NSObject, DataScannerViewControllerDelegate {
+internal struct RappOfferScanner: UIViewControllerRepresentable {
+    internal final class Coordinator: NSObject, DataScannerViewControllerDelegate {
       private let onScan: @MainActor @Sendable (String) -> Void
       private var accepted = false
 
-      init(onScan: @escaping @MainActor @Sendable (String) -> Void) {
+      internal init(onScan: @escaping @MainActor @Sendable (String) -> Void) {
         self.onScan = onScan
       }
 
-      func dataScanner(
+      internal func dataScanner(
         _: DataScannerViewController,
         didAdd addedItems: [RecognizedItem],
         allItems _: [RecognizedItem]
@@ -70,5 +39,36 @@ import SwiftUI
         }
       }
     }
+
+    internal let onScan: @MainActor @Sendable (String) -> Void
+
+    internal static func dismantleUIViewController(
+      _ scanner: DataScannerViewController,
+      coordinator _: Coordinator
+    ) {
+      scanner.stopScanning()
+    }
+
+    internal func makeCoordinator() -> Coordinator { Coordinator(onScan: onScan) }
+
+    internal func makeUIViewController(context: Context) -> DataScannerViewController {
+      let scanner = DataScannerViewController(
+        recognizedDataTypes: [.barcode(symbologies: [.qr])],
+        qualityLevel: .balanced,
+        recognizesMultipleItems: false,
+        isHighFrameRateTrackingEnabled: false,
+        isPinchToZoomEnabled: true,
+        isGuidanceEnabled: true,
+        isHighlightingEnabled: true
+      )
+      scanner.delegate = context.coordinator
+      DispatchQueue.main.async { try? scanner.startScanning() }
+      return scanner
+    }
+
+    internal func updateUIViewController(
+      _: DataScannerViewController,
+      context _: Context
+    ) {}
   }
 #endif

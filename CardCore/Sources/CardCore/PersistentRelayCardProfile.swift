@@ -10,6 +10,20 @@ public enum PersistentRelayCardProfile: String, Codable, Sendable {
   case rsa2048
   case rsa3072
 
+  /// The domain profile this wire value names.
+  public var cardKeyProfile: CardKeyProfile {
+    switch self {
+    case .ecdsaP256:
+      .ecdsaP256
+    case .ecdsaP384:
+      .ecdsaP384
+    case .rsa2048:
+      .rsa2048
+    case .rsa3072:
+      .rsa3072
+    }
+  }
+
   /// Wraps a resolved card key profile for the wire.
   public init(_ profile: CardKeyProfile) {
     self =
@@ -23,19 +37,5 @@ public enum PersistentRelayCardProfile: String, Codable, Sendable {
       case .rsa3072:
         .rsa3072
       }
-  }
-
-  /// The domain profile this wire value names.
-  public var cardKeyProfile: CardKeyProfile {
-    switch self {
-    case .ecdsaP256:
-      .ecdsaP256
-    case .ecdsaP384:
-      .ecdsaP384
-    case .rsa2048:
-      .rsa2048
-    case .rsa3072:
-      .rsa3072
-    }
   }
 }

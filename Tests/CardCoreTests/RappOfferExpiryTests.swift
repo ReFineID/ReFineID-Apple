@@ -2,8 +2,8 @@ import Foundation
 import RappEngine
 import XCTest
 
-final class RappOfferExpiryTests: XCTestCase {
-  func testOfferExpiresAtItsMonotonicDeadline() throws {
+internal final class RappOfferExpiryTests: XCTestCase {
+  internal func testOfferExpiresAtItsMonotonicDeadline() throws {
     let bridge = try makeBridge(startedAt: 1_000, lifetime: 100)
 
     XCTAssertNoThrow(try bridge.offerUri(nowMonotonicMs: 1_099))
@@ -12,7 +12,7 @@ final class RappOfferExpiryTests: XCTestCase {
     }
   }
 
-  func testOfferCannotOutliveDeadlineDuringNoiseHandshake() throws {
+  internal func testOfferCannotOutliveDeadlineDuringNoiseHandshake() throws {
     let bridge = try makeBridge(startedAt: 1_000, lifetime: 100)
 
     try bridge.begin(candidateId: "candidate", nowMonotonicMs: 1_099)

@@ -91,6 +91,8 @@ public final class SecureMessagingChannel: CardChannel {
 
   /// The largest body a short-form command APDU can carry.
   private static let maximumBodyLength: Int = 255
+  private static let evenInstructionRemainder: UInt8 = 2
+  private static let instructionByteIndex = 1
 
   /// Chunked reads over this channel ask for the secure-messaged chunk,
   /// never the plain one.
@@ -139,7 +141,7 @@ public final class SecureMessagingChannel: CardChannel {
     guard bytes.count >= Self.headerLength else { throw Failure.malformedCommand }
     var header = Data(bytes.prefix(Self.headerLength))
     header[header.startIndex] |= PaceValues.classSecureMessagingBit
-    let hasOddInstruction = !bytes[1].isMultiple(of: 2)
+    let hasOddInstruction = !bytes[Self.instructionByteIndex].isMultiple(of: Self.evenInstructionRemainder)
     if bytes.count == Self.headerLength {
       return PlainCommandParts(
         header: header,

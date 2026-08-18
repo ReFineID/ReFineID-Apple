@@ -1,7 +1,21 @@
-#if canImport(RappEngine)
+  #if canImport(RappEngine)
   import Foundation
 
   extension RappOperationDriver.KeyProfile {
+    /// The card key profile this RAPP profile names.
+    public var cardKeyProfile: CardKeyProfile {
+      switch self {
+      case .ecdsaP256:
+        .ecdsaP256
+      case .ecdsaP384:
+        .ecdsaP384
+      case .rsa2048:
+        .rsa2048
+      case .rsa3072:
+        .rsa3072
+      }
+    }
+
     /// Maps a card key profile onto its RAPP counterpart.
     public init(_ profile: CardKeyProfile) {
       self =
@@ -16,23 +30,31 @@
           .rsa3072
         }
     }
-
-    /// The card key profile this RAPP profile names.
-    public var cardKeyProfile: CardKeyProfile {
-      switch self {
-      case .ecdsaP256:
-        .ecdsaP256
-      case .ecdsaP384:
-        .ecdsaP384
-      case .rsa2048:
-        .rsa2048
-      case .rsa3072:
-        .rsa3072
-      }
-    }
   }
 
   extension RappOperationDriver.SignatureAlgorithm {
+    /// The signing algorithm this RAPP algorithm names.
+    public var signingAlgorithm: SigningAlgorithm {
+      switch self {
+    case .ecdsaSHA224:
+      SigningAlgorithm(hash: .sha224, scheme: .ecdsa)
+    case .ecdsaSHA256:
+      SigningAlgorithm(hash: .sha256, scheme: .ecdsa)
+    case .ecdsaSHA384:
+      SigningAlgorithm(hash: .sha384, scheme: .ecdsa)
+    case .ecdsaSHA512:
+      SigningAlgorithm(hash: .sha512, scheme: .ecdsa)
+    case .rsaPkcs1SHA256:
+      SigningAlgorithm(hash: .sha256, scheme: .rsaPkcs1)
+    case .rsaPkcs1SHA384:
+      SigningAlgorithm(hash: .sha384, scheme: .rsaPkcs1)
+    case .rsaPkcs1SHA512:
+      SigningAlgorithm(hash: .sha512, scheme: .rsaPkcs1)
+    case .rsaPssSHA256:
+      SigningAlgorithm(hash: .sha256, scheme: .rsaPss)
+      }
+    }
+
     /// Maps a signing algorithm onto its RAPP counterpart, or nil for a
     /// hash-scheme combination RAPP does not carry.
     public init?(_ algorithm: SigningAlgorithm) {
@@ -55,28 +77,6 @@
         self = .rsaPssSHA256
       default:
         return nil
-      }
-    }
-
-    /// The signing algorithm this RAPP algorithm names.
-    public var signingAlgorithm: SigningAlgorithm {
-      switch self {
-      case .ecdsaSHA224:
-        SigningAlgorithm(hash: .sha224, scheme: .ecdsa)
-      case .ecdsaSHA256:
-        SigningAlgorithm(hash: .sha256, scheme: .ecdsa)
-      case .ecdsaSHA384:
-        SigningAlgorithm(hash: .sha384, scheme: .ecdsa)
-      case .ecdsaSHA512:
-        SigningAlgorithm(hash: .sha512, scheme: .ecdsa)
-      case .rsaPkcs1SHA256:
-        SigningAlgorithm(hash: .sha256, scheme: .rsaPkcs1)
-      case .rsaPkcs1SHA384:
-        SigningAlgorithm(hash: .sha384, scheme: .rsaPkcs1)
-      case .rsaPkcs1SHA512:
-        SigningAlgorithm(hash: .sha512, scheme: .rsaPkcs1)
-      case .rsaPssSHA256:
-        SigningAlgorithm(hash: .sha256, scheme: .rsaPss)
       }
     }
   }

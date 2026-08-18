@@ -14,28 +14,28 @@ import SwiftUI
 #endif
 
 internal enum RappApplePeerProfile {
-  static let name = "apple-peer-v1"
-  static let candidateID = "apple-peer-v1.nearby"
+  internal static let name = "apple-peer-v1"
+  internal static let candidateID = "apple-peer-v1.nearby"
 
   /// Deterministic CBOR for an empty map.
   ///
   /// Apple peer discovery currently needs no public parameter beyond
   /// its bound profile and candidate ID.
   private static let emptyMapInitialByte: UInt8 = 0b1010_0000
-  static let candidateParameters = Data([emptyMapInitialByte])
+  internal static let candidateParameters = Data([emptyMapInitialByte])
 
   /// Only profiles implemented end to end by the current phone executor.
-  static let supportedCredentialProfiles = [
+  internal static let supportedCredentialProfiles = [
     "fi.eid.card-status.v1",
     "fi.eid.authentication.v1",
     "fi.eid.document-signing.v1",
   ]
 
-  static func isSupported(_ profile: String) -> Bool {
+  internal static func isSupported(_ profile: String) -> Bool {
     supportedCredentialProfiles.contains(profile)
   }
 
-  static func label(for profile: String) -> String {
+  internal static func label(for profile: String) -> String {
     switch profile {
     case "fi.eid.card-status.v1":
       String(localized: "Card status")

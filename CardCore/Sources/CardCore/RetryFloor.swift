@@ -8,7 +8,14 @@ public enum RetryFloor {
   ///
   /// Zero also proceeds because a blocked credential has no attempt left
   /// for the operation to consume.
-  public static let minimumAttemptsToProceed: UInt8 = 3
+  private enum Constants {
+    static let minimumAttemptsToProceed: UInt8 = 3
+    static let lowAttemptsThreshold: UInt8 = 2
+  }
+
+  /// An unblocked operation proceeds only when more attempts remain than
+  /// the low-attempt cutoff.
+  public static let minimumAttemptsToProceed: UInt8 = Constants.minimumAttemptsToProceed
 
   /// Decides from one fresh reading.
   ///
@@ -20,7 +27,7 @@ public enum RetryFloor {
   /// immediately before it.
   public static func evaluate(freshReading: RetryCount?) -> RetryFloorVerdict {
     guard let reading = freshReading else { return .refuseUnreadable }
-    if reading.attemptsRemaining == 1 || reading.attemptsRemaining == 2 {
+    if (1...Constants.lowAttemptsThreshold).contains(reading.attemptsRemaining) {
       return .refuseLowAttempts
     }
     return .proceed

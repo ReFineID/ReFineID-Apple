@@ -15,6 +15,7 @@ import XCTest
 internal enum CardSetupScreen {
   /// How long a control takes to appear after launch.
   private static let appearTimeout: TimeInterval = 10
+  private static let deleteCharacterCount = 32
 
   /// Enters whichever credentials are not already stored.
   ///
@@ -58,7 +59,10 @@ internal enum CardSetupScreen {
       return false
     }
     field.tap()
-    field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 32))
+    field.typeText(
+      String(
+        repeating: XCUIKeyboardKey.delete.rawValue,
+        count: Self.deleteCharacterCount))
     field.typeText(digits)
 
     if fieldIdentifier == UITestIdentifiers.cardAccessNumberField {

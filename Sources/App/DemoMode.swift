@@ -14,6 +14,9 @@
   /// diagnostics. Quitting the process destroys both its card and device state.
   @MainActor
   internal final class DemoMode: ObservableObject {
+
+    // MARK: Static Properties
+
     internal static let shared = DemoMode()
 
     internal static let launchArgument = "--virtual-card"
@@ -23,10 +26,14 @@
     internal static let offersNearField =
       UIDevice.current.userInterfaceIdiom == .phone
 
+    // MARK: Static Computed Properties
+
     /// The scenario a demonstration starts from on this device class.
     internal static var defaultScenario: VirtualIDCard.Scenario {
       offersNearField ? .factoryFreshNearField : .factoryFreshReader
     }
+
+    // MARK: Properties
 
     @Published internal private(set) var isActive = false
     @Published internal private(set) var state = DemoMode.defaultScenario.snapshot
@@ -34,6 +41,8 @@
     @Published internal private(set) var isEditorPresented = false
 
     private var card = VirtualIDCard(scenario: DemoMode.defaultScenario)
+
+    // MARK: Computed Properties
 
     internal var isHolding: Bool { false }
 
@@ -70,6 +79,8 @@
     internal var activationScheme: ActivationScheme {
       Self.scheme(for: state.card.generation)
     }
+
+    // MARK: Static Functions
 
     private static func scheme(
       for generation: VirtualIDCard.Generation
@@ -151,6 +162,8 @@
         }
       }
     }
+
+    // MARK: Functions
 
     internal func setEditorPresented(_ presented: Bool) {
       isEditorPresented = presented
@@ -348,6 +361,7 @@
         CredentialRetryHealth.shared.clear()
       }
     }
+
   }
 
 #endif

@@ -10,10 +10,19 @@ import SwiftUI
 /// probe. There is no polling, and identity presentation never waits for it.
 @MainActor
 internal final class CredentialRetryHealth: ObservableObject {
+  private enum RetryThreshold {
+    static let lowAttempts: UInt8 = 2
+    static let zeroAttempts: UInt8 = 0
+  }
+
+  // MARK: Nested Types
+
   internal enum Level: Equatable {
     case pristine
     case warning
     case critical
+
+    // MARK: Computed Properties
 
     internal var color: Color {
       switch self {
@@ -60,7 +69,11 @@ internal final class CredentialRetryHealth: ObservableObject {
     case unrecoverable
   }
 
+  // MARK: Static Properties
+
   internal static let shared = CredentialRetryHealth()
+
+  // MARK: Properties
 
   @Published internal private(set) var level: Level?
   @Published internal private(set) var recovery: Recovery?
@@ -72,14 +85,12 @@ internal final class CredentialRetryHealth: ObservableObject {
   private var readerRefresh: Task<Void, Never>?
   private var refreshGeneration = 0
 
-  private init() {
-    // The one instance is `shared`; nothing is set up per instance.
-  }
+  // MARK: Lifecycle
 
-  /// Starts one non-blocking retry probe for the newly inserted reader card.
-  ///
-  /// A replacement or removal invalidates the generation, so a late answer can
-  /// never color the key for a card that is no longer present.
+  private init() {}
+
+  // MARK: Static Functions
+
   private static func attempts(_ outcome: RetryProbeOutcome) -> UInt8? {
     switch outcome {
     case .remaining(let count):
@@ -91,13 +102,19 @@ internal final class CredentialRetryHealth: ObservableObject {
     }
   }
 
+  // MARK: Functions
+
+  /// Starts one non-blocking retry probe for the newly inserted reader card.
+  ///
+  /// A replacement or removal invalidates the generation, so a late answer can
+  /// never color the key for a card that is no longer present.
   internal func refreshFromReader() {
     cancelReaderRefresh()
     level = nil
     report = nil
     let generation = refreshGeneration
     readerRefresh = Task { [weak self] in
-      let probed = await CardMaintenance.credentialReport(
+      let report = await CardMaintenance.credentialReport(
         transport: .reader,
         cardAccessNumber: nil
       )
@@ -107,7 +124,7 @@ internal final class CredentialRetryHealth: ObservableObject {
         refreshGeneration == generation
       else { return }
       readerRefresh = nil
-      apply(probed)
+      apply(report)
     }
   }
 
@@ -118,6 +135,13 @@ internal final class CredentialRetryHealth: ObservableObject {
   internal func update(_ report: CredentialProbeReport?) {
     cancelReaderRefresh()
     apply(report)
+  }
+
+  internal func clear() {
+    cancelReaderRefresh()
+    recovery = nil
+    level = nil
+    report = nil
   }
 
   private func apply(_ report: CredentialProbeReport?) {
@@ -140,14 +164,14 @@ internal final class CredentialRetryHealth: ObservableObject {
       return
     }
     self.report = report
-    if attempts.contains(where: { $0 <= RetryCount.lowAttemptCeiling }) {
-      if puk == 0 {
+    if attempts.contains(where: { $0 <= RetryThreshold.lowAttempts }) {
+      if puk == RetryThreshold.zeroAttempts {
         recovery = .unrecoverable
-      } else if puk <= RetryCount.lowAttemptCeiling {
+      } else if puk <= RetryThreshold.lowAttempts {
         recovery = .useOtherSoftware
-      } else if pin1 <= RetryCount.lowAttemptCeiling {
+      } else if pin1 <= RetryThreshold.lowAttempts {
         recovery = .resetPin1
-      } else if pin2 <= RetryCount.lowAttemptCeiling {
+      } else if pin2 <= RetryThreshold.lowAttempts {
         recovery = .resetPin2
       } else {
         recovery = nil
@@ -160,13 +184,6 @@ internal final class CredentialRetryHealth: ObservableObject {
       recovery = nil
       level = .warning
     }
-  }
-
-  internal func clear() {
-    cancelReaderRefresh()
-    recovery = nil
-    level = nil
-    report = nil
   }
 
   private func cancelReaderRefresh() {

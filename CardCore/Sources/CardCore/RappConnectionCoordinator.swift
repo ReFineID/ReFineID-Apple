@@ -1,19 +1,13 @@
 #if canImport(RappEngine)
   import Foundation
   import RappEngine
-  /// The sole byte-transport capability required by RAPP.
-  ///
-  /// Implementations must preserve frame boundaries and report successful
-  /// release by returning from ``send(_:)``. They must not parse, log, retry,
-  /// or reinterpret frames.
-  public protocol RappFrameTransport: Sendable {
-    func send(_ frame: Data) async throws
-    func close() async
-  }
 
   /// Runs one authenticated connection from Noise setup through durable card
   /// operations. All externally visible events are semantic and authenticated.
   public actor RappConnectionCoordinator {
+
+    // MARK: Nested Types
+
     /// Why the connection closed, attributed to the phase that closed it.
     public enum CloseReason: Sendable, Equatable {
       case handshake(RappSessionDriver.CloseReason)
@@ -63,6 +57,8 @@
       case closed
     }
 
+    // MARK: Properties
+
     /// Connection events in order; the stream finishes after `closed`.
     nonisolated public let events: AsyncStream<Event>
 
@@ -75,6 +71,8 @@
     private var operation: RappOperationDriver?
     private var phase = Phase.handshaking
     private var livenessTask: Task<Void, Never>?
+
+    // MARK: Lifecycle
 
     /// Prepares one connection over an established pair; ``start()`` sends
     /// the first frame.
@@ -106,10 +104,7 @@
       self.continuation = capturedContinuation
     }
 
-    deinit {
-      livenessTask?.cancel()
-      continuation.finish()
-    }
+    // MARK: Functions
 
     /// Begins the Noise handshake once the transport is connected.
     public func start() async {
@@ -459,24 +454,29 @@
       }
     }
 
-    private func scheduleLiveness(at deadline: UInt64) {
-      guard phase == .operating else { return }
+  private func scheduleLiveness(at deadline: UInt64) {
+    guard phase == .operating else { return }
       livenessTask?.cancel()
 
-      let now = clock.monotonicMilliseconds()
-      let delayMilliseconds = deadline > now ? deadline - now : 0
-      let (convertedDelay, overflow) = delayMilliseconds.multipliedReportingOverflow(
-        by: 1_000_000
-      )
-      let delayNanoseconds = overflow ? UInt64.max : convertedDelay
+    let now = clock.monotonicMilliseconds()
+    enum Timing {
+      static let nanosecondsPerMillisecond: UInt64 = 1_000_000
+    }
+
+    let delayMilliseconds = deadline > now ? deadline - now : 0
+    let maximumDelayNanoseconds = UInt64.max
+    let (convertedDelay, overflow) = delayMilliseconds.multipliedReportingOverflow(
+      by: Timing.nanosecondsPerMillisecond
+    )
+    let delayNanoseconds = overflow ? maximumDelayNanoseconds : convertedDelay
       let maximumJitter = min(
         liveness.maximumJitterMilliseconds,
         UInt64(Int64.max)
       )
 
-      livenessTask = Task { [weak self] in
-        do {
-          try await Task.sleep(nanoseconds: delayNanoseconds)
+    livenessTask = Task { [weak self] in
+      do {
+        try await Task.sleep(nanoseconds: delayNanoseconds)
         } catch {
           return
         }
@@ -496,6 +496,11 @@
       livenessTask = nil
       await transport.close()
       continuation.yield(.closed(reason))
+      continuation.finish()
+    }
+
+    deinit {
+      livenessTask?.cancel()
       continuation.finish()
     }
   }

@@ -5,12 +5,42 @@ import Foundation
 import Testing
 
 @Suite("RAPP shipping configuration")
-struct RappShippingConfigurationTests {
+internal struct RappShippingConfigurationTests {
+
+  // MARK: Static Properties
+
   private static let classID = "fi.refineid.ReFineID.rapp-token"
   private static let service = "_refineid-rly._tcp"
 
+  // MARK: Static Computed Properties
+
+  private static var root: URL {
+    URL(fileURLWithPath: #filePath)
+      .deletingLastPathComponent()
+      .deletingLastPathComponent()
+      .deletingLastPathComponent()
+  }
+
+  // MARK: Static Functions
+
+  private static func plist(_ path: String) throws -> [String: Any] {
+    let data = try Data(contentsOf: root.appending(path: path))
+    return try #require(
+      PropertyListSerialization.propertyList(from: data, format: nil)
+        as? [String: Any])
+  }
+
+  private static func extensionAttributes(
+    _ plist: [String: Any]
+  ) -> [String: Any]? {
+    (plist["NSExtension"] as? [String: Any])?["NSExtensionAttributes"]
+      as? [String: Any]
+  }
+
+  // MARK: Functions
+
   @Test("RAPP and smart-card drivers have separate CryptoTokenKit classes")
-  func separateTokenDrivers() throws {
+  internal func separateTokenDrivers() throws {
     #expect(PersistentTokenIdentity.classID == Self.classID)
 
     let reader = try Self.plist("Config/TokenExtension-Info.plist")
@@ -30,7 +60,7 @@ struct RappShippingConfigurationTests {
   }
 
   @Test("RAPP extension is a distinct embedded product on every platform")
-  func separateRappExtensionTarget() throws {
+  internal func separateRappExtensionTarget() throws {
     let project = try String(
       contentsOf: Self.root.appending(path: "ReFineID.xcodeproj/project.pbxproj"),
       encoding: .utf8)
@@ -42,7 +72,7 @@ struct RappShippingConfigurationTests {
   }
 
   @Test("RAPP network declarations are present in shipping containers")
-  func networkDeclarations() throws {
+  internal func networkDeclarations() throws {
     for path in [
       "Config/ReFineID-Info.plist",
       "Config/ReFineID-iOS-Info.plist",
@@ -75,7 +105,7 @@ struct RappShippingConfigurationTests {
   }
 
   @Test("Release inspection enforces the separate RAPP archive topology")
-  func releaseInspectionTopology() throws {
+  internal func releaseInspectionTopology() throws {
     let source = try String(
       contentsOf: Self.root.appending(
         path: "Scripts/apple-app-store-connect-release-manager.swift"),
@@ -86,24 +116,4 @@ struct RappShippingConfigurationTests {
     #expect(!source.contains("network entitlements match the gated-relay shape"))
   }
 
-  private static var root: URL {
-    URL(fileURLWithPath: #filePath)
-      .deletingLastPathComponent()
-      .deletingLastPathComponent()
-      .deletingLastPathComponent()
-  }
-
-  private static func plist(_ path: String) throws -> [String: Any] {
-    let data = try Data(contentsOf: root.appending(path: path))
-    return try #require(
-      PropertyListSerialization.propertyList(from: data, format: nil)
-        as? [String: Any])
-  }
-
-  private static func extensionAttributes(
-    _ plist: [String: Any]
-  ) -> [String: Any]? {
-    (plist["NSExtension"] as? [String: Any])?["NSExtensionAttributes"]
-      as? [String: Any]
-  }
 }

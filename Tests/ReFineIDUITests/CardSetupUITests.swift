@@ -10,12 +10,8 @@ import XCTest
 /// that opt-in a missing credential fails and names the missing variable.
 @MainActor
 internal final class CardSetupUITests: XCTestCase {
-  override internal func setUpWithError() throws {
-    try super.setUpWithError()
-    try XCTSkipUnless(
-      UITestEnvironment.realCardTestsEnabled,
-      "Set TEST_RUNNER_\(UITestEnvironment.realCardTestsVariable)=1 to run physical-card tests")
-  }
+
+  // MARK: Static Functions
 
   /// What to say when the run was not given a value it cannot invent.
   ///
@@ -28,6 +24,17 @@ internal final class CardSetupUITests: XCTestCase {
       + "TEST_RUNNER_\(variable)=... xcodebuild test ... - not appended "
       + "after the arguments, and not as a plain exported variable."
   }
+
+  // MARK: Overridden Functions
+
+  override internal func setUpWithError() throws {
+    try super.setUpWithError()
+    try XCTSkipUnless(
+      UITestEnvironment.realCardTestsEnabled,
+      "Set TEST_RUNNER_\(UITestEnvironment.realCardTestsVariable)=1 to run physical-card tests")
+  }
+
+  // MARK: Functions
 
   /// Enters both credentials and asserts that identity creation is ready.
   internal func testAcceptsCredentialsForIdentityMinting() throws {
@@ -63,4 +70,5 @@ internal final class CardSetupUITests: XCTestCase {
       mint.waitForExistence(timeout: 10) && mint.isEnabled,
       "valid CAN and PIN1 did not enable identity minting")
   }
+
 }

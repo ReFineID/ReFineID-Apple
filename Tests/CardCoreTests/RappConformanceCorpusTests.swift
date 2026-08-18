@@ -18,13 +18,36 @@ import Testing
 
 @Suite("RAPP independent conformance corpus")
 internal struct RappConformanceCorpusTests {
+
+  // MARK: Static Functions
+
+  private static func corpus() throws -> RappConformanceCorpusSupport.Corpus {
+    try JSONDecoder().decode(RappConformanceCorpusSupport.Corpus.self, from: corpusSource())
+  }
+
+  private static func corpusSource() throws -> Data {
+    let repositoryRoot = URL(fileURLWithPath: #filePath)
+      .deletingLastPathComponent()
+      .deletingLastPathComponent()
+      .deletingLastPathComponent()
+    return try Data(
+      contentsOf:
+      repositoryRoot
+        .appendingPathComponent("Documentation/rapp-conformance/rapp-v26.8.17.233.json")
+    )
+  }
+
+  // MARK: Functions
+
   @Test("Corpus identity and provenance are fixed")
   internal func corpusIdentity() throws {
     let source = try Self.corpusSource()
     let digest = Data(SHA256.hash(data: source))
-    #expect(digest.hex == "3165ba9c4bd2cf1063707eb799af401bf232e0f62e546702781afa0bf6229bd7")
+    #expect(RappConformanceCorpusSupport.hex(digest) == "3165ba9c4bd2cf1063707eb799af401bf232e0f62e546702781afa0bf6229bd7")
 
-    let corpus = try JSONDecoder().decode(Corpus.self, from: source)
+    let corpus = try JSONDecoder().decode(
+      RappConformanceCorpusSupport.Corpus.self,
+      from: source)
     #expect(corpus.format == "fi.refineid.rapp.conformance-v1")
     #expect(corpus.protocolDocumentVersion == "26.8.17.233")
     #expect(corpus.deterministicCBOR.count == 15)
@@ -38,23 +61,27 @@ internal struct RappConformanceCorpusTests {
   @Test("Swift independently produces every golden deterministic-CBOR value")
   internal func deterministicCBOR() throws {
     for vector in try Self.corpus().deterministicCBOR {
-      #expect(try DeterministicCBOR.encode(vector.value) == Data(hex: vector.encodedHex))
+      #expect(
+        try RappConformanceCorpusSupport.DeterministicCBOR.encode(vector.value)
+          == RappConformanceCorpusSupport.data(fromHex: vector.encodedHex))
     }
   }
 
   @Test("Swift independently derives pair, session, and rendezvous identifiers")
   internal func identifierDerivation() throws {
     for vector in try Self.corpus().identifierDerivation {
-      let handshakeHash = try Data(hex: vector.handshakeHashHex)
+      let handshakeHash = try RappConformanceCorpusSupport.data(fromHex: vector.handshakeHashHex)
       let pairInput = Data("RAPP-pair-id-v1".utf8) + handshakeHash
       let sessionInput = Data("RAPP-session-id-v1".utf8) + handshakeHash
       let rendezvousInput = Data("RAPP-rendezvous-v1".utf8) + handshakeHash
       let pairID = Data(SHA256.hash(data: pairInput).prefix(16))
       let sessionID = Data(SHA256.hash(data: sessionInput).prefix(16))
       let rendezvousToken = Data(SHA256.hash(data: rendezvousInput).prefix(16))
-      let expectedPairID = try Data(hex: vector.pairIDHex)
-      let expectedSessionID = try Data(hex: vector.sessionIDHex)
-      let expectedRendezvousToken = try Data(hex: vector.rendezvousTokenHex)
+      let expectedPairID = try RappConformanceCorpusSupport.data(fromHex: vector.pairIDHex)
+      let expectedSessionID = try RappConformanceCorpusSupport.data(fromHex: vector.sessionIDHex)
+      let expectedRendezvousToken = try RappConformanceCorpusSupport.data(
+        fromHex: vector.rendezvousTokenHex
+      )
       #expect(pairID == expectedPairID)
       #expect(sessionID == expectedSessionID)
       #expect(rendezvousToken == expectedRendezvousToken)
@@ -64,11 +91,11 @@ internal struct RappConformanceCorpusTests {
   @Test("Swift independently encodes the accepted stream rendezvous preambles")
   internal func streamRendezvous() throws {
     for vector in try Self.corpus().streamRendezvous {
-      let encoded = try Data(hex: vector.encodedHex)
+      let encoded = try RappConformanceCorpusSupport.data(fromHex: vector.encodedHex)
       if vector.accepted {
-        let token =
-          try vector.rendezvousTokenHex.map { try Data(hex: $0) } ?? Data()
-        let preamble = try DeterministicCBOR.encode(
+        let token = try vector.rendezvousTokenHex.map(RappConformanceCorpusSupport.data(fromHex:)) ??
+          Data()
+        let preamble = try RappConformanceCorpusSupport.DeterministicCBOR.encode(
           .array([
             .text("RAPP-stream-v1"),
             .text(vector.purpose),
@@ -90,11 +117,13 @@ internal struct RappConformanceCorpusTests {
       let profiles = vector.profiles.sorted {
         Data($0.utf8).lexicographicallyPrecedes(Data($1.utf8))
       }
-      let preimage = try DeterministicCBOR.encode(
-        .array(profiles.map(CorpusValue.text))
+      let preimage = try RappConformanceCorpusSupport.DeterministicCBOR.encode(
+        .array(profiles.map(RappConformanceCorpusSupport.CorpusValue.text))
       )
-      let expectedPreimage = try Data(hex: vector.canonicalCBORHex)
-      let expectedHash = try Data(hex: vector.sha256Hex)
+      let expectedPreimage = try RappConformanceCorpusSupport.data(
+        fromHex: vector.canonicalCBORHex
+      )
+      let expectedHash = try RappConformanceCorpusSupport.data(fromHex: vector.sha256Hex)
       #expect(preimage == expectedPreimage)
       #expect(Data(SHA256.hash(data: preimage)) == expectedHash)
     }
@@ -103,289 +132,23 @@ internal struct RappConformanceCorpusTests {
   @Test("Swift independently constructs and commits a request")
   internal func requestHash() throws {
     for vector in try Self.corpus().requestHash {
-      let preimageValue = CorpusValue.array([
+      let preimageValue = try RappConformanceCorpusSupport.CorpusValue.array([
         .text("RAPP-request-v1"),
-        .bytes(try Data(hex: vector.sessionIDHex)),
-        .bytes(try Data(hex: vector.operationIDHex)),
+        .bytes(RappConformanceCorpusSupport.data(fromHex: vector.sessionIDHex)),
+        .bytes(RappConformanceCorpusSupport.data(fromHex: vector.operationIDHex)),
         .text(vector.profile),
         .text(vector.action),
         vector.context,
         vector.payload,
       ])
-      let preimage = try DeterministicCBOR.encode(preimageValue)
-      let expectedPreimage = try Data(hex: vector.preimageCBORHex)
-      let expectedHash = try Data(hex: vector.sha256Hex)
+      let preimage = try RappConformanceCorpusSupport.DeterministicCBOR.encode(preimageValue)
+      let expectedPreimage = try RappConformanceCorpusSupport.data(
+        fromHex: vector.preimageCBORHex
+      )
+      let expectedHash = try RappConformanceCorpusSupport.data(fromHex: vector.sha256Hex)
       #expect(preimage == expectedPreimage)
       #expect(Data(SHA256.hash(data: preimage)) == expectedHash)
     }
   }
 
-  private static func corpus() throws -> Corpus {
-    try JSONDecoder().decode(Corpus.self, from: corpusSource())
-  }
-
-  private static func corpusSource() throws -> Data {
-    let repositoryRoot = URL(fileURLWithPath: #filePath)
-      .deletingLastPathComponent()
-      .deletingLastPathComponent()
-      .deletingLastPathComponent()
-    return try Data(
-      contentsOf:
-        repositoryRoot
-        .appendingPathComponent("Documentation/rapp-conformance/rapp-v26.8.17.233.json")
-    )
-  }
-}
-
-private struct Corpus: Decodable {
-  let format: String
-  let protocolDocumentVersion: String
-  let deterministicCBOR: [CBORVector]
-  let identifierDerivation: [IdentifierVector]
-  let grantsHash: [GrantsVector]
-  let requestHash: [RequestVector]
-  let rejectedCBOR: [RejectedCBORVector]
-  let streamRendezvous: [StreamRendezvousVector]
-
-  private enum CodingKeys: String, CodingKey {
-    case format
-    case protocolDocumentVersion = "protocol_document_version"
-    case deterministicCBOR = "deterministic_cbor"
-    case identifierDerivation = "identifier_derivation"
-    case grantsHash = "grants_hash"
-    case requestHash = "request_hash"
-    case rejectedCBOR = "rejected_cbor"
-    case streamRendezvous = "stream_rendezvous"
-  }
-}
-
-private struct CBORVector: Decodable {
-  let name: String
-  let value: CorpusValue
-  let encodedHex: String
-
-  private enum CodingKeys: String, CodingKey {
-    case name
-    case value
-    case encodedHex = "encoded_hex"
-  }
-}
-
-private struct IdentifierVector: Decodable {
-  let name: String
-  let handshakeHashHex: String
-  let pairIDHex: String
-  let sessionIDHex: String
-  let rendezvousTokenHex: String
-
-  private enum CodingKeys: String, CodingKey {
-    case name
-    case handshakeHashHex = "handshake_hash_hex"
-    case pairIDHex = "pair_id_hex"
-    case sessionIDHex = "session_id_hex"
-    case rendezvousTokenHex = "rendezvous_token_hex"
-  }
-}
-
-private struct StreamRendezvousVector: Decodable {
-  private enum CodingKeys: String, CodingKey {
-    case name
-    case accepted
-    case purpose
-    case encodedHex = "encoded_hex"
-    case rendezvousTokenHex = "rendezvous_token_hex"
-    case error
-  }
-
-  let name: String
-  let accepted: Bool
-  let purpose: String
-  let encodedHex: String
-  let rendezvousTokenHex: String?
-  let error: String?
-}
-
-private struct GrantsVector: Decodable {
-  let name: String
-  let profiles: [String]
-  let canonicalCBORHex: String
-  let sha256Hex: String
-
-  private enum CodingKeys: String, CodingKey {
-    case name
-    case profiles
-    case canonicalCBORHex = "canonical_cbor_hex"
-    case sha256Hex = "sha256_hex"
-  }
-}
-
-private struct RequestVector: Decodable {
-  let name: String
-  let sessionIDHex: String
-  let operationIDHex: String
-  let profile: String
-  let action: String
-  let context: CorpusValue
-  let payload: CorpusValue
-  let preimageCBORHex: String
-  let sha256Hex: String
-
-  private enum CodingKeys: String, CodingKey {
-    case name
-    case sessionIDHex = "session_id_hex"
-    case operationIDHex = "operation_id_hex"
-    case profile
-    case action
-    case context
-    case payload
-    case preimageCBORHex = "preimage_cbor_hex"
-    case sha256Hex = "sha256_hex"
-  }
-}
-
-private struct RejectedCBORVector: Decodable {
-  let name: String
-  let encodedHex: String
-  let error: String
-
-  private enum CodingKeys: String, CodingKey {
-    case name
-    case encodedHex = "encoded_hex"
-    case error
-  }
-}
-
-private indirect enum CorpusValue: Decodable {
-  case unsigned(UInt64)
-  case negative(Int64)
-  case bytes(Data)
-  case text(String)
-  case array([Self])
-  case map([CorpusMapEntry])
-  case bool(Bool)
-  case null
-
-  init(from decoder: Decoder) throws {
-    let container = try decoder.container(keyedBy: CodingKeys.self)
-    switch try container.decode(String.self, forKey: .kind) {
-    case "unsigned": self = .unsigned(try container.decode(UInt64.self, forKey: .value))
-    case "negative": self = .negative(try container.decode(Int64.self, forKey: .value))
-    case "bytes": self = .bytes(try Data(hex: container.decode(String.self, forKey: .hex)))
-    case "text": self = .text(try container.decode(String.self, forKey: .value))
-    case "array": self = .array(try container.decode([Self].self, forKey: .items))
-    case "map": self = .map(try container.decode([CorpusMapEntry].self, forKey: .entries))
-    case "bool": self = .bool(try container.decode(Bool.self, forKey: .value))
-    case "null": self = .null
-    case let kind:
-      throw DecodingError.dataCorruptedError(
-        forKey: .kind,
-        in: container,
-        debugDescription: "Unknown corpus value kind \(kind)"
-      )
-    }
-  }
-
-  private enum CodingKeys: String, CodingKey {
-    case kind
-    case value
-    case hex
-    case items
-    case entries
-  }
-}
-
-private struct CorpusMapEntry: Decodable {
-  let key: String
-  let value: CorpusValue
-}
-
-private enum DeterministicCBOR {
-  static func encode(_ value: CorpusValue) throws -> Data {
-    switch value {
-    case .unsigned(let number):
-      return header(major: 0, value: number)
-    case .negative(let number):
-      guard number < 0 else { throw CorpusError.invalidNegative }
-      return header(major: 1, value: UInt64(-(number + 1)))
-    case .bytes(let bytes):
-      return header(major: 2, value: UInt64(bytes.count)) + bytes
-    case .text(let text):
-      let bytes = Data(text.utf8)
-      return header(major: 3, value: UInt64(bytes.count)) + bytes
-    case .array(let items):
-      return try items.reduce(header(major: 4, value: UInt64(items.count))) {
-        $0 + (try encode($1))
-      }
-    case .map(let entries):
-      var seen = Set<Data>()
-      let encodedEntries = try entries.map { entry -> (Data, Data) in
-        let key = try encode(.text(entry.key))
-        guard seen.insert(key).inserted else { throw CorpusError.duplicateMapKey }
-        return (key, try encode(entry.value))
-      }.sorted { left, right in
-        left.0.lexicographicallyPrecedes(right.0)
-      }
-      return encodedEntries.reduce(header(major: 5, value: UInt64(entries.count))) {
-        $0 + $1.0 + $1.1
-      }
-    case .bool(let value):
-      return Data([value ? 0xF5 : 0xF4])
-    case .null:
-      return Data([0xF6])
-    }
-  }
-
-  private static func header(major: UInt8, value: UInt64) -> Data {
-    let prefix = major << 5
-    switch value {
-    case 0...23:
-      return Data([prefix | UInt8(value)])
-    case 24...UInt64(UInt8.max):
-      return Data([prefix | 24, UInt8(value)])
-    case 0...UInt64(UInt16.max):
-      var integer = UInt16(value).bigEndian
-      return Data([prefix | 25]) + withUnsafeBytes(of: &integer) { Data($0) }
-    case 0...UInt64(UInt32.max):
-      var integer = UInt32(value).bigEndian
-      return Data([prefix | 26]) + withUnsafeBytes(of: &integer) { Data($0) }
-    default:
-      var integer = value.bigEndian
-      return Data([prefix | 27]) + withUnsafeBytes(of: &integer) { Data($0) }
-    }
-  }
-}
-
-private enum CorpusError: Error {
-  case invalidHex
-  case invalidNegative
-  case duplicateMapKey
-}
-
-extension Data {
-  fileprivate init(hex: String) throws {
-    let characters = Array(hex.utf8)
-    guard characters.count.isMultiple(of: 2) else { throw CorpusError.invalidHex }
-    self.init()
-    reserveCapacity(characters.count / 2)
-    for index in stride(from: 0, to: characters.count, by: 2) {
-      guard
-        let high = Self.hexNibble(characters[index]),
-        let low = Self.hexNibble(characters[index + 1])
-      else { throw CorpusError.invalidHex }
-      append((high << 4) | low)
-    }
-  }
-
-  fileprivate var hex: String {
-    map { String(format: "%02x", $0) }.joined()
-  }
-
-  fileprivate static func hexNibble(_ byte: UInt8) -> UInt8? {
-    switch byte {
-    case 48...57: byte - 48
-    case 65...70: byte - 55
-    case 97...102: byte - 87
-    default: nil
-    }
-  }
 }

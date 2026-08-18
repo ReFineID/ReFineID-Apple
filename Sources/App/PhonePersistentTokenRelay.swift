@@ -12,16 +12,23 @@
   /// operation, and fail-stop decisions belong to RAPP.
   @MainActor
   internal final class PhonePersistentTokenRelay {
-    internal static let shared = PhonePersistentTokenRelay()
+
+    // MARK: Nested Types
 
     private enum RelistenPolicy {
       case automatic
       case explicitUserActionRequired
     }
 
+    // MARK: Static Properties
+
+    internal static let shared = PhonePersistentTokenRelay()
+
     private static let maximumPreCoordinatorFrames = 4
     /// Pause between stream dial attempts while redialing is automatic.
     private static let streamRedialDelayMilliseconds = 2_000
+
+    // MARK: Properties
 
     private let vault = RappDeviceVault()
     private let policy = RappRequesterPolicy.interactive
@@ -33,7 +40,11 @@
     private var preCoordinatorFrames: [Data] = []
     private var relistenPolicy = RelistenPolicy.automatic
 
+    // MARK: Lifecycle
+
     private init() {}
+
+    // MARK: Functions
 
     internal func start() {
       // A proxy without an antenna is not a proxy: only near-field
@@ -63,23 +74,6 @@
       relay.start()
     }
 
-    /// The stream profile dials the requester's stored listener endpoints
-    /// with the pair's session preamble instead of advertising nearby.
-    private func startStream(_ context: PhoneStreamPairContext) {
-      let streamConnectionID = UUID()
-      let stream = StreamRelaySession(
-        endpointLiterals: context.endpoints,
-        preamble: context.preamble
-      ) { [weak self] event in
-        Task { @MainActor in
-          self?.receiveStream(event, connectionID: streamConnectionID)
-        }
-      }
-      connectionID = streamConnectionID
-      streamRelay = stream
-      stream.start()
-    }
-
     /// Explicit UI action may call this after the user has corrected local
     /// credentials or deliberately chosen to reconnect.
     ///
@@ -95,6 +89,23 @@
       relay?.cancel()
       streamRelay?.cancel()
       Task { await coordinator?.close() }
+    }
+
+    /// The stream profile dials the requester's stored listener endpoints
+    /// with the pair's session preamble instead of advertising nearby.
+    private func startStream(_ context: PhoneStreamPairContext) {
+      let streamConnectionID = UUID()
+      let stream = StreamRelaySession(
+        endpointLiterals: context.endpoints,
+        preamble: context.preamble
+      ) { [weak self] event in
+        Task { @MainActor in
+          self?.receiveStream(event, connectionID: streamConnectionID)
+        }
+      }
+      connectionID = streamConnectionID
+      streamRelay = stream
+      stream.start()
     }
 
     private func receive(

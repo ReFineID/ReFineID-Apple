@@ -5,14 +5,22 @@
   /// to Swift; the generated Rust bridge owns the QR bearer secret, Noise state,
   /// private keys, transcript checks, and final pair record.
   public actor RappPairingCoordinator {
+
+    // MARK: Nested Types
+
     /// One transport option offered for the pairing attempt.
     public struct TransportCandidate: Sendable, Equatable {
+
+      // MARK: Properties
+
       /// Registered transport profile name.
       public let profile: String
       /// Opaque identifier echoed back after peer authentication.
       public let candidateID: String
       /// Deterministic-CBOR map of profile-specific public parameters.
       public let parametersCBOR: Data
+
+      // MARK: Computed Properties
 
       fileprivate var binding: RappTransportCandidate {
         RappTransportCandidate(
@@ -22,16 +30,22 @@
         )
       }
 
+      // MARK: Lifecycle
+
       /// Creates a candidate from already-encoded public parameters.
       public init(profile: String, candidateID: String, parametersCBOR: Data) {
         self.profile = profile
         self.candidateID = candidateID
         self.parametersCBOR = parametersCBOR
       }
+
     }
 
     /// Authenticated peer facts shown for the explicit pairing decision.
     public struct Peer: Sendable, Equatable {
+
+      // MARK: Properties
+
       /// User-visible peer label shown during pairing confirmation.
       public let displayName: String
       /// Peer platform label.
@@ -39,20 +53,28 @@
       /// Exact requester profile list; absent when the peer is the proxy.
       public let requestedProfiles: [String]?
 
+      // MARK: Lifecycle
+
       fileprivate init(_ hello: RappPeerHello) {
         displayName = hello.displayName
         platform = hello.platform
         requestedProfiles = hello.requestedProfiles
       }
+
     }
 
     /// Non-secret metadata for a completed pairing.
     public struct PairSummary: Sendable, Equatable {
+
+      // MARK: Nested Types
+
       /// Local endpoint role bound into the pair record.
       public enum Role: Sendable, Equatable {
         case requester
         case proxy
       }
+
+      // MARK: Properties
 
       /// Transcript-derived pair identifier.
       public let pairID: Data
@@ -67,7 +89,9 @@
       /// Wall-clock creation time recorded in the pair record.
       public let createdAtMilliseconds: UInt64
 
-      init(_ metadata: RappPairMetadata) {
+      // MARK: Lifecycle
+
+      internal init(_ metadata: RappPairMetadata) {
         pairID = metadata.pairId
         role = metadata.role == .requester ? .requester : .proxy
         profiles = metadata.profiles
@@ -75,6 +99,7 @@
         candidateID = metadata.candidateId
         createdAtMilliseconds = metadata.createdAtMs
       }
+
     }
 
     /// Reason the pairing attempt ended without a completed pair.
@@ -117,6 +142,8 @@
       case closed
     }
 
+    // MARK: Properties
+
     /// Delivers pairing events in order until the attempt ends.
     nonisolated public let events: AsyncStream<Event>
     /// Secret-bearing QR text; present only for the requester role.
@@ -137,6 +164,8 @@
     private var peerGrantedProfiles: [String]?
     private var localConfirmationSent = false
     private var offerExpiryTask: Task<Void, Never>?
+
+    // MARK: Lifecycle
 
     private init(
       role: Role,
@@ -169,10 +198,7 @@
       self.continuation = capturedContinuation
     }
 
-    private static func deadline(startedAt: UInt64, lifetime: UInt64) -> UInt64 {
-      let (deadline, overflow) = startedAt.addingReportingOverflow(lifetime)
-      return overflow ? UInt64.max : deadline
-    }
+    // MARK: Static Functions
 
     /// Creates the requester side owning a fresh one-use offer that covers
     /// the given transport candidates.
@@ -245,6 +271,13 @@
         )
       )
     }
+
+    private static func deadline(startedAt: UInt64, lifetime: UInt64) -> UInt64 {
+      let (deadline, overflow) = startedAt.addingReportingOverflow(lifetime)
+      return overflow ? UInt64.max : deadline
+    }
+
+    // MARK: Functions
 
     /// Publishes the requester QR without consuming it or starting transport.
     public func publishOffer() {
@@ -521,18 +554,23 @@
       return true
     }
 
-    private func scheduleOfferExpiry() {
-      guard offerExpiryTask == nil else { return }
-      let now = clock.monotonicMilliseconds()
-      let remainingMilliseconds =
-        offerDeadlineMilliseconds > now
+  private func scheduleOfferExpiry() {
+    guard offerExpiryTask == nil else { return }
+    let now = clock.monotonicMilliseconds()
+    enum Timing {
+      static let nanosecondsPerMillisecond: UInt64 = 1_000_000
+    }
+
+    let maximumDelayNanoseconds = UInt64.max
+    let remainingMilliseconds =
+      offerDeadlineMilliseconds > now
         ? offerDeadlineMilliseconds - now
         : 0
-      let (nanoseconds, overflow) = remainingMilliseconds.multipliedReportingOverflow(
-        by: 1_000_000
-      )
-      let delay = overflow ? UInt64.max : nanoseconds
-      offerExpiryTask = Task { [weak self] in
+    let (nanoseconds, overflow) = remainingMilliseconds.multipliedReportingOverflow(
+      by: Timing.nanosecondsPerMillisecond
+    )
+    let delay = overflow ? maximumDelayNanoseconds : nanoseconds
+    offerExpiryTask = Task { [weak self] in
         do {
           try await Task.sleep(nanoseconds: delay)
         } catch {
@@ -546,9 +584,9 @@
     private func expireOffer() async {
       guard
         state == .offer
-          || state == .awaitingRequesterHandshake
-          || state == .awaitingResponderHandshake
-          || state == .awaitingFinalRequesterHandshake
+        || state == .awaitingRequesterHandshake
+        || state == .awaitingResponderHandshake
+        || state == .awaitingFinalRequesterHandshake
       else { return }
       await fail(.offerExpired)
     }
@@ -557,5 +595,6 @@
       offerExpiryTask?.cancel()
       continuation.finish()
     }
+
   }
 #endif

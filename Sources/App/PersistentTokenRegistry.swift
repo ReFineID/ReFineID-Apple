@@ -15,7 +15,12 @@
   /// remote connect already read, so the holder is asked exactly once.
   @MainActor
   internal final class PersistentTokenRegistry {
+
+    // MARK: Static Properties
+
     internal static let shared = PersistentTokenRegistry()
+
+    // MARK: Static Computed Properties
 
     private static var driverConfiguration: TKTokenDriver.Configuration? {
       TKTokenDriver.Configuration.driverConfigurations[
@@ -26,11 +31,16 @@
     private static var needsIdentity: Bool {
       driverConfiguration?.tokenConfigurations.isEmpty ?? true
     }
+
+    // MARK: Properties
+
     private var isRunning = false
 
-    private init() {
-      // The one instance is `shared`; nothing is set up per instance.
-    }
+    // MARK: Lifecycle
+
+    private init() {}
+
+    // MARK: Static Functions
 
     /// Publishes an already-fetched certificate as the persistent
     /// identity.
@@ -90,6 +100,8 @@
       #endif
     }
 
+    // MARK: Functions
+
     /// Fetches and publishes once at launch, on the platform whose
     /// requester runs unattended.
     ///
@@ -130,5 +142,6 @@
         Self.publish(certificateDER)
       }
     #endif
+
   }
 #endif

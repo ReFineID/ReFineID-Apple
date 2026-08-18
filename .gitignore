@@ -71,3 +71,8 @@ build/
 
 # Per-developer feature flags
 Config/LocalFeatures.xcconfig
+
+## SwiftLint report dumps
+lint*.json
+targeted.json
+persistent_only.json
