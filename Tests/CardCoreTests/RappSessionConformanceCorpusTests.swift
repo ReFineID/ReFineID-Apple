@@ -2,16 +2,42 @@ import Foundation
 import Testing
 
 @Suite("RAPP independent session conformance corpus")
-struct RappSessionConformanceCorpusTests {
+internal struct RappSessionConformanceCorpusTests {
+
+  // MARK: Static Properties
+
   private static let supportedWireVersion: [UInt16] = [26, 8]
 
+  // MARK: Static Functions
+
+  private static func corpus() throws -> RappSessionConformanceCorpusSupport.SessionCorpus {
+    let repository = URL(fileURLWithPath: #filePath)
+      .deletingLastPathComponent()
+      .deletingLastPathComponent()
+      .deletingLastPathComponent()
+    let url =
+      repository
+      .appendingPathComponent("Documentation")
+      .appendingPathComponent("rapp-conformance")
+      .appendingPathComponent("rapp-v26.8.17.233.json")
+    let decoder = JSONDecoder()
+    decoder.keyDecodingStrategy = .convertFromSnakeCase
+    return try decoder.decode(
+      RappSessionConformanceCorpusSupport.SessionCorpus.self,
+      from: Data(contentsOf: url))
+  }
+
+  // MARK: Functions
+
   @Test
-  func exactDirectionalSequenceAndSessionBindingMatchCorpus() throws {
+  internal func exactDirectionalSequenceAndSessionBindingMatchCorpus() throws {
     let vectors = try Self.corpus().sequenceGuard
     #expect(vectors.count == 6)
     for vector in vectors {
-      let guardSessionID = try Data(sessionHex: vector.guardSessionIdHex)
-      var guardState = IndependentSequenceGuard(sessionID: guardSessionID)
+      let guardSessionID = try RappSessionConformanceCorpusSupport.data(
+        fromHex: vector.guardSessionIdHex)
+      var guardState = RappSessionConformanceCorpusSupport.IndependentSequenceGuard(
+        sessionID: guardSessionID)
 
       for sequence in vector.acceptedSequences {
         #expect(
@@ -20,7 +46,8 @@ struct RappSessionConformanceCorpusTests {
         )
       }
 
-      let incomingSessionID = try Data(sessionHex: vector.incomingSessionIdHex)
+      let incomingSessionID = try RappSessionConformanceCorpusSupport.data(
+        fromHex: vector.incomingSessionIdHex)
       #expect(
         guardState.accept(
           sessionID: incomingSessionID,
@@ -39,7 +66,7 @@ struct RappSessionConformanceCorpusTests {
   }
 
   @Test
-  func visibleWireVersionRejectsDowngradesAndUnknownUpgrades() throws {
+  internal func visibleWireVersionRejectsDowngradesAndUnknownUpgrades() throws {
     let vectors = try Self.corpus().wireVersion
     #expect(vectors.count == 4)
     for vector in vectors {
@@ -52,7 +79,7 @@ struct RappSessionConformanceCorpusTests {
   }
 
   @Test
-  func operationProfilesCannotExceedAuthenticatedPairingGrants() throws {
+  internal func operationProfilesCannotExceedAuthenticatedPairingGrants() throws {
     let vectors = try Self.corpus().grantEnforcement
     #expect(vectors.count == 3)
     for vector in vectors {
@@ -64,93 +91,4 @@ struct RappSessionConformanceCorpusTests {
     }
   }
 
-  private static func corpus() throws -> SessionCorpus {
-    let repository = URL(fileURLWithPath: #filePath)
-      .deletingLastPathComponent()
-      .deletingLastPathComponent()
-      .deletingLastPathComponent()
-    let url =
-      repository
-      .appendingPathComponent("Documentation")
-      .appendingPathComponent("rapp-conformance")
-      .appendingPathComponent("rapp-v26.8.17.233.json")
-    let decoder = JSONDecoder()
-    decoder.keyDecodingStrategy = .convertFromSnakeCase
-    return try decoder.decode(SessionCorpus.self, from: Data(contentsOf: url))
-  }
-}
-
-private struct SessionCorpus: Decodable {
-  let sequenceGuard: [SequenceVector]
-  let wireVersion: [WireVersionVector]
-  let grantEnforcement: [GrantVector]
-}
-
-private struct SequenceVector: Decodable {
-  let name: String
-  let guardSessionIdHex: String
-  let acceptedSequences: [UInt64]
-  let incomingSessionIdHex: String
-  let incomingSequence: UInt64
-  let expected: String
-  let expectedNextReceive: UInt64
-}
-
-private struct WireVersionVector: Decodable {
-  let name: String
-  let version: [UInt16]
-  let expected: String
-}
-
-private struct GrantVector: Decodable {
-  let name: String
-  let grantedProfiles: [String]
-  let requestedProfile: String
-  let expected: String
-}
-
-private enum IndependentSequenceDecision: String {
-  case accepted
-  case wrongSession = "wrong_session"
-  case wrongSequence = "wrong_sequence"
-}
-
-private struct IndependentSequenceGuard {
-  let sessionID: Data
-  private(set) var nextReceive: UInt64 = 0
-
-  mutating func accept(
-    sessionID incomingSessionID: Data,
-    sequence: UInt64
-  ) -> IndependentSequenceDecision {
-    guard incomingSessionID == sessionID else { return .wrongSession }
-    guard sequence == nextReceive else { return .wrongSequence }
-    guard nextReceive < UInt64.max else { return .wrongSequence }
-    nextReceive += 1
-    return .accepted
-  }
-}
-
-extension Data {
-  fileprivate init(sessionHex value: String) throws {
-    guard value.count == 32, value.count.isMultiple(of: 2) else {
-      throw SessionCorpusError.invalidHex
-    }
-    var bytes = [UInt8]()
-    bytes.reserveCapacity(value.count / 2)
-    var index = value.startIndex
-    while index < value.endIndex {
-      let next = value.index(index, offsetBy: 2)
-      guard let byte = UInt8(value[index..<next], radix: 16) else {
-        throw SessionCorpusError.invalidHex
-      }
-      bytes.append(byte)
-      index = next
-    }
-    self.init(bytes)
-  }
-}
-
-private enum SessionCorpusError: Error {
-  case invalidHex
 }

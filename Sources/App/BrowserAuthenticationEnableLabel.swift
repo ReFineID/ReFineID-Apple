@@ -7,10 +7,14 @@ import SwiftUI
 /// Both configured and first-use card paths use this view so their icon,
 /// foreground treatment, and accessibility label cannot diverge.
 internal struct BrowserAuthenticationEnableLabel: View {
-  var body: some View {
+  private enum Geometry {
+    static let verticalPadding: CGFloat = 8
+  }
+
+  internal var body: some View {
     Label("Enable", systemImage: "person.badge.key.fill")
       .foregroundStyle(.white)
       .frame(maxWidth: .infinity)
-      .padding(.vertical, 8)
+      .padding(.vertical, Geometry.verticalPadding)
   }
 }

@@ -14,11 +14,8 @@ import SwiftUI
 /// access control, and this window never spends a near-last attempt.
 /// Entries are never stored and never echoed anywhere.
 internal struct CardManagementView: View {
-  private struct ReaderReadKey: Equatable {
-    let isPresent: Bool
-    let isReady: Bool
-    let transport: CardMaintenance.Transport
-  }
+
+  // MARK: Nested Types
 
   /// The four things this window does to a credential in use.
   ///
@@ -37,6 +34,8 @@ internal struct CardManagementView: View {
     case resetPin1
     case resetPin2
 
+    // MARK: Computed Properties
+
     internal var id: Self { self }
 
     /// The tab's label, naming the action and the credential.
@@ -53,6 +52,14 @@ internal struct CardManagementView: View {
       }
     }
   }
+
+  private struct ReaderReadKey: Equatable {
+    let isPresent: Bool
+    let isReady: Bool
+    let transport: CardMaintenance.Transport
+  }
+
+  // MARK: Static Properties
 
   #if os(macOS)
     /// Internal, not private: the counter presentation lives in
@@ -72,49 +79,23 @@ internal struct CardManagementView: View {
     private var windowWidth: CGFloat = 560
   #endif
 
-  private let startsWithReaderCard: Bool
-  private let usesProvidedCardAccessNumber: Bool
-  private let activationRequired: Bool
-  private let onActivationSucceeded: () -> Void
+  // MARK: SwiftUI Properties
+
   @ObservedObject private var cardPresence = CardPresence.shared
   @ObservedObject private var retryHealth = CredentialRetryHealth.shared
   @Environment(\.dismiss) private var dismiss
-
   @StateObject private var model: CardManagementModel
   @State private var task: ManagementTask
   @State private var hasChosenTask = false
 
-  internal init(
-    readerCardIsPresent: Bool = false,
-    activationRequired: Bool = false,
-    cardAccessNumber: String? = nil,
-    activationScheme: ActivationScheme? = nil,
-    activationNeeds: CardActivationNeeds? = nil,
-    onActivationSucceeded: @escaping () -> Void = {}
-  ) {
-    startsWithReaderCard = readerCardIsPresent
-    self.activationRequired = activationRequired
-    let providesCardAccessNumber =
-      cardAccessNumber?.count == CardAccessNumber.digitCount
-    usesProvidedCardAccessNumber = providesCardAccessNumber
-    self.onActivationSucceeded = onActivationSucceeded
-    // Built before the wrapper, because a state object takes its value as
-    // an escaping autoclosure, which cannot read a half-initialised view.
-    let initialModel = CardManagementModel(
-      transport: readerCardIsPresent
-        ? .reader
-        : (providesCardAccessNumber ? .nearField : nil),
-      activationRequired: activationRequired,
-      cardAccessNumber: cardAccessNumber,
-      activationScheme: activationScheme,
-      activationNeeds: activationNeeds
-    )
-    _model = StateObject(wrappedValue: initialModel)
-    _task = State(
-      initialValue: Self.initialTask(
-        for: CredentialRetryHealth.shared.recovery)
-    )
-  }
+  // MARK: Properties
+
+  private let startsWithReaderCard: Bool
+  private let usesProvidedCardAccessNumber: Bool
+  private let activationRequired: Bool
+  private let onActivationSucceeded: () -> Void
+
+  // MARK: Computed Properties
 
   private var readerCardIsPresent: Bool {
     #if os(iOS)
@@ -143,6 +124,36 @@ internal struct CardManagementView: View {
       transport: model.transport
     )
   }
+
+  /// The tasks this card can actually be asked to do.
+  ///
+  /// Activation is offered only while the card is still in its
+  /// factory state; for a card in use there is no such operation,
+  /// and showing it would invite a retry spent for nothing.
+  /// Whether this card is still waiting to be taken into use.
+  ///
+  /// Activation sets both PINs from the code in the issuance letter,
+  /// so while it is available there is nothing else to offer: a PIN
+  /// that has never been set cannot be changed, and resetting one
+  /// would be a second door to the same operation with a retry spent
+  /// on getting there.
+  private var awaitsActivation: Bool {
+    activationRequired || model.offersActivation
+  }
+
+  /// A critical card is a recovery workflow, never a PIN-change workflow.
+  private var availableTasks: [ManagementTask] {
+    switch retryHealth.recovery {
+    case .resetPin1, .resetPin2:
+      [.resetPin1, .resetPin2]
+    case .useOtherSoftware, .unrecoverable:
+      []
+    case nil:
+      ManagementTask.allCases
+    }
+  }
+
+  // MARK: Content Properties
 
   internal var body: some View {
     taskSection
@@ -220,22 +231,6 @@ internal struct CardManagementView: View {
     }
   #endif
 
-  /// The tasks this card can actually be asked to do.
-  ///
-  /// Activation is offered only while the card is still in its
-  /// factory state; for a card in use there is no such operation,
-  /// and showing it would invite a retry spent for nothing.
-  /// Whether this card is still waiting to be taken into use.
-  ///
-  /// Activation sets both PINs from the code in the issuance letter,
-  /// so while it is available there is nothing else to offer: a PIN
-  /// that has never been set cannot be changed, and resetting one
-  /// would be a second door to the same operation with a retry spent
-  /// on getting there.
-  private var awaitsActivation: Bool {
-    activationRequired || model.offersActivation
-  }
-
   /// One segment per task, and only the chosen one on screen.
   ///
   /// A segmented control rather than tabs: this view is a pane of
@@ -293,31 +288,6 @@ internal struct CardManagementView: View {
     }
   }
 
-  /// A critical card is a recovery workflow, never a PIN-change workflow.
-  private var availableTasks: [ManagementTask] {
-    switch retryHealth.recovery {
-    case .resetPin1, .resetPin2:
-      [.resetPin1, .resetPin2]
-    case .useOtherSoftware, .unrecoverable:
-      []
-    case nil:
-      ManagementTask.allCases
-    }
-  }
-
-  private static func initialTask(
-    for recovery: CredentialRetryHealth.Recovery?
-  ) -> ManagementTask {
-    switch recovery {
-    case .resetPin1:
-      .resetPin1
-    case .resetPin2:
-      .resetPin2
-    case .useOtherSoftware, .unrecoverable, nil:
-      .changePin1
-    }
-  }
-
   @ViewBuilder private var recoveryGuidanceSection: some View {
     if model.failure == nil, model.notice == nil {
       switch retryHealth.recovery {
@@ -366,22 +336,6 @@ internal struct CardManagementView: View {
     }
   }
 
-  private static func spentAttempts(
-    _ report: CredentialProbeReport
-  ) -> [(name: String, remaining: RetryCount)] {
-    [("PIN 1", report.pin1), ("PIN 2", report.pin2), ("PUK", report.puk)]
-      .compactMap { name, outcome in
-        guard case .remaining(let count) = outcome, !count.isPristine
-        else { return nil }
-        return (name, count)
-      }
-  }
-
-  private func activationCompleted() {
-    onActivationSucceeded()
-    dismiss()
-  }
-
   @ViewBuilder private var connectionSection: some View {
     #if os(iOS)
       if !readerCardIsPresent,
@@ -408,6 +362,68 @@ internal struct CardManagementView: View {
     #endif
   }
 
+  // MARK: Lifecycle
+
+  internal init(
+    readerCardIsPresent: Bool = false,
+    activationRequired: Bool = false,
+    cardAccessNumber: String? = nil,
+    activationScheme: ActivationScheme? = nil,
+    activationNeeds: CardActivationNeeds? = nil,
+    onActivationSucceeded: @escaping () -> Void = {}
+  ) {
+    startsWithReaderCard = readerCardIsPresent
+    self.activationRequired = activationRequired
+    let providesCardAccessNumber =
+      cardAccessNumber?.count == CardAccessNumber.digitCount
+    usesProvidedCardAccessNumber = providesCardAccessNumber
+    self.onActivationSucceeded = onActivationSucceeded
+    // Built before the wrapper, because a state object takes its value as
+    // an escaping autoclosure, which cannot read a half-initialised view.
+    let initialModel = CardManagementModel(
+      transport: readerCardIsPresent
+        ? .reader
+        : (providesCardAccessNumber ? .nearField : nil),
+      activationRequired: activationRequired,
+      cardAccessNumber: cardAccessNumber,
+      activationScheme: activationScheme,
+      activationNeeds: activationNeeds
+    )
+    _model = StateObject(wrappedValue: initialModel)
+    _task = State(
+      initialValue: Self.initialTask(
+        for: CredentialRetryHealth.shared.recovery)
+    )
+  }
+
+  // MARK: Static Functions
+
+  private static func initialTask(
+    for recovery: CredentialRetryHealth.Recovery?
+  ) -> ManagementTask {
+    switch recovery {
+    case .resetPin1:
+      .resetPin1
+    case .resetPin2:
+      .resetPin2
+    case .useOtherSoftware, .unrecoverable, nil:
+      .changePin1
+    }
+  }
+
+  // MARK: Content Methods
+
+  private static func spentAttempts(
+    _ report: CredentialProbeReport
+  ) -> [(name: String, remaining: RetryCount)] {
+    [("PIN 1", report.pin1), ("PIN 2", report.pin2), ("PUK", report.puk)]
+      .compactMap { name, outcome in
+        guard case .remaining(let count) = outcome, !count.isPristine
+        else { return nil }
+        return (name, count)
+      }
+  }
+
   /// The form one tab shows.
   @ViewBuilder
   private func page(for task: ManagementTask) -> some View {
@@ -421,6 +437,13 @@ internal struct CardManagementView: View {
     case .resetPin2:
       CredentialUnblockSection(model: model, target: .pin2)
     }
+  }
+
+  // MARK: Functions
+
+  private func activationCompleted() {
+    onActivationSucceeded()
+    dismiss()
   }
 
   /// Opens on what the card needs, until the holder chooses.

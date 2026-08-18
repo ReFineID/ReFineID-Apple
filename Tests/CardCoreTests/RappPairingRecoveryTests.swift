@@ -4,7 +4,7 @@ import XCTest
 @testable import CardCore
 
 #if canImport(RappEngine)
-  final class RappPairingRecoveryTests: XCTestCase {
+  internal final class RappPairingRecoveryTests: XCTestCase {
     private actor RecordingTransport: RappFrameTransport {
       private var frames: [Data] = []
       private var closes = 0
@@ -22,7 +22,7 @@ import XCTest
       }
     }
 
-    func testRequesterReusesOfferWithFreshTransportAfterHandshakeGarbage() async throws {
+    internal func testRequesterReusesOfferWithFreshTransportAfterHandshakeGarbage() async throws {
       let initialOffer = expectation(description: "initial offer")
       let restoredOffer = expectation(description: "restored offer")
       let firstTransport = RecordingTransport()

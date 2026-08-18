@@ -37,12 +37,8 @@
   /// run.
   @MainActor
   internal final class SafariCardLoginUITests: XCTestCase {
-    override internal func setUpWithError() throws {
-      try super.setUpWithError()
-      try XCTSkipUnless(
-        UITestEnvironment.realCardTestsEnabled,
-        "Set TEST_RUNNER_\(UITestEnvironment.realCardTestsVariable)=1 to run physical-card tests")
-    }
+
+    // MARK: Nested Types
 
     /// What one watch of the screen recorded, whichever way it ended.
     private struct Observation {
@@ -58,6 +54,8 @@
       /// Every distinct system label the run met, in the order it met them.
       let systemLabels: [String]
     }
+
+    // MARK: Static Properties
 
     /// System Safari.
     private static let safariBundleIdentifier = "com.apple.mobilesafari"
@@ -98,6 +96,8 @@
     /// language still records the whole run in the screenshots and the
     /// recording, which is what the tap here exists to make watchable.
     private static let affirmativeActions = ["Allow", "Continue", "OK", "Select", "Use"]
+
+    // MARK: Static Functions
 
     /// Whether the signed-in page is on screen.
     private static func signedIn(_ safari: XCUIApplication) -> Bool {
@@ -144,6 +144,17 @@
         return
       }
     }
+
+    // MARK: Overridden Functions
+
+    override internal func setUpWithError() throws {
+      try super.setUpWithError()
+      try XCTSkipUnless(
+        UITestEnvironment.realCardTestsEnabled,
+        "Set TEST_RUNNER_\(UITestEnvironment.realCardTestsVariable)=1 to run physical-card tests")
+    }
+
+    // MARK: Functions
 
     /// Opens the card-authenticated site in Safari and reports what
     /// happened.

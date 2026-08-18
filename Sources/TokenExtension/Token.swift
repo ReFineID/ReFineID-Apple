@@ -14,12 +14,18 @@ import Security
 /// at a service's client-certificate request. Signing itself is the
 /// session's responsibility.
 internal final class Token: TKSmartCardToken, TKTokenDelegate {
+
+  // MARK: Static Properties
+
   /// The auth certificate and its key share this keychain object ID.
   internal static let authObjectID = "auth"
   /// The qualified-signature certificate and key share this object ID.
   internal static let signObjectID = "sign"
   /// The published issuing-CA certificate's object ID (cert-only).
   internal static let issuerObjectID = "issuer-ca"
+
+  // MARK: Properties
+
   /// The authentication key's profile, resolved from the leaf and used
   /// by the session to advertise and select signing algorithms.
   internal let keyProfile: CardKeyProfile
@@ -80,14 +86,19 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
   /// rejection bankrupts this live token and its stored registration.
   internal let cardInstanceID: CardInstanceIdentifier
 
-  /// One-way lifetime state shared by every session of this token.
-  private let revocationLock = NSLock()
-  private var revoked = false
-
   /// The card session taken at the mint and kept open for the signature.
   ///
   /// Empty on the contact path, which opens a session per operation.
   internal let heldSession = HeldCardSession()
+
+  /// Releases the held session when the card leaves the slot.
+  internal var slotStateObservation: NSKeyValueObservation?
+
+  /// One-way lifetime state shared by every session of this token.
+  private let revocationLock = NSLock()
+  private var revoked = false
+
+  // MARK: Computed Properties
 
   /// Whether a card-confirmed credential refusal has bankrupted this token.
   internal var isRevoked: Bool {
@@ -96,16 +107,7 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
     return revoked
   }
 
-  /// Irreversibly disables this token instance and releases its card session.
-  internal func revokeCurrentInstance() {
-    revocationLock.lock()
-    revoked = true
-    revocationLock.unlock()
-    heldSession.release()
-  }
-
-  /// Releases the held session when the card leaves the slot.
-  internal var slotStateObservation: NSKeyValueObservation?
+  // MARK: Lifecycle
 
   internal init(
     smartCard: TKSmartCard,
@@ -210,6 +212,16 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
   /// phone's own antenna keeps the radio, and the next hold then meets
   /// the busy answer ``NearFieldCardSession`` has to retry through -
   /// about 2.5 seconds of the holder's time for nothing.
+  // MARK: Functions
+
+  /// Irreversibly disables this token instance and releases its card session.
+  internal func revokeCurrentInstance() {
+    revocationLock.lock()
+    revoked = true
+    revocationLock.unlock()
+    heldSession.release()
+  }
+
   deinit {
     heldSession.release()
     // Last chance to get the trace out of a process ctkd is dropping: a
@@ -217,4 +229,5 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
     // anything still only recorded would go with it.
     TokenLog.flush()
   }
+
 }

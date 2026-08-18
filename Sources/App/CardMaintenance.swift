@@ -361,12 +361,13 @@ internal enum CardMaintenance {
     /// models compile for macOS without pretending that a reader session
     /// is an NFC setup flow. The signature stays async so shared callers
     /// await one shape on both platforms.
-    // swiftlint:disable:next async_without_await
+    // swiftlint:disable async_without_await
     internal static func connectionSnapshot(
       cardAccessNumber _: String
     ) async -> ConnectionSnapshotResult {
       .failed
     }
+  // swiftlint:enable async_without_await
   #endif
 
   /// Establishes the first PACE channel while preserving a rejected CAN

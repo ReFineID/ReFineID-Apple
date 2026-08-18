@@ -16,9 +16,15 @@
   /// setup section, not just this button.
   @available(iOS 26.0, *)
   internal struct CardRegistrationSections: View {
+
+    // MARK: Static Properties
+
     /// Stable automation names; changing one never changes visible copy.
     private static let startIdentifier = "primeStartButton"
     private static let failedIdentifier = "primeFailed"
+
+    // MARK: Static Computed Properties
+
     /// Complete persistent identity state, read without waking NFC.
     ///
     /// A registration without its prime or stored PIN cannot sign. Treating
@@ -30,6 +36,8 @@
         && TKSmartCardTokenRegistrationManager.default.registeredSmartCardTokens
           .contains { CardTokenNamespace.owns(tokenIdentifier: $0) }
     }
+
+    // MARK: Properties
 
     /// Whether the parent has either stored or complete entered credentials.
     internal let canPrepareCredentials: Bool
@@ -60,6 +68,8 @@
     internal var onRegistrationStarted: @MainActor () -> Void = {}
     internal var onRegistrationFinished: @MainActor (Bool) -> Void = { _ in }
 
+    // MARK: SwiftUI Properties
+
     /// Flipped when a hold ends with a registered identity.
     @Binding internal var isRegistered: Bool
 
@@ -72,29 +82,28 @@
     /// happened when it was.
     internal let model: CardPrimingModel
 
-    /// Runs the one credential-registration path used by both initial setup
-    /// and the later explicit certificate-read action.
+    // MARK: Computed Properties
+
+    /// Whether this device can carry out the hold the button starts.
     ///
-    /// One hold does the whole thing: the access number is proved by PACE
-    /// inside it, and neither credential is written to this device until
-    /// that hold has produced a registered identity. Every outcome clears
-    /// the entered PIN.
-    @MainActor
-    internal static func registerIdentity(
-      cardAccessNumber: String,
-      pin1: String,
-      model: CardPrimingModel,
-      commit: IdentityCommitments
-    ) async -> Bool {
-      defer { commit.clearPin1Entry() }
-      await model.prime(cardAccessNumber: cardAccessNumber, pin1: pin1)
-      guard case .succeeded = model.lastRunResult,
-        commit.storeCardAccessNumber(cardAccessNumber),
-        commit.storeVerifiedPin1(pin1)
-      else { return false }
-      commit.markRegistered()
-      return true
+    /// A demonstration opens no slot it depends on, so an iPad's missing
+    /// antenna is no reason to withhold the button from one.
+    private var isTransportReady: Bool {
+      model.allowsNearField || isDemonstration
     }
+
+    /// Lets the device test observe the completed operation without
+    /// putting a diagnostic result row back into the holder's UI.
+    private var actionIdentifier: String {
+      switch model.lastRunResult {
+      case .notRun, .succeeded:
+        Self.startIdentifier
+      case .failed:
+        Self.failedIdentifier
+      }
+    }
+
+    // MARK: Content Properties
 
     internal var body: some View {
       // The one primary action of the screen, so it is the one filled,
@@ -130,24 +139,32 @@
       }
     }
 
-    /// Whether this device can carry out the hold the button starts.
+    // MARK: Static Functions
+
+    /// Runs the one credential-registration path used by both initial setup
+    /// and the later explicit certificate-read action.
     ///
-    /// A demonstration opens no slot it depends on, so an iPad's missing
-    /// antenna is no reason to withhold the button from one.
-    private var isTransportReady: Bool {
-      model.allowsNearField || isDemonstration
+    /// One hold does the whole thing: the access number is proved by PACE
+    /// inside it, and neither credential is written to this device until
+    /// that hold has produced a registered identity. Every outcome clears
+    /// the entered PIN.
+    @MainActor
+    internal static func registerIdentity(
+      cardAccessNumber: String,
+      pin1: String,
+      model: CardPrimingModel,
+      commit: IdentityCommitments
+    ) async -> Bool {
+      defer { commit.clearPin1Entry() }
+      await model.prime(cardAccessNumber: cardAccessNumber, pin1: pin1)
+      guard case .succeeded = model.lastRunResult,
+        commit.storeCardAccessNumber(cardAccessNumber),
+        commit.storeVerifiedPin1(pin1)
+      else { return false }
+      commit.markRegistered()
+      return true
     }
 
-    /// Lets the device test observe the completed operation without
-    /// putting a diagnostic result row back into the holder's UI.
-    private var actionIdentifier: String {
-      switch model.lastRunResult {
-      case .notRun, .succeeded:
-        Self.startIdentifier
-      case .failed:
-        Self.failedIdentifier
-      }
-    }
   }
 
 #endif

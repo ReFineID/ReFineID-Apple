@@ -8,11 +8,6 @@ extension CardManagementModel {
   /// A missing report keeps the form responsive while the asynchronous probe
   /// arrives. Once a credential-specific reading exists, the UI cannot offer
   /// an operation the fresh same-session backend probe would refuse.
-  internal func allowsCredentialOperation(spending role: CredentialRole) -> Bool {
-    guard let outcome = retryOutcome(for: role) else { return true }
-    return RetryFloor.evaluate(probeOutcome: outcome) == .proceed
-  }
-
   /// Activation may write either PIN independently.
   ///
   /// Every PIN still awaiting its factory-state write must be above the
@@ -31,5 +26,10 @@ extension CardManagementModel {
     case .puk:
       report?.puk
     }
+  }
+
+  internal func allowsCredentialOperation(spending role: CredentialRole) -> Bool {
+    guard let outcome = retryOutcome(for: role) else { return true }
+    return RetryFloor.evaluate(probeOutcome: outcome) == .proceed
   }
 }

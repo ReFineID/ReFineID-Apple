@@ -8,10 +8,8 @@ import Foundation
 internal enum TokenError: Error {
   /// No usable PIN yet (none entered, no valid cache): the system must
   /// present the PIN sheet and retry.
-  case authenticationRequired
-
-  /// The card still carries at least one factory activation credential.
   case activationRequired
+  case authenticationRequired
 
   /// The leaf certificate DER did not construct a `SecCertificate`.
   case certificateUnreadable
