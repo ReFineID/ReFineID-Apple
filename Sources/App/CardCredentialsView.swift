@@ -464,7 +464,7 @@ internal struct CardCredentialsView: View {
           PersonRowLabel(configured: remoteModel.holder != nil)
         }
         if remoteModel.phase == .failed {
-          Text("The remote card could not be read.")
+          Text(remoteModel.failureText ?? String(localized: "The remote card could not be read."))
             .foregroundStyle(.secondary)
         }
       } header: {

@@ -56,7 +56,6 @@ internal final class RappPairingModel {
     case offer(String)
     case scanning
     case connecting
-    case review(RappPairingCoordinator.Peer)
     case paired(RappPairingCoordinator.PairSummary)
     case failed(String)
   }
@@ -284,16 +283,8 @@ internal final class RappPairingModel {
     RappApplePeerProfile.isSupported(profile)
   }
 
-  internal func approvePeer() {
-    guard case .review(let peer) = phase else { return }
-    confirmPeer(peer)
-  }
-
   /// Grants exactly the requested, supported profiles and proceeds to store
   /// the pairing.
-  ///
-  /// Used by the requester's manual confirmation and by the proxy's automatic
-  /// confirmation.
   private func confirmPeer(_ peer: RappPairingCoordinator.Peer) {
     guard let coordinator else { return }
     let grantSet = requestedProfiles(for: peer).filter(
@@ -443,15 +434,10 @@ internal final class RappPairingModel {
     case .reviewPeer(let peer):
       reviewedPeerName = peer.displayName
       // The scan of the offer QR, carrying its 256-bit bearer secret, is the
-      // human consent that authorizes this pairing and its public reads. A
-      // peer that lists requested profiles is the requester, so this device is
-      // the proxy and confirms automatically with the requested grant set. The
-      // requester still confirms the scanned proxy explicitly.
-      if peer.requestedProfiles != nil {
-        confirmPeer(peer)
-      } else {
-        phase = .review(peer)
-      }
+      // human consent that authorizes this pairing and its public reads. Only
+      // a device that saw the code can reach this point, on either side, so
+      // both confirm without asking again.
+      confirmPeer(peer)
     case .paired(let pair):
       do {
         try vault.selectPair(pairID: pair.pairID)
@@ -497,7 +483,7 @@ internal final class RappPairingModel {
   private var isFinished: Bool {
     switch phase {
     case .paired, .failed: true
-    case .idle, .offer, .scanning, .connecting, .review: false
+    case .idle, .offer, .scanning, .connecting: false
     }
   }
 
@@ -661,14 +647,6 @@ internal struct RappPairingView: View {
       #endif
     case .connecting:
       Section { ProgressView("Establishing a secure connection") }
-    case .review(let peer):
-      Section("Confirm the other device") {
-        LabeledContent("Device", value: peer.displayName)
-        LabeledContent("Platform", value: peer.platform)
-        Button("Allow this device") { model.approvePeer() }
-          .buttonStyle(.borderedProminent)
-        Button("Deny", role: .destructive) { model.denyPeer() }
-      }
     case .paired(let pair):
       Section {
         Label("Secure pairing established", systemImage: "checkmark.shield")

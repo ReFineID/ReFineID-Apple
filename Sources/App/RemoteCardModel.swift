@@ -23,6 +23,9 @@
 
     internal private(set) var phase = Phase.idle
 
+    /// Why the last attempt failed, in the holder's words.
+    internal private(set) var failureText: String?
+
     /// Whether a requester pairing exists to connect through.
     internal private(set) var hasPair = false
 
@@ -50,9 +53,20 @@
       guard phase != .connecting else { return }
       phase = .connecting
       Task.detached(priority: .userInitiated) { [weak self] in
-        let response = try? RappPersistentRequesterClient(
-          displayName: String(localized: "ReFineID iPad")
-        ).perform(.readAuthenticationCertificate)
+        let response: RappRequesterResponse?
+        var failure: String?
+        do {
+          response = try RappPersistentRequesterClient(
+            displayName: String(localized: "ReFineID iPad")
+          ).perform(.readAuthenticationCertificate)
+        } catch let error as RappRequesterClientError {
+          response = nil
+          failure = remoteFailureText(for: error)
+        } catch {
+          response = nil
+          failure = String(localized: "The remote card could not be read.")
+        }
+        await self?.setFailureText(failure)
         let holder: String?
         if case .authenticationCertificate(let der) = response,
           let facts = CertificateFacts(der: der),
@@ -74,6 +88,23 @@
 
     private func finishConnect(holder: String?) {
       phase = holder.map(Phase.identity) ?? .failed
+      if holder != nil { failureText = nil }
+    }
+
+    private func setFailureText(_ text: String?) {
+      failureText = text
+    }
+  }
+
+  /// Names the failure so the holder knows which device to attend to.
+  private func remoteFailureText(for error: RappRequesterClientError) -> String {
+    switch error {
+    case .noActivePair, .noSelectedPair:
+      String(localized: "No paired phone. Pair a phone to use its card.")
+    case .timedOut:
+      String(localized: "The phone did not answer. Open ReFineID on the phone and try again.")
+    default:
+      String(localized: "The remote card could not be read.")
     }
   }
 
