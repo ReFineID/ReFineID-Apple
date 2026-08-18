@@ -180,10 +180,21 @@ import Testing
         self.receiver = receiver
       }
 
+      /// Hands the frame to the peer without waiting for it to be processed.
+      ///
+      /// A real transport returns once the frame is on its way. Delivering
+      /// it inline instead suspends the sender inside its own coordinator
+      /// until the peer has finished, so a reply that arrives during that
+      /// window waits for an actor the sender still holds and neither side
+      /// moves again. The peers are two actors here, and every exchange in
+      /// this protocol is a reply.
       func send(_ frame: Data) async throws {
         frames.append(frame)
         guard let receiver else { throw TestFailure.receiverMissing }
-        await receiver(frame)
+        Task { await receiver(frame) }
+        // Lets the delivery above begin before the sender continues, which
+        // is the ordering a real transport gives without being asked.
+        await Task.yield()
       }
 
       func close() {
