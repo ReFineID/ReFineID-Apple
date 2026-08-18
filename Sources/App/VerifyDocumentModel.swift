@@ -4,7 +4,7 @@
 
   import CardCore
   import Foundation
-  import Observation
+  import SwiftUI
 
   /// Verifies one chosen signed document and holds its report.
   ///
@@ -12,8 +12,7 @@
   /// each signer's revocation is additionally checked against fresh
   /// OCSP or CRL evidence and the row states which basis it reached.
   @MainActor
-  @Observable
-  internal final class VerifyDocumentModel {
+  internal final class VerifyDocumentModel: ObservableObject {
     /// The revocation basis one signature's row reached.
     internal enum Revocation: Sendable, Equatable {
       case checking
@@ -40,10 +39,10 @@
       text("verify.errorUnreadable", "The document could not be read.")
     }
 
-    internal private(set) var phase = Phase.idle
+    @Published internal private(set) var phase = Phase.idle
 
     /// The verified file's name, for the report heading.
-    internal private(set) var documentName = ""
+    @Published internal private(set) var documentName = ""
 
     private static func message(
       for failure: DocumentVerification.Failure

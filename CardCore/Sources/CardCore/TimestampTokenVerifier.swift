@@ -170,10 +170,9 @@ public enum TimestampTokenVerifier {
   ) -> Bool {
     guard
       let signer = SecCertificateCreateWithData(nil, certificate as CFData),
-      let notBefore = SecCertificateCopyNotValidBeforeDate(signer) as Date?,
-      let notAfter = SecCertificateCopyNotValidAfterDate(signer) as Date?
+      let validity = CertificateValidity.window(of: signer)
     else { return false }
-    return notBefore <= generatedAt && generatedAt <= notAfter
+    return validity.notBefore <= generatedAt && generatedAt <= validity.notAfter
   }
 
   /// Evaluates signer trust at genTime under exclusive caller anchors.

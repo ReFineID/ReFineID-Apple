@@ -3,7 +3,6 @@
 #if os(iOS)
   import CardCore
   import Foundation
-  import Observation
   import SwiftUI
 
   /// One authenticated RAPP request awaiting the card holder's decision.
@@ -33,11 +32,11 @@
   /// There is no automatic approval, timeout, or queue. A second operation is
   /// denied while one is visible; expiry and disconnect arrive from the RAPP
   /// state machine and explicitly cancel the matching request.
-  @MainActor @Observable
-  internal final class RappAuthorizationInbox {
+  @MainActor
+  internal final class RappAuthorizationInbox: ObservableObject {
     internal static let shared = RappAuthorizationInbox()
 
-    internal private(set) var request: RappAuthorizationRequest?
+    @Published internal private(set) var request: RappAuthorizationRequest?
     private var continuation: CheckedContinuation<RappAuthorizationDecision, Never>?
 
     private init() {}
@@ -133,7 +132,7 @@
                 SecureField("Signature (PIN 2)", text: $pin2)
                   .keyboardType(.numberPad)
                   .textContentType(.none)
-                  .onChange(of: pin2) { _, typed in
+                  .onValueChange(of: pin2) { typed in
                     pin2 = LimitedDigits.pin(typed)
                   }
                   .focused($pin2Focused)

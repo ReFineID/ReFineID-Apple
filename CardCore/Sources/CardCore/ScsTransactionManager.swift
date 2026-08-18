@@ -2,7 +2,7 @@
 
 import CryptoKit
 import Foundation
-import Synchronization
+import os
 
 /// The stateful SCS transaction flow (DVV SCS specification v1.3
 /// §2.7): a signed `begin` establishes an encrypted channel, one
@@ -18,7 +18,7 @@ import Synchronization
 /// logic lives in `ScsTransactionBegin` and
 /// `ScsTransactionExecution`; this class owns only the pending slot.
 public final class ScsTransactionManager: Sendable {
-  private let pending = Mutex<ScsAgreedTransaction?>(nil)
+  private let pending = OSAllocatedUnfairLock<ScsAgreedTransaction?>(initialState: nil)
 
   /// Creates a manager with no pending transaction.
   public init() {

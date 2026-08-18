@@ -76,11 +76,11 @@ internal struct CardManagementView: View {
   private let usesProvidedCardAccessNumber: Bool
   private let activationRequired: Bool
   private let onActivationSucceeded: () -> Void
-  private let cardPresence = CardPresence.shared
-  private let retryHealth = CredentialRetryHealth.shared
+  @ObservedObject private var cardPresence = CardPresence.shared
+  @ObservedObject private var retryHealth = CredentialRetryHealth.shared
   @Environment(\.dismiss) private var dismiss
 
-  @State private var model: CardManagementModel
+  @StateObject private var model: CardManagementModel
   @State private var task: ManagementTask
   @State private var hasChosenTask = false
 
@@ -94,20 +94,22 @@ internal struct CardManagementView: View {
   ) {
     startsWithReaderCard = readerCardIsPresent
     self.activationRequired = activationRequired
-    usesProvidedCardAccessNumber =
+    let providesCardAccessNumber =
       cardAccessNumber?.count == CardAccessNumber.digitCount
+    usesProvidedCardAccessNumber = providesCardAccessNumber
     self.onActivationSucceeded = onActivationSucceeded
-    _model = State(
-      initialValue: CardManagementModel(
-        transport: readerCardIsPresent
-          ? .reader
-          : (usesProvidedCardAccessNumber ? .nearField : nil),
-        activationRequired: activationRequired,
-        cardAccessNumber: cardAccessNumber,
-        activationScheme: activationScheme,
-        activationNeeds: activationNeeds
-      )
+    // Built before the wrapper, because a state object takes its value as
+    // an escaping autoclosure, which cannot read a half-initialised view.
+    let initialModel = CardManagementModel(
+      transport: readerCardIsPresent
+        ? .reader
+        : (providesCardAccessNumber ? .nearField : nil),
+      activationRequired: activationRequired,
+      cardAccessNumber: cardAccessNumber,
+      activationScheme: activationScheme,
+      activationNeeds: activationNeeds
     )
+    _model = StateObject(wrappedValue: initialModel)
     _task = State(
       initialValue: Self.initialTask(
         for: CredentialRetryHealth.shared.recovery)
@@ -182,7 +184,7 @@ internal struct CardManagementView: View {
           }
         }
       #endif
-      .onChange(of: model.report) { _, report in
+      .onValueChange(of: model.report) { report in
         suggestTask(from: report)
       }
       #if os(macOS)
@@ -284,7 +286,7 @@ internal struct CardManagementView: View {
       }
       .formStyle(.grouped)
       .disabled(model.working)
-      .onChange(of: task) { _, _ in
+      .onValueChange(of: task) { _ in
         hasChosenTask = true
         model.clearOutcome()
       }
@@ -392,7 +394,7 @@ internal struct CardManagementView: View {
             .keyboardType(.numberPad)
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
-            .onChange(of: model.cardAccessNumber) { _, typed in
+            .onValueChange(of: model.cardAccessNumber) { typed in
               model.cardAccessNumber = LimitedDigits.cardAccessNumber(typed)
             }
             .accessibilityIdentifier("managementCardAccessNumber")

@@ -40,7 +40,7 @@ extension TokenSession {
       "sign: qualified entry pin2Collected=\(entered != nil) "
         + "session=\(UInt(bitPattern: ObjectIdentifier(self).hashValue))"
     )
-    let smartCard = try getSmartCard()
+    let smartCard = try requestedSmartCard()
     do {
       let signature = try SmartCardChannel(smartCard, waits: .reader).withSession { channel in
         try QualifiedSignature.perform(

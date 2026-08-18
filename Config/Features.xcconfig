@@ -49,9 +49,28 @@
 
 REFINEID_FEATURES =
 
+// The local card: this build talks to a card the device itself holds,
+// over its own antenna. On by default, because every shipping iPhone
+// and Mac has that hardware.
+//
+// It is separate from REFINEID_FEATURES above because it is not a
+// feature awaiting a decision: it is a statement about the hardware a
+// build targets. A device with no antenna can never read a card
+// locally, and the code that would is written against CryptoTokenKit's
+// NFC card slot, which exists only in iOS 26. Turning it off compiles
+// that whole path away, which is what lets an older iPad build at all.
+//
+// Off, the build keeps the half that needs no antenna: pairing with a
+// phone over RAPP, and serving a browser the certificate that phone
+// answers for. That is the requester, and it is the entire reason an
+// iPad without a card reader is useful.
+//
+//   xcodebuild ... REFINEID_LOCAL_CARD_FEATURE=""
+REFINEID_LOCAL_CARD_FEATURE = REFINEID_LOCAL_CARD
+
 // A developer's own flags, out of the repository: the file is
 // optional, ignored by git, and an assignment there replaces the
 // default above on that machine only.
 #include? "LocalFeatures.xcconfig"
 
-SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) $(REFINEID_FEATURES)
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) $(REFINEID_FEATURES) $(REFINEID_LOCAL_CARD_FEATURE)

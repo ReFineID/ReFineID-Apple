@@ -25,7 +25,7 @@ extension CardMaintenance {
   }
 
   internal static var availableTransports: [Transport] {
-    #if canImport(CoreNFC) && os(iOS)
+    #if REFINEID_LOCAL_CARD && os(iOS)
       if SupportedCardTransports.offersNearField {
         return [.reader, .nearField]
       }

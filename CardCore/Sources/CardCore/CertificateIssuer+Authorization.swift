@@ -48,15 +48,10 @@ extension CertificateIssuer {
 
   /// Whether the certificate covers the requested relationship date.
   internal static func isValid(_ certificate: Parsed, at date: Date) -> Bool {
-    guard
-      let notBefore =
-        SecCertificateCopyNotValidBeforeDate(certificate.certificate) as Date?,
-      let notAfter =
-        SecCertificateCopyNotValidAfterDate(certificate.certificate) as Date?
-    else {
+    guard let validity = CertificateValidity.window(of: certificate.certificate) else {
       return false
     }
-    return notBefore <= date && date <= notAfter
+    return validity.notBefore <= date && date <= validity.notAfter
   }
 
   /// Whether the revoked subject has unambiguous end-entity semantics.

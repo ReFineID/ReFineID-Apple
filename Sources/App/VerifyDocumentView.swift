@@ -8,7 +8,7 @@
 
   /// Verifies a chosen signed PDF and reports each signature's facts.
   internal struct VerifyDocumentView: View {
-    @State private var model = VerifyDocumentModel()
+    @StateObject private var model = VerifyDocumentModel()
     @State private var importing = false
 
     internal var body: some View {

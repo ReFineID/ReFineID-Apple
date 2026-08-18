@@ -28,6 +28,18 @@
 // rather than repeated in every target's build settings. It is a
 // public identifier - it is stamped into every signed binary - so it
 // belongs here where a fork changes it once.
+// The oldest systems the app runs on, in one place rather than repeated
+// in every target. iOS 16 is what an iPad 5th generation reaches, and that
+// iPad is a useful requester: it has no antenna and never reads a card
+// itself, but it pairs with a phone that does and serves the browser the
+// certificate that phone answers for. Nothing newer is required for that
+// path -- CryptoTokenKit has published identities since iOS 14 and the RAPP
+// engine needs only CryptoKit, from iOS 13.
+//
+// Anything newer the app uses is either behind an availability check or
+// behind REFINEID_LOCAL_CARD in Config/Features.xcconfig.
+IPHONEOS_DEPLOYMENT_TARGET = 16.0
+
 DEVELOPMENT_TEAM = 4ZJC3SFJR2
 
 MARKETING_VERSION = 26.8.17

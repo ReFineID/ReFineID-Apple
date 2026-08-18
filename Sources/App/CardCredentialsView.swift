@@ -27,10 +27,10 @@ internal struct CardCredentialsView: View {
 
   private static let sectionSpacing: CGFloat = 24
 
-  @State private var model = CardCredentialsModel()
-  private let retryHealth = CredentialRetryHealth.shared
+  @StateObject private var model = CardCredentialsModel()
+  @ObservedObject private var retryHealth = CredentialRetryHealth.shared
   #if os(iOS)
-    private let demoMode = DemoMode.shared
+    @ObservedObject private var demoMode = DemoMode.shared
   #endif
   @State private var cardAccessNumberEntry = ""
   @State private var pin1Entry = ""
@@ -45,9 +45,9 @@ internal struct CardCredentialsView: View {
   @FocusState private var isCardAccessNumberFieldFocused: Bool
   @FocusState private var isPin1FieldFocused: Bool
 
-  #if canImport(CoreNFC) && os(iOS)
+  #if REFINEID_LOCAL_CARD && os(iOS)
     /// The priming model lives here, above everything a hold hides.
-    @State private var primingModel = CardPrimingModel()
+    @StateObject private var primingModel = CardPrimingModel()
   #endif
 
   #if os(iOS)
@@ -145,7 +145,7 @@ internal struct CardCredentialsView: View {
   /// Read from the model the parent owns, so it cannot be stranded by
   /// the very views a hold hides.
   private var isHolding: Bool {
-    #if canImport(CoreNFC) && os(iOS)
+    #if REFINEID_LOCAL_CARD && os(iOS)
       return model.isConnecting || primingModel.isRunning || demoMode.isHolding
     #else
       return false
@@ -160,7 +160,7 @@ internal struct CardCredentialsView: View {
   /// rather than the device as different. A demonstration fakes the
   /// antenna, never the device class.
   private var offersNearField: Bool {
-    #if canImport(CoreNFC) && os(iOS)
+    #if REFINEID_LOCAL_CARD && os(iOS)
       return primingModel.allowsNearField
         || (isDemonstration && DemoMode.offersNearField)
     #else
@@ -286,11 +286,20 @@ internal struct CardCredentialsView: View {
       }
     }
     #if os(iOS)
-      .listSectionSpacing(Self.sectionSpacing)
+      .listSections(spacing: Self.sectionSpacing)
       .navigationTitle("ReFineID")
       .navigationBarTitleDisplayMode(.large)
-      .navigationDestination(item: flowDestination) { destination in
-        destinationView(destination)
+      .navigationDestination(
+        isPresented: Binding(
+          get: { flowDestination.wrappedValue != nil },
+          set: { presented in
+            if !presented { flowDestination.wrappedValue = nil }
+          }
+        )
+      ) {
+        if let destination = flowDestination.wrappedValue {
+          destinationView(destination)
+        }
       }
       .navigationDestination(isPresented: $showsDocumentVerify) {
         VerifyDocumentView()
@@ -332,7 +341,7 @@ internal struct CardCredentialsView: View {
           readerHolders = await readerModel?.holderNames() ?? []
         }
       #endif
-      .onChange(of: hasIdentity) { _, registered in
+      .onValueChange(of: hasIdentity) { registered in
         // A set identity ends the fields' job; nothing they held is worth
         // keeping in memory once the setup they belonged to is over.
         if registered {
@@ -346,7 +355,7 @@ internal struct CardCredentialsView: View {
           synchronizeIdentityState()
         }
       }
-      .onChange(of: model.contents) { _, _ in
+      .onValueChange(of: model.contents) { _ in
         // A hold that stored the number and then broke leaves the field
         // as it was. Seeding again here puts the stored number back in
         // front of the holder, which is where a wrong one gets noticed.
@@ -367,7 +376,7 @@ internal struct CardCredentialsView: View {
           }
         }
       #endif
-      .onChange(of: isCardAccessNumberEntryComplete) { _, complete in
+      .onValueChange(of: isCardAccessNumberEntryComplete) { complete in
         // A PIN entered for one complete CAN must not survive while that
         // CAN is erased or replaced. It reappears only after the new card
         // number is complete and the holder enters its PIN deliberately.
@@ -381,7 +390,7 @@ internal struct CardCredentialsView: View {
           #endif
         }
       }
-      .onChange(of: cardAccessNumberEntry) { _, entered in
+      .onValueChange(of: cardAccessNumberEntry) { entered in
         model.invalidateCardStatus()
         activationScheme = nil
         activationNeeds = nil
@@ -406,7 +415,7 @@ internal struct CardCredentialsView: View {
         model.invalidateCardStatus()
         isCardAccessNumberFieldFocused = true
       }
-      #if os(iOS)
+      #if REFINEID_LOCAL_CARD && os(iOS)
         .sheet(isPresented: $isScanning) {
           scannerSheet
         }
@@ -686,29 +695,36 @@ internal struct CardCredentialsView: View {
       compactSectionHeader("Browser authentication")
     }
     if hasConfiguredCard {
-      #if os(iOS)
+      #if REFINEID_LOCAL_CARD && os(iOS)
         // Its own section and its own visual weight: the credential rows
         // collect input, this is the screen's one primary action.
-        Section {
-          CardRegistrationSections(
-            canPrepareCredentials: canPrepareIdentity,
-            isDemonstration: isDemonstration,
-            enteredPin1: enteredPin1,
-            storeVerifiedPin1: storeVerifiedPin1,
-            clearPin1Entry: clearPin1Entry,
-            onRegistrationStarted: {
-              transition(.startConfiguredBrowserRegistration)
-            },
-            onRegistrationFinished: { succeeded in
-              finishBrowserRegistration(succeeded: succeeded)
-            },
-            isRegistered: $isRegistered,
-            model: primingModel
-          )
-          .id(registrationReset)
+        //
+        // The section registers the card through the system's card slot,
+        // which arrived in iOS 26. An older system reaches this only on a
+        // device whose antenna it cannot open, so the section is absent
+        // rather than present and unusable.
+        if #available(iOS 26.0, *) {
+          Section {
+            CardRegistrationSections(
+              canPrepareCredentials: canPrepareIdentity,
+              isDemonstration: isDemonstration,
+              enteredPin1: enteredPin1,
+              storeVerifiedPin1: storeVerifiedPin1,
+              clearPin1Entry: clearPin1Entry,
+              onRegistrationStarted: {
+                transition(.startConfiguredBrowserRegistration)
+              },
+              onRegistrationFinished: { succeeded in
+                finishBrowserRegistration(succeeded: succeeded)
+              },
+              isRegistered: $isRegistered,
+              model: primingModel
+            )
+            .id(registrationReset)
+          }
+          .listRowBackground(Color.clear)
+          .listRowInsets(EdgeInsets())
         }
-        .listRowBackground(Color.clear)
-        .listRowInsets(EdgeInsets())
         if let failure = primingModel.failure {
           Section {
             CredentialOutcomeText(message: failure, tone: .failure)
@@ -764,22 +780,24 @@ internal struct CardCredentialsView: View {
             isCardAccessNumberFieldFocused = true
           }
         }
-        .onChange(of: cardAccessNumberEntry) { _, typed in
+        .onValueChange(of: cardAccessNumberEntry) { typed in
           cardAccessNumberEntry = LimitedDigits.cardAccessNumber(typed)
         }
-        if CardAccessNumberScanner.isAvailable {
-          Button {
-            scannerTorchEnabled = false
-            isScanning = true
-          } label: {
-            Label("Scan", systemImage: "camera")
-              .labelStyle(.iconOnly)
+        #if REFINEID_LOCAL_CARD && os(iOS)
+          if CardAccessNumberScanner.isAvailable {
+            Button {
+              scannerTorchEnabled = false
+              isScanning = true
+            } label: {
+              Label("Scan", systemImage: "camera")
+                .labelStyle(.iconOnly)
+            }
+            .buttonStyle(.borderless)
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
+            .padding(-10)
           }
-          .buttonStyle(.borderless)
-          .frame(width: 44, height: 44)
-          .contentShape(Rectangle())
-          .padding(-10)
-        }
+        #endif
       }
     #else
       TextField(
@@ -788,7 +806,7 @@ internal struct CardCredentialsView: View {
       )
       .font(.body)
       .accessibilityIdentifier("cardAccessNumberField")
-      .onChange(of: cardAccessNumberEntry) { _, typed in
+      .onValueChange(of: cardAccessNumberEntry) { typed in
         cardAccessNumberEntry = LimitedDigits.cardAccessNumber(typed)
       }
     #endif
@@ -819,13 +837,13 @@ internal struct CardCredentialsView: View {
         .autocorrectionDisabled()
         .focused($isPin1FieldFocused)
         .accessibilityIdentifier("pin1Field")
-        .onChange(of: pin1Entry) { _, typed in
+        .onValueChange(of: pin1Entry) { typed in
           pin1Entry = LimitedDigits.pin1(typed)
         }
     }
   }
 
-  #if os(iOS)
+  #if REFINEID_LOCAL_CARD && os(iOS)
     /// The camera, framed so it can be dismissed.
     private var scannerSheet: some View {
       ScannerSheet(
@@ -863,7 +881,10 @@ internal struct CardCredentialsView: View {
 
   /// Reads the persistent registration state, on the platform that has it.
   private func refreshRegistration() {
-    #if canImport(CoreNFC) && os(iOS)
+    #if REFINEID_LOCAL_CARD && os(iOS)
+      // A system without the card slot has no registration to read, so
+      // the answer is the same one it gives before the first hold.
+      guard #available(iOS 26.0, *) else { return }
       isRegistered = CardRegistrationSections.hasRegisteredIdentity
     #endif
   }
@@ -1019,14 +1040,18 @@ internal struct CardCredentialsView: View {
           if !isDemonstration {
             model.forgetPin1()
           }
-          #if canImport(CoreNFC) && os(iOS)
-            let succeeded = await CardRegistrationSections.registerIdentity(
-              pin1: pin1,
-              model: primingModel,
-              storeVerifiedPin1: storeVerifiedPin1,
-              clearPin1Entry: clearPin1Entry
-            ) { isRegistered = true }
-            finishBrowserRegistration(succeeded: succeeded)
+          #if REFINEID_LOCAL_CARD && os(iOS)
+            if #available(iOS 26.0, *) {
+              let succeeded = await CardRegistrationSections.registerIdentity(
+                pin1: pin1,
+                model: primingModel,
+                storeVerifiedPin1: storeVerifiedPin1,
+                clearPin1Entry: clearPin1Entry
+              ) { isRegistered = true }
+              finishBrowserRegistration(succeeded: succeeded)
+            } else {
+              finishBrowserRegistration(succeeded: false)
+            }
           #endif
         }
       case .activationRequired(let scheme, let needs):

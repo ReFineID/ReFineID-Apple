@@ -1,7 +1,6 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
 import CardCore
-import Observation
 import SwiftUI
 
 /// Session-only presentation of one complete, side-effect-free retry probe.
@@ -10,8 +9,7 @@ import SwiftUI
 /// needed; reader insertion may also start one narrow, cancellable counter
 /// probe. There is no polling, and identity presentation never waits for it.
 @MainActor
-@Observable
-internal final class CredentialRetryHealth {
+internal final class CredentialRetryHealth: ObservableObject {
   internal enum Level: Equatable {
     case pristine
     case warning
@@ -58,15 +56,15 @@ internal final class CredentialRetryHealth {
 
   internal static let shared = CredentialRetryHealth()
 
-  internal private(set) var level: Level?
-  internal private(set) var recovery: Recovery?
+  @Published internal private(set) var level: Level?
+  @Published internal private(set) var recovery: Recovery?
 
   /// The accepted report behind the level, so the management screen
   /// can name the exact counters the color came from.
-  internal private(set) var report: CredentialProbeReport?
+  @Published internal private(set) var report: CredentialProbeReport?
 
-  @ObservationIgnored private var readerRefresh: Task<Void, Never>?
-  @ObservationIgnored private var refreshGeneration = 0
+  private var readerRefresh: Task<Void, Never>?
+  private var refreshGeneration = 0
 
   private init() {}
 
@@ -198,20 +196,12 @@ internal struct CredentialRetryHealthKey: View {
     ZStack(alignment: .bottomTrailing) {
       if let level = displayedLevel {
         Image(systemName: systemName)
-          .contentTransition(
-            .symbolEffect(
-              .replace.magic(fallback: .offUp.byLayer),
-              options: .nonRepeating)
-          )
+          .replacingSymbol()
           .foregroundStyle(level.color)
         statusBadge(level)
       } else {
         Image(systemName: systemName)
-          .contentTransition(
-            .symbolEffect(
-              .replace.magic(fallback: .offUp.byLayer),
-              options: .nonRepeating)
-          )
+          .replacingSymbol()
           .foregroundStyle(
             routeAvailable
               ? AnyShapeStyle(.green)
@@ -225,7 +215,7 @@ internal struct CredentialRetryHealthKey: View {
         ?? String(localized: "Credential retry status unavailable")
     )
     .onAppear { animateIfNeeded(displayedLevel) }
-    .onChange(of: displayedLevel) { _, newLevel in
+    .onValueChange(of: displayedLevel) { newLevel in
       animateIfNeeded(newLevel)
     }
   }
@@ -246,10 +236,10 @@ internal struct CredentialRetryHealthKey: View {
       badge(level)
     case .warning:
       badge(level)
-        .symbolEffect(.pulse, value: animationTrigger)
+        .pulsingSymbol(value: animationTrigger)
     case .critical:
       badge(level)
-        .symbolEffect(.bounce, options: .repeating, value: animationTrigger)
+        .bouncingSymbol(value: animationTrigger)
     }
   }
 

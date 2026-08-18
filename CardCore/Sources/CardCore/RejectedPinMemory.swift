@@ -1,6 +1,6 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-import Synchronization
+import os
 
 /// Process-lifetime memory of PINs a card has rejected.
 ///
@@ -12,7 +12,7 @@ import Synchronization
 ///
 /// The memory stores only non-reversible fingerprints - never a PIN.
 public final class RejectedPinMemory: Sendable {
-  private let rejected = Mutex<Set<PinFingerprint>>([])
+  private let rejected = OSAllocatedUnfairLock<Set<PinFingerprint>>(initialState: [])
 
   /// Creates an empty memory; the driver owns one per process.
   public init() {

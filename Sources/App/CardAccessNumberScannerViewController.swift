@@ -1,6 +1,6 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if os(iOS)
+#if REFINEID_LOCAL_CARD && os(iOS)
 
   @preconcurrency import AVFoundation
   import UIKit
@@ -85,12 +85,8 @@
       else {
         return
       }
-      if let connection = previewLayer.connection,
-        connection.isVideoRotationAngleSupported(
-          CardAccessNumberCapturePipeline.portraitRotationAngle)
-      {
-        connection.videoRotationAngle =
-          CardAccessNumberCapturePipeline.portraitRotationAngle
+      if let connection = previewLayer.connection {
+        CardAccessNumberCapturePipeline.orientPortrait(connection)
       }
       pipeline.start()
     }

@@ -83,7 +83,7 @@ internal struct CredentialSecretField<Field: View, Validation: View>: View {
             #endif
             .autocorrectionDisabled()
             .lineLimit(1)
-            .onChange(of: text) { _, value in
+            .onValueChange(of: text) { value in
               text = LimitedDigits.puk(value)
             }
         } else {
@@ -120,7 +120,7 @@ internal struct CredentialSecretField<Field: View, Validation: View>: View {
       validation()
         .frame(width: 24, height: 24)
     }
-    .onChange(of: text) { _, value in
+    .onValueChange(of: text) { value in
       if value.isEmpty {
         revealsValue = false
       }

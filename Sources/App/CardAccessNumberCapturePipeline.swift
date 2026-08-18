@@ -1,6 +1,6 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if os(iOS)
+#if REFINEID_LOCAL_CARD && os(iOS)
 
   @preconcurrency import AVFoundation
 
@@ -58,6 +58,22 @@
     private var camera: AVCaptureDevice?
     private var isConfigured = false
 
+    /// Points the connection at portrait before the first frame arrives.
+    ///
+    /// The rotation angle replaced the orientation enumeration in iOS 17,
+    /// and 90 degrees is the angle that enumeration called portrait.
+    internal static func orientPortrait(_ connection: AVCaptureConnection) {
+      if #available(iOS 17.0, *) {
+        guard
+          connection.isVideoRotationAngleSupported(portraitRotationAngle)
+        else { return }
+        connection.videoRotationAngle = portraitRotationAngle
+      } else {
+        guard connection.isVideoOrientationSupported else { return }
+        connection.videoOrientation = .portrait
+      }
+    }
+
     /// Configures the one capture session used by preview, QR, and torch.
     @MainActor
     internal func configure(
@@ -91,11 +107,8 @@
         queue: recognitionQueue)
       session.addOutput(output)
 
-      if let connection = output.connection(with: .video),
-        connection.isVideoRotationAngleSupported(
-          Self.portraitRotationAngle)
-      {
-        connection.videoRotationAngle = Self.portraitRotationAngle
+      if let connection = output.connection(with: .video) {
+        Self.orientPortrait(connection)
       }
 
       configureCloseFocus(on: selectedCamera)
@@ -119,7 +132,7 @@
         }
         camera.videoZoomFactor = wideAngleZoomFactor(for: camera)
 
-        if camera.isFocusRectOfInterestSupported {
+        if #available(iOS 26.0, *), camera.isFocusRectOfInterestSupported {
           camera.focusRectOfInterest = Self.scanFocusRect
         } else if camera.isFocusPointOfInterestSupported {
           camera.focusPointOfInterest = Self.scanCenter

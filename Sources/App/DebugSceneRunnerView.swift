@@ -61,7 +61,7 @@
     private static func run(_ mode: DebugLaunchMode) async {
       switch mode {
       case .activationProbe:
-        #if os(iOS)
+        #if REFINEID_LOCAL_CARD && os(iOS)
           let report = await CardMaintenance.debugActivationSignals()
           DebugConsole.emit(report.lines)
           DebugConsole.finish(succeeded: report.succeeded)
@@ -109,7 +109,7 @@
     /// exists to catch, so it exits non-zero.
     private static func prime() async -> Bool {
       DebugConsole.emit("=== prime ===")
-      #if canImport(CoreNFC) && os(iOS)
+      #if REFINEID_LOCAL_CARD && os(iOS)
         let contents = CardCredentialStore.contents()
         DebugConsole.emit("card access number stored: \(contents.hasCardAccessNumber)")
         DebugConsole.emit(
@@ -118,6 +118,11 @@
           !pin1.isEmpty
         else {
           DebugConsole.emit("prime: REFINEID_DEBUG_PIN1 is required")
+          return false
+        }
+        guard #available(iOS 26.0, *) else {
+          DebugConsole.emit("prime: the system card slot needs iOS 26")
+          DebugConsole.emit("=== end ===")
           return false
         }
         let outcome = await CardPriming.prime(

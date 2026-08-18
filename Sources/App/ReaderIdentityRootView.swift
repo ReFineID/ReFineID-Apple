@@ -10,10 +10,10 @@
     @Environment(\.scenePhase)
     private var scenePhase
 
-    @State private var model = ReaderIdentityModeModel()
-    @State private var remoteModel = RemoteCardModel()
+    @StateObject private var model = ReaderIdentityModeModel()
+    @StateObject private var remoteModel = RemoteCardModel()
 
-    @State private var authorizationInbox = RappAuthorizationInbox.shared
+    @ObservedObject private var authorizationInbox = RappAuthorizationInbox.shared
     @State private var showsRappPairing = false
 
     internal var body: some View {
@@ -28,13 +28,13 @@
         model.refresh()
         remoteModel.refresh()
       }
-      .onChange(of: scenePhase) {
+      .onValueChange(of: scenePhase) { _ in
         if scenePhase == .active {
           model.refresh()
           remoteModel.refresh()
         }
       }
-      .onChange(of: authorizationInbox.request?.id) {
+      .onValueChange(of: authorizationInbox.request?.id) { _ in
         // One presenter can hold one sheet: a pending authorization takes
         // the stage from the pairing sheet.
         if authorizationInbox.request != nil {

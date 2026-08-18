@@ -1,6 +1,6 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if canImport(CoreNFC) && os(iOS)
+#if REFINEID_LOCAL_CARD && os(iOS)
 
   import CardCore
   import CryptoTokenKit
@@ -11,6 +11,7 @@
   /// Kept with the card in the slot: `registerSmartCard` accepts only a
   /// token created for a live slot, so a registration attempted after
   /// the hold ends finds nothing to register.
+  @available(iOS 26.0, *)
   extension CardPriming {
     /// Registers the live card so the system can ask for it later.
     internal static func register(

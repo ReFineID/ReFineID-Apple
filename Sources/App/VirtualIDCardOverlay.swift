@@ -154,7 +154,7 @@
     /// Keep the diagnostic meaning red while meeting the accessibility audit.
     private static let accessibleRed = Color(red: 0.65, green: 0, blue: 0)
 
-    private let demoMode = DemoMode.shared
+    @ObservedObject private var demoMode = DemoMode.shared
     internal let openEditor: () -> Void
 
     internal var body: some View {
@@ -274,7 +274,7 @@
               .virtualCardMenuControl()
             }
             .tint(.primary)
-            .onChange(of: scenario) { _, selected in
+            .onValueChange(of: scenario) { selected in
               draft = Self.deviceScoped(selected.snapshot)
               faultPreset = .none
             }

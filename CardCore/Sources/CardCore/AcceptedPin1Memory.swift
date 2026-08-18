@@ -1,6 +1,6 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-import Synchronization
+import os
 
 /// Process-lifetime memory of PIN1 values the named card has accepted.
 ///
@@ -18,7 +18,8 @@ import Synchronization
 /// naturally disappear when the process exits.
 public final class AcceptedPin1Memory: Sendable {
   /// One accepted PIN per physical card.
-  private let entries = Mutex<[TokenSerial: ZeroizingDigitStore]>([:])
+  private let entries = OSAllocatedUnfairLock<[TokenSerial: ZeroizingDigitStore]>(
+    initialState: [:])
 
   /// Creates empty process memory.
   public init() {

@@ -1,6 +1,6 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if DEBUG && canImport(CoreNFC) && os(iOS)
+#if DEBUG && REFINEID_LOCAL_CARD && os(iOS)
 
   import CardCore
   import Foundation
@@ -19,6 +19,7 @@
   /// DEBUG only, and deliberately not on the login path: reading
   /// EF.CardAccess costs a SELECT and a READ BINARY that a login has no
   /// use for.
+  @available(iOS 26.0, *)
   internal enum CardCapabilityProbe {
     /// The suite `PaceCommand.securityEnvironment()` fixes, named the
     /// way EF.CardAccess names it, so the report can say whether the

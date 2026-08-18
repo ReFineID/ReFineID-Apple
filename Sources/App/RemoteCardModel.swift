@@ -4,7 +4,7 @@
 
   import CardCore
   import Foundation
-  import Observation
+  import SwiftUI
 
   /// The requester's view of the selected remote card.
   ///
@@ -12,8 +12,7 @@
   /// certificate; the holder approves the request and presents the card.
   /// The certificate's subject then names the person on this screen.
   @MainActor
-  @Observable
-  internal final class RemoteCardModel {
+  internal final class RemoteCardModel: ObservableObject {
     internal enum Phase: Equatable {
       case idle
       case connecting
@@ -21,13 +20,13 @@
       case failed
     }
 
-    internal private(set) var phase = Phase.idle
+    @Published internal private(set) var phase = Phase.idle
 
     /// Why the last attempt failed, in the holder's words.
-    internal private(set) var failureText: String?
+    @Published internal private(set) var failureText: String?
 
     /// Whether a requester pairing exists to connect through.
-    internal private(set) var hasPair = false
+    @Published internal private(set) var hasPair = false
 
     /// The person shown once the remote card has answered.
     internal var holder: String? {

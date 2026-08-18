@@ -10,7 +10,10 @@ import PackageDescription
 private let package = Package(
   name: "CardCore",
   platforms: [
-    .iOS("26.0"),
+    // An iPad without an antenna runs only the remote-card path, whose
+    // interfaces have existed since iOS 14, so the floor is what the
+    // cryptography needs rather than what the newest card features do.
+    .iOS("16.0"),
     .macOS("26.0"),
   ],
   products: [

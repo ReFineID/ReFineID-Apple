@@ -159,7 +159,7 @@ internal struct CredentialUnblockSection: View {
           #if os(iOS)
             .keyboardType(.numberPad)
           #endif
-          .onChange(of: puk) { _, typed in
+          .onValueChange(of: puk) { typed in
             puk = LimitedDigits.puk(typed)
           }
           .focused($focus, equals: .puk)
@@ -182,7 +182,7 @@ internal struct CredentialUnblockSection: View {
           #if os(iOS)
             .keyboardType(.numberPad)
           #endif
-          .onChange(of: new) { _, typed in
+          .onValueChange(of: new) { typed in
             new = LimitedDigits.pin(typed)
           }
           .focused($focus, equals: .new)
@@ -205,7 +205,7 @@ internal struct CredentialUnblockSection: View {
           #if os(iOS)
             .keyboardType(.numberPad)
           #endif
-          .onChange(of: repeated) { _, typed in
+          .onValueChange(of: repeated) { typed in
             repeated = LimitedDigits.pin(typed)
           }
           .focused($focus, equals: .repeated)

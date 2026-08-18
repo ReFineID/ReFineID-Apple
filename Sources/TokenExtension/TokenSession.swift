@@ -242,7 +242,7 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
     // getSmartCard() returns the card but not necessarily inside an open
     // session; open one explicitly (the reference does this on every sign),
     // synchronously - no Swift concurrency on the ctkd thread, which hangs.
-    let smartCard = try getSmartCard()
+    let smartCard = try requestedSmartCard()
     do {
       let signature = try SmartCardChannel(smartCard, waits: .reader).withSession { channel in
         try ReaderSignature.perform(

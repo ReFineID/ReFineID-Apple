@@ -11,8 +11,7 @@
   /// A newly appearing activated reader card starts one bounded retry-counter
   /// probe for the shared health key. There is no card-presence polling.
   @MainActor
-  @Observable
-  internal final class ReaderIdentityModeModel {
+  internal final class ReaderIdentityModeModel: ObservableObject {
     /// Whether the platform is presenting a contact reader slot at all.
     ///
     /// A reader identity cannot exist without a reader. Asking the slot
@@ -52,7 +51,7 @@
     /// what wakes the field is a registered token that has to be minted
     /// to answer at all. A token already live answers from what it
     /// published.
-    internal private(set) var liveReaderTokenIdentifiers: [String] = []
+    @Published internal private(set) var liveReaderTokenIdentifiers: [String] = []
 
     /// Number of live reader tokens.
     internal var liveReaderTokenCount: Int {
@@ -154,10 +153,17 @@
       let refineIDTokenIdentifiers = Set(
         watcher.tokenIDs.filter(CardTokenNamespace.owns(tokenIdentifier:))
       )
-      let registeredTokenIdentifiers = Set(
-        TKSmartCardTokenRegistrationManager.default.registeredSmartCardTokens
-          .filter(CardTokenNamespace.owns(tokenIdentifier:))
-      )
+      let registeredTokenIdentifiers: Set<String>
+      if #available(iOS 26.0, *) {
+        registeredTokenIdentifiers = Set(
+          TKSmartCardTokenRegistrationManager.default.registeredSmartCardTokens
+            .filter(CardTokenNamespace.owns(tokenIdentifier:))
+        )
+      } else {
+        // No antenna, so nothing was ever registered for the system to
+        // summon: every live token is backed by a connected reader.
+        registeredTokenIdentifiers = []
+      }
       // Persistent registrations are ReFineID's NFC identities. A token that
       // is live in the watcher but absent from that list is backed by a
       // connected reader. This remains true across an app upgrade even when

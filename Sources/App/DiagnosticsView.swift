@@ -32,7 +32,7 @@ internal struct DiagnosticsView: View {
           .foregroundStyle(clearSucceeded ? Color.secondary : Color.red)
         }
       }
-      #if canImport(CoreNFC) && os(iOS)
+      #if REFINEID_LOCAL_CARD && os(iOS)
         capabilitySection
       #endif
       if let snapshot {
@@ -117,7 +117,7 @@ internal struct DiagnosticsView: View {
     }
   }
 
-  #if canImport(CoreNFC) && os(iOS)
+  #if REFINEID_LOCAL_CARD && os(iOS)
     /// Asks the card what suites it supports and times the one in use.
     ///
     /// A card operation, so it is a deliberate action rather than part
@@ -201,7 +201,7 @@ internal struct DiagnosticsView: View {
     snapshot = DiagnosticsSnapshot.collect()
   }
 
-  #if canImport(CoreNFC) && os(iOS)
+  #if REFINEID_LOCAL_CARD && os(iOS)
     /// Runs the capability probe, then refreshes so the new trace lines
     /// it wrote are on screen with it.
     private func probeCapabilities() {

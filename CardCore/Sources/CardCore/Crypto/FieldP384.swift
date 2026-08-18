@@ -19,9 +19,9 @@
 internal struct FieldP384: Equatable, Sendable {
   /// A full 384-by-384-bit product plus one carry limb for reduction.
   ///
-  /// The width is invariant, so heap-backed `Array` storage only adds
-  /// allocation and copy-on-write checks to the innermost arithmetic loop.
-  private typealias WideLimbs = InlineArray<13, UInt64>  // swiftlint:disable:this no_magic_numbers
+  /// The width is invariant: `fullMultiply` always fills `wideLimbCount`
+  /// limbs and `montgomeryReduce` reads the same width back.
+  private typealias WideLimbs = [UInt64]
 
   /// The field modulus `p`.
   internal static let prime = BrainpoolP384r1Values.prime
@@ -68,6 +68,10 @@ internal struct FieldP384: Equatable, Sendable {
 
   /// The number of limbs in a full 384-by-384-bit schoolbook product.
   private static let productLimbCount = U384.limbCount * productWidthMultiple
+
+  /// The schoolbook product plus the one carry limb reduction pushes past
+  /// it, which is the width `WideLimbs` always holds.
+  private static let wideLimbCount = productLimbCount + 1
 
   /// Offsets into the high half of a wide product.
   private static let highLimbTwoOffset = 2
@@ -132,7 +136,7 @@ internal struct FieldP384: Equatable, Sendable {
   /// The full 384-by-384-bit schoolbook product as `productLimbCount`
   /// little-endian limbs.
   private static func fullMultiply(_ lhs: U384, _ rhs: U384) -> WideLimbs {
-    var product = WideLimbs(repeating: 0)
+    var product = WideLimbs(repeating: 0, count: wideLimbCount)
     for outer in 0..<U384.limbCount {
       var carry: UInt64 = 0
       for inner in 0..<U384.limbCount {

@@ -32,7 +32,7 @@
     private var minimumWidth: CGFloat = 420
 
     private let model = LoginIdentityModel.shared
-    private let retryHealth = CredentialRetryHealth.shared
+    @ObservedObject private var retryHealth = CredentialRetryHealth.shared
     @State private var signing = SignDocumentModel()
 
     /// Notices a card waiting to be taken into use, and carries the

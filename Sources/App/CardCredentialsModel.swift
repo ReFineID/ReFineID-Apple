@@ -12,8 +12,7 @@ import SwiftUI
 /// The card access number is the one value read back: it is printed on
 /// the card face and is the holder's to see.
 @MainActor
-@Observable
-internal final class CardCredentialsModel {
+internal final class CardCredentialsModel: ObservableObject {
   internal enum ConnectionResult: Sendable {
     case activated
     case activationRequired(
@@ -24,25 +23,25 @@ internal final class CardCredentialsModel {
   }
 
   /// What the device currently holds.
-  internal private(set) var contents = CardCredentialStore.contents()
+  @Published internal private(set) var contents = CardCredentialStore.contents()
 
   /// The stored card access number, shown by the manager window.
-  internal private(set) var storedCardAccessNumber =
+  @Published internal private(set) var storedCardAccessNumber =
     CardCredentialStore.displayedCardAccessNumber()
 
   /// Whether there is anything behind the destructive forget action.
-  internal private(set) var hasForgettableState =
+  @Published internal private(set) var hasForgettableState =
     CardStateReset.hasForgettableState()
 
   /// Set when the last action failed, for the holder to read.
-  internal private(set) var failure: String?
+  @Published internal private(set) var failure: String?
 
   /// True only while the initial, side-effect-free card classification runs.
-  internal private(set) var isConnecting = false
+  @Published internal private(set) var isConnecting = false
 
   /// True only after this launch has classified the live card and, for an
   /// activated card, obtained a complete credential retry report.
-  internal private(set) var hasVerifiedCardStatus = false
+  @Published internal private(set) var hasVerifiedCardStatus = false
 
   /// Establishes PACE with an entered CAN and classifies the live card.
   ///

@@ -85,6 +85,11 @@ internal struct DiagnosticsSnapshot: Sendable {
   /// thing to check when the system never presents the card.
   private static func registeredTokens() -> Section {
     #if os(iOS)
+      guard #available(iOS 26.0, *) else {
+        return Section(
+          title: "Registered smart-card tokens",
+          lines: ["not available on this system"])
+      }
       let registered = TKSmartCardTokenRegistrationManager.default
         .registeredSmartCardTokens
         .sorted()

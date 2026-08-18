@@ -16,13 +16,15 @@ import Foundation
 /// six-limb initializer (curve constants live in `BrainpoolP384r1Values`)
 /// and a failable big-endian byte initializer.
 public struct U384: Equatable, Comparable, Sendable {
-  /// The fixed-width limb storage.
+  /// The limb storage, always exactly `limbCount` elements.
   ///
-  /// `Array` is copy-on-write heap storage even when its count never changes.
-  /// Every field operation creates several `U384` values, so using an inline
-  /// array keeps those six limbs inside the value and removes allocator and
-  /// reference-count traffic from the scalar-multiplication loop.
-  internal typealias Limbs = InlineArray<6, UInt64>  // swiftlint:disable:this no_magic_numbers
+  /// Every initializer here produces that width and no operation changes it,
+  /// so the count is an invariant of the type rather than something callers
+  /// pass around.
+  internal typealias Limbs = [UInt64]
+
+  /// Storage with every limb clear, the starting point of each operation.
+  internal static var zeroLimbs: Limbs { Limbs(repeating: 0, count: limbCount) }
 
   /// The number of 64-bit limbs in the representation.
   public static let limbCount = 6
@@ -74,7 +76,7 @@ public struct U384: Equatable, Comparable, Sendable {
 
   /// Zero.
   public init() {
-    limbs = Limbs(repeating: 0)
+    limbs = Self.zeroLimbs
   }
 
   /// A small value that fits in the least significant limb.
@@ -115,7 +117,7 @@ public struct U384: Equatable, Comparable, Sendable {
       (Self.byteCount - bigEndianBytes.count)..<Self.byteCount,
       with: bigEndianBytes
     )
-    var built = Limbs(repeating: 0)
+    var built = Self.zeroLimbs
     for limb in 0..<Self.limbCount {
       let base = (Self.limbCount - 1 - limb) * Self.bytesPerLimb
       var value: UInt64 = 0
@@ -151,7 +153,7 @@ public struct U384: Equatable, Comparable, Sendable {
     _ lhs: Self,
     _ rhs: Self
   ) -> (sum: Self, carry: UInt64) {
-    var out = Limbs(repeating: 0)
+    var out = Self.zeroLimbs
     var carry: UInt64 = 0
     for index in 0..<Self.limbCount {
       let (partial, firstOverflow) = lhs.limbs[index].addingReportingOverflow(rhs.limbs[index])
@@ -168,7 +170,7 @@ public struct U384: Equatable, Comparable, Sendable {
     _ lhs: Self,
     _ rhs: Self
   ) -> (difference: Self, borrow: UInt64) {
-    var out = Limbs(repeating: 0)
+    var out = Self.zeroLimbs
     var borrow: UInt64 = 0
     for index in 0..<Self.limbCount {
       let (partial, firstBorrow) = lhs.limbs[index]
@@ -203,7 +205,7 @@ public struct U384: Equatable, Comparable, Sendable {
 
   /// The value doubled modulo 2^384, with the bit that left the window.
   internal func shiftedLeftOne() -> (value: Self, carry: UInt64) {
-    var out = Limbs(repeating: 0)
+    var out = Self.zeroLimbs
     var carry: UInt64 = 0
     for index in 0..<Self.limbCount {
       out[index] = (limbs[index] << 1) | carry
@@ -219,7 +221,7 @@ public struct U384: Equatable, Comparable, Sendable {
   /// the window, so a 385-bit intermediate can be halved without widening
   /// the type.
   internal func shiftedRightOne(carryIn: UInt64) -> Self {
-    var out = Limbs(repeating: 0)
+    var out = Self.zeroLimbs
     var carry = carryIn & 1
     for index in stride(from: Self.limbCount - 1, through: 0, by: -1) {
       let next = limbs[index] & 1

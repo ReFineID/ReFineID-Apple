@@ -57,12 +57,24 @@ public enum CardSignRequestResolver {
       hash: .sha224,
       scheme: .ecdsa,
       hashesMessage: false),
-    Shape(
-      secKeyAlgorithm: .ecdsaSignatureDigestRFC4754SHA384,
-      hash: .sha384,
-      scheme: .ecdsa,
-      hashesMessage: false),
   ]
+
+  /// The raw-signature shape, offered only where Security defines it.
+  ///
+  /// It names the same P-384 digest signature as the X9.62 shape above and
+  /// differs only in how the caller wants the two integers packed, so a
+  /// system without the constant loses a packing, never the ability to
+  /// authenticate.
+  private static let rawEcdsaShapes: [Shape] = {
+    guard #available(iOS 17.0, macOS 14.0, *) else { return [] }
+    return [
+      Shape(
+        secKeyAlgorithm: .ecdsaSignatureDigestRFC4754SHA384,
+        hash: .sha384,
+        scheme: .ecdsa,
+        hashesMessage: false)
+    ]
+  }()
 
   /// RSA client-authentication and qualified-signature shapes.
   private static let rsaShapes: [Shape] = [
@@ -165,7 +177,7 @@ public enum CardSignRequestResolver {
   private static func shapes(for profile: CardKeyProfile) -> [Shape] {
     switch profile {
     case .ecdsaP256, .ecdsaP384:
-      Self.ecdsaShapes
+      Self.ecdsaShapes + Self.rawEcdsaShapes
     case .rsa2048, .rsa3072:
       Self.rsaShapes
     }

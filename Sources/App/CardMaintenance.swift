@@ -11,7 +11,7 @@ import Foundation
 /// one exclusive session. An NFC action therefore presents one system
 /// sheet and never opens another sheet merely to refresh counters.
 internal enum CardMaintenance {
-  #if canImport(CoreNFC) && os(iOS)
+  #if REFINEID_LOCAL_CARD && os(iOS)
     /// Result of one PACE-authenticated NFC hold.
     ///
     /// A rejected CAN remains distinct because RAPP must terminate that
@@ -68,8 +68,12 @@ internal enum CardMaintenance {
         operation
       )
     case .nearField:
-      #if canImport(CoreNFC) && os(iOS)
+      #if REFINEID_LOCAL_CARD && os(iOS)
         guard SupportedCardTransports.offersNearField else { return nil }
+        // The system's card slot over the antenna arrived in iOS 26. An
+        // older system has no way to hold a card, which is the same
+        // answer as a device without an antenna.
+        guard #available(iOS 26.0, *) else { return nil }
         let held: NearFieldCardSession
         do {
           held = try await NearFieldCardSession.open(message: message)
@@ -99,7 +103,7 @@ internal enum CardMaintenance {
     }
   }
 
-  #if canImport(CoreNFC) && os(iOS)
+  #if REFINEID_LOCAL_CARD && os(iOS)
     /// Runs one RAPP card operation in one exclusive NFC hold after PACE.
     ///
     /// The callback receives only secure-messaging `CardOperations`. It cannot
@@ -112,6 +116,8 @@ internal enum CardMaintenance {
       _ operation: @escaping @Sendable (CardOperations) -> Payload
     ) async -> SecureNearFieldResult<Payload> {
       guard SupportedCardTransports.offersNearField else { return .failed }
+      // The system's card slot over the antenna arrived in iOS 26.
+      guard #available(iOS 26.0, *) else { return .failed }
       let held: NearFieldCardSession
       do {
         held = try await NearFieldCardSession.open(message: message)
@@ -156,7 +162,7 @@ internal enum CardMaintenance {
   /// The first wireless connection, classified from the live ATR before
   /// falling back to the certificate. Unknown state is a failed connection,
   /// never evidence that the card is activated.
-  #if canImport(CoreNFC) && os(iOS)
+  #if REFINEID_LOCAL_CARD && os(iOS)
     internal static func connectionSnapshot(
       cardAccessNumber: String
     ) async -> ConnectionSnapshotResult {
@@ -165,6 +171,8 @@ internal enum CardMaintenance {
           cardAccessNumber: cardAccessNumber)
       }
       guard SupportedCardTransports.offersNearField else { return .failed }
+      // The system's card slot over the antenna arrived in iOS 26.
+      guard #available(iOS 26.0, *) else { return .failed }
       let held: NearFieldCardSession
       do {
         held = try await NearFieldCardSession.open(
@@ -234,6 +242,11 @@ internal enum CardMaintenance {
         guard let cardAccessNumber = CardCredentialStore.displayedCardAccessNumber() else {
           return DebugModeReport(
             lines: ["activation-probe: no validated CAN is stored"],
+            succeeded: false)
+        }
+        guard #available(iOS 26.0, *) else {
+          return DebugModeReport(
+            lines: ["activation-probe: the card slot needs iOS 26"],
             succeeded: false)
         }
         let held: NearFieldCardSession

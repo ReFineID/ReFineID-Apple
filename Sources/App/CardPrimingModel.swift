@@ -1,6 +1,6 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if canImport(CoreNFC) && os(iOS)
+#if REFINEID_LOCAL_CARD && os(iOS)
 
   import CardCore
   import SwiftUI
@@ -11,10 +11,8 @@
   /// ``CardCredentialStore``, which never hands the digits back. Apple's
   /// NFC sheet reports the live operation; after it closes, the setup form
   /// retains only a sanitized failure sentence.
-  @available(iOS 26.0, *)
   @MainActor
-  @Observable
-  internal final class CardPrimingModel {
+  internal final class CardPrimingModel: ObservableObject {
     /// Result retained only for device automation.
     internal enum RunResult: Equatable {
       case notRun
@@ -24,24 +22,24 @@
 
     /// What the device currently holds, so the screen can say whether
     /// priming is even possible.
-    internal private(set) var contents = CardCredentialStore.contents()
+    @Published internal private(set) var contents = CardCredentialStore.contents()
 
     /// Whether this device offers the phone's own antenna.
     ///
     /// Reader selection is automatic: an available transport is always
     /// usable and there is no holder preference that can disable it.
-    internal private(set) var allowsNearField = SupportedCardTransports.offersNearField
+    @Published internal private(set) var allowsNearField = SupportedCardTransports.offersNearField
 
     /// True while a hold is in progress.
-    internal private(set) var isRunning = false
+    @Published internal private(set) var isRunning = false
 
     /// The last run's testable result, deliberately not rendered in the setup form.
     ///
     /// Apple's NFC sheet reports it to the holder.
-    internal private(set) var lastRunResult = RunResult.notRun
+    @Published internal private(set) var lastRunResult = RunResult.notRun
 
     /// A short, sanitized failure retained after Apple's NFC sheet closes.
-    internal private(set) var failure: String?
+    @Published internal private(set) var failure: String?
 
     /// Refreshes what is stored, without touching any secret.
     internal func refresh() {
@@ -58,6 +56,10 @@
       }
       refresh()
       guard contents.hasCardAccessNumber, allowsNearField else { return }
+      // `allowsNearField` is already false below iOS 26, because the
+      // system's card slot arrived there; this states the same fact in
+      // the form the compiler reads.
+      guard #available(iOS 26.0, *) else { return }
       isRunning = true
       lastRunResult = .notRun
       failure = nil

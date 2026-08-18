@@ -143,7 +143,7 @@ internal struct CardActivationSection: View {
           #if os(iOS)
             .keyboardType(.numberPad)
           #endif
-          .onChange(of: entry) { _, typed in
+          .onValueChange(of: entry) { typed in
             entry = LimitedDigits.puk(typed)
           }
           .focused($focus, equals: .entry)
@@ -167,7 +167,7 @@ internal struct CardActivationSection: View {
             #if os(iOS)
               .keyboardType(.numberPad)
             #endif
-            .onChange(of: newPin1) { _, typed in
+            .onValueChange(of: newPin1) { typed in
               newPin1 = LimitedDigits.pin1(typed)
             }
             .focused($focus, equals: .pin1)
@@ -190,7 +190,7 @@ internal struct CardActivationSection: View {
             #if os(iOS)
               .keyboardType(.numberPad)
             #endif
-            .onChange(of: newPin1Repeated) { _, typed in
+            .onValueChange(of: newPin1Repeated) { typed in
               newPin1Repeated = LimitedDigits.pin1(typed)
             }
             .focused($focus, equals: .pin1Repeat)
@@ -216,7 +216,7 @@ internal struct CardActivationSection: View {
             #if os(iOS)
               .keyboardType(.numberPad)
             #endif
-            .onChange(of: newPin2) { _, typed in
+            .onValueChange(of: newPin2) { typed in
               newPin2 = LimitedDigits.pin2(typed)
             }
             .focused($focus, equals: .pin2)
@@ -239,7 +239,7 @@ internal struct CardActivationSection: View {
             #if os(iOS)
               .keyboardType(.numberPad)
             #endif
-            .onChange(of: newPin2Repeated) { _, typed in
+            .onValueChange(of: newPin2Repeated) { typed in
               newPin2Repeated = LimitedDigits.pin2(typed)
             }
             .focused($focus, equals: .pin2Repeat)

@@ -1,23 +1,22 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
 import CardCore
-import Observation
+import SwiftUI
 
 @MainActor
-@Observable
-internal final class CardManagementModel {
-  internal private(set) var report: CredentialProbeReport? {
+internal final class CardManagementModel: ObservableObject {
+  @Published internal private(set) var report: CredentialProbeReport? {
     didSet { CredentialRetryHealth.shared.update(report) }
   }
-  internal private(set) var activationNeeds = CardMaintenance.ActivationNeeds(
+  @Published internal private(set) var activationNeeds = CardMaintenance.ActivationNeeds(
     pin1: true,
     pin2: true
   )
-  internal private(set) var activationScheme: ActivationScheme?
-  internal private(set) var offersActivation = false
-  internal private(set) var working = false
-  internal private(set) var failure: String?
-  internal private(set) var notice: String?
+  @Published internal private(set) var activationScheme: ActivationScheme?
+  @Published internal private(set) var offersActivation = false
+  @Published internal private(set) var working = false
+  @Published internal private(set) var failure: String?
+  @Published internal private(set) var notice: String?
 
   private let activationRequired: Bool
   private var nextRefreshIdentifier = 0
@@ -27,7 +26,7 @@ internal final class CardManagementModel {
     working || activeRefreshIdentifier != nil
   }
 
-  internal var transport: CardMaintenance.Transport {
+  @Published internal var transport: CardMaintenance.Transport {
     didSet {
       guard transport != oldValue else { return }
       #if DEBUG
@@ -46,7 +45,7 @@ internal final class CardManagementModel {
     }
   }
 
-  internal var cardAccessNumber: String
+  @Published internal var cardAccessNumber: String
   internal let availableTransports = CardMaintenance.availableTransports
 
   internal var canContactCard: Bool {

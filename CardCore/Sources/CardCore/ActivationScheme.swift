@@ -102,7 +102,7 @@ public enum ActivationScheme: Equatable, Sendable {
     if issuer?.contains(Self.organisationalIssuerMarker) == true {
       return nil
     }
-    if let issued = SecCertificateCopyNotValidBeforeDate(certificate) as Date? {
+    if let issued = CertificateValidity.window(of: certificate)?.notBefore {
       return Self.classify(issuedOn: issued)
     }
     return issuer.flatMap(Self.classify(issuerCommonName:))

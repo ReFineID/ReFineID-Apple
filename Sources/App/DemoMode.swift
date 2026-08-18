@@ -4,7 +4,7 @@
 
   import CardCore
   import Foundation
-  import Observation
+  import SwiftUI
   import UIKit
 
   /// Process-scoped demonstration and UI-test environment.
@@ -13,8 +13,7 @@
   /// physical card I/O, Keychain storage, token registration, or production
   /// diagnostics. Quitting the process destroys both its card and device state.
   @MainActor
-  @Observable
-  internal final class DemoMode {
+  internal final class DemoMode: ObservableObject {
     internal static let shared = DemoMode()
 
     internal static let launchArgument = "--virtual-card"
@@ -29,10 +28,10 @@
       offersNearField ? .factoryFreshNearField : .factoryFreshReader
     }
 
-    internal private(set) var isActive = false
-    internal private(set) var state = DemoMode.defaultScenario.snapshot
-    internal private(set) var revision = 0
-    internal private(set) var isEditorPresented = false
+    @Published internal private(set) var isActive = false
+    @Published internal private(set) var state = DemoMode.defaultScenario.snapshot
+    @Published internal private(set) var revision = 0
+    @Published internal private(set) var isEditorPresented = false
 
     private var card = VirtualIDCard(scenario: DemoMode.defaultScenario)
 

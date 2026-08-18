@@ -93,7 +93,7 @@
         }
       }
       .onAppear { seedVirtualRequestIfNeeded() }
-      .onChange(of: DemoMode.shared.revision) { _, _ in
+      .onValueChange(of: DemoMode.shared.revision) { _ in
         seedVirtualRequestIfNeeded()
       }
     }
@@ -160,7 +160,7 @@
               .keyboardType(.numberPad)
               .textContentType(.oneTimeCode)
               .accessibilityIdentifier("signingPIN2")
-              .onChange(of: pin2) { _, value in
+              .onValueChange(of: pin2) { value in
                 pin2 = String(
                   value.filter(\.isNumber).prefix(Pin2.maximumDigitCount))
               }

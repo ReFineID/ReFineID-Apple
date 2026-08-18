@@ -3,7 +3,6 @@
 import CardCore
 import CoreImage
 import Foundation
-import Observation
 import RappEngine
 import SwiftUI
 
@@ -49,8 +48,7 @@ private enum RappApplePeerProfile {
 }
 
 @MainActor
-@Observable
-internal final class RappPairingModel {
+internal final class RappPairingModel: ObservableObject {
   internal enum Phase: Equatable {
     case idle
     case offer(String)
@@ -83,12 +81,12 @@ internal final class RappPairingModel {
     #endif
   }
 
-  internal private(set) var phase = Phase.idle
-  internal private(set) var pairs: [RappPairingCoordinator.PairSummary] = []
-  internal private(set) var selectedPairID: Data?
+  @Published internal private(set) var phase = Phase.idle
+  @Published internal private(set) var pairs: [RappPairingCoordinator.PairSummary] = []
+  @Published internal private(set) var selectedPairID: Data?
 
-  @ObservationIgnored private let vault: RappDeviceVault
-  @ObservationIgnored private let catalog: RappPairCatalog
+  private let vault: RappDeviceVault
+  private let catalog: RappPairCatalog
   private var relay: PersistentRelaySession?
   private var streamRelay: StreamRelaySession?
   private var streamEverConnected = false
@@ -116,7 +114,7 @@ internal final class RappPairingModel {
 
   internal func createOffer() {
     resetAttempt()
-    #if os(iOS)
+    #if REFINEID_LOCAL_CARD && os(iOS)
       PhonePersistentTokenRelay.shared.suspendForPairing()
     #endif
     let relay = makeRelay(role: .host)
@@ -159,7 +157,9 @@ internal final class RappPairingModel {
         fail(String(localized: "The camera cannot scan pairing codes right now"))
         return
       }
-      PhonePersistentTokenRelay.shared.suspendForPairing()
+      #if REFINEID_LOCAL_CARD
+        PhonePersistentTokenRelay.shared.suspendForPairing()
+      #endif
       phase = .scanning
     }
 
@@ -516,7 +516,7 @@ internal final class RappPairingModel {
   }
 
   private func resumeRegularRelay() {
-    #if os(iOS)
+    #if REFINEID_LOCAL_CARD && os(iOS)
       PhonePersistentTokenRelay.shared.resumeAfterUserAction()
     #endif
   }
@@ -531,7 +531,7 @@ internal struct RappPairingButton: View {
       isPresented = true
     } label: {
       Image(systemName: hasSelectedPair ? "link" : "link.badge.plus")
-        .contentTransition(.symbolEffect(.replace))
+        .replacingSymbolPlainly()
     }
     .accessibilityLabel("Remote Card")
     .accessibilityValue(
@@ -546,7 +546,7 @@ internal struct RappPairingButton: View {
 
 internal struct RappPairingView: View {
   @Environment(\.dismiss) private var dismiss
-  @State private var model = RappPairingModel()
+  @StateObject private var model = RappPairingModel()
 
   internal var body: some View {
     NavigationStack {

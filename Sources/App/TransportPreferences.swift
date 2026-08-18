@@ -11,17 +11,16 @@ import SwiftUI
 /// carried over from another device can never present a control the
 /// hardware cannot honour.
 @MainActor
-@Observable
-internal final class TransportPreferences {
+internal final class TransportPreferences: ObservableObject {
   /// The transports this device could offer.
   internal let supported: CardTransportSelection
 
   /// The transports the holder currently allows.
-  internal private(set) var selection: CardTransportSelection
+  @Published internal private(set) var selection: CardTransportSelection
 
   /// Set when the last change could not be stored, so the UI can say so
   /// rather than silently showing a value that did not stick.
-  internal private(set) var lastWriteFailed = false
+  @Published internal private(set) var lastWriteFailed = false
 
   internal init() {
     let platformCeiling = SupportedCardTransports.current

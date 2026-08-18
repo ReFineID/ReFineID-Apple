@@ -211,7 +211,7 @@ internal struct CredentialChangeSection: View {
           #if os(iOS)
             .keyboardType(.numberPad)
           #endif
-          .onChange(of: current) { _, typed in
+          .onValueChange(of: current) { typed in
             current = LimitedDigits.pin(typed)
           }
           .focused($focus, equals: .current)
@@ -235,7 +235,7 @@ internal struct CredentialChangeSection: View {
           #if os(iOS)
             .keyboardType(.numberPad)
           #endif
-          .onChange(of: new) { _, typed in
+          .onValueChange(of: new) { typed in
             new = LimitedDigits.pin(typed)
           }
           .focused($focus, equals: .new)
@@ -259,7 +259,7 @@ internal struct CredentialChangeSection: View {
           #if os(iOS)
             .keyboardType(.numberPad)
           #endif
-          .onChange(of: repeated) { _, typed in
+          .onValueChange(of: repeated) { typed in
             repeated = LimitedDigits.pin(typed)
           }
           .focused($focus, equals: .repeated)

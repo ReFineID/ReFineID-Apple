@@ -1,6 +1,6 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if canImport(CoreNFC) && os(iOS)
+#if REFINEID_LOCAL_CARD && os(iOS)
 
   import CardCore
   import Foundation
@@ -8,6 +8,7 @@
 
   /// The card I/O of a first prime: PACE and the reads, inside the one
   /// field's exclusive card session.
+  @available(iOS 26.0, *)
   extension CardPriming {
     /// What the one field reads off a card this device has never primed.
     internal struct Payload: Sendable {
