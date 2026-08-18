@@ -11,6 +11,23 @@ internal struct OperationResultMessage: Equatable {
   internal var error: ResultError?
   internal var result: CardOperationResult?
 
+  /// The body fields this result puts on the wire.
+  ///
+  /// The sealing path needs the fields rather than their encoding, so the two
+  /// share one definition and cannot describe the same result differently.
+  internal var wireBody: [String: WireValue] {
+    var body: [String: WireValue] = [
+      "operation_id": .bytes(operationIdentifier),
+      "request_hash": .bytes(requestHash),
+      "status": .text(status.rawValue),
+      "body": .map(result.map(wireResultBody) ?? [:]),
+    ]
+    if let error {
+      body["error"] = .text(error.rawValue)
+    }
+    return body
+  }
+
   /// A completed result carries an output and no error; every other status
   /// carries a matching error and no output.
   private var isConsistent: Bool {
@@ -65,17 +82,8 @@ internal struct OperationResultMessage: Equatable {
   }
 
   internal func encoded() throws -> Data {
-    var body: [String: WireValue] = [
-      "operation_id": .bytes(operationIdentifier),
-      "request_hash": .bytes(requestHash),
-      "status": .text(status.rawValue),
-      "body": .map(result.map(wireResultBody) ?? [:]),
-    ]
-    if let error {
-      body["error"] = .text(error.rawValue)
-    }
     do {
-      return try WireValue.map(body).encoded()
+      return try WireValue.map(wireBody).encoded()
     } catch {
       throw PairRecordError.invalidInput
     }

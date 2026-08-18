@@ -10,20 +10,36 @@ import Foundation
 extension RappOperationBridge {
   /// Classifies one authenticated message on whichever side runs here.
   internal func dispatch(_ message: TypedMessage, nowMs: UInt64) throws -> RappBridgeAction {
+    // The engine is a value, so its new state is stored before the action is
+    // built. Building an action reads the engine to describe the operation the
+    // message just created, and a deferred store would leave that read looking
+    // at the state from before the message arrived.
     switch side {
     case .proxy(var engine):
-      defer { side = .proxy(engine) }
       var store = VaultProxyJournalStore(vault: vault, pairIdentifier: pairIdentifier)
-      let dispatch = try mapping {
-        try engine.receive(
-          message, store: &store, nowMilliseconds: nowMs,
-          maximumLifetimeMilliseconds: maximumLifetimeMilliseconds)
+      let dispatch: ProxyDispatch
+      do {
+        dispatch = try mapping {
+          try engine.receive(
+            message, store: &store, nowMilliseconds: nowMs,
+            maximumLifetimeMilliseconds: maximumLifetimeMilliseconds)
+        }
+      } catch {
+        side = .proxy(engine)
+        throw error
       }
+      side = .proxy(engine)
       return try action(for: dispatch)
     case .requester(var engine):
-      defer { side = .requester(engine) }
       var store = VaultRequesterJournalStore(vault: vault, pairIdentifier: pairIdentifier)
-      let dispatch = try mapping { try engine.receive(message, store: &store) }
+      let dispatch: RequesterDispatch
+      do {
+        dispatch = try mapping { try engine.receive(message, store: &store) }
+      } catch {
+        side = .requester(engine)
+        throw error
+      }
+      side = .requester(engine)
       return try action(for: dispatch)
     }
   }

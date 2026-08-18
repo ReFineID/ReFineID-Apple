@@ -50,7 +50,9 @@ extension TypedMessage {
       report.wireBody
     case .error(let error):
       error.wireBody
-    case .operationResult, .other:
+    case .operationResult(let result):
+      result.wireBody
+    case .other:
       nil
     }
   }

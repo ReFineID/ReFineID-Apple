@@ -93,7 +93,13 @@ internal struct PairingConfirmation {
       guard hello.requestedProfiles == nil else { throw PairingError.roleViolation }
     case .proxy:
       guard let requested = hello.requestedProfiles else { throw PairingError.roleViolation }
-      guard requested == offeredProfiles else { throw PairingError.grantMismatch }
+      // The offer names a set of profiles, so the requester's echo has to
+      // name the same set. Requesters that list them in their own order are
+      // making the same statement, and refusing those would end a pairing
+      // over a sequence the protocol never gave meaning to.
+      guard sortedByNameBytes(requested) == offeredProfiles else {
+        throw PairingError.grantMismatch
+      }
     }
     peerHello = hello
     return hello
