@@ -1,8 +1,8 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if canImport(ReFineIDRapp)
+#if canImport(RappEngine)
   import Foundation
-  import ReFineIDRapp
+  import RappEngine
   import Security
 
   /// Failures raised while producing platform entropy.

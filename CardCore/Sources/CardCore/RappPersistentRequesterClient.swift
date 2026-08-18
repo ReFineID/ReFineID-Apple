@@ -1,8 +1,7 @@
-#if canImport(MultipeerConnectivity) && canImport(ReFineIDRapp)
+#if canImport(MultipeerConnectivity) && canImport(RappEngine)
   import Foundation
   import os
-  import ReFineIDRapp
-
+  import RappEngine
   /// Timing policy for one requester-side RAPP operation: the lifetime the
   /// operation is granted, the bound on the synchronous wait, and the pacing
   /// of liveness probes on the established channel.

@@ -15,8 +15,6 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 echo "swift format lint..."
-# CardCore/Sources/ReFineIDRapp holds UniFFI-generated bindings; the
-# generator owns their style, so only authored sources pass the gate.
 swift format lint --strict --recursive \
   Sources Tests CardCore/Sources/CardCore CardCore/Sources/RappEngine \
   CardCore/Tests CardCore/Package.swift \

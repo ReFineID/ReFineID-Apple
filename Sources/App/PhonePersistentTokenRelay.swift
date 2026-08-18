@@ -3,8 +3,7 @@
 #if os(iOS) && canImport(CoreNFC)
   import CardCore
   import Foundation
-  import ReFineIDRapp
-
+  import RappEngine
   /// Owns the phone side of one mutually authenticated RAPP connection.
   ///
   /// The transport is an opaque frame carrier chosen by the selected pair:

@@ -3,7 +3,7 @@ import XCTest
 
 @testable import CardCore
 
-#if canImport(ReFineIDRapp)
+#if canImport(RappEngine)
   final class RappPairingRecoveryTests: XCTestCase {
     private actor RecordingTransport: RappFrameTransport {
       private var frames: [Data] = []

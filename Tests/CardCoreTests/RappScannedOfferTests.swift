@@ -4,9 +4,8 @@ import CardCore
 import Foundation
 import XCTest
 
-#if canImport(ReFineIDRapp)
-  import ReFineIDRapp
-
+#if canImport(RappEngine)
+  import RappEngine
   /// Round-trips a requester offer carrying an Apple-peer and a stream
   /// candidate through the QR URI and the scanned-offer candidate listing.
   internal final class RappScannedOfferTests: XCTestCase {

@@ -14,7 +14,7 @@ import Foundation
 internal struct ProxyOperationEngine {
   private let grantedProfiles: [ProfileName]
 
-  private var operations: [AuthorizationTransaction]
+  internal private(set) var operations: [AuthorizationTransaction]
 
   private var recovered: [RecoveredProxyRecord]
 
@@ -354,4 +354,5 @@ internal struct ProxyOperationEngine {
   private func index(of operationIdentifier: Data) -> Int? {
     operations.firstIndex { $0.reference.operationIdentifier == operationIdentifier }
   }
+
 }

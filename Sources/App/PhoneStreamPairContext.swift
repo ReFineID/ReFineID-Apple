@@ -3,8 +3,7 @@
 #if os(iOS) && canImport(CoreNFC)
   import CardCore
   import Foundation
-  import ReFineIDRapp
-
+  import RappEngine
   /// The selected pair's stream rendezvous facts needed to dial.
   internal struct PhoneStreamPairContext {
     /// Stored listener endpoints of the paired requester.

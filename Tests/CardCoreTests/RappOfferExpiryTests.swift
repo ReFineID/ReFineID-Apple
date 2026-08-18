@@ -1,5 +1,5 @@
 import Foundation
-import ReFineIDRapp
+import RappEngine
 import XCTest
 
 final class RappOfferExpiryTests: XCTestCase {

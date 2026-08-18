@@ -1,7 +1,6 @@
-#if canImport(ReFineIDRapp)
+#if canImport(RappEngine)
   import Foundation
-  import ReFineIDRapp
-
+  import RappEngine
   /// Transport-independent coordinator for the authenticated RAPP session setup.
   ///
   /// The surrounding transport may carry bytes and report closure, but it must not

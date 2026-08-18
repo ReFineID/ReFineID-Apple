@@ -6,9 +6,8 @@ import Testing
 
 @testable import CardCore
 
-#if canImport(ReFineIDRapp)
-  import ReFineIDRapp
-
+#if canImport(RappEngine)
+  import RappEngine
   @Suite
   internal struct RappIntegrationTests {
     private enum TestFailure: Error {

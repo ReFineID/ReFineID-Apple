@@ -1,4 +1,4 @@
-#if canImport(ReFineIDRapp)
+#if canImport(RappEngine)
   import Foundation
 
   extension RappOperationDriver.KeyProfile {

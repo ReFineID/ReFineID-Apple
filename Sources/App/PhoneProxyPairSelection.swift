@@ -3,8 +3,7 @@
 #if os(iOS) && canImport(CoreNFC)
   import CardCore
   import Foundation
-  import ReFineIDRapp
-
+  import RappEngine
   /// Resolves the phone's one usable selected pair for a proxy connection.
   internal enum PhoneProxyPairSelection {
     /// Loads the selected active pair record, selecting a sole active pair

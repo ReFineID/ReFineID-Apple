@@ -1,9 +1,8 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if canImport(ReFineIDRapp)
+#if canImport(RappEngine)
   import Foundation
-  import ReFineIDRapp
-
+  import RappEngine
   /// Reads a scanned one-use pairing offer without consuming it.
   public enum RappScannedOffer {
     /// One transport candidate carried by a scanned pairing offer.

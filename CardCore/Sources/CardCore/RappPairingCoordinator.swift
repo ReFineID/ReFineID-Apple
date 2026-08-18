@@ -1,7 +1,6 @@
-#if canImport(ReFineIDRapp)
+#if canImport(RappEngine)
   import Foundation
-  import ReFineIDRapp
-
+  import RappEngine
   /// Drives one explicit, one-use RAPP pairing attempt. No pair secret is exposed
   /// to Swift; the generated Rust bridge owns the QR bearer secret, Noise state,
   /// private keys, transcript checks, and final pair record.

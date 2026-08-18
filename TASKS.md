@@ -22,19 +22,18 @@ extension topology, verified invariants, and known gaps in detail.
   pushed.
 - Apple repository: `~/src/ReFineID-Apple` at
   `ca3fab2fb9daeeed179d36816c1c55ed91131d28`. `HEAD` and `origin/main` match.
-  The checked-in `ReFineIDRappFFI.xcframework` and generated Swift bindings are
-  explicitly pinned in the handoff to the Rust revision above.
-- Do not replace the checked-in framework without rebuilding it from a pushed
-  Rust revision and updating the pinned revision in the same commit series.
+- The protocol engine is Swift, in `CardCore/Sources/RappEngine`. There is no
+  compiled artifact to pin. Its authority is the vendored specification, the
+  formal state model, and the conformance corpus and vectors beside them, and
+  its tests fail when the engine and those documents disagree.
 
 ### Implemented and verified
 
 - RAPP pairing, authenticated operation transport, explicit phone-holder
   authorization, browser authentication, document signing, acknowledgements,
   durable peer selection/revocation, and immediate durable revocation after one
-  authenticated protocol violation are implemented through the shared Rust
-  core. Activation and PIN management are deliberately not remote RAPP
-  operations.
+  authenticated protocol violation are implemented in the Swift engine.
+  Activation and PIN management are deliberately not remote RAPP operations.
 - macOS ships separate direct-reader and RAPP CryptoTokenKit extensions. The
   reader extension has smart-card access and no network entitlement; the RAPP
   extension has local-network client/server access and no smart-card
@@ -101,8 +100,8 @@ Outcome: every shipped Apple artifact is auditable back to pushed Rust source.
 
 - Confirm the pinned Rust and Apple revisions above are reachable from their
   remotes and both worktrees are clean before making changes.
-- Rebuild RAPP Swift bindings and `ReFineIDRappFFI.xcframework` only through the
-  repository-owned Swift release manager. Never hand-edit generated bindings.
+- Change the specification and the formal model first, regenerate the corpus
+  and the vectors, re-vendor them, and then make the engine follow.
 - If Rust ABI or wire behavior changes, first commit and push Rust, rebuild the
   Apple artifact, then update its pinned Rust hash and handoff in the same Apple
   commit series.
@@ -111,8 +110,8 @@ Outcome: every shipped Apple artifact is auditable back to pushed Rust source.
 
 Acceptance criteria:
 
-- A clean checkout can reproduce the checked-in framework from the documented
-  Rust revision.
+- A clean checkout builds the engine from source with no toolchain beyond
+  Xcode.
 - The release manager rejects a framework whose recorded source revision,
   slices, symbols, or extension topology does not match the candidate.
 - Rust and Apple non-UI RAPP suites pass before UI harness work begins.

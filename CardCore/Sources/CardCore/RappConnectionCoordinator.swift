@@ -1,7 +1,6 @@
-#if canImport(ReFineIDRapp)
+#if canImport(RappEngine)
   import Foundation
-  import ReFineIDRapp
-
+  import RappEngine
   /// The sole byte-transport capability required by RAPP.
   ///
   /// Implementations must preserve frame boundaries and report successful

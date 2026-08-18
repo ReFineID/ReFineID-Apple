@@ -1,7 +1,6 @@
-#if canImport(ReFineIDRapp)
+#if canImport(RappEngine)
   import Foundation
-  import ReFineIDRapp
-
+  import RappEngine
   /// Owns one established RAPP operation runtime and translates generated binding
   /// records into Sendable Apple-side values. It never performs card I/O itself.
   public actor RappOperationDriver {

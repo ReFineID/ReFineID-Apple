@@ -1,9 +1,8 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if canImport(ReFineIDRapp)
+#if canImport(RappEngine)
   import Foundation
-  import ReFineIDRapp
-
+  import RappEngine
   extension RappDeviceVault: RappPairVault {
     /// Rust-core binding for ``insertPair(pairID:record:)``.
     public func insertDeviceOnly(pairId: Data, record: Data) throws {

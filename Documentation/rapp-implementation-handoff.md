@@ -10,24 +10,30 @@ claim that RAPP is production-ready.
 
 ## Protocol authority
 
-The shared Rust protocol engine is the protocol and state-machine authority.
-The committed Apple XCFramework and generated Swift binding are pinned to:
+The vendored documents are the authority, and the Swift engine in
+`CardCore/Sources/RappEngine` implements them. There is no compiled protocol
+artifact in this repository.
 
-- RAPP protocol document version `26.8.17.233`, together with the
-  state-machine YAML of the same version
-- Rust crate `refineid-rapp`, version `26.8.5`
-- RAPP golden corpus: `Documentation/rapp-conformance/rapp-v26.8.17.233.json`
+- Specification: `Documentation/protocol/rapp-v26.8.17.233.md`
+- Formal state model: `Documentation/protocol/rapp-state-machine-v26.8.17.233.yaml`
+- Conformance corpus: `Documentation/rapp-conformance/rapp-v26.8.17.233.json`
   (`SHA-256 3165ba9c4bd2cf1063707eb799af401bf232e0f62e546702781afa0bf6229bd7`)
+- Vectors generated from the reference engine, covering what the corpus does
+  not reach: `rapp-transport-v26.8.17.233.json` (post-handshake framing),
+  `rapp-flow-v26.8.17.233.json` (ceremony bodies), and
+  `rapp-operation-v26.8.17.233.json` (operation bodies)
 
-The crate lives in the Rust workspace named by the `REFINEID_RAPP_REPO`
-environment variable at regeneration time. Regenerate only from crate
-sources whose `cargo clippy -p refineid-rapp --all-targets --all-features`
-and `cargo test -p refineid-rapp --features bindings` both pass.
+The engine is held to those documents by its tests rather than by anyone
+remembering to follow them. The state tables are transcribed from the model
+and checked against it in both directions at test time: every rule in the
+model is implemented, and no implemented rule is absent from the model. Every
+encoding is compared byte for byte against the vectors, which is what catches
+an ordinary refactor that silently rewrites a wire key.
 
-Do not independently redefine RAPP framing, transitions, role constraints,
-failure policy, or cryptography in Swift. Change the Rust protocol/model first,
-make its tests pass, regenerate the Apple binding, and then adapt the Apple
-integration.
+Change the specification and the model first, regenerate the corpus and the
+vectors, re-vendor all of them together, and then make the engine follow. A
+change to the documents that the engine does not follow fails the build, so
+the two cannot drift apart quietly.
 
 Important invariants already represented in the implementation are:
 
@@ -43,33 +49,25 @@ Important invariants already represented in the implementation are:
 The presently supported remote operation families are card status, browser
 authentication, and qualified document signing.
 
-## Generated Rust boundary
+## The Swift engine
 
-`CardCore/Artifacts/ReFineIDRappFFI.xcframework` is deliberately committed.
-It contains arm64 slices for macOS, iOS device, and iOS Simulator. Intel macOS
-is intentionally unsupported.
+`CardCore/Sources/RappEngine` is the protocol engine. It depends on Foundation
+and CryptoKit only, and is organised as:
 
-`CardCore/Sources/ReFineIDRapp/ReFineIDRapp.swift` is the generated Swift
-binding. `CardCore/Package.swift` exposes the generated Swift target and binary
-artifact to CardCore.
+- `Noise/` the Noise framework, with the two patterns this protocol uses
+- `Wire/` deterministic CBOR, the envelope, and the message registry
+- `Rapp/` the prologues, the derivations, and the transport channel
+- `State/` the formal model transcribed as tables
+- `Storage/` the offer, the pair record, and the operation journal
+- `Flow/` the pairing and session ceremonies
+- `Runtime/` liveness, the failure policy, and framing
+- `Operation/` typed operations and their authorization
+- `Engine/` the proxy and requester operation engines
+- `API/` the interface `CardCore` calls
 
-Regenerate both from the Apple repository root with:
-
-```sh
-REFINEID_RAPP_REPO=<rust-workspace> \
-  swift Scripts/apple-app-store-connect-release-manager.swift rapp-bindings
-```
-
-The command requires `REFINEID_RAPP_REPO` to point at the Rust workspace
-containing `crates/refineid-rapp`. The generated files must be committed
-together with the protocol document and crate version pins above. Do not
-hand-edit generated bindings or leave a regenerated XCFramework untracked.
-
-The static libraries are currently about 55 MB per slice. GitHub accepts them
-but warns because they exceed its recommended 50 MB size. They remain below
-GitHub's 100 MB hard file limit. If artifact distribution changes later, first
-provide a reproducible, authenticated fetch/build path before removing them
-from Git.
+There is nothing to regenerate and no toolchain beyond Xcode. What was a
+166 MB committed binary and a Rust build step is now Swift that the same
+tests, linters, and reviewers see as any other source in this repository.
 
 ## CardCore RAPP layer
 
@@ -279,10 +277,9 @@ network permission, CryptoTokenKit, or Safari system-sheet behavior.
   for production.
 - Cross-platform Android, Windows, Linux, and FreeBSD interoperability remains
   protocol intent, not implemented Apple evidence.
-- A generic universal iOS Simulator build still requests an x86_64 Rust binary
-  slice that the intentionally arm64-only committed XCFramework does not
-  contain. The supported arm64 physical-device graph builds; this is not a
-  claim of universal Simulator support.
+- The Simulator restriction that a compiled arm64-only artifact imposed is
+  gone: the engine is Swift and builds for whatever slice the toolchain asks
+  for.
 
 ## Exact next step
 
@@ -299,8 +296,8 @@ network permission, CryptoTokenKit, or Safari system-sheet behavior.
      -only-testing:ReFineIDUITests/<test-class>/<test-method>
    ```
 
-   The project declares macOS `arm64` in every configuration because the
-   committed RAPP XCFramework intentionally has no Intel slice.
+   The project declares macOS `arm64` in every configuration. The engine no
+   longer constrains this; the declaration is now the project's own choice.
 3. Pair macOS and iPhone from a clean pairing state using the QR UI.
 4. With a known activated card and correct CAN/PIN values, record one card
    status read, one Safari browser-authentication operation, and one harmless

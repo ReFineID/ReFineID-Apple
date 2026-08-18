@@ -1,7 +1,6 @@
-#if canImport(ReFineIDRapp)
+#if canImport(RappEngine)
   import Foundation
-  import ReFineIDRapp
-
+  import RappEngine
   /// Device-local view of active RAPP pair records. Revoked tombstones are never
   /// returned as usable pairs and pair private material never leaves Rust.
   public actor RappPairCatalog {

@@ -18,23 +18,13 @@ private let package = Package(
   ],
   targets: [
     // The RAPP protocol engine in Swift: deterministic CBOR, the envelope
-    // schema, and the Noise handshakes and transport channel. It implements
+    // schema, the Noise handshakes and transport channel, the formal state
+    // model, the storage codecs, and the two operation engines. It implements
     // the vendored specification and is replayed against the vendored
-    // conformance corpus, so it is built and tested on its own while the
-    // generated bindings below still carry the app.
+    // conformance corpus and the vectors generated from the reference engine.
     .target(
       name: "RappEngine",
       path: "Sources/RappEngine"),
-    // Generated from refineid-lib-core by the Swift release manager. RAPP is
-    // a mandatory product capability; Apple targets never downgrade to the
-    // retired unauthenticated relay when these bindings are unavailable.
-    .binaryTarget(
-      name: "ReFineIDRappFFI",
-      path: "Artifacts/ReFineIDRappFFI.xcframework"),
-    .target(
-      name: "ReFineIDRapp",
-      dependencies: ["ReFineIDRappFFI"],
-      path: "Sources/ReFineIDRapp"),
     // Tests live in the Xcode project's Tests/CardCoreTests bundle target
     // so one scheme runs them locally and in Xcode Cloud.
     // They exercise the public API only.
@@ -43,13 +33,13 @@ private let package = Package(
       dependencies: [
         "ObjCExceptionGuard",
         "PcscCardReset",
-        "ReFineIDRapp",
+        "RappEngine",
       ],
       linkerSettings: [
         .linkedFramework("Security")
       ]),
-    // The engine is not yet reachable from the app, so its conformance
-    // replays run here rather than in the Xcode project's test bundle.
+    // The engine's conformance replays run here rather than in the Xcode
+    // project's test bundle, so they also run from the command line.
     .testTarget(
       name: "RappEngineTests",
       dependencies: ["RappEngine"],

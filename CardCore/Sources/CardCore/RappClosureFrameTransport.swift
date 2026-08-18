@@ -1,4 +1,4 @@
-#if canImport(ReFineIDRapp)
+#if canImport(RappEngine)
   import Foundation
 
   /// Adapts an existing platform transport without giving it any RAPP semantic
