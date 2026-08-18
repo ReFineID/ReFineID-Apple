@@ -15,6 +15,7 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
   )
   case signatureResponse(id: UUID, signature: Data)
 
+  /// The correlation ID shared by a request and its answer.
   public var requestID: UUID {
     switch self {
     case .identityRequest(let id), .identityResponse(let id, _),
@@ -24,6 +25,7 @@ public enum PersistentRelayMessage: Codable, Equatable, Sendable {
     }
   }
 
+  /// Decodes the application message carried above the opaque transport.
   public static func decoded(_ data: Data) throws -> Self {
     try JSONDecoder().decode(Self.self, from: data)
   }

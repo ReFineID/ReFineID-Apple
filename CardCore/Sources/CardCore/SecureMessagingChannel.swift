@@ -141,7 +141,8 @@ public final class SecureMessagingChannel: CardChannel {
     guard bytes.count >= Self.headerLength else { throw Failure.malformedCommand }
     var header = Data(bytes.prefix(Self.headerLength))
     header[header.startIndex] |= PaceValues.classSecureMessagingBit
-    let hasOddInstruction = !bytes[Self.instructionByteIndex].isMultiple(of: Self.evenInstructionRemainder)
+    let hasOddInstruction = !bytes[Self.instructionByteIndex].isMultiple(
+      of: Self.evenInstructionRemainder)
     if bytes.count == Self.headerLength {
       return PlainCommandParts(
         header: header,

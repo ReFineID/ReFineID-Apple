@@ -1,4 +1,4 @@
-  #if canImport(RappEngine)
+#if canImport(RappEngine)
   import Foundation
 
   extension RappOperationDriver.KeyProfile {
@@ -36,22 +36,22 @@
     /// The signing algorithm this RAPP algorithm names.
     public var signingAlgorithm: SigningAlgorithm {
       switch self {
-    case .ecdsaSHA224:
-      SigningAlgorithm(hash: .sha224, scheme: .ecdsa)
-    case .ecdsaSHA256:
-      SigningAlgorithm(hash: .sha256, scheme: .ecdsa)
-    case .ecdsaSHA384:
-      SigningAlgorithm(hash: .sha384, scheme: .ecdsa)
-    case .ecdsaSHA512:
-      SigningAlgorithm(hash: .sha512, scheme: .ecdsa)
-    case .rsaPkcs1SHA256:
-      SigningAlgorithm(hash: .sha256, scheme: .rsaPkcs1)
-    case .rsaPkcs1SHA384:
-      SigningAlgorithm(hash: .sha384, scheme: .rsaPkcs1)
-    case .rsaPkcs1SHA512:
-      SigningAlgorithm(hash: .sha512, scheme: .rsaPkcs1)
-    case .rsaPssSHA256:
-      SigningAlgorithm(hash: .sha256, scheme: .rsaPss)
+      case .ecdsaSHA224:
+        SigningAlgorithm(hash: .sha224, scheme: .ecdsa)
+      case .ecdsaSHA256:
+        SigningAlgorithm(hash: .sha256, scheme: .ecdsa)
+      case .ecdsaSHA384:
+        SigningAlgorithm(hash: .sha384, scheme: .ecdsa)
+      case .ecdsaSHA512:
+        SigningAlgorithm(hash: .sha512, scheme: .ecdsa)
+      case .rsaPkcs1SHA256:
+        SigningAlgorithm(hash: .sha256, scheme: .rsaPkcs1)
+      case .rsaPkcs1SHA384:
+        SigningAlgorithm(hash: .sha384, scheme: .rsaPkcs1)
+      case .rsaPkcs1SHA512:
+        SigningAlgorithm(hash: .sha512, scheme: .rsaPkcs1)
+      case .rsaPssSHA256:
+        SigningAlgorithm(hash: .sha256, scheme: .rsaPss)
       }
     }
 

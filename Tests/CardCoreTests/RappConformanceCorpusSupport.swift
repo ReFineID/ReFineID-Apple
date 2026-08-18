@@ -1,3 +1,5 @@
+// Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
+
 import CryptoKit
 import Foundation
 
@@ -18,7 +20,7 @@ internal enum RappConformanceCorpusSupport {
     static let majorText = CBORMajor.text.rawValue
     static let majorArray = CBORMajor.array.rawValue
     static let majorMap = CBORMajor.map.rawValue
-    static let compactValueLimit = 23
+    static let compactValueLimit: UInt64 = 23
     static let utf8HexDigitsPerByte = 2
     static let prefixLength = 8
     static let hexRadix = 16
@@ -33,15 +35,15 @@ internal enum RappConformanceCorpusSupport {
     static let cborLength8BitMax = UInt64(UInt8.max)
     static let cborLength16BitMax = UInt64(UInt16.max)
     static let cborLength32BitMax = UInt64(UInt32.max)
-    static let nibbleShift = 4
-    static let zeroDigit = 48
-    static let nineDigit = 57
-    static let upperADigit = 65
-    static let upperFDigit = 70
-    static let lowerADigit = 97
-    static let lowerFDigit = 102
-    static let upperOffset = 55
-    static let lowerOffset = 87
+    static let nibbleShift: UInt8 = 4
+    static let zeroDigit: UInt8 = 48
+    static let nineDigit: UInt8 = 57
+    static let upperADigit: UInt8 = 65
+    static let upperFDigit: UInt8 = 70
+    static let lowerADigit: UInt8 = 97
+    static let lowerFDigit: UInt8 = 102
+    static let upperOffset: UInt8 = 55
+    static let lowerOffset: UInt8 = 87
     static let hexPrefix = 4
 
     private static func byte(fromHex value: String) -> UInt8 {
@@ -268,21 +270,21 @@ internal enum RappConformanceCorpusSupport {
   internal enum DeterministicCBOR {
     internal static func encode(_ value: CorpusValue) throws -> Data {
       switch value {
-      case let .unsigned(number):
+      case .unsigned(let number):
         return header(major: Constants.majorUnsigned, value: number)
-      case let .negative(number):
+      case .negative(let number):
         guard number < 0 else { throw CorpusError.invalidNegative }
         return header(major: Constants.majorNegative, value: UInt64(-(number + 1)))
-      case let .bytes(bytes):
+      case .bytes(let bytes):
         return header(major: Constants.majorBytes, value: UInt64(bytes.count)) + bytes
-      case let .text(text):
+      case .text(let text):
         let bytes = Data(text.utf8)
         return header(major: Constants.majorText, value: UInt64(bytes.count)) + bytes
-      case let .array(items):
+      case .array(let items):
         return try items.reduce(header(major: Constants.majorArray, value: UInt64(items.count))) {
           try $0 + encode($1)
         }
-      case let .map(entries):
+      case .map(let entries):
         var seen = Set<Data>()
         let encodedEntries = try entries.map { entry -> (Data, Data) in
           let key = try encode(.text(entry.key))
@@ -291,10 +293,12 @@ internal enum RappConformanceCorpusSupport {
         }.sorted { left, right in
           left.0.lexicographicallyPrecedes(right.0)
         }
-        return encodedEntries.reduce(header(major: Constants.majorMap, value: UInt64(entries.count))) {
+        return encodedEntries.reduce(
+          header(major: Constants.majorMap, value: UInt64(entries.count))
+        ) {
           $0 + $1.0 + $1.1
         }
-      case let .bool(value):
+      case .bool(let value):
         return Data([value ? Constants.boolTrue : Constants.boolFalse])
       case .null:
         return Data([Constants.cborNull])
@@ -304,22 +308,22 @@ internal enum RappConformanceCorpusSupport {
     private static func header(major: UInt8, value: UInt64) -> Data {
       let prefix = major << 5
       switch value {
-      case 0 ... Constants.compactValueLimit:
+      case 0...Constants.compactValueLimit:
         return Data([prefix | UInt8(value)])
-      case UInt64(Constants.cborLength8Bit) ... Constants.cborLength8BitMax:
+      case UInt64(Constants.cborLength8Bit)...Constants.cborLength8BitMax:
         return Data([prefix | UInt8(Constants.cborLength8Bit), UInt8(value)])
-      case 0 ... Constants.cborLength16BitMax:
+      case 0...Constants.cborLength16BitMax:
         var integer = UInt16(value).bigEndian
-        return Data([prefix | UInt8(Constants.cborLength16Bit)]) +
-          withUnsafeBytes(of: &integer) { Data($0) }
-      case 0 ... Constants.cborLength32BitMax:
+        return Data([prefix | UInt8(Constants.cborLength16Bit)])
+          + withUnsafeBytes(of: &integer) { Data($0) }
+      case 0...Constants.cborLength32BitMax:
         var integer = UInt32(value).bigEndian
-        return Data([prefix | UInt8(Constants.cborLength32Bit)]) +
-          withUnsafeBytes(of: &integer) { Data($0) }
+        return Data([prefix | UInt8(Constants.cborLength32Bit)])
+          + withUnsafeBytes(of: &integer) { Data($0) }
       default:
         var integer = value.bigEndian
-        return Data([prefix | UInt8(Constants.cborLength64Bit)]) +
-          withUnsafeBytes(of: &integer) { Data($0) }
+        return Data([prefix | UInt8(Constants.cborLength64Bit)])
+          + withUnsafeBytes(of: &integer) { Data($0) }
       }
     }
   }
@@ -336,15 +340,15 @@ internal enum RappConformanceCorpusSupport {
 
   internal static func data(fromHex value: String) throws -> Data {
     let characters = Array(value.utf8)
-    guard characters.count.isMultiple(of: Constants.hashPairLength) else {
+    guard characters.count.isMultiple(of: Constants.hexPairLength) else {
       throw CorpusError.invalidHex
     }
     var result = Data()
-    result.reserveCapacity(characters.count / Constants.hashPairLength)
+    result.reserveCapacity(characters.count / Constants.hexPairLength)
     for index in stride(
       from: 0,
       to: characters.count,
-      by: Constants.hashPairLength
+      by: Constants.hexPairLength
     ) {
       guard
         let high = hexNibble(characters[index]),
@@ -359,11 +363,11 @@ internal enum RappConformanceCorpusSupport {
 
   private static func hexNibble(_ byte: UInt8) -> UInt8? {
     switch byte {
-    case Constants.zeroDigit ... Constants.nineDigit:
+    case Constants.zeroDigit...Constants.nineDigit:
       return byte - UInt8(Constants.zeroDigit)
-    case Constants.upperADigit ... Constants.upperFDigit:
+    case Constants.upperADigit...Constants.upperFDigit:
       return byte - UInt8(Constants.upperOffset)
-    case Constants.lowerADigit ... Constants.lowerFDigit:
+    case Constants.lowerADigit...Constants.lowerFDigit:
       return byte - UInt8(Constants.lowerOffset)
     default:
       return nil

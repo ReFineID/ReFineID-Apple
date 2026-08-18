@@ -88,9 +88,9 @@ internal struct CredentialSecretField<Field: View, Validation: View>: View {
         Image(systemName: revealsValue ? "eye" : "eye.slash")
       }
       .buttonStyle(.plain)
-          .frame(width: Geometry.buttonSize, height: Geometry.buttonSize)
-          .contentShape(Rectangle())
-          .padding(Geometry.negativePadding)
+      .frame(width: Geometry.buttonSize, height: Geometry.buttonSize)
+      .contentShape(Rectangle())
+      .padding(Geometry.negativePadding)
       .accessibilityLabel(Text(verbatim: revealAccessibilityLabel))
       .accessibilityIdentifier(revealIdentifier)
       validation()

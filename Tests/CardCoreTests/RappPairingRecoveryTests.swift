@@ -4,7 +4,7 @@ import XCTest
 @testable import CardCore
 
 #if canImport(RappEngine)
-internal final class RappPairingRecoveryTests: XCTestCase {
+  internal final class RappPairingRecoveryTests: XCTestCase {
     private actor RecordingTransport: RappFrameTransport {
       private var frames: [Data] = []
       private var closes = 0

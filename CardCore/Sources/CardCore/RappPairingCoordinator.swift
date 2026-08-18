@@ -554,23 +554,23 @@
       return true
     }
 
-  private func scheduleOfferExpiry() {
-    guard offerExpiryTask == nil else { return }
-    let now = clock.monotonicMilliseconds()
-    enum Timing {
-      static let nanosecondsPerMillisecond: UInt64 = 1_000_000
-    }
+    private func scheduleOfferExpiry() {
+      guard offerExpiryTask == nil else { return }
+      let now = clock.monotonicMilliseconds()
+      enum Timing {
+        static let nanosecondsPerMillisecond: UInt64 = 1_000_000
+      }
 
-    let maximumDelayNanoseconds = UInt64.max
-    let remainingMilliseconds =
-      offerDeadlineMilliseconds > now
+      let maximumDelayNanoseconds = UInt64.max
+      let remainingMilliseconds =
+        offerDeadlineMilliseconds > now
         ? offerDeadlineMilliseconds - now
         : 0
-    let (nanoseconds, overflow) = remainingMilliseconds.multipliedReportingOverflow(
-      by: Timing.nanosecondsPerMillisecond
-    )
-    let delay = overflow ? maximumDelayNanoseconds : nanoseconds
-    offerExpiryTask = Task { [weak self] in
+      let (nanoseconds, overflow) = remainingMilliseconds.multipliedReportingOverflow(
+        by: Timing.nanosecondsPerMillisecond
+      )
+      let delay = overflow ? maximumDelayNanoseconds : nanoseconds
+      offerExpiryTask = Task { [weak self] in
         do {
           try await Task.sleep(nanoseconds: delay)
         } catch {
@@ -584,9 +584,9 @@
     private func expireOffer() async {
       guard
         state == .offer
-        || state == .awaitingRequesterHandshake
-        || state == .awaitingResponderHandshake
-        || state == .awaitingFinalRequesterHandshake
+          || state == .awaitingRequesterHandshake
+          || state == .awaitingResponderHandshake
+          || state == .awaitingFinalRequesterHandshake
       else { return }
       await fail(.offerExpired)
     }

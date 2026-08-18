@@ -112,13 +112,17 @@ internal final class CardSetupStateMachineTests: XCTestCase {
   internal func testCardOutcomeRoutesRespectPurpose() {
     assertTransition(.classifyingBrowser, .classificationActivated, .registeringBrowser)
     assertTransition(.classifyingManagementHome, .classificationActivated, .pinManagementHome)
-    assertTransition(.classifyingManagementIdentity, .classificationActivated, .pinManagementIdentity)
+    assertTransition(
+      .classifyingManagementIdentity, .classificationActivated, .pinManagementIdentity)
     assertTransition(.classifyingBrowser, .classificationRecoveryRequired, .pinManagementHome)
-    assertTransition(.classifyingManagementHome, .classificationRecoveryRequired, .pinManagementHome)
-    assertTransition(.classifyingManagementIdentity, .classificationRecoveryRequired, .pinManagementIdentity)
+    assertTransition(
+      .classifyingManagementHome, .classificationRecoveryRequired, .pinManagementHome)
+    assertTransition(
+      .classifyingManagementIdentity, .classificationRecoveryRequired, .pinManagementIdentity)
     assertTransition(.classifyingBrowser, .classificationActivationRequired, .activationHome)
     assertTransition(.classifyingManagementHome, .classificationActivationRequired, .activationHome)
-    assertTransition(.classifyingManagementIdentity, .classificationActivationRequired, .activationIdentity)
+    assertTransition(
+      .classifyingManagementIdentity, .classificationActivationRequired, .activationIdentity)
   }
 
   internal func testDestinationDismissalPreservesIdentityOrigin() {

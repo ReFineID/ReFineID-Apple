@@ -103,8 +103,8 @@
       }
     }
 
-  private var documentSection: some View {
-    Section(text("signing.section", "Documents")) {
+    private var documentSection: some View {
+      Section(text("signing.section", "Documents")) {
         ForEach(inputs) { input in
           HStack {
             Image(systemName: input.isPDF ? "doc.richtext" : "doc")

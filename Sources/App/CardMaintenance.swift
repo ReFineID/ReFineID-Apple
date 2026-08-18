@@ -367,7 +367,7 @@ internal enum CardMaintenance {
     ) async -> ConnectionSnapshotResult {
       .failed
     }
-    // swiftlint:enable async_without_await
+  // swiftlint:enable async_without_await
   #endif
 
   /// Establishes the first PACE channel while preserving a rejected CAN

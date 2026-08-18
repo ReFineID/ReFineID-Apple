@@ -454,29 +454,29 @@
       }
     }
 
-  private func scheduleLiveness(at deadline: UInt64) {
-    guard phase == .operating else { return }
+    private func scheduleLiveness(at deadline: UInt64) {
+      guard phase == .operating else { return }
       livenessTask?.cancel()
 
-    let now = clock.monotonicMilliseconds()
-    enum Timing {
-      static let nanosecondsPerMillisecond: UInt64 = 1_000_000
-    }
+      let now = clock.monotonicMilliseconds()
+      enum Timing {
+        static let nanosecondsPerMillisecond: UInt64 = 1_000_000
+      }
 
-    let delayMilliseconds = deadline > now ? deadline - now : 0
-    let maximumDelayNanoseconds = UInt64.max
-    let (convertedDelay, overflow) = delayMilliseconds.multipliedReportingOverflow(
-      by: Timing.nanosecondsPerMillisecond
-    )
-    let delayNanoseconds = overflow ? maximumDelayNanoseconds : convertedDelay
+      let delayMilliseconds = deadline > now ? deadline - now : 0
+      let maximumDelayNanoseconds = UInt64.max
+      let (convertedDelay, overflow) = delayMilliseconds.multipliedReportingOverflow(
+        by: Timing.nanosecondsPerMillisecond
+      )
+      let delayNanoseconds = overflow ? maximumDelayNanoseconds : convertedDelay
       let maximumJitter = min(
         liveness.maximumJitterMilliseconds,
         UInt64(Int64.max)
       )
 
-    livenessTask = Task { [weak self] in
-      do {
-        try await Task.sleep(nanoseconds: delayNanoseconds)
+      livenessTask = Task { [weak self] in
+        do {
+          try await Task.sleep(nanoseconds: delayNanoseconds)
         } catch {
           return
         }

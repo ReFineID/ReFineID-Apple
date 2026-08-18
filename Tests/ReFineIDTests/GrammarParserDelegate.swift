@@ -1,4 +1,8 @@
+// Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
+
 import Foundation
+
+@testable import ReFineID
 
 internal final class GrammarParserDelegate: NSObject, XMLParserDelegate {
   internal var initialState: CardSetupStateMachine.State?

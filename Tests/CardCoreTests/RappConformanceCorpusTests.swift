@@ -32,7 +32,7 @@ internal struct RappConformanceCorpusTests {
       .deletingLastPathComponent()
     return try Data(
       contentsOf:
-      repositoryRoot
+        repositoryRoot
         .appendingPathComponent("Documentation/rapp-conformance/rapp-v26.8.17.233.json")
     )
   }
@@ -43,7 +43,9 @@ internal struct RappConformanceCorpusTests {
   internal func corpusIdentity() throws {
     let source = try Self.corpusSource()
     let digest = Data(SHA256.hash(data: source))
-    #expect(RappConformanceCorpusSupport.hex(digest) == "3165ba9c4bd2cf1063707eb799af401bf232e0f62e546702781afa0bf6229bd7")
+    #expect(
+      RappConformanceCorpusSupport.hex(digest)
+        == "3165ba9c4bd2cf1063707eb799af401bf232e0f62e546702781afa0bf6229bd7")
 
     let corpus = try JSONDecoder().decode(
       RappConformanceCorpusSupport.Corpus.self,
@@ -93,8 +95,8 @@ internal struct RappConformanceCorpusTests {
     for vector in try Self.corpus().streamRendezvous {
       let encoded = try RappConformanceCorpusSupport.data(fromHex: vector.encodedHex)
       if vector.accepted {
-        let token = try vector.rendezvousTokenHex.map(RappConformanceCorpusSupport.data(fromHex:)) ??
-          Data()
+        let token =
+          try vector.rendezvousTokenHex.map(RappConformanceCorpusSupport.data(fromHex:)) ?? Data()
         let preamble = try RappConformanceCorpusSupport.DeterministicCBOR.encode(
           .array([
             .text("RAPP-stream-v1"),

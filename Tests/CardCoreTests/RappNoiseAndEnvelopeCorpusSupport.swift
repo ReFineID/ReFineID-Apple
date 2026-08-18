@@ -1,24 +1,26 @@
+// Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
+
 import CryptoKit
 import Foundation
 
 internal enum RappNoiseAndEnvelopeCorpusSupport {
   private enum Constants {
-    static let majorAdditionalInfoMask = 0x1f
+    static let majorAdditionalInfoMask: UInt8 = 0x1f
     static let majorLengthRange = 1...2
     static let maxDecodeDepth = 16
     static let maxCollectionCount = 128
     static let maxReadLength = 16_384
     static let pairLength = 2
     static let hexRadix = 16
-    static let majorLengthMax = 23
-    static let nextValue8bit = 24
+    static let majorLengthMax: UInt8 = 23
+    static let nextValue8bit: UInt8 = 24
     static let max8bit = UInt64(UInt8.max)
-    static let nextValue16bit = 25
-    static let min16bit = 0x100
-    static let max16bit = 0xffff
-    static let nextValue32bit = 26
-    static let max32bit = 0xffff_ffff
-    static let nextValue64bit = 27
+    static let nextValue16bit: UInt8 = 25
+    static let min16bit: UInt64 = 0x100
+    static let max16bit: UInt64 = 0xffff
+    static let nextValue32bit: UInt8 = 26
+    static let max32bit: UInt64 = 0xffff_ffff
+    static let nextValue64bit: UInt8 = 27
     static let majorUnsigned = CBORMajor.unsigned.rawValue
     static let majorBytes = CBORMajor.bytes.rawValue
     static let majorText = CBORMajor.text.rawValue
@@ -28,8 +30,8 @@ internal enum RappNoiseAndEnvelopeCorpusSupport {
     static let byteCountUInt16 = 2
     static let byteCountUInt32 = 4
     static let byteCountUInt64 = 8
-    static let wireMajor = 26
-    static let wireMinor = 8
+    static let wireMajor: UInt64 = 26
+    static let wireMinor: UInt64 = 8
     static let sessionIDLength = 16
     static let challengeLength = 32
     static let hashPrefixLength = 16
@@ -82,8 +84,8 @@ internal enum RappNoiseAndEnvelopeCorpusSupport {
       case name, suite
       case transportProfile = "transport_profile"
       case handshakeHashHex = "handshake_hash_hex"
-      case initiatorPublicHex = "initiator_static_public_hex"
-      case responderPublicHex = "responder_static_public_hex"
+      case initiatorStaticPublicHex = "initiator_static_public_hex"
+      case responderStaticPublicHex = "responder_static_public_hex"
       case messagesHex = "messages_hex"
       case prologueHex = "prologue_hex"
       case pairIDHex = "pair_id_hex"
@@ -306,18 +308,20 @@ internal enum RappNoiseAndEnvelopeCorpusSupport {
       return Data([
         prefix | UInt8(Constants.nextValue16bit),
         UInt8(value >> UInt8(Constants.byteShift)),
-        UInt8(value)
+        UInt8(value),
       ])
-      case UInt64(Constants.nextValue32bit)...Constants.max32bit:
+    case UInt64(Constants.nextValue32bit)...Constants.max32bit:
       return Data(
-        [prefix | UInt8(Constants.nextValue32bit)] + (0..<Constants.byteCountUInt32).reversed().map {
-          UInt8(value >> UInt64($0 * Constants.byteShift))
-        })
+        [prefix | UInt8(Constants.nextValue32bit)]
+          + (0..<Constants.byteCountUInt32).reversed().map {
+            UInt8(value >> UInt64($0 * Constants.byteShift))
+          })
     default:
       return Data(
-        [prefix | UInt8(Constants.nextValue64bit)] + (0..<Constants.byteCountUInt64).reversed().map {
-          UInt8(value >> UInt64($0 * Constants.byteShift))
-        })
+        [prefix | UInt8(Constants.nextValue64bit)]
+          + (0..<Constants.byteCountUInt64).reversed().map {
+            UInt8(value >> UInt64($0 * Constants.byteShift))
+          })
     }
   }
 
@@ -344,15 +348,15 @@ internal enum RappNoiseAndEnvelopeCorpusSupport {
   ) -> String? {
     guard case .map(let envelope) = value else { return "WrongType { field: \"envelope\" }" }
     let allowed: Set<String> = [
-      "version", "session_id", "sequence", "type", "body", "critical", "extensions"
+      "version", "session_id", "sequence", "type", "body", "critical", "extensions",
     ]
     guard Set(envelope.keys).isSubset(of: allowed) else { return "UnknownField" }
 
     guard let version = envelope["version"] else { return "MissingField { field: \"version\" }" }
     guard case .array(let parts) = version,
-          parts.count == Constants.majorLengthRange.count,
-          case .unsigned(let major) = parts[0],
-          case .unsigned(let minor) = parts[1]
+      parts.count == Constants.majorLengthRange.count,
+      case .unsigned(let major) = parts[0],
+      case .unsigned(let minor) = parts[1]
     else { return "WrongType { field: \"version\" }" }
     guard major == wire.major, minor == wire.minor else { return "UnsupportedVersion" }
 

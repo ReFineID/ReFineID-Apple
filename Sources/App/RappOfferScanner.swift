@@ -14,7 +14,7 @@ import SwiftUI
 #endif
 
 #if os(iOS)
-internal struct RappOfferScanner: UIViewControllerRepresentable {
+  internal struct RappOfferScanner: UIViewControllerRepresentable {
     internal final class Coordinator: NSObject, DataScannerViewControllerDelegate {
       private let onScan: @MainActor @Sendable (String) -> Void
       private var accepted = false

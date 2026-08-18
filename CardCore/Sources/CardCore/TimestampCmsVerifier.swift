@@ -77,12 +77,12 @@ internal enum TimestampCmsVerifier {
 
     func hash(_ data: Data) -> Data {
       switch self {
-    case .sha256:
-      Data(SHA256.hash(data: data))
-    case .sha384:
-      Data(SHA384.hash(data: data))
-    case .sha512:
-      Data(SHA512.hash(data: data))
+      case .sha256:
+        Data(SHA256.hash(data: data))
+      case .sha384:
+        Data(SHA384.hash(data: data))
+      case .sha512:
+        Data(SHA512.hash(data: data))
       }
     }
 

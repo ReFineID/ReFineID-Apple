@@ -8,7 +8,7 @@
   /// Edits one complete virtual card/device snapshot and one fault plan.
   internal struct VirtualIDCardEditor: View {
 
-  // MARK: Static Computed Properties
+    // MARK: Static Computed Properties
 
     /// The scenarios a demonstration on this device class can offer.
     private static var offeredScenarios: [VirtualIDCard.Scenario] {
@@ -43,52 +43,51 @@
     /// The scenario menu, held apart so the form's body stays
     /// within what the type checker will infer in one piece.
     @ViewBuilder private var scenarioSection: some View {
-            Section(
-              virtualCardLocalized("section.scenario", defaultValue: "Scenario")
-            ) {
-              Menu {
-                ForEach(Self.offeredScenarios) { candidate in
-                  Button {
-                    scenario = candidate
-                  } label: {
-                    if scenario == candidate {
-                      Label(candidate.localizedName, systemImage: "checkmark")
-                    } else {
-                      Text(candidate.localizedName)
-                    }
-                  }
-                  .accessibilityIdentifier(
-                    "virtualCardScenarioOption.\(candidate.rawValue)")
-                }
-              } label: {
-                VStack(alignment: .leading, spacing: Self.menuLineSpacing) {
-                  Text(
-                    virtualCardLocalized(
-                      "scenario.preset",
-                      defaultValue: "Preset")
-                  )
-                  .foregroundStyle(.primary)
-                  Text(scenario.localizedName)
-                    .foregroundStyle(.primary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .virtualCardMenuControl()
+      Section(
+        virtualCardLocalized("section.scenario", defaultValue: "Scenario")
+      ) {
+        Menu {
+          ForEach(Self.offeredScenarios) { candidate in
+            Button {
+              scenario = candidate
+            } label: {
+              if scenario == candidate {
+                Label(candidate.localizedName, systemImage: "checkmark")
+              } else {
+                Text(candidate.localizedName)
               }
-              .tint(.primary)
-              .onValueChange(of: scenario) { selected in
-                draft = Self.deviceScoped(selected.snapshot)
-                faultPreset = .none
-              }
-              .pickerStyle(.menu)
-              .accessibilityIdentifier("virtualCardScenario")
-              .accessibilityLabel(
-                Text(
-                  virtualCardLocalized(
-                    "scenario.accessibilityLabel",
-                    defaultValue: "Virtual card scenario")))
             }
+            .accessibilityIdentifier(
+              "virtualCardScenarioOption.\(candidate.rawValue)")
+          }
+        } label: {
+          VStack(alignment: .leading, spacing: Self.menuLineSpacing) {
+            Text(
+              virtualCardLocalized(
+                "scenario.preset",
+                defaultValue: "Preset")
+            )
+            .foregroundStyle(.primary)
+            Text(scenario.localizedName)
+              .foregroundStyle(.primary)
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .virtualCardMenuControl()
+        }
+        .tint(.primary)
+        .onValueChange(of: scenario) { selected in
+          draft = Self.deviceScoped(selected.snapshot)
+          faultPreset = .none
+        }
+        .pickerStyle(.menu)
+        .accessibilityIdentifier("virtualCardScenario")
+        .accessibilityLabel(
+          Text(
+            virtualCardLocalized(
+              "scenario.accessibilityLabel",
+              defaultValue: "Virtual card scenario")))
+      }
     }
-
 
     internal var body: some View {
       NavigationStack {

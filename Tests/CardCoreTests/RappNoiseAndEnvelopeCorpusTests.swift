@@ -35,7 +35,8 @@ internal final class RappNoiseAndEnvelopeCorpusTests: XCTestCase {
           encodeText("RAPP-pairing-v1"),
           encodeArray([
             encodeUnsigned(RappNoiseAndEnvelopeCorpusSupport.wire.major),
-            encodeUnsigned(RappNoiseAndEnvelopeCorpusSupport.wire.minor)]),
+            encodeUnsigned(RappNoiseAndEnvelopeCorpusSupport.wire.minor),
+          ]),
           encodeText(vector.suite),
           encodeBytes(decodeHex(try XCTUnwrap(vector.offerHashHex))),
           encodeText(vector.transportProfile),
@@ -47,7 +48,8 @@ internal final class RappNoiseAndEnvelopeCorpusTests: XCTestCase {
           encodeText("RAPP-session-v1"),
           encodeArray([
             encodeUnsigned(RappNoiseAndEnvelopeCorpusSupport.wire.major),
-            encodeUnsigned(RappNoiseAndEnvelopeCorpusSupport.wire.minor)]),
+            encodeUnsigned(RappNoiseAndEnvelopeCorpusSupport.wire.minor),
+          ]),
           encodeText(vector.suite),
           encodeBytes(decodeHex(vector.pairIDHex)),
           encodeBytes(decodeHex(try XCTUnwrap(vector.grantsHashHex))),
@@ -60,7 +62,8 @@ internal final class RappNoiseAndEnvelopeCorpusTests: XCTestCase {
       }
 
       XCTAssertEqual(encodeHex(expectedPrologue), vector.prologueHex, vector.name)
-      XCTAssertEqual(vector.messagesHex.map { decodeHex($0).count }, expectedMessageLengths, vector.name)
+      XCTAssertEqual(
+        vector.messagesHex.map { decodeHex($0).count }, expectedMessageLengths, vector.name)
       XCTAssertTrue(vector.messagesHex.allSatisfy { !decodeHex($0).isEmpty }, vector.name)
 
       let handshakeHash = decodeHex(vector.handshakeHashHex)

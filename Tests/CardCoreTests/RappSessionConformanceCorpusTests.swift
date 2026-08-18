@@ -34,7 +34,8 @@ internal struct RappSessionConformanceCorpusTests {
     let vectors = try Self.corpus().sequenceGuard
     #expect(vectors.count == 6)
     for vector in vectors {
-      let guardSessionID = try RappSessionConformanceCorpusSupport.data(fromHex: vector.guardSessionIdHex)
+      let guardSessionID = try RappSessionConformanceCorpusSupport.data(
+        fromHex: vector.guardSessionIdHex)
       var guardState = RappSessionConformanceCorpusSupport.IndependentSequenceGuard(
         sessionID: guardSessionID)
 
@@ -45,7 +46,8 @@ internal struct RappSessionConformanceCorpusTests {
         )
       }
 
-      let incomingSessionID = try RappSessionConformanceCorpusSupport.data(fromHex: vector.incomingSessionIdHex)
+      let incomingSessionID = try RappSessionConformanceCorpusSupport.data(
+        fromHex: vector.incomingSessionIdHex)
       #expect(
         guardState.accept(
           sessionID: incomingSessionID,

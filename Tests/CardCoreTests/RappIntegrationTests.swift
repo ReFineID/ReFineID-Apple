@@ -94,10 +94,14 @@ import Testing
     }
 
     private enum RequestedOperation: Sendable, Equatable {
-      case browserAuthentication(origin: String, digest:
-        Data)
-      case documentSigning(documentName: String, digest:
-        Data)
+      case browserAuthentication(
+        origin: String,
+        digest:
+          Data)
+      case documentSigning(
+        documentName: String,
+        digest:
+          Data)
 
       // MARK: Computed Properties
 
