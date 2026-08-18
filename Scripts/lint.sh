@@ -18,7 +18,8 @@ echo "swift format lint..."
 # CardCore/Sources/ReFineIDRapp holds UniFFI-generated bindings; the
 # generator owns their style, so only authored sources pass the gate.
 swift format lint --strict --recursive \
-  Sources Tests CardCore/Sources/CardCore CardCore/Package.swift \
+  Sources Tests CardCore/Sources/CardCore CardCore/Sources/RappEngine \
+  CardCore/Tests CardCore/Package.swift \
   PKCS11Bridge/Sources PKCS11Bridge/Tests PKCS11Bridge/Package.swift \
   Scripts/BrainpoolBenchmark.swift
 

@@ -12,3 +12,10 @@ fails the build rather than drifting silently.
 
 Do not edit these files here. Change them at the canonical source, regenerate
 the corpus, and re-vendor all three together.
+
+`../rapp-conformance/rapp-transport-v26.8.17.233.json` records post-handshake
+frames generated from the canonical Rust engine at wire version 26.8, using the
+same fixed keys as the conformance corpus's handshake transcripts. The corpus
+proves the handshake but stops there, so without these the framing that carries
+every operation would have no golden vectors: sixteen frames per suite, both
+directions, with counters running well past their first value.

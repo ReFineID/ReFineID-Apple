@@ -17,6 +17,14 @@ private let package = Package(
     .library(name: "CardCore", targets: ["CardCore"])
   ],
   targets: [
+    // The RAPP protocol engine in Swift: deterministic CBOR, the envelope
+    // schema, and the Noise handshakes and transport channel. It implements
+    // the vendored specification and is replayed against the vendored
+    // conformance corpus, so it is built and tested on its own while the
+    // generated bindings below still carry the app.
+    .target(
+      name: "RappEngine",
+      path: "Sources/RappEngine"),
     // Generated from refineid-lib-core by the Swift release manager. RAPP is
     // a mandatory product capability; Apple targets never downgrade to the
     // retired unauthenticated relay when these bindings are unavailable.
@@ -40,6 +48,12 @@ private let package = Package(
       linkerSettings: [
         .linkedFramework("Security")
       ]),
+    // The engine is not yet reachable from the app, so its conformance
+    // replays run here rather than in the Xcode project's test bundle.
+    .testTarget(
+      name: "RappEngineTests",
+      dependencies: ["RappEngine"],
+      path: "Tests/RappEngineTests"),
     // Objective-C, because catching an Objective-C exception is a
     // thing only Objective-C can do.
     .target(name: "ObjCExceptionGuard"),
