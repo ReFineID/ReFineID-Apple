@@ -25,12 +25,10 @@ import Testing
     private struct PairingFixture {
       let requesterVault: RappDeviceVault
       let proxyVault: RappDeviceVault
-      let requesterPairing: RappPairingCoordinator
-      let proxyPairing: RappPairingCoordinator
       let requesterSummary: RappPairingCoordinator.PairSummary
       let proxySummary: RappPairingCoordinator.PairSummary
-      let requesterOutbound: FrameEndpoint
-      let proxyOutbound: FrameEndpoint
+      let requesterFrames: (frames: [Data], closeCount: Int)
+      let proxyFrames: (frames: [Data], closeCount: Int)
       let requesterPrefix: String
       let proxyPrefix: String
     }
@@ -248,7 +246,7 @@ import Testing
     }
 
     @Test
-    internal func swiftCoordinatorsPairThroughRustAndKeepTheChannelInMemory() async throws {
+    internal func swiftCoordinatorsPairThroughRustAndRevocationIsDurable() async throws {
       let fixture = try await Self.makePairedFixture()
       defer { Self.deleteKeychainServices(for: fixture) }
 
@@ -259,27 +257,28 @@ import Testing
       #expect(Set(fixture.proxySummary.profiles) == Set(Self.profiles))
       #expect(fixture.requesterSummary.transportProfile == Self.transportProfile)
       #expect(fixture.requesterSummary.candidateID == Self.candidateID)
-
-      // Nothing pairing-related touches the vault: the pair keys live only
-      // inside the live channel.
       #expect(
         try fixture.requesterVault.loadPair(
-          pairID: fixture.requesterSummary.pairID) == nil)
-      #expect(try fixture.proxyVault.loadPair(pairID: fixture.proxySummary.pairID) == nil)
+          pairID: fixture.requesterSummary.pairID) != nil)
+      #expect(try fixture.proxyVault.loadPair(pairID: fixture.proxySummary.pairID) != nil)
 
-      // The ceremony transports stay open: the pairing channel is the session.
-      let requesterFrames = await fixture.requesterOutbound.snapshot()
-      let proxyFrames = await fixture.proxyOutbound.snapshot()
-      #expect(!requesterFrames.frames.isEmpty)
-      #expect(!proxyFrames.frames.isEmpty)
-      #expect(requesterFrames.closeCount == 0)
-      #expect(proxyFrames.closeCount == 0)
+      #expect(!fixture.requesterFrames.frames.isEmpty)
+      #expect(!fixture.proxyFrames.frames.isEmpty)
+      #expect(fixture.requesterFrames.closeCount == 1)
+      #expect(fixture.proxyFrames.closeCount == 1)
 
-      // The handover is one-shot on each side.
-      #expect(await fixture.requesterPairing.continueEstablished() != nil)
-      #expect(await fixture.requesterPairing.continueEstablished() == nil)
-      #expect(await fixture.proxyPairing.continueEstablished() != nil)
-      #expect(await fixture.proxyPairing.continueEstablished() == nil)
+      let catalog = RappPairCatalog(vault: fixture.requesterVault)
+      try await catalog.select(pairID: fixture.requesterSummary.pairID)
+      #expect(try await catalog.selectedPair()?.pairID == fixture.requesterSummary.pairID)
+      try await catalog.revoke(pairID: fixture.requesterSummary.pairID)
+      #expect(
+        try fixture.requesterVault.pairIsRevoked(
+          pairID: fixture.requesterSummary.pairID))
+      #expect(try await catalog.activePairs().isEmpty)
+      #expect(try await catalog.selectedPair() == nil)
+      #expect(
+        try fixture.proxyVault.pairIsRevoked(
+          pairID: fixture.proxySummary.pairID) == false)
     }
 
     @Test
@@ -328,6 +327,12 @@ import Testing
         try fixture.proxyVault.loadProxy(
           pairID: fixture.proxySummary.pairID
         ).allSatisfy { $0.retainedResult == nil })
+      #expect(
+        try fixture.requesterVault.pairIsRevoked(
+          pairID: fixture.requesterSummary.pairID) == false)
+      #expect(
+        try fixture.proxyVault.pairIsRevoked(
+          pairID: fixture.proxySummary.pairID) == false)
       await connection.requester.close()
       await connection.proxy.close()
     }
@@ -377,6 +382,12 @@ import Testing
         try fixture.proxyVault.loadProxy(
           pairID: fixture.proxySummary.pairID
         ).allSatisfy { $0.retainedResult == nil })
+      #expect(
+        try fixture.requesterVault.pairIsRevoked(
+          pairID: fixture.requesterSummary.pairID) == false)
+      #expect(
+        try fixture.proxyVault.pairIsRevoked(
+          pairID: fixture.proxySummary.pairID) == false)
       await connection.requester.close()
       await connection.proxy.close()
     }
@@ -415,6 +426,12 @@ import Testing
 
       #expect(reason == termination.reason)
       #expect(progress == termination.progress)
+      #expect(
+        try fixture.requesterVault.pairIsRevoked(
+          pairID: fixture.requesterSummary.pairID) == false)
+      #expect(
+        try fixture.proxyVault.pairIsRevoked(
+          pairID: fixture.proxySummary.pairID) == false)
       #expect(
         await connection.proxyOutbound.snapshot().closeCount
           == termination.proxyTransportCloseCount)
@@ -462,14 +479,18 @@ import Testing
             executions: 1,
             acknowledgments: 0
           ))
-      // The pairing lived only inside the channel; nothing about it is at
-      // rest to inspect after the rejection ends it.
+      #expect(
+        try fixture.requesterVault.pairIsRevoked(
+          pairID: fixture.requesterSummary.pairID))
+      #expect(
+        try fixture.proxyVault.pairIsRevoked(
+          pairID: fixture.proxySummary.pairID))
       #expect(
         try fixture.requesterVault.loadPair(
           pairID: fixture.requesterSummary.pairID) == nil)
       #expect(try fixture.proxyVault.loadPair(pairID: fixture.proxySummary.pairID) == nil)
-      await connection.requester.close()
-      await connection.proxy.close()
+      #expect(try fixture.requesterVault.activePairIDs().isEmpty)
+      #expect(try fixture.proxyVault.activePairIDs().isEmpty)
     }
 
     private static let profiles = [
@@ -522,6 +543,7 @@ import Testing
         offerLifetimeMilliseconds: 60_000,
         displayName: "Requester Mac",
         platform: "macOS",
+        vault: requesterVault,
         transport: requesterTransport
       )
       let proxy = try RappPairingCoordinator.proxy(
@@ -529,6 +551,7 @@ import Testing
         selectedCandidateID: candidateID,
         displayName: "Authorizer iPhone",
         platform: "iOS",
+        vault: proxyVault,
         transport: proxyTransport
       )
       await requesterOutbound.install { frame in await proxy.receive(frame) }
@@ -550,12 +573,10 @@ import Testing
       return try await PairingFixture(
         requesterVault: requesterVault,
         proxyVault: proxyVault,
-        requesterPairing: requester,
-        proxyPairing: proxy,
         requesterSummary: requesterOutcome.value,
         proxySummary: proxyOutcome.value,
-        requesterOutbound: requesterOutbound,
-        proxyOutbound: proxyOutbound,
+        requesterFrames: requesterOutbound.snapshot(),
+        proxyFrames: proxyOutbound.snapshot(),
         requesterPrefix: requesterPrefix,
         proxyPrefix: proxyPrefix
       )
@@ -564,38 +585,45 @@ import Testing
     private static func makeConnection(
       _ fixture: PairingFixture
     ) async throws -> ConnectionFixture {
-      // The pairing channel continues as the session: both sides take their
-      // live handover, and the same endpoints re-route frames to the
-      // operation coordinators.
-      let requesterHandover = try #require(
-        await fixture.requesterPairing.continueEstablished()
+      let requesterPair = try RappPairRecord.loadFromVault(
+        pairId: fixture.requesterSummary.pairID,
+        vault: fixture.requesterVault
       )
-      let proxyHandover = try #require(
-        await fixture.proxyPairing.continueEstablished()
+      let proxyPair = try RappPairRecord.loadFromVault(
+        pairId: fixture.proxySummary.pairID,
+        vault: fixture.proxyVault
       )
+      let requesterOutbound = FrameEndpoint()
+      let proxyOutbound = FrameEndpoint()
       let requester = try RappConnectionCoordinator(
         role: .requester,
-        pairing: requesterHandover.pairing,
+        pair: requesterPair,
         vault: fixture.requesterVault,
-        transport: requesterHandover.transport,
+        transport: RappClosureFrameTransport(
+          sender: { frame in try await requesterOutbound.send(frame) },
+          closer: { await requesterOutbound.close() }
+        ),
         maximumLifetimeMilliseconds: 60_000,
         liveness: liveness
       )
       let proxy = try RappConnectionCoordinator(
         role: .proxy,
-        pairing: proxyHandover.pairing,
+        pair: proxyPair,
         vault: fixture.proxyVault,
-        transport: proxyHandover.transport,
+        transport: RappClosureFrameTransport(
+          sender: { frame in try await proxyOutbound.send(frame) },
+          closer: { await proxyOutbound.close() }
+        ),
         maximumLifetimeMilliseconds: 60_000,
         liveness: liveness
       )
-      await fixture.requesterOutbound.install { frame in await proxy.receive(frame) }
-      await fixture.proxyOutbound.install { frame in await requester.receive(frame) }
+      await requesterOutbound.install { frame in await proxy.receive(frame) }
+      await proxyOutbound.install { frame in await requester.receive(frame) }
       return ConnectionFixture(
         requester: requester,
         proxy: proxy,
-        requesterOutbound: fixture.requesterOutbound,
-        proxyOutbound: fixture.proxyOutbound
+        requesterOutbound: requesterOutbound,
+        proxyOutbound: proxyOutbound
       )
     }
 
@@ -615,7 +643,7 @@ import Testing
           throw TestFailure.connectionClosed(reason)
         case .inspectPrerequisites, .awaitUserApproval, .executeSafeRead,
           .executeCardCommand, .advisoryCancellation, .operationFinished,
-          .peerReserved, .peerUnknownOperation:
+          .peerBusy, .peerUnknownOperation:
           throw TestFailure.unexpectedConnectionEvent
         }
       }
@@ -636,7 +664,7 @@ import Testing
           throw TestFailure.connectionClosed(reason)
         case .inspectPrerequisites, .awaitUserApproval, .executeSafeRead,
           .executeCardCommand, .completed, .advisoryCancellation,
-          .operationFinished, .peerReserved, .peerUnknownOperation:
+          .operationFinished, .peerBusy, .peerUnknownOperation:
           throw TestFailure.unexpectedConnectionEvent
         }
       }
@@ -682,7 +710,7 @@ import Testing
         case .closed(let reason):
           throw TestFailure.connectionClosed(reason)
         case .executeSafeRead, .completed, .advisoryCancellation,
-          .peerReserved, .peerUnknownOperation:
+          .peerBusy, .peerUnknownOperation:
           throw TestFailure.unexpectedConnectionEvent
         }
       }
@@ -722,7 +750,7 @@ import Testing
         case .closed(let reason):
           throw TestFailure.connectionClosed(reason)
         case .executeSafeRead, .completed, .advisoryCancellation,
-          .operationFinished, .peerReserved, .peerUnknownOperation:
+          .operationFinished, .peerBusy, .peerUnknownOperation:
           throw TestFailure.unexpectedConnectionEvent
         }
       }
@@ -778,7 +806,7 @@ import Testing
         case .closed(let reason):
           throw TestFailure.connectionClosed(reason)
         case .executeSafeRead, .completed, .advisoryCancellation,
-          .operationFinished, .peerReserved, .peerUnknownOperation:
+          .operationFinished, .peerBusy, .peerUnknownOperation:
           throw TestFailure.unexpectedConnectionEvent
         }
       }

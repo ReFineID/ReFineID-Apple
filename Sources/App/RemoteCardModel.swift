@@ -32,12 +32,16 @@
       return nil
     }
 
-    /// A pairing lives only inside its connection, and no requester-side
-    /// holder keeps one for this screen yet, so no remote card is
-    /// available to connect through.
+    /// Re-reads the selected pairing and drops state without one.
     internal func refresh() {
-      hasPair = false
-      phase = .idle
+      Task {
+        let catalog = RappPairCatalog(vault: RappDeviceVault())
+        let selected = try? await catalog.selectedPair()
+        hasPair = selected?.role == .requester
+        if !hasPair {
+          phase = .idle
+        }
+      }
     }
 
     /// Reads the holder from the remote card's authentication

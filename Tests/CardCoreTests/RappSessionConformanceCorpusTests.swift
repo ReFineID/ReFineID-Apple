@@ -73,7 +73,7 @@ struct RappSessionConformanceCorpusTests {
       repository
       .appendingPathComponent("Documentation")
       .appendingPathComponent("rapp-conformance")
-      .appendingPathComponent("rapp-v26.8.17.213.json")
+      .appendingPathComponent("rapp-v26.8.17.233.json")
     let decoder = JSONDecoder()
     decoder.keyDecodingStrategy = .convertFromSnakeCase
     return try decoder.decode(SessionCorpus.self, from: Data(contentsOf: url))

@@ -209,6 +209,20 @@ private func buildRappBindings() {
         currentDirectory: rustRoot
     )
 
+    // A generated artifact must never reuse a stale cross-target object, so
+    // the crate is cleaned per target before every build. `cargo clean -p`
+    // without `--target` skips exactly these directories.
+    for target in rappRustTargets {
+        releaseRun(
+            "/usr/bin/env",
+            [
+                "cargo", "clean", "-p", "refineid-rapp",
+                "--release", "--target", target,
+            ],
+            currentDirectory: rustRoot
+        )
+    }
+
     for target in rappRustTargets {
         releaseRun(
             "/usr/bin/env",

@@ -181,11 +181,52 @@
     }
 
     private func establish() async {
-      // A pairing lives only inside the connection that created it; there is
-      // no stored pair a fresh per-operation connection could authenticate
-      // against. This one-shot client therefore reports the remote card
-      // unavailable until a holder of the live pairing serves it.
-      finish(error: .noActivePair)
+      do {
+        let pairIDs = try vault.activePairIDs()
+        guard !pairIDs.isEmpty else {
+          finish(error: .noActivePair)
+          return
+        }
+        let pairID: Data
+        if let selected = try vault.selectedPairID() {
+          guard pairIDs.contains(selected) else {
+            try vault.clearSelectedPair()
+            finish(error: .noSelectedPair)
+            return
+          }
+          pairID = selected
+        } else if pairIDs.count == 1 {
+          pairID = pairIDs[0]
+          try vault.selectPair(pairID: pairID)
+        } else {
+          finish(error: .noSelectedPair)
+          return
+        }
+        let pair = try RappPairRecord.loadFromVault(pairId: pairID, vault: vault)
+        let coordinator = try RappConnectionCoordinator(
+          role: .requester,
+          pair: pair,
+          vault: vault,
+          transport: transport,
+          maximumLifetimeMilliseconds: policy.maximumOperationLifetimeMilliseconds,
+          liveness: policy.liveness
+        )
+        let installed = state.withLock { state -> Bool in
+          guard state.coordinator == nil, !state.completed else { return false }
+          state.coordinator = coordinator
+          return true
+        }
+        guard installed else { return }
+
+        Task { [weak self] in
+          for await event in coordinator.events {
+            await self?.receive(event, from: coordinator)
+          }
+        }
+        await coordinator.start()
+      } catch {
+        finish(error: .protocolFailure)
+      }
     }
 
     private func receive(
@@ -264,7 +305,7 @@
 
       case .inspectPrerequisites, .awaitUserApproval, .executeSafeRead,
         .executeCardCommand, .advisoryCancellation, .operationFinished,
-        .peerReserved, .peerUnknownOperation:
+        .peerBusy, .peerUnknownOperation:
         await coordinator.close()
         finish(error: .protocolFailure)
       }

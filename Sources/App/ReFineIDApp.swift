@@ -182,10 +182,11 @@ internal struct ReFineIDApp: App {
     // an upgrade rather than leave sensitive dead data in the keychain.
     CardCredentialStore.removeLegacySigningWindow()
 
-    // RAPP authenticates the peer above the opaque transport. A pairing is
-    // its live connection, created only by the pairing ceremony, so nothing
-    // starts listening at launch.
-    #if os(macOS)
+    // RAPP authenticates the selected peer above the opaque transport. There
+    // is deliberately no legacy protocol downgrade when RAPP is unavailable.
+    #if os(iOS)
+      PhonePersistentTokenRelay.shared.start()
+    #elseif os(macOS)
       PersistentTokenRegistry.shared.start()
     #endif
 

@@ -22,16 +22,17 @@ internal struct RappConformanceCorpusTests {
   internal func corpusIdentity() throws {
     let source = try Self.corpusSource()
     let digest = Data(SHA256.hash(data: source))
-    #expect(digest.hex == "064d26b6ea574ca094c53ee064b830224d3ee4d86aef665672431edcb45251da")
+    #expect(digest.hex == "3165ba9c4bd2cf1063707eb799af401bf232e0f62e546702781afa0bf6229bd7")
 
     let corpus = try JSONDecoder().decode(Corpus.self, from: source)
     #expect(corpus.format == "fi.refineid.rapp.conformance-v1")
-    #expect(corpus.protocolDocumentVersion == "26.8.17.213")
+    #expect(corpus.protocolDocumentVersion == "26.8.17.233")
     #expect(corpus.deterministicCBOR.count == 15)
     #expect(corpus.identifierDerivation.count == 2)
+    #expect(corpus.grantsHash.count == 3)
     #expect(corpus.requestHash.count == 1)
     #expect(corpus.rejectedCBOR.count == 8)
-    #expect(corpus.streamPreamble.count == 5)
+    #expect(corpus.streamRendezvous.count == 5)
   }
 
   @Test("Swift independently produces every golden deterministic-CBOR value")
@@ -41,30 +42,37 @@ internal struct RappConformanceCorpusTests {
     }
   }
 
-  @Test("Swift independently derives the pair and session identifiers")
+  @Test("Swift independently derives pair, session, and rendezvous identifiers")
   internal func identifierDerivation() throws {
     for vector in try Self.corpus().identifierDerivation {
       let handshakeHash = try Data(hex: vector.handshakeHashHex)
       let pairInput = Data("RAPP-pair-id-v1".utf8) + handshakeHash
       let sessionInput = Data("RAPP-session-id-v1".utf8) + handshakeHash
+      let rendezvousInput = Data("RAPP-rendezvous-v1".utf8) + handshakeHash
       let pairID = Data(SHA256.hash(data: pairInput).prefix(16))
       let sessionID = Data(SHA256.hash(data: sessionInput).prefix(16))
+      let rendezvousToken = Data(SHA256.hash(data: rendezvousInput).prefix(16))
       let expectedPairID = try Data(hex: vector.pairIDHex)
       let expectedSessionID = try Data(hex: vector.sessionIDHex)
+      let expectedRendezvousToken = try Data(hex: vector.rendezvousTokenHex)
       #expect(pairID == expectedPairID)
       #expect(sessionID == expectedSessionID)
+      #expect(rendezvousToken == expectedRendezvousToken)
     }
   }
 
-  @Test("Swift independently encodes the accepted stream preamble")
-  internal func streamPreamble() throws {
-    for vector in try Self.corpus().streamPreamble {
+  @Test("Swift independently encodes the accepted stream rendezvous preambles")
+  internal func streamRendezvous() throws {
+    for vector in try Self.corpus().streamRendezvous {
       let encoded = try Data(hex: vector.encodedHex)
       if vector.accepted {
+        let token =
+          try vector.rendezvousTokenHex.map { try Data(hex: $0) } ?? Data()
         let preamble = try DeterministicCBOR.encode(
           .array([
             .text("RAPP-stream-v1"),
-            .text("pairing"),
+            .text(vector.purpose),
+            .bytes(token),
           ])
         )
         #expect(preamble == encoded, "\(vector.name)")
@@ -73,6 +81,22 @@ internal struct RappConformanceCorpusTests {
         #expect(vector.error?.isEmpty == false, "\(vector.name)")
         #expect(!encoded.isEmpty, "\(vector.name)")
       }
+    }
+  }
+
+  @Test("Swift independently normalizes and commits granted profiles")
+  internal func grantsHash() throws {
+    for vector in try Self.corpus().grantsHash {
+      let profiles = vector.profiles.sorted {
+        Data($0.utf8).lexicographicallyPrecedes(Data($1.utf8))
+      }
+      let preimage = try DeterministicCBOR.encode(
+        .array(profiles.map(CorpusValue.text))
+      )
+      let expectedPreimage = try Data(hex: vector.canonicalCBORHex)
+      let expectedHash = try Data(hex: vector.sha256Hex)
+      #expect(preimage == expectedPreimage)
+      #expect(Data(SHA256.hash(data: preimage)) == expectedHash)
     }
   }
 
@@ -108,7 +132,7 @@ internal struct RappConformanceCorpusTests {
     return try Data(
       contentsOf:
         repositoryRoot
-        .appendingPathComponent("Documentation/rapp-conformance/rapp-v26.8.17.213.json")
+        .appendingPathComponent("Documentation/rapp-conformance/rapp-v26.8.17.233.json")
     )
   }
 }
@@ -118,18 +142,20 @@ private struct Corpus: Decodable {
   let protocolDocumentVersion: String
   let deterministicCBOR: [CBORVector]
   let identifierDerivation: [IdentifierVector]
+  let grantsHash: [GrantsVector]
   let requestHash: [RequestVector]
   let rejectedCBOR: [RejectedCBORVector]
-  let streamPreamble: [StreamPreambleVector]
+  let streamRendezvous: [StreamRendezvousVector]
 
   private enum CodingKeys: String, CodingKey {
     case format
     case protocolDocumentVersion = "protocol_document_version"
     case deterministicCBOR = "deterministic_cbor"
     case identifierDerivation = "identifier_derivation"
+    case grantsHash = "grants_hash"
     case requestHash = "request_hash"
     case rejectedCBOR = "rejected_cbor"
-    case streamPreamble = "stream_preamble"
+    case streamRendezvous = "stream_rendezvous"
   }
 }
 
@@ -150,27 +176,47 @@ private struct IdentifierVector: Decodable {
   let handshakeHashHex: String
   let pairIDHex: String
   let sessionIDHex: String
+  let rendezvousTokenHex: String
 
   private enum CodingKeys: String, CodingKey {
     case name
     case handshakeHashHex = "handshake_hash_hex"
     case pairIDHex = "pair_id_hex"
     case sessionIDHex = "session_id_hex"
+    case rendezvousTokenHex = "rendezvous_token_hex"
   }
 }
 
-private struct StreamPreambleVector: Decodable {
+private struct StreamRendezvousVector: Decodable {
   private enum CodingKeys: String, CodingKey {
     case name
     case accepted
+    case purpose
     case encodedHex = "encoded_hex"
+    case rendezvousTokenHex = "rendezvous_token_hex"
     case error
   }
 
   let name: String
   let accepted: Bool
+  let purpose: String
   let encodedHex: String
+  let rendezvousTokenHex: String?
   let error: String?
+}
+
+private struct GrantsVector: Decodable {
+  let name: String
+  let profiles: [String]
+  let canonicalCBORHex: String
+  let sha256Hex: String
+
+  private enum CodingKeys: String, CodingKey {
+    case name
+    case profiles
+    case canonicalCBORHex = "canonical_cbor_hex"
+    case sha256Hex = "sha256_hex"
+  }
 }
 
 private struct RequestVector: Decodable {

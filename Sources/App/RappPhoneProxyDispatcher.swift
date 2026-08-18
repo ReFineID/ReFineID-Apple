@@ -8,10 +8,15 @@
   /// connection. It sees no wire frames and owns no transport capability.
   internal actor RappPhoneProxyDispatcher {
     private let inbox: RappAuthorizationInbox
+    private let requireExplicitReconnect: @MainActor @Sendable () -> Void
     private var pin2ByOperation: [Data: String] = [:]
 
-    internal init(inbox: RappAuthorizationInbox) {
+    internal init(
+      inbox: RappAuthorizationInbox,
+      requireExplicitReconnect: @escaping @MainActor @Sendable () -> Void
+    ) {
       self.inbox = inbox
+      self.requireExplicitReconnect = requireExplicitReconnect
     }
 
     internal func receive(
@@ -38,10 +43,13 @@
             return
           }
           // The QR scan that paired this device, carrying the offer's 256-bit
-          // bearer secret, is the human consent that authorizes this session's
-          // public reads, so a safe read proceeds without another prompt. Only
-          // a PIN-consuming credential command still asks per operation.
-          if operation.kind.isSafeRead {
+          // bearer secret, is the human consent that authorizes this session.
+          // Safe reads and browser authentication proceed without another
+          // prompt: browser authentication signs with the already-stored PIN1
+          // (its prerequisite check confirmed it), so nothing more is asked.
+          // Only qualified document signing, which needs PIN2 entered per
+          // signature, still prompts.
+          if operation.kind.isSafeRead || operation.kind == .browserAuthenticate {
             try await coordinator.approve(operationID: operationID)
             return
           }
@@ -52,16 +60,19 @@
               ?? String(localized: "Paired device"),
             action: action
           )
-          // The prompt blocks until the holder answers. A child task keeps
-          // the event pump free, so a session close still reaches the inbox
-          // and cancels the visible request.
-          Task {
-            await self.resolveApproval(
-              request,
-              operationID: operationID,
-              operation: operation,
-              coordinator: coordinator
-            )
+          switch await inbox.ask(request) {
+          case .approved:
+            try await coordinator.approve(operationID: operationID)
+          case .approvedDocumentSignature(let pin2):
+            guard operation.kind == .signDocument else {
+              try await coordinator.requestInvalidOrUnsupported(
+                operationID: operationID)
+              return
+            }
+            pin2ByOperation[operationID] = pin2
+            try await coordinator.approve(operationID: operationID)
+          case .denied:
+            try await coordinator.deny(operationID: operationID)
           }
 
         case .executeSafeRead(let operationID, let operation):
@@ -86,7 +97,7 @@
         case .terminal(let operationID, _, _):
           await cancel(operationID)
 
-        case .peerReserved:
+        case .peerBusy:
           return
 
         case .completed:
@@ -103,38 +114,13 @@
       }
     }
 
-    /// Waits for the holder's decision and applies it to the coordinator.
-    private func resolveApproval(
-      _ request: RappAuthorizationRequest,
-      operationID: Data,
-      operation: RappOperationDriver.Operation,
-      coordinator: RappConnectionCoordinator
-    ) async {
-      do {
-        switch await inbox.ask(request) {
-        case .approved:
-          try await coordinator.approve(operationID: operationID)
-        case .approvedDocumentSignature(let pin2):
-          guard operation.kind == .signDocument else {
-            try await coordinator.requestInvalidOrUnsupported(
-              operationID: operationID)
-            return
-          }
-          pin2ByOperation[operationID] = pin2
-          try await coordinator.approve(operationID: operationID)
-        case .denied:
-          try await coordinator.deny(operationID: operationID)
-        }
-      } catch {
-        pin2ByOperation.removeAll(keepingCapacity: false)
-        await inbox.cancelAll()
-        await coordinator.close()
-      }
-    }
-
-    /// The reviewed name of the live pairing's requesting device.
+    /// The remembered name of the selected pair's requesting device.
     private static func requesterName() async -> String? {
-      await MainActor.run { PhonePersistentTokenRelay.shared.livePeerName }
+      let catalog = RappPairCatalog(vault: RappDeviceVault())
+      guard let selected = try? await catalog.selectedPair() else {
+        return nil
+      }
+      return RappPairNames.name(forPairID: selected.pairID)
     }
 
     private func prerequisitesExist(
@@ -278,6 +264,7 @@
         }
       case .wrongCardAccessNumber:
         CardCredentialStore.forgetAll()
+        await requireExplicitReconnect()
         try? await coordinator.credentialRejected(operationID: operationID)
       case .failed:
         try? await coordinator.cardRemovedBeforeTransmit(operationID: operationID)
@@ -362,6 +349,7 @@
         case .credential(.pin2, _), .credential(.puk, _):
           break
         }
+        await requireExplicitReconnect()
         try? await coordinator.credentialRejected(operationID: operationID)
       case .refusedBeforeCredentialTransmit(let refusal):
         switch refusal {
@@ -375,6 +363,7 @@
             operationID: operationID)
         }
       case .completionAmbiguous:
+        await requireExplicitReconnect()
         try? await coordinator.cardCompletionAmbiguous(operationID: operationID)
       }
     }

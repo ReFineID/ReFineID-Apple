@@ -4,6 +4,44 @@
   import Foundation
   import ReFineIDRapp
 
+  extension RappDeviceVault: RappPairVault {
+    /// Rust-core binding for ``insertPair(pairID:record:)``.
+    public func insertDeviceOnly(pairId: Data, record: Data) throws {
+      do {
+        try insertPair(pairID: pairId, record: record)
+      } catch {
+        throw rappVaultError(error)
+      }
+    }
+
+    /// Rust-core binding for ``loadPair(pairID:)``.
+    public func loadDeviceOnly(pairId: Data) throws -> Data? {
+      do {
+        return try loadPair(pairID: pairId)
+      } catch {
+        throw rappVaultError(error)
+      }
+    }
+
+    /// Rust-core binding for ``revokePair(pairID:revokedAtMilliseconds:)``.
+    public func revokeDeviceOnly(pairId: Data, revokedAtMs: UInt64) throws {
+      do {
+        try revokePair(pairID: pairId, revokedAtMilliseconds: revokedAtMs)
+      } catch {
+        throw rappVaultError(error)
+      }
+    }
+
+    /// Rust-core binding for ``pairIsRevoked(pairID:)``.
+    public func isRevoked(pairId: Data) throws -> Bool {
+      do {
+        return try pairIsRevoked(pairID: pairId)
+      } catch {
+        throw rappVaultError(error)
+      }
+    }
+  }
+
   extension RappDeviceVault: RappOperationVault {
     /// Rust-core binding for ``persistRequester(pairID:operationID:record:)``.
     public func persistRequester(
@@ -108,7 +146,9 @@
     switch failure {
     case .duplicate:
       return .IdentifierAlreadyUsed
-    case .notFound, .malformed, .unavailable:
+    case .notFound:
+      return .PairNotFound
+    case .malformed, .unavailable:
       return .Unavailable
     }
   }
