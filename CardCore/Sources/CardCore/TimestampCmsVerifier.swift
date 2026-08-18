@@ -26,41 +26,56 @@ internal enum TimestampCmsVerifier {
 
     var byteCount: Int {
       switch self {
-      case .sha256: SHA256.byteCount
-      case .sha384: SHA384.byteCount
-      case .sha512: SHA512.byteCount
+      case .sha256:
+        SHA256.byteCount
+      case .sha384:
+        SHA384.byteCount
+      case .sha512:
+        SHA512.byteCount
       }
     }
 
     func hash(_ data: Data) -> Data {
       switch self {
-      case .sha256: Data(SHA256.hash(data: data))
-      case .sha384: Data(SHA384.hash(data: data))
-      case .sha512: Data(SHA512.hash(data: data))
+      case .sha256:
+        Data(SHA256.hash(data: data))
+      case .sha384:
+        Data(SHA384.hash(data: data))
+      case .sha512:
+        Data(SHA512.hash(data: data))
       }
     }
 
     var ecdsaAlgorithm: SecKeyAlgorithm {
       switch self {
-      case .sha256: .ecdsaSignatureMessageX962SHA256
-      case .sha384: .ecdsaSignatureMessageX962SHA384
-      case .sha512: .ecdsaSignatureMessageX962SHA512
+      case .sha256:
+        .ecdsaSignatureMessageX962SHA256
+      case .sha384:
+        .ecdsaSignatureMessageX962SHA384
+      case .sha512:
+        .ecdsaSignatureMessageX962SHA512
       }
     }
 
     var rsaPkcs1Algorithm: SecKeyAlgorithm {
       switch self {
-      case .sha256: .rsaSignatureMessagePKCS1v15SHA256
-      case .sha384: .rsaSignatureMessagePKCS1v15SHA384
-      case .sha512: .rsaSignatureMessagePKCS1v15SHA512
+      case .sha256:
+        .rsaSignatureMessagePKCS1v15SHA256
+      case .sha384:
+        .rsaSignatureMessagePKCS1v15SHA384
+      case .sha512:
+        .rsaSignatureMessagePKCS1v15SHA512
       }
     }
 
     var rsaPssAlgorithm: SecKeyAlgorithm {
       switch self {
-      case .sha256: .rsaSignatureMessagePSSSHA256
-      case .sha384: .rsaSignatureMessagePSSSHA384
-      case .sha512: .rsaSignatureMessagePSSSHA512
+      case .sha256:
+        .rsaSignatureMessagePSSSHA256
+      case .sha384:
+        .rsaSignatureMessagePSSSHA384
+      case .sha512:
+        .rsaSignatureMessagePSSSHA512
       }
     }
   }
@@ -307,10 +322,14 @@ internal enum TimestampCmsVerifier {
       throw TimestampTokenVerifier.Failure.malformed
     }
     switch reader.data(of: oid) {
-    case DerEncoder.objectIdentifier(SignOids.sha256): return .sha256
-    case DerEncoder.objectIdentifier(SignOids.sha384): return .sha384
-    case DerEncoder.objectIdentifier(SignOids.sha512): return .sha512
-    default: throw TimestampTokenVerifier.Failure.invalidSignature
+    case DerEncoder.objectIdentifier(SignOids.sha256):
+      return .sha256
+    case DerEncoder.objectIdentifier(SignOids.sha384):
+      return .sha384
+    case DerEncoder.objectIdentifier(SignOids.sha512):
+      return .sha512
+    default:
+      throw TimestampTokenVerifier.Failure.invalidSignature
     }
   }
 
@@ -332,10 +351,14 @@ internal enum TimestampCmsVerifier {
 
     let ecdsaDigest: Digest?
     switch encodedOid {
-    case DerEncoder.objectIdentifier(SignOids.ecdsaWithSha256): ecdsaDigest = .sha256
-    case DerEncoder.objectIdentifier(SignOids.ecdsaWithSha384): ecdsaDigest = .sha384
-    case DerEncoder.objectIdentifier(SignOids.ecdsaWithSha512): ecdsaDigest = .sha512
-    default: ecdsaDigest = nil
+    case DerEncoder.objectIdentifier(SignOids.ecdsaWithSha256):
+      ecdsaDigest = .sha256
+    case DerEncoder.objectIdentifier(SignOids.ecdsaWithSha384):
+      ecdsaDigest = .sha384
+    case DerEncoder.objectIdentifier(SignOids.ecdsaWithSha512):
+      ecdsaDigest = .sha512
+    default:
+      ecdsaDigest = nil
     }
     if let ecdsaDigest {
       guard parameters == nil, ecdsaDigest == digest else {
@@ -346,10 +369,14 @@ internal enum TimestampCmsVerifier {
 
     let rsaDigest: Digest?
     switch encodedOid {
-    case DerEncoder.objectIdentifier(SignOids.sha256WithRsa): rsaDigest = .sha256
-    case DerEncoder.objectIdentifier(SignOids.sha384WithRsa): rsaDigest = .sha384
-    case DerEncoder.objectIdentifier(SignOids.sha512WithRsa): rsaDigest = .sha512
-    default: rsaDigest = nil
+    case DerEncoder.objectIdentifier(SignOids.sha256WithRsa):
+      rsaDigest = .sha256
+    case DerEncoder.objectIdentifier(SignOids.sha384WithRsa):
+      rsaDigest = .sha384
+    case DerEncoder.objectIdentifier(SignOids.sha512WithRsa):
+      rsaDigest = .sha512
+    default:
+      rsaDigest = nil
     }
     if let rsaDigest {
       try Self.requireNull(parameters)

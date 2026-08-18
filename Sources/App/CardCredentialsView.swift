@@ -26,6 +26,9 @@ internal struct CardCredentialsView: View {
 
   private static let sectionSpacing: CGFloat = 24
 
+  /// Between a borrowed person and the control that drops them.
+  private static let holderActionSpacing: CGFloat = 12
+
   /// The seal drawn beside document verification.
   ///
   /// A symbol added after the system running this build resolves to
@@ -477,12 +480,28 @@ internal struct CardCredentialsView: View {
           case .connecting:
             ProgressView()
           case .identity(let holder):
-            Text(holder)
-              .textSelection(.enabled)
-              .accessibilityIdentifier("remoteCardHolder")
+            HStack(spacing: Self.holderActionSpacing) {
+              Text(holder)
+                .textSelection(.enabled)
+                .accessibilityIdentifier("remoteCardHolder")
+              Button {
+                remoteModel.forget()
+              } label: {
+                Image(systemName: "minus.circle.fill")
+                  .foregroundStyle(.red)
+              }
+              .buttonStyle(.borderless)
+              .accessibilityIdentifier("forgetRemoteIdentity")
+              .accessibilityLabel(String(localized: "Forget identity"))
+            }
           case .idle, .failed:
             Button(String(localized: "Connect Remote Reader")) {
-              if remoteModel.hasPair {
+              // A device with a card of its own reconnects to the pairing it
+              // already has. A device without one is here to borrow a card,
+              // and the code is how it asks, so it goes straight there --
+              // including when a stored pairing the other side has forgotten
+              // would otherwise strand it.
+              if remoteModel.hasPair, offersNearField {
                 remoteModel.connect()
               } else {
                 openRemoteReader()
@@ -499,6 +518,15 @@ internal struct CardCredentialsView: View {
         }
       } header: {
         compactSectionHeader("Identity")
+      }
+      // A pairing the peer no longer honours has just been discarded, so
+      // the code that makes a new one comes up without asking for the same
+      // tap twice.
+      .onValueChange(of: remoteModel.needsFreshPairing) { needsFresh in
+        if needsFresh {
+          remoteModel.acknowledgeFreshPairing()
+          openRemoteReader()
+        }
       }
     }
   #else
@@ -644,24 +672,6 @@ internal struct CardCredentialsView: View {
       }
     }
 
-    /// One navigation row with an aligned leading icon.
-    private func navigationRow(
-      _ title: String,
-      @ViewBuilder icon: () -> some View
-    ) -> some View {
-      HStack {
-        icon()
-          .frame(width: PersonRowLabel.iconWidth)
-          .accessibilityHidden(true)
-        Text(title)
-        Spacer()
-        Image(systemName: "chevron.forward")
-          .font(.footnote.weight(.semibold))
-          .foregroundStyle(.tertiary)
-          .accessibilityHidden(true)
-      }
-    }
-
     /// Who the connected reader's card says they are, one row per card.
     ///
     /// The reader message stands in for a card whose name cannot be
@@ -702,20 +712,6 @@ internal struct CardCredentialsView: View {
       readerModel?.holderReadKey ?? []
     }
   #endif
-
-  private func compactSectionHeader(
-    _ title: LocalizedStringKey
-  ) -> some View {
-    Text(title)
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .listRowInsets(EdgeInsets())
-  }
-
-  private func compactSectionHeader(verbatim title: String) -> some View {
-    Text(title)
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .listRowInsets(EdgeInsets())
-  }
 
   /// One operation, in its actual order: credentials and then minting.
   @ViewBuilder private var createIdentitySection: some View {
@@ -902,6 +898,54 @@ internal struct CardCredentialsView: View {
   ///
   /// A demonstration displays only its virtual device state, so a CAN stored
   /// for a physical identity cannot appear beside a fictional holder.
+  /// SwiftUI navigation is a projection of the formal flow state.
+  ///
+  /// A pop is fed back as an event so origin restoration is modeled as
+  /// well.
+  private var flowDestination: Binding<CardSetupStateMachine.Destination?> {
+    Binding(
+      get: { flowState.destination },
+      set: { destination in
+        guard destination == nil, flowState.destination != nil else { return }
+        transition(.destinationDismissed)
+      }
+    )
+  }
+
+  #if os(iOS)
+    /// One navigation row with an aligned leading icon.
+    private func navigationRow(
+      _ title: String,
+      @ViewBuilder icon: () -> some View
+    ) -> some View {
+      HStack {
+        icon()
+          .frame(width: PersonRowLabel.iconWidth)
+          .accessibilityHidden(true)
+        Text(title)
+        Spacer()
+        Image(systemName: "chevron.forward")
+          .font(.footnote.weight(.semibold))
+          .foregroundStyle(.tertiary)
+          .accessibilityHidden(true)
+      }
+    }
+  #endif
+
+  private func compactSectionHeader(
+    _ title: LocalizedStringKey
+  ) -> some View {
+    Text(title)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .listRowInsets(EdgeInsets())
+  }
+
+  private func compactSectionHeader(verbatim title: String) -> some View {
+    Text(title)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .listRowInsets(EdgeInsets())
+  }
+
   private func showStoredCardAccessNumber() {
     #if os(iOS)
       if isDemonstration {
@@ -1028,20 +1072,6 @@ internal struct CardCredentialsView: View {
       isCardAccessNumberFieldFocused = true
     }
     transition(.activationSucceeded)
-  }
-
-  /// SwiftUI navigation is a projection of the formal flow state.
-  ///
-  /// A pop is fed back as an event so origin restoration is modeled as
-  /// well.
-  private var flowDestination: Binding<CardSetupStateMachine.Destination?> {
-    Binding(
-      get: { flowState.destination },
-      set: { destination in
-        guard destination == nil, flowState.destination != nil else { return }
-        transition(.destinationDismissed)
-      }
-    )
   }
 
   /// Persistent identity is an input event, never an alternate navigation

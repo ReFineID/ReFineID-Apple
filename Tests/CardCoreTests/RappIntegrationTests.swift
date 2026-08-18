@@ -336,6 +336,61 @@ import Testing
       await connection.proxy.close()
     }
 
+    /// A card command that outlasts the liveness interval must still land.
+    ///
+    /// The antenna needs seconds and the requester probes every five, so a
+    /// probe crosses the wire while the proxy is still holding the card.
+    /// Neither peer may treat that crossing as a reason to end the pairing:
+    /// a holder who presented a card slightly slowly would be told to scan
+    /// a fresh code, and the pairing they had would be gone.
+    @Test
+    internal func aCardCommandOutlastingLivenessKeepsTheSessionAndPairing() async throws {
+      let fixture = try await Self.makePairedFixture()
+      defer { Self.deleteKeychainServices(for: fixture) }
+      let connection = try await Self.makeConnection(
+        fixture,
+        liveness: Self.interactiveLiveness
+      )
+      let digest = Data(repeating: 0xA5, count: 32)
+      let signature = Data([0x30, 0x06, 0x02, 0x01, 0x01, 0x02, 0x01, 0x02])
+      let operation = RequestedOperation.browserAuthentication(
+        origin: "https://example.invalid",
+        digest: digest
+      )
+
+      let requesterOutcome = Task {
+        try await Self.awaitCompletion(connection.requester, operation: operation)
+      }
+      let proxyOutcome = Task {
+        try await Self.authorizeAndComplete(
+          connection.proxy,
+          operation: operation,
+          signature: signature,
+          cardHoldMilliseconds: 7_000
+        )
+      }
+      defer {
+        requesterOutcome.cancel()
+        proxyOutcome.cancel()
+      }
+
+      await connection.proxy.start()
+      await connection.requester.start()
+      let result = try await requesterOutcome.value
+      _ = try await proxyOutcome.value
+
+      #expect(result.kind == .signature)
+      #expect(result.bytes == signature)
+      #expect(
+        try fixture.requesterVault.pairIsRevoked(
+          pairID: fixture.requesterSummary.pairID) == false)
+      #expect(
+        try fixture.proxyVault.pairIsRevoked(
+          pairID: fixture.proxySummary.pairID) == false)
+      await connection.requester.close()
+      await connection.proxy.close()
+    }
+
     @Test
     internal func authorizedDocumentSigningExecutesOnceAndAcknowledgesResult() async throws {
       let fixture = try await Self.makePairedFixture()
@@ -581,8 +636,25 @@ import Testing
       )
     }
 
+    /// What the shipped requester actually runs with.
+    ///
+    /// The suite's own liveness never fires inside a test, so every path
+    /// below was measured with no probe in flight. A card read takes
+    /// several seconds of antenna time, which is longer than this
+    /// interval, so on a device a probe is always in flight while an
+    /// operation is executing -- the one arrangement the fast fixture
+    /// could not produce.
+    private static let interactiveLiveness = RappOperationDriver.Liveness(
+      baseIntervalMilliseconds: 5_000,
+      responseTimeoutMilliseconds: 3_000,
+      maximumIntervalMilliseconds: 60_000,
+      maximumJitterMilliseconds: 500,
+      maximumMisses: 3
+    )
+
     private static func makeConnection(
-      _ fixture: PairingFixture
+      _ fixture: PairingFixture,
+      liveness: RappOperationDriver.Liveness = liveness
     ) async throws -> ConnectionFixture {
       let requesterPair = try RappPairRecord.loadFromVault(
         pairId: fixture.requesterSummary.pairID,
@@ -673,7 +745,8 @@ import Testing
     private static func authorizeAndComplete(
       _ coordinator: RappConnectionCoordinator,
       operation expected: RequestedOperation,
-      signature: Data
+      signature: Data,
+      cardHoldMilliseconds: UInt64 = 0
     ) async throws -> ProxyProgress {
       var progress = ProxyProgress()
       for await event in coordinator.events {
@@ -697,6 +770,11 @@ import Testing
             throw TestFailure.unexpectedConnectionEvent
           }
           progress.executions += 1
+          // The antenna's share of the operation, where the proxy is busy
+          // with the card and answers nothing else.
+          if cardHoldMilliseconds > 0 {
+            try await Task.sleep(for: .milliseconds(cardHoldMilliseconds))
+          }
           try await coordinator.completeSignature(
             operationID: operationID,
             signature: signature

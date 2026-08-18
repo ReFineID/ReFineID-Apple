@@ -13,40 +13,6 @@ import SwiftUI
   import AppKit
 #endif
 
-private enum RappApplePeerProfile {
-  static let name = "apple-peer-v1"
-  static let candidateID = "apple-peer-v1.nearby"
-
-  /// Deterministic CBOR for an empty map.
-  ///
-  /// Apple peer discovery currently needs no public parameter beyond
-  /// its bound profile and candidate ID.
-  private static let emptyMapInitialByte: UInt8 = 0b1010_0000
-  static let candidateParameters = Data([emptyMapInitialByte])
-
-  /// Only profiles implemented end to end by the current phone executor.
-  static let supportedCredentialProfiles = [
-    "fi.eid.card-status.v1",
-    "fi.eid.authentication.v1",
-    "fi.eid.document-signing.v1",
-  ]
-
-  static func isSupported(_ profile: String) -> Bool {
-    supportedCredentialProfiles.contains(profile)
-  }
-
-  static func label(for profile: String) -> String {
-    switch profile {
-    case "fi.eid.card-status.v1": String(localized: "Card status")
-    case "fi.eid.authentication.v1": String(localized: "Browser authentication")
-    case "fi.eid.document-signing.v1": String(localized: "Document signing")
-    case "fi.eid.activation.v1": String(localized: "Card activation")
-    case "fi.eid.pin-management.v1": String(localized: "PIN management")
-    default: String(localized: "Unknown access")
-    }
-  }
-}
-
 @MainActor
 internal final class RappPairingModel: ObservableObject {
   internal enum Phase: Equatable {
@@ -94,6 +60,15 @@ internal final class RappPairingModel: ObservableObject {
   private var coordinator: RappPairingCoordinator?
   private var eventTask: Task<Void, Never>?
   private var reviewedPeerName: String?
+
+  private var isFinished: Bool {
+    switch phase {
+    case .paired, .failed:
+      true
+    case .idle, .offer, .scanning, .connecting:
+      false
+    }
+  }
 
   internal init(vault: RappDeviceVault = RappDeviceVault()) {
     self.vault = vault
@@ -480,13 +455,6 @@ internal final class RappPairingModel: ObservableObject {
     }
   }
 
-  private var isFinished: Bool {
-    switch phase {
-    case .paired, .failed: true
-    case .idle, .offer, .scanning, .connecting: false
-    }
-  }
-
   private func fail(_ message: String) {
     let coordinator = coordinator
     phase = .failed(message)
@@ -521,219 +489,3 @@ internal final class RappPairingModel: ObservableObject {
     #endif
   }
 }
-
-internal struct RappPairingButton: View {
-  @Binding internal var isPresented: Bool
-  @State private var hasSelectedPair = false
-
-  internal var body: some View {
-    Button {
-      isPresented = true
-    } label: {
-      Image(systemName: hasSelectedPair ? "link" : "link.badge.plus")
-        .replacingSymbolPlainly()
-    }
-    .accessibilityLabel("Remote Card")
-    .accessibilityValue(
-      hasSelectedPair ? "Paired device selected" : "No paired device selected"
-    )
-    .task(id: isPresented) {
-      let catalog = RappPairCatalog(vault: RappDeviceVault())
-      hasSelectedPair = (try? await catalog.selectedPair()) != nil
-    }
-  }
-}
-
-internal struct RappPairingView: View {
-  @Environment(\.dismiss) private var dismiss
-  @StateObject private var model = RappPairingModel()
-
-  internal var body: some View {
-    NavigationStack {
-      Form {
-        pairedDevices
-        pairingAction
-        pairingProgress
-      }
-      .navigationTitle("Remote Card")
-      .toolbar {
-        ToolbarItem(placement: .confirmationAction) {
-          Button("Close") { dismiss() }
-        }
-      }
-    }
-    .onAppear { model.refresh() }
-    .onDisappear { model.cancel() }
-    #if os(macOS)
-      .frame(minWidth: 440, minHeight: 520)
-    #endif
-  }
-
-  @ViewBuilder private var pairedDevices: some View {
-    if !model.pairs.isEmpty {
-      Section("Paired devices") {
-        ForEach(model.pairs, id: \.pairID) { pair in
-          HStack {
-            Label(
-              model.displayName(for: pair),
-              systemImage: pair.remotePlatformSymbol
-            )
-            Spacer()
-            if model.selectedPairID == pair.pairID {
-              Image(systemName: "checkmark")
-                .foregroundStyle(Color.accentColor)
-                .accessibilityLabel("Selected")
-            }
-          }
-          Button("Remove this pairing", role: .destructive) {
-            model.revoke(pair)
-          }
-          .accessibilityIdentifier("removePairedDevice")
-        }
-      }
-    }
-  }
-
-  /// One connection at a time: pairing is offered only while no
-  /// paired device exists.
-  @ViewBuilder private var pairingAction: some View {
-    if model.pairs.isEmpty {
-      Section {
-        #if os(macOS)
-          Button("Pair a phone", systemImage: "qrcode") {
-            model.createOffer()
-          }
-        #else
-          // A device with an antenna holds the card and scans; a device
-          // without one requests and shows the code to scan.
-          if UIDevice.current.userInterfaceIdiom == .pad {
-            Button("Pair a phone", systemImage: "qrcode") {
-              model.createOffer()
-            }
-          } else {
-            Button("Scan pairing code", systemImage: "qrcode.viewfinder") {
-              model.scanOffer()
-            }
-          }
-        #endif
-      }
-    }
-  }
-
-  @ViewBuilder private var pairingProgress: some View {
-    switch model.phase {
-    case .idle:
-      EmptyView()
-    case .offer(let uri):
-      Section("Scan with ReFineID on the phone") {
-        if let image = RappPairingCode.image(uri) {
-          image
-            .interpolation(.none)
-            .resizable()
-            .scaledToFit()
-            .frame(maxWidth: 280, maxHeight: 280)
-            .accessibilityLabel("Pairing QR code")
-        }
-        ProgressView("Waiting for the phone")
-      }
-    case .scanning:
-      #if os(iOS)
-        Section("Scan the code shown on the other device") {
-          RappOfferScanner { model.acceptScannedOffer($0) }
-            .frame(minHeight: 320)
-            .clipShape(.rect(cornerRadius: 16))
-            .accessibilityLabel("Pairing code scanner")
-        }
-      #endif
-    case .connecting:
-      Section { ProgressView("Establishing a secure connection") }
-    case .paired(let pair):
-      Section {
-        Label("Secure pairing established", systemImage: "checkmark.shield")
-          .foregroundStyle(.green)
-        Text(pair.remotePlatformLabel)
-      }
-    case .failed(let message):
-      Section {
-        Label(message, systemImage: "exclamationmark.triangle")
-          .foregroundStyle(.red)
-      }
-    }
-  }
-}
-
-extension RappPairingCoordinator.PairSummary {
-  fileprivate var remotePlatformLabel: String {
-    switch role {
-    case .requester: String(localized: "Card-holding device")
-    case .proxy: String(localized: "Requesting device")
-    }
-  }
-
-  fileprivate var remotePlatformSymbol: String {
-    switch role {
-    case .requester: "iphone"
-    case .proxy: "desktopcomputer"
-    }
-  }
-}
-
-#if os(iOS)
-  private struct RappOfferScanner: UIViewControllerRepresentable {
-    let onScan: @MainActor @Sendable (String) -> Void
-
-    func makeCoordinator() -> Coordinator { Coordinator(onScan: onScan) }
-
-    func makeUIViewController(context: Context) -> DataScannerViewController {
-      let scanner = DataScannerViewController(
-        recognizedDataTypes: [.barcode(symbologies: [.qr])],
-        qualityLevel: .balanced,
-        recognizesMultipleItems: false,
-        isHighFrameRateTrackingEnabled: false,
-        isPinchToZoomEnabled: true,
-        isGuidanceEnabled: true,
-        isHighlightingEnabled: true
-      )
-      scanner.delegate = context.coordinator
-      DispatchQueue.main.async { try? scanner.startScanning() }
-      return scanner
-    }
-
-    func updateUIViewController(
-      _: DataScannerViewController,
-      context _: Context
-    ) {}
-
-    static func dismantleUIViewController(
-      _ scanner: DataScannerViewController,
-      coordinator _: Coordinator
-    ) {
-      scanner.stopScanning()
-    }
-
-    final class Coordinator: NSObject, DataScannerViewControllerDelegate {
-      private let onScan: @MainActor @Sendable (String) -> Void
-      private var accepted = false
-
-      init(onScan: @escaping @MainActor @Sendable (String) -> Void) {
-        self.onScan = onScan
-      }
-
-      func dataScanner(
-        _: DataScannerViewController,
-        didAdd addedItems: [RecognizedItem],
-        allItems _: [RecognizedItem]
-      ) {
-        guard !accepted else { return }
-        for item in addedItems {
-          guard case .barcode(let barcode) = item,
-            let value = barcode.payloadStringValue
-          else { continue }
-          accepted = true
-          Task { @MainActor [onScan] in onScan(value) }
-          return
-        }
-      }
-    }
-  }
-#endif

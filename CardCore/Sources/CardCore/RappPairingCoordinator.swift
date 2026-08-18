@@ -14,19 +14,19 @@
       /// Deterministic-CBOR map of profile-specific public parameters.
       public let parametersCBOR: Data
 
-      /// Creates a candidate from already-encoded public parameters.
-      public init(profile: String, candidateID: String, parametersCBOR: Data) {
-        self.profile = profile
-        self.candidateID = candidateID
-        self.parametersCBOR = parametersCBOR
-      }
-
       fileprivate var binding: RappTransportCandidate {
         RappTransportCandidate(
           profile: profile,
           candidateId: candidateID,
           parametersCbor: parametersCBOR
         )
+      }
+
+      /// Creates a candidate from already-encoded public parameters.
+      public init(profile: String, candidateID: String, parametersCBOR: Data) {
+        self.profile = profile
+        self.candidateID = candidateID
+        self.parametersCBOR = parametersCBOR
       }
     }
 
@@ -138,6 +138,42 @@
     private var localConfirmationSent = false
     private var offerExpiryTask: Task<Void, Never>?
 
+    private init(
+      role: Role,
+      bridge: RappPairingBridge,
+      offerURI: String?,
+      selectedCandidateID: String,
+      displayName: String,
+      platform: String,
+      vault: RappDeviceVault,
+      transport: any RappFrameTransport,
+      clock: RappPlatformClock,
+      offerDeadlineMilliseconds: UInt64
+    ) {
+      self.role = role
+      self.bridge = bridge
+      self.offerURI = offerURI
+      self.candidateID = selectedCandidateID
+      self.displayName = displayName
+      self.platform = platform
+      self.vault = vault
+      self.transport = transport
+      self.clock = clock
+      self.offerDeadlineMilliseconds = offerDeadlineMilliseconds
+
+      var capturedContinuation: AsyncStream<Event>.Continuation?
+      self.events = AsyncStream { capturedContinuation = $0 }
+      guard let capturedContinuation else {
+        preconditionFailure("AsyncStream did not provide a continuation")
+      }
+      self.continuation = capturedContinuation
+    }
+
+    private static func deadline(startedAt: UInt64, lifetime: UInt64) -> UInt64 {
+      let (deadline, overflow) = startedAt.addingReportingOverflow(lifetime)
+      return overflow ? UInt64.max : deadline
+    }
+
     /// Creates the requester side owning a fresh one-use offer that covers
     /// the given transport candidates.
     public static func requester(
@@ -208,42 +244,6 @@
           lifetime: try bridge.offerTtlMs()
         )
       )
-    }
-
-    private init(
-      role: Role,
-      bridge: RappPairingBridge,
-      offerURI: String?,
-      selectedCandidateID: String,
-      displayName: String,
-      platform: String,
-      vault: RappDeviceVault,
-      transport: any RappFrameTransport,
-      clock: RappPlatformClock,
-      offerDeadlineMilliseconds: UInt64
-    ) {
-      self.role = role
-      self.bridge = bridge
-      self.offerURI = offerURI
-      self.candidateID = selectedCandidateID
-      self.displayName = displayName
-      self.platform = platform
-      self.vault = vault
-      self.transport = transport
-      self.clock = clock
-      self.offerDeadlineMilliseconds = offerDeadlineMilliseconds
-
-      var capturedContinuation: AsyncStream<Event>.Continuation?
-      self.events = AsyncStream { capturedContinuation = $0 }
-      guard let capturedContinuation else {
-        preconditionFailure("AsyncStream did not provide a continuation")
-      }
-      self.continuation = capturedContinuation
-    }
-
-    deinit {
-      offerExpiryTask?.cancel()
-      continuation.finish()
     }
 
     /// Publishes the requester QR without consuming it or starting transport.
@@ -553,9 +553,9 @@
       await fail(.offerExpired)
     }
 
-    private static func deadline(startedAt: UInt64, lifetime: UInt64) -> UInt64 {
-      let (deadline, overflow) = startedAt.addingReportingOverflow(lifetime)
-      return overflow ? UInt64.max : deadline
+    deinit {
+      offerExpiryTask?.cancel()
+      continuation.finish()
     }
   }
 #endif

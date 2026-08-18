@@ -174,6 +174,19 @@
       case .readIdentity:
         await readIdentity(operationID: operationID, coordinator: coordinator)
       case .readAuthenticationCertificate, .readSignatureCertificate:
+        // The authentication certificate is public and this device read it
+        // once already, while setting its own identity up. A peer asking
+        // for it is asking for something held here, so the card stays in
+        // the holder's pocket.
+        if operation.kind == .readAuthenticationCertificate,
+          let primed = PrimeStore.primedAuthenticationCertificates().first
+        {
+          await finishRead(
+            .result(primed),
+            operationID: operationID,
+            coordinator: coordinator)
+          return
+        }
         guard let accessNumber = CardCredentialStore.displayedCardAccessNumber() else {
           await invalid(operationID, coordinator: coordinator)
           return
@@ -387,9 +400,12 @@
 
     private func attempts(_ outcome: RetryProbeOutcome?) -> UInt8? {
       switch outcome {
-      case .remaining(let count): count.attemptsRemaining
-      case .locked: 0
-      case .invalidated, .noInformation, .other, .verified, nil: nil
+      case .remaining(let count):
+        count.attemptsRemaining
+      case .locked:
+        0
+      case .invalidated, .noInformation, .other, .verified, nil:
+        nil
       }
     }
   }

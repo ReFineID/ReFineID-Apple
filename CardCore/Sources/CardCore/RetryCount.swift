@@ -17,6 +17,12 @@ public struct RetryCount: Equatable, Sendable {
   /// cards: five attempts.
   public static let pristineAllowance: UInt8 = 5
 
+  /// The point at which a credential is one mistake from blocking.
+  ///
+  /// Operations refuse to spend attempts at or below this, and
+  /// presentation names a recovery route instead of a count.
+  public static let lowAttemptCeiling: UInt8 = 2
+
   /// The validated number of attempts remaining.
   public let attemptsRemaining: UInt8
 

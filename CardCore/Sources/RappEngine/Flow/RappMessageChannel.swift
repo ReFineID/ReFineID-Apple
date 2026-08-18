@@ -42,8 +42,7 @@ internal struct RappMessageChannel {
     var guardCopy = sequence
     _ = try channel.open(frame) { plaintext in
       let envelope = try Envelope.decode(plaintext)
-      try guardCopy.acceptIncoming(
-        sessionIdentifier: envelope.sessionIdentifier, sequence: envelope.sequence)
+      guardCopy.noteIncoming(sequence: envelope.sequence)
       decoded = envelope
     }
     guard let envelope = decoded else { throw RappOpenFailure.authenticatedProtocolViolation }

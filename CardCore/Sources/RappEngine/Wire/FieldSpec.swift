@@ -72,7 +72,14 @@ internal struct FieldSpec {
     case .sessionClose:
       [Self("reason", .text), Self("last_received_sequence", .unsigned)]
     case .livenessPing, .livenessPong:
-      [Self("challenge", challenge), Self("last_received_sequence", .unsigned)]
+      // The reported position is informational: the cipher state below
+      // already refuses anything out of order, so a peer that leaves it out
+      // has told this side nothing it did not know. Requiring it made a
+      // heartbeat able to end a pairing.
+      [
+        Self("challenge", challenge),
+        Self("last_received_sequence", .unsigned, optional: true),
+      ]
     default:
       []
     }

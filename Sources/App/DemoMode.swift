@@ -37,10 +37,6 @@
 
     internal var isHolding: Bool { false }
 
-    internal func setEditorPresented(_ presented: Bool) {
-      isEditorPresented = presented
-    }
-
     internal var hasIdentity: Bool {
       state.device.cachedIdentity && state.device.tokenRegistered
     }
@@ -73,6 +69,91 @@
 
     internal var activationScheme: ActivationScheme {
       Self.scheme(for: state.card.generation)
+    }
+
+    private static func scheme(
+      for generation: VirtualIDCard.Generation
+    ) -> ActivationScheme {
+      switch generation {
+      case .activationCodeIsPuk:
+        .activationCodeIsPuk
+      case .presetActivationPIN:
+        .presetActivationPin
+      }
+    }
+
+    private static func maintenanceSnapshot(
+      from snapshot: VirtualIDCard.Snapshot,
+      retryReport: VirtualIDCard.RetryReport? = nil,
+      report suppliedReport: CredentialProbeReport? = nil
+    ) -> CardMaintenance.Snapshot {
+      let report =
+        suppliedReport
+        ?? retryReport.map(Self.report(from:))
+        ?? Self.report(from: snapshot.card)
+      return CardMaintenance.Snapshot(
+        report: report,
+        activationNeeds: CardActivationNeeds(
+          pin1: snapshot.card.pin1.isFactoryValue,
+          pin2: snapshot.card.pin2.isFactoryValue),
+        activationScheme: Self.scheme(for: snapshot.card.generation))
+    }
+
+    private static func report(
+      from card: VirtualIDCard.CardState
+    ) -> CredentialProbeReport {
+      CredentialProbeReport(
+        pin1: retryOutcome(card.pin1.attemptsRemaining),
+        pin2: retryOutcome(card.pin2.attemptsRemaining),
+        puk: retryOutcome(card.puk.attemptsRemaining))
+    }
+
+    private static func report(
+      from report: VirtualIDCard.RetryReport
+    ) -> CredentialProbeReport {
+      CredentialProbeReport(
+        pin1: retryOutcome(report.pin1),
+        pin2: retryOutcome(report.pin2),
+        puk: retryOutcome(report.puk))
+    }
+
+    private static func retryOutcome(_ attempts: UInt8) -> RetryProbeOutcome {
+      guard let count = RetryCount(attemptsRemaining: attempts) else {
+        return .noInformation
+      }
+      return count.isBlocked ? .locked : .remaining(count)
+    }
+
+    private static func outcome(
+      from outcome: VirtualIDCard.CredentialOutcome
+    ) -> CardMaintenance.Outcome {
+      switch outcome {
+      case .success:
+        .success
+      case .alreadyActivated:
+        .alreadyActivated
+      case .invalidEntry:
+        .invalidEntry
+      case .blocked:
+        .pinBlocked
+      case .rejected(let remaining):
+        RetryCount(attemptsRemaining: remaining)
+          .map { .rejected(remaining: $0) }
+          ?? .failed
+      case .refusedLowAttempts:
+        .floorRefused(.refuseLowAttempts)
+      case .transportFailure(let effect):
+        switch effect {
+        case .connectionLost, .readerDisconnected, .cardRemoved:
+          .noCard
+        case .timeout, .malformedResponse, .tokenNotPublished:
+          .failed
+        }
+      }
+    }
+
+    internal func setEditorPresented(_ presented: Bool) {
+      isEditorPresented = presented
     }
 
     internal func activate(
@@ -265,87 +346,6 @@
           Self.report(from: state.card))
       } else {
         CredentialRetryHealth.shared.clear()
-      }
-    }
-
-    private static func scheme(
-      for generation: VirtualIDCard.Generation
-    ) -> ActivationScheme {
-      switch generation {
-      case .activationCodeIsPuk:
-        .activationCodeIsPuk
-      case .presetActivationPIN:
-        .presetActivationPin
-      }
-    }
-
-    private static func maintenanceSnapshot(
-      from snapshot: VirtualIDCard.Snapshot,
-      retryReport: VirtualIDCard.RetryReport? = nil,
-      report suppliedReport: CredentialProbeReport? = nil
-    ) -> CardMaintenance.Snapshot {
-      let report =
-        suppliedReport
-        ?? retryReport.map(Self.report(from:))
-        ?? Self.report(from: snapshot.card)
-      return CardMaintenance.Snapshot(
-        report: report,
-        activationNeeds: CardActivationNeeds(
-          pin1: snapshot.card.pin1.isFactoryValue,
-          pin2: snapshot.card.pin2.isFactoryValue),
-        activationScheme: Self.scheme(for: snapshot.card.generation))
-    }
-
-    private static func report(
-      from card: VirtualIDCard.CardState
-    ) -> CredentialProbeReport {
-      CredentialProbeReport(
-        pin1: retryOutcome(card.pin1.attemptsRemaining),
-        pin2: retryOutcome(card.pin2.attemptsRemaining),
-        puk: retryOutcome(card.puk.attemptsRemaining))
-    }
-
-    private static func report(
-      from report: VirtualIDCard.RetryReport
-    ) -> CredentialProbeReport {
-      CredentialProbeReport(
-        pin1: retryOutcome(report.pin1),
-        pin2: retryOutcome(report.pin2),
-        puk: retryOutcome(report.puk))
-    }
-
-    private static func retryOutcome(_ attempts: UInt8) -> RetryProbeOutcome {
-      guard let count = RetryCount(attemptsRemaining: attempts) else {
-        return .noInformation
-      }
-      return count.isBlocked ? .locked : .remaining(count)
-    }
-
-    private static func outcome(
-      from outcome: VirtualIDCard.CredentialOutcome
-    ) -> CardMaintenance.Outcome {
-      switch outcome {
-      case .success:
-        .success
-      case .alreadyActivated:
-        .alreadyActivated
-      case .invalidEntry:
-        .invalidEntry
-      case .blocked:
-        .pinBlocked
-      case .rejected(let remaining):
-        RetryCount(attemptsRemaining: remaining)
-          .map { .rejected(remaining: $0) }
-          ?? .failed
-      case .refusedLowAttempts:
-        .floorRefused(.refuseLowAttempts)
-      case .transportFailure(let effect):
-        switch effect {
-        case .connectionLost, .readerDisconnected, .cardRemoved:
-          .noCard
-        case .timeout, .malformedResponse, .tokenNotPublished:
-          .failed
-        }
       }
     }
   }

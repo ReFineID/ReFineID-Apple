@@ -15,23 +15,29 @@ internal final class CredentialRetryHealth: ObservableObject {
     case warning
     case critical
 
-    fileprivate var color: Color {
+    internal var color: Color {
       switch self {
-      case .pristine: .green
-      case .warning: .yellow
-      case .critical: .red
+      case .pristine:
+        .green
+      case .warning:
+        .yellow
+      case .critical:
+        .red
       }
     }
 
-    fileprivate var badge: String {
+    internal var badge: String {
       switch self {
-      case .pristine: "checkmark.circle.fill"
-      case .warning: "exclamationmark.triangle.fill"
-      case .critical: "xmark.octagon.fill"
+      case .pristine:
+        "checkmark.circle.fill"
+      case .warning:
+        "exclamationmark.triangle.fill"
+      case .critical:
+        "xmark.octagon.fill"
       }
     }
 
-    fileprivate var accessibilityValue: String {
+    internal var accessibilityValue: String {
       switch self {
       case .pristine:
         String(localized: "All credential attempts are available")
@@ -66,19 +72,32 @@ internal final class CredentialRetryHealth: ObservableObject {
   private var readerRefresh: Task<Void, Never>?
   private var refreshGeneration = 0
 
-  private init() {}
+  private init() {
+    // The one instance is `shared`; nothing is set up per instance.
+  }
 
   /// Starts one non-blocking retry probe for the newly inserted reader card.
   ///
   /// A replacement or removal invalidates the generation, so a late answer can
   /// never color the key for a card that is no longer present.
+  private static func attempts(_ outcome: RetryProbeOutcome) -> UInt8? {
+    switch outcome {
+    case .remaining(let count):
+      count.attemptsRemaining
+    case .locked:
+      0
+    case .invalidated, .noInformation, .other, .verified:
+      nil
+    }
+  }
+
   internal func refreshFromReader() {
     cancelReaderRefresh()
     level = nil
     report = nil
     let generation = refreshGeneration
     readerRefresh = Task { [weak self] in
-      let report = await CardMaintenance.credentialReport(
+      let probed = await CardMaintenance.credentialReport(
         transport: .reader,
         cardAccessNumber: nil
       )
@@ -88,7 +107,7 @@ internal final class CredentialRetryHealth: ObservableObject {
         refreshGeneration == generation
       else { return }
       readerRefresh = nil
-      apply(report)
+      apply(probed)
     }
   }
 
@@ -121,14 +140,14 @@ internal final class CredentialRetryHealth: ObservableObject {
       return
     }
     self.report = report
-    if attempts.contains(where: { $0 <= 2 }) {
+    if attempts.contains(where: { $0 <= RetryCount.lowAttemptCeiling }) {
       if puk == 0 {
         recovery = .unrecoverable
-      } else if puk <= 2 {
+      } else if puk <= RetryCount.lowAttemptCeiling {
         recovery = .useOtherSoftware
-      } else if pin1 <= 2 {
+      } else if pin1 <= RetryCount.lowAttemptCeiling {
         recovery = .resetPin1
-      } else if pin2 <= 2 {
+      } else if pin2 <= RetryCount.lowAttemptCeiling {
         recovery = .resetPin2
       } else {
         recovery = nil
@@ -156,125 +175,4 @@ internal final class CredentialRetryHealth: ObservableObject {
     readerRefresh = nil
   }
 
-  private static func attempts(_ outcome: RetryProbeOutcome) -> UInt8? {
-    switch outcome {
-    case .remaining(let count): count.attemptsRemaining
-    case .locked: 0
-    case .invalidated, .noInformation, .other, .verified: nil
-    }
-  }
-}
-
-/// The common key artwork for every route into PIN management.
-///
-/// Tint is reinforced by a differently shaped system badge and a VoiceOver
-/// value, so health is never communicated by color alone.
-internal struct CredentialRetryHealthKey: View {
-  internal let level: CredentialRetryHealth.Level?
-  internal let systemName: String
-
-  /// Whether the route this key opens can be taken right now.
-  ///
-  /// An unprobed key on an open route is green -- no known issue --
-  /// while a closed route greys out like its row.
-  internal let routeAvailable: Bool
-
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  @State private var animationTrigger = false
-
-  internal init(
-    level: CredentialRetryHealth.Level?,
-    systemName: String = "key",
-    routeAvailable: Bool = true
-  ) {
-    self.level = level
-    self.systemName = systemName
-    self.routeAvailable = routeAvailable
-  }
-
-  internal var body: some View {
-    ZStack(alignment: .bottomTrailing) {
-      if let level = displayedLevel {
-        Image(systemName: systemName)
-          .replacingSymbol()
-          .foregroundStyle(level.color)
-        statusBadge(level)
-      } else {
-        Image(systemName: systemName)
-          .replacingSymbol()
-          .foregroundStyle(
-            routeAvailable
-              ? AnyShapeStyle(.green)
-              : AnyShapeStyle(.secondary))
-      }
-    }
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel(Text("Change or Reset PINs"))
-    .accessibilityValue(
-      displayedLevel?.accessibilityValue
-        ?? String(localized: "Credential retry status unavailable")
-    )
-    .onAppear { animateIfNeeded(displayedLevel) }
-    .onValueChange(of: displayedLevel) { newLevel in
-      animateIfNeeded(newLevel)
-    }
-  }
-
-  /// A closed route never wears a cached health level.
-  ///
-  /// The keys grey out with their row until the card is verified
-  /// again, whatever the last report said.
-  private var displayedLevel: CredentialRetryHealth.Level? {
-    routeAvailable ? level : nil
-  }
-
-  @ViewBuilder private func statusBadge(
-    _ level: CredentialRetryHealth.Level
-  ) -> some View {
-    switch level {
-    case .pristine:
-      badge(level)
-    case .warning:
-      badge(level)
-        .pulsingSymbol(value: animationTrigger)
-    case .critical:
-      badge(level)
-        .bouncingSymbol(value: animationTrigger)
-    }
-  }
-
-  private func badge(_ level: CredentialRetryHealth.Level) -> some View {
-    Image(systemName: level.badge)
-      .font(.system(size: 8, weight: .bold))
-      .foregroundStyle(level.color)
-      .background(.background, in: Circle())
-  }
-
-  /// Motion calls attention only to degraded states.
-  ///
-  /// Yielding one render pass lets an initially degraded badge exist
-  /// before its effect begins. Yellow pulses once; red repeats until the
-  /// state changes. There is no timing constant, and Reduce Motion
-  /// suppresses both. UI automation also opts out: XCTest waits for
-  /// animation quiescence before taps, while the red state intentionally
-  /// never becomes quiescent for a holder.
-  private func animateIfNeeded(_ level: CredentialRetryHealth.Level?) {
-    guard
-      !reduceMotion,
-      !Self.uiAutomationDisablesMotion,
-      level == .warning || level == .critical
-    else { return }
-    Task { @MainActor in
-      await Task.yield()
-      animationTrigger.toggle()
-    }
-  }
-
-  private static var uiAutomationDisablesMotion: Bool {
-    #if DEBUG
-      ProcessInfo.processInfo.arguments.contains("--ui-test-disable-motion")
-    #else
-      false
-    #endif
-  }
 }

@@ -43,6 +43,22 @@ internal final class CardCredentialsModel: ObservableObject {
   /// activated card, obtained a complete credential retry report.
   @Published internal private(set) var hasVerifiedCardStatus = false
 
+  /// Revokes every pair, drops the selection, and forgets all names.
+  ///
+  /// Revocation erases each pair's key material and leaves a tombstone,
+  /// so a replayed pair record can never come back to life.
+  private static func removeAllRappConfiguration() async {
+    let vault = RappDeviceVault()
+    let catalog = RappPairCatalog(vault: vault)
+    if let pairs = try? await catalog.activePairs() {
+      for pair in pairs {
+        try? await catalog.revoke(pairID: pair.pairID)
+      }
+    }
+    try? vault.clearSelectedPair()
+    RappPairNames.forgetAll()
+  }
+
   /// Establishes PACE with an entered CAN and classifies the live card.
   ///
   /// Nothing is persisted and no credential-changing command is sent.
@@ -202,21 +218,5 @@ internal final class CardCredentialsModel: ObservableObject {
     if failure == nil {
       failure = explanation
     }
-  }
-
-  /// Revokes every pair, drops the selection, and forgets all names.
-  ///
-  /// Revocation erases each pair's key material and leaves a tombstone,
-  /// so a replayed pair record can never come back to life.
-  private static func removeAllRappConfiguration() async {
-    let vault = RappDeviceVault()
-    let catalog = RappPairCatalog(vault: vault)
-    if let pairs = try? await catalog.activePairs() {
-      for pair in pairs {
-        try? await catalog.revoke(pairID: pair.pairID)
-      }
-    }
-    try? vault.clearSelectedPair()
-    RappPairNames.forgetAll()
   }
 }

@@ -128,6 +128,9 @@
       assertFaultPreset("responseLostAfterSignature")
     }
 
+    /// The audit arrived after the oldest system this app runs on, so
+    /// this check is offered only where it exists.
+    @available(iOS 17.0, macOS 14.0, *)
     internal func testVirtualCardEditorPassesAccessibilityAudit() throws {
       let app = UITestApp.launchVirtualCard()
       let overlay = app.buttons[UITestIdentifiers.virtualCardOverlay]
@@ -753,7 +756,8 @@
       in app: XCUIApplication,
       scrolling: Bool = false
     ) {
-      let menu = app.descendants(matching: .any)[identifier]
+      // A menu surfaces as its own control and again as its label; either opens it.
+      let menu = app.descendants(matching: .any)[identifier].firstMatch
       if scrolling {
         scrollTo(menu, in: app)
       }

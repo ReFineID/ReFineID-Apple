@@ -306,6 +306,15 @@ public enum PrimeStore {
     }
   }
 
+  /// The authentication certificates this device has already primed.
+  ///
+  /// The certificate is public and was read once, during setup, so a peer
+  /// asking for it is asking for something already held. Answering from
+  /// here spends no card session and asks the holder for nothing.
+  public static func primedAuthenticationCertificates() -> [Data] {
+    presenceOrderedItems().map(\.identity.certDER)
+  }
+
   /// The stored primes ``presence()`` reports, in the order it reports
   /// them: the staged record is not one of them.
   private static func presenceOrderedItems() -> [StoredItem] {

@@ -61,6 +61,19 @@ internal enum DocumentSigner {
     let profile: CardKeyProfile
   }
 
+  #if os(macOS)
+    /// A selected RAPP phone is the signing device only when no local reader
+    /// card is ready.
+    ///
+    /// The two paths never silently retry one another after an
+    /// authenticated or credential-bearing operation has begun.
+    @MainActor internal static var usesRappSigning: Bool {
+      guard !CardPresence.shared.isReaderCardReady else { return false }
+      let selected = try? RappDeviceVault().selectedPairID()
+      return (selected) != nil
+    }
+  #endif
+
   /// Signs `document`, answering the finished bytes.
   internal static func sign(
     _ document: Data,
@@ -222,17 +235,6 @@ internal enum DocumentSigner {
   }
 
   #if os(macOS)
-    /// A selected RAPP phone is the signing device only when no local reader
-    /// card is ready.
-    ///
-    /// The two paths never silently retry one another after an
-    /// authenticated or credential-bearing operation has begun.
-    @MainActor internal static var usesRappSigning: Bool {
-      guard !CardPresence.shared.isReaderCardReady else { return false }
-      let selected = try? RappDeviceVault().selectedPairID()
-      return (selected) != nil
-    }
-
     /// Builds the same locally verified card material as the reader path while
     /// delegating only the certificate read and PIN 2 card signature to the
     /// explicitly paired phone.

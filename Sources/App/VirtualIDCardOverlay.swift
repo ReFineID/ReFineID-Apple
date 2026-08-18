@@ -216,28 +216,25 @@
 
   /// Edits one complete virtual card/device snapshot and one fault plan.
   internal struct VirtualIDCardEditor: View {
+    /// The scenarios a demonstration on this device class can offer.
+    private static var offeredScenarios: [VirtualIDCard.Scenario] {
+      VirtualIDCard.Scenario.allCases.filter { scenario in
+        DemoMode.offersNearField || !scenario.usesNearField
+      }
+    }
+
+    /// The faults a demonstration on this device class can offer.
+    private static var offeredFaultPresets: [VirtualIDCard.FaultPreset] {
+      VirtualIDCard.FaultPreset.allCases.filter { preset in
+        DemoMode.offersNearField || !preset.usesNearField
+      }
+    }
+
     internal let demoMode: DemoMode
     internal let close: () -> Void
     @State private var draft: VirtualIDCard.Snapshot
     @State private var scenario = VirtualIDCard.Scenario.factoryFreshNearField
     @State private var faultPreset = VirtualIDCard.FaultPreset.none
-
-    internal init(demoMode: DemoMode, close: @escaping () -> Void) {
-      self.demoMode = demoMode
-      self.close = close
-      let current = Self.deviceScoped(demoMode.state)
-      _draft = State(initialValue: current)
-      _scenario = State(
-        initialValue: VirtualIDCard.Scenario.allCases.first { candidate in
-          let scoped = Self.deviceScoped(candidate.snapshot)
-          return scoped.card == current.card
-            && scoped.device == current.device
-        } ?? DemoMode.defaultScenario)
-      _faultPreset = State(
-        initialValue: VirtualIDCard.FaultPreset.allCases.first { preset in
-          preset.faults == current.faults
-        } ?? .none)
-    }
 
     internal var body: some View {
       NavigationStack {
@@ -620,18 +617,30 @@
       }
     }
 
-    /// The scenarios a demonstration on this device class can offer.
-    private static var offeredScenarios: [VirtualIDCard.Scenario] {
-      VirtualIDCard.Scenario.allCases.filter { scenario in
-        DemoMode.offersNearField || !scenario.usesNearField
+    private var certificateChoices: some View {
+      ForEach(VirtualIDCard.CertificateState.allCases) { state in
+        Text(state.localizedName)
+          .tag(state)
+          .accessibilityIdentifier(
+            "virtualCardCertificateOption.\(state.rawValue)")
       }
     }
 
-    /// The faults a demonstration on this device class can offer.
-    private static var offeredFaultPresets: [VirtualIDCard.FaultPreset] {
-      VirtualIDCard.FaultPreset.allCases.filter { preset in
-        DemoMode.offersNearField || !preset.usesNearField
-      }
+    internal init(demoMode: DemoMode, close: @escaping () -> Void) {
+      self.demoMode = demoMode
+      self.close = close
+      let current = Self.deviceScoped(demoMode.state)
+      _draft = State(initialValue: current)
+      _scenario = State(
+        initialValue: VirtualIDCard.Scenario.allCases.first { candidate in
+          let scoped = Self.deviceScoped(candidate.snapshot)
+          return scoped.card == current.card
+            && scoped.device == current.device
+        } ?? DemoMode.defaultScenario)
+      _faultPreset = State(
+        initialValue: VirtualIDCard.FaultPreset.allCases.first { preset in
+          preset.faults == current.faults
+        } ?? .none)
     }
 
     /// Clamps a snapshot to the transports this device class offers.
@@ -673,15 +682,6 @@
                 "credential.attemptsRemaining",
                 defaultValue: "%lld attempts remaining"),
               attempts.wrappedValue)))
-      }
-    }
-
-    private var certificateChoices: some View {
-      ForEach(VirtualIDCard.CertificateState.allCases) { state in
-        Text(state.localizedName)
-          .tag(state)
-          .accessibilityIdentifier(
-            "virtualCardCertificateOption.\(state.rawValue)")
       }
     }
 

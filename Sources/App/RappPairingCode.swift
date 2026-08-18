@@ -15,7 +15,11 @@ internal enum RappPairingCode {
   internal static func image(_ value: String) -> Image? {
     let filter = CIFilter(name: "CIQRCodeGenerator")
     filter?.setValue(Data(value.utf8), forKey: "inputMessage")
-    filter?.setValue("M", forKey: "inputCorrectionLevel")
+    // The offer carries a long secret, so every level of recovery costs
+    // modules and a denser code is a harder one to scan. The screen is not
+    // a printed label: it is clean, lit, and held still, so the lowest
+    // level is the one that reads fastest here.
+    filter?.setValue("L", forKey: "inputCorrectionLevel")
     guard let output = filter?.outputImage else { return nil }
     #if os(macOS)
       let representation = NSCIImageRep(ciImage: output)

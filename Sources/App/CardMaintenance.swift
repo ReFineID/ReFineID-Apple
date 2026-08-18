@@ -115,19 +115,35 @@ internal enum CardMaintenance {
       message: String,
       _ operation: @escaping @Sendable (CardOperations) -> Payload
     ) async -> SecureNearFieldResult<Payload> {
-      guard SupportedCardTransports.offersNearField else { return .failed }
+      guard SupportedCardTransports.offersNearField else {
+        #if DEBUG
+          print("[near-field] refused: platform offers no antenna")
+          fflush(stdout)
+        #endif
+        return .failed
+      }
       // The system's card slot over the antenna arrived in iOS 26.
-      guard #available(iOS 26.0, *) else { return .failed }
+      guard #available(iOS 26.0, *) else {
+        #if DEBUG
+          print("[near-field] refused: system predates the card slot")
+          fflush(stdout)
+        #endif
+        return .failed
+      }
       let held: NearFieldCardSession
       do {
         held = try await NearFieldCardSession.open(message: message)
       } catch {
+        #if DEBUG
+          print("[near-field] open failed: \(String(describing: error))")
+          fflush(stdout)
+        #endif
         return .failed
       }
       defer { held.end() }
       return await withCheckedContinuation { continuation in
         DispatchQueue.global(qos: .userInitiated).async {
-          let answer = try? held.withCardSession { channel in
+          let answer = Self.cardSessionAnswer(held) { channel in
             do {
               let operations = try connectionOperations(
                 over: channel,
@@ -137,11 +153,37 @@ internal enum CardMaintenance {
             } catch ConnectionFailure.wrongCardAccessNumber {
               return SecureNearFieldResult<Payload>.wrongCardAccessNumber
             } catch {
+              #if DEBUG
+                print("[near-field] connect failed: \(String(describing: error))")
+                fflush(stdout)
+              #endif
               return SecureNearFieldResult<Payload>.failed
             }
           }
           continuation.resume(returning: answer ?? .failed)
         }
+      }
+    }
+
+    /// Runs the body on the held session, keeping what the session threw.
+    ///
+    /// The throwing call is the one that reports why the antenna never
+    /// reached a card, and discarding it leaves every distinct refusal --
+    /// no card in the field, a session the system would not grant, a card
+    /// that answered nothing -- looking like the same failure.
+    @available(iOS 26.0, *)
+    private static func cardSessionAnswer<Payload: Sendable>(
+      _ held: NearFieldCardSession,
+      _ body: (SmartCardChannel) throws -> SecureNearFieldResult<Payload>
+    ) -> SecureNearFieldResult<Payload>? {
+      do {
+        return try held.withCardSession(body)
+      } catch {
+        #if DEBUG
+          print("[near-field] session failed: \(String(describing: error))")
+          fflush(stdout)
+        #endif
+        return nil
       }
     }
   #endif

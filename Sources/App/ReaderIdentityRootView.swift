@@ -43,7 +43,12 @@
       }
       .sheet(
         isPresented: $showsRappPairing,
-        onDismiss: { remoteModel.refresh() }
+        onDismiss: {
+          // Pairing is the means, not the end: the holder asked for an
+          // identity, so a pairing that now exists is read straight away
+          // rather than waiting behind the same button a second time.
+          remoteModel.refreshThenConnect()
+        }
       ) {
         RappPairingView()
       }

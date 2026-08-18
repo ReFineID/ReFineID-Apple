@@ -233,13 +233,12 @@ public final class RappOperationBridge: @unchecked Sendable {
         envelope = try session.open(bytes)
       } catch SessionError.integrityFailure {
         return closingAction(.sessionClosed)
-      } catch SessionError.closed {
-        // A frame that arrives once this session has ended is not the peer
-        // breaking the protocol; the session is simply over. Ending the
-        // pairing here would let ordinary crossing traffic destroy it.
-        return closingAction(.sessionClosed)
       } catch {
-        return closingAction(.pairRevoked)
+        // Every remaining way a frame can fail to open ends this session
+        // and leaves the pairing standing. A pairing is what the holder
+        // made with a card and a scan; it is not the right price for a
+        // frame this side could not read.
+        return closingAction(.sessionClosed)
       }
       if let livenessAction = try livenessReply(to: envelope, nowMs: nowMs) {
         return livenessAction
@@ -252,7 +251,7 @@ public final class RappOperationBridge: @unchecked Sendable {
           sessionIdentifier: session.sessionIdentifier,
           nowMilliseconds: nowMs)
       } catch {
-        return closingAction(.pairRevoked)
+        return closingAction(.sessionClosed)
       }
       return try dispatch(message, nowMs: nowMs)
     }
@@ -268,7 +267,7 @@ public final class RappOperationBridge: @unchecked Sendable {
         nowMilliseconds: nowMs, nextChallenge: ping, jitterMilliseconds: jitterMs)
       {
       case .sendPing(let outstanding):
-        let frame = try sealed(.livenessPing, body: ["challenge": .bytes(outstanding.bytes)])
+        let frame = try sealed(.livenessPing, body: livenessBody(outstanding.bytes))
         return RappBridgeAction(kind: .sendFrame, frame: frame)
       case .probeMissed(let nextProbeAtMilliseconds):
         return RappBridgeAction(kind: .noAction, nextPollAtMs: nextProbeAtMilliseconds)
@@ -278,6 +277,19 @@ public final class RappOperationBridge: @unchecked Sendable {
         return closingAction(.sessionClosed)
       }
     }
+  }
+
+  /// The body both liveness messages carry.
+  ///
+  /// A ping is not only a probe: it also reports how far this side has read,
+  /// and the schema requires that report. Building the body in one place
+  /// keeps the ping and the pong from drifting apart from the schema, which
+  /// is what a peer would otherwise read as a wire violation.
+  internal func livenessBody(_ challenge: Data) -> [String: WireValue] {
+    [
+      "challenge": .bytes(challenge),
+      "last_received_sequence": .unsigned(session.lastReceivedSequence),
+    ]
   }
 
   /// Closes the session and classifies every operation still in flight.

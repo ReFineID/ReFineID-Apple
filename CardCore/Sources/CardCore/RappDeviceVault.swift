@@ -65,6 +65,11 @@ public final class RappDeviceVault: @unchecked Sendable {
     static let operation = 16
   }
 
+  private enum RetainedResultMutation {
+    case preserve
+    case replace(Data?)
+  }
+
   private enum StoredValue {
     /// Keychain does not reliably replace a non-empty generic-password value
     /// with zero-length data.
@@ -346,11 +351,6 @@ public final class RappDeviceVault: @unchecked Sendable {
       try deleteAll(service: operationService(namespace: namespace.requester, pairID: pairID))
       try deleteAll(service: operationService(namespace: namespace.proxy, pairID: pairID))
     }
-  }
-
-  private enum RetainedResultMutation {
-    case preserve
-    case replace(Data?)
   }
 
   private func persistProxyValue(

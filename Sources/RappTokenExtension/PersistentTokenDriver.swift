@@ -117,6 +117,12 @@ private final class PersistentTokenSession: TKTokenSession,
     else {
       throw TKError(.notImplemented)
     }
+    #if DEBUG
+      let vault = RappDeviceVault()
+      ExtensionTrace.record(
+        "rapp vault: active=\(((try? vault.activePairIDs()) ?? []).count)"
+          + " selected=\((try? vault.selectedPairID()) != nil)")
+    #endif
     let signature: Data
     do {
       let response = try RappPersistentRequesterClient(
@@ -134,6 +140,14 @@ private final class PersistentTokenSession: TKTokenSession,
       }
       signature = receivedSignature
     } catch {
+      // CryptoTokenKit carries one code back to the caller, so the reason
+      // the relay gave is lost at this boundary. It is the only account of
+      // why a browser was refused an identity, so it is recorded before
+      // the throw narrows it to a communication failure.
+      #if DEBUG
+        ExtensionTrace.record("rapp sign failed: \(String(describing: error))")
+        ExtensionTrace.flush()
+      #endif
       throw TKError(.communicationError)
     }
     guard request.isSatisfied(by: signature, from: persistentToken.publicKey) else {

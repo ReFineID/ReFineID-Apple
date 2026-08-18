@@ -53,8 +53,14 @@ internal struct EstablishedSession {
       channel = nil
       throw SessionError.integrityFailure
     } catch {
+      // The frame decrypted, so it came from the paired peer holding the
+      // right key; only its contents were unreadable. That ends this
+      // session and nothing more. Ending the pairing would answer a
+      // message this side could not parse by making the holder scan a new
+      // code -- and a peer that can still decrypt is not the threat that
+      // revocation exists for.
       channel = nil
-      throw SessionError.pairingMustEnd(cause: .wireViolation)
+      throw SessionError.unexpectedMessage
     }
     channel = working
     return envelope

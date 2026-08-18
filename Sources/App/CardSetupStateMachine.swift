@@ -8,6 +8,10 @@ import Foundation
 /// Keep `transitions` structurally identical to that document; exhaustive tests
 /// reject any difference between the two representations.
 internal enum CardSetupStateMachine {
+  // State and Event are transcribed from the SCXML grammar in document
+  // order, and exhaustive tests compare the two representations case by
+  // case. Sorting them by name would break that correspondence.
+  // swiftlint:disable sorted_enum_cases
   internal enum State: String, CaseIterable, Sendable {
     case home
     case identityHome
@@ -42,6 +46,7 @@ internal enum CardSetupStateMachine {
     case activationSucceeded = "activation.succeeded"
     case destinationDismissed = "destination.dismissed"
   }
+  // swiftlint:enable sorted_enum_cases
 
   internal enum Destination: Hashable, Sendable {
     case activation
@@ -56,8 +61,8 @@ internal enum CardSetupStateMachine {
   }
 
   internal enum Reduction: Equatable, Sendable {
-    case transitioned(to: State)
     case rejected
+    case transitioned(to: State)
   }
 
   internal static let initialState = State.home

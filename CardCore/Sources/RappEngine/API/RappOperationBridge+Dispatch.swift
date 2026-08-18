@@ -51,7 +51,7 @@ extension RappOperationBridge {
     case .livenessPing:
       var body = envelope.body
       let challenge = try takeBytes(&body, "challenge")
-      let frame = try sealed(.livenessPong, body: ["challenge": .bytes(challenge)])
+      let frame = try sealed(.livenessPong, body: livenessBody(challenge))
       return RappBridgeAction(kind: .sendFrame, frame: frame)
     case .livenessPong:
       var body = envelope.body

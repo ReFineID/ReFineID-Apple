@@ -96,6 +96,34 @@ internal enum UITestIdentifiers {
   /// The reader/NFC identity route into qualified document signing.
   internal static let signDocuments = "signDocuments"
 
+  /// The document verification route, which needs no card at all.
+  internal static let verifyDocuments = "verifyDocuments"
+
+  /// The requester's action that borrows a card from a paired phone.
+  internal static let connectRemoteReader = "connectRemoteReader"
+
+  /// The holder named by a borrowed card, once it has answered.
+  internal static let remoteCardHolder = "remoteCardHolder"
+
+  /// Drops that borrowed holder, and the pairing it arrived through.
+  internal static let forgetRemoteIdentity = "forgetRemoteIdentity"
+
+  /// The row that opens the card-serving route, absent where no card can
+  /// be reached.
+  internal static let remoteCard = "remoteCard"
+
+  /// The code a requesting device shows for a phone to scan.
+  internal static let pairingCode = "pairingCode"
+
+  /// The step that starts a pairing.
+  ///
+  /// Offered only where a device can also serve a card; a borrowing device
+  /// shows the code instead.
+  internal static let pairPhone = "pairPhone"
+
+  /// Leaves the pairing sheet without having paired.
+  internal static let closePairing = "closePairing"
+
   /// Document-signing controls shared by reader and NFC routes.
   internal static let signingPIN2 = "signingPIN2"
   internal static let signingCommit = "signingCommit"
