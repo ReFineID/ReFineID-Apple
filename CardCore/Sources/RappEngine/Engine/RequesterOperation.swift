@@ -135,11 +135,11 @@ internal struct RequesterOperation {
       try persist(&store, state: .resultPending)
       return .sendAcknowledgement(.operationResultAck(reference))
     }
-    guard let terminal = result.status.failureState else {
+    guard let terminal = result.status.failureState, let failure = result.error else {
       throw EngineError.localInvariantFailure
     }
     try persist(&store, state: terminal)
-    return .terminal(terminal)
+    return .terminal(state: terminal, error: failure)
   }
 
   /// Records that the acknowledgement was delivered and releases the result.

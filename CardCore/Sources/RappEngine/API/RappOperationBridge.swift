@@ -233,6 +233,11 @@ public final class RappOperationBridge: @unchecked Sendable {
         envelope = try session.open(bytes)
       } catch SessionError.integrityFailure {
         return closingAction(.sessionClosed)
+      } catch SessionError.closed {
+        // A frame that arrives once this session has ended is not the peer
+        // breaking the protocol; the session is simply over. Ending the
+        // pairing here would let ordinary crossing traffic destroy it.
+        return closingAction(.sessionClosed)
       } catch {
         return closingAction(.pairRevoked)
       }

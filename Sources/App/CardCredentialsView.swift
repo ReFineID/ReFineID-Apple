@@ -163,6 +163,10 @@ internal struct CardCredentialsView: View {
     #if REFINEID_LOCAL_CARD && os(iOS)
       return primingModel.allowsNearField
         || (isDemonstration && DemoMode.offersNearField)
+    #elseif os(iOS)
+      // A build without the local card path has no way to reach a card of
+      // its own: an iPad has no antenna and no reader to attach one to.
+      return false
     #else
       return true
     #endif
@@ -587,23 +591,28 @@ internal struct CardCredentialsView: View {
         .tint(.primary)
         .accessibilityIdentifier("remoteCard")
         .disabled(!remoteCardAvailable)
-        Button {
-          openCardManagement()
-        } label: {
-          navigationRow(
-            String(localized: "Personal Identification Numbers (PINs)")
-          ) {
-            // A closed route greys the keys; health color returns
-            // with availability.
-            CredentialRetryHealthKey(
-              level: retryHealth.level,
-              systemName: "key.2.on.ring",
-              routeAvailable: managementAvailable)
+        // Changing a code writes to the card itself, so the route belongs to
+        // a device that can reach one. Offering it where it can never open
+        // describes the app as broken rather than the device as different.
+        if offersNearField || hasReaderIdentity {
+          Button {
+            openCardManagement()
+          } label: {
+            navigationRow(
+              String(localized: "Personal Identification Numbers (PINs)")
+            ) {
+              // A closed route greys the keys; health color returns
+              // with availability.
+              CredentialRetryHealthKey(
+                level: retryHealth.level,
+                systemName: "key.2.on.ring",
+                routeAvailable: managementAvailable)
+            }
           }
+          .tint(.primary)
+          .accessibilityIdentifier("manageCard")
+          .disabled(!managementAvailable)
         }
-        .tint(.primary)
-        .accessibilityIdentifier("manageCard")
-        .disabled(!managementAvailable)
       } header: {
         compactSectionHeader("Card")
       }

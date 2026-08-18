@@ -95,8 +95,8 @@ internal struct RequesterOperationEngine {
       return switch action {
       case .sendAcknowledgement(let message):
         .sendResultAcknowledgement(operationIdentifier: operationIdentifier, message: message)
-      case .terminal(let state):
-        .terminal(operationIdentifier: operationIdentifier, state: state)
+      case .terminal(let state, let failure):
+        .terminal(operationIdentifier: operationIdentifier, state: state, reason: failure)
       }
     case .operationCancel(let cancellation):
       let state = try operations[index].receiveCancel(cancellation, to: &store)

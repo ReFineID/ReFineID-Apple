@@ -181,10 +181,10 @@ internal struct EngineDriveTests {
         return
       }
       EngineReport.check(!closesOnDenial, "a denial does not close the session")
-      let deniedDispatch = try requester.receive(deniedMessage, store: &store)
+      let denied = try requester.receive(deniedMessage, store: &store)
       EngineReport.check(
-        deniedDispatch == .terminal(operationIdentifier: identifier, state: .denied),
-        "the requester journals the denial as terminal")
+        denied == .terminal(operationIdentifier: identifier, state: .denied, reason: .userDenied),
+        "the requester journals the denial as terminal, naming why it ended")
 
       var model = RappState(role: .proxy)
       model.pairing = .pairedConnected

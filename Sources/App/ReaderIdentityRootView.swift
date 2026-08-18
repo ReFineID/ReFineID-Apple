@@ -1,6 +1,8 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if os(iOS)
+// A device that reads its own card hosts the credentials surface below.
+// One that cannot has a screen of its own, in `RequesterIdentityView`.
+#if os(iOS) && REFINEID_LOCAL_CARD
 
   import SwiftUI
 

@@ -123,9 +123,10 @@ extension RappOperationBridge {
       return RappBridgeAction(
         kind: .resultAcknowledgment, operationId: operationIdentifier,
         frame: try sealedMessage(message))
-    case .terminal(let operationIdentifier, let state):
+    case .terminal(let operationIdentifier, let state, let reason):
       return RappBridgeAction(
-        kind: .terminal, operationId: operationIdentifier, terminalState: state.rawValue)
+        kind: .terminal, operationId: operationIdentifier, terminalState: state.rawValue,
+        terminalReason: RappTerminalReason(reason))
     case .cancellationReceived(let operationIdentifier, let state):
       return RappBridgeAction(
         kind: .cancelled, operationId: operationIdentifier, terminalState: state.rawValue,

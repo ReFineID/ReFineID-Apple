@@ -20,6 +20,6 @@ internal enum RequesterDispatch: Equatable {
   case sendResultAcknowledgement(operationIdentifier: Data, message: TypedMessage)
   /// An authenticated status report was stored as an annotation.
   case statusAnnotated(operationIdentifier: Data)
-  /// The operation reached its journaled terminal state.
-  case terminal(operationIdentifier: Data, state: OperationState)
+  /// The operation reached its journaled terminal state, and why.
+  case terminal(operationIdentifier: Data, state: OperationState, reason: ResultError)
 }
