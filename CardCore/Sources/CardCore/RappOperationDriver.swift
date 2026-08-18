@@ -4,6 +4,9 @@
   /// Owns one established RAPP operation runtime and translates generated binding
   /// records into Sendable Apple-side values. It never performs card I/O itself.
   public actor RappOperationDriver {
+
+    // MARK: Nested Types
+
     /// Local misuse of the driver or a bridge action missing a required field.
     public enum LocalError: Error, Sendable {
       case wrongPhase
@@ -14,6 +17,9 @@
 
     /// Caller-injected liveness polling policy with no hidden timing constants.
     public struct Liveness: Sendable, Equatable {
+
+      // MARK: Properties
+
       /// Interval between liveness polls before any backoff.
       public let baseIntervalMilliseconds: UInt64
       /// Time allowed for the peer to answer one liveness challenge.
@@ -24,6 +30,20 @@
       public let maximumJitterMilliseconds: UInt64
       /// Consecutive unanswered challenges tolerated before closing.
       public let maximumMisses: UInt8
+
+      // MARK: Computed Properties
+
+      fileprivate var binding: RappLivenessConfiguration {
+        RappLivenessConfiguration(
+          baseIntervalMs: baseIntervalMilliseconds,
+          responseTimeoutMs: responseTimeoutMilliseconds,
+          maximumIntervalMs: maximumIntervalMilliseconds,
+          maximumJitterMs: maximumJitterMilliseconds,
+          maximumMisses: maximumMisses
+        )
+      }
+
+      // MARK: Lifecycle
 
       /// Creates a policy from explicit caller-chosen bounds.
       public init(
@@ -40,15 +60,6 @@
         self.maximumMisses = maximumMisses
       }
 
-      fileprivate var binding: RappLivenessConfiguration {
-        RappLivenessConfiguration(
-          baseIntervalMs: baseIntervalMilliseconds,
-          responseTimeoutMs: responseTimeoutMilliseconds,
-          maximumIntervalMs: maximumIntervalMilliseconds,
-          maximumJitterMs: maximumJitterMilliseconds,
-          maximumMisses: maximumMisses
-        )
-      }
     }
 
     /// Card signing key profile named by an operation request.
@@ -58,23 +69,36 @@
       case rsa2048
       case rsa3072
 
+      // MARK: Computed Properties
+
       fileprivate var binding: RappCardKeyProfile {
         switch self {
-        case .ecdsaP256: .ecdsaP256
-        case .ecdsaP384: .ecdsaP384
-        case .rsa2048: .rsa2048
-        case .rsa3072: .rsa3072
+        case .ecdsaP256:
+          .ecdsaP256
+        case .ecdsaP384:
+          .ecdsaP384
+        case .rsa2048:
+          .rsa2048
+        case .rsa3072:
+          .rsa3072
         }
       }
 
+      // MARK: Lifecycle
+
       fileprivate init(_ value: RappCardKeyProfile) {
         switch value {
-        case .ecdsaP256: self = .ecdsaP256
-        case .ecdsaP384: self = .ecdsaP384
-        case .rsa2048: self = .rsa2048
-        case .rsa3072: self = .rsa3072
+        case .ecdsaP256:
+          self = .ecdsaP256
+        case .ecdsaP384:
+          self = .ecdsaP384
+        case .rsa2048:
+          self = .rsa2048
+        case .rsa3072:
+          self = .rsa3072
         }
       }
+
     }
 
     /// Signature algorithm named by an operation request.
@@ -88,31 +112,52 @@
       case rsaPkcs1SHA512
       case rsaPssSHA256
 
+      // MARK: Computed Properties
+
       fileprivate var binding: RappSignatureAlgorithm {
         switch self {
-        case .ecdsaSHA224: .ecdsaSha224
-        case .ecdsaSHA256: .ecdsaSha256
-        case .ecdsaSHA384: .ecdsaSha384
-        case .ecdsaSHA512: .ecdsaSha512
-        case .rsaPkcs1SHA256: .rsaPkcs1Sha256
-        case .rsaPkcs1SHA384: .rsaPkcs1Sha384
-        case .rsaPkcs1SHA512: .rsaPkcs1Sha512
-        case .rsaPssSHA256: .rsaPssSha256
+        case .ecdsaSHA224:
+          .ecdsaSha224
+        case .ecdsaSHA256:
+          .ecdsaSha256
+        case .ecdsaSHA384:
+          .ecdsaSha384
+        case .ecdsaSHA512:
+          .ecdsaSha512
+        case .rsaPkcs1SHA256:
+          .rsaPkcs1Sha256
+        case .rsaPkcs1SHA384:
+          .rsaPkcs1Sha384
+        case .rsaPkcs1SHA512:
+          .rsaPkcs1Sha512
+        case .rsaPssSHA256:
+          .rsaPssSha256
         }
       }
 
+      // MARK: Lifecycle
+
       fileprivate init(_ value: RappSignatureAlgorithm) {
         switch value {
-        case .ecdsaSha224: self = .ecdsaSHA224
-        case .ecdsaSha256: self = .ecdsaSHA256
-        case .ecdsaSha384: self = .ecdsaSHA384
-        case .ecdsaSha512: self = .ecdsaSHA512
-        case .rsaPkcs1Sha256: self = .rsaPkcs1SHA256
-        case .rsaPkcs1Sha384: self = .rsaPkcs1SHA384
-        case .rsaPkcs1Sha512: self = .rsaPkcs1SHA512
-        case .rsaPssSha256: self = .rsaPssSHA256
+        case .ecdsaSha224:
+          self = .ecdsaSHA224
+        case .ecdsaSha256:
+          self = .ecdsaSHA256
+        case .ecdsaSha384:
+          self = .ecdsaSHA384
+        case .ecdsaSha512:
+          self = .ecdsaSHA512
+        case .rsaPkcs1Sha256:
+          self = .rsaPkcs1SHA256
+        case .rsaPkcs1Sha384:
+          self = .rsaPkcs1SHA384
+        case .rsaPkcs1Sha512:
+          self = .rsaPkcs1SHA512
+        case .rsaPssSha256:
+          self = .rsaPssSHA256
         }
       }
+
     }
 
     /// Kind of operation the requester asks the proxy to perform.
@@ -124,20 +169,31 @@
       case browserAuthenticate
       case signDocument
 
+      // MARK: Lifecycle
+
       fileprivate init(_ value: RappOperationKind) {
         switch value {
-        case .inspectCard: self = .inspectCard
-        case .readIdentity: self = .readIdentity
-        case .readAuthenticationCertificate: self = .readAuthenticationCertificate
-        case .readSignatureCertificate: self = .readSignatureCertificate
-        case .browserAuthenticate: self = .browserAuthenticate
-        case .signDocument: self = .signDocument
+        case .inspectCard:
+          self = .inspectCard
+        case .readIdentity:
+          self = .readIdentity
+        case .readAuthenticationCertificate:
+          self = .readAuthenticationCertificate
+        case .readSignatureCertificate:
+          self = .readSignatureCertificate
+        case .browserAuthenticate:
+          self = .browserAuthenticate
+        case .signDocument:
+          self = .signDocument
         }
       }
     }
 
     /// One requested operation, described without any local credentials.
     public struct Operation: Sendable, Equatable {
+
+      // MARK: Properties
+
       /// Requested operation kind.
       public let kind: OperationKind
       /// User-visible request context such as an origin or a document name.
@@ -149,6 +205,8 @@
       /// Digest to be signed; empty for non-signing operations.
       public let digest: Data
 
+      // MARK: Lifecycle
+
       fileprivate init(_ value: RappOperationDescriptor) {
         kind = OperationKind(value.kind)
         displayContext = value.displayContext
@@ -156,6 +214,7 @@
         algorithm = value.algorithm.map(SignatureAlgorithm.init)
         digest = value.digest
       }
+
     }
 
     /// Kind of a successfully completed operation result.
@@ -165,18 +224,27 @@
       case certificate
       case signature
 
+      // MARK: Lifecycle
+
       fileprivate init(_ value: RappResultKind) {
         switch value {
-        case .inspection: self = .inspection
-        case .identity: self = .identity
-        case .certificate: self = .certificate
-        case .signature: self = .signature
+        case .inspection:
+          self = .inspection
+        case .identity:
+          self = .identity
+        case .certificate:
+          self = .certificate
+        case .signature:
+          self = .signature
         }
       }
     }
 
     /// Successful operation result with only the fields its kind populates.
     public struct Result: Sendable, Equatable {
+
+      // MARK: Properties
+
       /// Result kind that selects which optional fields are populated.
       public let kind: ResultKind
       /// Whether PIN 1 still carries its factory value; inspection only.
@@ -196,6 +264,8 @@
       /// Certificate DER or signature bytes; empty for other result kinds.
       public let bytes: Data
 
+      // MARK: Lifecycle
+
       fileprivate init(_ value: RappOperationResult) {
         kind = ResultKind(value.kind)
         pin1Factory = value.pin1Factory
@@ -207,6 +277,7 @@
         personID = value.personId
         bytes = value.bytes
       }
+
     }
 
     /// Reason an operation ended without delivering a result.
@@ -220,16 +291,26 @@
       case cardRemovedBeforeTransmit
       case cardCompletionAmbiguous
 
+      // MARK: Lifecycle
+
       fileprivate init(_ value: RappTerminalReason) {
         switch value {
-        case .userDenied: self = .userDenied
-        case .requestExpired: self = .requestExpired
-        case .cancelled: self = .cancelled
-        case .requestInvalidOrUnsupported: self = .requestInvalidOrUnsupported
-        case .retryPolicyRefused: self = .retryPolicyRefused
-        case .credentialRejected: self = .credentialRejected
-        case .cardRemovedBeforeTransmit: self = .cardRemovedBeforeTransmit
-        case .cardCompletionAmbiguous: self = .cardCompletionAmbiguous
+        case .userDenied:
+          self = .userDenied
+        case .requestExpired:
+          self = .requestExpired
+        case .cancelled:
+          self = .cancelled
+        case .requestInvalidOrUnsupported:
+          self = .requestInvalidOrUnsupported
+        case .retryPolicyRefused:
+          self = .retryPolicyRefused
+        case .credentialRejected:
+          self = .credentialRejected
+        case .cardRemovedBeforeTransmit:
+          self = .cardRemovedBeforeTransmit
+        case .cardCompletionAmbiguous:
+          self = .cardCompletionAmbiguous
         }
       }
     }
@@ -246,34 +327,58 @@
     /// A token that the transport must return after it has released a frame.
     public enum FrameRelease: Sendable, Equatable {
       case none
-      case resultAcknowledgment(operationID: Data)
+      case resultAcknowledgment(operationID:
+        Data)
       case closeSession
     }
 
     /// Effect the caller must apply on behalf of the driver, which performs
     /// no card or transport I/O itself.
     public enum Command: Sendable, Equatable {
-      case send(frame: Data, release: FrameRelease)
-      case inspectPrerequisites(operationID: Data, operation: Operation)
-      case awaitUserApproval(operationID: Data, operation: Operation)
-      case executeSafeRead(operationID: Data, operation: Operation)
-      case executeCardCommand(operationID: Data, operation: Operation)
-      case completed(operationID: Data, result: Result)
-      case terminal(operationID: Data?, state: String?, reason: TerminalReason?)
-      case advisoryCancellation(operationID: Data?)
-      case operationFinished(operationID: Data?)
-      case peerBusy(operationID: Data?)
-      case peerUnknownOperation(operationID: Data?)
-      case scheduleLiveness(atMonotonicMilliseconds: UInt64)
+      case send(frame: Data, release:
+        FrameRelease)
+      case inspectPrerequisites(operationID: Data, operation:
+        Operation)
+      case awaitUserApproval(operationID: Data, operation:
+        Operation)
+      case executeSafeRead(operationID: Data, operation:
+        Operation)
+      case executeCardCommand(operationID: Data, operation:
+        Operation)
+      case completed(operationID: Data, result:
+        Result)
+      case terminal(operationID: Data?, state: String?, reason:
+        TerminalReason?)
+      case advisoryCancellation(operationID:
+        Data?)
+      case operationFinished(operationID:
+        Data?)
+      case peerBusy(operationID:
+        Data?)
+      case peerUnknownOperation(operationID:
+        Data?)
+      case scheduleLiveness(atMonotonicMilliseconds:
+        UInt64)
       case closed(CloseReason)
     }
+
+    private enum OperationCommandKind {
+      case inspect
+      case approval
+      case safeRead
+      case cardCommand
+    }
+
+    // MARK: Properties
 
     private let bridge: RappOperationBridge
     private let entropy: RappPlatformEntropy
     private let clock: RappPlatformClock
     private var closed = false
 
-    init(
+    // MARK: Lifecycle
+
+    internal init(
       role: RappSessionDriver.Role,
       session: RappSessionBridge,
       vault: RappDeviceVault,
@@ -304,6 +409,8 @@
         )
       }
     }
+
+    // MARK: Functions
 
     /// Starts a requester inspection of card and PIN status.
     public func beginInspectCard(expiresAfterMilliseconds: UInt64) throws -> [Command] {
@@ -618,13 +725,6 @@
     ) -> [Command] {
       guard let deadline = action.nextPollAtMs else { return commands }
       return commands + [.scheduleLiveness(atMonotonicMilliseconds: deadline)]
-    }
-
-    private enum OperationCommandKind {
-      case inspect
-      case approval
-      case safeRead
-      case cardCommand
     }
 
     private func operationCommand(

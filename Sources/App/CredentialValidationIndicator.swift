@@ -5,18 +5,15 @@ import SwiftUI
 
 /// One compact validation result shared by card credential forms.
 internal struct CredentialValidationIndicator: View {
+
+  // MARK: Properties
+
   internal let valid: Bool
   internal var entriesDiffer = false
   internal var unchanged = false
   internal var isEmpty = false
 
-  internal var body: some View {
-    Image(systemName: symbol)
-      .foregroundStyle(color)
-      .opacity(isEmpty ? 0 : 1)
-      .accessibilityHidden(isEmpty)
-      .accessibilityLabel(Text(accessibilityDescription))
-  }
+  // MARK: Computed Properties
 
   private var symbol: String {
     if valid { return "checkmark.circle.fill" }
@@ -40,114 +37,15 @@ internal struct CredentialValidationIndicator: View {
     if entriesDiffer { return String(localized: "The new entries differ.") }
     return String(localized: "Invalid entry")
   }
-}
 
-/// A secret card-code row with one consistent, accessible reveal control.
-///
-/// The editable control is the caller's `SecureField` while hidden and a
-/// standard `TextField` while revealed, so a revealed value supports
-/// selection and copying. The revealed field keeps entries to ASCII
-/// digits within the longest supported secret; the caller's own field
-/// applies its exact bounds. Validation is the final result at the end
-/// of the row.
-internal struct CredentialSecretField<Field: View, Validation: View>: View {
-  private let name: String
-  @Binding private var text: String
-  private let revealIdentifier: String
-  private let field: () -> Field
-  private let validation: () -> Validation
-  @State private var revealsValue = false
-
-  internal init(
-    name: String,
-    text: Binding<String>,
-    revealIdentifier: String,
-    @ViewBuilder field: @escaping () -> Field,
-    @ViewBuilder validation: @escaping () -> Validation
-  ) {
-    self.name = name
-    self._text = text
-    self.revealIdentifier = revealIdentifier
-    self.field = field
-    self.validation = validation
-  }
+  // MARK: Content Properties
 
   internal var body: some View {
-    HStack {
-      Group {
-        if revealsValue {
-          TextField(name, text: $text)
-            .textContentType(.oneTimeCode)
-            #if os(iOS)
-              .keyboardType(.numberPad)
-            #endif
-            .autocorrectionDisabled()
-            .lineLimit(1)
-            .onValueChange(of: text) { value in
-              text = LimitedDigits.puk(value)
-            }
-        } else {
-          field()
-        }
-      }
-      // A Form on macOS turns the field's title into a leading label
-      // and shrinks the editable area to a small trailing box. The
-      // plain, label-free field spans the whole line instead, with
-      // the name shown inside it the way iOS shows it.
-      #if os(macOS)
-        .textFieldStyle(.plain)
-        .labelsHidden()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .overlay(alignment: .leading) {
-          if text.isEmpty {
-            Text(name)
-            .foregroundStyle(.secondary)
-            .allowsHitTesting(false)
-          }
-        }
-      #endif
-      Button {
-        revealsValue.toggle()
-      } label: {
-        Image(systemName: revealsValue ? "eye" : "eye.slash")
-      }
-      .buttonStyle(.plain)
-      .frame(width: 44, height: 44)
-      .contentShape(Rectangle())
-      .padding(-10)
-      .accessibilityLabel(Text(verbatim: revealAccessibilityLabel))
-      .accessibilityIdentifier(revealIdentifier)
-      validation()
-        .frame(width: 24, height: 24)
-    }
-    .onValueChange(of: text) { value in
-      if value.isEmpty {
-        revealsValue = false
-      }
-    }
+    Image(systemName: symbol)
+      .foregroundStyle(color)
+      .opacity(isEmpty ? 0 : 1)
+      .accessibilityHidden(isEmpty)
+      .accessibilityLabel(Text(accessibilityDescription))
   }
 
-  private var revealAccessibilityLabel: String {
-    let format =
-      revealsValue
-      ? String(localized: "Hide %@")
-      : String(localized: "Show %@")
-    return String.localizedStringWithFormat(format, name)
-  }
-}
-
-extension CredentialSecretField where Validation == EmptyView {
-  internal init(
-    name: String,
-    text: Binding<String>,
-    revealIdentifier: String,
-    @ViewBuilder field: @escaping () -> Field
-  ) {
-    self.init(
-      name: name,
-      text: text,
-      revealIdentifier: revealIdentifier,
-      field: field
-    ) { EmptyView() }
-  }
 }

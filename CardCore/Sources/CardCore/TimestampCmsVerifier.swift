@@ -11,6 +11,9 @@ import Security
 /// and hands only the final public-key operation to Security. The signed
 /// attributes are verified in their exact DER SET encoding, never rebuilt.
 internal enum TimestampCmsVerifier {
+
+  // MARK: Nested Types
+
   /// The CMS state needed by the timestamp certificate-policy verifier.
   internal struct Authenticated {
     internal let signerCertificate: Data
@@ -24,45 +27,65 @@ internal enum TimestampCmsVerifier {
     case sha384
     case sha512
 
+    // MARK: Computed Properties
+
     var byteCount: Int {
       switch self {
-      case .sha256: SHA256.byteCount
-      case .sha384: SHA384.byteCount
-      case .sha512: SHA512.byteCount
-      }
-    }
-
-    func hash(_ data: Data) -> Data {
-      switch self {
-      case .sha256: Data(SHA256.hash(data: data))
-      case .sha384: Data(SHA384.hash(data: data))
-      case .sha512: Data(SHA512.hash(data: data))
+      case .sha256:
+        SHA256.byteCount
+      case .sha384:
+        SHA384.byteCount
+      case .sha512:
+        SHA512.byteCount
       }
     }
 
     var ecdsaAlgorithm: SecKeyAlgorithm {
       switch self {
-      case .sha256: .ecdsaSignatureMessageX962SHA256
-      case .sha384: .ecdsaSignatureMessageX962SHA384
-      case .sha512: .ecdsaSignatureMessageX962SHA512
+      case .sha256:
+        .ecdsaSignatureMessageX962SHA256
+      case .sha384:
+        .ecdsaSignatureMessageX962SHA384
+      case .sha512:
+        .ecdsaSignatureMessageX962SHA512
       }
     }
 
     var rsaPkcs1Algorithm: SecKeyAlgorithm {
       switch self {
-      case .sha256: .rsaSignatureMessagePKCS1v15SHA256
-      case .sha384: .rsaSignatureMessagePKCS1v15SHA384
-      case .sha512: .rsaSignatureMessagePKCS1v15SHA512
+      case .sha256:
+        .rsaSignatureMessagePKCS1v15SHA256
+      case .sha384:
+        .rsaSignatureMessagePKCS1v15SHA384
+      case .sha512:
+        .rsaSignatureMessagePKCS1v15SHA512
       }
     }
 
     var rsaPssAlgorithm: SecKeyAlgorithm {
       switch self {
-      case .sha256: .rsaSignatureMessagePSSSHA256
-      case .sha384: .rsaSignatureMessagePSSSHA384
-      case .sha512: .rsaSignatureMessagePSSSHA512
+      case .sha256:
+        .rsaSignatureMessagePSSSHA256
+      case .sha384:
+        .rsaSignatureMessagePSSSHA384
+      case .sha512:
+        .rsaSignatureMessagePSSSHA512
       }
     }
+
+    // MARK: Functions
+
+    func hash(_ data: Data) -> Data {
+      switch self {
+    case .sha256:
+      Data(SHA256.hash(data: data))
+    case .sha384:
+      Data(SHA384.hash(data: data))
+    case .sha512:
+      Data(SHA512.hash(data: data))
+      }
+    }
+
   }
 
   /// One parsed signer and the exact values its signature covers.
@@ -73,6 +96,15 @@ internal enum TimestampCmsVerifier {
     let signatureAlgorithm: SecKeyAlgorithm
     let signature: Data
   }
+
+  /// The SignedData fields used by one timestamp token.
+  private struct Layout {
+    let digest: Digest
+    let content: Data
+    let signerInfo: DerReader.Element
+  }
+
+  // MARK: Static Functions
 
   /// Authenticates the sole signer and exact encapsulated content.
   internal static func authenticate(
@@ -150,13 +182,6 @@ internal enum TimestampCmsVerifier {
       embeddedCertificates: embedded,
       trust: trust
     )
-  }
-
-  /// The SignedData fields used by one timestamp token.
-  private struct Layout {
-    let digest: Digest
-    let content: Data
-    let signerInfo: DerReader.Element
   }
 
   /// Parses the complete ContentInfo and requires one digest and one signer.
@@ -307,10 +332,14 @@ internal enum TimestampCmsVerifier {
       throw TimestampTokenVerifier.Failure.malformed
     }
     switch reader.data(of: oid) {
-    case DerEncoder.objectIdentifier(SignOids.sha256): return .sha256
-    case DerEncoder.objectIdentifier(SignOids.sha384): return .sha384
-    case DerEncoder.objectIdentifier(SignOids.sha512): return .sha512
-    default: throw TimestampTokenVerifier.Failure.invalidSignature
+    case DerEncoder.objectIdentifier(SignOids.sha256):
+      return .sha256
+    case DerEncoder.objectIdentifier(SignOids.sha384):
+      return .sha384
+    case DerEncoder.objectIdentifier(SignOids.sha512):
+      return .sha512
+    default:
+      throw TimestampTokenVerifier.Failure.invalidSignature
     }
   }
 
@@ -332,10 +361,14 @@ internal enum TimestampCmsVerifier {
 
     let ecdsaDigest: Digest?
     switch encodedOid {
-    case DerEncoder.objectIdentifier(SignOids.ecdsaWithSha256): ecdsaDigest = .sha256
-    case DerEncoder.objectIdentifier(SignOids.ecdsaWithSha384): ecdsaDigest = .sha384
-    case DerEncoder.objectIdentifier(SignOids.ecdsaWithSha512): ecdsaDigest = .sha512
-    default: ecdsaDigest = nil
+    case DerEncoder.objectIdentifier(SignOids.ecdsaWithSha256):
+      ecdsaDigest = .sha256
+    case DerEncoder.objectIdentifier(SignOids.ecdsaWithSha384):
+      ecdsaDigest = .sha384
+    case DerEncoder.objectIdentifier(SignOids.ecdsaWithSha512):
+      ecdsaDigest = .sha512
+    default:
+      ecdsaDigest = nil
     }
     if let ecdsaDigest {
       guard parameters == nil, ecdsaDigest == digest else {
@@ -346,10 +379,14 @@ internal enum TimestampCmsVerifier {
 
     let rsaDigest: Digest?
     switch encodedOid {
-    case DerEncoder.objectIdentifier(SignOids.sha256WithRsa): rsaDigest = .sha256
-    case DerEncoder.objectIdentifier(SignOids.sha384WithRsa): rsaDigest = .sha384
-    case DerEncoder.objectIdentifier(SignOids.sha512WithRsa): rsaDigest = .sha512
-    default: rsaDigest = nil
+    case DerEncoder.objectIdentifier(SignOids.sha256WithRsa):
+      rsaDigest = .sha256
+    case DerEncoder.objectIdentifier(SignOids.sha384WithRsa):
+      rsaDigest = .sha384
+    case DerEncoder.objectIdentifier(SignOids.sha512WithRsa):
+      rsaDigest = .sha512
+    default:
+      rsaDigest = nil
     }
     if let rsaDigest {
       try Self.requireNull(parameters)
@@ -529,6 +566,8 @@ internal enum TimestampCmsVerifier {
 
   /// Extracts id-ce-subjectKeyIdentifier from one X.509 certificate.
   private static func subjectKeyIdentifier(in certificate: Data) -> Data? {
+    let issuedNameFieldCount: Int = 5
+
     var outer = DerReader(certificate)
     guard
       let certificateElement = outer.next(), outer.isAtEnd
@@ -543,7 +582,7 @@ internal enum TimestampCmsVerifier {
     }
     guard field.tag == DerValues.tagInteger else { return nil }
     // signature, issuer, validity, subject and SubjectPublicKeyInfo.
-    for _ in 0..<5 {
+    for _ in 0..<issuedNameFieldCount {
       guard fields.next() != nil else { return nil }
     }
     while let candidate = fields.next() {

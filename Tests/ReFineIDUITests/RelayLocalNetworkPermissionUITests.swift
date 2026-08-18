@@ -8,6 +8,30 @@ import XCTest
 /// The test is idempotent after permission has already been decided.
 @MainActor
 internal final class RelayLocalNetworkPermissionUITests: XCTestCase {
+
+  // MARK: Static Functions
+
+  private static func takeAffirmativeAction(in prompt: XCUIElement) -> Bool {
+    for title in ["Allow", "Salli", "Tillåt"]
+    where prompt.buttons[title].exists {
+      prompt.buttons[title].tap()
+      return true
+    }
+    return false
+  }
+
+  private static func isLocalNetworkPrompt(_ prompt: XCUIElement) -> Bool {
+    let text = prompt.staticTexts.allElementsBoundByIndex
+      .map(\.label)
+      .joined(separator: " ")
+      .lowercased()
+    return text.contains("local network")
+      || text.contains("lähiverk")
+      || text.contains("lokala nätverk")
+  }
+
+  // MARK: Functions
+
   internal func testGrantsRelayPermissionIfPresented() {
     let app = XCUIApplication()
     let monitor = addUIInterruptionMonitor(withDescription: "Local Network") {
@@ -43,22 +67,4 @@ internal final class RelayLocalNetworkPermissionUITests: XCTestCase {
     }
   }
 
-  private static func takeAffirmativeAction(in prompt: XCUIElement) -> Bool {
-    for title in ["Allow", "Salli", "Tillåt"]
-    where prompt.buttons[title].exists {
-      prompt.buttons[title].tap()
-      return true
-    }
-    return false
-  }
-
-  private static func isLocalNetworkPrompt(_ prompt: XCUIElement) -> Bool {
-    let text = prompt.staticTexts.allElementsBoundByIndex
-      .map(\.label)
-      .joined(separator: " ")
-      .lowercased()
-    return text.contains("local network")
-      || text.contains("lähiverk")
-      || text.contains("lokala nätverk")
-  }
 }

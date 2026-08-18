@@ -10,6 +10,9 @@ import Security
 /// records and retained results share one item so result transitions remain
 /// atomic without decoding Rust-owned journal bytes.
 public final class RappDeviceVault: @unchecked Sendable {
+
+  // MARK: Nested Types
+
   /// Storage failures surfaced by vault operations.
   public enum Failure: Error, Equatable, Sendable {
     case duplicate
@@ -20,16 +23,22 @@ public final class RappDeviceVault: @unchecked Sendable {
 
   /// One proxy operation journal and its optionally retained result.
   public struct StoredProxyJournal: Equatable, Sendable {
+
+    // MARK: Properties
+
     /// Rust-owned journal bytes for the proxy operation.
     public let record: Data
     /// Result bytes retained for redelivery; absent once acknowledged.
     public let retainedResult: Data?
+
+    // MARK: Lifecycle
 
     /// Creates a snapshot pairing journal bytes with a retained result.
     public init(record: Data, retainedResult: Data?) {
       self.record = record
       self.retainedResult = retainedResult
     }
+
   }
 
   private enum PairState: String, Codable {
@@ -43,10 +52,15 @@ public final class RappDeviceVault: @unchecked Sendable {
   }
 
   private struct Namespace {
+
+    // MARK: Properties
+
     let pair: String
     let requester: String
     let proxy: String
     let selection: String
+
+    // MARK: Lifecycle
 
     init(prefix: String) {
       pair = "\(prefix).pair"
@@ -54,6 +68,7 @@ public final class RappDeviceVault: @unchecked Sendable {
       proxy = "\(prefix).proxy"
       selection = "\(prefix).selection"
     }
+
   }
 
   private enum SelectionAccount {
@@ -75,11 +90,20 @@ public final class RappDeviceVault: @unchecked Sendable {
     static let noRetainedResult = Data("ReFineID:RAPP:no-retained-result:v1".utf8)
   }
 
+  private enum RetainedResultMutation {
+    case preserve
+    case replace(Data?)
+  }
+
+  // MARK: Properties
+
   private let accessGroup: String?
   private let namespace: Namespace
   private let lock = NSLock()
   private let encoder: PropertyListEncoder
   private let decoder = PropertyListDecoder()
+
+  // MARK: Lifecycle
 
   /// Opens the production vault, optionally shared via an access group.
   public convenience init(accessGroup: String? = nil) {
@@ -97,6 +121,8 @@ public final class RappDeviceVault: @unchecked Sendable {
     encoder = PropertyListEncoder()
     encoder.outputFormat = .binary
   }
+
+  // MARK: Functions
 
   /// Stores a new active pair record under its pair identifier.
   public func insertPair(pairID: Data, record: Data) throws {
@@ -348,11 +374,6 @@ public final class RappDeviceVault: @unchecked Sendable {
     }
   }
 
-  private enum RetainedResultMutation {
-    case preserve
-    case replace(Data?)
-  }
-
   private func persistProxyValue(
     pairID: Data,
     operationID: Data,
@@ -534,23 +555,26 @@ public final class RappDeviceVault: @unchecked Sendable {
 }
 
 extension Data {
-  private static let hexadecimalDigitsPerByte = 2
-
-  fileprivate init?(strictHexadecimal value: String) {
-    guard value.count.isMultiple(of: Self.hexadecimalDigitsPerByte) else { return nil }
-    var bytes: [UInt8] = []
-    bytes.reserveCapacity(value.count / Self.hexadecimalDigitsPerByte)
-    var index = value.startIndex
-    while index < value.endIndex {
-      let next = value.index(index, offsetBy: Self.hexadecimalDigitsPerByte)
-      guard let byte = UInt8(value[index..<next], radix: 16) else { return nil }
-      bytes.append(byte)
-      index = next
-    }
-    self.init(bytes)
+  private enum Hexadecimal {
+    static let digitsPerByte = 2
+    static let radix: UInt = 16
   }
 
   fileprivate var hexadecimal: String {
     map { String(format: "%02x", $0) }.joined()
+  }
+
+  fileprivate init?(strictHexadecimal value: String) {
+    guard value.count.isMultiple(of: Hexadecimal.digitsPerByte) else { return nil }
+    var bytes: [UInt8] = []
+    bytes.reserveCapacity(value.count / Hexadecimal.digitsPerByte)
+    var index = value.startIndex
+    while index < value.endIndex {
+      let next = value.index(index, offsetBy: Hexadecimal.digitsPerByte)
+      guard let byte = UInt8(value[index..<next], radix: Hexadecimal.radix) else { return nil }
+      bytes.append(byte)
+      index = next
+    }
+    self.init(bytes)
   }
 }

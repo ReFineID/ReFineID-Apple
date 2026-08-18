@@ -18,12 +18,8 @@
   /// a device round trip is too expensive to spend learning that.
   @MainActor
   internal final class CardPrimingUITests: XCTestCase {
-    override internal func setUpWithError() throws {
-      try super.setUpWithError()
-      try XCTSkipUnless(
-        UITestEnvironment.realCardTestsEnabled,
-        "Set TEST_RUNNER_\(UITestEnvironment.realCardTestsVariable)=1 to run physical-card tests")
-    }
+
+    // MARK: Static Properties
 
     /// How long the two-field setup takes: Core NFC PACE and metadata reads,
     /// followed by the live CryptoTokenKit registration field.
@@ -31,6 +27,8 @@
 
     /// How long a screen takes to appear after a tap.
     private static let appearTimeout: TimeInterval = 15
+
+    // MARK: Static Functions
 
     /// Brings the device's stored credentials up to date when the run was
     /// given them.
@@ -45,6 +43,17 @@
         pin1: UITestEnvironment.pin1,
         in: app)
     }
+
+    // MARK: Overridden Functions
+
+    override internal func setUpWithError() throws {
+      try super.setUpWithError()
+      try XCTSkipUnless(
+        UITestEnvironment.realCardTestsEnabled,
+        "Set TEST_RUNNER_\(UITestEnvironment.realCardTestsVariable)=1 to run physical-card tests")
+    }
+
+    // MARK: Functions
 
     /// Starts Safari setup from the card form and asserts registration.
     internal func testRegistersCardForSafari() {
@@ -72,6 +81,7 @@
         registered,
         "the card was not registered for Safari")
     }
+
   }
 
 #endif

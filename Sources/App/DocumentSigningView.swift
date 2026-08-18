@@ -98,12 +98,16 @@
       }
     }
 
-    private var documentSection: some View {
-      Section(text("signing.section", "Documents")) {
+  private var documentSection: some View {
+    enum Layout {
+      static let fileNameLines = 2
+    }
+
+    Section(text("signing.section", "Documents")) {
         ForEach(inputs) { input in
           HStack {
             Image(systemName: input.isPDF ? "doc.richtext" : "doc")
-            Text(input.name).lineLimit(2)
+            Text(input.name).lineLimit(Layout.fileNameLines)
             Spacer()
             Button(role: .destructive) {
               inputs.removeAll { $0.id == input.id }

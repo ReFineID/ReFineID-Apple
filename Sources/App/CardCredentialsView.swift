@@ -20,11 +20,18 @@ import SwiftUI
 /// nothing to do with the card. They cost nothing at runtime and they are
 /// what VoiceOver already wants.
 internal struct CardCredentialsView: View {
+
+  // MARK: Nested Types
+
   private enum CardConnectionPurpose: Sendable {
     case pinManagement
   }
 
+  // MARK: Static Properties
+
   private static let sectionSpacing: CGFloat = 24
+
+  // MARK: Static Computed Properties
 
   /// The seal drawn beside document verification.
   ///
@@ -39,6 +46,8 @@ internal struct CardCredentialsView: View {
       "checkmark.seal.text.page"
     #endif
   }
+
+  // MARK: SwiftUI Properties
 
   @StateObject private var model = CardCredentialsModel()
   @ObservedObject private var retryHealth = CredentialRetryHealth.shared
@@ -63,6 +72,8 @@ internal struct CardCredentialsView: View {
     @StateObject private var primingModel = CardPrimingModel()
   #endif
 
+  // MARK: Properties
+
   #if os(iOS)
     /// Live reader identities, when an iOS root provides them.
     private let readerModel: ReaderIdentityModeModel?
@@ -79,6 +90,16 @@ internal struct CardCredentialsView: View {
     /// Whether the document verification screen is pushed.
     @State private var showsDocumentVerify = false
   #endif
+
+  // MARK: Computed Properties
+
+  /// The complete visible CAN handed to signing and PIN management.
+  ///
+  /// These routes can establish and verify their own card session, so they
+  /// become available at six digits without requiring an earlier NFC read.
+  internal var managementCardAccessNumber: String? {
+    isCardAccessNumberEntryComplete ? cardAccessNumberEntry : nil
+  }
 
   /// The PIN is valid for storage only inside the card's documented range.
   private var isPin1EntryComplete: Bool {
@@ -100,14 +121,6 @@ internal struct CardCredentialsView: View {
       && offersNearField
       && !isHolding
       && !isCardAccessNumberEntryComplete
-  }
-
-  /// The complete visible CAN handed to signing and PIN management.
-  ///
-  /// These routes can establish and verify their own card session, so they
-  /// become available at six digits without requiring an earlier NFC read.
-  internal var managementCardAccessNumber: String? {
-    isCardAccessNumberEntryComplete ? cardAccessNumberEntry : nil
   }
 
   /// Disclosure follows a validated connection, never digit count alone.
@@ -221,16 +234,192 @@ internal struct CardCredentialsView: View {
   }
 
   #if os(iOS)
-    internal init(
-      readerModel: ReaderIdentityModeModel?,
-      remoteModel: RemoteCardModel,
-      openRemoteReader: @escaping () -> Void
-    ) {
-      self.readerModel = readerModel
-      self.remoteModel = remoteModel
-      self.openRemoteReader = openRemoteReader
+    /// The document routes, active once a card path exists.
+    ///
+    /// Each route opens its own screen, so the rows read as navigation
+    /// rather than as immediate actions.
+    /// Whether a qualified signature can start right now.
+    private var signingAvailable: Bool {
+      hasReaderIdentity || isCardAccessNumberEntryComplete
+    }
+
+    private var signingSection: some View {
+      // Verification asks for no card and no identity, so it leads.
+      Section {
+        Button {
+          showsDocumentVerify = true
+        } label: {
+          navigationRow(
+            String(
+              localized: "verify.title",
+              defaultValue: "Verify",
+              table: "DocumentSigning")
+          ) {
+            Image(systemName: Self.verificationSymbolName)
+              .foregroundStyle(Color.accentColor)
+          }
+        }
+        .tint(.primary)
+        .accessibilityIdentifier("verifyDocuments")
+        // Signing reaches the card for a qualified signature, so the route
+        // belongs to a device that can reach one.
+        if offersNearField || hasReaderIdentity {
+          Button {
+            synchronizeIdentityState()
+            transition(.openDocumentSigning)
+          } label: {
+            navigationRow(
+              String(
+                localized: "signing.title",
+                defaultValue: "Sign",
+                table: "DocumentSigning")
+            ) {
+              Image(systemName: "signature")
+                .foregroundStyle(
+                  signingAvailable
+                    ? AnyShapeStyle(Color.accentColor)
+                    : AnyShapeStyle(.secondary))
+            }
+          }
+          .tint(.primary)
+          .accessibilityIdentifier("signDocuments")
+          .disabled(!signingAvailable)
+        }
+      } header: {
+        compactSectionHeader(
+          verbatim: String(
+            localized: "signing.document",
+            defaultValue: "Document",
+            table: "DocumentSigning"))
+      }
+    }
+
+    /// Whether the credential management route can be taken right now.
+    private var managementAvailable: Bool {
+      (isCardAccessNumberEntryComplete || hasReaderIdentity)
+        && !model.isConnecting
+    }
+
+    /// Whether the remote card route can be taken right now.
+    ///
+    /// A card holder serves a remote card from a primed identity or
+    /// a live reader identity; a requesting device consumes one and
+    /// needs none.
+    private var remoteCardAvailable: Bool {
+      !offersNearField || hasIdentity || hasReaderIdentity
+    }
+
+    /// The card's credential management route.
+    private var cardSection: some View {
+      Section {
+        // A device that reaches a card of its own can also serve one, and
+        // this route is how it offers that. A device without one only ever
+        // consumes a remote card, which the identity row already connects.
+        if offersNearField {
+          Button {
+            openRemoteReader()
+          } label: {
+            navigationRow(String(localized: "Remote Card")) {
+              Image(
+                systemName: remoteCardAvailable
+                  ? "key.radiowaves.forward"
+                  : "key.radiowaves.forward.slash"
+              )
+              .foregroundStyle(
+                remoteCardAvailable
+                  ? AnyShapeStyle(Color.accentColor)
+                  : AnyShapeStyle(.secondary)
+              )
+              .accessibilityHidden(true)
+            }
+          }
+          .tint(.primary)
+          .accessibilityIdentifier("remoteCard")
+          .disabled(!remoteCardAvailable)
+        }
+        // Changing a code writes to the card itself, so the route belongs to
+        // a device that can reach one. Offering it where it can never open
+        // describes the app as broken rather than the device as different.
+        if offersNearField || hasReaderIdentity {
+          Button {
+            openCardManagement()
+          } label: {
+            navigationRow(
+              String(localized: "Personal Identification Numbers (PINs)")
+            ) {
+              // A closed route greys the keys; health color returns
+              // with availability.
+              CredentialRetryHealthKey(
+                level: retryHealth.level,
+                systemName: "key.2.on.ring",
+                routeAvailable: managementAvailable)
+            }
+          }
+          .tint(.primary)
+          .accessibilityIdentifier("manageCard")
+          .disabled(!managementAvailable)
+        }
+      } header: {
+        compactSectionHeader("Card")
+      }
+    }
+
+    /// Who the connected reader's card says they are, one row per card.
+    ///
+    /// The reader message stands in for a card whose name cannot be
+    /// read: a live token with no readable name is still a card present.
+    private var readerIdentitySection: some View {
+      Section {
+        if readerHolders.isEmpty {
+          Text(readerMessage)
+            .foregroundStyle(.secondary)
+        } else {
+          ForEach(readerHolders, id: \.self) { holder in
+            LabeledContent {
+              Text(holder)
+                .textSelection(.enabled)
+                .accessibilityIdentifier("readerCardHolder")
+            } label: {
+              PersonRowLabel(configured: true)
+            }
+          }
+        }
+      } header: {
+        compactSectionHeader("Identity")
+      }
+    }
+
+    /// Distinguishes one usable reader from several without exposing
+    /// card data.
+    private var readerMessage: String {
+      if (readerModel?.liveReaderTokenCount ?? 0) == 1 {
+        String(localized: "USB-C reader connected with ID card.")
+      } else {
+        String(localized: "USB-C readers connected with ID cards.")
+      }
+    }
+
+    /// Changes whenever the identities rendered by the reader rows change.
+    private var readerHolderReadKey: [String] {
+      readerModel?.holderReadKey ?? []
     }
   #endif
+
+  /// SwiftUI navigation is a projection of the formal flow state.
+  ///
+  /// A pop is fed back as an event so origin restoration is modeled as
+  /// well.
+  private var flowDestination: Binding<CardSetupStateMachine.Destination?> {
+    Binding(
+      get: { flowState.destination },
+      set: { destination in
+        guard destination == nil, flowState.destination != nil else { return }
+        transition(.destinationDismissed)
+      }
+    )
+  }
+
+  // MARK: Content Properties
 
   internal var body: some View {
     #if os(iOS)
@@ -513,210 +702,6 @@ internal struct CardCredentialsView: View {
     }
   #endif
 
-  #if os(iOS)
-    /// The document routes, active once a card path exists.
-    ///
-    /// Each route opens its own screen, so the rows read as navigation
-    /// rather than as immediate actions.
-    /// Whether a qualified signature can start right now.
-    private var signingAvailable: Bool {
-      hasReaderIdentity || isCardAccessNumberEntryComplete
-    }
-
-    private var signingSection: some View {
-      // Verification asks for no card and no identity, so it leads.
-      Section {
-        Button {
-          showsDocumentVerify = true
-        } label: {
-          navigationRow(
-            String(
-              localized: "verify.title",
-              defaultValue: "Verify",
-              table: "DocumentSigning")
-          ) {
-            Image(systemName: Self.verificationSymbolName)
-              .foregroundStyle(Color.accentColor)
-          }
-        }
-        .tint(.primary)
-        .accessibilityIdentifier("verifyDocuments")
-        // Signing reaches the card for a qualified signature, so the route
-        // belongs to a device that can reach one.
-        if offersNearField || hasReaderIdentity {
-          Button {
-            synchronizeIdentityState()
-            transition(.openDocumentSigning)
-          } label: {
-            navigationRow(
-              String(
-                localized: "signing.title",
-                defaultValue: "Sign",
-                table: "DocumentSigning")
-            ) {
-              Image(systemName: "signature")
-                .foregroundStyle(
-                  signingAvailable
-                    ? AnyShapeStyle(Color.accentColor)
-                    : AnyShapeStyle(.secondary))
-            }
-          }
-          .tint(.primary)
-          .accessibilityIdentifier("signDocuments")
-          .disabled(!signingAvailable)
-        }
-      } header: {
-        compactSectionHeader(
-          verbatim: String(
-            localized: "signing.document",
-            defaultValue: "Document",
-            table: "DocumentSigning"))
-      }
-    }
-
-    /// Whether the credential management route can be taken right now.
-    private var managementAvailable: Bool {
-      (isCardAccessNumberEntryComplete || hasReaderIdentity)
-        && !model.isConnecting
-    }
-
-    /// Whether the remote card route can be taken right now.
-    ///
-    /// A card holder serves a remote card from a primed identity or
-    /// a live reader identity; a requesting device consumes one and
-    /// needs none.
-    private var remoteCardAvailable: Bool {
-      !offersNearField || hasIdentity || hasReaderIdentity
-    }
-
-    /// The card's credential management route.
-    private var cardSection: some View {
-      Section {
-        // A device that reaches a card of its own can also serve one, and
-        // this route is how it offers that. A device without one only ever
-        // consumes a remote card, which the identity row already connects.
-        if offersNearField {
-          Button {
-            openRemoteReader()
-          } label: {
-            navigationRow(String(localized: "Remote Card")) {
-              Image(
-                systemName: remoteCardAvailable
-                  ? "key.radiowaves.forward"
-                  : "key.radiowaves.forward.slash"
-              )
-              .foregroundStyle(
-                remoteCardAvailable
-                  ? AnyShapeStyle(Color.accentColor)
-                  : AnyShapeStyle(.secondary)
-              )
-              .accessibilityHidden(true)
-            }
-          }
-          .tint(.primary)
-          .accessibilityIdentifier("remoteCard")
-          .disabled(!remoteCardAvailable)
-        }
-        // Changing a code writes to the card itself, so the route belongs to
-        // a device that can reach one. Offering it where it can never open
-        // describes the app as broken rather than the device as different.
-        if offersNearField || hasReaderIdentity {
-          Button {
-            openCardManagement()
-          } label: {
-            navigationRow(
-              String(localized: "Personal Identification Numbers (PINs)")
-            ) {
-              // A closed route greys the keys; health color returns
-              // with availability.
-              CredentialRetryHealthKey(
-                level: retryHealth.level,
-                systemName: "key.2.on.ring",
-                routeAvailable: managementAvailable)
-            }
-          }
-          .tint(.primary)
-          .accessibilityIdentifier("manageCard")
-          .disabled(!managementAvailable)
-        }
-      } header: {
-        compactSectionHeader("Card")
-      }
-    }
-
-    /// One navigation row with an aligned leading icon.
-    private func navigationRow(
-      _ title: String,
-      @ViewBuilder icon: () -> some View
-    ) -> some View {
-      HStack {
-        icon()
-          .frame(width: PersonRowLabel.iconWidth)
-          .accessibilityHidden(true)
-        Text(title)
-        Spacer()
-        Image(systemName: "chevron.forward")
-          .font(.footnote.weight(.semibold))
-          .foregroundStyle(.tertiary)
-          .accessibilityHidden(true)
-      }
-    }
-
-    /// Who the connected reader's card says they are, one row per card.
-    ///
-    /// The reader message stands in for a card whose name cannot be
-    /// read: a live token with no readable name is still a card present.
-    private var readerIdentitySection: some View {
-      Section {
-        if readerHolders.isEmpty {
-          Text(readerMessage)
-            .foregroundStyle(.secondary)
-        } else {
-          ForEach(readerHolders, id: \.self) { holder in
-            LabeledContent {
-              Text(holder)
-                .textSelection(.enabled)
-                .accessibilityIdentifier("readerCardHolder")
-            } label: {
-              PersonRowLabel(configured: true)
-            }
-          }
-        }
-      } header: {
-        compactSectionHeader("Identity")
-      }
-    }
-
-    /// Distinguishes one usable reader from several without exposing
-    /// card data.
-    private var readerMessage: String {
-      if (readerModel?.liveReaderTokenCount ?? 0) == 1 {
-        String(localized: "USB-C reader connected with ID card.")
-      } else {
-        String(localized: "USB-C readers connected with ID cards.")
-      }
-    }
-
-    /// Changes whenever the identities rendered by the reader rows change.
-    private var readerHolderReadKey: [String] {
-      readerModel?.holderReadKey ?? []
-    }
-  #endif
-
-  private func compactSectionHeader(
-    _ title: LocalizedStringKey
-  ) -> some View {
-    Text(title)
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .listRowInsets(EdgeInsets())
-  }
-
-  private func compactSectionHeader(verbatim title: String) -> some View {
-    Text(title)
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .listRowInsets(EdgeInsets())
-  }
-
   /// One operation, in its actual order: credentials and then minting.
   @ViewBuilder private var createIdentitySection: some View {
     Section {
@@ -796,6 +781,11 @@ internal struct CardCredentialsView: View {
   /// into a checkmark the moment it was stored left the holder with no
   /// way to correct it short of forgetting everything.
   @ViewBuilder private var cardAccessNumberRow: some View {
+    enum Layout {
+      static let canButtonSize = 44.0
+      static let canButtonOuterPadding = -10
+    }
+
     #if os(iOS)
       HStack {
         TextField(
@@ -830,9 +820,9 @@ internal struct CardCredentialsView: View {
                 .labelStyle(.iconOnly)
             }
             .buttonStyle(.borderless)
-            .frame(width: 44, height: 44)
+            .frame(width: Layout.canButtonSize, height: Layout.canButtonSize)
             .contentShape(Rectangle())
-            .padding(-10)
+            .padding(Layout.canButtonOuterPadding)
           }
         #endif
       }
@@ -891,6 +881,106 @@ internal struct CardCredentialsView: View {
       }
     }
   #endif
+
+  // MARK: Lifecycle
+
+  #if os(iOS)
+    internal init(
+      readerModel: ReaderIdentityModeModel?,
+      remoteModel: RemoteCardModel,
+      openRemoteReader: @escaping () -> Void
+    ) {
+      self.readerModel = readerModel
+      self.remoteModel = remoteModel
+      self.openRemoteReader = openRemoteReader
+    }
+  #endif
+
+  // MARK: Content Methods
+
+  private func navigationRow(
+    _ title: String,
+    @ViewBuilder icon: () -> some View
+  ) -> some View {
+    HStack {
+      icon()
+        .frame(width: PersonRowLabel.iconWidth)
+        .accessibilityHidden(true)
+      Text(title)
+      Spacer()
+      Image(systemName: "chevron.forward")
+        .font(.footnote.weight(.semibold))
+        .foregroundStyle(.tertiary)
+        .accessibilityHidden(true)
+    }
+  }
+
+  private func compactSectionHeader(
+    _ title: LocalizedStringKey
+  ) -> some View {
+    Text(title)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .listRowInsets(EdgeInsets())
+  }
+
+  private func compactSectionHeader(verbatim title: String) -> some View {
+    Text(title)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .listRowInsets(EdgeInsets())
+  }
+
+  #if os(iOS)
+    /// The pushed screen for one flow destination.
+    ///
+    /// A live reader identity signs and manages over its own card
+    /// session; the wireless routes carry the entered CAN instead.
+    @ViewBuilder
+    private func destinationView(
+      _ destination: CardSetupStateMachine.Destination
+    ) -> some View {
+      switch destination {
+      case .activation:
+        #if DEBUG
+          // A result builder accepts a declaration, not a discard statement.
+          // swiftlint:disable:next redundant_discardable_let
+          let _ = DebugConsole.emit("navigation-destination: activation")
+        #endif
+        if let activationScheme, let activationNeeds {
+          CardManagementView(
+            activationRequired: true,
+            cardAccessNumber: cardAccessNumberEntry,
+            activationScheme: activationScheme,
+            activationNeeds: activationNeeds,
+            onActivationSucceeded: activationSucceeded
+          )
+          .id(CardSetupStateMachine.Destination.activation)
+        }
+      case .pinManagement:
+        #if DEBUG
+          // A result builder accepts a declaration, not a discard statement.
+          // swiftlint:disable:next redundant_discardable_let
+          let _ = DebugConsole.emit("navigation-destination: PIN management")
+        #endif
+        if hasReaderIdentity {
+          CardManagementView(readerCardIsPresent: true)
+            .id(CardSetupStateMachine.Destination.pinManagement)
+        } else {
+          CardManagementView(
+            cardAccessNumber: managementCardAccessNumber
+          )
+          .id(CardSetupStateMachine.Destination.pinManagement)
+        }
+      case .signDocuments:
+        DocumentSigningView(
+          transport: hasReaderIdentity ? .reader : .nearField,
+          cardAccessNumber: hasReaderIdentity ? nil : managementCardAccessNumber
+        )
+        .id(CardSetupStateMachine.Destination.signDocuments)
+      }
+    }
+  #endif
+
+  // MARK: Functions
 
   /// Puts a stored card access number back in its field.
   ///
@@ -1028,20 +1118,6 @@ internal struct CardCredentialsView: View {
       isCardAccessNumberFieldFocused = true
     }
     transition(.activationSucceeded)
-  }
-
-  /// SwiftUI navigation is a projection of the formal flow state.
-  ///
-  /// A pop is fed back as an event so origin restoration is modeled as
-  /// well.
-  private var flowDestination: Binding<CardSetupStateMachine.Destination?> {
-    Binding(
-      get: { flowState.destination },
-      set: { destination in
-        guard destination == nil, flowState.destination != nil else { return }
-        transition(.destinationDismissed)
-      }
-    )
   }
 
   /// Persistent identity is an input event, never an alternate navigation
@@ -1200,57 +1276,6 @@ internal struct CardCredentialsView: View {
       }
     #endif
   }
-
-  #if os(iOS)
-    /// The pushed screen for one flow destination.
-    ///
-    /// A live reader identity signs and manages over its own card
-    /// session; the wireless routes carry the entered CAN instead.
-    @ViewBuilder
-    private func destinationView(
-      _ destination: CardSetupStateMachine.Destination
-    ) -> some View {
-      switch destination {
-      case .activation:
-        #if DEBUG
-          // A result builder accepts a declaration, not a discard statement.
-          // swiftlint:disable:next redundant_discardable_let
-          let _ = DebugConsole.emit("navigation-destination: activation")
-        #endif
-        if let activationScheme, let activationNeeds {
-          CardManagementView(
-            activationRequired: true,
-            cardAccessNumber: cardAccessNumberEntry,
-            activationScheme: activationScheme,
-            activationNeeds: activationNeeds,
-            onActivationSucceeded: activationSucceeded
-          )
-          .id(CardSetupStateMachine.Destination.activation)
-        }
-      case .pinManagement:
-        #if DEBUG
-          // A result builder accepts a declaration, not a discard statement.
-          // swiftlint:disable:next redundant_discardable_let
-          let _ = DebugConsole.emit("navigation-destination: PIN management")
-        #endif
-        if hasReaderIdentity {
-          CardManagementView(readerCardIsPresent: true)
-            .id(CardSetupStateMachine.Destination.pinManagement)
-        } else {
-          CardManagementView(
-            cardAccessNumber: managementCardAccessNumber
-          )
-          .id(CardSetupStateMachine.Destination.pinManagement)
-        }
-      case .signDocuments:
-        DocumentSigningView(
-          transport: hasReaderIdentity ? .reader : .nearField,
-          cardAccessNumber: hasReaderIdentity ? nil : managementCardAccessNumber
-        )
-        .id(CardSetupStateMachine.Destination.signDocuments)
-      }
-    }
-  #endif
 
   /// A slashed key performs the prerequisite read; a verified key opens the
   /// route selected by that card state without repeating NFC work.

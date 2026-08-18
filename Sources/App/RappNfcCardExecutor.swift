@@ -29,10 +29,10 @@
     }
 
     internal enum Outcome: Sendable, Equatable {
-      case result(Data)
+      case completionAmbiguous
       case refusedBeforeCredentialTransmit(Refusal)
       case rejected(Rejection)
-      case completionAmbiguous
+      case result(Data)
     }
 
     private struct Identity {

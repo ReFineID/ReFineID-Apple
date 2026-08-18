@@ -2,88 +2,14 @@
   import Foundation
   import os
   import RappEngine
-  /// Timing policy for one requester-side RAPP operation: the lifetime the
-  /// operation is granted, the bound on the synchronous wait, and the pacing
-  /// of liveness probes on the established channel.
-  public struct RappRequesterPolicy: Sendable, Equatable {
-    /// Operation lifetime granted to the RAPP runtime and sent as the
-    /// expiry when the operation begins.
-    public let maximumOperationLifetimeMilliseconds: UInt64
-    /// Longest time ``RappPersistentRequesterClient/perform(_:)`` blocks
-    /// before failing as timed out.
-    public let synchronousWaitTimeout: TimeInterval
-    /// Liveness probing configuration for the established channel.
-    public let liveness: RappOperationDriver.Liveness
-
-    /// Composes a policy from explicit timing values.
-    public init(
-      maximumOperationLifetimeMilliseconds: UInt64,
-      synchronousWaitTimeout: TimeInterval,
-      liveness: RappOperationDriver.Liveness
-    ) {
-      self.maximumOperationLifetimeMilliseconds = maximumOperationLifetimeMilliseconds
-      self.synchronousWaitTimeout = synchronousWaitTimeout
-      self.liveness = liveness
-    }
-
-    /// Provisional interactive policy.
-    ///
-    /// It is injectable so measured transport behavior can revise policy
-    /// without adding UI timing heuristics.
-    public static let interactive = Self(
-      maximumOperationLifetimeMilliseconds: 120_000,
-      synchronousWaitTimeout: 125,
-      liveness: .init(
-        baseIntervalMilliseconds: 5_000,
-        responseTimeoutMilliseconds: 3_000,
-        maximumIntervalMilliseconds: 60_000,
-        maximumJitterMilliseconds: 500,
-        maximumMisses: 3
-      )
-    )
-  }
-
-  /// A card operation the requester asks the paired proxy to perform.
-  public enum RappRequesterOperation: Sendable, Equatable {
-    case readAuthenticationCertificate
-    case readSignatureCertificate
-    case browserAuthentication(
-      displayContext: String,
-      keyProfile: RappOperationDriver.KeyProfile,
-      algorithm: RappOperationDriver.SignatureAlgorithm,
-      digest: Data
-    )
-    case documentSigning(
-      documentName: String,
-      keyProfile: RappOperationDriver.KeyProfile,
-      algorithm: RappOperationDriver.SignatureAlgorithm,
-      digest: Data
-    )
-  }
-
-  /// The authenticated payload a completed requester operation yields.
-  public enum RappRequesterResponse: Sendable, Equatable {
-    case authenticationCertificate(Data)
-    case signatureCertificate(Data)
-    case signature(Data)
-  }
-
-  /// Why a requester operation ended without a response.
-  public enum RappRequesterClientError: Error, Sendable, Equatable {
-    case noActivePair
-    case noSelectedPair
-    case transport
-    case protocolFailure
-    case terminal(RappOperationDriver.TerminalReason?)
-    case timedOut
-    case unexpectedResult
-  }
-
   /// Single-use synchronous facade for CryptoTokenKit and registry callbacks.
   ///
   /// The blocking boundary contains no protocol logic; an actor-owned RAPP
   /// coordinator performs the authenticated asynchronous exchange.
   public final class RappPersistentRequesterClient: @unchecked Sendable {
+
+    // MARK: Nested Types
+
     private struct State: Sendable {
       var started = false
       var operationStarted = false
@@ -92,6 +18,8 @@
       var response: RappRequesterResponse?
       var error: RappRequesterClientError?
     }
+
+    // MARK: Properties
 
     private let displayName: String
     private let policy: RappRequesterPolicy
@@ -117,6 +45,8 @@
       }
     )
 
+    // MARK: Lifecycle
+
     /// Builds a one-shot client that connects over the persistent relay
     /// and resolves its pair from the vault.
     public init(
@@ -128,6 +58,8 @@
       self.policy = policy
       self.vault = vault
     }
+
+    // MARK: Functions
 
     /// Runs one operation and blocks the caller until it resolves.
     ///

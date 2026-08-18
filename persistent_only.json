@@ -1,0 +1,38 @@
+[
+  {
+    "character" : 17,
+    "file" : "/Users/pk/src/ReFineID-Apple/Worktrees/ReFineID-Apple-lint-fix/CardCore/Sources/CardCore/PersistentRelayMessage.swift",
+    "line" : 35,
+    "reason" : "public declarations should be documented",
+    "rule_id" : "missing_docs",
+    "severity" : "Error",
+    "type" : "Missing Docs"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/pk/src/ReFineID-Apple/Worktrees/ReFineID-Apple-lint-fix/CardCore/Sources/CardCore/PersistentRelayMessage.swift",
+    "line" : 19,
+    "reason" : "Prefer not to use extension access modifiers",
+    "rule_id" : "no_extension_access_modifier",
+    "severity" : "Error",
+    "type" : "No Extension Access Modifier"
+  },
+  {
+    "character" : 8,
+    "file" : "/Users/pk/src/ReFineID-Apple/Worktrees/ReFineID-Apple-lint-fix/CardCore/Sources/CardCore/PersistentRelayMessage.swift",
+    "line" : 19,
+    "reason" : "Extensions shouldn't be used to group code within the same source file",
+    "rule_id" : "no_grouping_extension",
+    "severity" : "Error",
+    "type" : "No Grouping Extension"
+  },
+  {
+    "character" : 10,
+    "file" : "/Users/pk/src/ReFineID-Apple/Worktrees/ReFineID-Apple-lint-fix/CardCore/Sources/CardCore/PersistentRelayMessage.swift",
+    "line" : 31,
+    "reason" : "An 'other_method' should not be placed amongst the type content(s) 'type_method'",
+    "rule_id" : "type_contents_order",
+    "severity" : "Error",
+    "type" : "Type Contents Order"
+  }
+]

@@ -22,27 +22,38 @@ import Security
 /// control that stops a guessed PIN, and deletion reveals nothing. The
 /// reasoning and the trade are in `Documentation/decisions.md`.
 public enum CardCredentialStore {
-  /// Posted in-process whenever the stored CAN is explicitly removed.
-  ///
-  /// The app uses this to clear any visible copy immediately after the
-  /// card rejects PACE. It is deliberately an event rather than polling.
-  public static let cardAccessNumberDidInvalidate =
-    Notification.Name("fi.refineid.card-access-number-did-invalidate")
+
+  // MARK: Nested Types
 
   /// What the store currently holds.
   public struct Contents: Equatable, Sendable {
+
+    // MARK: Properties
+
     /// Whether a card access number is stored.
     public let hasCardAccessNumber: Bool
 
     /// Whether PIN1 is stored for unattended signing.
     public let hasPin1: Bool
 
+    // MARK: Lifecycle
+
     /// Records what a store lookup found.
     public init(hasCardAccessNumber: Bool, hasPin1: Bool) {
       self.hasCardAccessNumber = hasCardAccessNumber
       self.hasPin1 = hasPin1
     }
+
   }
+
+  // MARK: Static Properties
+
+  /// Posted in-process whenever the stored CAN is explicitly removed.
+  ///
+  /// The app uses this to clear any visible copy immediately after the
+  /// card rejects PACE. It is deliberately an event rather than polling.
+  public static let cardAccessNumberDidInvalidate =
+    Notification.Name("fi.refineid.card-access-number-did-invalidate")
 
   /// Keychain service the card credentials live under.
   private static let service = "fi.refineid.credentials"
@@ -56,6 +67,8 @@ public enum CardCredentialStore {
   /// Keychain coordinates used by the retired timed signing window.
   private static let legacySigningWindowService = "fi.refineid.pin1window"
   private static let legacySigningWindowAccount = "current"
+
+  // MARK: Static Functions
 
   /// What is stored, without reading any secret.
   public static func contents() -> Contents {
@@ -111,18 +124,6 @@ public enum CardCredentialStore {
   public static func publishCardAccessNumberToDriver() -> Bool {
     guard let digits = read(account: cardAccessNumberAccount) else { return false }
     return publishToDriver(digits: digits)
-  }
-
-  /// The platform half of the above: iOS shares a keychain access group
-  /// with its extensions and needs no second copy of the number, so it
-  /// does not make one.
-  @discardableResult
-  private static func publishToDriver(digits: String) -> Bool {
-    #if os(macOS)
-      return OfferedAccessNumber.publish(digits: digits)
-    #else
-      return false
-    #endif
   }
 
   /// Publishes a just-typed card access number for the driver's next
@@ -310,6 +311,18 @@ public enum CardCredentialStore {
     #if os(macOS)
       OfferedAccessNumber.withdraw()
       DriverConfiguredCredentials.withdraw()
+    #endif
+  }
+
+  /// The platform half of the above: iOS shares a keychain access group
+  /// with its extensions and needs no second copy of the number, so it
+  /// does not make one.
+  @discardableResult
+  private static func publishToDriver(digits: String) -> Bool {
+    #if os(macOS)
+      return OfferedAccessNumber.publish(digits: digits)
+    #else
+      return false
     #endif
   }
 

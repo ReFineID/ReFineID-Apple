@@ -9,38 +9,38 @@ import Foundation
 /// reject any difference between the two representations.
 internal enum CardSetupStateMachine {
   internal enum State: String, CaseIterable, Sendable {
-    case home
-    case identityHome
+    case activationHome
+    case activationIdentity
     case classifyingBrowser
     case classifyingManagementHome
     case classifyingManagementIdentity
-    case registeringBrowser
-    case activationHome
-    case activationIdentity
-    case pinManagementHome
-    case pinManagementIdentity
     case documentSigningHome
     case documentSigningIdentity
+    case home
+    case identityHome
+    case pinManagementHome
+    case pinManagementIdentity
+    case registeringBrowser
   }
 
   internal enum Event: String, CaseIterable, Sendable {
-    case identityLoaded = "identity.loaded"
+    case activationSucceeded
+    case classificationActivated
+    case classificationActivationRequired
+    case classificationFailed
+    case classificationRecoveryRequired
+    case classificationWrongCardAccessNumber
+    case destinationDismissed
     case identityForgotten = "identity.forgotten"
+    case identityLoaded = "identity.loaded"
+    case openDocumentSigning = "signing.open"
+    case openKnownActivation = "activation.open.known"
+    case openVerifiedManagement = "management.open.verified"
+    case registrationFailed = "registration.failed"
+    case registrationSucceeded = "registration.succeeded"
     case startBrowserClassification = "browser.classification.start"
     case startConfiguredBrowserRegistration = "browser.registration.start"
     case startManagementClassification = "management.classification.start"
-    case openKnownActivation = "activation.open.known"
-    case openVerifiedManagement = "management.open.verified"
-    case openDocumentSigning = "signing.open"
-    case classificationActivated = "classification.activated"
-    case classificationRecoveryRequired = "classification.recovery-required"
-    case classificationActivationRequired = "classification.activation-required"
-    case classificationWrongCardAccessNumber = "classification.wrong-can"
-    case classificationFailed = "classification.failed"
-    case registrationSucceeded = "registration.succeeded"
-    case registrationFailed = "registration.failed"
-    case activationSucceeded = "activation.succeeded"
-    case destinationDismissed = "destination.dismissed"
   }
 
   internal enum Destination: Hashable, Sendable {
@@ -56,8 +56,8 @@ internal enum CardSetupStateMachine {
   }
 
   internal enum Reduction: Equatable, Sendable {
-    case transitioned(to: State)
     case rejected
+    case transitioned(to: State)
   }
 
   internal static let initialState = State.home

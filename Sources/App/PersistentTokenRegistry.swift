@@ -15,51 +15,12 @@
   /// remote connect already read, so the holder is asked exactly once.
   @MainActor
   internal final class PersistentTokenRegistry {
+
+    // MARK: Static Properties
+
     internal static let shared = PersistentTokenRegistry()
-    private var isRunning = false
 
-    private init() {}
-
-    /// Fetches and publishes once at launch, on the platform whose
-    /// requester runs unattended.
-    ///
-    /// iOS publishes from the visible remote connect instead: a launch
-    /// fetch would surprise the phone's holder with an authorization
-    /// out of nowhere.
-    internal func start() {
-      #if os(macOS)
-        startFetch()
-      #endif
-    }
-
-    #if os(macOS)
-      private func startFetch() {
-        guard !isRunning, Self.needsIdentity else { return }
-        isRunning = true
-        Task.detached(priority: .userInitiated) {
-          let certificateDER: Data?
-          do {
-            let response = try RappPersistentRequesterClient(
-              displayName: "ReFineID Mac"
-            ).perform(.readAuthenticationCertificate)
-            guard case .authenticationCertificate(let certificate) = response else {
-              await Self.shared.finish(nil)
-              return
-            }
-            certificateDER = certificate
-          } catch {
-            certificateDER = nil
-          }
-          await Self.shared.finish(certificateDER)
-        }
-      }
-
-      private func finish(_ certificateDER: Data?) {
-        defer { isRunning = false }
-        guard let certificateDER else { return }
-        Self.publish(certificateDER)
-      }
-    #endif
+    // MARK: Static Computed Properties
 
     private static var driverConfiguration: TKTokenDriver.Configuration? {
       TKTokenDriver.Configuration.driverConfigurations[
@@ -70,6 +31,16 @@
     private static var needsIdentity: Bool {
       driverConfiguration?.tokenConfigurations.isEmpty ?? true
     }
+
+    // MARK: Properties
+
+    private var isRunning = false
+
+    // MARK: Lifecycle
+
+    private init() {}
+
+    // MARK: Static Functions
 
     /// Publishes an already-fetched certificate as the persistent
     /// identity.
@@ -116,5 +87,49 @@
         fflush(stdout)
       #endif
     }
+
+    // MARK: Functions
+
+    /// Fetches and publishes once at launch, on the platform whose
+    /// requester runs unattended.
+    ///
+    /// iOS publishes from the visible remote connect instead: a launch
+    /// fetch would surprise the phone's holder with an authorization
+    /// out of nowhere.
+    internal func start() {
+      #if os(macOS)
+        startFetch()
+      #endif
+    }
+
+    #if os(macOS)
+      private func startFetch() {
+        guard !isRunning, Self.needsIdentity else { return }
+        isRunning = true
+        Task.detached(priority: .userInitiated) {
+          let certificateDER: Data?
+          do {
+            let response = try RappPersistentRequesterClient(
+              displayName: "ReFineID Mac"
+            ).perform(.readAuthenticationCertificate)
+            guard case .authenticationCertificate(let certificate) = response else {
+              await Self.shared.finish(nil)
+              return
+            }
+            certificateDER = certificate
+          } catch {
+            certificateDER = nil
+          }
+          await Self.shared.finish(certificateDER)
+        }
+      }
+
+      private func finish(_ certificateDER: Data?) {
+        defer { isRunning = false }
+        guard let certificateDER else { return }
+        Self.publish(certificateDER)
+      }
+    #endif
+
   }
 #endif

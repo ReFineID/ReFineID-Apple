@@ -8,10 +8,19 @@
 /// global switch lives in CardCore: a caller must explicitly construct and
 /// retain an instance.
 public actor VirtualIDCard {
+  private enum RetryThresholds {
+    static let zeroAttempts: UInt8 = 0
+    static let lowAttemptsThreshold: UInt8 = 2
+  }
+
+  // MARK: Nested Types
+
   /// How the simulated device reaches the card.
   public enum Transport: String, CaseIterable, Identifiable, Sendable {
     case nearField
     case reader
+
+    // MARK: Computed Properties
 
     /// The value itself as its stable identity.
     public var id: Self { self }
@@ -25,6 +34,8 @@ public actor VirtualIDCard {
     case activationCodeIsPuk
     case presetActivationPIN
 
+    // MARK: Computed Properties
+
     /// The value itself as its stable identity.
     public var id: Self { self }
   }
@@ -37,18 +48,25 @@ public actor VirtualIDCard {
     case unreadable
     case missing
 
+    // MARK: Computed Properties
+
     /// The value itself as its stable identity.
     public var id: Self { self }
   }
 
   /// One PIN or PUK as stored on the simulated card.
   public struct CredentialState: Equatable, Sendable {
+
+    // MARK: Properties
+
     /// The digits the card currently accepts.
     public var value: String
     /// Attempts left before the credential blocks.
     public var attemptsRemaining: UInt8
     /// True while the credential still holds its factory value.
     public var isFactoryValue: Bool
+
+    // MARK: Lifecycle
 
     /// Creates a credential with the given digits and retry allowance.
     public init(
@@ -60,10 +78,14 @@ public actor VirtualIDCard {
       self.attemptsRemaining = attemptsRemaining
       self.isFactoryValue = isFactoryValue
     }
+
   }
 
   /// The card-side state: what a physical card itself stores and reports.
   public struct CardState: Equatable, Sendable {
+
+    // MARK: Properties
+
     /// The transport this card connects over.
     public var transport: Transport
     /// True when a contact reader is attached.
@@ -92,6 +114,8 @@ public actor VirtualIDCard {
     public var authenticationCertificate: CertificateState
     /// The condition of the qualified signature certificate.
     public var signatureCertificate: CertificateState
+
+    // MARK: Lifecycle
 
     /// Creates a fully specified card state.
     public init(
@@ -125,10 +149,14 @@ public actor VirtualIDCard {
       self.authenticationCertificate = authenticationCertificate
       self.signatureCertificate = signatureCertificate
     }
+
   }
 
   /// What the simulated device remembers independently of the card.
   public struct DeviceState: Equatable, Sendable {
+
+    // MARK: Properties
+
     /// The CAN saved on the device for future near-field connections.
     public var storedCardAccessNumber: String?
     /// The CAN in use on the currently open near-field connection.
@@ -141,6 +169,8 @@ public actor VirtualIDCard {
     public var tokenRegistered: Bool
     /// True while a signature authorization is in flight.
     public var pendingSigningRequest: Bool
+
+    // MARK: Lifecycle
 
     /// Creates device state; every field defaults to a fresh device.
     public init(
@@ -158,16 +188,22 @@ public actor VirtualIDCard {
       self.tokenRegistered = tokenRegistered
       self.pendingSigningRequest = pendingSigningRequest
     }
+
   }
 
   /// One observable moment: card state, device state, and queued faults.
   public struct Snapshot: Equatable, Sendable {
+
+    // MARK: Properties
+
     /// The card-side state.
     public var card: CardState
     /// The device-side state.
     public var device: DeviceState
     /// Transport faults waiting to fire, in queue order.
     public var faults: [Fault]
+
+    // MARK: Lifecycle
 
     /// Creates a snapshot, with no faults queued by default.
     public init(
@@ -179,6 +215,7 @@ public actor VirtualIDCard {
       self.device = device
       self.faults = faults
     }
+
   }
 
   /// A preset snapshot the virtual card can start from or reset to.
@@ -194,6 +231,8 @@ public actor VirtualIDCard {
     case pin2RecoveryReader = "pin2-recovery-reader"
     case pukRecoveryRefusedReader = "puk-recovery-refused-reader"
     case absent
+
+    // MARK: Computed Properties
 
     /// The value itself as its stable identity.
     public var id: Self { self }
@@ -299,16 +338,16 @@ public actor VirtualIDCard {
       case .pin1RecoveryReader:
         card.transport = .reader
         card.readerConnected = true
-        card.pin1.attemptsRemaining = 2
+        card.pin1.attemptsRemaining = RetryThresholds.lowAttemptsThreshold
       case .pin2RecoveryReader:
         card.transport = .reader
         card.readerConnected = true
-        card.pin2.attemptsRemaining = 2
+        card.pin2.attemptsRemaining = RetryThresholds.lowAttemptsThreshold
       case .pukRecoveryRefusedReader:
         card.transport = .reader
         card.readerConnected = true
-        card.pin1.attemptsRemaining = 0
-        card.puk.attemptsRemaining = 2
+        card.pin1.attemptsRemaining = RetryThresholds.zeroAttempts
+        card.puk.attemptsRemaining = RetryThresholds.lowAttemptsThreshold
       case .absent:
         card.cardPresent = false
       }
@@ -332,6 +371,8 @@ public actor VirtualIDCard {
     case authenticateSignature
     case qualifiedSignature
 
+    // MARK: Computed Properties
+
     /// The value itself as its stable identity.
     public var id: Self { self }
   }
@@ -344,6 +385,8 @@ public actor VirtualIDCard {
   public enum FaultPhase: String, CaseIterable, Identifiable, Sendable {
     case beforeCommand
     case afterCardExecution
+
+    // MARK: Computed Properties
 
     /// The value itself as its stable identity.
     public var id: Self { self }
@@ -358,12 +401,17 @@ public actor VirtualIDCard {
     case malformedResponse
     case tokenNotPublished
 
+    // MARK: Computed Properties
+
     /// The value itself as its stable identity.
     public var id: Self { self }
   }
 
   /// A deterministic transport failure queued against one operation.
   public struct Fault: Equatable, Sendable {
+
+    // MARK: Properties
+
     /// The operation this fault intercepts.
     public var operation: Operation
     /// The phase at which the fault fires.
@@ -372,6 +420,8 @@ public actor VirtualIDCard {
     public var effect: FaultEffect
     /// How many more times the fault fires before it expires.
     public var remainingOccurrences: Int
+
+    // MARK: Lifecycle
 
     /// Creates a fault that fires at least once.
     public init(
@@ -385,6 +435,7 @@ public actor VirtualIDCard {
       self.effect = effect
       self.remainingOccurrences = max(1, remainingOccurrences)
     }
+
   }
 
   /// A named fault queue for common failure demonstrations.
@@ -399,6 +450,8 @@ public actor VirtualIDCard {
     case tokenPublicationFailure
     case cardRemovedDuringSignature
     case responseLostAfterSignature
+
+    // MARK: Computed Properties
 
     /// The value itself as its stable identity.
     public var id: Self { self }
@@ -484,6 +537,9 @@ public actor VirtualIDCard {
 
   /// Attempts remaining for each credential, read without side effects.
   public struct RetryReport: Equatable, Sendable {
+
+    // MARK: Properties
+
     /// Attempts remaining for PIN 1.
     public let pin1: UInt8
     /// Attempts remaining for PIN 2.
@@ -491,12 +547,15 @@ public actor VirtualIDCard {
     /// Attempts remaining for the PUK.
     public let puk: UInt8
 
+    // MARK: Lifecycle
+
     /// Creates a report from the three counters.
     public init(pin1: UInt8, pin2: UInt8, puk: UInt8) {
       self.pin1 = pin1
       self.pin2 = pin2
       self.puk = puk
     }
+
   }
 
   /// The outcome of probing the retry counters.
@@ -522,20 +581,29 @@ public actor VirtualIDCard {
 
   /// A credential outcome paired with the snapshot it produced.
   public struct MutationResult: Equatable, Sendable {
+
+    // MARK: Properties
+
     /// The outcome at the card boundary.
     public let outcome: CredentialOutcome
     /// The state after the operation.
     public let snapshot: Snapshot
+
+    // MARK: Lifecycle
 
     /// Pairs an outcome with the resulting snapshot.
     public init(outcome: CredentialOutcome, snapshot: Snapshot) {
       self.outcome = outcome
       self.snapshot = snapshot
     }
+
   }
 
   /// The entry and new PINs offered to activate factory credentials.
   public struct ActivationRequest: Equatable, Sendable {
+
+    // MARK: Properties
+
     /// The activation code offered to the card.
     public let entry: String
     /// The new PIN 1 to set, when PIN 1 needs activation.
@@ -543,22 +611,30 @@ public actor VirtualIDCard {
     /// The new PIN 2 to set, when PIN 2 needs activation.
     public let newPIN2: String?
 
+    // MARK: Lifecycle
+
     /// Creates a request from the entry and the optional new PINs.
     public init(entry: String, newPIN1: String?, newPIN2: String?) {
       self.entry = entry
       self.newPIN1 = newPIN1
       self.newPIN2 = newPIN2
     }
+
   }
 
   /// Per-PIN activation outcomes with the snapshot they produced.
   public struct ActivationResult: Equatable, Sendable {
+
+    // MARK: Properties
+
     /// The outcome for PIN 1.
     public let pin1: CredentialOutcome
     /// The outcome for PIN 2, or nil when PIN 2 was never attempted.
     public let pin2: CredentialOutcome?
     /// The state after the activation attempt.
     public let snapshot: Snapshot
+
+    // MARK: Lifecycle
 
     /// Pairs the per-PIN outcomes with the resulting snapshot.
     public init(
@@ -570,6 +646,7 @@ public actor VirtualIDCard {
       self.pin2 = pin2
       self.snapshot = snapshot
     }
+
   }
 
   /// The outcome of authenticating with PIN 1.
@@ -595,7 +672,26 @@ public actor VirtualIDCard {
     case transportFailure(FaultEffect)
   }
 
+  // MARK: Properties
+
   private var current: Snapshot
+
+  // MARK: Computed Properties
+
+  private var activationRequired: Bool {
+    current.card.pin1.isFactoryValue || current.card.pin2.isFactoryValue
+  }
+
+  private var activationEntryDigitCount: Int {
+    switch current.card.generation {
+    case .activationCodeIsPuk:
+      Puk.maximumDigitCount
+    case .presetActivationPIN:
+      Puk.minimumDigitCount
+    }
+  }
+
+  // MARK: Lifecycle
 
   /// Creates a card preset to the given scenario.
   public init(scenario: Scenario = .factoryFreshNearField) {
@@ -606,6 +702,8 @@ public actor VirtualIDCard {
   public init(snapshot: Snapshot) {
     current = snapshot
   }
+
+  // MARK: Functions
 
   /// Reads the current snapshot without changing anything.
   public func inspect() -> Snapshot {
@@ -867,9 +965,9 @@ public actor VirtualIDCard {
       return finishSignature(.certificateUnavailable)
     }
     switch current.card.pin2.attemptsRemaining {
-    case 0:
+    case RetryThresholds.zeroAttempts:
       return finishSignature(.blocked)
-    case 1, 2:
+    case 1...RetryThresholds.lowAttemptsThreshold:
       return finishSignature(
         .refusedLowAttempts(remaining: current.card.pin2.attemptsRemaining))
     default:
@@ -894,19 +992,6 @@ public actor VirtualIDCard {
   private func finishSignature(_ result: SignatureResult) -> SignatureResult {
     current.device.pendingSigningRequest = false
     return result
-  }
-
-  private var activationRequired: Bool {
-    current.card.pin1.isFactoryValue || current.card.pin2.isFactoryValue
-  }
-
-  private var activationEntryDigitCount: Int {
-    switch current.card.generation {
-    case .activationCodeIsPuk:
-      Puk.maximumDigitCount
-    case .presetActivationPIN:
-      Puk.minimumDigitCount
-    }
   }
 
   private func reachabilityFailure() -> FaultEffect? {
@@ -1073,9 +1158,9 @@ public actor VirtualIDCard {
 
   private func retryRefusal(_ remaining: UInt8) -> CredentialOutcome? {
     switch remaining {
-    case 0:
+    case RetryThresholds.zeroAttempts:
       .blocked
-    case 1, 2:
+    case 1...RetryThresholds.lowAttemptsThreshold:
       .refusedLowAttempts(remaining: remaining)
     default:
       nil

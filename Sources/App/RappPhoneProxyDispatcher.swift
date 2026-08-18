@@ -7,9 +7,14 @@
   /// Exhaustive semantic dispatcher for one authenticated phone-side RAPP
   /// connection. It sees no wire frames and owns no transport capability.
   internal actor RappPhoneProxyDispatcher {
+
+    // MARK: Properties
+
     private let inbox: RappAuthorizationInbox
     private let requireExplicitReconnect: @MainActor @Sendable () -> Void
     private var pin2ByOperation: [Data: String] = [:]
+
+    // MARK: Lifecycle
 
     internal init(
       inbox: RappAuthorizationInbox,
@@ -18,6 +23,19 @@
       self.inbox = inbox
       self.requireExplicitReconnect = requireExplicitReconnect
     }
+
+    // MARK: Static Functions
+
+    /// The remembered name of the selected pair's requesting device.
+    private static func requesterName() async -> String? {
+      let catalog = RappPairCatalog(vault: RappDeviceVault())
+      guard let selected = try? await catalog.selectedPair() else {
+        return nil
+      }
+      return RappPairNames.name(forPairID: selected.pairID)
+    }
+
+    // MARK: Functions
 
     internal func receive(
       _ event: RappConnectionCoordinator.Event,
@@ -112,15 +130,6 @@
         await inbox.cancelAll()
         await coordinator.close()
       }
-    }
-
-    /// The remembered name of the selected pair's requesting device.
-    private static func requesterName() async -> String? {
-      let catalog = RappPairCatalog(vault: RappDeviceVault())
-      guard let selected = try? await catalog.selectedPair() else {
-        return nil
-      }
-      return RappPairNames.name(forPairID: selected.pairID)
     }
 
     private func prerequisitesExist(
@@ -387,9 +396,12 @@
 
     private func attempts(_ outcome: RetryProbeOutcome?) -> UInt8? {
       switch outcome {
-      case .remaining(let count): count.attemptsRemaining
-      case .locked: 0
-      case .invalidated, .noInformation, .other, .verified, nil: nil
+      case .remaining(let count):
+        count.attemptsRemaining
+      case .locked:
+        0
+      case .invalidated, .noInformation, .other, .verified, nil:
+        nil
       }
     }
   }

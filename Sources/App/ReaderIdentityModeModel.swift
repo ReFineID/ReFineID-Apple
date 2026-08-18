@@ -12,6 +12,9 @@
   /// probe for the shared health key. There is no card-presence polling.
   @MainActor
   internal final class ReaderIdentityModeModel: ObservableObject {
+
+    // MARK: Static Computed Properties
+
     /// Whether the platform is presenting a contact reader slot at all.
     ///
     /// A reader identity cannot exist without a reader. Asking the slot
@@ -32,14 +35,7 @@
       }
     }
 
-    /// Watches physical token publication and removal.
-    private let watcher = TKTokenWatcher()
-
-    /// Session-only health shared by every PIN-management shortcut.
-    private let retryHealth = CredentialRetryHealth.shared
-
-    /// One-shot removal handlers already installed for token IDs.
-    private var removalHandlers: Set<String> = []
+    // MARK: Properties
 
     /// The live reader tokens by identifier, including ones minted
     /// before this build, in a stable order.
@@ -52,6 +48,17 @@
     /// to answer at all. A token already live answers from what it
     /// published.
     @Published internal private(set) var liveReaderTokenIdentifiers: [String] = []
+
+    /// Watches physical token publication and removal.
+    private let watcher = TKTokenWatcher()
+
+    /// Session-only health shared by every PIN-management shortcut.
+    private let retryHealth = CredentialRetryHealth.shared
+
+    /// One-shot removal handlers already installed for token IDs.
+    private var removalHandlers: Set<String> = []
+
+    // MARK: Computed Properties
 
     /// Number of live reader tokens.
     internal var liveReaderTokenCount: Int {
@@ -89,24 +96,15 @@
       return liveReaderTokenIdentifiers
     }
 
+    // MARK: Lifecycle
+
     internal init() {
       if !DemoMode.shared.isActive {
         watcher.setInsertionHandler(Self.insertionHandler(for: self))
       }
     }
 
-    /// Returns holder names without exposing the backend to the view.
-    internal func holderNames() async -> [String] {
-      if DemoMode.shared.isActive {
-        return isActive ? [DemoMode.shared.holderName] : []
-      }
-      let identifiers = liveReaderTokenIdentifiers
-      return await Task.detached(priority: .utility) {
-        identifiers.compactMap { identifier in
-          PublishedIdentityName.name(ofTokenIdentifier: identifier)
-        }
-      }.value
-    }
+    // MARK: Static Functions
 
     /// Builds a ctkd callback with no inherited main-actor isolation.
     ///
@@ -135,6 +133,21 @@
           model?.tokenWasRemoved(removedTokenIdentifier)
         }
       }
+    }
+
+    // MARK: Functions
+
+    /// Returns holder names without exposing the backend to the view.
+    internal func holderNames() async -> [String] {
+      if DemoMode.shared.isActive {
+        return isActive ? [DemoMode.shared.holderName] : []
+      }
+      let identifiers = liveReaderTokenIdentifiers
+      return await Task.detached(priority: .utility) {
+        identifiers.compactMap { identifier in
+          PublishedIdentityName.name(ofTokenIdentifier: identifier)
+        }
+      }.value
     }
 
     /// Lists live reader tokens while excluding persistent NFC registrations.

@@ -9,7 +9,14 @@ import SwiftUI
 /// job it was installed for has neither, and this is empty: the setup
 /// screen ends at its last product control.
 internal struct CardSetupFooter: View {
-  private static let padding: CGFloat = 12
+  private static let basePadding: CGFloat = 12
+  private static let padding = basePadding
+  private static let verticalPadding = basePadding
+  private static let demoBackgroundRed: (red: Double, green: Double, blue: Double) = (
+    red: 0.68,
+    green: 0.04,
+    blue: 0.04
+  )
 
   #if DEBUG
     /// Read from the bundle at run time: the stamp scripts renumber
@@ -51,10 +58,14 @@ internal struct CardSetupFooter: View {
         .font(.headline)
         .foregroundStyle(.white)
         .accessibilityIdentifier("demoModeNotice")
-        .padding(.vertical, Self.padding)
+        .padding(.vertical, Self.verticalPadding)
         .frame(maxWidth: .infinity)
         .background(
-          Color(red: 0.68, green: 0.04, blue: 0.04),
+          Color(
+            red: Self.demoBackgroundRed.red,
+            green: Self.demoBackgroundRed.green,
+            blue: Self.demoBackgroundRed.blue
+          ),
           ignoresSafeAreaEdges: .bottom)
     #endif
   }

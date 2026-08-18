@@ -16,6 +16,9 @@ import Security
 /// below that level is offered: a signature that cannot outlive its
 /// certificates is not what this is for.
 internal enum DocumentSigner {
+
+  // MARK: Nested Types
+
   /// Why a document could not be signed.
   internal enum Failure: Error {
     /// The card refused, or its qualified slot is unusable.
@@ -61,165 +64,7 @@ internal enum DocumentSigner {
     let profile: CardKeyProfile
   }
 
-  /// Signs `document`, answering the finished bytes.
-  internal static func sign(
-    _ document: Data,
-    pin2: String?,
-    reason: String?,
-    location: String?,
-    transport: CardMaintenance.Transport = .reader,
-    cardAccessNumber: String? = nil
-  ) async throws -> Product {
-    try await Self.sign(
-      document,
-      pin2: pin2,
-      reason: reason,
-      location: location,
-      stamp: nil,
-      transport: transport,
-      cardAccessNumber: cardAccessNumber
-    )
-  }
-
-  /// The same, appending a page carrying the visible mark.
-  ///
-  /// The page is written in the signature's own revision, so it is
-  /// inside what the signature covers. Adding it afterwards would
-  /// leave a document that validators report as changed after
-  /// signing.
-  internal static func sign(
-    _ document: Data,
-    pin2: String?,
-    reason: String?,
-    location: String?,
-    stamp: VisibleStamp?,
-    transport: CardMaintenance.Transport = .reader,
-    cardAccessNumber: String? = nil
-  ) async throws -> Product {
-    let claim = PdfIncrementalSigner.SignatureClaim(
-      signedAt: Date(), reason: reason, location: location
-    )
-    return try await Self.sign(
-      document,
-      pin2: pin2,
-      claim: claim,
-      stamp: stamp,
-      transport: transport,
-      cardAccessNumber: cardAccessNumber
-    )
-  }
-
-  /// The same operation with one instant shared by the QR and PDF.
-  internal static func sign(
-    _ document: Data,
-    pin2: String?,
-    claim: PdfIncrementalSigner.SignatureClaim,
-    stamp: VisibleStamp?,
-    transport: CardMaintenance.Transport = .reader,
-    cardAccessNumber: String? = nil
-  ) async throws -> Product {
-    let material = try await Self.cardMaterial(
-      pin2: pin2,
-      document: document,
-      claim: claim,
-      stamp: stamp,
-      transport: transport,
-      cardAccessNumber: cardAccessNumber
-    )
-    let verifiedTokens = try await Self.timestamped(material.signature)
-    let timestamped = try TimestampedSignature.verified(
-      TimestampedSignatureInput(
-        placeholder: material.placeholder,
-        signedAttributes: material.signedAttributes,
-        signatureValue: material.signature,
-        signerProfile: material.profile,
-        signerCertificate: material.certificate
-      ),
-      timestampTokens: verifiedTokens
-    )
-    let evidence: PdfValidationStore.Material
-    do {
-      evidence = try await ValidationMaterialCollector.collect(
-        signerCertificate: material.certificate,
-        timestampTokens: verifiedTokens
-      )
-    } catch {
-      #if DEBUG && os(macOS)
-        if let product = DebugRevokedDocumentSigning.product(
-          timestamped: timestamped,
-          after: error,
-          enabled: DebugRevokedDocumentSigning.isEnabled()
-        ) {
-          return product
-        }
-      #endif
-      throw Failure.validation(error)
-    }
-    let withEvidence = try PdfValidationStore.appended(
-      to: timestamped.bytes, material: evidence
-    )
-    return Product(
-      bytes: try await Self.archiveTimestamped(withEvidence),
-      completion: .archival
-    )
-  }
-
-  /// Reads the qualified certificate, verifies PIN2 and signs, in
-  /// one exclusive card session.
-  private static func cardMaterial(
-    pin2: String?,
-    document: Data,
-    claim: PdfIncrementalSigner.SignatureClaim,
-    stamp: VisibleStamp?,
-    transport: CardMaintenance.Transport,
-    cardAccessNumber: String?
-  ) async throws -> CardMaterial {
-    let prepared: PdfSignaturePlaceholder
-    do {
-      prepared = try PdfIncrementalSigner.prepare(
-        document, revision: .signature(claim), appending: stamp?.mark
-      )
-    } catch let error as PdfSigningError {
-      throw Failure.document(error)
-    }
-    let digest = prepared.digest
-    #if os(macOS)
-      if await MainActor.run(body: { Self.usesRappSigning }) {
-        return try await Self.remoteCardMaterial(
-          prepared: prepared,
-          byteRangeDigest: digest,
-          expectedCertificate: stamp?.signerCertificate
-        )
-      }
-    #endif
-    guard let pin2 else {
-      throw Failure.card(.invalidEntry)
-    }
-    let answer = await CardMaintenance.qualifiedSignature(
-      pin2: pin2,
-      expectedCertificate: stamp?.signerCertificate,
-      transport: transport,
-      cardAccessNumber: cardAccessNumber
-    ) { certificate in
-      QualifiedDocumentCms.signedAttributes(
-        byteRangeDigest: digest, signerCertificate: certificate
-      )
-    }
-    switch answer {
-    case .signerCertificateMismatch:
-      throw Failure.stampSignerChanged
-    case .signed(let product):
-      return CardMaterial(
-        placeholder: prepared,
-        signedAttributes: product.content,
-        signature: product.signature,
-        certificate: product.certificate,
-        profile: product.profile
-      )
-    case .refused(let outcome):
-      throw Failure.card(outcome)
-    }
-  }
+  // MARK: Static Computed Properties
 
   #if os(macOS)
     /// A selected RAPP phone is the signing device only when no local reader
@@ -331,6 +176,111 @@ internal enum DocumentSigner {
     }
   #endif
 
+  // MARK: Static Functions
+
+  /// Signs `document`, answering the finished bytes.
+  internal static func sign(
+    _ document: Data,
+    pin2: String?,
+    reason: String?,
+    location: String?,
+    transport: CardMaintenance.Transport = .reader,
+    cardAccessNumber: String? = nil
+  ) async throws -> Product {
+    try await Self.sign(
+      document,
+      pin2: pin2,
+      reason: reason,
+      location: location,
+      stamp: nil,
+      transport: transport,
+      cardAccessNumber: cardAccessNumber
+    )
+  }
+
+  /// The same, appending a page carrying the visible mark.
+  ///
+  /// The page is written in the signature's own revision, so it is
+  /// inside what the signature covers. Adding it afterwards would
+  /// leave a document that validators report as changed after
+  /// signing.
+  internal static func sign(
+    _ document: Data,
+    pin2: String?,
+    reason: String?,
+    location: String?,
+    stamp: VisibleStamp?,
+    transport: CardMaintenance.Transport = .reader,
+    cardAccessNumber: String? = nil
+  ) async throws -> Product {
+    let claim = PdfIncrementalSigner.SignatureClaim(
+      signedAt: Date(), reason: reason, location: location
+    )
+    return try await Self.sign(
+      document,
+      pin2: pin2,
+      claim: claim,
+      stamp: stamp,
+      transport: transport,
+      cardAccessNumber: cardAccessNumber
+    )
+  }
+
+  /// The same operation with one instant shared by the QR and PDF.
+  internal static func sign(
+    _ document: Data,
+    pin2: String?,
+    claim: PdfIncrementalSigner.SignatureClaim,
+    stamp: VisibleStamp?,
+    transport: CardMaintenance.Transport = .reader,
+    cardAccessNumber: String? = nil
+  ) async throws -> Product {
+    let material = try await Self.cardMaterial(
+      pin2: pin2,
+      document: document,
+      claim: claim,
+      stamp: stamp,
+      transport: transport,
+      cardAccessNumber: cardAccessNumber
+    )
+    let verifiedTokens = try await Self.timestamped(material.signature)
+    let timestamped = try TimestampedSignature.verified(
+      TimestampedSignatureInput(
+        placeholder: material.placeholder,
+        signedAttributes: material.signedAttributes,
+        signatureValue: material.signature,
+        signerProfile: material.profile,
+        signerCertificate: material.certificate
+      ),
+      timestampTokens: verifiedTokens
+    )
+    let evidence: PdfValidationStore.Material
+    do {
+      evidence = try await ValidationMaterialCollector.collect(
+        signerCertificate: material.certificate,
+        timestampTokens: verifiedTokens
+      )
+    } catch {
+      #if DEBUG && os(macOS)
+        if let product = DebugRevokedDocumentSigning.product(
+          timestamped: timestamped,
+          after: error,
+          enabled: DebugRevokedDocumentSigning.isEnabled()
+        ) {
+          return product
+        }
+      #endif
+      throw Failure.validation(error)
+    }
+    let withEvidence = try PdfValidationStore.appended(
+      to: timestamped.bytes, material: evidence
+    )
+    return Product(
+      bytes: try await Self.archiveTimestamped(withEvidence),
+      completion: .archival
+    )
+  }
+
   /// A detached raw signature over the stamp's compact claim.
   ///
   /// This card operation comes first because its bytes are drawn into
@@ -359,6 +309,63 @@ internal enum DocumentSigner {
         signerCertificate: product.certificate,
         signature: product.signature
       )
+    }
+  }
+
+  /// Reads the qualified certificate, verifies PIN2 and signs, in
+  /// one exclusive card session.
+  private static func cardMaterial(
+    pin2: String?,
+    document: Data,
+    claim: PdfIncrementalSigner.SignatureClaim,
+    stamp: VisibleStamp?,
+    transport: CardMaintenance.Transport,
+    cardAccessNumber: String?
+  ) async throws -> CardMaterial {
+    let prepared: PdfSignaturePlaceholder
+    do {
+      prepared = try PdfIncrementalSigner.prepare(
+        document, revision: .signature(claim), appending: stamp?.mark
+      )
+    } catch let error as PdfSigningError {
+      throw Failure.document(error)
+    }
+    let digest = prepared.digest
+    #if os(macOS)
+      if await MainActor.run(body: { Self.usesRappSigning }) {
+        return try await Self.remoteCardMaterial(
+          prepared: prepared,
+          byteRangeDigest: digest,
+          expectedCertificate: stamp?.signerCertificate
+        )
+      }
+    #endif
+    guard let pin2 else {
+      throw Failure.card(.invalidEntry)
+    }
+    let answer = await CardMaintenance.qualifiedSignature(
+      pin2: pin2,
+      expectedCertificate: stamp?.signerCertificate,
+      transport: transport,
+      cardAccessNumber: cardAccessNumber
+    ) { certificate in
+      QualifiedDocumentCms.signedAttributes(
+        byteRangeDigest: digest, signerCertificate: certificate
+      )
+    }
+    switch answer {
+    case .signerCertificateMismatch:
+      throw Failure.stampSignerChanged
+    case .signed(let product):
+      return CardMaterial(
+        placeholder: prepared,
+        signedAttributes: product.content,
+        signature: product.signature,
+        certificate: product.certificate,
+        profile: product.profile
+      )
+    case .refused(let outcome):
+      throw Failure.card(outcome)
     }
   }
 
