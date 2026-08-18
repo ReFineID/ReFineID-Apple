@@ -26,6 +26,20 @@ internal struct CardCredentialsView: View {
 
   private static let sectionSpacing: CGFloat = 24
 
+  /// The seal drawn beside document verification.
+  ///
+  /// A symbol added after the system running this build resolves to
+  /// nothing and leaves the row without its mark, so the newer name is
+  /// used only where it exists.
+  private static var verificationSymbolName: String {
+    #if os(iOS)
+      UIImage(systemName: "checkmark.seal.text.page") != nil
+        ? "checkmark.seal.text.page" : "checkmark.seal"
+    #else
+      "checkmark.seal.text.page"
+    #endif
+  }
+
   @StateObject private var model = CardCredentialsModel()
   @ObservedObject private var retryHealth = CredentialRetryHealth.shared
   #if os(iOS)
@@ -271,7 +285,11 @@ internal struct CardCredentialsView: View {
       #if os(iOS)
         if !isHolding {
           signingSection
-          cardSection
+          // A heading over nothing is a heading about nothing: the section
+          // appears only where at least one of its routes can open.
+          if offersNearField || hasReaderIdentity {
+            cardSection
+          }
         }
       #endif
       #if !os(iOS)
@@ -517,32 +535,36 @@ internal struct CardCredentialsView: View {
               defaultValue: "Verify",
               table: "DocumentSigning")
           ) {
-            Image(systemName: "checkmark.seal.text.page")
+            Image(systemName: Self.verificationSymbolName)
               .foregroundStyle(Color.accentColor)
           }
         }
         .tint(.primary)
         .accessibilityIdentifier("verifyDocuments")
-        Button {
-          synchronizeIdentityState()
-          transition(.openDocumentSigning)
-        } label: {
-          navigationRow(
-            String(
-              localized: "signing.title",
-              defaultValue: "Sign",
-              table: "DocumentSigning")
-          ) {
-            Image(systemName: "signature")
-              .foregroundStyle(
-                signingAvailable
-                  ? AnyShapeStyle(Color.accentColor)
-                  : AnyShapeStyle(.secondary))
+        // Signing reaches the card for a qualified signature, so the route
+        // belongs to a device that can reach one.
+        if offersNearField || hasReaderIdentity {
+          Button {
+            synchronizeIdentityState()
+            transition(.openDocumentSigning)
+          } label: {
+            navigationRow(
+              String(
+                localized: "signing.title",
+                defaultValue: "Sign",
+                table: "DocumentSigning")
+            ) {
+              Image(systemName: "signature")
+                .foregroundStyle(
+                  signingAvailable
+                    ? AnyShapeStyle(Color.accentColor)
+                    : AnyShapeStyle(.secondary))
+            }
           }
+          .tint(.primary)
+          .accessibilityIdentifier("signDocuments")
+          .disabled(!signingAvailable)
         }
-        .tint(.primary)
-        .accessibilityIdentifier("signDocuments")
-        .disabled(!signingAvailable)
       } header: {
         compactSectionHeader(
           verbatim: String(
@@ -570,26 +592,31 @@ internal struct CardCredentialsView: View {
     /// The card's credential management route.
     private var cardSection: some View {
       Section {
-        Button {
-          openRemoteReader()
-        } label: {
-          navigationRow(String(localized: "Remote Card")) {
-            Image(
-              systemName: remoteCardAvailable
-                ? "key.radiowaves.forward"
-                : "key.radiowaves.forward.slash"
-            )
-            .foregroundStyle(
-              remoteCardAvailable
-                ? AnyShapeStyle(Color.accentColor)
-                : AnyShapeStyle(.secondary)
-            )
-            .accessibilityHidden(true)
+        // A device that reaches a card of its own can also serve one, and
+        // this route is how it offers that. A device without one only ever
+        // consumes a remote card, which the identity row already connects.
+        if offersNearField {
+          Button {
+            openRemoteReader()
+          } label: {
+            navigationRow(String(localized: "Remote Card")) {
+              Image(
+                systemName: remoteCardAvailable
+                  ? "key.radiowaves.forward"
+                  : "key.radiowaves.forward.slash"
+              )
+              .foregroundStyle(
+                remoteCardAvailable
+                  ? AnyShapeStyle(Color.accentColor)
+                  : AnyShapeStyle(.secondary)
+              )
+              .accessibilityHidden(true)
+            }
           }
+          .tint(.primary)
+          .accessibilityIdentifier("remoteCard")
+          .disabled(!remoteCardAvailable)
         }
-        .tint(.primary)
-        .accessibilityIdentifier("remoteCard")
-        .disabled(!remoteCardAvailable)
         // Changing a code writes to the card itself, so the route belongs to
         // a device that can reach one. Offering it where it can never open
         // describes the app as broken rather than the device as different.

@@ -118,13 +118,7 @@ internal struct ReFineIDApp: App {
       StatusView()
     #else
       ZStack(alignment: .bottomTrailing) {
-        // A device that reads its own card opens on the credentials
-        // surface; one that cannot has only what a paired phone offers.
-        #if REFINEID_LOCAL_CARD
-          ReaderIdentityRootView()
-        #else
-          RequesterIdentityView()
-        #endif
+        ReaderIdentityRootView()
         if DemoMode.shared.isActive {
           VirtualIDCardOverlay {
             DemoMode.shared.setEditorPresented(true)

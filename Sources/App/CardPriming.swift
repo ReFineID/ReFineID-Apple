@@ -240,7 +240,7 @@
       await CardPrimingFeedback.startWorking()
       let outcome = await Self.hold(
         sheet: sheet,
-        accessNumber: accessNumber,
+        accessNumber: ProvenAccessNumber(value: accessNumber, digits: cardAccessNumber),
         progress: progress,
         step: report)
       await CardPrimingFeedback.report(succeeded: outcome.stored && outcome.registered)
@@ -253,7 +253,7 @@
     /// and one place to be answered, both inside the panel's lifetime.
     private static func hold(
       sheet: PrimingSheetReporter,
-      accessNumber: CardAccessNumber,
+      accessNumber: ProvenAccessNumber,
       progress: @escaping Progress,
       step: @escaping StepReport
     ) async -> Outcome {
@@ -299,7 +299,7 @@
     private static func readStoreRegister(
       sheet: PrimingSheetReporter,
       lookup: PrimeLookupIdentifier,
-      accessNumber: CardAccessNumber,
+      accessNumber: ProvenAccessNumber,
       progress: @escaping Progress,
       step: @escaping StepReport
     ) async -> Outcome {
@@ -309,7 +309,7 @@
         payload = try await Self.onCardQueue {
           try Self.read(
             from: sheet,
-            accessNumber: accessNumber,
+            accessNumber: accessNumber.value,
             progress: progress,
             step: step)
         }
@@ -319,6 +319,15 @@
         // a PIN, CAN or the holder.
         sheet.fail(Self.sheetMessage(for: error))
         return Self.failure(error)
+      }
+
+      // The read above opened the secure channel with this number, so it
+      // is proven, and the record built below is stored under it.
+      guard CardCredentialStore.save(cardAccessNumber: accessNumber.digits) == errSecSuccess
+      else {
+        step(.stored, .failed)
+        sheet.fail(String(localized: "Could not save card details"))
+        return Self.failure(Failure.primeNotStored)
       }
 
       // The exact record is what the extension's mint -- already waiting
