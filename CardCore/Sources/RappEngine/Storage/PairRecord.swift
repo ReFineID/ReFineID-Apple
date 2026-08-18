@@ -7,6 +7,13 @@ internal let pairRecordFormatVersion: UInt64 = 2
 
 /// One durable pairing, as stored on this device only.
 internal struct PairRecord: Equatable {
+  /// Every key a stored record may carry, and must carry in full.
+  private static let expectedKeys = [
+    "format_version", "pair_id", "rendezvous_token", "role", "local_static_private",
+    "local_static_public", "remote_static_public", "grants_hash", "profiles", "transport_profile",
+    "candidate_id", "transport_parameters", "created_at_ms",
+  ]
+
   internal let pairIdentifier: Data
   internal let rendezvousToken: Data
   internal let role: EndpointRole
@@ -57,12 +64,47 @@ internal struct PairRecord: Equatable {
     self.createdAtMilliseconds = createdAtMilliseconds
   }
 
-  /// Every key a stored record may carry, and must carry in full.
-  private static let expectedKeys = [
-    "format_version", "pair_id", "rendezvous_token", "role", "local_static_private",
-    "local_static_public", "remote_static_public", "grants_hash", "profiles", "transport_profile",
-    "candidate_id", "transport_parameters", "created_at_ms",
-  ]
+  internal static func decode(_ bytes: Data) throws -> Self {
+    guard let decoded = try? decodeDeterministicCbor(bytes),
+      case .map(var map) = decoded
+    else { throw PairRecordError.invalidInput }
+    guard map.keys.allSatisfy(expectedKeys.contains) else { throw PairRecordError.invalidInput }
+    guard try takeUnsigned(&map, "format_version") == pairRecordFormatVersion else {
+      throw PairRecordError.invalidInput
+    }
+    let decodedPairIdentifier = try takeBytes(&map, "pair_id")
+    let decodedRendezvousToken = try takeBytes(&map, "rendezvous_token")
+    guard let decodedRole = EndpointRole(rawValue: try takeText(&map, "role")) else {
+      throw PairRecordError.invalidInput
+    }
+    let decodedLocalStaticPrivate = try takeBytes(&map, "local_static_private")
+    let decodedLocalStaticPublic = try takeBytes(&map, "local_static_public")
+    let decodedRemoteStaticPublic = try takeBytes(&map, "remote_static_public")
+    let decodedGrantsHash = try takeBytes(&map, "grants_hash")
+    let decodedProfiles = try takeTextArray(&map, "profiles").map { name -> ProfileName in
+      guard let profile = ProfileName(rawValue: name) else { throw PairRecordError.invalidInput }
+      return profile
+    }
+    let decodedTransport = PairTransportBinding(
+      profile: try takeText(&map, "transport_profile"),
+      candidateIdentifier: try takeText(&map, "candidate_id"),
+      parameters: try takeMap(&map, "transport_parameters")
+    )
+    let decodedCreatedAtMilliseconds = try takeUnsigned(&map, "created_at_ms")
+    guard map.isEmpty else { throw PairRecordError.invalidInput }
+    return try Self(
+      pairIdentifier: decodedPairIdentifier,
+      rendezvousToken: decodedRendezvousToken,
+      role: decodedRole,
+      localStaticPrivate: decodedLocalStaticPrivate,
+      localStaticPublic: decodedLocalStaticPublic,
+      remoteStaticPublic: decodedRemoteStaticPublic,
+      grantsHash: decodedGrantsHash,
+      profiles: decodedProfiles,
+      transport: decodedTransport,
+      createdAtMilliseconds: decodedCreatedAtMilliseconds
+    )
+  }
 
   internal func encoded() throws -> Data {
     let value = WireValue.map([
@@ -85,47 +127,5 @@ internal struct PairRecord: Equatable {
     } catch {
       throw PairRecordError.invalidInput
     }
-  }
-
-  internal static func decode(_ bytes: Data) throws -> PairRecord {
-    guard let decoded = try? decodeDeterministicCbor(bytes),
-      case .map(var map) = decoded
-    else { throw PairRecordError.invalidInput }
-    guard map.keys.allSatisfy(expectedKeys.contains) else { throw PairRecordError.invalidInput }
-    guard try takeUnsigned(&map, "format_version") == pairRecordFormatVersion else {
-      throw PairRecordError.invalidInput
-    }
-    let pairIdentifier = try takeBytes(&map, "pair_id")
-    let rendezvousToken = try takeBytes(&map, "rendezvous_token")
-    guard let role = EndpointRole(rawValue: try takeText(&map, "role")) else {
-      throw PairRecordError.invalidInput
-    }
-    let localStaticPrivate = try takeBytes(&map, "local_static_private")
-    let localStaticPublic = try takeBytes(&map, "local_static_public")
-    let remoteStaticPublic = try takeBytes(&map, "remote_static_public")
-    let grantsHash = try takeBytes(&map, "grants_hash")
-    let profiles = try takeTextArray(&map, "profiles").map { name -> ProfileName in
-      guard let profile = ProfileName(rawValue: name) else { throw PairRecordError.invalidInput }
-      return profile
-    }
-    let transport = PairTransportBinding(
-      profile: try takeText(&map, "transport_profile"),
-      candidateIdentifier: try takeText(&map, "candidate_id"),
-      parameters: try takeMap(&map, "transport_parameters")
-    )
-    let createdAtMilliseconds = try takeUnsigned(&map, "created_at_ms")
-    guard map.isEmpty else { throw PairRecordError.invalidInput }
-    return try PairRecord(
-      pairIdentifier: pairIdentifier,
-      rendezvousToken: rendezvousToken,
-      role: role,
-      localStaticPrivate: localStaticPrivate,
-      localStaticPublic: localStaticPublic,
-      remoteStaticPublic: remoteStaticPublic,
-      grantsHash: grantsHash,
-      profiles: profiles,
-      transport: transport,
-      createdAtMilliseconds: createdAtMilliseconds
-    )
   }
 }

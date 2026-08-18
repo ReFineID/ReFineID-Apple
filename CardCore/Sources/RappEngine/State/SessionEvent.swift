@@ -1,5 +1,10 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
+// The cases are transcribed in the order the formal model lists them, so the
+// tables read line for line against the document. Alphabetising them would
+// break the correspondence the bidirectional conformance test protects.
+// swiftlint:disable sorted_enum_cases
+
 /// Session component event.
 internal enum SessionEvent: String, CaseIterable, Sendable {
   case connect
@@ -32,3 +37,5 @@ internal enum SessionEvent: String, CaseIterable, Sendable {
   case localSecurityShutdown = "local_security_shutdown"
   case closeCompleteOrDeadline = "close_complete_or_deadline"
 }
+
+// swiftlint:enable sorted_enum_cases

@@ -1,5 +1,10 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
+// The cases are transcribed in the order the formal model lists them, so the
+// tables read line for line against the document. Alphabetising them would
+// break the correspondence the bidirectional conformance test protects.
+// swiftlint:disable sorted_enum_cases
+
 /// Pairing component state.
 ///
 /// A pairing instance exists per stored or in-progress peer relationship;
@@ -20,8 +25,12 @@ internal enum PairingState: String, CaseIterable, Sendable {
   /// aborts an attempt that has not stored one.
   internal var holdsStoredPairing: Bool {
     switch self {
-    case .pairedDisconnected, .pairedConnected: true
-    case .unpaired, .offerActive, .handshaking, .confirming, .revoked: false
+    case .pairedDisconnected, .pairedConnected:
+      true
+    case .unpaired, .offerActive, .handshaking, .confirming, .revoked:
+      false
     }
   }
 }
+
+// swiftlint:enable sorted_enum_cases

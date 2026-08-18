@@ -11,8 +11,11 @@ internal struct CardInspection: Equatable {
   internal var pukAttempts: UInt8?
 
   internal init(
-    pin1Factory: Bool, pin2Factory: Bool, pin1Attempts: UInt8? = nil, pin2Attempts: UInt8? = nil,
-    pukAttempts: UInt8? = nil
+    pin1Factory: Bool,
+    pin2Factory: Bool,
+    pin1Attempts: UInt8?,
+    pin2Attempts: UInt8?,
+    pukAttempts: UInt8?
   ) {
     self.pin1Factory = pin1Factory
     self.pin2Factory = pin2Factory
@@ -20,4 +23,11 @@ internal struct CardInspection: Equatable {
     self.pin2Attempts = pin2Attempts
     self.pukAttempts = pukAttempts
   }
+  /// An inspection that reported no attempt counters.
+  internal init(pin1Factory: Bool, pin2Factory: Bool) {
+    self.init(
+      pin1Factory: pin1Factory, pin2Factory: pin2Factory, pin1Attempts: nil,
+      pin2Attempts: nil, pukAttempts: nil)
+  }
+
 }

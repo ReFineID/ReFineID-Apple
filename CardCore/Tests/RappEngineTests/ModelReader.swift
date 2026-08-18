@@ -4,6 +4,16 @@ import Foundation
 
 @testable import RappEngine
 
+/// Indentation levels of the block-style model document.
+private let modelIndentSection = 2
+private let modelIndentRule = 4
+private let modelIndentRuleField = 6
+
+/// A `key: value` line splits into exactly this many parts.
+private let keyValueParts = 2
+/// The `- ` that opens a rule.
+private let ruleMarkerLength = 2
+
 /// A deliberately small reader for the block-style subset the model uses.
 internal struct ModelReader {
   internal let documentVersion: String
@@ -12,17 +22,17 @@ internal struct ModelReader {
   internal let rules: [String: [ParsedRule]]
 
   internal init(text: String) {
-    var version = ""
-    var guardNames: Set<String> = []
-    var actionNames: Set<String> = []
-    var rules: [String: [ParsedRule]] = ["pairing": [], "session": [], "operation": []]
+    var parsedVersion = ""
+    var parsedGuardNames: Set<String> = []
+    var parsedActionNames: Set<String> = []
+    var parsedRules: [String: [ParsedRule]] = ["pairing": [], "session": [], "operation": []]
     var section = ""
     var inTransitions = false
     var current: ParsedRule?
 
     func flush() {
-      if let rule = current, !section.isEmpty, rules[section] != nil {
-        rules[section]?.append(rule)
+      if let rule = current, !section.isEmpty, parsedRules[section] != nil {
+        parsedRules[section]?.append(rule)
       }
       current = nil
     }
@@ -40,40 +50,41 @@ internal struct ModelReader {
         let name = body.split(separator: ":", maxSplits: 1)[0]
         section = String(name)
         if section == "document_version" {
-          version = Self.value(of: body).trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+          let quoted = CharacterSet(charactersIn: "\"")
+          parsedVersion = Self.value(of: body).trimmingCharacters(in: quoted)
         }
         continue
       }
 
-      if indent == 2 {
+      if indent == modelIndentSection {
         flush()
         let key = body.trimmingCharacters(in: .whitespaces).split(separator: ":", maxSplits: 1)[0]
         inTransitions = String(key) == "transitions"
         if !inTransitions {
-          if section == "guards" { guardNames.insert(String(key)) }
-          if section == "actions" { actionNames.insert(String(key)) }
+          if section == "guards" { parsedGuardNames.insert(String(key)) }
+          if section == "actions" { parsedActionNames.insert(String(key)) }
         }
         continue
       }
 
       guard inTransitions else { continue }
       let trimmed = body.trimmingCharacters(in: .whitespaces)
-      if indent == 4, trimmed.hasPrefix("- ") {
+      if indent == modelIndentRule, trimmed.hasPrefix("- ") {
         flush()
         var rule = ParsedRule()
-        Self.assign(String(trimmed.dropFirst(2)), into: &rule)
+        Self.assign(String(trimmed.dropFirst(ruleMarkerLength)), into: &rule)
         current = rule
-      } else if indent >= 6, var rule = current {
+      } else if indent >= modelIndentRuleField, var rule = current {
         Self.assign(trimmed, into: &rule)
         current = rule
       }
     }
     flush()
 
-    self.documentVersion = version
-    self.guardNames = guardNames
-    self.actionNames = actionNames
-    self.rules = rules
+    self.documentVersion = parsedVersion
+    self.guardNames = parsedGuardNames
+    self.actionNames = parsedActionNames
+    self.rules = parsedRules
   }
 
   private static func stripComment(_ line: String) -> String {
@@ -83,7 +94,7 @@ internal struct ModelReader {
 
   private static func value(of line: String) -> String {
     let parts = line.split(separator: ":", maxSplits: 1)
-    guard parts.count == 2 else { return "" }
+    guard parts.count == keyValueParts else { return "" }
     return parts[1].trimmingCharacters(in: .whitespaces)
   }
 
@@ -97,25 +108,35 @@ internal struct ModelReader {
 
   private static func assign(_ text: String, into rule: inout ParsedRule) {
     let parts = text.split(separator: ":", maxSplits: 1)
-    guard parts.count == 2 else { return }
+    guard parts.count == keyValueParts else { return }
     let key = parts[0].trimmingCharacters(in: .whitespaces)
     let raw = parts[1].trimmingCharacters(in: .whitespaces)
     switch key {
-    case "from": rule.from = scalarOrList(raw)
-    case "event": rule.event = raw
-    case "role": rule.role = raw
-    case "guard": rule.condition = raw
-    case "to": rule.to = raw
-    case "actions": rule.actions = scalarOrList(raw)
-    default: break
+    case "from":
+      rule.from = scalarOrList(raw)
+    case "event":
+      rule.event = raw
+    case "role":
+      rule.role = raw
+    case "guard":
+      rule.condition = raw
+    case "to":
+      rule.to = raw
+    case "actions":
+      rule.actions = scalarOrList(raw)
+    default:
+      break
     }
   }
 }
 
 internal func roles(of ruleRole: String) -> [EndpointRole] {
   switch ruleRole {
-  case "requester": [.requester]
-  case "proxy": [.proxy]
-  default: [.requester, .proxy]
+  case "requester":
+    [.requester]
+  case "proxy":
+    [.proxy]
+  default:
+    [.requester, .proxy]
   }
 }

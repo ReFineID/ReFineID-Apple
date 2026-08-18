@@ -38,6 +38,76 @@ internal struct PairingOffer {
     try validate()
   }
 
+  /// A scanned QR URI, decoded and validated.
+  internal static func from(uri: String) throws -> Self {
+    guard uri.hasPrefix(offerUriPrefix) else { throw PairingOfferError.wrongScheme }
+    let payload = String(uri.dropFirst(offerUriPrefix.count))
+    let decoded = try base64UrlDecode(payload)
+    guard decoded.count <= OfferLimit.encodedOfferSize else { throw PairingOfferError.oversized }
+    let value: WireValue
+    do {
+      value = try decodeDeterministicCbor(decoded)
+    } catch let error as WireError {
+      throw PairingOfferError.wire(error)
+    }
+    guard case .map(var map) = value else { throw PairingOfferError.wrongType }
+    let expected = [
+      "scheme", "version", "offer_id", "pairing_secret", "suites", "profiles", "transports",
+      "offer_ttl_ms",
+    ]
+    guard map.keys.allSatisfy(expected.contains) else { throw PairingOfferError.unknownField }
+    guard try offerTakeText(&map, "scheme") == offerSchemeName else {
+      throw PairingOfferError.wrongScheme
+    }
+    guard
+      try offerTakeArray(&map, "version") == [
+        .unsigned(RappNoise.wireVersion.major), .unsigned(RappNoise.wireVersion.minor),
+      ]
+    else { throw PairingOfferError.unsupportedVersion }
+    let decodedOfferIdentifier = try offerTakeBytes(&map, "offer_id")
+    guard decodedOfferIdentifier.count == OfferLimit.offerIdentifierSize else {
+      throw PairingOfferError.wrongLength("offer_id")
+    }
+    let secret = try offerTakeBytes(&map, "pairing_secret")
+    guard secret.count == OfferLimit.pairingSecretSize else {
+      throw PairingOfferError.wrongLength("pairing_secret")
+    }
+    let decodedSuites = try offerTakeTextArray(&map, "suites")
+    let decodedProfiles = try offerTakeTextArray(&map, "profiles")
+    let decodedTransports = try offerTakeArray(&map, "transports").map(candidateFrom)
+    let lifetime = try offerTakeUnsigned(&map, "offer_ttl_ms")
+    return try Self(
+      offerIdentifier: decodedOfferIdentifier,
+      pairingSecret: secret,
+      suites: decodedSuites,
+      profiles: decodedProfiles,
+      transports: decodedTransports,
+      offerLifetimeMilliseconds: lifetime
+    )
+  }
+
+  private static func candidateValue(_ candidate: TransportCandidate) -> WireValue {
+    .map([
+      "profile": .text(candidate.profile),
+      "candidate_id": .text(candidate.candidateIdentifier),
+      "parameters": .map(candidate.parameters),
+    ])
+  }
+
+  private static func candidateFrom(_ value: WireValue) throws -> TransportCandidate {
+    guard case .map(var map) = value else { throw PairingOfferError.wrongType }
+    let expected = ["profile", "candidate_id", "parameters"]
+    guard map.keys.allSatisfy(expected.contains) else { throw PairingOfferError.unknownField }
+    let profile = try offerTakeText(&map, "profile")
+    let candidateIdentifier = try offerTakeText(&map, "candidate_id")
+    guard let parameters = map.removeValue(forKey: "parameters") else {
+      throw PairingOfferError.missingField("parameters")
+    }
+    guard case .map(let entries) = parameters else { throw PairingOfferError.wrongType }
+    return TransportCandidate(
+      profile: profile, candidateIdentifier: candidateIdentifier, parameters: entries)
+  }
+
   private func validate() throws {
     guard !suites.isEmpty, !profiles.isEmpty, !transports.isEmpty else {
       throw PairingOfferError.emptyRequiredArray
@@ -91,75 +161,5 @@ internal struct PairingOffer {
     let encoded = try WireValue.map(asMap(includingSecret: true)).encoded()
     guard encoded.count <= OfferLimit.encodedOfferSize else { throw PairingOfferError.oversized }
     return offerUriPrefix + base64UrlEncode(encoded)
-  }
-
-  /// A scanned QR URI, decoded and validated.
-  internal static func from(uri: String) throws -> PairingOffer {
-    guard uri.hasPrefix(offerUriPrefix) else { throw PairingOfferError.wrongScheme }
-    let payload = String(uri.dropFirst(offerUriPrefix.count))
-    let decoded = try base64UrlDecode(payload)
-    guard decoded.count <= OfferLimit.encodedOfferSize else { throw PairingOfferError.oversized }
-    let value: WireValue
-    do {
-      value = try decodeDeterministicCbor(decoded)
-    } catch let error as WireError {
-      throw PairingOfferError.wire(error)
-    }
-    guard case .map(var map) = value else { throw PairingOfferError.wrongType }
-    let expected = [
-      "scheme", "version", "offer_id", "pairing_secret", "suites", "profiles", "transports",
-      "offer_ttl_ms",
-    ]
-    guard map.keys.allSatisfy(expected.contains) else { throw PairingOfferError.unknownField }
-    guard try offerTakeText(&map, "scheme") == offerSchemeName else {
-      throw PairingOfferError.wrongScheme
-    }
-    guard
-      try offerTakeArray(&map, "version") == [
-        .unsigned(RappNoise.wireVersion.major), .unsigned(RappNoise.wireVersion.minor),
-      ]
-    else { throw PairingOfferError.unsupportedVersion }
-    let offerIdentifier = try offerTakeBytes(&map, "offer_id")
-    guard offerIdentifier.count == OfferLimit.offerIdentifierSize else {
-      throw PairingOfferError.wrongLength("offer_id")
-    }
-    let secret = try offerTakeBytes(&map, "pairing_secret")
-    guard secret.count == OfferLimit.pairingSecretSize else {
-      throw PairingOfferError.wrongLength("pairing_secret")
-    }
-    let suites = try offerTakeTextArray(&map, "suites")
-    let profiles = try offerTakeTextArray(&map, "profiles")
-    let transports = try offerTakeArray(&map, "transports").map(candidateFrom)
-    let lifetime = try offerTakeUnsigned(&map, "offer_ttl_ms")
-    return try PairingOffer(
-      offerIdentifier: offerIdentifier,
-      pairingSecret: secret,
-      suites: suites,
-      profiles: profiles,
-      transports: transports,
-      offerLifetimeMilliseconds: lifetime
-    )
-  }
-
-  private static func candidateValue(_ candidate: TransportCandidate) -> WireValue {
-    .map([
-      "profile": .text(candidate.profile),
-      "candidate_id": .text(candidate.candidateIdentifier),
-      "parameters": .map(candidate.parameters),
-    ])
-  }
-
-  private static func candidateFrom(_ value: WireValue) throws -> TransportCandidate {
-    guard case .map(var map) = value else { throw PairingOfferError.wrongType }
-    let expected = ["profile", "candidate_id", "parameters"]
-    guard map.keys.allSatisfy(expected.contains) else { throw PairingOfferError.unknownField }
-    let profile = try offerTakeText(&map, "profile")
-    let candidateIdentifier = try offerTakeText(&map, "candidate_id")
-    guard let parameters = map.removeValue(forKey: "parameters") else {
-      throw PairingOfferError.missingField("parameters")
-    }
-    guard case .map(let entries) = parameters else { throw PairingOfferError.wrongType }
-    return TransportCandidate(
-      profile: profile, candidateIdentifier: candidateIdentifier, parameters: entries)
   }
 }

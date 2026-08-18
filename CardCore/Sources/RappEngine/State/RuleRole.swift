@@ -1,5 +1,10 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
+// The cases are transcribed in the order the formal model lists them, so the
+// tables read line for line against the document. Alphabetising them would
+// break the correspondence the bidirectional conformance test protects.
+// swiftlint:disable sorted_enum_cases
+
 /// The role a transition rule applies to.
 internal enum RuleRole: String, CaseIterable, Sendable {
   case requester
@@ -9,9 +14,14 @@ internal enum RuleRole: String, CaseIterable, Sendable {
   /// Whether an endpoint in `role` implements rules carrying this value.
   internal func includes(_ role: EndpointRole) -> Bool {
     switch self {
-    case .both: true
-    case .requester: role == .requester
-    case .proxy: role == .proxy
+    case .both:
+      true
+    case .requester:
+      role == .requester
+    case .proxy:
+      role == .proxy
     }
   }
 }
+
+// swiftlint:enable sorted_enum_cases

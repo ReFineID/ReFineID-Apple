@@ -1,5 +1,10 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
+// The cases are transcribed in the order the formal model lists them, so the
+// tables read line for line against the document. Alphabetising them would
+// break the correspondence the bidirectional conformance test protects.
+// swiftlint:disable sorted_enum_cases
+
 /// A condition a transition rule requires.
 ///
 /// A failed guard on a rule triggered by an authenticated peer message
@@ -25,3 +30,5 @@ internal enum RappGuard: String, CaseIterable, Sendable {
   case provenNoTransmission = "proven_no_transmission"
   case profileHasNoConsequentialCommand = "profile_has_no_consequential_command"
 }
+
+// swiftlint:enable sorted_enum_cases

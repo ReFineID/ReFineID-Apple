@@ -7,7 +7,7 @@ extension RappModelTables {
   /// races and appear in no rule; they transition nothing.
   internal static let operation: [RappRule<OperationState, OperationEvent>] = [
     RappRule(
-      from: .none,
+      from: .idle,
       event: .requestSent,
       role: .requester,
       condition: .admissionPermitted,
@@ -15,7 +15,7 @@ extension RappModelTables {
       actions: [.computeRequestHash, .journalRequest, .startExpiryClock]
     ),
     RappRule(
-      from: .none,
+      from: .idle,
       event: .requestReceived,
       role: .proxy,
       condition: .admissionPermitted,

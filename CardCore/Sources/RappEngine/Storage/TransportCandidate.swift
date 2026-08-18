@@ -9,10 +9,17 @@ internal struct TransportCandidate: Equatable {
   internal var parameters: [String: WireValue]
 
   internal init(
-    profile: String, candidateIdentifier: String, parameters: [String: WireValue] = [:]
+    profile: String,
+    candidateIdentifier: String,
+    parameters: [String: WireValue]
   ) {
     self.profile = profile
     self.candidateIdentifier = candidateIdentifier
     self.parameters = parameters
   }
+  /// A candidate that carries no parameters.
+  internal init(profile: String, candidateIdentifier: String) {
+    self.init(profile: profile, candidateIdentifier: candidateIdentifier, parameters: [:])
+  }
+
 }

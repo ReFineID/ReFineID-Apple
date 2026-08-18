@@ -15,6 +15,39 @@ internal struct ProxyJournalRecord: Equatable {
   internal var transmissionCount: UInt8
   internal var automaticRetryPermitted: Bool
 
+  internal static func decode(_ bytes: Data) throws -> Self {
+    var map = try decodedMap(bytes)
+    guard try takeUnsigned(&map, "format_version") == proxyJournalFormatVersion else {
+      throw PairRecordError.invalidInput
+    }
+    let decodedPairIdentifier = try takeBytes(&map, "pair_id")
+    let decodedSessionIdentifier = try takeBytes(&map, "session_id")
+    let decodedOperationIdentifier = try takeBytes(&map, "operation_id")
+    let decodedRequestHash = try takeBytes(&map, "request_hash")
+    guard decodedPairIdentifier.count == PairRecordSize.pairIdentifier,
+      decodedSessionIdentifier.count == JournalSize.sessionIdentifier,
+      decodedOperationIdentifier.count == JournalSize.operationIdentifier,
+      decodedRequestHash.count == JournalSize.requestHash
+    else { throw PairRecordError.invalidInput }
+    guard let decodedState = OperationState(rawValue: try takeText(&map, "state")) else {
+      throw PairRecordError.invalidInput
+    }
+    let transmissions = try takeUnsigned(&map, "transmission_count")
+    guard let decodedTransmissionCount = UInt8(exactly: transmissions)
+    else { throw PairRecordError.invalidInput }
+    let decodedAutomaticRetryPermitted = try takeBoolean(&map, "automatic_retry_permitted")
+    guard map.isEmpty else { throw PairRecordError.invalidInput }
+    return Self(
+      pairIdentifier: decodedPairIdentifier,
+      sessionIdentifier: decodedSessionIdentifier,
+      operationIdentifier: decodedOperationIdentifier,
+      requestHash: decodedRequestHash,
+      state: decodedState,
+      transmissionCount: decodedTransmissionCount,
+      automaticRetryPermitted: decodedAutomaticRetryPermitted
+    )
+  }
+
   internal func encoded() throws -> Data {
     let value = WireValue.map([
       "format_version": .unsigned(proxyJournalFormatVersion),
@@ -31,37 +64,5 @@ internal struct ProxyJournalRecord: Equatable {
     } catch {
       throw PairRecordError.invalidInput
     }
-  }
-
-  internal static func decode(_ bytes: Data) throws -> ProxyJournalRecord {
-    var map = try decodedMap(bytes)
-    guard try takeUnsigned(&map, "format_version") == proxyJournalFormatVersion else {
-      throw PairRecordError.invalidInput
-    }
-    let pairIdentifier = try takeBytes(&map, "pair_id")
-    let sessionIdentifier = try takeBytes(&map, "session_id")
-    let operationIdentifier = try takeBytes(&map, "operation_id")
-    let requestHash = try takeBytes(&map, "request_hash")
-    guard pairIdentifier.count == PairRecordSize.pairIdentifier,
-      sessionIdentifier.count == JournalSize.sessionIdentifier,
-      operationIdentifier.count == JournalSize.operationIdentifier,
-      requestHash.count == JournalSize.requestHash
-    else { throw PairRecordError.invalidInput }
-    guard let state = OperationState(rawValue: try takeText(&map, "state")) else {
-      throw PairRecordError.invalidInput
-    }
-    guard let transmissionCount = UInt8(exactly: try takeUnsigned(&map, "transmission_count"))
-    else { throw PairRecordError.invalidInput }
-    let automaticRetryPermitted = try takeBoolean(&map, "automatic_retry_permitted")
-    guard map.isEmpty else { throw PairRecordError.invalidInput }
-    return ProxyJournalRecord(
-      pairIdentifier: pairIdentifier,
-      sessionIdentifier: sessionIdentifier,
-      operationIdentifier: operationIdentifier,
-      requestHash: requestHash,
-      state: state,
-      transmissionCount: transmissionCount,
-      automaticRetryPermitted: automaticRetryPermitted
-    )
   }
 }

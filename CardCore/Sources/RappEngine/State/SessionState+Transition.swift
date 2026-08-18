@@ -6,19 +6,37 @@ extension SessionState {
     from state: Self,
     on event: SessionEvent,
     role: EndpointRole,
-    guards: RappGuards = .allSatisfied
+    guards: RappGuards
   ) -> RappTransition<Self>? {
     guard case .fire(let transition) = outcome(from: state, on: event, role: role, guards: guards)
     else { return nil }
     return transition
   }
 
+  /// The session rule that fires when every guard holds.
+  internal static func transition(
+    from state: Self,
+    on event: SessionEvent,
+    role: EndpointRole
+  ) -> RappTransition<Self>? {
+    transition(from: state, on: event, role: role, guards: .allSatisfied)
+  }
+
   internal static func outcome(
     from state: Self,
     on event: SessionEvent,
     role: EndpointRole,
-    guards: RappGuards = .allSatisfied
+    guards: RappGuards
   ) -> RappTransitionOutcome<Self> {
     rappResolve(RappModelTables.session, from: state, on: event, role: role, guards: guards)
+  }
+
+  /// The outcome when every guard holds.
+  internal static func outcome(
+    from state: Self,
+    on event: SessionEvent,
+    role: EndpointRole
+  ) -> RappTransitionOutcome<Self> {
+    outcome(from: state, on: event, role: role, guards: .allSatisfied)
   }
 }

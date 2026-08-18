@@ -1,11 +1,16 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
+// The cases are transcribed in the order the formal model lists them, so the
+// tables read line for line against the document. Alphabetising them would
+// break the correspondence the bidirectional conformance test protects.
+// swiftlint:disable sorted_enum_cases
+
 /// Operation component state.
 ///
 /// An operation instance exists per operation identifier. Terminal states are
 /// permanent journal records that accept no further transitions.
 internal enum OperationState: String, CaseIterable, Sendable {
-  case none
+  case idle = "none"
   case requested
   /// Proxy only.
   case awaitingConsent = "awaiting_consent"
@@ -29,7 +34,7 @@ internal enum OperationState: String, CaseIterable, Sendable {
     case .completed, .denied, .cancelled, .rejected, .credentialRejected,
       .ambiguous, .deliveryUncertain:
       true
-    case .none, .requested, .awaitingConsent, .prepared, .committed, .executing,
+    case .idle, .requested, .awaitingConsent, .prepared, .committed, .executing,
       .resultPending:
       false
     }
@@ -37,6 +42,8 @@ internal enum OperationState: String, CaseIterable, Sendable {
 
   /// Whether the instance occupies the single active-operation slot.
   internal var isActive: Bool {
-    self != .none && !isTerminal
+    self != .idle && !isTerminal
   }
 }
+
+// swiftlint:enable sorted_enum_cases

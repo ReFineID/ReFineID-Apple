@@ -1,5 +1,9 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
+// The model names this field `to`; these types mirror the document's rules
+// verbatim so the comparison reads field for field.
+// swiftlint:disable identifier_name
+
 import Foundation
 
 @testable import RappEngine
@@ -13,3 +17,5 @@ internal struct ParsedRule {
   internal var to = ""
   internal var actions: [String] = []
 }
+
+// swiftlint:enable identifier_name

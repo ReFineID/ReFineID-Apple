@@ -1,5 +1,10 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
+// The model names this field `to`, and the tables below are read line for
+// line against the document, so the field keeps the document's name rather
+// than a longer synonym.
+// swiftlint:disable identifier_name
+
 /// One rule of the formal model.
 ///
 /// A rule listing several `from` states is shorthand for one rule per listed
@@ -17,7 +22,7 @@ internal struct RappRule<State: Equatable & Sendable, Event: Equatable & Sendabl
     from: [State],
     event: Event,
     role: RuleRole,
-    condition: RappGuard? = nil,
+    condition: RappGuard?,
     to: State,
     actions: [RappAction]
   ) {
@@ -29,11 +34,23 @@ internal struct RappRule<State: Equatable & Sendable, Event: Equatable & Sendabl
     self.actions = actions
   }
 
+  /// A rule no guard governs.
+  internal init(
+    from: [State],
+    event: Event,
+    role: RuleRole,
+    to: State,
+    actions: [RappAction]
+  ) {
+    self.init(
+      from: from, event: event, role: role, condition: nil, to: to, actions: actions)
+  }
+
   internal init(
     from: State,
     event: Event,
     role: RuleRole,
-    condition: RappGuard? = nil,
+    condition: RappGuard?,
     to: State,
     actions: [RappAction]
   ) {
@@ -42,11 +59,25 @@ internal struct RappRule<State: Equatable & Sendable, Event: Equatable & Sendabl
       actions: actions)
   }
 
+  /// A rule for one state that no guard governs.
+  internal init(
+    from: State,
+    event: Event,
+    role: RuleRole,
+    to: State,
+    actions: [RappAction]
+  ) {
+    self.init(
+      from: [from], event: event, role: role, condition: nil, to: to, actions: actions)
+  }
+
   /// Whether this rule governs the given state, event, and endpoint.
   internal func governs(state: State, event candidate: Event, role endpoint: EndpointRole) -> Bool {
     from.contains(state) && self.event == candidate && role.includes(endpoint)
   }
 }
+
+// swiftlint:enable identifier_name
 
 /// Resolves an event against a rule table.
 ///

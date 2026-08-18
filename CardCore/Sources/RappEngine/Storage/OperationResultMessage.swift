@@ -11,6 +11,59 @@ internal struct OperationResultMessage: Equatable {
   internal var error: ResultError?
   internal var result: CardOperationResult?
 
+  /// A completed result carries an output and no error; every other status
+  /// carries a matching error and no output.
+  private var isConsistent: Bool {
+    switch (status, error, result) {
+    case (.completed, .none, .some):
+      true
+    case (_, .some, .none):
+      true
+    default:
+      false
+    }
+  }
+
+  internal static func decode(_ bytes: Data) throws -> Self {
+    var map = try decodedMap(bytes)
+    let decodedOperationIdentifier = try takeBytes(&map, "operation_id")
+    let decodedRequestHash = try takeBytes(&map, "request_hash")
+    guard decodedOperationIdentifier.count == JournalSize.operationIdentifier,
+      decodedRequestHash.count == JournalSize.requestHash
+    else { throw PairRecordError.invalidInput }
+    guard let decodedStatus = ResultStatus(rawValue: try takeText(&map, "status")) else {
+      throw PairRecordError.invalidInput
+    }
+    let decodedError: ResultError?
+    switch map.removeValue(forKey: "error") {
+    case .none:
+      decodedError = nil
+    case .some(.text(let name)):
+      guard let parsed = ResultError(rawValue: name) else { throw PairRecordError.invalidInput }
+      decodedError = parsed
+    case .some:
+      throw PairRecordError.invalidInput
+    }
+    let resultBody = try takeMap(&map, "body")
+    guard map.isEmpty else { throw PairRecordError.invalidInput }
+    let decodedResult: CardOperationResult?
+    if decodedStatus == .completed {
+      decodedResult = try wireResultFrom(resultBody)
+    } else {
+      guard resultBody.isEmpty else { throw PairRecordError.invalidInput }
+      decodedResult = nil
+    }
+    let message = Self(
+      operationIdentifier: decodedOperationIdentifier,
+      requestHash: decodedRequestHash,
+      status: decodedStatus,
+      error: decodedError,
+      result: decodedResult
+    )
+    guard message.isConsistent else { throw PairRecordError.invalidInput }
+    return message
+  }
+
   internal func encoded() throws -> Data {
     var body: [String: WireValue] = [
       "operation_id": .bytes(operationIdentifier),
@@ -28,51 +81,4 @@ internal struct OperationResultMessage: Equatable {
     }
   }
 
-  internal static func decode(_ bytes: Data) throws -> OperationResultMessage {
-    var map = try decodedMap(bytes)
-    let operationIdentifier = try takeBytes(&map, "operation_id")
-    let requestHash = try takeBytes(&map, "request_hash")
-    guard operationIdentifier.count == JournalSize.operationIdentifier,
-      requestHash.count == JournalSize.requestHash
-    else { throw PairRecordError.invalidInput }
-    guard let status = ResultStatus(rawValue: try takeText(&map, "status")) else {
-      throw PairRecordError.invalidInput
-    }
-    let error: ResultError?
-    switch map.removeValue(forKey: "error") {
-    case .none: error = nil
-    case .some(.text(let name)):
-      guard let parsed = ResultError(rawValue: name) else { throw PairRecordError.invalidInput }
-      error = parsed
-    case .some: throw PairRecordError.invalidInput
-    }
-    let resultBody = try takeMap(&map, "body")
-    guard map.isEmpty else { throw PairRecordError.invalidInput }
-    let result: CardOperationResult?
-    if status == .completed {
-      result = try wireResultFrom(resultBody)
-    } else {
-      guard resultBody.isEmpty else { throw PairRecordError.invalidInput }
-      result = nil
-    }
-    let message = OperationResultMessage(
-      operationIdentifier: operationIdentifier,
-      requestHash: requestHash,
-      status: status,
-      error: error,
-      result: result
-    )
-    guard message.isConsistent else { throw PairRecordError.invalidInput }
-    return message
-  }
-
-  /// A completed result carries an output and no error; every other status
-  /// carries a matching error and no output.
-  private var isConsistent: Bool {
-    switch (status, error, result) {
-    case (.completed, .none, .some): true
-    case (_, .some, .none): true
-    default: false
-    }
-  }
 }

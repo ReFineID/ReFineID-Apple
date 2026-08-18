@@ -14,17 +14,9 @@ internal struct RappState: Sendable, Equatable {
   /// A credential rejection requires a fresh explicit user action.
   internal var requiresUserIntent: Bool
 
-  internal init(role: EndpointRole) {
-    self.role = role
-    self.pairing = .unpaired
-    self.session = .absent
-    self.operation = .none
-    self.requiresUserIntent = false
-  }
-
   /// Rule X-08 and invariants INV-01, INV-02, and INV-04.
   internal var operationAdmissionPermitted: Bool {
-    pairing == .pairedConnected && session == .healthy && operation == .none
+    pairing == .pairedConnected && session == .healthy && operation == .idle
   }
 
   /// The operation event a session close delivers, per rules X-02 to X-05.
@@ -32,13 +24,24 @@ internal struct RappState: Sendable, Equatable {
   /// Returns nil when no operation instance is affected.
   internal var operationEventForSessionClose: OperationEvent? {
     switch operation {
-    case .requested, .awaitingConsent, .prepared: .sessionClosedPreCommit
-    case .committed, .executing: .sessionClosedPostCommit
-    case .resultPending: .sessionClosedBeforeAck
-    case .none, .completed, .denied, .cancelled, .rejected, .credentialRejected,
+    case .requested, .awaitingConsent, .prepared:
+      .sessionClosedPreCommit
+    case .committed, .executing:
+      .sessionClosedPostCommit
+    case .resultPending:
+      .sessionClosedBeforeAck
+    case .idle, .completed, .denied, .cancelled, .rejected, .credentialRejected,
       .ambiguous, .deliveryUncertain:
       nil
     }
+  }
+
+  internal init(role: EndpointRole) {
+    self.role = role
+    self.pairing = .unpaired
+    self.session = .absent
+    self.operation = .idle
+    self.requiresUserIntent = false
   }
 
   /// Applies the operation half of a session close and returns its actions.

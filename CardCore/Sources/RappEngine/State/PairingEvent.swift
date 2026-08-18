@@ -1,5 +1,10 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
+// The cases are transcribed in the order the formal model lists them, so the
+// tables read line for line against the document. Alphabetising them would
+// break the correspondence the bidirectional conformance test protects.
+// swiftlint:disable sorted_enum_cases
+
 /// Pairing component event.
 ///
 /// Raw values are the formal model's event names, so a Swift case and a model
@@ -23,3 +28,5 @@ internal enum PairingEvent: String, CaseIterable, Sendable {
   /// Produced by a peer close carrying pairing_revoked or protocol_violation.
   case peerRevocationNotice = "peer_revocation_notice"
 }
+
+// swiftlint:enable sorted_enum_cases

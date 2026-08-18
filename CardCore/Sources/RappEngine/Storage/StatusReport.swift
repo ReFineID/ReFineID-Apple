@@ -10,11 +10,20 @@ internal struct StatusReport: Equatable {
   internal var requestHash: Data?
 
   internal init(
-    operationIdentifier: Data, known: Bool, state: OperationState? = nil, requestHash: Data? = nil
+    operationIdentifier: Data,
+    known: Bool,
+    state: OperationState?,
+    requestHash: Data?
   ) {
     self.operationIdentifier = operationIdentifier
     self.known = known
     self.state = state
     self.requestHash = requestHash
   }
+  /// A report naming an operation the peer does not know.
+  internal init(operationIdentifier: Data, known: Bool) {
+    self.init(
+      operationIdentifier: operationIdentifier, known: known, state: nil, requestHash: nil)
+  }
+
 }

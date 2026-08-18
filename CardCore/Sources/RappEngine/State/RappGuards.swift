@@ -2,8 +2,6 @@
 
 /// The set of guards an endpoint currently satisfies.
 internal struct RappGuards: Sendable, Equatable {
-  private var satisfied: Set<RappGuard>
-
   /// Every guard holds.
   ///
   /// Conformance checks drive rules with this so a rule is exercised on its
@@ -12,6 +10,8 @@ internal struct RappGuards: Sendable, Equatable {
 
   /// No guard holds.
   internal static let noneSatisfied = Self(satisfied: [])
+
+  private var satisfied: Set<RappGuard>
 
   internal init(satisfied: Set<RappGuard>) {
     self.satisfied = satisfied
