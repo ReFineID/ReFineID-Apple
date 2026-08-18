@@ -187,6 +187,58 @@ public final class RappSessionBridge: @unchecked Sendable {
     locked { phase = .closed }
   }
 
+  /// Seals one opaque payload over the established session.
+  ///
+  /// A caller that carries its own correlation and answers each request
+  /// once needs the cipher and nothing above it: ordering and replay are
+  /// already settled by the nonce this advances.
+  ///
+  /// - Parameter payload: the bytes to seal.
+  /// - Returns: the frame to hand the transport.
+  /// - Throws: ``RappBindingError/WrongPhase`` before the session is
+  ///   established, and ``RappBindingError/ProtocolFailure`` if it cannot
+  ///   be sealed.
+  public func sealPayload(_ payload: Data) throws -> Data {
+    try locked {
+      guard case .established(var session) = phase else {
+        throw RappBindingError.WrongPhase
+      }
+      do {
+        let frame = try session.sealPayload(payload)
+        phase = .established(session)
+        return frame
+      } catch {
+        throw RappBindingError.ProtocolFailure
+      }
+    }
+  }
+
+  /// Opens one opaque payload from the established session.
+  ///
+  /// A frame that will not open ends the session and leaves the pairing
+  /// standing.
+  ///
+  /// - Parameter frame: the bytes the transport delivered.
+  /// - Returns: the payload the peer sealed.
+  /// - Throws: ``RappBindingError/WrongPhase`` before the session is
+  ///   established, and ``RappBindingError/ProtocolFailure`` when the
+  ///   frame does not open.
+  public func openPayload(_ frame: Data) throws -> Data {
+    try locked {
+      guard case .established(var session) = phase else {
+        throw RappBindingError.WrongPhase
+      }
+      do {
+        let payload = try session.openPayload(frame)
+        phase = .established(session)
+        return payload
+      } catch {
+        phase = .closed
+        throw RappBindingError.ProtocolFailure
+      }
+    }
+  }
+
   /// The established session, for the operation bridge built over it.
   internal func takeEstablished() throws -> (session: EstablishedSession, pair: PairRecord) {
     try locked {

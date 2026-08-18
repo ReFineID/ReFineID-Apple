@@ -23,6 +23,20 @@ internal struct RappMessageChannel {
     self.sequence = SequenceGuard(sessionIdentifier: sessionIdentifier)
   }
 
+  /// Seals one opaque payload, with no envelope around it.
+  ///
+  /// The cipher beneath already advances a nonce per frame in each
+  /// direction, so ordering and replay are settled there. A caller that
+  /// carries its own correlation needs nothing else from this layer.
+  internal mutating func sealPayload(_ payload: Data) throws -> Data {
+    try channel.seal(payload)
+  }
+
+  /// Opens one opaque payload.
+  internal mutating func openPayload(_ frame: Data) throws -> Data {
+    try channel.open(frame)
+  }
+
   internal mutating func seal(
     _ messageType: MessageType, body: [String: WireValue]
   ) throws -> Data {

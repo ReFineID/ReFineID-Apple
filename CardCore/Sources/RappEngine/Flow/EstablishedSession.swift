@@ -30,6 +30,33 @@ internal struct EstablishedSession {
     self.channel = channel
   }
 
+  /// Seals one opaque payload over this session's cipher.
+  internal mutating func sealPayload(_ payload: Data) throws -> Data {
+    guard var working = channel else { throw SessionError.closed }
+    let frame: Data
+    do {
+      frame = try working.sealPayload(payload)
+    } catch {
+      throw SessionError.noise
+    }
+    channel = working
+    return frame
+  }
+
+  /// Opens one opaque payload, ending the session if it will not open.
+  internal mutating func openPayload(_ frame: Data) throws -> Data {
+    guard var working = channel else { throw SessionError.closed }
+    let payload: Data
+    do {
+      payload = try working.openPayload(frame)
+    } catch {
+      channel = nil
+      throw SessionError.integrityFailure
+    }
+    channel = working
+    return payload
+  }
+
   internal mutating func seal(
     _ messageType: MessageType, body: [String: WireValue]
   ) throws -> Data {

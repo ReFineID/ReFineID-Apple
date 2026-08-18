@@ -176,6 +176,14 @@ internal struct FlowDriveTests {
       requesterSession.sessionIdentifier != peers.requester.pairIdentifier,
       "the session identifier is not the pair identifier")
 
+    // The slim relay's channel: a payload with no envelope over it, which
+    // brings its own correlation and needs the cipher and nothing else.
+    let slim = Data("one request".utf8)
+    check(
+      try proxySession.openPayload(try requesterSession.sealPayload(slim)) == slim
+        && (try requesterSession.openPayload(try proxySession.sealPayload(slim))) == slim,
+      "an opaque payload crosses the session both ways unchanged")
+
     let challenge = randomBytes(FlowLimit.livenessChallenge)
     let pingFrame = try requesterSession.seal(
       .livenessPing, body: ["challenge": .bytes(challenge), "last_received_sequence": .unsigned(0)])
