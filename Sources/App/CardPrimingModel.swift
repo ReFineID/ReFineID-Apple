@@ -41,6 +41,16 @@
     /// A short, sanitized failure retained after Apple's NFC sheet closes.
     @Published internal private(set) var failure: String?
 
+    /// What the card refused, when the refusal names a route to take.
+    ///
+    /// Read by the setup screen straight after a run, so a single hold can
+    /// send the holder to activation or back to the access number without
+    /// asking for the card again.
+    @Published internal private(set) var refusal: CardSetupRefusal?
+
+    /// The credential counters the last hold read.
+    @Published internal private(set) var credentialReport: CredentialProbeReport?
+
     /// Refreshes what is stored, without touching any secret.
     internal func refresh() {
       contents = CardCredentialStore.contents()
@@ -48,14 +58,17 @@
     }
 
     /// Primes the card for later system-driven logins through the selected backend.
-    internal func prime(pin1: String) async {
+    ///
+    /// The access number is supplied rather than read from storage, because
+    /// a first setup has not stored one yet: this hold is what proves it.
+    internal func prime(cardAccessNumber: String, pin1: String) async {
       guard !isRunning else { return }
       if DemoMode.shared.isActive {
         await primeVirtualCard(pin1: pin1)
         return
       }
       refresh()
-      guard contents.hasCardAccessNumber, allowsNearField else { return }
+      guard allowsNearField else { return }
       // `allowsNearField` is already false below iOS 26, because the
       // system's card slot arrived there; this states the same fact in
       // the form the compiler reads.
@@ -63,7 +76,10 @@
       isRunning = true
       lastRunResult = .notRun
       failure = nil
+      refusal = nil
+      credentialReport = nil
       let outcome = await CardPriming.prime(
+        cardAccessNumber: cardAccessNumber,
         pin1: pin1,
         progress: { _ in
           // The meter on the system NFC sheet carries progress; the
@@ -75,6 +91,8 @@
       // The sound is started and answered inside the panel's lifetime,
       // in `CardPriming`; nothing here makes a noise after it closed. A
       // hold the holder cancelled never got as far as a sound at all.
+      refusal = outcome.refusal
+      credentialReport = outcome.credentialReport
       if outcome.cancelled {
         lastRunResult = .notRun
         failure = nil

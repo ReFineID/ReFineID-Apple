@@ -66,6 +66,10 @@
         String(localized: "Activate this card first, then try setup again.")
       case Failure.cardAccessNumberMissing:
         String(localized: "Store the card access number first, then try again.")
+      case Failure.wrongCardAccessNumber:
+        String(localized: "The Card Access Number (CAN) is incorrect.")
+      case Failure.pin1Malformed:
+        String(localized: "PIN 1 does not fit its digit rules.")
       case Failure.pin1Unavailable:
         String(localized: "PIN 1 could not be verified safely.")
       case Failure.pin1LowAttempts(let remaining):

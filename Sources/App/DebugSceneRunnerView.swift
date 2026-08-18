@@ -125,7 +125,13 @@
           DebugConsole.emit("=== end ===")
           return false
         }
+        guard let storedAccessNumber = CardCredentialStore.displayedCardAccessNumber() else {
+          DebugConsole.emit("prime: a stored card access number is required")
+          DebugConsole.emit("=== end ===")
+          return false
+        }
         let outcome = await CardPriming.prime(
+          cardAccessNumber: storedAccessNumber,
           pin1: pin1,
           progress: { line in
             DebugConsole.emit("progress: " + line)

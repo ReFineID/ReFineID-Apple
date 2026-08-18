@@ -9,6 +9,7 @@
   /// Such a device asks a paired phone for the card and publishes the
   /// certificate that comes back, so there are three things worth showing:
   /// the one action, the code the phone scans, and the person it reached.
+  /// Verification joins them because it reads a document, never a card.
   internal struct RequesterIdentityView: View {
     /// The pairing code's side, large enough for a phone to read it
     /// across the width of a desk.
@@ -19,11 +20,24 @@
 
     @StateObject private var pairing = RappPairingModel()
     @StateObject private var remote = RemoteCardModel()
+    @State private var showsDocumentVerify = false
 
     internal var body: some View {
-      content
+      NavigationStack {
+        VStack(spacing: Self.spacing) {
+          content
+          if isResting {
+            verifyAction
+          }
+        }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
+        // The root carries no title and no controls of its own, so its bar
+        // would be an empty strip above a screen with two buttons on it.
+        .toolbar(.hidden, for: .navigationBar)
+        .navigationDestination(isPresented: $showsDocumentVerify) {
+          VerifyDocumentView()
+        }
         .onAppear {
           pairing.refresh()
           remote.refresh()
@@ -40,6 +54,7 @@
         .onValueChange(of: pairing.pairs.count) { _ in
           remote.refresh()
         }
+      }
     }
 
     @ViewBuilder private var content: some View {
@@ -57,6 +72,31 @@
     /// Whether either half of the exchange is mid-flight.
     private var isWorking: Bool {
       remote.phase == .connecting || pairing.phase == .connecting
+    }
+
+    /// Whether the screen is waiting on the holder rather than on a phone.
+    ///
+    /// A code on screen and a read in flight are both passing states that
+    /// end on their own, and a second action beside them is one the holder
+    /// has no reason to take yet.
+    private var isResting: Bool {
+      if case .offer = pairing.phase { return false }
+      return !isWorking
+    }
+
+    /// The verification screen's own name, taken from where it defines it.
+    private var verifyTitle: String {
+      String(
+        localized: "verify.title",
+        defaultValue: "Verify",
+        table: "DocumentSigning")
+    }
+
+    /// Reading a document asks for no card, no phone, and no identity, so
+    /// it stands on its own beside the one action that needs all three.
+    private var verifyAction: some View {
+      Button(verifyTitle) { showsDocumentVerify = true }
+        .accessibilityIdentifier("verifyDocuments")
     }
 
     /// The last failure from whichever half produced one.

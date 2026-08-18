@@ -26,6 +26,13 @@
 
       /// Proof that the live card did not report a factory activation state.
       internal let activationCheck: PrimedIdentity.ActivationCheck
+
+      /// The credential counters read in this same hold.
+      ///
+      /// Read here because the recovery route decided right after this
+      /// hold is what consumes them; nothing stores them as a lasting
+      /// claim about the card.
+      internal let credentialReport: CredentialProbeReport?
     }
 
     /// Reads everything the later signature must not have to read.
@@ -34,7 +41,6 @@
     internal static func read(
       from sheet: PrimingSheetReporter,
       accessNumber: CardAccessNumber,
-      pin1: String,
       progress: Progress,
       step: StepReport
     ) throws -> Payload {
@@ -54,6 +60,18 @@
         let keys: PaceSessionKeys
         do {
           keys = try PaceEstablishment(channel: channel).establish(with: accessNumber)
+        } catch PaceEstablishment.Failure.authenticationTokenMismatch {
+          // PACE is the access number's proof: the session keys derive
+          // from it, so a card that will not agree is a card these
+          // digits do not describe.
+          step(.secureChannel, .failed)
+          throw Failure.wrongCardAccessNumber
+        } catch PaceEstablishment.Failure.cardRejected(.authenticationFailed) {
+          // A FINEID card may answer the terminal's final PACE token with
+          // 6300 rather than returning its own for local comparison. Both
+          // outcomes mean the derived keys did not match.
+          step(.secureChannel, .failed)
+          throw Failure.wrongCardAccessNumber
         } catch {
           step(.secureChannel, .failed)
           throw error
@@ -65,7 +83,7 @@
           channel: SecureMessagingChannel(wrapping: channel, sessionKeys: keys))
         progress(String(localized: "Reading the certificate from the card."))
         do {
-          let payload = try Self.readIdentity(operations: operations, pin1: pin1)
+          let payload = try Self.readIdentity(operations: operations)
           step(.certificate, .done)
           progress(String(localized: "Card identity read."))
           return payload
@@ -77,35 +95,20 @@
     }
 
     /// The reads behind the secure channel, validated into a payload.
+    ///
+    /// PIN1 is not sent. The certificate is public and the secure channel
+    /// is the only thing it needs, so setup asks the card for nothing it
+    /// will not use. The counters are read because the route chosen
+    /// immediately after this hold depends on them.
     private static func readIdentity(
-      operations: CardOperations,
-      pin1 digits: String
+      operations: CardOperations
     ) throws -> Payload {
       let certificate = try operations.readCertificate(.authentication)
       let activationCheck = try Self.activationCheck(
         certificate: certificate,
         operations: operations
       )
-      guard let pin1 = Pin1(digits: digits) else {
-        throw Failure.pin1Unavailable
-      }
-      guard let probe = try? operations.probeRetryCounter(role: .pin1) else {
-        throw Failure.pin1Unavailable
-      }
-      switch RetryFloor.evaluate(probeOutcome: probe) {
-      case .proceed:
-        break
-      case .refuseLowAttempts:
-        guard case .remaining(let remaining) = probe else {
-          throw Failure.pin1Unavailable
-        }
-        throw Failure.pin1LowAttempts(remaining)
-      case .refuseBlocked:
-        throw CardOperationError.pinBlocked
-      case .refuseUnreadable:
-        throw Failure.pin1Unavailable
-      }
-      try operations.verifyPin1(pin1.consumeForSingleTransmission())
+      let credentialReport = try? operations.probeCredentials()
       let serial = try operations.readTokenSerial()
       guard let instance = CardInstanceIdentifier(tokenSerial: serial) else {
         throw Failure.unidentifiedCard
@@ -126,7 +129,8 @@
         certificate: certificate,
         issuer: issuer,
         tokenSerial: serial.value,
-        activationCheck: activationCheck)
+        activationCheck: activationCheck,
+        credentialReport: credentialReport)
     }
 
     /// Accepts only a card with no known factory activation state.
@@ -144,7 +148,9 @@
         return .passed
       }
       let needs = operations.activationNeeds(scheme: scheme)
-      guard !needs.any else { throw Failure.activationRequired }
+      guard !needs.any else {
+        throw Failure.activationRequired(scheme: scheme, needs: needs)
+      }
       return .passed
     }
   }

@@ -44,6 +44,12 @@
     /// Supplies the transient PIN to the one NFC operation.
     internal let enteredPin1: @MainActor () -> String?
 
+    /// Supplies the access number the hold proves, entered or already stored.
+    internal let cardAccessNumber: @MainActor () -> String?
+
+    /// Commits the access number only after PACE proved it.
+    internal let storeCardAccessNumber: @MainActor (String) -> Bool
+
     /// Commits PIN1 only after the card accepted it.
     internal let storeVerifiedPin1: @MainActor (String) -> Bool
 
@@ -69,22 +75,24 @@
     /// Runs the one credential-registration path used by both initial setup
     /// and the later explicit certificate-read action.
     ///
-    /// PIN1 remains transient until the card accepts it and Safari identity
-    /// publication succeeds. Every outcome clears the entered value.
+    /// One hold does the whole thing: the access number is proved by PACE
+    /// inside it, and neither credential is written to this device until
+    /// that hold has produced a registered identity. Every outcome clears
+    /// the entered PIN.
     @MainActor
     internal static func registerIdentity(
+      cardAccessNumber: String,
       pin1: String,
       model: CardPrimingModel,
-      storeVerifiedPin1: @MainActor (String) -> Bool,
-      clearPin1Entry: @MainActor () -> Void,
-      markRegistered: @MainActor () -> Void
+      commit: IdentityCommitments
     ) async -> Bool {
-      defer { clearPin1Entry() }
-      await model.prime(pin1: pin1)
+      defer { commit.clearPin1Entry() }
+      await model.prime(cardAccessNumber: cardAccessNumber, pin1: pin1)
       guard case .succeeded = model.lastRunResult,
-        storeVerifiedPin1(pin1)
+        commit.storeCardAccessNumber(cardAccessNumber),
+        commit.storeVerifiedPin1(pin1)
       else { return false }
-      markRegistered()
+      commit.markRegistered()
       return true
     }
 
@@ -94,14 +102,17 @@
       // commits. Everything after the tap is Apple's NFC sheet.
       Button {
         Task { @MainActor in
-          guard let pin1 = enteredPin1() else { return }
+          guard let pin1 = enteredPin1(), let accessNumber = cardAccessNumber() else { return }
           onRegistrationStarted()
           let succeeded = await Self.registerIdentity(
+            cardAccessNumber: accessNumber,
             pin1: pin1,
             model: model,
-            storeVerifiedPin1: storeVerifiedPin1,
-            clearPin1Entry: clearPin1Entry
-          ) { isRegistered = true }
+            commit: IdentityCommitments(
+              storeCardAccessNumber: storeCardAccessNumber,
+              storeVerifiedPin1: storeVerifiedPin1,
+              clearPin1Entry: clearPin1Entry,
+              markRegistered: { isRegistered = true }))
           onRegistrationFinished(succeeded)
         }
       } label: {

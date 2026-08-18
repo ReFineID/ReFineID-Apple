@@ -21,7 +21,6 @@ import SwiftUI
 /// what VoiceOver already wants.
 internal struct CardCredentialsView: View {
   private enum CardConnectionPurpose: Sendable {
-    case browserAuthentication(pin1: String)
     case pinManagement
   }
 
@@ -718,6 +717,8 @@ internal struct CardCredentialsView: View {
               canPrepareCredentials: canPrepareIdentity,
               isDemonstration: isDemonstration,
               enteredPin1: enteredPin1,
+              cardAccessNumber: registrationCardAccessNumber,
+              storeCardAccessNumber: storeProvenCardAccessNumber,
               storeVerifiedPin1: storeVerifiedPin1,
               clearPin1Entry: clearPin1Entry,
               onRegistrationStarted: {
@@ -913,94 +914,16 @@ internal struct CardCredentialsView: View {
     isPin1FieldFocused = false
   }
 
-  /// Starts browser setup only after the same live classification used by
-  /// every other wireless card route.
-  private func connectIdentityCard() {
-    guard let pin1 = enteredPin1() else { return }
-    classifyIdentityCard(for: .browserAuthentication(pin1: pin1))
-  }
-
-  #if os(iOS)
-    /// The pushed screen for one flow destination.
-    ///
-    /// A live reader identity signs and manages over its own card
-    /// session; the wireless routes carry the entered CAN instead.
-    @ViewBuilder
-    private func destinationView(
-      _ destination: CardSetupStateMachine.Destination
-    ) -> some View {
-      switch destination {
-      case .activation:
-        #if DEBUG
-          // A result builder accepts a declaration, not a discard statement.
-          // swiftlint:disable:next redundant_discardable_let
-          let _ = DebugConsole.emit("navigation-destination: activation")
-        #endif
-        if let activationScheme, let activationNeeds {
-          CardManagementView(
-            activationRequired: true,
-            cardAccessNumber: cardAccessNumberEntry,
-            activationScheme: activationScheme,
-            activationNeeds: activationNeeds,
-            onActivationSucceeded: activationSucceeded
-          )
-          .id(CardSetupStateMachine.Destination.activation)
-        }
-      case .pinManagement:
-        #if DEBUG
-          // A result builder accepts a declaration, not a discard statement.
-          // swiftlint:disable:next redundant_discardable_let
-          let _ = DebugConsole.emit("navigation-destination: PIN management")
-        #endif
-        if hasReaderIdentity {
-          CardManagementView(readerCardIsPresent: true)
-            .id(CardSetupStateMachine.Destination.pinManagement)
-        } else {
-          CardManagementView(
-            cardAccessNumber: managementCardAccessNumber
-          )
-          .id(CardSetupStateMachine.Destination.pinManagement)
-        }
-      case .signDocuments:
-        DocumentSigningView(
-          transport: hasReaderIdentity ? .reader : .nearField,
-          cardAccessNumber: hasReaderIdentity ? nil : managementCardAccessNumber
-        )
-        .id(CardSetupStateMachine.Destination.signDocuments)
-      }
-    }
-  #endif
-
-  /// A slashed key performs the prerequisite read; a verified key opens the
-  /// route selected by that card state without repeating NFC work.
-  ///
-  /// A live reader identity opens management directly: its card is
-  /// already present.
-  private func openCardManagement() {
-    if hasReaderIdentity {
-      synchronizeIdentityState()
-      transition(.openVerifiedManagement)
-      return
-    }
-    guard isCardAccessNumberEntryComplete, !model.isConnecting else { return }
-    synchronizeIdentityState()
-    if let activationNeeds, activationNeeds.any {
-      transition(.openKnownActivation)
-    } else if model.hasVerifiedCardStatus {
-      transition(.openVerifiedManagement)
-    } else {
-      classifyIdentityCard(for: .pinManagement)
-    }
-  }
-
   /// One side-effect-free NFC snapshot decides activation, recovery, and the
-  /// healthy path before either PIN management or browser registration opens.
+  /// healthy path before PIN management opens.
+  ///
+  /// Browser setup does not come through here: it proves the access number
+  /// inside the one hold that also reads and registers the identity, so it
+  /// never spends a second field on a question it can answer in the first.
   private func classifyIdentityCard(for purpose: CardConnectionPurpose) {
     guard isCardAccessNumberEntryComplete, !model.isConnecting else { return }
     let started: Bool
     switch purpose {
-    case .browserAuthentication:
-      started = transition(.startBrowserClassification)
     case .pinManagement:
       started = transition(.startManagementClassification)
     }
@@ -1015,13 +938,6 @@ internal struct CardCredentialsView: View {
         return
       }
       guard entered == cardAccessNumberEntry else {
-        model.invalidateCardStatus()
-        transition(.classificationFailed)
-        return
-      }
-      if case .browserAuthentication(let pin1) = purpose,
-        pin1 != pin1Entry
-      {
         model.invalidateCardStatus()
         transition(.classificationFailed)
         return
@@ -1044,24 +960,6 @@ internal struct CardCredentialsView: View {
         case .pinManagement:
           clearPin1Entry()
           transition(.classificationActivated)
-        case .browserAuthentication(let pin1):
-          transition(.classificationActivated)
-          if !isDemonstration {
-            model.forgetPin1()
-          }
-          #if REFINEID_LOCAL_CARD && os(iOS)
-            if #available(iOS 26.0, *) {
-              let succeeded = await CardRegistrationSections.registerIdentity(
-                pin1: pin1,
-                model: primingModel,
-                storeVerifiedPin1: storeVerifiedPin1,
-                clearPin1Entry: clearPin1Entry
-              ) { isRegistered = true }
-              finishBrowserRegistration(succeeded: succeeded)
-            } else {
-              finishBrowserRegistration(succeeded: false)
-            }
-          #endif
         }
       case .activationRequired(let scheme, let needs):
         if !isDemonstration {
@@ -1166,6 +1064,186 @@ internal struct CardCredentialsView: View {
       assertionFailure(
         "Rejected card-setup transition: \(flowState.rawValue) + \(event.rawValue)")
       return false
+    }
+  }
+
+  /// The access number a registration hold should prove.
+  ///
+  /// The entered digits when the holder is setting the card up, and the
+  /// stored ones when they are registering a card this device already
+  /// knows.
+  @MainActor
+  private func registrationCardAccessNumber() -> String? {
+    if isCardAccessNumberEntryComplete { return cardAccessNumberEntry }
+    return CardCredentialStore.displayedCardAccessNumber()
+  }
+
+  /// Commits the access number at the device boundary, once proved.
+  ///
+  /// A demonstration models the same persistence without writing a real
+  /// card's number into the Keychain.
+  private func storeProvenCardAccessNumber(_ digits: String) -> Bool {
+    #if os(iOS)
+      if isDemonstration { return demoMode.hasValidatedConnection }
+    #endif
+    return model.saveCardAccessNumber(digits)
+  }
+
+  /// Sets the identity up in one hold.
+  ///
+  /// PACE proves the access number, the public certificate is read behind
+  /// it, and the identity is registered -- all while the card is against
+  /// the phone once. Neither credential is stored until that succeeded.
+  ///
+  /// The card is asked for nothing this setup will not use. Whether it
+  /// accepts PIN1 is true of the card at the moment it signs, not of this
+  /// moment, so the signing path reads its counter and verifies there; a
+  /// PIN that turns out to be wrong discards the identity then.
+  private func connectIdentityCard() {
+    guard let pin1 = enteredPin1(), isCardAccessNumberEntryComplete else { return }
+    guard transition(.startBrowserClassification) else { return }
+    let entered = cardAccessNumberEntry
+    activationScheme = nil
+    activationNeeds = nil
+    isCardAccessNumberFieldFocused = false
+    model.clearFailure()
+    model.invalidateCardStatus()
+    Task { @MainActor in
+      #if REFINEID_LOCAL_CARD && os(iOS)
+        if #available(iOS 26.0, *) {
+          let succeeded = await CardRegistrationSections.registerIdentity(
+            cardAccessNumber: entered,
+            pin1: pin1,
+            model: primingModel,
+            commit: IdentityCommitments(
+              storeCardAccessNumber: storeProvenCardAccessNumber,
+              storeVerifiedPin1: storeVerifiedPin1,
+              clearPin1Entry: clearPin1Entry,
+              markRegistered: { isRegistered = true }))
+          finishIdentitySetup(succeeded: succeeded)
+          return
+        }
+      #endif
+      transition(.classificationFailed)
+    }
+  }
+
+  /// Routes the one hold's outcome, reading what the card said.
+  @MainActor
+  private func finishIdentitySetup(succeeded: Bool) {
+    #if REFINEID_LOCAL_CARD && os(iOS)
+      guard #available(iOS 26.0, *) else { return }
+      retryHealth.update(primingModel.credentialReport)
+      guard !succeeded else {
+        // The counters this hold read decide where the holder goes next.
+        // An identity whose card is one wrong entry from blocking is worth
+        // having, but the code needs restoring before it can sign, so the
+        // route to that comes first.
+        if retryHealth.recovery != nil {
+          clearPin1Entry()
+          transition(.classificationRecoveryRequired)
+          return
+        }
+        transition(.classificationActivated)
+        finishBrowserRegistration(succeeded: true)
+        return
+      }
+      switch primingModel.refusal {
+      case .wrongCardAccessNumber:
+        Task { @MainActor in
+          // A stored identity whose access number this card refuses is
+          // facing a different card: every authority is removed and setup
+          // starts over from the access number.
+          if !isDemonstration, hasIdentity {
+            await model.forgetEverythingAfterCardMismatch()
+          }
+          cardAccessNumberEntry = ""
+          isCardAccessNumberFieldFocused = true
+          clearPin1Entry()
+          transition(.classificationWrongCardAccessNumber)
+        }
+      case .activationRequired(let scheme, let needs):
+        clearPin1Entry()
+        activationScheme = scheme
+        activationNeeds = needs
+        transition(.classificationActivationRequired)
+      case nil:
+        clearPin1Entry()
+        transition(.classificationFailed)
+      }
+    #endif
+  }
+
+  #if os(iOS)
+    /// The pushed screen for one flow destination.
+    ///
+    /// A live reader identity signs and manages over its own card
+    /// session; the wireless routes carry the entered CAN instead.
+    @ViewBuilder
+    private func destinationView(
+      _ destination: CardSetupStateMachine.Destination
+    ) -> some View {
+      switch destination {
+      case .activation:
+        #if DEBUG
+          // A result builder accepts a declaration, not a discard statement.
+          // swiftlint:disable:next redundant_discardable_let
+          let _ = DebugConsole.emit("navigation-destination: activation")
+        #endif
+        if let activationScheme, let activationNeeds {
+          CardManagementView(
+            activationRequired: true,
+            cardAccessNumber: cardAccessNumberEntry,
+            activationScheme: activationScheme,
+            activationNeeds: activationNeeds,
+            onActivationSucceeded: activationSucceeded
+          )
+          .id(CardSetupStateMachine.Destination.activation)
+        }
+      case .pinManagement:
+        #if DEBUG
+          // A result builder accepts a declaration, not a discard statement.
+          // swiftlint:disable:next redundant_discardable_let
+          let _ = DebugConsole.emit("navigation-destination: PIN management")
+        #endif
+        if hasReaderIdentity {
+          CardManagementView(readerCardIsPresent: true)
+            .id(CardSetupStateMachine.Destination.pinManagement)
+        } else {
+          CardManagementView(
+            cardAccessNumber: managementCardAccessNumber
+          )
+          .id(CardSetupStateMachine.Destination.pinManagement)
+        }
+      case .signDocuments:
+        DocumentSigningView(
+          transport: hasReaderIdentity ? .reader : .nearField,
+          cardAccessNumber: hasReaderIdentity ? nil : managementCardAccessNumber
+        )
+        .id(CardSetupStateMachine.Destination.signDocuments)
+      }
+    }
+  #endif
+
+  /// A slashed key performs the prerequisite read; a verified key opens the
+  /// route selected by that card state without repeating NFC work.
+  ///
+  /// A live reader identity opens management directly: its card is
+  /// already present.
+  private func openCardManagement() {
+    if hasReaderIdentity {
+      synchronizeIdentityState()
+      transition(.openVerifiedManagement)
+      return
+    }
+    guard isCardAccessNumberEntryComplete, !model.isConnecting else { return }
+    synchronizeIdentityState()
+    if let activationNeeds, activationNeeds.any {
+      transition(.openKnownActivation)
+    } else if model.hasVerifiedCardStatus {
+      transition(.openVerifiedManagement)
+    } else {
+      classifyIdentityCard(for: .pinManagement)
     }
   }
 

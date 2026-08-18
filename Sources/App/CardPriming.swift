@@ -77,25 +77,42 @@
       /// what they did and should not be told off for it with an error
       /// tone.
       internal var cancelled: Bool = false
+
+      /// What the card said, when it said something the caller can route on.
+      internal var refusal: CardSetupRefusal?
+
+      /// The credential counters this hold read, for the health display and
+      /// the recovery route.
+      internal var credentialReport: CredentialProbeReport?
     }
 
     /// Why a priming run stopped short.
     internal enum Failure: Error {
+      /// The card still needs its first holder PIN values.
+      ///
+      /// Carries what the live card reported, so the caller can open the
+      /// activation route it names without reading the card again.
+      case activationRequired(scheme: ActivationScheme, needs: CardActivationNeeds)
+
       /// No card access number is stored, so PACE cannot be run.
       case cardAccessNumberMissing
 
-      /// PIN1 was malformed or its retry counter could not be read.
-      case pin1Unavailable
+      /// The certificate came off the card but is not a certificate.
+      case certificateUnreadable
 
       /// One or two attempts remain. The exact card-reported count survives
       /// into the UI instead of being collapsed into an opaque safety error.
       case pin1LowAttempts(RetryCount)
 
-      /// The card still needs its first holder PIN values.
-      case activationRequired
+      /// PIN1 does not fit its digit rules, so there is nothing to store.
+      ///
+      /// Shape is a property of the value and is checked before the slot
+      /// opens. Whether the card accepts it is a property of the card at
+      /// the instant it signs, and is checked there.
+      case pin1Malformed
 
-      /// The certificate came off the card but is not a certificate.
-      case certificateUnreadable
+      /// PIN1 was malformed or its retry counter could not be read.
+      case pin1Unavailable
 
       /// The prime could not be written, so nothing would be there to
       /// serve the next login.
@@ -105,6 +122,10 @@
       /// named -- and an unnamed card would be served another card's
       /// primed identity.
       case unidentifiedCard
+
+      /// The card refused the offered access number, so this is a
+      /// different card than the digits describe.
+      case wrongCardAccessNumber
     }
 
     /// Shown under Apple's own "Ready to Scan" title whenever the system
@@ -155,14 +176,32 @@
     /// Never throws: a prime is a thing a person is doing, and every way
     /// it can fail is something they need to read rather than something a
     /// caller needs to catch.
+    ///
+    /// One hold does the whole setup: PACE proves the offered access
+    /// number, the public certificate is read behind it, and the identity
+    /// is stored and registered. Nothing is written to this device until
+    /// that hold has succeeded.
+    ///
+    /// PIN1 is never sent to the card here. The certificate is public and
+    /// needs only the secure channel, and whether the card accepts a PIN
+    /// is true of the card at the instant it signs rather than of this
+    /// setup -- so it is checked there, where the counter is read in the
+    /// same session that consumes it.
     internal static func prime(
+      cardAccessNumber: String,
       pin1: String,
       progress: @escaping Progress,
       step: @escaping StepReport
     ) async -> Outcome {
-      guard let accessNumber = CardCredentialStore.cardAccessNumber() else {
+      guard let accessNumber = CardAccessNumber(digits: cardAccessNumber) else {
         step(.found, .failed)
         return Self.failure(Failure.cardAccessNumberMissing)
+      }
+      // Shape is the one thing about a PIN that is knowable without a
+      // card, so it is the one thing checked before the slot opens.
+      guard Pin1(digits: pin1) != nil else {
+        step(.found, .failed)
+        return Self.failure(Failure.pin1Malformed)
       }
       // Marked BEFORE the slot opens: `ctkd` asks the extension for a
       // token the moment the card arrives, and a mark written after that
@@ -202,7 +241,6 @@
       let outcome = await Self.hold(
         sheet: sheet,
         accessNumber: accessNumber,
-        pin1: pin1,
         progress: progress,
         step: report)
       await CardPrimingFeedback.report(succeeded: outcome.stored && outcome.registered)
@@ -216,7 +254,6 @@
     private static func hold(
       sheet: PrimingSheetReporter,
       accessNumber: CardAccessNumber,
-      pin1: String,
       progress: @escaping Progress,
       step: @escaping StepReport
     ) async -> Outcome {
@@ -232,7 +269,6 @@
         sheet: sheet,
         lookup: lookup,
         accessNumber: accessNumber,
-        pin1: pin1,
         progress: progress,
         step: step)
     }
@@ -243,7 +279,20 @@
         stored: false,
         registered: false,
         summary: Self.summary(for: error),
-        cancelled: (error as? NearFieldCardSession.Failure) == .dismissed)
+        cancelled: (error as? NearFieldCardSession.Failure) == .dismissed,
+        refusal: Self.refusal(for: error))
+    }
+
+    /// The routable part of a failure, when the card named one.
+    private static func refusal(for error: any Error) -> CardSetupRefusal? {
+      switch error as? Failure {
+      case .wrongCardAccessNumber:
+        .wrongCardAccessNumber
+      case .activationRequired(let scheme, let needs):
+        .activationRequired(scheme: scheme, needs: needs)
+      default:
+        nil
+      }
     }
 
     /// Reads the card in this same field, stores the prime, registers.
@@ -251,7 +300,6 @@
       sheet: PrimingSheetReporter,
       lookup: PrimeLookupIdentifier,
       accessNumber: CardAccessNumber,
-      pin1: String,
       progress: @escaping Progress,
       step: @escaping StepReport
     ) async -> Outcome {
@@ -262,7 +310,6 @@
           try Self.read(
             from: sheet,
             accessNumber: accessNumber,
-            pin1: pin1,
             progress: progress,
             step: step)
         }
@@ -296,7 +343,11 @@
       progress(String(localized: "Card details stored on this iPhone."))
 
       return await Self.finish(
-        instance: payload.instance, sheet: sheet, progress: progress, step: step)
+        instance: payload.instance,
+        credentialReport: payload.credentialReport,
+        sheet: sheet,
+        progress: progress,
+        step: step)
     }
 
     /// Registers the live card and reports how the hold ended.
@@ -306,6 +357,7 @@
     /// rather than being called after the hold.
     private static func finish(
       instance: CardInstanceIdentifier,
+      credentialReport: CredentialProbeReport?,
       sheet: PrimingSheetReporter,
       progress: @escaping Progress,
       step: StepReport
@@ -326,7 +378,8 @@
             localized: """
               The card details were stored, but Safari setup did not \
               finish. Try priming the card again.
-              """))
+              """),
+        credentialReport: credentialReport)
     }
 
     /// Runs one blocking card exchange off the cooperative pool.
