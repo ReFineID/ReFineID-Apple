@@ -44,6 +44,9 @@ internal struct DiagnosticsSnapshot: Sendable {
   /// What is printed for a section that found nothing.
   private static let nothing = "(none)"
 
+  /// Enough of an identifier to tell two pairings apart.
+  private static let identifierPrefixLength = 4
+
   /// The blocks, in reading order.
   internal let sections: [Section]
 
@@ -72,6 +75,7 @@ internal struct DiagnosticsSnapshot: Sendable {
         Self.watcherTokens(),
         Self.driverConfigurations(),
         Self.primeStore(),
+        Self.pairings(),
         Self.credentialPolicy(),
         Self.transportPolicy(),
         Self.keychainCounts(),
@@ -152,6 +156,30 @@ internal struct DiagnosticsSnapshot: Sendable {
     return Section(
       title: "Prime store (\(primes.count))",
       lines: lines.isEmpty ? [Self.nothing] : lines)
+  }
+
+  /// The pairings this device can serve or ask through.
+  ///
+  /// Identifiers only, and only their first bytes: a pairing names two
+  /// devices and nothing about the person holding either.
+  private static func pairings() -> Section {
+    let vault = RappDeviceVault()
+    let active = (try? vault.activePairIDs()) ?? []
+    let selected = (try? vault.selectedPairID()).flatMap(\.self)
+    var lines = ["active: \(active.count)"]
+    if let selected {
+      lines.append("selected: " + Self.shortIdentifier(selected))
+    } else {
+      lines.append("selected: none")
+    }
+    return Section(title: "Pairings", lines: lines)
+  }
+
+  /// The leading bytes of an identifier, which is enough to tell two apart.
+  private static func shortIdentifier(_ identifier: Data) -> String {
+    identifier.prefix(Self.identifierPrefixLength)
+      .map { String(format: "%02x", $0) }
+      .joined()
   }
 
   /// How a contactless signature obtains PIN1.

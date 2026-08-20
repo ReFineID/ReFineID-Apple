@@ -33,6 +33,14 @@
     /// Run the card priming flow with no interface.
     case prime = "--prime"
 
+    /// Ask the paired device for its authentication certificate over the
+    /// relay, and report what came back.
+    ///
+    /// The answer comes from the peer's stored prime, so this drives the
+    /// whole relay -- pairing, session, request, answer -- without a card
+    /// being presented to anything.
+    case remoteIdentityProbe = "--remote-identity-probe"
+
     /// Return this device to a known zero: no token, no prime, no window,
     /// no trace.
     case resetCardState = "--reset-card-state"
@@ -68,8 +76,9 @@
     /// window would have existed.
     internal var needsScene: Bool {
       switch self {
-      case .diagnostics, .forgetCan, .paceCheck, .resetCardState, .setCan,
-        .setPin1, .signDocument, .signProbe, .tokenPublishProbe, .trace:
+      case .diagnostics, .forgetCan, .paceCheck, .remoteIdentityProbe,
+        .resetCardState, .setCan, .setPin1, .signDocument, .signProbe,
+        .tokenPublishProbe, .trace:
         false
       case .activationProbe, .ctkSignProbe, .managementProbe, .prime:
         true
@@ -83,7 +92,7 @@
     internal var takesValue: Bool {
       switch self {
       case .activationProbe, .ctkSignProbe, .diagnostics, .forgetCan, .paceCheck, .prime,
-        .resetCardState, .tokenPublishProbe, .trace:
+        .remoteIdentityProbe, .resetCardState, .tokenPublishProbe, .trace:
         false
       case .managementProbe, .setCan, .setPin1, .signDocument, .signProbe:
         true

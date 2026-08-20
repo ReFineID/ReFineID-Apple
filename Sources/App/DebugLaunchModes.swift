@@ -96,6 +96,14 @@
         Self.storeCardAccessNumber()
       case .setPin1:
         Self.storePin1()
+      case .remoteIdentityProbe:
+        #if os(iOS)
+          DebugRemoteIdentityProbe.report()
+        #else
+          DebugModeReport(
+            lines: [mode.rawValue + ": asks a paired phone, which only iOS does"],
+            succeeded: false)
+        #endif
       case .signDocument, .signProbe, .tokenPublishProbe, .trace:
         Self.probeReport(for: mode)
       }
