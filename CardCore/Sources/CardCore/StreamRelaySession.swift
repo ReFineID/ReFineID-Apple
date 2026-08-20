@@ -19,6 +19,15 @@ import Foundation
     /// How long one endpoint is given before the next is tried.
     private static let attemptSeconds = 3.0
 
+    /// How many times a published service is dialled before giving up.
+    ///
+    /// A name can resolve to more than one address, and one of them can be
+    /// a record its listener no longer answers on: a peer that was killed
+    /// leaves its registration behind until it ages out. Dialling the name
+    /// again resolves it afresh, which is how the live address is reached
+    /// while the dead one is still being advertised.
+    private static let serviceAttempts = 5
+
     private let endpoints: [StreamRelayEndpoint]
     private let preamble: Data
     private let onEvent: @Sendable (StreamRelayEvent) -> Void
@@ -108,7 +117,11 @@ import Foundation
     private func dialNext() {
       guard !isFinished else { return }
       let dialed: NWConnection
-      if let service, nextEndpointIndex == 0 {
+      if let service {
+        guard nextEndpointIndex < Self.serviceAttempts else {
+          finish(.unreachable)
+          return
+        }
         nextEndpointIndex += 1
         dialed = NWConnection(to: service, using: .tcp)
       } else {
@@ -133,19 +146,16 @@ import Foundation
         self?.handleState(state, attempt: attempt, connection: dialed)
       }
       dialed.start(queue: queue)
+      waitOut(attempt: attempt, connection: dialed)
     }
 
-    /// Gives one endpoint its time before the next is tried.
+    /// Gives one dial its time before the next is tried.
     ///
-    /// Waiting is what a connection reports while it is still trying, and a
-    /// listener that is up is often reached on the attempt after it.
-    /// Abandoning the endpoint here left every dial unreachable against a
-    /// listener that was ready.
+    /// Every dial is bounded, not only one that reports itself waiting: a
+    /// connection to an address nothing answers on stays preparing, and a
+    /// preparing dial that is never given up on is a peer that never
+    /// arrives.
     private func waitOut(attempt: Int, connection: NWConnection) {
-      guard !isReady else {
-        finish(.disconnected)
-        return
-      }
       queue.asyncAfter(deadline: .now() + Self.attemptSeconds) { [weak self] in
         guard let self, attempt == generation, !isFinished, !isReady else { return }
         connection.cancel()
@@ -177,7 +187,8 @@ import Foundation
         receiveLengthPrefix(attempt: attempt, connection: connection)
 
       case .waiting:
-        waitOut(attempt: attempt, connection: connection)
+        // The dial's own deadline decides when to move on.
+        break
 
       case .failed:
         if isReady {
