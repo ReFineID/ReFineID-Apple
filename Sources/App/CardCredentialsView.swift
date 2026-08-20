@@ -691,7 +691,13 @@ internal struct CardCredentialsView: View {
             }
           case .idle, .failed:
             Button(String(localized: "Connect Remote Reader")) {
-              if remoteModel.hasPair {
+              // A device with a card of its own reconnects to the pairing it
+              // already has. A device without one is here to borrow a card,
+              // and the code is how it asks, so it goes straight there --
+              // including when a stored pairing the other side has forgotten
+              // would otherwise strand it behind a wait for an answer that
+              // is not coming.
+              if remoteModel.hasPair, offersNearField {
                 remoteModel.connect()
               } else {
                 openRemoteReader()

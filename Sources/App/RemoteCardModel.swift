@@ -40,6 +40,16 @@
 
     /// Re-reads the selected pairing and drops state without one.
     internal func refresh() {
+      #if DEBUG
+        // A stored pairing is what makes this device believe it can just
+        // reconnect. A test needs that belief without two devices and a
+        // scanned code, because the rule under test is what the belief
+        // makes the screen do.
+        if ProcessInfo.processInfo.arguments.contains("--pretend-paired") {
+          hasPair = true
+          return
+        }
+      #endif
       Task {
         let catalog = RappPairCatalog(vault: RappDeviceVault())
         let selected = try? await catalog.selectedPair()

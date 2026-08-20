@@ -60,6 +60,25 @@
       }
     }
 
+    /// A stored pairing does not stand between the tap and the code.
+    ///
+    /// A device that cannot reach a card of its own has nothing to
+    /// reconnect to: its pairing names a phone that may have forgotten it,
+    /// and waiting for an answer that is not coming looks to the holder
+    /// like a button that does nothing. The code is what this device has
+    /// to offer, so the tap goes there whatever it has stored.
+    internal func testConnectRemoteReaderShowsTheCodeEvenWhenPaired() {
+      let app = UITestApp.launch(arguments: ["--pretend-paired"])
+      let connect = element(UITestIdentifiers.connectRemoteReader, in: app)
+      XCTAssertTrue(connect.waitForExistence(timeout: Self.appearTimeout))
+      connect.tap()
+
+      XCTAssertTrue(
+        element(UITestIdentifiers.pairingCode, in: app)
+          .waitForExistence(timeout: Self.codeTimeout),
+        "a stored pairing kept the code from appearing")
+    }
+
     /// One tap reaches the code, and closing it leaves the screen whole.
     ///
     /// Completing the pairing needs a phone to read the code, so the walk

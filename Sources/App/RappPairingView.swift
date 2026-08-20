@@ -60,7 +60,7 @@ internal struct RappPairingView: View {
       if borrowsOnly {
         borrowedCardCode
       } else {
-        servingCardForm
+        servingCardScanner
       }
     }
     .onAppear {
@@ -70,12 +70,13 @@ internal struct RappPairingView: View {
         #if os(iOS)
           ScreenBrightness.raiseForScanning()
         #endif
+      } else {
+        model.scanOffer()
       }
     }
     // The code is on screen to be scanned, so a scan that lands is the end
     // of this screen: it leaves, and what it produced is read behind it.
     .onValueChange(of: model.phase) { phase in
-      guard borrowsOnly else { return }
       switch phase {
       case .paired, .failed:
         dismiss()
@@ -94,23 +95,28 @@ internal struct RappPairingView: View {
     #endif
   }
 
-  /// The screen a device that can also serve a card shows: its pairings,
-  /// the step that starts a new one, and how the current attempt is going.
-  private var servingCardForm: some View {
-    NavigationStack {
-      Form {
-        pairedDevices
-        pairingAction
-        pairingProgress
-      }
-      .navigationTitle("Remote Card")
-      .toolbar {
-        ToolbarItem(placement: .confirmationAction) {
-          Button("Close") { dismiss() }
-            .accessibilityIdentifier("closePairing")
+  /// The camera, which is the whole of what a card holder does here.
+  ///
+  /// A device that serves a card opens this screen to read one code. A
+  /// list of pairings and a button to begin would be two steps in front of
+  /// the only step there is, and the pairing it makes is shown on the
+  /// screen this came from.
+  @ViewBuilder private var servingCardScanner: some View {
+    #if os(iOS)
+      ZStack {
+        Color.black.ignoresSafeArea()
+        RappOfferScanner { model.acceptScannedOffer($0) }
+          .ignoresSafeArea()
+          .accessibilityIdentifier("pairingScanner")
+        if case .connecting = model.phase {
+          ProgressView()
+            .controlSize(.large)
+            .tint(.white)
         }
       }
-    }
+    #else
+      EmptyView()
+    #endif
   }
 
   /// The surface the code is drawn on, in each platform's own paper.
@@ -153,99 +159,4 @@ internal struct RappPairingView: View {
     }
   }
 
-  @ViewBuilder private var pairedDevices: some View {
-    if !model.pairs.isEmpty {
-      Section("Paired devices") {
-        ForEach(model.pairs, id: \.pairID) { pair in
-          HStack {
-            Label(
-              model.displayName(for: pair),
-              systemImage: pair.remotePlatformSymbol
-            )
-            Spacer()
-            if model.selectedPairID == pair.pairID {
-              Image(systemName: "checkmark")
-                .foregroundStyle(Color.accentColor)
-                .accessibilityLabel("Selected")
-            }
-          }
-          Button("Remove this pairing", role: .destructive) {
-            model.revoke(pair)
-          }
-          .accessibilityIdentifier("removePairedDevice")
-        }
-      }
-    }
-  }
-
-  /// One connection at a time: pairing is offered only while no
-  /// paired device exists.
-  @ViewBuilder private var pairingAction: some View {
-    if model.pairs.isEmpty {
-      Section {
-        #if os(macOS)
-          Button("Pair a phone", systemImage: "qrcode") {
-            model.createOffer()
-          }
-          .accessibilityIdentifier("pairPhone")
-        #else
-          // A device with an antenna holds the card and scans; a device
-          // without one requests and shows the code to scan.
-          if UIDevice.current.userInterfaceIdiom == .pad {
-            Button("Pair a phone", systemImage: "qrcode") {
-              model.createOffer()
-            }
-            .accessibilityIdentifier("pairPhone")
-          } else {
-            Button("Scan pairing code", systemImage: "qrcode.viewfinder") {
-              model.scanOffer()
-            }
-            .accessibilityIdentifier("scanPairingCode")
-          }
-        #endif
-      }
-    }
-  }
-
-  @ViewBuilder private var pairingProgress: some View {
-    switch model.phase {
-    case .idle:
-      EmptyView()
-    case .offer(let uri):
-      Section("Scan with ReFineID on the phone") {
-        if let image = RappPairingCode.image(uri) {
-          image
-            .interpolation(.none)
-            .resizable()
-            .scaledToFit()
-            .frame(maxWidth: Layout.pairingCodeEdge, maxHeight: Layout.pairingCodeEdge)
-            .accessibilityLabel("Pairing QR code")
-            .accessibilityIdentifier("pairingCode")
-        }
-        ProgressView("Waiting for the phone")
-      }
-    case .scanning:
-      #if os(iOS)
-        Section("Scan the code shown on the other device") {
-          RappOfferScanner { model.acceptScannedOffer($0) }
-            .frame(minHeight: Layout.scannerMinimumHeight)
-            .clipShape(.rect(cornerRadius: Layout.scannerCornerRadius))
-            .accessibilityLabel("Pairing code scanner")
-        }
-      #endif
-    case .connecting:
-      Section { ProgressView("Establishing a secure connection") }
-    case .paired(let pair):
-      Section {
-        Label("Secure pairing established", systemImage: "checkmark.shield")
-          .foregroundStyle(.green)
-        Text(pair.remotePlatformLabel)
-      }
-    case .failed(let message):
-      Section {
-        Label(message, systemImage: "exclamationmark.triangle")
-          .foregroundStyle(.red)
-      }
-    }
-  }
 }
