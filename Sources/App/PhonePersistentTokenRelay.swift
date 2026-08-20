@@ -16,42 +16,37 @@
 
     // MARK: Nested Types
 
-    private enum RelistenPolicy {
+    internal enum RelistenPolicy {
       case automatic
       case explicitUserActionRequired
     }
 
     // MARK: Static Properties
 
-    #if REFINEID_STREAM_TRANSPORT
-      /// What the holder says first, so the requester knows a peer arrived.
-      private static let browsedPreamble = StreamRelayPreamble.hello
-    #endif
-
     internal static let shared = PhonePersistentTokenRelay()
 
-    private static let maximumPreCoordinatorFrames = 4
+    internal static let maximumPreCoordinatorFrames = 4
     /// Pause between stream dial attempts while redialing is automatic.
-    private static let streamRedialDelayMilliseconds = 2_000
+    internal static let streamRedialDelayMilliseconds = 2_000
 
     // MARK: Properties
 
-    private let vault = RappDeviceVault()
+    internal let vault = RappDeviceVault()
     private let policy = RappRequesterPolicy.interactive
-    private var relay: PersistentRelaySession?
-    private var streamRelay: StreamRelaySession?
+    internal var relay: PersistentRelaySession?
     #if REFINEID_STREAM_TRANSPORT
-      private var streamBrowser: StreamRelayBrowser?
+      internal var streamListener: StreamRelayListener?
+      internal var streamContext: PhoneStreamPairContext?
     #endif
-    private var coordinator: RappConnectionCoordinator?
+    internal var coordinator: RappConnectionCoordinator?
     #if REFINEID_SLIM_RELAY
       private var slimSession: SignRelaySession?
       private var slimProxy: SignRelayProxy?
     #endif
-    private var dispatcher: RappPhoneProxyDispatcher?
-    private var connectionID: UUID?
-    private var preCoordinatorFrames: [Data] = []
-    private var relistenPolicy = RelistenPolicy.automatic
+    internal var dispatcher: RappPhoneProxyDispatcher?
+    internal var connectionID: UUID?
+    internal var preCoordinatorFrames: [Data] = []
+    internal var relistenPolicy = RelistenPolicy.automatic
 
     // MARK: Lifecycle
 
@@ -63,18 +58,15 @@
       // A proxy without an antenna is not a proxy: only near-field
       // devices advertise as the card holder.
       guard SupportedCardTransports.offersNearField else { return }
-      guard relay == nil, streamRelay == nil, coordinator == nil,
+      guard relay == nil, coordinator == nil,
         relistenPolicy == .automatic,
         hasUsableSelectedPair()
       else { return }
 
-      if let context = PhoneStreamPairContext.resolve(vault: vault) {
-        startStream(context)
-        return
-      }
-
       #if REFINEID_STREAM_TRANSPORT
-        startBrowsedStream()
+        guard streamListener == nil else { return }
+        guard let context = PhoneStreamPairContext.resolve(vault: vault) else { return }
+        startListening(context)
       #else
         let nearbyConnectionID = UUID()
         let nearby = PersistentRelaySession(
@@ -97,65 +89,17 @@
     /// It never restores a revoked pair; the vault remains authoritative.
     internal func resumeAfterUserAction() {
       relistenPolicy = .automatic
-      if relay == nil, streamRelay == nil, coordinator == nil { start() }
+      if relay == nil, coordinator == nil { start() }
     }
 
     internal func suspendForPairing() {
       relistenPolicy = .explicitUserActionRequired
-      let coordinator = coordinator
+      let closing = coordinator
       relay?.cancel()
-      streamRelay?.cancel()
-      Task { await coordinator?.close() }
-    }
-
-    #if REFINEID_STREAM_TRANSPORT
-      /// Finds the requester's published listener and dials it.
-      ///
-      /// A pairing made over the nearby transport carries no stored
-      /// endpoints, so the holder finds the requester the same way it would
-      /// have found a peer: by name, over the plain name service.
-      private func startBrowsedStream() {
-        let browsedConnectionID = UUID()
-        connectionID = browsedConnectionID
-        streamBrowser = StreamRelayBrowser { [weak self] endpoint in
-          Task { @MainActor in
-            self?.dialBrowsed(endpoint, connectionID: browsedConnectionID)
-          }
-        }
-        streamBrowser?.start()
-      }
-
-      /// Dials the requester once it has been found.
-      private func dialBrowsed(_ endpoint: NWEndpoint, connectionID: UUID) {
-        guard self.connectionID == connectionID, streamRelay == nil else { return }
-        let stream = StreamRelaySession(
-          service: endpoint,
-          preamble: Self.browsedPreamble
-        ) { [weak self] event in
-          Task { @MainActor in
-            self?.receiveStream(event, connectionID: connectionID)
-          }
-        }
-        streamRelay = stream
-        stream.start()
-      }
-    #endif
-
-    /// The stream profile dials the requester's stored listener endpoints
-    /// with the pair's session preamble instead of advertising nearby.
-    private func startStream(_ context: PhoneStreamPairContext) {
-      let streamConnectionID = UUID()
-      let stream = StreamRelaySession(
-        endpointLiterals: context.endpoints,
-        preamble: context.preamble
-      ) { [weak self] event in
-        Task { @MainActor in
-          self?.receiveStream(event, connectionID: streamConnectionID)
-        }
-      }
-      connectionID = streamConnectionID
-      streamRelay = stream
-      stream.start()
+      #if REFINEID_STREAM_TRANSPORT
+        streamListener?.cancel()
+      #endif
+      Task { await closing?.close() }
     }
 
     private func receive(
@@ -187,40 +131,18 @@
       }
     }
 
-    private func receiveStream(
-      _ event: StreamRelayEvent,
-      connectionID: UUID
-    ) {
-      guard self.connectionID == connectionID else { return }
-      switch event {
-      case .connected:
-        establishStream(connectionID: connectionID)
-
-      case .frame(let frame):
-        if let coordinator {
-          Task { await coordinator.receive(frame) }
-        } else if preCoordinatorFrames.count < Self.maximumPreCoordinatorFrames {
-          preCoordinatorFrames.append(frame)
-        } else {
-          streamRelay?.cancel()
-        }
-
-      case .closed:
-        handleTransportClosed(
-          redialDelayMilliseconds: Self.streamRedialDelayMilliseconds
-        )
-      }
-    }
-
     /// Tears down the closed connection and reconnects while automatic,
     /// yielding immediately for the nearby relay and pausing between
     /// stream dial attempts.
-    private func handleTransportClosed(redialDelayMilliseconds: Int) {
+    internal func handleTransportClosed(redialDelayMilliseconds: Int) {
       let closingCoordinator = coordinator
       coordinator = nil
       dispatcher = nil
       relay = nil
-      streamRelay = nil
+      #if REFINEID_STREAM_TRANSPORT
+        streamListener = nil
+        streamContext = nil
+      #endif
       connectionID = nil
       preCoordinatorFrames.removeAll(keepingCapacity: false)
       Task { await closingCoordinator?.transportClosed() }
@@ -257,28 +179,6 @@
         transport: transport
       ) { [weak relay] in
         relay?.cancel()
-      }
-    }
-
-    private func establishStream(connectionID: UUID) {
-      guard self.connectionID == connectionID, coordinator == nil,
-        let streamRelay
-      else { return }
-
-      let transport = RappClosureFrameTransport(
-        sender: { [weak streamRelay] frame in
-          guard let streamRelay else {
-            throw StreamRelayTransportError.notConnected
-          }
-          try await streamRelay.send(frame)
-        },
-        closer: { [weak streamRelay] in streamRelay?.cancel() }
-      )
-      establishCoordinator(
-        connectionID: connectionID,
-        transport: transport
-      ) { [weak streamRelay] in
-        streamRelay?.cancel()
       }
     }
 
@@ -324,7 +224,7 @@
       }
     #endif
 
-    private func establishCoordinator(
+    internal func establishCoordinator(
       connectionID: UUID,
       transport: RappClosureFrameTransport,
       failTransport: () -> Void
@@ -385,6 +285,10 @@
       connectionID: UUID
     ) {
       guard self.connectionID == connectionID else { return }
+      #if DEBUG
+        print("[stream-holder] session event \(String(describing: event))")
+        fflush(stdout)
+      #endif
       if PhoneRelayFailStops.requireExplicitUserAction(event) {
         relistenPolicy = .explicitUserActionRequired
       }
@@ -394,7 +298,7 @@
       relistenPolicy = .explicitUserActionRequired
     }
 
-    private func hasUsableSelectedPair() -> Bool {
+    internal func hasUsableSelectedPair() -> Bool {
       (try? PhoneProxyPairSelection.resolveSelectedPair(vault: vault)) != nil
     }
   }

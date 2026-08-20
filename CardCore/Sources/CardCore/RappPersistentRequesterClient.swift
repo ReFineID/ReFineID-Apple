@@ -1,5 +1,6 @@
 #if canImport(MultipeerConnectivity) && canImport(RappEngine)
   import Foundation
+  import Network
   import os
   import RappEngine
   /// Single-use synchronous facade for CryptoTokenKit and registry callbacks.
@@ -10,46 +11,37 @@
 
     // MARK: Nested Types
 
-    private struct State: Sendable {
-      var started = false
-      var connected = false
-      var operationStarted = false
-      var completed = false
-      var coordinator: RappConnectionCoordinator?
+    internal struct State: Sendable {
+      internal var started = false
+      internal var connected = false
+      internal var operationStarted = false
+      internal var completed = false
+      internal var coordinator: RappConnectionCoordinator?
       #if REFINEID_SLIM_RELAY
-        var slimSession: SignRelaySession?
-        var slimRequestID: UUID?
+        internal var slimSession: SignRelaySession?
+        internal var slimRequestID: UUID?
       #endif
-      var response: RappRequesterResponse?
-      var error: RappRequesterClientError?
+      internal var response: RappRequesterResponse?
+      internal var error: RappRequesterClientError?
     }
 
     // MARK: Properties
 
     private let displayName: String
-    private let policy: RappRequesterPolicy
-    private let vault: RappDeviceVault
-    private let state = OSAllocatedUnfairLock(initialState: State())
+    internal let policy: RappRequesterPolicy
+    internal let vault: RappDeviceVault
+    internal let state = OSAllocatedUnfairLock(initialState: State())
     private let completed = DispatchSemaphore(value: 0)
     #if REFINEID_SLIM_RELAY
-      private let pendingSlimRequest = OSAllocatedUnfairLock<Data?>(initialState: nil)
+      internal let pendingSlimRequest = OSAllocatedUnfairLock<Data?>(initialState: nil)
     #endif
-    private var operation: RappRequesterOperation?
+    internal var operation: RappRequesterOperation?
 
     #if REFINEID_STREAM_TRANSPORT
-      private lazy var listener = StreamRelayListener { [weak self] event in
-        // A dialer announces itself with a frame that means nothing above
-        // the transport, so its arrival is the connection and not a
-        // message. Passing it up would give the session a frame the
-        // requester never sent.
-        if case .frame(let payload) = event, payload == StreamRelayPreamble.hello {
-          self?.receive(.connected)
-          return
-        }
-        self?.receive(PersistentRelayEvent(event))
-      }
+      internal var browser: StreamRelayBrowser?
+      internal var dialer: StreamRelaySession?
     #else
-      private lazy var relay = PersistentRelaySession(
+      internal lazy var relay = PersistentRelaySession(
         role: .host,
         displayName: displayName
       ) { [weak self] event in
@@ -57,10 +49,10 @@
       }
     #endif
 
-    private lazy var transport = RappClosureFrameTransport(
+    internal lazy var transport = RappClosureFrameTransport(
       sender: { [weak self] frame in
         guard let self else { throw RappRequesterClientError.transport }
-        try sendOverTransport(frame)
+        try await sendOverTransport(frame)
       },
       closer: { [weak self] in
         self?.cancelTransport()
@@ -137,36 +129,18 @@
       }
     }
 
-    /// Starts whichever transport this build carries.
-    private func startTransport() {
-      #if REFINEID_STREAM_TRANSPORT
-        listener.start(displayName: displayName)
-      #else
-        relay.start()
-      #endif
-    }
-
-    /// Hands one frame to whichever transport this build carries.
-    private func sendOverTransport(_ frame: Data) throws {
-      #if REFINEID_STREAM_TRANSPORT
-        try listener.send(frame)
-      #else
-        try relay.send(frame)
-      #endif
-    }
-
-    /// Stops whichever transport this build carries.
-    private func cancelTransport() {
-      #if REFINEID_STREAM_TRANSPORT
-        listener.cancel()
-      #else
-        relay.cancel()
-      #endif
-    }
-
     // MARK: Lifecycle
 
-    private func receive(_ event: PersistentRelayEvent) {
+    /// The most recently made pairing, which is the one to use when the
+    /// holder has not chosen among several.
+    private static func newestPairID(in vault: RappDeviceVault) async throws -> Data? {
+      try await RappPairCatalog(vault: vault)
+        .activePairs()
+        .max { $0.createdAtMilliseconds < $1.createdAtMilliseconds }?
+        .pairID
+    }
+
+    internal func receive(_ event: PersistentRelayEvent) {
       switch event {
       case .connected:
         state.withLock { $0.connected = true }
@@ -187,228 +161,44 @@
       }
     }
 
-    /// The most recently made pairing, which is the one to use when the
-    /// holder has not chosen among several.
-    private static func newestPairID(in vault: RappDeviceVault) async throws -> Data? {
-      try await RappPairCatalog(vault: vault)
-        .activePairs()
-        .max { $0.createdAtMilliseconds < $1.createdAtMilliseconds }?
-        .pairID
+    /// The pairing this request runs over, selecting the newest when
+    /// several are held and none is chosen.
+    ///
+    /// Several pairings and none chosen is what a device holds after it
+    /// has been paired more than once, and the one the holder made last is
+    /// the one they made to use. Refusing here asked for a fresh code the
+    /// holder had already scanned.
+    internal func resolvedPairID() async throws -> Data? {
+      let pairIDs = try vault.activePairIDs()
+      guard !pairIDs.isEmpty else { return nil }
+      if let selected = try vault.selectedPairID() {
+        guard pairIDs.contains(selected) else {
+          try vault.clearSelectedPair()
+          return nil
+        }
+        return selected
+      }
+      if let newest = try await Self.newestPairID(in: vault) {
+        try vault.selectPair(pairID: newest)
+        return newest
+      }
+      return nil
     }
 
-    private func establish() async {
-      do {
-        let pairIDs = try vault.activePairIDs()
-        guard !pairIDs.isEmpty else {
-          finish(error: .noActivePair)
-          return
-        }
-        let pairID: Data
-        if let selected = try vault.selectedPairID() {
-          guard pairIDs.contains(selected) else {
-            try vault.clearSelectedPair()
-            finish(error: .noSelectedPair)
-            return
-          }
-          pairID = selected
-        } else if let newest = try await Self.newestPairID(in: vault) {
-          // Several pairings and none chosen is what a device holds after
-          // it has been paired more than once, and the one the holder made
-          // last is the one they made to use. Refusing here asked for a
-          // fresh code the holder had already scanned.
-          pairID = newest
-          try vault.selectPair(pairID: pairID)
-        } else {
-          finish(error: .noSelectedPair)
-          return
-        }
-        let pair = try RappPairRecord.loadFromVault(pairId: pairID, vault: vault)
-        #if REFINEID_SLIM_RELAY
-          try await establishSlim(pair: pair)
-          return
-        #endif
-        let coordinator = try RappConnectionCoordinator(
-          role: .requester,
-          pair: pair,
-          vault: vault,
-          transport: transport,
-          maximumLifetimeMilliseconds: policy.maximumOperationLifetimeMilliseconds,
-          liveness: policy.liveness
-        )
-        let installed = state.withLock { state -> Bool in
-          guard state.coordinator == nil, !state.completed else { return false }
-          state.coordinator = coordinator
-          return true
-        }
-        guard installed else { return }
-
-        Task { [weak self] in
-          for await event in coordinator.events {
-            await self?.receive(event, from: coordinator)
-          }
-        }
-        await coordinator.start()
-      } catch {
-        finish(error: .protocolFailure)
-      }
+    /// Settles the request with the answer the holder gave.
+    internal func finish(response: RappRequesterResponse) {
+      settle(response: response, error: nil)
     }
 
-    #if REFINEID_SLIM_RELAY
-      /// Opens a slim session over the selected pairing and asks once.
-      private func establishSlim(pair: RappPairRecord) async throws {
-        guard let operation else {
-          finish(error: .protocolFailure)
-          return
-        }
-        let requestID = UUID()
-        guard let request = SignRelayOperation.request(for: operation, id: requestID) else {
-          finish(error: .unexpectedResult)
-          return
-        }
-        let session = try SignRelaySession(role: .requester, pair: pair, vault: vault)
-        let installed = state.withLock { state -> Bool in
-          guard state.slimSession == nil, !state.completed else { return false }
-          state.slimSession = session
-          state.slimRequestID = requestID
-          return true
-        }
-        guard installed else { return }
-        pendingSlimRequest.withLock { $0 = try? request.encoded() }
-        for frame in try await session.start().send {
-          try relay.send(frame)
-        }
-      }
-
-      /// Drives one frame through the slim session, and answers when the
-      /// peer's message is the one this client asked for.
-      private func receiveSlim(_ frame: Data) async {
-        guard let session = state.withLock({ $0.slimSession }) else { return }
-        let step: SignRelayStep
-        do {
-          step = try await session.receive(frame)
-        } catch {
-          finish(error: .transport)
-          return
-        }
-        for outgoing in step.send {
-          try? relay.send(outgoing)
-        }
-        if await session.isEstablished {
-          await sendPendingSlimRequest(over: session)
-        }
-        guard
-          let payload = step.payload,
-          let answer = try? PersistentRelayMessage.decoded(payload),
-          let operation
-        else { return }
-        guard let response = SignRelayOperation.response(from: answer, for: operation) else {
-          finish(error: .unexpectedResult)
-          return
-        }
-        finish(response: response)
-      }
-
-      /// Sends the one request this client carries, once the session can.
-      private func sendPendingSlimRequest(over session: SignRelaySession) async {
-        guard
-          let encoded = pendingSlimRequest.withLock({ value -> Data? in
-            defer { value = nil }
-            return value
-          })
-        else { return }
-        guard let sealed = try? await session.seal(encoded) else {
-          finish(error: .transport)
-          return
-        }
-        try? relay.send(sealed)
-      }
-    #endif
-
-    private func receive(
-      _ event: RappConnectionCoordinator.Event,
-      from coordinator: RappConnectionCoordinator
-    ) async {
-      switch event {
-      case .established:
-        let shouldStart = state.withLock { state -> Bool in
-          guard !state.operationStarted, !state.completed else { return false }
-          state.operationStarted = true
-          return true
-        }
-        guard shouldStart, let operation else { return }
-        do {
-          switch operation {
-          case .readAuthenticationCertificate:
-            try await coordinator.beginReadCertificate(
-              signatureCertificate: false,
-              expiresAfterMilliseconds: policy.maximumOperationLifetimeMilliseconds
-            )
-          case .readSignatureCertificate:
-            try await coordinator.beginReadCertificate(
-              signatureCertificate: true,
-              expiresAfterMilliseconds: policy.maximumOperationLifetimeMilliseconds
-            )
-          case .browserAuthentication(let context, let keyProfile, let algorithm, let digest):
-            try await coordinator.beginBrowserAuthentication(
-              origin: context,
-              keyProfile: keyProfile,
-              algorithm: algorithm,
-              digest: digest,
-              expiresAfterMilliseconds: policy.maximumOperationLifetimeMilliseconds
-            )
-          case .documentSigning(let documentName, let keyProfile, let algorithm, let digest):
-            try await coordinator.beginSignDocument(
-              documentName: documentName,
-              keyProfile: keyProfile,
-              algorithm: algorithm,
-              digest: digest,
-              expiresAfterMilliseconds: policy.maximumOperationLifetimeMilliseconds
-            )
-          }
-        } catch {
-          await coordinator.close()
-          finish(error: .protocolFailure)
-        }
-
-      case .completed(_, let result):
-        let response: RappRequesterResponse?
-        switch (operation, result.kind) {
-        case (.readAuthenticationCertificate, .certificate):
-          response = result.bytes.isEmpty ? nil : .authenticationCertificate(result.bytes)
-        case (.readSignatureCertificate, .certificate):
-          response = result.bytes.isEmpty ? nil : .signatureCertificate(result.bytes)
-        case (.browserAuthentication, .signature):
-          response = result.bytes.isEmpty ? nil : .signature(result.bytes)
-        case (.documentSigning, .signature):
-          response = result.bytes.isEmpty ? nil : .signature(result.bytes)
-        default:
-          response = nil
-        }
-        await coordinator.close()
-        if let response {
-          finish(response: response)
-        } else {
-          finish(error: .unexpectedResult)
-        }
-
-      case .terminal(_, _, let reason):
-        await coordinator.close()
-        finish(error: .terminal(reason))
-
-      case .closed:
-        finish(error: .transport)
-
-      case .inspectPrerequisites, .awaitUserApproval, .executeSafeRead,
-        .executeCardCommand, .advisoryCancellation, .operationFinished,
-        .peerBusy, .peerUnknownOperation:
-        await coordinator.close()
-        finish(error: .protocolFailure)
-      }
+    /// Settles the request with the reason it produced no answer.
+    internal func finish(error: RappRequesterClientError) {
+      settle(response: nil, error: error)
     }
 
-    private func finish(
-      response: RappRequesterResponse? = nil,
-      error: RappRequesterClientError? = nil
+    /// Records the outcome and releases the blocking caller, once.
+    private func settle(
+      response: RappRequesterResponse?,
+      error: RappRequesterClientError?
     ) {
       let shouldSignal = state.withLock { state -> Bool in
         guard !state.completed else { return false }

@@ -4,28 +4,35 @@
   import CardCore
   import Foundation
   import RappEngine
-  /// The selected pair's stream rendezvous facts needed to dial.
-  internal struct PhoneStreamPairContext {
-    /// Stored listener endpoints of the paired requester.
-    internal let endpoints: [String]
-    /// Session preamble frame built by the Rust core for this pair.
-    internal let preamble: Data
 
-    /// Resolves the dialing facts when the selected pair is bound to the
-    /// stream transport profile; nil for every other pair or when the
-    /// pair cannot be loaded.
+  /// The selected pair's rendezvous facts the holder listens under.
+  ///
+  /// The holder is the side whose listener the network lets everyone
+  /// reach, so it publishes and the requester dials. Both derive the same
+  /// name from the pairing's rendezvous token, and the requester's opening
+  /// frame is the session preamble built from that token -- the arrival
+  /// that says which pairing the dial is for.
+  internal struct PhoneStreamPairContext {
+    /// The name this pair's listener publishes.
+    internal let serviceName: String
+
+    /// The opening frame a requester of this pair dials with.
+    internal let sessionPreamble: Data
+
+    /// Resolves the listening facts for the selected pair; nil when no
+    /// pair is selected or the pair cannot be loaded.
     internal static func resolve(vault: RappDeviceVault) -> Self? {
       guard
         let pair = try? PhoneProxyPairSelection.resolveSelectedPair(vault: vault),
         let metadata = try? pair.metadata(),
-        metadata.transportProfile == rappStreamProfileName(),
-        let storedEndpoints = metadata.streamEndpoints,
-        !storedEndpoints.isEmpty,
-        let sessionPreamble = try? rappStreamSessionPreamble(
+        let preamble = try? rappStreamSessionPreamble(
           rendezvousToken: metadata.rendezvousToken
         )
       else { return nil }
-      return Self(endpoints: storedEndpoints, preamble: sessionPreamble)
+      return Self(
+        serviceName: StreamRendezvousName.name(sharing: metadata.rendezvousToken),
+        sessionPreamble: preamble
+      )
     }
   }
 #endif

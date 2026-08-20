@@ -27,6 +27,9 @@ internal final class RappPairingModel: ObservableObject {
   private enum Policy {
     /// RAPP 0.1 OFFER_TTL_MAX.
     static let offerLifetimeMilliseconds: UInt64 = 180_000
+
+    /// Names the one stream candidate an offer of this transport carries.
+    static let streamCandidateID = "stream-1"
   }
 
   /// The in-protocol name the reviewing peer sees for this requester.
@@ -47,21 +50,40 @@ internal final class RappPairingModel: ObservableObject {
     #endif
   }
 
-  @Published internal private(set) var phase = Phase.idle
+  /// The one transport candidate an offer carries, by build.
+  ///
+  /// The stream candidate names no endpoints: the holder publishes a
+  /// listener under a name derived from this offer, and the requester
+  /// finds it there.
+  private static var offeredCandidate: RappPairingCoordinator.TransportCandidate {
+    #if REFINEID_STREAM_TRANSPORT
+      .init(
+        profile: rappStreamProfileName(),
+        candidateID: Policy.streamCandidateID,
+        parametersCBOR: RappApplePeerProfile.candidateParameters
+      )
+    #else
+      .init(
+        profile: RappApplePeerProfile.name,
+        candidateID: RappApplePeerProfile.candidateID,
+        parametersCBOR: RappApplePeerProfile.candidateParameters
+      )
+    #endif
+  }
+
+  @Published internal var phase = Phase.idle
   @Published internal private(set) var pairs: [RappPairingCoordinator.PairSummary] = []
-  @Published internal private(set) var selectedPairID: Data?
+  @Published internal var selectedPairID: Data?
 
-  private let vault: RappDeviceVault
-  private let catalog: RappPairCatalog
-  private var relay: PairingRelay?
-  private var streamRelay: StreamRelaySession?
-  private var streamEverConnected = false
-  private var relayGeneration: UUID?
-  private var coordinator: RappPairingCoordinator?
-  private var eventTask: Task<Void, Never>?
-  private var reviewedPeerName: String?
+  internal let vault: RappDeviceVault
+  internal let catalog: RappPairCatalog
+  internal var relay: PairingRelay?
+  internal var relayGeneration: UUID?
+  internal var coordinator: RappPairingCoordinator?
+  internal var eventTask: Task<Void, Never>?
+  internal var reviewedPeerName: String?
 
-  private var isFinished: Bool {
+  internal var isFinished: Bool {
     switch phase {
     case .paired, .failed:
       true
@@ -94,17 +116,26 @@ internal final class RappPairingModel: ObservableObject {
     #endif
     let relay = makeRelay(role: .host)
     let transport = makeTransport(relay: relay)
+    publish(
+      candidates: [Self.offeredCandidate],
+      selectedCandidateID: Self.offeredCandidate.candidateID,
+      relay: relay,
+      transport: transport
+    )
+  }
+
+  /// Makes the offer these candidates describe and shows its code.
+  internal func publish(
+    candidates: [RappPairingCoordinator.TransportCandidate],
+    selectedCandidateID: String,
+    relay: PairingRelay,
+    transport: any RappFrameTransport
+  ) {
     do {
       let coordinator = try RappPairingCoordinator.requester(
         profiles: RappApplePeerProfile.supportedCredentialProfiles,
-        candidates: [
-          .init(
-            profile: RappApplePeerProfile.name,
-            candidateID: RappApplePeerProfile.candidateID,
-            parametersCBOR: RappApplePeerProfile.candidateParameters
-          )
-        ],
-        selectedCandidateID: RappApplePeerProfile.candidateID,
+        candidates: candidates,
+        selectedCandidateID: selectedCandidateID,
         offerLifetimeMilliseconds: Policy.offerLifetimeMilliseconds,
         displayName: Self.requesterDisplayName,
         platform: Self.requesterPlatform,
@@ -114,220 +145,26 @@ internal final class RappPairingModel: ObservableObject {
       install(coordinator: coordinator, relay: relay)
       Task { [weak self] in
         await coordinator.publishOffer()
-        guard let self, self.coordinator === coordinator, !isFinished
+        guard let self, self.coordinator === coordinator, !isFinished,
+          let uri = coordinator.offerURI
         else { return }
-        relay.start()
+        relay.start(sharingOfferURI: uri)
       }
     } catch {
       fail(String(localized: "Pairing could not be started"))
     }
   }
 
-  #if os(iOS)
-    internal func scanOffer() {
-      resetAttempt()
-      guard DataScannerViewController.isSupported,
-        DataScannerViewController.isAvailable
-      else {
-        fail(String(localized: "The camera cannot scan pairing codes right now"))
-        return
-      }
-      #if REFINEID_LOCAL_CARD
-        PhonePersistentTokenRelay.shared.suspendForPairing()
-      #endif
-      phase = .scanning
-    }
-
-    internal func acceptScannedOffer(_ uri: String) {
-      guard phase == .scanning else { return }
-      phase = .connecting
-      do {
-        let candidates = try RappScannedOffer.candidates(scannedOfferURI: uri)
-        if let applePeer = candidates.first(where: { candidate in
-          candidate.profile == RappApplePeerProfile.name
-        }) {
-          try startApplePeerPairing(uri: uri, candidateID: applePeer.candidateID)
-        } else if let stream = candidates.first(where: { candidate in
-          candidate.profile == rappStreamProfileName()
-            && !candidate.streamEndpoints.isEmpty
-        }) {
-          try startStreamPairing(uri: uri, candidate: stream)
-        } else {
-          fail(String(localized: "The pairing code is invalid or expired"))
-        }
-      } catch {
-        fail(String(localized: "The pairing code is invalid or expired"))
-      }
-    }
-
-    private func startApplePeerPairing(uri: String, candidateID: String) throws {
-      let relay = makeRelay(role: .cardHolder)
-      let transport = makeTransport(relay: relay)
-      let coordinator = try RappPairingCoordinator.proxy(
-        scannedOfferURI: uri,
-        selectedCandidateID: candidateID,
-        displayName: UIDevice.current.name,
-        platform: "iOS",
-        vault: vault,
-        transport: transport
-      )
-      install(coordinator: coordinator, relay: relay)
-      relay.start()
-    }
-
-    /// Dials the stream candidate's listener endpoints with the pairing
-    /// preamble and runs the pairing ceremony over that connection.
-    private func startStreamPairing(
-      uri: String,
-      candidate: RappScannedOffer.Candidate
-    ) throws {
-      let generation = UUID()
-      relayGeneration = generation
-      streamEverConnected = false
-      let stream = StreamRelaySession(
-        endpointLiterals: candidate.streamEndpoints,
-        preamble: rappStreamPairingPreamble()
-      ) { [weak self] event in
-        Task { @MainActor in
-          self?.receiveStream(event, generation: generation)
-        }
-      }
-      let transport = RappClosureFrameTransport(
-        sender: { [weak stream] frame in
-          guard let stream else {
-            throw StreamRelayTransportError.notConnected
-          }
-          try await stream.send(frame)
-        },
-        closer: { [weak stream] in stream?.cancel() }
-      )
-      let coordinator = try RappPairingCoordinator.proxy(
-        scannedOfferURI: uri,
-        selectedCandidateID: candidate.candidateID,
-        displayName: UIDevice.current.name,
-        platform: "iOS",
-        vault: vault,
-        transport: transport
-      )
-      self.coordinator = coordinator
-      streamRelay = stream
-      eventTask = Task { [weak self] in
-        for await event in coordinator.events {
-          self?.receive(event, from: coordinator)
-        }
-      }
-      stream.start()
-    }
-
-    private func receiveStream(_ event: StreamRelayEvent, generation: UUID) {
-      guard generation == relayGeneration else { return }
-      guard let coordinator else { return }
-      switch event {
-      case .connected:
-        streamEverConnected = true
-        Task { await coordinator.transportConnected() }
-      case .frame(let frame):
-        Task { await coordinator.receive(frame) }
-      case .closed:
-        guard !isFinished else {
-          finishAttempt()
-          return
-        }
-        // A dial that never connected leaves the coordinator in its offer
-        // state, where transport closure is not an event.
-        guard streamEverConnected else {
-          fail(String(localized: "Pairing ended before it was completed"))
-          return
-        }
-        Task { await coordinator.transportClosed() }
-      }
-    }
-  #endif
-
-  internal func requestedProfiles(
-    for peer: RappPairingCoordinator.Peer
-  ) -> [String] {
-    peer.requestedProfiles ?? RappApplePeerProfile.supportedCredentialProfiles
-  }
-
-  internal func profileLabel(_ profile: String) -> String {
-    RappApplePeerProfile.label(for: profile)
-  }
-
-  internal func profileIsSupported(_ profile: String) -> Bool {
-    RappApplePeerProfile.isSupported(profile)
-  }
-
-  /// Grants exactly the requested, supported profiles and proceeds to store
-  /// the pairing.
-  private func confirmPeer(_ peer: RappPairingCoordinator.Peer) {
-    guard let coordinator else { return }
-    let grantSet = requestedProfiles(for: peer).filter(
-      RappApplePeerProfile.isSupported)
-    guard !grantSet.isEmpty else {
-      denyPeer()
-      return
-    }
-    phase = .connecting
-    Task { await coordinator.approve(grantedProfiles: grantSet) }
-  }
-
-  internal func denyPeer() {
-    guard let coordinator else {
-      cancel()
-      return
-    }
-    phase = .failed(String(localized: "Pairing was denied"))
-    Task { [weak self] in
-      await coordinator.deny()
-      self?.finishAttempt()
-      self?.resumeRegularRelay()
-    }
-  }
-
-  internal func select(_ pair: RappPairingCoordinator.PairSummary) {
-    Task {
-      do {
-        try await catalog.select(pairID: pair.pairID)
-        selectedPairID = pair.pairID
-        resumeRegularRelay()
-      } catch {
-        fail(String(localized: "The paired device is no longer available"))
-      }
-    }
-  }
-
-  internal func revoke(_ pair: RappPairingCoordinator.PairSummary) {
-    Task {
-      do {
-        try await catalog.revoke(pairID: pair.pairID)
-        RappPairNames.forget(pairID: pair.pairID)
-        refresh()
-      } catch {
-        fail(String(localized: "The paired device could not be removed"))
-      }
-    }
-  }
-
-  /// The paired device's reviewed name, or its role when the pair
-  /// predates remembered names.
-  internal func displayName(
-    for pair: RappPairingCoordinator.PairSummary
-  ) -> String {
-    RappPairNames.name(forPairID: pair.pairID) ?? pair.remotePlatformLabel
-  }
-
   internal func cancel() {
     let coordinator = coordinator
     relay?.cancel()
-    streamRelay?.cancel()
     finishAttempt()
     phase = .idle
     Task { await coordinator?.close() }
     resumeRegularRelay()
   }
 
-  private func makeRelay(role: PersistentRelayRole) -> PairingRelay {
+  internal func makeRelay(role: PersistentRelayRole) -> PairingRelay {
     let generation = UUID()
     relayGeneration = generation
     let displayName: String
@@ -349,7 +186,7 @@ internal final class RappPairingModel: ObservableObject {
     }
   }
 
-  private func makeTransport(
+  internal func makeTransport(
     relay: PairingRelay
   ) -> RappClosureFrameTransport {
     RappClosureFrameTransport(
@@ -363,7 +200,7 @@ internal final class RappPairingModel: ObservableObject {
     )
   }
 
-  private func install(
+  internal func install(
     coordinator: RappPairingCoordinator,
     relay: PairingRelay
   ) {
@@ -396,94 +233,32 @@ internal final class RappPairingModel: ObservableObject {
     }
   }
 
-  private func receive(
-    _ event: RappPairingCoordinator.Event,
-    from coordinator: RappPairingCoordinator
-  ) {
-    guard self.coordinator === coordinator else { return }
-    switch event {
-    case .offerReady(let uri):
-      phase = .offer(uri)
-    case .offerRestored(let uri):
-      restoreRequesterOffer(uri, coordinator: coordinator)
-    case .reviewPeer(let peer):
-      reviewedPeerName = peer.displayName
-      // The scan of the offer QR, carrying its 256-bit bearer secret, is the
-      // human consent that authorizes this pairing and its public reads. Only
-      // a device that saw the code can reach this point, on either side, so
-      // both confirm without asking again.
-      confirmPeer(peer)
-    case .paired(let pair):
-      do {
-        try vault.selectPair(pairID: pair.pairID)
-        if let reviewedPeerName {
-          RappPairNames.remember(reviewedPeerName, pairID: pair.pairID)
-        }
-        selectedPairID = pair.pairID
-        phase = .paired(pair)
-        refresh()
-        finishAttempt()
-        resumeRegularRelay()
-      } catch {
-        fail(String(localized: "The paired device could not be selected"))
-      }
-    case .closed:
-      guard !isFinished else { return }
-      fail(String(localized: "Pairing ended before it was completed"))
-    }
-  }
-
-  private func restoreRequesterOffer(
-    _ uri: String,
-    coordinator: RappPairingCoordinator
-  ) {
-    phase = .offer(uri)
-    relay?.cancel()
-    let replacement = makeRelay(role: .host)
-    let replacementTransport = makeTransport(relay: replacement)
-    relay = replacement
-    Task { @MainActor [weak self] in
-      guard await coordinator.replaceTransport(replacementTransport),
-        let self,
-        self.coordinator === coordinator,
-        !isFinished
-      else {
-        self?.fail(String(localized: "Pairing could not be started"))
-        return
-      }
-      replacement.start()
-    }
-  }
-
-  private func fail(_ message: String) {
+  internal func fail(_ message: String) {
     let coordinator = coordinator
     phase = .failed(message)
     relay?.cancel()
-    streamRelay?.cancel()
     finishAttempt()
     Task { await coordinator?.close() }
     resumeRegularRelay()
   }
 
-  private func finishAttempt() {
+  internal func finishAttempt() {
     relay = nil
-    streamRelay = nil
     relayGeneration = nil
     coordinator = nil
     eventTask?.cancel()
     eventTask = nil
   }
 
-  private func resetAttempt() {
+  internal func resetAttempt() {
     let coordinator = coordinator
     relay?.cancel()
-    streamRelay?.cancel()
     finishAttempt()
     phase = .idle
     Task { await coordinator?.close() }
   }
 
-  private func resumeRegularRelay() {
+  internal func resumeRegularRelay() {
     #if REFINEID_LOCAL_CARD && os(iOS)
       PhonePersistentTokenRelay.shared.resumeAfterUserAction()
     #endif
