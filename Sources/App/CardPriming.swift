@@ -134,7 +134,7 @@
     /// The title already says an action is wanted, so this only names the
     /// card.
     internal static let registrationPrompt = String(
-      localized: "Present your identity card.")
+      localized: "Present your identity card")
 
     /// How many times registration is attempted while the card is live.
     ///
