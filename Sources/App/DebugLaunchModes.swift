@@ -51,6 +51,9 @@
   /// `--prime-*` family in the donor
   /// `platform/apple/RefineID/Shared/RefineIDApp.swift`.
   internal enum DebugLaunchModes {
+    /// A target is a host and a port.
+    private static let hostAndPort = 2
+
     /// The selected mode when it needs a window, otherwise nil.
     ///
     /// The app roots its scene in ``DebugSceneRunnerView`` when this is
@@ -96,6 +99,12 @@
         Self.storeCardAccessNumber()
       case .setPin1:
         Self.storePin1()
+      case .localNetworkProbe:
+        #if canImport(Network)
+          Self.localNetworkReport()
+        #else
+          DebugModeReport(lines: [mode.rawValue + ": no network stack"], succeeded: false)
+        #endif
       case .remoteIdentityProbe:
         #if os(iOS)
           DebugRemoteIdentityProbe.report()
@@ -108,6 +117,20 @@
         Self.probeReport(for: mode)
       }
     }
+
+    #if canImport(Network)
+      /// Reads the target from the command line and tries to reach it.
+      private static func localNetworkReport() -> DebugModeReport {
+        let value = Self.pathValue(after: .localNetworkProbe) ?? ""
+        let parts = value.split(separator: ":")
+        guard parts.count == Self.hostAndPort, let port = UInt16(parts[1]) else {
+          return DebugModeReport(
+            lines: ["usage: --local-network-probe <host>:<port>"],
+            succeeded: false)
+        }
+        return DebugLocalNetworkProbe.report(host: String(parts[0]), port: port)
+      }
+    #endif
 
     /// The modes that drive a reader or read what one left behind.
     private static func probeReport(for mode: DebugLaunchMode) -> DebugModeReport {

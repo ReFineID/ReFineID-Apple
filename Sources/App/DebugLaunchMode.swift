@@ -24,6 +24,12 @@
     /// Drop the stored card access number, wherever it is kept.
     case forgetCan = "--forget-can"
 
+    /// Try one connection to an address on this network and report it.
+    ///
+    /// Local network access is refused silently, so an absence of peers
+    /// says nothing. A connection reports a state.
+    case localNetworkProbe = "--local-network-probe"
+
     /// Changes and restores both PINs over a named physical transport.
     case managementProbe = "--management-probe"
 
@@ -76,8 +82,9 @@
     /// window would have existed.
     internal var needsScene: Bool {
       switch self {
-      case .diagnostics, .forgetCan, .paceCheck, .resetCardState, .setCan,
-        .setPin1, .signDocument, .signProbe, .tokenPublishProbe, .trace:
+      case .diagnostics, .forgetCan, .localNetworkProbe, .paceCheck,
+        .resetCardState, .setCan, .setPin1, .signDocument, .signProbe,
+        .tokenPublishProbe, .trace:
         false
       case .activationProbe, .ctkSignProbe, .managementProbe, .prime,
         .remoteIdentityProbe:
@@ -97,6 +104,8 @@
       case .activationProbe, .ctkSignProbe, .diagnostics, .forgetCan, .paceCheck, .prime,
         .remoteIdentityProbe, .resetCardState, .tokenPublishProbe, .trace:
         false
+      case .localNetworkProbe:
+        true
       case .managementProbe, .setCan, .setPin1, .signDocument, .signProbe:
         true
       }
