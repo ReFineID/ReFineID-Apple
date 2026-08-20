@@ -88,6 +88,15 @@ REFINEID_SLIM_RELAY_FEATURE =
 //     app its peer, while a direct connection to the same port succeeds.
 //     Both peers must carry it.
 //
+//     Half of it lives in the CardCore package, which does not inherit
+//     these conditions: a build that sets the line below alone pairs over
+//     the stream and then answers a browser over the nearby framework. A
+//     build for a device sets the whole condition list instead, keeping
+//     what the configuration already carries:
+//
+//   xcodebuild ... \
+//     SWIFT_ACTIVE_COMPILATION_CONDITIONS="DEBUG REFINEID_LOCAL_CARD REFINEID_STREAM_TRANSPORT"
+//
 //   xcodebuild ... REFINEID_STREAM_TRANSPORT_FEATURE=REFINEID_STREAM_TRANSPORT
 REFINEID_STREAM_TRANSPORT_FEATURE =
 
