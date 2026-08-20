@@ -36,24 +36,36 @@
     #endif
     private var operation: RappRequesterOperation?
 
-    private lazy var relay = PersistentRelaySession(
-      role: .host,
-      displayName: displayName
-    ) { [weak self] event in
-      self?.receive(event)
-    }
+    #if REFINEID_STREAM_TRANSPORT
+      private lazy var listener = StreamRelayListener { [weak self] event in
+        // A dialer announces itself with a frame that means nothing above
+        // the transport, so its arrival is the connection and not a
+        // message. Passing it up would give the session a frame the
+        // requester never sent.
+        if case .frame(let payload) = event, payload == StreamRelayPreamble.hello {
+          self?.receive(.connected)
+          return
+        }
+        self?.receive(PersistentRelayEvent(event))
+      }
+    #else
+      private lazy var relay = PersistentRelaySession(
+        role: .host,
+        displayName: displayName
+      ) { [weak self] event in
+        self?.receive(event)
+      }
+    #endif
 
     private lazy var transport = RappClosureFrameTransport(
       sender: { [weak self] frame in
         guard let self else { throw RappRequesterClientError.transport }
-        try relay.send(frame)
+        try sendOverTransport(frame)
       },
       closer: { [weak self] in
-        self?.relay.cancel()
+        self?.cancelTransport()
       }
     )
-
-    // MARK: Lifecycle
 
     /// Builds a one-shot client that connects over the persistent relay
     /// and resolves its pair from the vault.
@@ -82,7 +94,7 @@
       }
       guard accepted else { throw RappRequesterClientError.protocolFailure }
       self.operation = operation
-      relay.start()
+      startTransport()
 
       // A device that is not on this network is not slow, it is absent,
       // and waiting the full operation lifetime to say so leaves the holder
@@ -96,7 +108,7 @@
           state.completed = true
           state.error = .peerNotFound
         }
-        relay.cancel()
+        cancelTransport()
         throw RappRequesterClientError.peerNotFound
       }
 
@@ -108,16 +120,45 @@
           return state.coordinator
         }
         Task { await coordinator?.close() }
-        relay.cancel()
+        cancelTransport()
         throw RappRequesterClientError.timedOut
       }
 
-      relay.cancel()
+      cancelTransport()
       return try state.withLock { state in
         if let response = state.response { return response }
         throw state.error ?? RappRequesterClientError.transport
       }
     }
+
+    /// Starts whichever transport this build carries.
+    private func startTransport() {
+      #if REFINEID_STREAM_TRANSPORT
+        listener.start(displayName: displayName)
+      #else
+        relay.start()
+      #endif
+    }
+
+    /// Hands one frame to whichever transport this build carries.
+    private func sendOverTransport(_ frame: Data) throws {
+      #if REFINEID_STREAM_TRANSPORT
+        try listener.send(frame)
+      #else
+        try relay.send(frame)
+      #endif
+    }
+
+    /// Stops whichever transport this build carries.
+    private func cancelTransport() {
+      #if REFINEID_STREAM_TRANSPORT
+        listener.cancel()
+      #else
+        relay.cancel()
+      #endif
+    }
+
+    // MARK: Lifecycle
 
     private func receive(_ event: PersistentRelayEvent) {
       switch event {

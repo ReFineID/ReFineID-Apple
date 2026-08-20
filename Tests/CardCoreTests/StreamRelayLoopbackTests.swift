@@ -1,6 +1,7 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
 import Foundation
+import Network
 import Testing
 
 @testable import CardCore
@@ -26,6 +27,45 @@ internal struct StreamRelayLoopbackTests {
   }
 
   // MARK: Functions
+
+  /// A dialer finds the listener by browsing and carries a frame to it.
+  ///
+  /// This is the pair the devices use: the requester publishes and the
+  /// holder finds it, with no peer framework between them.
+  @Test
+  internal func aBrowserFindsTheListenerAndTheDialerReachesIt() async throws {
+    let name = "ReFineID test \(UUID().uuidString.prefix(6))"
+    let greeting = Data("found you".utf8)
+
+    let heard = StreamRelayMailbox()
+    let listener = StreamRelayListener { event in
+      Task { await heard.record(event) }
+    }
+    listener.start(displayName: name)
+    defer { listener.cancel() }
+
+    let found = StreamRelayEndpointBox()
+    let browser = StreamRelayBrowser { endpoint in
+      Task { await found.set(endpoint) }
+    }
+    browser.start()
+    defer { browser.cancel() }
+
+    var endpoint: NWEndpoint?
+    for _ in 0..<Self.attempts where endpoint == nil {
+      endpoint = await found.matching(name)
+      if endpoint == nil { try await Task.sleep(for: Self.pause) }
+    }
+    let service = try #require(endpoint, "the browser never found the listener")
+
+    let dialer = StreamRelaySession(service: service, preamble: greeting) { _ in }
+    dialer.start()
+    defer { dialer.cancel() }
+
+    let arrived = try? await Self.awaitFrame(in: heard)
+    let saw = await heard.reported
+    #expect(arrived == greeting, "listener saw: \(saw)")
+  }
 
   /// A dialer reaches a listener and each carries a frame to the other.
   ///

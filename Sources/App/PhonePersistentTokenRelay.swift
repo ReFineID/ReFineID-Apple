@@ -3,6 +3,7 @@
 #if os(iOS) && REFINEID_LOCAL_CARD
   import CardCore
   import Foundation
+  import Network
   import RappEngine
   /// Owns the phone side of one mutually authenticated RAPP connection.
   ///
@@ -22,6 +23,11 @@
 
     // MARK: Static Properties
 
+    #if REFINEID_STREAM_TRANSPORT
+      /// What the holder says first, so the requester knows a peer arrived.
+      private static let browsedPreamble = StreamRelayPreamble.hello
+    #endif
+
     internal static let shared = PhonePersistentTokenRelay()
 
     private static let maximumPreCoordinatorFrames = 4
@@ -34,6 +40,9 @@
     private let policy = RappRequesterPolicy.interactive
     private var relay: PersistentRelaySession?
     private var streamRelay: StreamRelaySession?
+    #if REFINEID_STREAM_TRANSPORT
+      private var streamBrowser: StreamRelayBrowser?
+    #endif
     private var coordinator: RappConnectionCoordinator?
     #if REFINEID_SLIM_RELAY
       private var slimSession: SignRelaySession?
@@ -64,18 +73,22 @@
         return
       }
 
-      let connectionID = UUID()
-      let relay = PersistentRelaySession(
-        role: .cardHolder,
-        displayName: "ReFineID iPhone"
-      ) { [weak self] event in
-        Task { @MainActor in
-          self?.receive(event, connectionID: connectionID)
+      #if REFINEID_STREAM_TRANSPORT
+        startBrowsedStream()
+      #else
+        let nearbyConnectionID = UUID()
+        let nearby = PersistentRelaySession(
+          role: .cardHolder,
+          displayName: "ReFineID iPhone"
+        ) { [weak self] event in
+          Task { @MainActor in
+            self?.receive(event, connectionID: nearbyConnectionID)
+          }
         }
-      }
-      self.connectionID = connectionID
-      self.relay = relay
-      relay.start()
+        connectionID = nearbyConnectionID
+        relay = nearby
+        nearby.start()
+      #endif
     }
 
     /// Explicit UI action may call this after the user has corrected local
@@ -94,6 +107,39 @@
       streamRelay?.cancel()
       Task { await coordinator?.close() }
     }
+
+    #if REFINEID_STREAM_TRANSPORT
+      /// Finds the requester's published listener and dials it.
+      ///
+      /// A pairing made over the nearby transport carries no stored
+      /// endpoints, so the holder finds the requester the same way it would
+      /// have found a peer: by name, over the plain name service.
+      private func startBrowsedStream() {
+        let browsedConnectionID = UUID()
+        connectionID = browsedConnectionID
+        streamBrowser = StreamRelayBrowser { [weak self] endpoint in
+          Task { @MainActor in
+            self?.dialBrowsed(endpoint, connectionID: browsedConnectionID)
+          }
+        }
+        streamBrowser?.start()
+      }
+
+      /// Dials the requester once it has been found.
+      private func dialBrowsed(_ endpoint: NWEndpoint, connectionID: UUID) {
+        guard self.connectionID == connectionID, streamRelay == nil else { return }
+        let stream = StreamRelaySession(
+          service: endpoint,
+          preamble: Self.browsedPreamble
+        ) { [weak self] event in
+          Task { @MainActor in
+            self?.receiveStream(event, connectionID: connectionID)
+          }
+        }
+        streamRelay = stream
+        stream.start()
+      }
+    #endif
 
     /// The stream profile dials the requester's stored listener endpoints
     /// with the pair's session preamble instead of advertising nearby.

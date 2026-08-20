@@ -79,9 +79,21 @@ REFINEID_LOCAL_CARD_FEATURE = REFINEID_LOCAL_CARD
 //   xcodebuild ... REFINEID_SLIM_RELAY_FEATURE=REFINEID_SLIM_RELAY
 REFINEID_SLIM_RELAY_FEATURE =
 
+// REFINEID_STREAM_TRANSPORT
+//     Carries the relay over a published service and a dialled port
+//     instead of the nearby peer framework. The requester publishes and
+//     listens; the card holder finds it and dials. Measured need: between
+//     a device on one system generation and a device on another, the
+//     nearby framework receives the service record and never hands the
+//     app its peer, while a direct connection to the same port succeeds.
+//     Both peers must carry it.
+//
+//   xcodebuild ... REFINEID_STREAM_TRANSPORT_FEATURE=REFINEID_STREAM_TRANSPORT
+REFINEID_STREAM_TRANSPORT_FEATURE =
+
 // A developer's own flags, out of the repository: the file is
 // optional, ignored by git, and an assignment there replaces the
 // default above on that machine only.
 #include? "LocalFeatures.xcconfig"
 
-SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) $(REFINEID_FEATURES) $(REFINEID_LOCAL_CARD_FEATURE) $(REFINEID_SLIM_RELAY_FEATURE)
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) $(REFINEID_FEATURES) $(REFINEID_LOCAL_CARD_FEATURE) $(REFINEID_SLIM_RELAY_FEATURE) $(REFINEID_STREAM_TRANSPORT_FEATURE)

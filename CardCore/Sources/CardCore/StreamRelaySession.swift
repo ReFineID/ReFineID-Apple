@@ -28,6 +28,7 @@ import Foundation
     private var generation = 0
     private var isReady = false
     private var isFinished = false
+    private var service: NWEndpoint?
 
     /// Builds a dialer over the listener's address literals.
     ///
@@ -43,6 +44,20 @@ import Foundation
       self.endpoints = endpointLiterals.compactMap(StreamRelayEndpoint.init)
       self.preamble = preamble
       self.onEvent = onEvent
+    }
+
+    /// Builds a dialer for one already-found service endpoint.
+    ///
+    /// A published service resolves itself when dialled, so a caller that
+    /// found one has no address literal to pass and needs none.
+    @preconcurrency
+    public convenience init(
+      service: NWEndpoint,
+      preamble: Data,
+      onEvent: @escaping @Sendable (StreamRelayEvent) -> Void
+    ) {
+      self.init(endpointLiterals: [], preamble: preamble, onEvent: onEvent)
+      self.service = service
     }
 
     /// Dials the first endpoint; later endpoints are tried in order until
@@ -92,21 +107,27 @@ import Foundation
 
     private func dialNext() {
       guard !isFinished else { return }
-      guard nextEndpointIndex < endpoints.count else {
-        finish(.unreachable)
-        return
+      let dialed: NWConnection
+      if let service, nextEndpointIndex == 0 {
+        nextEndpointIndex += 1
+        dialed = NWConnection(to: service, using: .tcp)
+      } else {
+        guard nextEndpointIndex < endpoints.count else {
+          finish(.unreachable)
+          return
+        }
+        let endpoint = endpoints[nextEndpointIndex]
+        nextEndpointIndex += 1
+        dialed = NWConnection(
+          host: NWEndpoint.Host(endpoint.host),
+          port: NWEndpoint.Port(rawValue: endpoint.port) ?? .any,
+          using: .tcp
+        )
       }
-      let endpoint = endpoints[nextEndpointIndex]
-      nextEndpointIndex += 1
       generation += 1
       let attempt = generation
       isReady = false
 
-      let dialed = NWConnection(
-        host: NWEndpoint.Host(endpoint.host),
-        port: NWEndpoint.Port(rawValue: endpoint.port) ?? .any,
-        using: .tcp
-      )
       connection = dialed
       dialed.stateUpdateHandler = { [weak self] state in
         self?.handleState(state, attempt: attempt, connection: dialed)
