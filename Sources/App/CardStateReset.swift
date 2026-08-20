@@ -2,7 +2,11 @@
 
 import CardCore
 import CryptoTokenKit
+import Foundation
 import Security
+
+/// Milliseconds in one second, for the stamp a revocation carries.
+private let millisecondsPerSecond: TimeInterval = 1_000
 
 /// Removes only the Safari identity state published by this app.
 ///
@@ -48,6 +52,9 @@ internal enum CardStateReset {
     PrimeStore.forgetAll()
     lines.append("ReFineID prime store: cleared")
 
+    let revoked = Self.revokeEveryPairing()
+    lines.append("ReFineID pairings revoked: \(revoked)")
+
     let traceStatus = ExtensionTrace.clear()
     let traceCleared = traceStatus == errSecSuccess || traceStatus == errSecItemNotFound
     lines.append(
@@ -59,6 +66,26 @@ internal enum CardStateReset {
     return Outcome(
       lines: lines,
       succeeded: registration.succeeded && traceCleared)
+  }
+
+  /// Revokes every pairing this device holds, and returns how many.
+  ///
+  /// A pairing is state this device keeps about another, so a reset that
+  /// claims a known zero has to take them too. Leaving them behind was how
+  /// a device came to hold nine records for one peer, of which one answered.
+  private static func revokeEveryPairing() -> Int {
+    let vault = RappDeviceVault()
+    let pairIDs = (try? vault.activePairIDs()) ?? []
+    let now = UInt64(Date().timeIntervalSince1970 * millisecondsPerSecond)
+    var revoked = 0
+    for pairID in pairIDs {
+      guard (try? vault.revokePair(pairID: pairID, revokedAtMilliseconds: now)) != nil
+      else { continue }
+      RappPairNames.forget(pairID: pairID)
+      revoked += 1
+    }
+    try? vault.clearSelectedPair()
+    return revoked
   }
 
   /// Unregisters only token IDs issued by this app's CTK class.

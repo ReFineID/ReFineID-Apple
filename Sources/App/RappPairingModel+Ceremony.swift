@@ -5,6 +5,9 @@ import Foundation
 import RappEngine
 import SwiftUI
 
+/// Milliseconds in one second, for the stamp a revocation carries.
+private let millisecondsPerSecond: TimeInterval = 1_000
+
 /// What the model does with each event the pairing ceremony reports.
 extension RappPairingModel {
   internal func receive(
@@ -30,6 +33,7 @@ extension RappPairingModel {
         if let reviewedPeerName {
           RappPairNames.remember(reviewedPeerName, pairID: pair.pairID)
         }
+        supersedeOlderPairings(with: pair.pairID)
         selectedPairID = pair.pairID
         phase = .paired(pair)
         refresh()
@@ -66,6 +70,29 @@ extension RappPairingModel {
         return
       }
       replacement.start(sharingOfferURI: uri)
+    }
+  }
+
+  /// Revokes the pairings the new one replaces.
+  ///
+  /// Pairing the same two devices again makes a fresh record and leaves the
+  /// last one behind, so a device that has been paired a few times holds
+  /// several records naming one peer and only one of them answers. The
+  /// newest is the one both sides just agreed on; the rest are spent.
+  ///
+  /// Only pairings naming the same peer are taken. A device legitimately
+  /// pairs with more than one other, and those records are not this one's
+  /// to revoke.
+  internal func supersedeOlderPairings(with keptPairID: Data) {
+    guard let keptName = RappPairNames.name(forPairID: keptPairID) else { return }
+    let superseded = ((try? vault.activePairIDs()) ?? [])
+      .filter { pairID in
+        pairID != keptPairID && RappPairNames.name(forPairID: pairID) == keptName
+      }
+    let now = UInt64(Date().timeIntervalSince1970 * millisecondsPerSecond)
+    for pairID in superseded {
+      try? vault.revokePair(pairID: pairID, revokedAtMilliseconds: now)
+      RappPairNames.forget(pairID: pairID)
     }
   }
 }
