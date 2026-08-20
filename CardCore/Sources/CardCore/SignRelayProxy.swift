@@ -8,48 +8,43 @@ import Foundation
 /// twice must reach the card once. The answer is kept under the request's
 /// identifier and replayed if the same identifier is asked again, which is
 /// the whole of what at-most-once needs here.
+///
+/// This works on payloads rather than frames: the session owns the cipher,
+/// and a second owner of it is a second place for the two to disagree.
 public actor SignRelayProxy {
   /// Performs one request against the card.
   public typealias Perform = @Sendable (PersistentRelayMessage) async -> PersistentRelayMessage
 
-  private let channel: any SignRelayChannel
   private let perform: Perform
   private let journal: (any SignRelayJournal)?
   private var answered: [UUID: PersistentRelayMessage] = [:]
   private var running: Set<UUID> = []
 
-  /// Serves requests over `channel`, performing each with `perform`.
+  /// Serves requests, performing each with `perform`.
   ///
   /// - Parameters:
-  ///   - channel: seals and opens this session's frames.
   ///   - journal: where answers outlive the process; without one they last
   ///     only as long as this proxy does.
   ///   - perform: reaches the card.
-  public init(
-    channel: any SignRelayChannel,
-    journal: (any SignRelayJournal)? = nil,
-    perform: @escaping Perform
-  ) {
-    self.channel = channel
+  public init(journal: (any SignRelayJournal)? = nil, perform: @escaping Perform) {
     self.journal = journal
     self.perform = perform
   }
 
-  /// Handles one frame and answers with the frame to send back, if any.
+  /// Answers one request payload.
   ///
-  /// A frame that will not open ends the session; the caller closes and the
-  /// pairing is untouched. A request already in flight is ignored rather
-  /// than started a second time.
+  /// A request already in flight is answered with nil rather than started a
+  /// second time.
   ///
-  /// - Parameter frame: the bytes the transport delivered.
-  /// - Returns: the frame to send back, or nil when the request is already
+  /// - Parameter payload: the peer's opened request.
+  /// - Returns: the answer's payload, or nil when the request is already
   ///   being performed.
-  /// - Throws: when the frame does not open, or the answer cannot be sealed.
-  public func receive(_ frame: Data) async throws -> Data? {
-    let request = try PersistentRelayMessage.decoded(try channel.open(frame))
+  /// - Throws: when the payload is not a request this relay carries.
+  public func answer(to payload: Data) async throws -> Data? {
+    let request = try PersistentRelayMessage.decoded(payload)
     let id = request.requestID
     if let answer = try alreadyAnswered(id) {
-      return try channel.seal(try answer.encoded())
+      return try answer.encoded()
     }
     guard !running.contains(id) else { return nil }
     running.insert(id)
@@ -57,7 +52,7 @@ public actor SignRelayProxy {
     running.remove(id)
     answered[id] = answer
     try? journal?.record(answer, for: id)
-    return try channel.seal(try answer.encoded())
+    return try answer.encoded()
   }
 
   /// What was already answered for this request, here or in the journal.

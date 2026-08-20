@@ -43,20 +43,23 @@ internal struct SignRelayTests {
   @Test
   internal func aSlowCardReadStillAnswers() async throws {
     let id = UUID()
-    let proxy = SignRelayProxy(channel: SignRelayMarkerChannel()) { request in
+    let proxy = SignRelayProxy { request in
       try? await Task.sleep(for: .seconds(7))
       return .signatureResponse(id: request.requestID, signature: Self.signature)
     }
-    let requester = SignRelayRequester(channel: SignRelayMarkerChannel())
+    let channel = SignRelayMarkerChannel()
+    let requester = SignRelayRequester(channel: channel)
 
     let answer = try await requester.perform(
       Self.request(id),
       timeout: .seconds(30)
     ) { frame in
       Task {
-        if let reply = try? await proxy.receive(frame) {
-          try? await requester.receive(reply)
-        }
+        guard
+          let payload = try? channel.open(frame),
+          let reply = try? await proxy.answer(to: payload)
+        else { return }
+        try? await requester.receive(channel.seal(reply))
       }
     }
 
@@ -71,19 +74,18 @@ internal struct SignRelayTests {
   internal func aRepeatedRequestReachesTheCardOnce() async throws {
     let id = UUID()
     let performed = SignRelayPerformanceCounter()
-    let proxy = SignRelayProxy(channel: SignRelayMarkerChannel()) { request in
+    let proxy = SignRelayProxy { request in
       await performed.increment()
       return .signatureResponse(id: request.requestID, signature: Self.signature)
     }
 
-    let channel = SignRelayMarkerChannel()
-    let frame = channel.seal(try Self.request(id).encoded())
-    let first = try await proxy.receive(frame)
-    let second = try await proxy.receive(frame)
+    let payload = try Self.request(id).encoded()
+    let first = try await proxy.answer(to: payload)
+    let second = try await proxy.answer(to: payload)
 
     let expected = PersistentRelayMessage.signatureResponse(id: id, signature: Self.signature)
-    #expect(try PersistentRelayMessage.decoded(channel.open(#require(first))) == expected)
-    #expect(try PersistentRelayMessage.decoded(channel.open(#require(second))) == expected)
+    #expect(try PersistentRelayMessage.decoded(#require(first)) == expected)
+    #expect(try PersistentRelayMessage.decoded(#require(second)) == expected)
     #expect(await performed.count == 1)
   }
 
@@ -102,24 +104,23 @@ internal struct SignRelayTests {
     defer { Self.deleteJournal(vault: vault, pairID: pairID) }
     let journal = SignRelayVaultJournal(vault: vault, pairID: pairID)
     let performed = SignRelayPerformanceCounter()
-    let channel = SignRelayMarkerChannel()
-    let frame = channel.seal(try Self.request(id).encoded())
+    let payload = try Self.request(id).encoded()
 
-    let before = SignRelayProxy(channel: channel, journal: journal) { request in
+    let before = SignRelayProxy(journal: journal) { request in
       await performed.increment()
       return .signatureResponse(id: request.requestID, signature: Self.signature)
     }
-    _ = try await before.receive(frame)
+    _ = try await before.answer(to: payload)
 
     // The process ends here, and a new proxy comes up on the same pairing.
-    let after = SignRelayProxy(channel: channel, journal: journal) { request in
+    let after = SignRelayProxy(journal: journal) { request in
       await performed.increment()
       return .signatureResponse(id: request.requestID, signature: Self.signature)
     }
-    let replayed = try await after.receive(frame)
+    let replayed = try await after.answer(to: payload)
 
     let expected = PersistentRelayMessage.signatureResponse(id: id, signature: Self.signature)
-    #expect(try PersistentRelayMessage.decoded(channel.open(#require(replayed))) == expected)
+    #expect(try PersistentRelayMessage.decoded(#require(replayed)) == expected)
     #expect(await performed.count == 1)
   }
 

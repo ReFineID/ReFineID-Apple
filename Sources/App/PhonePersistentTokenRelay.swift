@@ -35,6 +35,10 @@
     private var relay: PersistentRelaySession?
     private var streamRelay: StreamRelaySession?
     private var coordinator: RappConnectionCoordinator?
+    #if REFINEID_SLIM_RELAY
+      private var slimSession: SignRelaySession?
+      private var slimProxy: SignRelayProxy?
+    #endif
     private var dispatcher: RappPhoneProxyDispatcher?
     private var connectionID: UUID?
     private var preCoordinatorFrames: [Data] = []
@@ -118,6 +122,12 @@
         establish(connectionID: connectionID)
 
       case .frame(let frame):
+        #if REFINEID_SLIM_RELAY
+          if slimSession != nil {
+            Task { await receiveSlim(frame) }
+            return
+          }
+        #endif
         if let coordinator {
           Task { await coordinator.receive(frame) }
         } else if preCoordinatorFrames.count < Self.maximumPreCoordinatorFrames {
@@ -226,6 +236,48 @@
       }
     }
 
+    #if REFINEID_SLIM_RELAY
+      /// Serves the slim relay over the selected pairing.
+      private func establishSlim(
+        pair: RappPairRecord,
+        transport: RappClosureFrameTransport
+      ) throws {
+        let session = try SignRelaySession(role: .proxy, pair: pair, vault: vault)
+        slimSession = session
+        let journal = (try? vault.selectedPairID()).flatMap { pairID in
+          pairID.map { SignRelayVaultJournal(vault: vault, pairID: $0) }
+        }
+        slimProxy = SignRelayProxy(journal: journal) { request in
+          #if REFINEID_LOCAL_CARD
+            return await SlimCardWork.perform(request)
+          #else
+            // A device with no card path can serve nobody else's request.
+            return .failure(id: request.requestID, reason: .cardUnavailable)
+          #endif
+        }
+        _ = transport
+      }
+
+      /// Drives one frame through the slim session and answers what it asks.
+      private func receiveSlim(_ frame: Data) async {
+        guard let session = slimSession, let proxy = slimProxy else { return }
+        let step: SignRelayStep
+        do {
+          step = try await session.receive(frame)
+        } catch {
+          relay?.cancel()
+          return
+        }
+        for outgoing in step.send {
+          try? relay?.send(outgoing)
+        }
+        guard let payload = step.payload else { return }
+        guard let answer = try? await proxy.answer(to: payload) else { return }
+        guard let sealed = try? await session.seal(answer) else { return }
+        try? relay?.send(sealed)
+      }
+    #endif
+
     private func establishCoordinator(
       connectionID: UUID,
       transport: RappClosureFrameTransport,
@@ -241,37 +293,41 @@
           failTransport()
           return
         }
-        let coordinator = try RappConnectionCoordinator(
-          role: .proxy,
-          pair: pair,
-          vault: vault,
-          transport: transport,
-          maximumLifetimeMilliseconds:
-            policy.maximumOperationLifetimeMilliseconds,
-          liveness: policy.liveness
-        )
-        let dispatcher = RappPhoneProxyDispatcher(
-          inbox: RappAuthorizationInbox.shared
-        ) { [weak self] in
-          self?.requireExplicitUserAction()
-        }
-        self.coordinator = coordinator
-        self.dispatcher = dispatcher
+        #if REFINEID_SLIM_RELAY
+          try establishSlim(pair: pair, transport: transport)
+        #else
+          let made = try RappConnectionCoordinator(
+            role: .proxy,
+            pair: pair,
+            vault: vault,
+            transport: transport,
+            maximumLifetimeMilliseconds:
+              policy.maximumOperationLifetimeMilliseconds,
+            liveness: policy.liveness
+          )
+          let madeDispatcher = RappPhoneProxyDispatcher(
+            inbox: RappAuthorizationInbox.shared
+          ) { [weak self] in
+            self?.requireExplicitUserAction()
+          }
+          coordinator = made
+          dispatcher = madeDispatcher
 
-        let earlyFrames = preCoordinatorFrames
-        preCoordinatorFrames.removeAll(keepingCapacity: false)
-        Task { [weak self] in
-          for await event in coordinator.events {
-            await dispatcher.receive(event, from: coordinator)
-            self?.observe(event, connectionID: connectionID)
+          let earlyFrames = preCoordinatorFrames
+          preCoordinatorFrames.removeAll(keepingCapacity: false)
+          Task { [weak self] in
+            for await event in made.events {
+              await madeDispatcher.receive(event, from: made)
+              self?.observe(event, connectionID: connectionID)
+            }
           }
-        }
-        Task {
-          await coordinator.start()
-          for frame in earlyFrames {
-            await coordinator.receive(frame)
+          Task {
+            await made.start()
+            for frame in earlyFrames {
+              await made.receive(frame)
+            }
           }
-        }
+        #endif
       } catch {
         relistenPolicy = .explicitUserActionRequired
         failTransport()
