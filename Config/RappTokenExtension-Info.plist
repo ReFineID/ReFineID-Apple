@@ -5,6 +5,7 @@
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_refineid-rly._tcp</string>
+		<string>_refineid-rly._udp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>ReFineID connects to your paired card-holding device over the local network.</string>

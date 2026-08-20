@@ -18,6 +18,7 @@
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_refineid-rly._tcp</string>
+		<string>_refineid-rly._udp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>ReFineID uses the local network to connect your devices securely for identity-card operations.</string>

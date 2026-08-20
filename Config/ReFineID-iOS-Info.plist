@@ -20,6 +20,7 @@
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_refineid-rly._tcp</string>
+		<string>_refineid-rly._udp</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>ReFineID reads the access number printed on your card so you do not have to type it.</string>
