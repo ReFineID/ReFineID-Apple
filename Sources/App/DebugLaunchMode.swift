@@ -51,6 +51,12 @@
     /// no trace.
     case resetCardState = "--reset-card-state"
 
+    /// Choose the pairing whose identifier starts with the given prefix.
+    ///
+    /// A device paired more than once holds several, and only the peer
+    /// knows which of them it shares.
+    case selectPair = "--select-pair"
+
     /// Store a card access number given on the command line.
     case setCan = "--set-can"
 
@@ -83,8 +89,8 @@
     internal var needsScene: Bool {
       switch self {
       case .diagnostics, .forgetCan, .localNetworkProbe, .paceCheck,
-        .resetCardState, .setCan, .setPin1, .signDocument, .signProbe,
-        .tokenPublishProbe, .trace:
+        .resetCardState, .selectPair, .setCan, .setPin1, .signDocument,
+        .signProbe, .tokenPublishProbe, .trace:
         false
       case .activationProbe, .ctkSignProbe, .managementProbe, .prime,
         .remoteIdentityProbe:
@@ -106,7 +112,7 @@
         false
       case .localNetworkProbe:
         true
-      case .managementProbe, .setCan, .setPin1, .signDocument, .signProbe:
+      case .managementProbe, .selectPair, .setCan, .setPin1, .signDocument, .signProbe:
         true
       }
     }

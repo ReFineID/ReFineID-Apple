@@ -100,9 +100,12 @@
       // and waiting the full operation lifetime to say so leaves the holder
       // watching a spinner for two minutes over a question already
       // answered. Discovery is given its own, much shorter deadline.
-      if completed.wait(timeout: .now() + policy.discoveryTimeout) != .success,
-        !state.withLock({ $0.connected })
-      {
+      // The first wait consumes the signal, so an answer that arrives
+      // inside the discovery window must not be waited for a second time:
+      // nothing would ever signal again and a settled request would sit out
+      // the whole operation lifetime.
+      var settled = completed.wait(timeout: .now() + policy.discoveryTimeout) == .success
+      if !settled, !state.withLock({ $0.connected }) {
         state.withLock { state in
           guard !state.completed else { return }
           state.completed = true
@@ -112,7 +115,10 @@
         throw RappRequesterClientError.peerNotFound
       }
 
-      guard completed.wait(timeout: .now() + policy.synchronousWaitTimeout) == .success else {
+      if !settled {
+        settled = completed.wait(timeout: .now() + policy.synchronousWaitTimeout) == .success
+      }
+      guard settled else {
         let coordinator = state.withLock { state -> RappConnectionCoordinator? in
           guard !state.completed else { return state.coordinator }
           state.completed = true
@@ -181,6 +187,15 @@
       }
     }
 
+    /// The most recently made pairing, which is the one to use when the
+    /// holder has not chosen among several.
+    private static func newestPairID(in vault: RappDeviceVault) async throws -> Data? {
+      try await RappPairCatalog(vault: vault)
+        .activePairs()
+        .max { $0.createdAtMilliseconds < $1.createdAtMilliseconds }?
+        .pairID
+    }
+
     private func establish() async {
       do {
         let pairIDs = try vault.activePairIDs()
@@ -196,8 +211,12 @@
             return
           }
           pairID = selected
-        } else if pairIDs.count == 1 {
-          pairID = pairIDs[0]
+        } else if let newest = try await Self.newestPairID(in: vault) {
+          // Several pairings and none chosen is what a device holds after
+          // it has been paired more than once, and the one the holder made
+          // last is the one they made to use. Refusing here asked for a
+          // fresh code the holder had already scanned.
+          pairID = newest
           try vault.selectPair(pairID: pairID)
         } else {
           finish(error: .noSelectedPair)

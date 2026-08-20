@@ -87,7 +87,7 @@
       case .prime:
         DebugConsole.finish(succeeded: await Self.prime())
       case .diagnostics, .forgetCan, .localNetworkProbe, .paceCheck,
-        .resetCardState, .setCan,
+        .resetCardState, .selectPair, .setCan,
         .setPin1, .signDocument, .signProbe, .tokenPublishProbe, .trace:
         DebugConsole.emit(mode.rawValue + ": runs before the window opens, not here")
         DebugConsole.finish(succeeded: false)

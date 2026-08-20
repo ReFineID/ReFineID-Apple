@@ -54,6 +54,9 @@
     /// A target is a host and a port.
     private static let hostAndPort = 2
 
+    /// Enough of an identifier to name one pairing.
+    private static let identifierPrefixLength = 4
+
     /// The selected mode when it needs a window, otherwise nil.
     ///
     /// The app roots its scene in ``DebugSceneRunnerView`` when this is
@@ -105,6 +108,8 @@
         #else
           DebugModeReport(lines: [mode.rawValue + ": no network stack"], succeeded: false)
         #endif
+      case .selectPair:
+        Self.selectPairReport()
       case .remoteIdentityProbe:
         #if os(iOS)
           DebugRemoteIdentityProbe.report()
@@ -131,6 +136,29 @@
         return DebugLocalNetworkProbe.report(host: String(parts[0]), port: port)
       }
     #endif
+
+    /// Chooses the pairing whose identifier starts with the given prefix.
+    private static func selectPairReport() -> DebugModeReport {
+      guard let prefix = Self.pathValue(after: .selectPair), !prefix.isEmpty else {
+        return DebugModeReport(
+          lines: ["usage: --select-pair <identifier prefix>"], succeeded: false)
+      }
+      let vault = RappDeviceVault()
+      guard
+        let match = ((try? vault.activePairIDs()) ?? []).first(where: { pairID in
+          pairID.prefix(Self.identifierPrefixLength).map { String(format: "%02x", $0) }.joined()
+            .hasPrefix(prefix)
+        })
+      else {
+        return DebugModeReport(lines: ["no pairing starts with \(prefix)"], succeeded: false)
+      }
+      do {
+        try vault.selectPair(pairID: match)
+        return DebugModeReport(lines: ["selected \(prefix)"], succeeded: true)
+      } catch {
+        return DebugModeReport(lines: ["could not select: \(error)"], succeeded: false)
+      }
+    }
 
     /// The modes that drive a reader or read what one left behind.
     private static func probeReport(for mode: DebugLaunchMode) -> DebugModeReport {
