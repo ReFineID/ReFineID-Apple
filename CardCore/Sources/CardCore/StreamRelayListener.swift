@@ -50,17 +50,21 @@ import Foundation
     }
 
     /// Sends one frame to the dialer, or throws when none is connected.
+    ///
+    /// A frame handed over before a dialer arrived has nowhere to go. It is
+    /// reported rather than dropped: a caller that sends too early otherwise
+    /// waits for an answer to a message the peer never received.
     public func send(_ frame: Data) throws {
       guard let encoded = StreamRelayFraming.encode(frame) else {
         throw StreamRelayTransportError.invalidFrameLength
       }
-      queue.sync {
-        connection?.send(
-          content: encoded,
-          completion: .contentProcessed { _ in
-            // A send that failed is reported by the connection's own state.
-          })
-      }
+      let open: NWConnection? = queue.sync { connection }
+      guard let open else { throw StreamRelayTransportError.notConnected }
+      open.send(
+        content: encoded,
+        completion: .contentProcessed { _ in
+          // A send that failed is reported by the connection's own state.
+        })
     }
 
     /// Stops listening and reports the channel closed.

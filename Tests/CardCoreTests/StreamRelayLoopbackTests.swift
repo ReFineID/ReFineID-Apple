@@ -8,7 +8,7 @@ import Testing
 
 /// The transport that replaces peer discovery with a published service and
 /// a dialled port.
-@Suite
+@Suite(.serialized)
 internal struct StreamRelayLoopbackTests {
 
   // MARK: Static Properties
@@ -45,7 +45,7 @@ internal struct StreamRelayLoopbackTests {
     defer { listener.cancel() }
 
     let found = StreamRelayEndpointBox()
-    let browser = StreamRelayBrowser { endpoint in
+    let browser = StreamRelayBrowser(matching: name) { endpoint in
       Task { await found.set(endpoint) }
     }
     browser.start()

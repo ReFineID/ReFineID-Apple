@@ -13,13 +13,21 @@ import Foundation
   /// differs from its peer's.
   public final class StreamRelayBrowser: @unchecked Sendable {
     private let onFound: @Sendable (NWEndpoint) -> Void
+    private let name: String?
     private let queue = DispatchQueue(label: "fi.refineid.stream-browser")
     private var browser: NWBrowser?
     private var reported = false
 
-    /// Reports the first published holder to one owner.
+    /// Reports a published requester to one owner.
+    ///
+    /// A network carries more than one of these, so a caller that knows
+    /// which it wants says so; a caller that does not takes the first.
     @preconcurrency
-    public init(onFound: @escaping @Sendable (NWEndpoint) -> Void) {
+    public init(
+      matching name: String? = nil,
+      onFound: @escaping @Sendable (NWEndpoint) -> Void
+    ) {
+      self.name = name
       self.onFound = onFound
     }
 
@@ -32,7 +40,13 @@ import Foundation
         using: parameters
       )
       made.browseResultsChangedHandler = { [weak self] results, _ in
-        guard let self, let first = results.first else { return }
+        guard let self else { return }
+        let wanted = results.first { result in
+          guard let name else { return true }
+          guard case .service(let serviceName, _, _, _) = result.endpoint else { return false }
+          return serviceName == name
+        }
+        guard let first = wanted else { return }
         queue.async { [weak self] in
           guard let self, !reported else { return }
           reported = true
