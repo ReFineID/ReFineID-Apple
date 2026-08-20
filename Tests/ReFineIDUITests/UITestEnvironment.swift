@@ -39,6 +39,13 @@ internal enum UITestEnvironment {
   /// Explicit consent to run tests that talk to a physical identity card.
   internal static let realCardTestsVariable = "REFINEID_REAL_CARD_TESTS"
 
+  /// Set to 1 to have the app open the target page instead of typing it.
+  ///
+  /// A simulator's Safari does not reliably hand its address field
+  /// keyboard focus to a synthesized tap; the app's own open does not
+  /// need the keyboard at all.
+  internal static let opensViaAppVariable = "REFINEID_SAFARI_OPEN_VIA_APP"
+
   /// Whether this invocation may use a physical card and external sites.
   ///
   /// Simulator and Xcode Cloud runs remain deterministic by default. The
@@ -46,6 +53,11 @@ internal enum UITestEnvironment {
   /// retry or waiting for hardware that is not present.
   internal static var realCardTestsEnabled: Bool {
     Self.value(Self.realCardTestsVariable) == "1"
+  }
+
+  /// Whether the app opens the target page instead of Safari's keyboard.
+  internal static var opensViaApp: Bool {
+    Self.value(Self.opensViaAppVariable) == "1"
   }
 
   /// The card access number, or nil when the run was not given one.

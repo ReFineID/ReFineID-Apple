@@ -60,6 +60,8 @@
     /// Runs the mode and ends the process with its status.
     private static func run(_ mode: DebugLaunchMode) async {
       switch mode {
+      case .browseProbe, .listenProbe, .offerRemoteReader, .pairWithOffer:
+        await runPairingMode(mode)
       case .activationProbe:
         #if REFINEID_LOCAL_CARD && os(iOS)
           let report = await CardMaintenance.debugActivationSignals()
@@ -75,13 +77,13 @@
         DebugConsole.finish(succeeded: report.succeeded)
       case .managementProbe:
         DebugConsole.finish(succeeded: await DebugCardManagementProbe.run())
-      case .remoteIdentityProbe:
+      case .remoteIdentityProbe, .remoteSignProbe:
+        await runRelayProbe(mode)
+      case .openSafari:
         #if os(iOS)
-          let report = DebugRemoteIdentityProbe.report()
-          DebugConsole.emit(report.lines)
-          DebugConsole.finish(succeeded: report.succeeded)
+          await Self.openRequestedPage()
         #else
-          DebugConsole.emit([mode.rawValue + ": asks a paired phone, which only iOS does"])
+          DebugConsole.emit([mode.rawValue + ": opens mobile Safari, which only iOS has"])
           DebugConsole.finish(succeeded: false)
         #endif
       case .prime:
@@ -90,6 +92,83 @@
         .resetCardState, .selectPair, .setCan,
         .setPin1, .signDocument, .signProbe, .tokenPublishProbe, .trace:
         DebugConsole.emit(mode.rawValue + ": runs before the window opens, not here")
+        DebugConsole.finish(succeeded: false)
+      }
+    }
+
+    #if os(iOS)
+      /// Opens the page named after `--open-safari` and reports whether the
+      /// system took it.
+      private static func openRequestedPage() async {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let index = arguments.firstIndex(of: DebugLaunchMode.openSafari.rawValue),
+          arguments.index(after: index) < arguments.endIndex,
+          let url = URL(string: "https://" + arguments[arguments.index(after: index)])
+        else {
+          DebugConsole.emit("open-safari: expected an address after the flag")
+          DebugConsole.finish(succeeded: false)
+        }
+        let opened = await UIApplication.shared.open(url)
+        DebugConsole.emit("open-safari: opened: " + String(opened))
+        DebugConsole.finish(succeeded: opened)
+      }
+    #endif
+
+    /// Runs one of the cable-driven pairing modes.
+    ///
+    /// Only the four pairing modes reach this; anything else has been
+    /// handled by the caller's own switch.
+    /// Runs a probe that asks the paired phone, and reports what came back.
+    ///
+    /// A probe blocks on the relay and hops to the main queue to publish, so
+    /// running it on the main thread deadlocks the hop.
+    private static func runRelayProbe(_ mode: DebugLaunchMode) async {
+      #if os(iOS)
+        let work: @Sendable () -> DebugModeReport =
+          mode == .remoteIdentityProbe
+          ? DebugRemoteIdentityProbe.report
+          : DebugRemoteSignProbe.report
+        let report = await Self.offMainThread(work)
+        DebugConsole.emit(report.lines)
+        DebugConsole.finish(succeeded: report.succeeded)
+      #else
+        DebugConsole.emit([mode.rawValue + ": asks a paired phone, which only iOS does"])
+        DebugConsole.finish(succeeded: false)
+      #endif
+    }
+
+    private static func runPairingMode(_ mode: DebugLaunchMode) async {
+      switch mode {
+      case .browseProbe:
+        // The type is fixed to what the relay browses, so the probe answers
+        // for the path that is failing rather than one that is not used.
+        let report = await DebugBrowseProbe.run(type: "_refineid-rly._tcp")
+        DebugConsole.emit(report.lines)
+        DebugConsole.finish(succeeded: report.succeeded)
+      case .listenProbe:
+        let report = await DebugListenProbe.run()
+        DebugConsole.emit(report.lines)
+        DebugConsole.finish(succeeded: report.succeeded)
+      case .offerRemoteReader:
+        #if os(iOS)
+          let report = await DebugPairWithOffer.offer()
+          DebugConsole.emit(report.lines)
+          DebugConsole.finish(succeeded: report.succeeded)
+        #else
+          DebugConsole.emit([mode.rawValue + ": offers a reader, which only iOS does"])
+          DebugConsole.finish(succeeded: false)
+        #endif
+      case .pairWithOffer:
+        #if os(iOS)
+          let report = await DebugPairWithOffer.run(offerURI: DebugLaunchModes.offerURI())
+          DebugConsole.emit(report.lines)
+          DebugConsole.finish(succeeded: report.succeeded)
+        #else
+          DebugConsole.emit([mode.rawValue + ": pairs by scanning, which only iOS does"])
+          DebugConsole.finish(succeeded: false)
+        #endif
+      default:
+        DebugConsole.emit(mode.rawValue + ": not a pairing mode")
         DebugConsole.finish(succeeded: false)
       }
     }

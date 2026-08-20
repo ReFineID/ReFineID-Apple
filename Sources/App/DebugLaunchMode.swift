@@ -15,6 +15,9 @@
     /// Read the factory-activation signals over NFC without changing the card.
     case activationProbe = "--activation-probe"
 
+    /// Browse for a named service type and report what arrived.
+    case browseProbe = "--browse-probe"
+
     /// Sign through the token extension exactly as Safari does.
     case ctkSignProbe = "--ctk-sign-probe"
 
@@ -23,6 +26,12 @@
 
     /// Drop the stored card access number, wherever it is kept.
     case forgetCan = "--forget-can"
+
+    /// Open a listener, dial it from this device, and report both ends.
+    ///
+    /// A listener that says it is ready while its port refuses connections
+    /// looks, from the other device, exactly like a peer that is not there.
+    case listenProbe = "--listen-probe"
 
     /// Try one connection to an address on this network and report it.
     ///
@@ -33,8 +42,30 @@
     /// Changes and restores both PINs over a named physical transport.
     case managementProbe = "--management-probe"
 
+    /// Make a pairing offer and print it, then wait for the peer.
+    ///
+    /// The requester's half of a pairing driven from a cable: it prints
+    /// the offer a peer would otherwise read off the screen, so a script
+    /// can hand it to the other device.
+    case offerRemoteReader = "--offer-remote-reader"
+
+    /// Open a page in Safari from the command line.
+    ///
+    /// A simulator's Safari does not reliably give its address field
+    /// keyboard focus to a synthesized tap, so a test that needs a page
+    /// open asks the app to open it instead.
+    case openSafari = "--open-safari"
+
     /// Runs one PACE handshake over an attached reader and times it.
     case paceCheck = "--pace-check"
+
+    /// Pair with an offer given in the environment instead of scanning
+    /// one.
+    ///
+    /// The camera is the only consent this app takes, and a device with no
+    /// hands on it cannot give it. This stands in for the scan so a pairing
+    /// can be driven from a cable, and it exists in DEBUG builds only.
+    case pairWithOffer = "--pair-with-offer"
 
     /// Run the card priming flow with no interface.
     case prime = "--prime"
@@ -46,6 +77,12 @@
     /// whole relay -- pairing, session, request, answer -- without a card
     /// being presented to anything.
     case remoteIdentityProbe = "--remote-identity-probe"
+
+    /// Ask the paired device for one browser-authentication signature.
+    ///
+    /// The request a website makes, run from the app so its refusal has a
+    /// name instead of a CryptoTokenKit number.
+    case remoteSignProbe = "--remote-sign-probe"
 
     /// Return this device to a known zero: no token, no prime, no window,
     /// no trace.
@@ -92,8 +129,9 @@
         .resetCardState, .selectPair, .setCan, .setPin1, .signDocument,
         .signProbe, .tokenPublishProbe, .trace:
         false
-      case .activationProbe, .ctkSignProbe, .managementProbe, .prime,
-        .remoteIdentityProbe:
+      case .activationProbe, .browseProbe, .ctkSignProbe, .listenProbe, .managementProbe,
+        .offerRemoteReader, .openSafari, .pairWithOffer, .prime, .remoteIdentityProbe,
+        .remoteSignProbe:
         // MultipeerConnectivity browses only for an app that has a window.
         // A probe that runs before one exists finds the peer's name in the
         // service records and is never handed the peer itself.
@@ -107,13 +145,18 @@
     /// from the command line at each launch and never committed anywhere.
     internal var takesValue: Bool {
       switch self {
-      case .activationProbe, .ctkSignProbe, .diagnostics, .forgetCan, .paceCheck, .prime,
-        .remoteIdentityProbe, .resetCardState, .tokenPublishProbe, .trace:
+      case .activationProbe, .browseProbe, .ctkSignProbe, .diagnostics, .forgetCan,
+        .listenProbe, .offerRemoteReader, .openSafari, .paceCheck, .prime,
+        .remoteIdentityProbe, .remoteSignProbe, .resetCardState, .tokenPublishProbe,
+        .trace:
         false
       case .localNetworkProbe:
         true
-      case .managementProbe, .selectPair, .setCan, .setPin1, .signDocument, .signProbe:
+      case .managementProbe, .selectPair, .setCan, .setPin1,
+        .signDocument, .signProbe:
         true
+      case .pairWithOffer:
+        false
       }
     }
   }

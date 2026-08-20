@@ -57,6 +57,9 @@
     /// Enough of an identifier to name one pairing.
     private static let identifierPrefixLength = 4
 
+    /// The name of the variable carrying an offer to pair with.
+    internal static let offerVariable = "REFINEID_PAIR_OFFER"
+
     /// The selected mode when it needs a window, otherwise nil.
     ///
     /// The app roots its scene in ``DebugSceneRunnerView`` when this is
@@ -86,7 +89,8 @@
     /// Runs one mode that needs no window.
     internal static func report(for mode: DebugLaunchMode) -> DebugModeReport {
       switch mode {
-      case .activationProbe, .ctkSignProbe, .managementProbe, .prime:
+      case .activationProbe, .browseProbe, .ctkSignProbe, .listenProbe, .managementProbe,
+        .offerRemoteReader, .openSafari, .pairWithOffer, .prime, .remoteSignProbe:
         DebugModeReport(
           lines: [mode.rawValue + ": needs a live scene; it is run from the window instead"],
           succeeded: false)
@@ -282,6 +286,19 @@
       return DebugModeReport(
         lines: ["=== extension trace (\(trace.count) lines) ==="] + trace + ["=== end ==="],
         succeeded: true)
+    }
+
+    /// The offer to pair with, or an empty string.
+    ///
+    /// It arrives in the environment rather than after the flag, because
+    /// the device tool repeats its own `--arguments` option into the
+    /// argument list and the value after a flag is that option, not the
+    /// value meant for it.
+    ///
+    /// It is a bearer secret for as long as it lives, so it is read here
+    /// and never printed, stored or defaulted.
+    internal static func offerURI() -> String {
+      ProcessInfo.processInfo.environment[offerVariable] ?? ""
     }
 
     /// The digits following a value-taking flag, or nil.
