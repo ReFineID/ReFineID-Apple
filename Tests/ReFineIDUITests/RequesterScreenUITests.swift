@@ -60,23 +60,23 @@
       }
     }
 
-    /// A stored pairing does not stand between the tap and the code.
+    /// A stored pairing is asked, rather than replaced with a new one.
     ///
-    /// A device that cannot reach a card of its own has nothing to
-    /// reconnect to: its pairing names a phone that may have forgotten it,
-    /// and waiting for an answer that is not coming looks to the holder
-    /// like a button that does nothing. The code is what this device has
-    /// to offer, so the tap goes there whatever it has stored.
-    internal func testConnectRemoteReaderShowsTheCodeEvenWhenPaired() {
+    /// This once went straight to the code whatever was stored, because a
+    /// pairing the peer had forgotten left the tap waiting for an answer
+    /// that never came and the button looked dead. The answer now comes,
+    /// so the pairing is asked; one the peer no longer honours still ends
+    /// at the code, by way of ``needsFreshPairing``.
+    internal func testConnectRemoteReaderAsksTheStoredPairing() {
       let app = UITestApp.launch(arguments: ["--pretend-paired"])
       let connect = element(UITestIdentifiers.connectRemoteReader, in: app)
       XCTAssertTrue(connect.waitForExistence(timeout: Self.appearTimeout))
       connect.tap()
 
-      XCTAssertTrue(
+      XCTAssertFalse(
         element(UITestIdentifiers.pairingCode, in: app)
           .waitForExistence(timeout: Self.codeTimeout),
-        "a stored pairing kept the code from appearing")
+        "a stored pairing was replaced with a fresh code instead of asked")
     }
 
     /// One tap reaches the code, and closing it leaves the screen whole.
