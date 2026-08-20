@@ -93,6 +93,10 @@
       keyItem.constraints = [
         NSNumber(value: TKTokenOperation.signData.rawValue): true
       ]
+      // The leaf and its key, and nothing else. Publishing the issuer
+      // beside them stopped the browser forming an identity at all:
+      // measured on the requester, a configuration of three items was
+      // never offered, and the same two were offered at once.
       configuration.keychainItems = [certificateItem, keyItem]
       #if DEBUG
         print("[persistent-token] published \(instanceID)")

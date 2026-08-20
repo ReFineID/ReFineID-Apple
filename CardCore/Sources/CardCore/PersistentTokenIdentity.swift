@@ -12,4 +12,5 @@ public enum PersistentTokenIdentity {
 
   /// Keychain object ID of the published authentication key.
   public static let keyObjectID = "authentication-key"
+
 }
