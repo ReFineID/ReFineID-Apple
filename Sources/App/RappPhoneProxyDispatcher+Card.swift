@@ -67,8 +67,7 @@
         return
       }
       #if DEBUG
-        print("[stream-holder] card read starting: \(operation.kind)")
-        fflush(stdout)
+        HolderTrace.say("card read starting: \(operation.kind)")
       #endif
       guard
         let outcome = await signingOutcome(
@@ -83,8 +82,7 @@
         return
       }
       #if DEBUG
-        print("[stream-holder] card read outcome: \(String(describing: outcome))")
-        fflush(stdout)
+        HolderTrace.say("card read outcome: \(String(describing: outcome))")
       #endif
       await finishSignature(
         outcome,

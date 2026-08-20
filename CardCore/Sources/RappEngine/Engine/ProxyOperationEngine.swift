@@ -5,6 +5,7 @@ import Foundation
 // The type is long because it is one dispatch: every operation message is
 // answered here, against the same journal and transaction. Splitting it would
 // scatter the single decision table this type exists to hold.
+// swiftlint:disable type_body_length
 
 /// Operations for one authenticated proxy session.
 ///
@@ -250,12 +251,22 @@ internal struct ProxyOperationEngine {
       try operations[index].commit(
         to: &store, requesterCommit: reference, nowMilliseconds: nowMilliseconds,
         maximumLifetimeMilliseconds: maximumLifetimeMilliseconds)
-      return .beginCardCommand(operationIdentifier: operationIdentifier)
     } catch AuthorizationError.expired {
       return try expireCommitted(index: index, store: &store)
     } catch let error as AuthorizationError {
       throw enginePeerError(error)
     }
+
+    // Telling the holder to execute is also entering execution, the way an
+    // approved safe read enters it when its dispatch is made. Emitting the
+    // dispatch without the transition left the transaction committed, and a
+    // committed transaction refuses the answer the card gives back.
+    do {
+      _ = try operations[index].beginCardCommand(to: &store)
+    } catch let error as AuthorizationError {
+      throw engineLocalError(error)
+    }
+    return .beginCardCommand(operationIdentifier: operationIdentifier)
   }
 
   /// A commit that arrives after its deadline yields a cancelled result rather
@@ -356,3 +367,5 @@ internal struct ProxyOperationEngine {
   }
 
 }
+
+// swiftlint:enable type_body_length

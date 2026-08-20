@@ -363,8 +363,21 @@ public final class RappOperationBridge: @unchecked Sendable {
   ) throws -> RappBridgeAction {
     try withProxy { engine, store in
       guard let reference = engine.reference(operationId) else {
+        #if DEBUG
+          EngineTrace.say(
+            "no live operation for this answer: live "
+              + "\(engine.operations.count), stages "
+              + "\(engine.operations.map { String(describing: $0.stage) })")
+        #endif
         throw RappBindingError.WrongPhase
       }
+      #if DEBUG
+        let stage =
+          engine.operations
+          .first { $0.reference == reference }
+          .map { String(describing: $0.stage) } ?? "none"
+        EngineTrace.say("answering a transaction in stage \(stage)")
+      #endif
       return try engine.finishCompleted(
         operationIdentifier: operationId,
         result: OperationResultMessage.completed(reference: reference, result: result),

@@ -11,6 +11,13 @@
   /// MultipeerConnectivity advertises nearby, while the stream profile dials
   /// the requester's stored listener endpoints. All identity, sequencing,
   /// operation, and fail-stop decisions belong to RAPP.
+  #if DEBUG
+    /// The event's case name alone, which is what a timeline needs.
+    private func eventCaseName(_ event: RappConnectionCoordinator.Event) -> String {
+      String(describing: event).prefix { $0 != "(" }.description
+    }
+  #endif
+
   @MainActor
   internal final class PhonePersistentTokenRelay {
 
@@ -286,8 +293,7 @@
     ) {
       guard self.connectionID == connectionID else { return }
       #if DEBUG
-        print("[stream-holder] session event \(String(describing: event))")
-        fflush(stdout)
+        HolderTrace.say("session event \(eventCaseName(event))")
       #endif
       if PhoneRelayFailStops.requireExplicitUserAction(event) {
         relistenPolicy = .explicitUserActionRequired

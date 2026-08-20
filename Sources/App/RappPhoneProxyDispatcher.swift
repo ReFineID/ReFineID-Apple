@@ -194,14 +194,19 @@
     ) async {
       if case .result(let signature) = outcome {
         do {
+          #if DEBUG
+            HolderTrace.say("answering with \(signature.count) bytes")
+          #endif
           try await coordinator.completeSignature(
             operationID: operationID,
             signature: signature
           )
+          #if DEBUG
+            HolderTrace.say("answer accepted")
+          #endif
         } catch {
           #if DEBUG
-            print("[stream-holder] answer refused: \(String(describing: error))")
-            fflush(stdout)
+            HolderTrace.say("answer refused: \(String(describing: error))")
           #endif
         }
       } else {
