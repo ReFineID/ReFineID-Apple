@@ -141,6 +141,7 @@ import Foundation
       }
       guard !wasClosed else { return }
       trace("closed \(String(describing: error))")
+      acceptedPeer = nil
       advertiser?.stopAdvertisingPeer()
       browser?.stopBrowsingForPeers()
       onEvent(.closed(error))
@@ -179,6 +180,14 @@ import Foundation
         trace("connected \(peerID.displayName)")
       case .notConnected:
         trace("not connected \(peerID.displayName)")
+        // The peer being served has left, so the next one may be served.
+        // A device asks over more than one process -- the app for a
+        // pairing, its token extension for a signature -- and holding the
+        // departed peer's place refused every later process forever, which
+        // is one working exchange and then none.
+        if acceptedPeer?.displayName == peerID.displayName {
+          acceptedPeer = nil
+        }
         if everConnected.withLock({ $0 }) {
           finish(.disconnected)
         } else if let peer = lastFoundPeer {
@@ -238,7 +247,9 @@ import Foundation
       withContext _: Data?,
       invitationHandler: (Bool, MCSession?) -> Void
     ) {
-      if let acceptedPeer, acceptedPeer.displayName != peerID.displayName {
+      if let acceptedPeer, acceptedPeer.displayName != peerID.displayName,
+        !session.connectedPeers.isEmpty
+      {
         trace("refused invitation from \(peerID.displayName), serving \(acceptedPeer.displayName)")
         invitationHandler(false, nil)
         return

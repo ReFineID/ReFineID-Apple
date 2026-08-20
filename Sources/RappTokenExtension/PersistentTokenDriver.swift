@@ -66,6 +66,18 @@ internal final class PersistentTokenDriver: TKTokenDriver,
       delegate = self
     }
 
+    /// Records what this token did with a browser's request.
+    ///
+    /// A signature the card made and this token refuses is the one failure
+    /// that leaves no trace anywhere: the browser is told only that the
+    /// data was corrupt, asks again, and is refused again.
+    private static func say(_ line: String) {
+      #if DEBUG
+        ExtensionTrace.record(line)
+        ExtensionTrace.flush()
+      #endif
+    }
+
     fileprivate func tokenSession(
       _: TKTokenSession,
       supports operation: TKTokenOperation,
@@ -132,8 +144,10 @@ internal final class PersistentTokenDriver: TKTokenDriver,
         throw TKError(.communicationError)
       }
       guard request.isSatisfied(by: signature, from: persistentToken.publicKey) else {
+        Self.say("rapp sign rejected: \(signature.count) bytes did not verify")
         throw TKError(.corruptedData)
       }
+      Self.say("rapp sign served: \(signature.count) bytes")
       return signature
     }
   }
