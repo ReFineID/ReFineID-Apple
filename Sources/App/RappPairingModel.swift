@@ -53,7 +53,7 @@ internal final class RappPairingModel: ObservableObject {
 
   private let vault: RappDeviceVault
   private let catalog: RappPairCatalog
-  private var relay: PersistentRelaySession?
+  private var relay: PairingRelay?
   private var streamRelay: StreamRelaySession?
   private var streamEverConnected = false
   private var relayGeneration: UUID?
@@ -327,7 +327,7 @@ internal final class RappPairingModel: ObservableObject {
     resumeRegularRelay()
   }
 
-  private func makeRelay(role: PersistentRelayRole) -> PersistentRelaySession {
+  private func makeRelay(role: PersistentRelayRole) -> PairingRelay {
     let generation = UUID()
     relayGeneration = generation
     let displayName: String
@@ -341,7 +341,7 @@ internal final class RappPairingModel: ObservableObject {
     case .cardHolder:
       displayName = String(localized: "ReFineID iPhone")
     }
-    return PersistentRelaySession(
+    return PairingRelay(
       role: role,
       displayName: displayName
     ) { [weak self] event in
@@ -350,14 +350,14 @@ internal final class RappPairingModel: ObservableObject {
   }
 
   private func makeTransport(
-    relay: PersistentRelaySession
+    relay: PairingRelay
   ) -> RappClosureFrameTransport {
     RappClosureFrameTransport(
       sender: { [weak relay] frame in
         guard let relay else {
           throw PersistentRelayTransportError.disconnected
         }
-        try relay.send(frame)
+        try await relay.send(frame)
       },
       closer: { [weak relay] in relay?.cancel() }
     )
@@ -365,7 +365,7 @@ internal final class RappPairingModel: ObservableObject {
 
   private func install(
     coordinator: RappPairingCoordinator,
-    relay: PersistentRelaySession
+    relay: PairingRelay
   ) {
     self.coordinator = coordinator
     self.relay = relay

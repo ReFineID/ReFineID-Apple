@@ -9,7 +9,7 @@
     ///
     /// The two transports report the same three things, so the layer above
     /// need not know which one carried them.
-    internal init(_ event: StreamRelayEvent) {
+    public init(_ event: StreamRelayEvent) {
       switch event {
       case .connected:
         self = .connected
