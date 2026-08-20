@@ -30,6 +30,15 @@ import Foundation
     private var browser: MCNearbyServiceBrowser?
     private var lastFoundPeer: MCPeerID?
 
+    /// The one peer this channel has taken into its session.
+    ///
+    /// A device runs more than one process that speaks this service: the
+    /// app and its token extension both advertise and both invite. Taking
+    /// the second invitation replaced a live session with one belonging to
+    /// another process, and when that process went away it closed the
+    /// channel the first was still using.
+    private var acceptedPeer: MCPeerID?
+
     /// Builds a channel for one role that reports to one owner.
     @preconcurrency
     public init(
@@ -216,17 +225,25 @@ import Foundation
       withError _: (any Error)?
     ) {}
 
-    /// Accepts the inviter into the encrypted session.
+    /// Accepts one inviter into the encrypted session, and only that one.
     ///
-    /// Acceptance is currently unconditional: there is no pairing and
-    /// no peer allowlist yet. That gap is the release blocker keeping
-    /// FEATURE_IPHONE_RELAY out of shipping builds.
+    /// The first invitation is taken and its peer remembered. A later
+    /// invitation is taken only if it is that same peer arriving again,
+    /// which is what a dropped connection looks like from here. Anything
+    /// else is refused, because a channel serves one peer at a time and
+    /// the process inviting second is not the one being served.
     public func advertiser(
       _: MCNearbyServiceAdvertiser,
       didReceiveInvitationFromPeer peerID: MCPeerID,
       withContext _: Data?,
       invitationHandler: (Bool, MCSession?) -> Void
     ) {
+      if let acceptedPeer, acceptedPeer.displayName != peerID.displayName {
+        trace("refused invitation from \(peerID.displayName), serving \(acceptedPeer.displayName)")
+        invitationHandler(false, nil)
+        return
+      }
+      acceptedPeer = peerID
       trace("accepted invitation from \(peerID.displayName)")
       invitationHandler(true, session)
     }
