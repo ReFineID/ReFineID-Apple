@@ -58,29 +58,24 @@ import Foundation
       session.delegate = self
     }
 
+    /// A fresh peer identity for this channel.
+    ///
+    /// This identity was kept between launches, archived under the display
+    /// name, so every later channel advertised and browsed as the same
+    /// peer. A peer identity that outlives the session it was made for
+    /// stops being found: the first channel after a fresh install worked
+    /// and every one after it browsed for the full timeout and found
+    /// nothing, which is one exchange and then none until the store was
+    /// cleared.
+    ///
+    /// Nothing above needs it to persist. Peers are authenticated by the
+    /// pairing's own transcript, so who a channel says it is at the
+    /// discovery layer carries no authority and costs nothing to remake.
     private static func persistentPeer(
       displayName: String,
-      role: PersistentRelayRole
+      role _: PersistentRelayRole
     ) -> MCPeerID {
-      let roleName = role == .cardHolder ? "card" : "host"
-      let key = "fi.refineid.persistent-relay.\(roleName).\(displayName)"
-      let defaults = UserDefaults.standard
-      if let data = defaults.data(forKey: key),
-        let peer = try? NSKeyedUnarchiver.unarchivedObject(
-          ofClass: MCPeerID.self,
-          from: data
-        )
-      {
-        return peer
-      }
-      let peer = MCPeerID(displayName: displayName)
-      if let data = try? NSKeyedArchiver.archivedData(
-        withRootObject: peer,
-        requiringSecureCoding: true
-      ) {
-        defaults.set(data, forKey: key)
-      }
-      return peer
+      MCPeerID(displayName: displayName)
     }
 
     /// Advertises or browses, by role.

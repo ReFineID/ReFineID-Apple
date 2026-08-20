@@ -58,6 +58,9 @@ internal final class PersistentTokenDriver: TKTokenDriver,
       #endif
     }
 
+    /// Milliseconds in one second, for the ages this token reports.
+    private static let millisecondsPerSecond = 1_000.0
+
     private let persistentToken: PersistentToken
 
     fileprivate init(token: PersistentToken) {
@@ -71,6 +74,11 @@ internal final class PersistentTokenDriver: TKTokenDriver,
     /// A signature the card made and this token refuses is the one failure
     /// that leaves no trace anywhere: the browser is told only that the
     /// data was corrupt, asks again, and is refused again.
+    /// How long ago, in whole milliseconds.
+    private static func millisecondsSince(_ started: Date) -> Int {
+      Int(Date().timeIntervalSince(started) * Self.millisecondsPerSecond)
+    }
+
     private static func say(_ line: String) {
       #if DEBUG
         ExtensionTrace.record(line)
@@ -116,6 +124,8 @@ internal final class PersistentTokenDriver: TKTokenDriver,
       else {
         throw TKError(.notImplemented)
       }
+      let started = Date()
+      Self.say("rapp sign asked")
       let signature: Data
       do {
         let response = try RappPersistentRequesterClient(
@@ -138,16 +148,18 @@ internal final class PersistentTokenDriver: TKTokenDriver,
         // of why a browser was refused an identity, so it is recorded
         // before the throw narrows it to a communication failure.
         #if DEBUG
-          ExtensionTrace.record("rapp sign failed: \(String(describing: error))")
+          ExtensionTrace.record(
+            "rapp sign failed after \(Self.millisecondsSince(started)) ms:"
+              + " \(String(describing: error))")
           ExtensionTrace.flush()
         #endif
         throw TKError(.communicationError)
       }
       guard request.isSatisfied(by: signature, from: persistentToken.publicKey) else {
-        Self.say("rapp sign rejected: \(signature.count) bytes did not verify")
+        Self.say("rapp sign rejected after \(Self.millisecondsSince(started)) ms")
         throw TKError(.corruptedData)
       }
-      Self.say("rapp sign served: \(signature.count) bytes")
+      Self.say("rapp sign served after \(Self.millisecondsSince(started)) ms")
       return signature
     }
   }
