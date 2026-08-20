@@ -75,6 +75,7 @@ internal struct DiagnosticsSnapshot: Sendable {
         Self.watcherTokens(),
         Self.driverConfigurations(),
         Self.primeStore(),
+        Self.network(),
         Self.pairings(),
         Self.credentialPolicy(),
         Self.transportPolicy(),
@@ -156,6 +157,39 @@ internal struct DiagnosticsSnapshot: Sendable {
     return Section(
       title: "Prime store (\(primes.count))",
       lines: lines.isEmpty ? [Self.nothing] : lines)
+  }
+
+  /// Which network this device is on.
+  ///
+  /// Two devices that cannot find each other are usually not on one
+  /// network, and nothing else in a capture says which one either is on.
+  /// The address is the device's own and names no person.
+  private static func network() -> Section {
+    var lines: [String] = []
+    var addresses: UnsafeMutablePointer<ifaddrs>?
+    guard getifaddrs(&addresses) == 0, let first = addresses else {
+      return Section(title: "Network", lines: [Self.nothing])
+    }
+    defer { freeifaddrs(addresses) }
+    for pointer in sequence(first: first, next: { $0.pointee.ifa_next }) {
+      let interface = pointer.pointee
+      guard
+        let name = interface.ifa_name.map({ String(cString: $0) }),
+        name == "en0" || name == "awdl0",
+        let address = interface.ifa_addr,
+        address.pointee.sa_family == UInt8(AF_INET)
+      else { continue }
+      var host = [CChar](repeating: 0, count: Int(NI_MAXHOST))
+      guard
+        getnameinfo(
+          address, socklen_t(address.pointee.sa_len), &host, socklen_t(host.count),
+          nil, 0, NI_NUMERICHOST) == 0
+      else { continue }
+      let printable = host.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }
+      guard let numeric = String(bytes: printable, encoding: .utf8) else { continue }
+      lines.append(name + ": " + numeric)
+    }
+    return Section(title: "Network", lines: lines.isEmpty ? [Self.nothing] : lines)
   }
 
   /// The pairings this device can serve or ask through.

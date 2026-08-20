@@ -75,9 +75,13 @@
         DebugConsole.finish(succeeded: report.succeeded)
       case .managementProbe:
         DebugConsole.finish(succeeded: await DebugCardManagementProbe.run())
+      case .remoteIdentityProbe:
+        let report = DebugRemoteIdentityProbe.report()
+        DebugConsole.emit(report.lines)
+        DebugConsole.finish(succeeded: report.succeeded)
       case .prime:
         DebugConsole.finish(succeeded: await Self.prime())
-      case .diagnostics, .forgetCan, .paceCheck, .remoteIdentityProbe,
+      case .diagnostics, .forgetCan, .paceCheck,
         .resetCardState, .setCan,
         .setPin1, .signDocument, .signProbe, .tokenPublishProbe, .trace:
         DebugConsole.emit(mode.rawValue + ": runs before the window opens, not here")

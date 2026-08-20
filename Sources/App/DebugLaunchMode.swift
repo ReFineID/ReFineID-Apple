@@ -76,11 +76,14 @@
     /// window would have existed.
     internal var needsScene: Bool {
       switch self {
-      case .diagnostics, .forgetCan, .paceCheck, .remoteIdentityProbe,
-        .resetCardState, .setCan, .setPin1, .signDocument, .signProbe,
-        .tokenPublishProbe, .trace:
+      case .diagnostics, .forgetCan, .paceCheck, .resetCardState, .setCan,
+        .setPin1, .signDocument, .signProbe, .tokenPublishProbe, .trace:
         false
-      case .activationProbe, .ctkSignProbe, .managementProbe, .prime:
+      case .activationProbe, .ctkSignProbe, .managementProbe, .prime,
+        .remoteIdentityProbe:
+        // MultipeerConnectivity browses only for an app that has a window.
+        // A probe that runs before one exists finds the peer's name in the
+        // service records and is never handed the peer itself.
         true
       }
     }
