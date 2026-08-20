@@ -13,7 +13,15 @@
       static let interactiveOperationLifetimeMilliseconds: UInt64 = 120_000
       static let synchronousWaitTimeoutSeconds: TimeInterval = 125
       static let baseIntervalMilliseconds: UInt64 = 5_000
-      static let responseTimeoutMilliseconds: UInt64 = 3_000
+
+      /// How long a probe waits for its answer.
+      ///
+      /// A card read is not a stall: PACE and an on-card signature take
+      /// several seconds with the holder's card on the phone, and a probe
+      /// sent during one is answered when that work yields. Three seconds
+      /// declared a working peer dead in the middle of the signature it had
+      /// been asked for.
+      static let responseTimeoutMilliseconds: UInt64 = 10_000
       static let maximumIntervalMilliseconds: UInt64 = 60_000
       static let maximumJitterMilliseconds: UInt64 = 500
       static let maximumMisses: UInt8 = 3
