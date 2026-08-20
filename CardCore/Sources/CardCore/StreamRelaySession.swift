@@ -16,6 +16,9 @@ import Foundation
   /// All state is confined to one serial queue. Each dial attempt carries a
   /// generation, and callbacks from superseded attempts are dropped.
   public final class StreamRelaySession: @unchecked Sendable {
+    /// How long one endpoint is given before the next is tried.
+    private static let attemptSeconds = 3.0
+
     private let endpoints: [StreamRelayEndpoint]
     private let preamble: Data
     private let onEvent: @Sendable (StreamRelayEvent) -> Void
@@ -111,6 +114,24 @@ import Foundation
       dialed.start(queue: queue)
     }
 
+    /// Gives one endpoint its time before the next is tried.
+    ///
+    /// Waiting is what a connection reports while it is still trying, and a
+    /// listener that is up is often reached on the attempt after it.
+    /// Abandoning the endpoint here left every dial unreachable against a
+    /// listener that was ready.
+    private func waitOut(attempt: Int, connection: NWConnection) {
+      guard !isReady else {
+        finish(.disconnected)
+        return
+      }
+      queue.asyncAfter(deadline: .now() + Self.attemptSeconds) { [weak self] in
+        guard let self, attempt == generation, !isFinished, !isReady else { return }
+        connection.cancel()
+        dialNext()
+      }
+    }
+
     private func handleState(
       _ state: NWConnection.State,
       attempt: Int,
@@ -134,7 +155,10 @@ import Foundation
         onEvent(.connected)
         receiveLengthPrefix(attempt: attempt, connection: connection)
 
-      case .waiting, .failed:
+      case .waiting:
+        waitOut(attempt: attempt, connection: connection)
+
+      case .failed:
         if isReady {
           finish(.disconnected)
         } else {

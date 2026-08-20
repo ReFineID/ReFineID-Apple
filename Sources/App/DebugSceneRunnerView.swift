@@ -76,9 +76,14 @@
       case .managementProbe:
         DebugConsole.finish(succeeded: await DebugCardManagementProbe.run())
       case .remoteIdentityProbe:
-        let report = DebugRemoteIdentityProbe.report()
-        DebugConsole.emit(report.lines)
-        DebugConsole.finish(succeeded: report.succeeded)
+        #if os(iOS)
+          let report = DebugRemoteIdentityProbe.report()
+          DebugConsole.emit(report.lines)
+          DebugConsole.finish(succeeded: report.succeeded)
+        #else
+          DebugConsole.emit([mode.rawValue + ": asks a paired phone, which only iOS does"])
+          DebugConsole.finish(succeeded: false)
+        #endif
       case .prime:
         DebugConsole.finish(succeeded: await Self.prime())
       case .diagnostics, .forgetCan, .localNetworkProbe, .paceCheck,
