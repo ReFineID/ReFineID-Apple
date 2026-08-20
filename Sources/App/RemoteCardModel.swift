@@ -201,7 +201,10 @@
     case .peerNotFound:
       String(
         localized:
-          "No paired phone on this network. Check both devices are on the same Wi-Fi.")
+          """
+          No paired phone found. Check both devices share a Wi-Fi network, \
+          and that Local Network is allowed for ReFineID in Settings.
+          """)
     case .timedOut:
       String(localized: "The phone did not answer. Open ReFineID on the phone and try again.")
     default:
