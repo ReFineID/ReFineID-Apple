@@ -19,6 +19,12 @@
       static let maximumMisses: UInt8 = 3
     }
 
+    /// Longest wait for a paired device to be found at all.
+    ///
+    /// Long enough for a phone that is there, short enough that a phone
+    /// that is not does not hold the screen.
+    public static let defaultDiscoveryTimeout: TimeInterval = 12
+
     /// Provisional interactive policy.
     ///
     /// It is injectable so measured transport behavior can revise policy
@@ -43,6 +49,9 @@
     /// Longest time ``RappPersistentRequesterClient/perform(_:)`` blocks
     /// before failing as timed out.
     public let synchronousWaitTimeout: TimeInterval
+
+    /// Longest wait for a paired device to be found at all.
+    public let discoveryTimeout: TimeInterval
     /// Liveness probing configuration for the established channel.
     public let liveness: RappOperationDriver.Liveness
 
@@ -50,10 +59,12 @@
     public init(
       maximumOperationLifetimeMilliseconds: UInt64,
       synchronousWaitTimeout: TimeInterval,
-      liveness: RappOperationDriver.Liveness
+      liveness: RappOperationDriver.Liveness,
+      discoveryTimeout: TimeInterval = Self.defaultDiscoveryTimeout
     ) {
       self.maximumOperationLifetimeMilliseconds = maximumOperationLifetimeMilliseconds
       self.synchronousWaitTimeout = synchronousWaitTimeout
+      self.discoveryTimeout = discoveryTimeout
       self.liveness = liveness
     }
   }

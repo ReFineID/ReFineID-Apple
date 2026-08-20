@@ -7,6 +7,10 @@
   public enum RappRequesterClientError: Error, Sendable, Equatable {
     case noActivePair
     case noSelectedPair
+
+    /// No paired device answered the search. Nothing was reached, so
+    /// nothing about the card was learned.
+    case peerNotFound
     case protocolFailure
     case terminal(RappOperationDriver.TerminalReason?)
     case timedOut

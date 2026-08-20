@@ -169,8 +169,13 @@
     /// worth another attempt with the same pairing.
     fileprivate var leavesPairingUnusable: Bool {
       switch self {
-      case .noActivePair, .noSelectedPair, .timedOut:
+      case .noActivePair, .noSelectedPair:
         true
+      case .peerNotFound, .timedOut:
+        // A phone that could not be reached says nothing about whether the
+        // pairing is good. Discarding it here would make a network away
+        // from home cost the holder their pairing.
+        false
       default:
         false
       }
@@ -193,6 +198,10 @@
     switch error {
     case .noActivePair, .noSelectedPair:
       String(localized: "No paired phone. Pair a phone to use its card.")
+    case .peerNotFound:
+      String(
+        localized:
+          "No paired phone on this network. Check both devices are on the same Wi-Fi.")
     case .timedOut:
       String(localized: "The phone did not answer. Open ReFineID on the phone and try again.")
     default:

@@ -71,7 +71,9 @@ internal struct RappPairingView: View {
           ScreenBrightness.raiseForScanning()
         #endif
       } else {
-        model.scanOffer()
+        #if os(iOS)
+          model.scanOffer()
+        #endif
       }
     }
     // The code is on screen to be scanned, so a scan that lands is the end

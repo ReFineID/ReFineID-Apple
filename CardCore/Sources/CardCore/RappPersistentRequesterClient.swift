@@ -12,6 +12,7 @@
 
     private struct State: Sendable {
       var started = false
+      var connected = false
       var operationStarted = false
       var completed = false
       var coordinator: RappConnectionCoordinator?
@@ -83,6 +84,22 @@
       self.operation = operation
       relay.start()
 
+      // A device that is not on this network is not slow, it is absent,
+      // and waiting the full operation lifetime to say so leaves the holder
+      // watching a spinner for two minutes over a question already
+      // answered. Discovery is given its own, much shorter deadline.
+      if completed.wait(timeout: .now() + policy.discoveryTimeout) != .success,
+        !state.withLock({ $0.connected })
+      {
+        state.withLock { state in
+          guard !state.completed else { return }
+          state.completed = true
+          state.error = .peerNotFound
+        }
+        relay.cancel()
+        throw RappRequesterClientError.peerNotFound
+      }
+
       guard completed.wait(timeout: .now() + policy.synchronousWaitTimeout) == .success else {
         let coordinator = state.withLock { state -> RappConnectionCoordinator? in
           guard !state.completed else { return state.coordinator }
@@ -105,6 +122,7 @@
     private func receive(_ event: PersistentRelayEvent) {
       switch event {
       case .connected:
+        state.withLock { $0.connected = true }
         Task { await establish() }
       case .frame(let frame):
         #if REFINEID_SLIM_RELAY
