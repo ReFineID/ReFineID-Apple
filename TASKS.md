@@ -1,10 +1,45 @@
 # Apple release task list
 
-Last reviewed: 2026-08-17
+Last reviewed: 2026-08-21
 
 Completed work is removed. This file contains only concrete outcomes that are
 still required for an Apple beta, App Store release, or the next protocol
 milestone.
+
+## Status, 2026-08-21: the iPhone MVP shape is implemented
+
+The first App Store release is an iPhone MVP on iOS 26
+(Documentation/decisions.md, 2026-08-21), and its shape is implemented
+and committed on `main` at `620e54a` - 19 commits ahead of
+`origin/main` (`31cbeda`), not yet pushed.
+
+What ships: one-step NFC priming and Safari login, document signing
+and checking, PIN changes, USB-C reader signing, and the demonstration
+mode, whose virtual card now arrives already activated. What is gated
+out of TestFlight and Release: the remote card (`REFINEID_REMOTE_CARD`
+- pairing, requester, phone-holder relay, persistent-token
+publication, the RAPP extension, and the Bonjour/local-network
+declarations) and activation (`FEATURE_CARD_ACTIVATION` - an
+unactivated card is shown a localized refusal instead of the form).
+Shipping configurations build at floor 26, iPhone-only, with the `nfc`
+required capability, from `Config/ReFineID-iOS-Store-Info.plist`;
+Debug and Profile keep floor 16, both device families, and every gate
+on. The archive inspector and `RappShippingConfigurationTests` enforce
+all of it, and `Metadata/appstore.json` carries the matching reviewer
+walkthrough and iPhone-only descriptions.
+
+Verified 2026-08-21: iOS TestFlight, iOS Debug, and macOS TestFlight
+all build clean; the store-shaped bundle carries exactly the reader
+and discovery extensions, `MinimumOSVersion` 26.0, `UIDeviceFamily`
+[1], `nfc`+`arm64`, and no Bonjour keys; the shipping-configuration
+suite passes. The full non-UI suite passes 528 of 529 - the one
+failure is a release blocker in section 0 and predates the gating
+work.
+
+App Store Connect: iOS 26.8.16 (114) awaits the guideline 2.1
+demonstration video; the macOS (114) submission was withdrawn by the
+owner on 2026-08-21. What remains before submission is exactly
+section 0.
 
 ## Current RAPP handoff
 
@@ -20,8 +55,14 @@ extension topology, verified invariants, and known gaps in detail.
   All 25 files under `crates/refineid-lib-core/src/rapp/`, the crate manifests,
   lockfile, library export, and formal state-machine data are tracked and
   pushed.
-- Apple repository: `~/src/ReFineID-Apple` at
-  `ca3fab2fb9daeeed179d36816c1c55ed91131d28`. `HEAD` and `origin/main` match.
+- Apple repository: `~/src/ReFineID-Apple`. The RAPP baseline this
+  handoff described was `ca3fab2`; the current revision is in the
+  status section above. Since 2026-08-21 the remote card is
+  compile-gated out of the shipping configurations
+  (`REFINEID_REMOTE_CARD`, on in Debug and Profile), so RAPP work
+  builds and tests exactly as before in the development
+  configurations, and a store artifact carries none of it until the
+  qualification matrix in the plan below passes.
 - The protocol engine is Swift, in `CardCore/Sources/RappEngine`. There is no
   compiled artifact to pin. Its authority is the vendored specification, the
   formal state model, and the conformance corpus and vectors beside them, and
