@@ -2183,6 +2183,22 @@
         }
       }
     },
+    "Insert your identity card into the reader": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laita henkilökortti lukijaan"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sätt in identitetskortet i läsaren"
+          }
+        }
+      }
+    },
     "Invalid entry": {
       "localizations": {
         "fi": {
@@ -3179,22 +3195,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Visa ditt identitetskort"
-          }
-        }
-      }
-    },
-    "Present your identity card to the reader": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Esitä henkilökorttisi lukijalle"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Visa ditt identitetskort för läsaren"
           }
         }
       }

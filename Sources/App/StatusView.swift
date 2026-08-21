@@ -155,7 +155,7 @@
           } else if availability == .noCard {
             // With no card there is exactly one thing to say, and a
             // labeled row saying it twice is not it.
-            Text("Present your identity card to the reader")
+            Text("Insert your identity card into the reader")
               .foregroundStyle(.secondary)
               .accessibilityIdentifier("loginIdentityStatus")
           } else {
