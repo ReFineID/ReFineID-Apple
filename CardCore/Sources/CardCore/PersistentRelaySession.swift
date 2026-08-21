@@ -16,6 +16,17 @@ import Foundation
     MCNearbyServiceBrowserDelegate
   {
     private static let serviceType = "refineid-rly"
+
+    /// The peer identity each role advertises under, for as long as this
+    /// process lives.
+    ///
+    /// One per launch, and no longer. Kept between launches it went stale
+    /// and stopped being found; made afresh for every channel the holder
+    /// became a different peer after each exchange, and a browser looking
+    /// for the peer it had just been talking to found churn instead.
+    private static let peerIdentities = OSAllocatedUnfairLock<[String: MCPeerID]>(
+      initialState: [:]
+    )
     private static let invitationRetry: TimeInterval = 3
     private static let invitationTimeout: TimeInterval = 10
 
@@ -58,24 +69,23 @@ import Foundation
       session.delegate = self
     }
 
-    /// A fresh peer identity for this channel.
+    /// A peer identity for this channel, shared by every channel this
+    /// process opens in the same role.
     ///
-    /// This identity was kept between launches, archived under the display
-    /// name, so every later channel advertised and browsed as the same
-    /// peer. A peer identity that outlives the session it was made for
-    /// stops being found: the first channel after a fresh install worked
-    /// and every one after it browsed for the full timeout and found
-    /// nothing, which is one exchange and then none until the store was
-    /// cleared.
-    ///
-    /// Nothing above needs it to persist. Peers are authenticated by the
-    /// pairing's own transcript, so who a channel says it is at the
-    /// discovery layer carries no authority and costs nothing to remake.
+    /// Peers are authenticated by the pairing's own transcript, so what a
+    /// channel calls itself during discovery carries no authority.
     private static func persistentPeer(
       displayName: String,
-      role _: PersistentRelayRole
+      role: PersistentRelayRole
     ) -> MCPeerID {
-      MCPeerID(displayName: displayName)
+      let roleName = role == .cardHolder ? "card" : "host"
+      let key = "\(roleName).\(displayName)"
+      return peerIdentities.withLock { identities in
+        if let peer = identities[key] { return peer }
+        let peer = MCPeerID(displayName: displayName)
+        identities[key] = peer
+        return peer
+      }
     }
 
     /// Advertises or browses, by role.
