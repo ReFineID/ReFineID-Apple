@@ -103,7 +103,7 @@
       }
 
       let instanceID =
-        "iphone-nfc-"
+        PersistentTokenIdentity.instancePrefix
         + SHA256.hash(data: certificateDER)
         .map { String(format: "%02x", $0) }
         .joined()

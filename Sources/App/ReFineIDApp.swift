@@ -91,12 +91,19 @@ internal struct ReFineIDApp: App {
   @ViewBuilder private var rootContent: some View {
     // Writing Tools is the feature being refused, and it does not exist
     // before iOS 18, so an older system needs nothing disabling.
-    if #available(iOS 18.0, macOS 15.0, *) {
-      contentForLaunchMode
-        .writingToolsBehavior(.disabled)
-    } else {
-      contentForLaunchMode
+    Group {
+      if #available(iOS 18.0, macOS 15.0, *) {
+        contentForLaunchMode
+          .writingToolsBehavior(.disabled)
+      } else {
+        contentForLaunchMode
+      }
     }
+    // Off the launch path for the reason in the initializer below:
+    // withdrawing reads the driver configuration, a synchronous call
+    // into `ctkd`, so it starts from the first screen rather than
+    // from a launch that would wait on it.
+    .task { DisplacedRemoteCardWithdrawal.performOnce() }
   }
 
   /// The screen for this launch, before the app-wide modifiers.

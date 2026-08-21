@@ -116,6 +116,36 @@ public enum DriverConfiguredCredentials {
     }
   }
 
+  /// The remote-card instance names among the given ones.
+  ///
+  /// The remote card publishes under `PersistentTokenIdentity.classID`;
+  /// under this driver's class, an instance carrying its name is the
+  /// configuration a build before the driver split wrote, which the
+  /// system lists as a present card for as long as it stays.
+  public static func displacedRemoteCardConfigurationIDs(
+    among instanceIDs: some Sequence<String>
+  ) -> [String] {
+    instanceIDs.filter { instance in
+      instance.hasPrefix(PersistentTokenIdentity.instancePrefix)
+    }
+  }
+
+  /// Drops the remote-card identities left under this driver's class,
+  /// and answers how many went.
+  ///
+  /// Narrower than `dropIdentityTokenConfigurations`: card identities,
+  /// live ones included, stay untouched, so this is safe to run with a
+  /// card working in the reader.
+  public static func dropDisplacedRemoteCardConfigurations() -> Int {
+    guard let configuration else { return 0 }
+    let displaced = Self.displacedRemoteCardConfigurationIDs(
+      among: configuration.tokenConfigurations.keys)
+    for instance in displaced {
+      configuration.removeTokenConfiguration(for: instance)
+    }
+    return displaced.count
+  }
+
   /// Withdraws it, so forgetting the card forgets it here too.
   internal static func withdraw() {
     configuration?.removeTokenConfiguration(for: Self.configurationInstanceID)

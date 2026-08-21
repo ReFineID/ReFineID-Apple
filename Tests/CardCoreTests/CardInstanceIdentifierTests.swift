@@ -65,6 +65,35 @@ internal struct CardInstanceIdentifierTests {
   }
 
   @Test
+  internal func displacedRemoteCardTokensAreRecognizedUnderEveryCardClass() {
+    #expect(
+      CardTokenNamespace.isDisplacedRemoteCardToken(
+        tokenIdentifier: "fi.refineid.ReFineID.token:iphone-nfc-0011aabb"))
+    #expect(
+      CardTokenNamespace.isDisplacedRemoteCardToken(
+        tokenIdentifier: "fi.refineid.ReFineID.ctk:iphone-nfc-0011aabb"))
+    #expect(
+      !CardTokenNamespace.isDisplacedRemoteCardToken(
+        tokenIdentifier: "fi.refineid.ReFineID.token:refineid-card-test00001"))
+    // Under its own driver class the remote card is where it belongs.
+    #expect(
+      !CardTokenNamespace.isDisplacedRemoteCardToken(
+        tokenIdentifier: "fi.refineid.ReFineID.rapp-token:iphone-nfc-0011aabb"))
+  }
+
+  @Test
+  internal func displacedConfigurationSelectionSparesSetupAndCards() {
+    let displaced = DriverConfiguredCredentials.displacedRemoteCardConfigurationIDs(
+      among: [
+        "card-access-number",
+        "refineid-card-test00001",
+        "iphone-nfc-0011aabb",
+        "iphone-nfc-ccddeeff",
+      ])
+    #expect(displaced == ["iphone-nfc-0011aabb", "iphone-nfc-ccddeeff"])
+  }
+
+  @Test
   internal func unknownShapesAreNotPublishedAsCardNames() throws {
     let short = try #require(TokenSerial(value: "SHORT"))
     let decimalWrongLength = try #require(TokenSerial(value: "0000000000"))

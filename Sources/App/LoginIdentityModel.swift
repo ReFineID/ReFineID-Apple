@@ -166,9 +166,13 @@
     internal func refresh() {
       generation += 1
       let listed = watcher.tokenIDs
+      // The credential entry and a displaced remote-card registration
+      // are both listed without a card being present, so neither may
+      // answer for one.
       isReady = listed.contains { identifier in
         CardTokenNamespace.owns(tokenIdentifier: identifier)
           && !identifier.hasPrefix(Self.credentialEntryPrefix)
+          && !CardTokenNamespace.isDisplacedRemoteCardToken(tokenIdentifier: identifier)
       }
       #if DEBUG
         Self.log.info(

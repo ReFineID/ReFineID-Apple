@@ -39,4 +39,18 @@ public enum CardTokenNamespace {
   public static func owns(tokenIdentifier: String) -> Bool {
     ownedTokenPrefixes.contains { tokenIdentifier.hasPrefix($0) }
   }
+
+  /// Whether a full token identifier names a remote-card identity
+  /// configured under a card driver class.
+  ///
+  /// The remote card publishes under `PersistentTokenIdentity.classID`;
+  /// under a card class, an instance carrying its name is what a build
+  /// before the driver split configured there. The system lists it as
+  /// a present card for as long as it stays, so anything asking "is a
+  /// card available?" has to refuse it by name.
+  public static func isDisplacedRemoteCardToken(tokenIdentifier: String) -> Bool {
+    ownedTokenPrefixes.contains { prefix in
+      tokenIdentifier.hasPrefix(prefix + PersistentTokenIdentity.instancePrefix)
+    }
+  }
 }
