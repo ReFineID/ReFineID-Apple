@@ -6,7 +6,9 @@ protocol milestone.
 
 ## Status
 
-- First release: iPhone MVP on iOS 26.
+- First release: iPhone MVP on iOS 26. Submitted: 26.8.21 (200), commit
+  `cbd4b4a`, WAITING_FOR_REVIEW since 2026-08-21T20:05Z
+  (Documentation/releases/26.8.21.md).
 - Ships: one-step NFC priming, Safari login, document signing and checking,
   PIN changes, USB-C reader signing, demo mode (virtual card starts activated).
 - Gated out of TestFlight/Release: remote card (`REFINEID_REMOTE_CARD`) and
@@ -22,9 +24,6 @@ protocol milestone.
   `RappIntegrationTests/credentialRejectionRevokesBothPeersWithoutAnotherExecution`
   fails on main (also at `2cd5248`, pre-gating). The pipeline runs the suite
   in Debug, where RAPP is on.
-- [ ] Cut the gated iPhone candidate; push the reshaped `Metadata/appstore.json`
-  (activation-free walkthrough, no RAPP paragraph, iPhone-only descriptions)
-  at submission.
 
 The RAPP physical qualification matrix is not a blocker here; it gates
 re-enabling `REFINEID_REMOTE_CARD` and the macOS release (Phase E below).
