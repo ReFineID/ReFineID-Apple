@@ -44,7 +44,9 @@
     @State private var accessNumber = ""
     @State private var isTargeted = false
     @State private var format = SignatureFormat.pades
-    @State private var showsRappPairing = false
+    #if REFINEID_REMOTE_CARD
+      @State private var showsRappPairing = false
+    #endif
     @FocusState private var pinFocused: Bool
 
     #if FEATURE_CONTACTLESS
@@ -88,10 +90,12 @@
           Text(verbatim: "ReFineID")
             .font(.largeTitle.bold())
           Spacer()
-          RappPairingButton(isPresented: $showsRappPairing)
-            .buttonStyle(.bordered)
-            .buttonBorderShape(.circle)
-            .controlSize(.large)
+          #if REFINEID_REMOTE_CARD
+            RappPairingButton(isPresented: $showsRappPairing)
+              .buttonStyle(.bordered)
+              .buttonBorderShape(.circle)
+              .controlSize(.large)
+          #endif
           if availability == .ready {
             SettingsLink {
               CredentialRetryHealthKey(level: retryHealth.level)
@@ -214,9 +218,11 @@
         react(to: .noCard)
       }
       .onDisappear { activation.stop() }
-      .sheet(isPresented: $showsRappPairing) {
-        RappPairingView()
-      }
+      #if REFINEID_REMOTE_CARD
+        .sheet(isPresented: $showsRappPairing) {
+          RappPairingView()
+        }
+      #endif
       // Signing is what this window is for, and its answer arrived in
       // silence: focus stays on Sign, and the outcome is drawn below it.
       .announcesOutcome(signing.failure)

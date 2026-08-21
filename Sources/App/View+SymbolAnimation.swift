@@ -38,7 +38,7 @@ extension View {
   /// system provides it, and falls back to the upward slide elsewhere.
   @ViewBuilder
   internal func replacingSymbol() -> some View {
-    #if os(iOS)
+    #if os(iOS) && !REFINEID_IOS_FLOOR_26
       if #available(iOS 18.0, *) {
         contentTransition(
           .symbolEffect(

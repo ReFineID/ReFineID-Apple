@@ -66,7 +66,7 @@ internal enum DocumentSigner {
 
   // MARK: Static Computed Properties
 
-  #if os(macOS)
+  #if os(macOS) && REFINEID_REMOTE_CARD
     /// A selected RAPP phone is the signing device only when no local reader
     /// card is ready.
     ///
@@ -331,7 +331,7 @@ internal enum DocumentSigner {
       throw Failure.document(error)
     }
     let digest = prepared.digest
-    #if os(macOS)
+    #if os(macOS) && REFINEID_REMOTE_CARD
       if await MainActor.run(body: { Self.usesRappSigning }) {
         return try await Self.remoteCardMaterial(
           prepared: prepared,

@@ -71,6 +71,74 @@ internal struct RappShippingConfigurationTests {
     #expect(!project.contains("ReFineIDRappTokenExtension.appex */; platformFilters"))
   }
 
+  @Test("Shipping configurations gate the remote card out of the iOS app")
+  internal func shippingConfigurationsGateRemoteCard() throws {
+    let project = try String(
+      contentsOf: Self.root.appending(path: "ReFineID.xcodeproj/project.pbxproj"),
+      encoding: .utf8)
+    // The RAPP extension is excluded from the embed phase of both
+    // shipping configurations, and both point the iOS app at the store
+    // Info.plist that carries no local-network declarations.
+    func occurrences(of needle: String) -> Int {
+      project.components(separatedBy: needle).count - 1
+    }
+    #expect(occurrences(of: "ReFineIDRappTokenExtension.appex,") == 2)
+    #expect(
+      occurrences(
+        of: "INFOPLIST_FILE = \"Config/ReFineID-iOS-Store-Info.plist\";") == 2)
+
+    let features = try String(
+      contentsOf: Self.root.appending(path: "Config/Features.xcconfig"),
+      encoding: .utf8)
+    #expect(features.contains("REFINEID_REMOTE_CARD_FEATURE = REFINEID_REMOTE_CARD"))
+    #expect(features.contains("REFINEID_REMOTE_CARD_FEATURE[config=TestFlight] ="))
+    #expect(features.contains("REFINEID_REMOTE_CARD_FEATURE[config=Release] ="))
+  }
+
+  @Test("The store Info.plist differs from development by exactly the gates")
+  internal func storeInfoPlistShape() throws {
+    let development = try Self.plist("Config/ReFineID-iOS-Info.plist")
+    let store = try Self.plist("Config/ReFineID-iOS-Store-Info.plist")
+
+    // What the gates remove: the remote card's network declarations, and
+    // the promise of activation in the NFC usage string.
+    #expect(store["NSLocalNetworkUsageDescription"] == nil)
+    #expect(store["NSBonjourServices"] == nil)
+    let storeNfcUsage = try #require(store["NFCReaderUsageDescription"] as? String)
+    let developmentNfcUsage = try #require(development["NFCReaderUsageDescription"] as? String)
+    #expect(!storeNfcUsage.localizedCaseInsensitiveContains("activation"))
+    #expect(developmentNfcUsage.localizedCaseInsensitiveContains("activation"))
+
+    // What the store shape adds: the antenna requirement that keeps the
+    // app off devices where nothing it ships can run.
+    let capabilities = try #require(store["UIRequiredDeviceCapabilities"] as? [String])
+    #expect(capabilities.contains("nfc"))
+    #expect(development["UIRequiredDeviceCapabilities"] == nil)
+
+    // Everything else stays word for word, so the two files cannot
+    // quietly drift apart.
+    for key in [
+      "CFBundleLocalizations",
+      "ITSAppUsesNonExemptEncryption",
+      "NSAppTransportSecurity",
+      "NSCameraUsageDescription",
+      "UIApplicationShortcutItems",
+      "com.apple.developer.nfc.readersession.iso7816.select-identifiers",
+    ] {
+      let left = development[key] as? NSObject
+      let right = store[key] as? NSObject
+      #expect(left == right, "\(key) differs between the two Info.plists")
+    }
+    let unexplained = Set(development.keys)
+      .symmetricDifference(store.keys)
+      .subtracting([
+        "NSLocalNetworkUsageDescription",
+        "NSBonjourServices",
+        "UIRequiredDeviceCapabilities",
+      ])
+    #expect(unexplained.isEmpty, "unexplained keys: \(unexplained.sorted())")
+  }
+
   @Test("RAPP network declarations are present in shipping containers")
   internal func networkDeclarations() throws {
     for path in [
@@ -114,6 +182,12 @@ internal struct RappShippingConfigurationTests {
     #expect(source.contains("fi.refineid.ReFineID.rapp-token"))
     #expect(source.contains("RAPP and direct-reader entitlements are separated"))
     #expect(!source.contains("network entitlements match the gated-relay shape"))
+    // The iOS candidate carries no remote card: no RAPP extension, no
+    // local-network declarations, and the store fence that keeps the
+    // app off devices without an antenna.
+    #expect(source.contains("hasRapp: false"))
+    #expect(source.contains("NSBonjourServices present without the remote card"))
+    #expect(source.contains("iPhone-only artifact requiring iOS 26.0 and an NFC antenna"))
   }
 
 }

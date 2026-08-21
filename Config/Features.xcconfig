@@ -68,6 +68,26 @@ REFINEID_FEATURES =
 //   xcodebuild ... REFINEID_LOCAL_CARD_FEATURE=""
 REFINEID_LOCAL_CARD_FEATURE = REFINEID_LOCAL_CARD
 
+// REFINEID_REMOTE_CARD
+//     The remote card: pairing this device with another over RAPP, and
+//     everything a pairing makes possible - borrowing the certificate a
+//     paired phone answers for, serving this device's card to a paired
+//     requester, publishing the borrowed identity as a persistent token,
+//     and signing documents through the pair. The engine and its tests
+//     build either way; this compiles away the app's entry points, the
+//     phone-holder relay, and the persistent-token publication.
+//
+//     Off in the shipping configurations for the first App Store
+//     release (Documentation/decisions.md, 2026-08-21): the protocol is
+//     implemented but its physical two-device qualification matrix has
+//     not run, and a first release carries no path a reviewer can reach
+//     that the owner has not. The store artifact also drops the
+//     local-network and Bonjour declarations and the RAPP token
+//     extension; the archive inspector enforces that shape.
+REFINEID_REMOTE_CARD_FEATURE = REFINEID_REMOTE_CARD
+REFINEID_REMOTE_CARD_FEATURE[config=TestFlight] =
+REFINEID_REMOTE_CARD_FEATURE[config=Release] =
+
 // REFINEID_SLIM_RELAY
 //     Carries a borrowed card over one request and one answer instead
 //     of the session machinery: the pairing's own cipher settles
@@ -105,4 +125,4 @@ REFINEID_STREAM_TRANSPORT_FEATURE =
 // default above on that machine only.
 #include? "LocalFeatures.xcconfig"
 
-SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) $(REFINEID_FEATURES) $(REFINEID_LOCAL_CARD_FEATURE) $(REFINEID_SLIM_RELAY_FEATURE) $(REFINEID_STREAM_TRANSPORT_FEATURE)
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) $(REFINEID_FEATURES) $(REFINEID_IOS_FLOOR_FEATURE) $(REFINEID_LOCAL_CARD_FEATURE) $(REFINEID_REMOTE_CARD_FEATURE) $(REFINEID_SLIM_RELAY_FEATURE) $(REFINEID_STREAM_TRANSPORT_FEATURE)

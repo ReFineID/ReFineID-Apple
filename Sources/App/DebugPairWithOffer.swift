@@ -1,6 +1,6 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if DEBUG && os(iOS)
+#if DEBUG && os(iOS) && REFINEID_REMOTE_CARD
 
   import CardCore
   import Foundation

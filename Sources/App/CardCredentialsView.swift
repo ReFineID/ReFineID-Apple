@@ -87,11 +87,13 @@ internal struct CardCredentialsView: View {
     /// Live reader identities, when an iOS root provides them.
     private let readerModel: ReaderIdentityModeModel?
 
-    /// The requester's view of the selected remote card.
-    private let remoteModel: RemoteCardModel
+    #if REFINEID_REMOTE_CARD
+      /// The requester's view of the selected remote card.
+      private let remoteModel: RemoteCardModel
 
-    /// Opens the remote reader connections owned by the root.
-    private let openRemoteReader: () -> Void
+      /// Opens the remote reader connections owned by the root.
+      private let openRemoteReader: () -> Void
+    #endif
 
     /// The holder names read from the live reader tokens.
     @State private var readerHolders: [String] = []
@@ -309,43 +311,47 @@ internal struct CardCredentialsView: View {
         && !model.isConnecting
     }
 
-    /// Whether the remote card route can be taken right now.
-    ///
-    /// A card holder serves a remote card from a primed identity or
-    /// a live reader identity; a requesting device consumes one and
-    /// needs none.
-    private var remoteCardAvailable: Bool {
-      !offersNearField || hasIdentity || hasReaderIdentity
-    }
+    #if REFINEID_REMOTE_CARD
+      /// Whether the remote card route can be taken right now.
+      ///
+      /// A card holder serves a remote card from a primed identity or
+      /// a live reader identity; a requesting device consumes one and
+      /// needs none.
+      private var remoteCardAvailable: Bool {
+        !offersNearField || hasIdentity || hasReaderIdentity
+      }
+    #endif
 
     /// The card's credential management route.
     private var cardSection: some View {
       Section {
-        // A device that reaches a card of its own can also serve one, and
-        // this route is how it offers that. A device without one only ever
-        // consumes a remote card, which the identity row already connects.
-        if offersNearField {
-          Button {
-            openRemoteReader()
-          } label: {
-            navigationRow(String(localized: "Remote Card")) {
-              Image(
-                systemName: remoteCardAvailable
-                  ? "key.radiowaves.forward"
-                  : "key.radiowaves.forward.slash"
-              )
-              .foregroundStyle(
-                remoteCardAvailable
-                  ? AnyShapeStyle(Color.accentColor)
-                  : AnyShapeStyle(.secondary)
-              )
-              .accessibilityHidden(true)
+        #if REFINEID_REMOTE_CARD
+          // A device that reaches a card of its own can also serve one, and
+          // this route is how it offers that. A device without one only ever
+          // consumes a remote card, which the identity row already connects.
+          if offersNearField {
+            Button {
+              openRemoteReader()
+            } label: {
+              navigationRow(String(localized: "Remote Card")) {
+                Image(
+                  systemName: remoteCardAvailable
+                    ? "key.radiowaves.forward"
+                    : "key.radiowaves.forward.slash"
+                )
+                .foregroundStyle(
+                  remoteCardAvailable
+                    ? AnyShapeStyle(Color.accentColor)
+                    : AnyShapeStyle(.secondary)
+                )
+                .accessibilityHidden(true)
+              }
             }
+            .tint(.primary)
+            .accessibilityIdentifier("remoteCard")
+            .disabled(!remoteCardAvailable)
           }
-          .tint(.primary)
-          .accessibilityIdentifier("remoteCard")
-          .disabled(!remoteCardAvailable)
-        }
+        #endif
         // Changing a code writes to the card itself, so the route belongs to
         // a device that can reach one. Offering it where it can never open
         // describes the app as broken rather than the device as different.
@@ -665,7 +671,7 @@ internal struct CardCredentialsView: View {
       }
   }
 
-  #if os(iOS)
+  #if os(iOS) && REFINEID_REMOTE_CARD
     /// The identity surface of a device with no antenna and no reader:
     /// the person is reached through a remote reader.
     private var remoteReaderSection: some View {
@@ -726,11 +732,15 @@ internal struct CardCredentialsView: View {
       }
     }
   #else
-    /// Unreachable on macOS: ``offersNearField`` is always true there.
+    /// Unreachable on macOS, where ``offersNearField`` is always true,
+    /// and absent with the remote card: a device that cannot consume a
+    /// remote reader offers no surface for one.
     private var remoteReaderSection: some View {
       EmptyView()
     }
+  #endif
 
+  #if os(macOS)
     /// Unreachable on macOS: ``hasReaderIdentity`` is always false there.
     private var readerIdentitySection: some View {
       EmptyView()
@@ -915,15 +925,21 @@ internal struct CardCredentialsView: View {
   // MARK: Lifecycle
 
   #if os(iOS)
-    internal init(
-      readerModel: ReaderIdentityModeModel?,
-      remoteModel: RemoteCardModel,
-      openRemoteReader: @escaping () -> Void
-    ) {
-      self.readerModel = readerModel
-      self.remoteModel = remoteModel
-      self.openRemoteReader = openRemoteReader
-    }
+    #if REFINEID_REMOTE_CARD
+      internal init(
+        readerModel: ReaderIdentityModeModel?,
+        remoteModel: RemoteCardModel,
+        openRemoteReader: @escaping () -> Void
+      ) {
+        self.readerModel = readerModel
+        self.remoteModel = remoteModel
+        self.openRemoteReader = openRemoteReader
+      }
+    #else
+      internal init(readerModel: ReaderIdentityModeModel?) {
+        self.readerModel = readerModel
+      }
+    #endif
   #endif
 
   // MARK: Content Methods

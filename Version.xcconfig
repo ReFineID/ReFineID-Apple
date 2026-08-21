@@ -52,6 +52,16 @@ IPHONEOS_DEPLOYMENT_TARGET = 16.0
 IPHONEOS_DEPLOYMENT_TARGET[config=TestFlight] = 26.0
 IPHONEOS_DEPLOYMENT_TARGET[config=Release] = 26.0
 
+// The same fact as a compilation condition, for the handful of app and
+// extension sources that must compile at both floors: a check like
+// `#available(iOS 17, *)` is required at floor 16 and refused as an
+// unnecessary check at floor 26, so those sites branch on this instead.
+// Defined beside the floor so the two can never disagree. The CardCore
+// package builds at its own manifest floor and never needs it.
+REFINEID_IOS_FLOOR_FEATURE =
+REFINEID_IOS_FLOOR_FEATURE[config=TestFlight] = REFINEID_IOS_FLOOR_26
+REFINEID_IOS_FLOOR_FEATURE[config=Release] = REFINEID_IOS_FLOOR_26
+
 TARGETED_DEVICE_FAMILY = 1,2
 TARGETED_DEVICE_FAMILY[config=TestFlight] = 1
 TARGETED_DEVICE_FAMILY[config=Release] = 1

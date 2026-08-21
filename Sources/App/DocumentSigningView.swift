@@ -219,7 +219,7 @@
     }
 
     private var requiresRequesterPIN2: Bool {
-      #if os(macOS)
+      #if os(macOS) && REFINEID_REMOTE_CARD
         !DocumentSigner.usesRappSigning
       #else
         true

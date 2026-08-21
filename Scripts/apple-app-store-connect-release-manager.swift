@@ -276,7 +276,10 @@ private func releaseArchiveLayout(at archive: URL) -> ReleaseArchiveLayout {
         rappPlist: rappBundle.appendingPathComponent("Info.plist"),
         discoveryPlist: discoveryBundle.appendingPathComponent("Info.plist"),
         expectedArchitectures: ["arm64"],
-        hasRapp: true,
+        // The first App Store release gates the remote card off
+        // (Documentation/decisions.md, 2026-08-21), so an iOS candidate
+        // carries no RAPP extension and no local-network declarations.
+        hasRapp: false,
         hasDiscovery: true
     )
 }
@@ -644,15 +647,29 @@ private func inspectReleaseArchive(_ archive: URL) {
     }
     releaseNote("app and embedded extensions are version \(appVersion) (\(appBuild))")
 
-    guard let localNetworkUsage = appPlist["NSLocalNetworkUsageDescription"] as? String,
-          !localNetworkUsage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-        releaseFail("NSLocalNetworkUsageDescription missing from the containing app")
+    if layout.hasRapp {
+        guard let localNetworkUsage = appPlist["NSLocalNetworkUsageDescription"] as? String,
+              !localNetworkUsage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            releaseFail("NSLocalNetworkUsageDescription missing from the containing app")
+        }
+        guard let bonjourServices = appPlist["NSBonjourServices"] as? [String],
+              bonjourServices.contains("_refineid-rly._tcp") else {
+            releaseFail("NSBonjourServices does not declare _refineid-rly._tcp")
+        }
+        releaseNote("RAPP local-network privacy and Bonjour declarations are present")
+    } else {
+        // A candidate without the remote card must ask for nothing the
+        // gated feature would have used: a local-network prompt string or
+        // a Bonjour declaration in a build that never browses is a
+        // question App Review is owed an answer to.
+        guard appPlist["NSLocalNetworkUsageDescription"] == nil else {
+            releaseFail("NSLocalNetworkUsageDescription present without the remote card")
+        }
+        guard appPlist["NSBonjourServices"] == nil else {
+            releaseFail("NSBonjourServices present without the remote card")
+        }
+        releaseNote("no local-network or Bonjour declarations; the remote card is gated off")
     }
-    guard let bonjourServices = appPlist["NSBonjourServices"] as? [String],
-          bonjourServices.contains("_refineid-rly._tcp") else {
-        releaseFail("NSBonjourServices does not declare _refineid-rly._tcp")
-    }
-    releaseNote("RAPP local-network privacy and Bonjour declarations are present")
 
     let readerConfiguration = releaseExtensionConfiguration(at: layout.tokenPlist)
     guard readerConfiguration.point == "com.apple.ctk-tokens",
@@ -690,7 +707,15 @@ private func inspectReleaseArchive(_ archive: URL) {
                     + "ships no iPad (decisions.md, 2026-08-21)"
             )
         }
-        releaseNote("iPhone-only artifact requiring iOS 26.0")
+        guard let capabilities = appPlist["UIRequiredDeviceCapabilities"] as? [String],
+              capabilities.contains("nfc") else {
+            releaseFail(
+                "the iOS artifact does not require the nfc capability; "
+                    + "without it the store installs the app on iPads in "
+                    + "compatibility mode, where no feature can run"
+            )
+        }
+        releaseNote("iPhone-only artifact requiring iOS 26.0 and an NFC antenna")
         guard let usesNonExemptEncryption =
             appPlist["ITSAppUsesNonExemptEncryption"] as? Bool else {
             releaseFail("ITSAppUsesNonExemptEncryption missing from the app Info.plist")

@@ -1,34 +1,37 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-import CardCore
-import CoreImage
-import Foundation
-import RappEngine
-import SwiftUI
+#if REFINEID_REMOTE_CARD
 
-#if os(iOS)
-  import UIKit
-  import VisionKit
-#elseif os(macOS)
-  import AppKit
+  import CardCore
+  import CoreImage
+  import Foundation
+  import RappEngine
+  import SwiftUI
+
+  #if os(iOS)
+    import UIKit
+    import VisionKit
+  #elseif os(macOS)
+    import AppKit
+  #endif
+
+  extension RappPairingCoordinator.PairSummary {
+    internal var remotePlatformLabel: String {
+      switch role {
+      case .requester:
+        String(localized: "Card-holding device")
+      case .proxy:
+        String(localized: "Requesting device")
+      }
+    }
+
+    internal var remotePlatformSymbol: String {
+      switch role {
+      case .requester:
+        "iphone"
+      case .proxy:
+        "desktopcomputer"
+      }
+    }
+  }
 #endif
-
-extension RappPairingCoordinator.PairSummary {
-  internal var remotePlatformLabel: String {
-    switch role {
-    case .requester:
-      String(localized: "Card-holding device")
-    case .proxy:
-      String(localized: "Requesting device")
-    }
-  }
-
-  internal var remotePlatformSymbol: String {
-    switch role {
-    case .requester:
-      "iphone"
-    case .proxy:
-      "desktopcomputer"
-    }
-  }
-}
