@@ -58,9 +58,7 @@ Activation and PIN management are deliberately not RAPP operations.
 Not proved: the physical two-device matrix (Phase E); a hardware-free RAPP UI
 harness — it must run the real Rust coordinators and may virtualize only
 transport and card effects, never inject SwiftUI state; independent interop
-and external security review. The 2026-08-17 iPad-requester run is evidence,
-not qualification. The dev iPhone may be locked and UI automation needs owner
-approval; never bypass either.
+and external security review. The 2026-08-17 iPad-requester run is evidence.
 
 Next: blocker 1; then the hardware-free harness (start at `RappPairingUI`,
 `RappAuthorizationInbox`, `RappPhoneProxyDispatcher`,
