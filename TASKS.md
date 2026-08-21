@@ -360,28 +360,6 @@ original wording are recorded in git history.
   walkthrough, no RAPP paragraph, and iPhone-only descriptions in three
   languages; they reach App Store Connect through the release manager's
   metadata commands at submission time.
-- [ ] Finish serial-binding the contactless prime store. The published
-  CryptoTokenKit identity, registration, and revocation are already
-  printed-serial-derived and every mint refuses a serial-less prime; still
-  open: primes are keyed by the batch-wide ATR digest, so one prime exists
-  per card family and a second same-generation card silently supersedes the
-  first, `PrimedIdentity.tokenSerial` remains optional in the type, and no
-  test covers the wrong-card-same-ATR path.
-- [ ] Close the remaining credential-clearing boundaries. Card-error
-  revocation, extension restart, and card and reader removal are handled;
-  still open: no sleep, screen-lock, or logout handler exists, the PIN 2
-  window can survive a card error or removal for its full 60 seconds,
-  `CardCredentialStore` writes `AfterFirstUnlockThisDeviceOnly` while its
-  header claims `WhenUnlockedThisDeviceOnly`, and the macOS offered-CAN file
-  outlives a crash, sleep, or lock.
-- [ ] Make the retry floor provable. `RetryFloor` is wired into every
-  reader-path credential operation; still open: the NFC deadline path
-  transmits PIN 1 with no immediately preceding probe (documented, but this
-  wording and that exception must agree), zero attempts proceeds and
-  transmits instead of refusing as blocked (`refuseBlocked` is unreachable),
-  enforcement is caller convention rather than type, and no test proves zero
-  credential commands on a production floor refusal. Never deliberately
-  exercise a real card's final attempt.
 - [ ] Re-prove the clean-device suomi.fi login and demonstration-mode
   onboarding on the exact App-Store-shaped candidate - now the gated
   iPhone shape: floor 26, iPhone-only, no remote card, no activation;
@@ -429,6 +407,33 @@ macOS release, and it stands unchanged in the RAPP plan above.
 
 ## 3. Deterministic safety verification
 
+The first three items were release blockers until 2026-08-21, when the
+owner descoped them from the iPhone MVP: each hardens behavior that
+already fails safe, and none gates the release. They remain recorded
+here so the findings inside them are not lost.
+
+- [ ] Finish serial-binding the contactless prime store. The published
+  CryptoTokenKit identity, registration, and revocation are already
+  printed-serial-derived and every mint refuses a serial-less prime; still
+  open: primes are keyed by the batch-wide ATR digest, so one prime exists
+  per card family and a second same-generation card silently supersedes the
+  first, `PrimedIdentity.tokenSerial` remains optional in the type, and no
+  test covers the wrong-card-same-ATR path.
+- [ ] Close the remaining credential-clearing boundaries. Card-error
+  revocation, extension restart, and card and reader removal are handled;
+  still open: no sleep, screen-lock, or logout handler exists, the PIN 2
+  window can survive a card error or removal for its full 60 seconds,
+  `CardCredentialStore` writes `AfterFirstUnlockThisDeviceOnly` while its
+  header claims `WhenUnlockedThisDeviceOnly`, and the macOS offered-CAN file
+  outlives a crash, sleep, or lock.
+- [ ] Make the retry floor provable. `RetryFloor` is wired into every
+  reader-path credential operation; still open: the NFC deadline path
+  transmits PIN 1 with no immediately preceding probe (documented, but this
+  wording and that exception must agree), zero attempts proceeds and
+  transmits instead of refusing as blocked (`refuseBlocked` is unreachable),
+  enforcement is caller convention rather than type, and no test proves zero
+  credential commands on a production floor refusal. Never deliberately
+  exercise a real card's final attempt.
 - [ ] Add instrumented test transports around every credential path and prove
   exact card-command counts for success, rejection, transport ambiguity, and
   retry refusal.
