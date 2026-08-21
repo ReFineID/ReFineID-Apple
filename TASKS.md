@@ -296,17 +296,29 @@ Acceptance criteria:
 
 ## 0. Release blockers
 
-Audited against source 2026-08-16. Each item states only what remains;
-the resolved halves of the original wording are recorded in git history.
+Audited against source 2026-08-16; rescoped 2026-08-21 for the iPhone
+MVP (Documentation/decisions.md, 2026-08-21): the remote card and
+activation are compile-gated out of the shipping configurations, so
+their qualification no longer blocks this release - it blocks turning
+them back on. Each item states only what remains; the resolved halves
+of the original wording are recorded in git history.
 
-- [ ] Qualify the committed RAPP candidate on physical macOS and iPhone
-  hardware. Record clean pairing, status, Safari authentication, document
-  signing, user denial, card removal, one authenticated fail-stop teardown,
-  and manual re-pairing against exact commits. Do not spend a real credential
-  retry. The protocol, explicit pairing, per-operation authorization, durable
-  one-violation revocation, and separate direct-reader and persistent-token
-  extension topology are implemented; this item is release evidence, not a
-  design placeholder.
+- [ ] Withdraw the waiting macOS 26.8.16 (114) submission in App Store
+  Connect. macOS releases later, with its own decided shape; until then
+  a macOS candidate cut from this source deliberately fails archive
+  inspection, because the inspector still describes the RAPP-on macOS
+  topology while the shipping configurations gate the remote card off.
+- [ ] Make the non-UI suite green again:
+  `RappIntegrationTests/credentialRejectionRevokesBothPeersWithoutAnotherExecution`
+  fails on main (verified also at 2cd5248, before the gating work - six
+  vault-revocation expectations after a rejected credential). RAPP is
+  gated out of the release, but the release pipeline runs the whole
+  suite in Debug, where RAPP is on.
+- [ ] Cut the gated iPhone candidate and push the reshaped metadata:
+  `Metadata/appstore.json` now carries the activation-free reviewer
+  walkthrough, no RAPP paragraph, and iPhone-only descriptions in three
+  languages; they reach App Store Connect through the release manager's
+  metadata commands at submission time.
 - [ ] Finish serial-binding the contactless prime store. The published
   CryptoTokenKit identity, registration, and revocation are already
   printed-serial-derived and every mint refuses a serial-less prime; still
@@ -330,13 +342,26 @@ the resolved halves of the original wording are recorded in git history.
   credential commands on a production floor refusal. Never deliberately
   exercise a real card's final attempt.
 - [ ] Re-prove the clean-device suomi.fi login and demonstration-mode
-  onboarding on the exact App-Store-shaped candidate; the clean-VM proof and
-  the shipped demonstration mode are recorded in decisions.md and history.
-- [ ] Film, sanitize, host, and link the App Review demonstration video for
-  iOS 26.8.16 (114), then answer the Resolution Center message. App Review
-  asked for it under guideline 2.1 on 2026-08-16 after reviewing on an iPad
-  Air, which has no NFC antenna; the shot list, sanitization rules, notes
-  text, and reply are in `Documentation/app-review-demo-video.md`.
+  onboarding on the exact App-Store-shaped candidate - now the gated
+  iPhone shape: floor 26, iPhone-only, no remote card, no activation;
+  the clean-VM proof and the shipped demonstration mode are recorded in
+  decisions.md and history.
+- [ ] Film, sanitize, host, and link the App Review demonstration video,
+  then answer the Resolution Center message. App Review asked for it
+  under guideline 2.1 on 2026-08-16 after reviewing on an iPad Air,
+  which has no NFC antenna; the shot list, sanitization rules, notes
+  text, and reply are in `Documentation/app-review-demo-video.md`. Film
+  the gated candidate, whose demonstration card arrives already
+  activated, so the video and the reviewed build tell one story. The
+  nfc required capability also keeps future reviews off iPads.
+
+The RAPP physical two-device qualification matrix (pairing, status,
+Safari authentication, document signing, denial, card removal, one
+authenticated fail-stop teardown, manual re-pairing, against exact
+commits, without spending a real credential retry) moved out of this
+release's blockers when the remote card was gated off. It is the
+acceptance gate for turning `REFINEID_REMOTE_CARD` back on and for the
+macOS release, and it stands unchanged in the RAPP plan above.
 
 ## 1. Product and public documentation
 

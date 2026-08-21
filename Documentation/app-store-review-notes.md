@@ -27,11 +27,15 @@ day. The rejection is about reviewer access, not about the build.
 The demonstration mode the notes offered to add was added, on iOS
 only, on 2026-08-13, and grew into the Virtual ID Card: an explicit,
 fictional identity card whose state a reviewer edits through a
-floating editor, driving the production screens through activation,
-PIN changes and resets, retry refusal, fault injection, and qualified
-signing of a fictional PDF. `Documentation/virtual-id-card.md` owns
-the design; the iOS notes walk a reviewer through it, fictional
-numbers included, so no step depends on guessing a value.
+floating editor, driving the production screens through PIN changes
+and resets, retry refusal, fault injection, and qualified signing of a
+fictional PDF. Since activation was gated out of the shipping
+configurations (Documentation/decisions.md, 2026-08-21), the
+demonstration card arrives already activated, and a factory-fresh
+state chosen in the editor shows the version's activation refusal
+rather than the form. `Documentation/virtual-id-card.md` owns the
+design; the iOS notes walk a reviewer through it, fictional numbers
+included, so no step depends on guessing a value.
 
 The macOS notes state the app's network behaviour as shipped: outbound
 time-stamp and revocation fetches plus the local-network RAPP service used only

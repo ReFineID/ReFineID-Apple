@@ -34,7 +34,7 @@ documents since 26.8.16.
 
 ### English
 
-ReFineID brings the Finnish identity card to iPhone and iPad.
+ReFineID brings the Finnish identity card to iPhone.
 
 Read your card with a USB-C smart-card reader, or wirelessly on iPhone,
 then sign in to e-services directly in Safari with the certificate on
@@ -44,7 +44,7 @@ ReFineID is open source: github.com/ReFineID/ReFineID-Apple
 
 ### Suomi
 
-ReFineID tuo suomalaisen henkilökortin iPhoneen ja iPadiin.
+ReFineID tuo suomalaisen henkilökortin iPhoneen.
 
 Lue korttisi USB-C-kortinlukijalla, tai iPhonessa langattomasti, ja
 kirjaudu sähköisiin palveluihin suoraan Safarissa kortin varmenteella.
@@ -55,7 +55,7 @@ ReFineID on avointa lähdekoodia: github.com/ReFineID/ReFineID-Apple
 
 ### Svenska
 
-ReFineID tar det finländska identitetskortet till iPhone och iPad.
+ReFineID tar det finländska identitetskortet till iPhone.
 
 Läs kortet med en USB-C-kortläsare, eller trådlöst på iPhone, och logga
 in på e-tjänster direkt i Safari med kortets certifikat. Välj en PDF i
