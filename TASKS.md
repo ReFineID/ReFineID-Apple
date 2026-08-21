@@ -33,11 +33,6 @@ protocol milestone.
 - [ ] Cut the gated iPhone candidate; push the reshaped `Metadata/appstore.json`
   (activation-free walkthrough, no RAPP paragraph, iPhone-only descriptions)
   at submission.
-- [ ] Re-prove clean-device suomi.fi login and demo onboarding on that exact
-  candidate.
-- [ ] Film, sanitize, host, and link the App Review demo video; answer the
-  Resolution Center (guideline 2.1, 2026-08-16, reviewed on an iPad Air).
-  Film the gated candidate. Details: `Documentation/app-review-demo-video.md`.
 
 The RAPP physical qualification matrix is not a blocker here; it gates
 re-enabling `REFINEID_REMOTE_CARD` and the macOS release (Phase E below).
