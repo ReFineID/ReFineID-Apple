@@ -5,6 +5,48 @@ controls iPhone scope. `Documentation/release-plan.md` controls
 macOS scope and shared security behavior. This file records the concrete
 values chosen under them.
 
+## 2026-08-21 The first App Store release is an iPhone MVP on iOS 26
+
+The first public release is the iPhone app alone, and it requires
+iOS 26. It carries exactly what real cards have verified: one-step NFC
+priming and the Safari login it serves, document signing and checking,
+PIN changes, and signing through a connected USB-C reader. Everything
+else waits, gated, for its own release.
+
+macOS is not released now. Its waiting 26.8.16 (114) submission is
+withdrawn rather than left to be approved ahead of the platform's real
+release. iPad is kept out because no iPadOS 26 device is available to
+qualify one, and an unqualified platform does not ship; the store
+artifact is iPhone-only (`TARGETED_DEVICE_FAMILY = 1`) and declares
+the `nfc` required capability, which also keeps an iPhone-only build
+off iPads in compatibility mode - the machine the last App Review ran
+on. Both restrictions loosen later, which Apple permits; their
+opposites would not be.
+
+The remote card (RAPP) is compile-gated out of shipping
+configurations. It is implemented and its engine is tested, but the
+physical two-device qualification matrix has never run, and a first
+release should contain no path a reviewer can reach that the owner has
+not. Gating it also removes the local-network and Bonjour declarations
+from the shipped app, and the RAPP token extension from the shipped
+topology: less shipped, less to review.
+
+Activation is compile-gated out as well. Activation writes to the
+card and consumes one-shot codes, so it cannot be tested repeatedly
+the way priming and signing were. An unactivated card still routes to
+the activation destination; in a shipping build that destination
+explains that this version cannot activate a card, rather than being a
+dead end. PIN management stays: it operates on an activated card, and
+a wrong entry there spends a retry the holder chose to risk, which is
+inherent to cards rather than to this app.
+
+The iOS 16 floor stays in the tree for now. Only the shipping
+configurations demand iOS 26; Debug and Profile keep building at 16 so
+the iPad-requester experiment stays cheap to resume when the remote
+card returns. The floor is a shipping-configuration setting, not a
+code revert, and the revert decision belongs to the day the iPad
+requester's hardware floor is chosen.
+
 ## 2026-08-13 A demonstration mode ships on iPhone, for one launch only
 
 The iOS submission was rejected under guideline 2.1(a) asking for a
