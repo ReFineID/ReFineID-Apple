@@ -61,6 +61,27 @@
       }
     }
 
+    /// The certificate this driver is currently offering, if any.
+    ///
+    /// What has been published outlives the app that published it, so a
+    /// screen that only ever learned an identity by fetching one showed
+    /// nothing on every launch after the first while the browser was still
+    /// being offered the very same certificate.
+    internal static func publishedCertificateDER() -> Data? {
+      guard let driver = driverConfiguration else { return nil }
+      for configuration in driver.tokenConfigurations.values {
+        guard
+          let item = try? configuration.certificate(
+            for: PersistentTokenIdentity.certificateObjectID
+          )
+        else {
+          continue
+        }
+        return item.data
+      }
+      return nil
+    }
+
     private static func publish(_ certificateDER: Data) {
       guard
         let driver = driverConfiguration,

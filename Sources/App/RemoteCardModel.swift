@@ -56,8 +56,26 @@
         hasPair = selected?.role == .requester
         if !hasPair {
           phase = .idle
+        } else {
+          restorePublishedIdentity()
         }
       }
+    }
+
+    /// Shows the identity this device is already offering a browser.
+    ///
+    /// The certificate stays published between launches, so asking the
+    /// phone again to learn what is already known is a card read for
+    /// nothing and, until it answers, a screen that says this device has
+    /// no identity when it has one.
+    private func restorePublishedIdentity() {
+      guard case .idle = phase,
+        let der = PersistentTokenRegistry.publishedCertificateDER(),
+        let name = remoteHolderName(inCertificate: der)
+      else {
+        return
+      }
+      phase = .identity(name)
     }
 
     /// Re-reads the selected pairing and, when one is there, uses it.
