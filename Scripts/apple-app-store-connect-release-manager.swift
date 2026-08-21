@@ -250,7 +250,11 @@ private func releaseArchiveLayout(at archive: URL) -> ReleaseArchiveLayout {
             rappPlist: rappBundle.appendingPathComponent("Contents/Info.plist"),
             discoveryPlist: discoveryBundle.appendingPathComponent("Contents/Info.plist"),
             expectedArchitectures: ["arm64"],
-            hasRapp: true,
+            // The macOS release gates the remote card off the same way the
+            // iPhone one does (Documentation/decisions.md, 2026-08-22), so
+            // a macOS candidate carries no RAPP extension, no local-network
+            // declarations, and no server entitlement.
+            hasRapp: false,
             hasDiscovery: false
         )
     }
@@ -354,7 +358,10 @@ private func inspectReleaseArchive(_ archive: URL) {
             releaseFail("embedded extension missing: \(layout.rappBundle.path)")
         }
     } else if releaseIsDirectory(layout.rappBundle) {
-        releaseFail("RAPP persistent-token extension is macOS-only: \(layout.rappBundle.path)")
+        releaseFail(
+            "RAPP persistent-token extension is gated out of shipping "
+                + "candidates: \(layout.rappBundle.path)"
+        )
     }
     if layout.hasDiscovery {
         guard releaseIsDirectory(layout.discoveryBundle) else {
@@ -508,23 +515,21 @@ private func inspectReleaseArchive(_ archive: URL) {
             "com.apple.developer.team-identifier",
             "com.apple.security.get-task-allow",
         ]
-        entitlementRules = [
+        // The client side stays in a gated candidate for timestamps and
+        // revocation fetches; the server side exists only for the remote
+        // card's relay listener, so it ships exactly when the RAPP
+        // extension does.
+        let appEntitlements: Set<String> = Set([
+            "com.apple.security.app-sandbox",
+            "com.apple.security.files.user-selected.read-write",
+            "com.apple.security.network.client",
+            "com.apple.security.smartcard",
+        ]).union(layout.hasRapp ? ["com.apple.security.network.server"] : [])
+        var rules: [(bundle: URL, allowed: Set<String>, required: Set<String>)] = [
             (
                 layout.app,
-                signingEntitlements.union([
-                    "com.apple.security.app-sandbox",
-                    "com.apple.security.files.user-selected.read-write",
-                    "com.apple.security.network.client",
-                    "com.apple.security.network.server",
-                    "com.apple.security.smartcard",
-                ]),
-                [
-                    "com.apple.security.app-sandbox",
-                    "com.apple.security.files.user-selected.read-write",
-                    "com.apple.security.network.client",
-                    "com.apple.security.network.server",
-                    "com.apple.security.smartcard",
-                ]
+                signingEntitlements.union(appEntitlements),
+                appEntitlements
             ),
             (
                 layout.tokenBundle,
@@ -537,20 +542,25 @@ private func inspectReleaseArchive(_ archive: URL) {
                     "com.apple.security.smartcard",
                 ]
             ),
-            (
-                layout.rappBundle,
-                signingEntitlements.union([
-                    "com.apple.security.app-sandbox",
-                    "com.apple.security.network.client",
-                    "com.apple.security.network.server",
-                ]),
-                [
-                    "com.apple.security.app-sandbox",
-                    "com.apple.security.network.client",
-                    "com.apple.security.network.server",
-                ]
-            ),
         ]
+        if layout.hasRapp {
+            rules.append(
+                (
+                    layout.rappBundle,
+                    signingEntitlements.union([
+                        "com.apple.security.app-sandbox",
+                        "com.apple.security.network.client",
+                        "com.apple.security.network.server",
+                    ]),
+                    [
+                        "com.apple.security.app-sandbox",
+                        "com.apple.security.network.client",
+                        "com.apple.security.network.server",
+                    ]
+                )
+            )
+        }
+        entitlementRules = rules
     } else {
         let allowed: Set<String> = [
             "keychain-access-groups",
@@ -583,29 +593,51 @@ private func inspectReleaseArchive(_ archive: URL) {
     if layout.platform == "macOS" {
         let appEntitlements = releaseEntitlements(of: layout.app)
         let readerEntitlements = releaseEntitlements(of: layout.tokenBundle)
-        let rappEntitlements = releaseEntitlements(of: layout.rappBundle)
         for entitlement in [
             "com.apple.security.network.client",
             "com.apple.security.network.server",
         ] {
-            guard appEntitlements[entitlement] as? Bool == true else {
-                releaseFail("\(layout.app.path): missing RAPP entitlement \(entitlement)")
-            }
-            guard rappEntitlements[entitlement] as? Bool == true else {
-                releaseFail(
-                    "\(layout.rappBundle.path): missing RAPP entitlement \(entitlement)"
-                )
-            }
             guard readerEntitlements[entitlement] == nil else {
                 releaseFail(
                     "\(layout.tokenBundle.path): direct-reader driver carries \(entitlement)"
                 )
             }
         }
-        guard rappEntitlements["com.apple.security.smartcard"] == nil else {
-            releaseFail("\(layout.rappBundle.path): RAPP requester carries direct-card access")
+        if layout.hasRapp {
+            let rappEntitlements = releaseEntitlements(of: layout.rappBundle)
+            for entitlement in [
+                "com.apple.security.network.client",
+                "com.apple.security.network.server",
+            ] {
+                guard appEntitlements[entitlement] as? Bool == true else {
+                    releaseFail("\(layout.app.path): missing RAPP entitlement \(entitlement)")
+                }
+                guard rappEntitlements[entitlement] as? Bool == true else {
+                    releaseFail(
+                        "\(layout.rappBundle.path): missing RAPP entitlement \(entitlement)"
+                    )
+                }
+            }
+            guard rappEntitlements["com.apple.security.smartcard"] == nil else {
+                releaseFail("\(layout.rappBundle.path): RAPP requester carries direct-card access")
+            }
+            releaseNote("RAPP and direct-reader entitlements are separated")
+        } else {
+            // A candidate without the remote card keeps outbound network
+            // access for timestamps and revocation checks, and nothing
+            // listens: a server entitlement in a build with no listener is
+            // a question App Review is owed an answer to.
+            guard appEntitlements["com.apple.security.network.client"] as? Bool == true else {
+                releaseFail(
+                    "\(layout.app.path): missing com.apple.security.network.client; "
+                        + "timestamps and revocation checks need it"
+                )
+            }
+            guard appEntitlements["com.apple.security.network.server"] == nil else {
+                releaseFail("network.server entitlement present without the remote card")
+            }
+            releaseNote("no server entitlement; the remote card is gated off")
         }
-        releaseNote("RAPP and direct-reader entitlements are separated")
     }
     releaseNote("entitlements match the reviewed allowlist")
 

@@ -87,6 +87,24 @@ internal struct RappShippingConfigurationTests {
       occurrences(
         of: "INFOPLIST_FILE = \"Config/ReFineID-iOS-Store-Info.plist\";") == 2)
 
+    // The macOS store shape mirrors the iOS one: both shipping
+    // configurations point the Mac app at the store Info.plist and
+    // entitlements without the remote card's declarations, while Debug
+    // and Profile keep the development files.
+    #expect(
+      occurrences(
+        of: "\"INFOPLIST_FILE[sdk=macosx*]\" = \"Config/ReFineID-Store-Info.plist\";") == 2)
+    #expect(
+      occurrences(
+        of: "\"INFOPLIST_FILE[sdk=macosx*]\" = \"Config/ReFineID-Info.plist\";") == 2)
+    #expect(
+      occurrences(
+        of: "\"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]\" = \"Config/ReFineID-Store.entitlements\";")
+        == 2)
+    #expect(
+      occurrences(
+        of: "\"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]\" = Config/ReFineID.entitlements;") == 2)
+
     let features = try String(
       contentsOf: Self.root.appending(path: "Config/Features.xcconfig"),
       encoding: .utf8)
@@ -145,6 +163,50 @@ internal struct RappShippingConfigurationTests {
     #expect(unexplained.isEmpty, "unexplained keys: \(unexplained.sorted())")
   }
 
+  @Test("The macOS store Info.plist and entitlements differ by exactly the gates")
+  internal func macStoreShape() throws {
+    let development = try Self.plist("Config/ReFineID-Info.plist")
+    let store = try Self.plist("Config/ReFineID-Store-Info.plist")
+
+    // What the gate removes: the remote card's network declarations.
+    #expect(store["NSLocalNetworkUsageDescription"] == nil)
+    #expect(store["NSBonjourServices"] == nil)
+
+    // Everything else stays word for word, so the two files cannot
+    // quietly drift apart.
+    for key in store.keys {
+      let left = development[key] as? NSObject
+      let right = store[key] as? NSObject
+      #expect(left == right, "\(key) differs between the two Info.plists")
+    }
+    let unexplained = Set(development.keys)
+      .symmetricDifference(store.keys)
+      .subtracting([
+        "NSLocalNetworkUsageDescription",
+        "NSBonjourServices",
+      ])
+    #expect(unexplained.isEmpty, "unexplained keys: \(unexplained.sorted())")
+
+    // The entitlements lose exactly the listener: the server side exists
+    // only for the remote card's relay, while the client side stays for
+    // timestamps and revocation checks.
+    let developmentEntitlements = try Self.plist("Config/ReFineID.entitlements")
+    let storeEntitlements = try Self.plist("Config/ReFineID-Store.entitlements")
+    #expect(storeEntitlements["com.apple.security.network.server"] == nil)
+    #expect(storeEntitlements["com.apple.security.network.client"] as? Bool == true)
+    for key in storeEntitlements.keys {
+      #expect(
+        storeEntitlements[key] as? NSObject == developmentEntitlements[key] as? NSObject,
+        "\(key) differs between the two entitlements files")
+    }
+    let unexplainedEntitlements = Set(developmentEntitlements.keys)
+      .symmetricDifference(storeEntitlements.keys)
+      .subtracting(["com.apple.security.network.server"])
+    #expect(
+      unexplainedEntitlements.isEmpty,
+      "unexplained entitlements: \(unexplainedEntitlements.sorted())")
+  }
+
   @Test("RAPP network declarations are present in shipping containers")
   internal func networkDeclarations() throws {
     for path in [
@@ -188,11 +250,11 @@ internal struct RappShippingConfigurationTests {
     #expect(source.contains("fi.refineid.ReFineID.rapp-token"))
     #expect(source.contains("RAPP and direct-reader entitlements are separated"))
     #expect(!source.contains("network entitlements match the gated-relay shape"))
-    // The iOS candidate carries no remote card: no RAPP extension, no
-    // local-network declarations, and the store fence that keeps the
-    // app off devices without an antenna.
-    #expect(source.contains("hasRapp: false"))
+    // Neither candidate carries the remote card: no RAPP extension, no
+    // local-network declarations, and on macOS no server entitlement.
+    #expect(source.components(separatedBy: "hasRapp: false").count - 1 == 2)
     #expect(source.contains("NSBonjourServices present without the remote card"))
+    #expect(source.contains("network.server entitlement present without the remote card"))
     #expect(source.contains("iPhone-only artifact requiring iOS 26.0 and an NFC antenna"))
   }
 

@@ -5,6 +5,28 @@ controls iPhone scope. `Documentation/release-plan.md` controls
 macOS scope and shared security behavior. This file records the concrete
 values chosen under them.
 
+## 2026-08-22 macOS ships with the remote card gated off
+
+The macOS app goes to the App Store carrying the same gates as the
+iPhone release below: the remote card (RAPP) and activation stay
+compile-gated out of the shipping configurations, which were already
+config-scoped rather than platform-scoped, and the RAPP token extension
+was already excluded from the shipping embed phases on every platform.
+
+What was missing was the macOS artifact's shape. The shipping
+configurations now point the Mac app at
+`Config/ReFineID-Store-Info.plist`, which drops the local-network and
+Bonjour declarations only the remote card uses, and sign it with
+`Config/ReFineID-Store.entitlements`, which drops
+`com.apple.security.network.server` - the entitlement that exists only
+for the remote card's relay listener. The client side stays for
+timestamps and revocation checks, and Debug and Profile keep the
+development files so remote-card work continues unchanged. The archive
+inspector now expects the gated shape from a macOS candidate too
+(`hasRapp: false`), and `RappShippingConfigurationTests` pins the
+wiring and the store files' word-for-word relationship to the
+development ones.
+
 ## 2026-08-21 The first App Store release is an iPhone MVP on iOS 26
 
 The first public release is the iPhone app alone, and it requires
