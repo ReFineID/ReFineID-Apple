@@ -10,7 +10,11 @@
      activation does not ship; and the nfc required capability, so the
      store never installs the app on a device without an antenna - which
      is every iPad, including iPads running iPhone apps in compatibility
-     mode. Tests hold the two files to this exact difference. -->
+     mode, and every Apple silicon Mac. Each delivery draws warning
+     ITMS-90863 for the Mac half of that; the warning is informational
+     and the exclusion is the point - the Mac gets its own app later.
+     Do not remove nfc to silence it. Tests hold the two files to this
+     exact difference. -->
 <dict>
 	<key>CFBundleLocalizations</key>
 	<array>
