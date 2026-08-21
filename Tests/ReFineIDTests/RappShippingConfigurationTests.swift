@@ -93,6 +93,12 @@ internal struct RappShippingConfigurationTests {
     #expect(features.contains("REFINEID_REMOTE_CARD_FEATURE = REFINEID_REMOTE_CARD"))
     #expect(features.contains("REFINEID_REMOTE_CARD_FEATURE[config=TestFlight] ="))
     #expect(features.contains("REFINEID_REMOTE_CARD_FEATURE[config=Release] ="))
+
+    // Activation is gated the same way: on where the work continues,
+    // off in the artifact a reviewer holds.
+    #expect(features.contains("REFINEID_ACTIVATION_FEATURE = FEATURE_CARD_ACTIVATION"))
+    #expect(features.contains("REFINEID_ACTIVATION_FEATURE[config=TestFlight] ="))
+    #expect(features.contains("REFINEID_ACTIVATION_FEATURE[config=Release] ="))
   }
 
   @Test("The store Info.plist differs from development by exactly the gates")

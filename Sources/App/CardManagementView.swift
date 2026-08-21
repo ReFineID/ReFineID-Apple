@@ -185,7 +185,11 @@ internal struct CardManagementView: View {
             // a second full credential probe; activation performs its own
             // retry-floor checks inside the exclusive card session.
             if awaitsActivation {
-              await model.detectActivationScheme()
+              #if FEATURE_CARD_ACTIVATION
+                await model.detectActivationScheme()
+              #endif
+              // Gated, the destination is a refusal that asks the card
+              // for nothing, so nothing is probed either.
             } else {
               await model.refresh()
             }
@@ -242,14 +246,24 @@ internal struct CardManagementView: View {
   /// action in a single act.
   @ViewBuilder private var taskSection: some View {
     if awaitsActivation {
-      Form {
-        connectionSection
-        CardActivationSection(
-          model: model,
-          onActivated: activationCompleted)
-        CardOutcomeSection(model: model)
-      }
-      .formStyle(.grouped)
+      #if FEATURE_CARD_ACTIVATION
+        Form {
+          connectionSection
+          CardActivationSection(
+            model: model,
+            onActivated: activationCompleted)
+          CardOutcomeSection(model: model)
+        }
+        .formStyle(.grouped)
+      #else
+        // The destination still exists; the build's answer differs. No
+        // connection section either: a form that cannot act on the card
+        // has no business inviting one.
+        Form {
+          CardActivationUnavailableSection()
+        }
+        .formStyle(.grouped)
+      #endif
     } else {
       Form {
         // The card's problem is the first thing on the page; the

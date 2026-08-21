@@ -295,6 +295,22 @@
         }
       }
     },
+    "Activate the card first, then return here to take it into use.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivoi kortti ensin ja palaa sitten ottamaan se käyttöön."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivera kortet först och kom sedan tillbaka för att ta det i bruk."
+          }
+        }
+      }
+    },
     "Activate this card first, then try setup again.": {
       "localizations": {
         "en": {
@@ -313,6 +329,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Aktivera kortet först, försök sedan igen."
+          }
+        }
+      }
+    },
+    "Activating a card is not part of this version of ReFineID.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortin aktivointi ei kuulu tähän ReFineID:n versioon."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivering av kortet ingår inte i den här versionen av ReFineID."
           }
         }
       }
@@ -4922,6 +4954,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Detta rensar ReFineID:s diagnostikspår. Det tar inte bort dina kortuppgifter eller din identitet för Safari."
+          }
+        }
+      }
+    },
+    "This identity card has not been activated yet.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tätä henkilökorttia ei ole vielä aktivoitu."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det här identitetskortet har inte aktiverats ännu."
           }
         }
       }

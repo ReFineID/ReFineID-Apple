@@ -29,8 +29,18 @@
     // MARK: Static Computed Properties
 
     /// The scenario a demonstration starts from on this device class.
+    ///
+    /// A demonstration walks only the flows the build offers. With
+    /// activation shipping, the card arrives factory fresh so the whole
+    /// journey can be shown; with activation gated, it arrives already
+    /// activated - exactly like the card of a holder who activated it
+    /// elsewhere - so the demonstration starts where the product does.
     internal static var defaultScenario: VirtualIDCard.Scenario {
-      offersNearField ? .factoryFreshNearField : .factoryFreshReader
+      #if FEATURE_CARD_ACTIVATION
+        offersNearField ? .factoryFreshNearField : .factoryFreshReader
+      #else
+        offersNearField ? .activatedNearField : .activatedReader
+      #endif
     }
 
     // MARK: Properties

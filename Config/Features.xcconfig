@@ -88,6 +88,23 @@ REFINEID_REMOTE_CARD_FEATURE = REFINEID_REMOTE_CARD
 REFINEID_REMOTE_CARD_FEATURE[config=TestFlight] =
 REFINEID_REMOTE_CARD_FEATURE[config=Release] =
 
+// FEATURE_CARD_ACTIVATION
+//     Taking a factory-fresh card into use: the activation form that
+//     spends the code from the issuance letter to set both PINs. Off
+//     in the shipping configurations for the first App Store release
+//     (Documentation/decisions.md, 2026-08-21): activation writes to
+//     the card and consumes one-shot codes, so it cannot be rehearsed
+//     the way priming and signing were. An unactivated card still
+//     routes to the activation destination; with the flag off that
+//     destination explains that this version does not activate a card,
+//     instead of offering the form. PIN management is untouched - it
+//     operates on a card already in use. The demonstration mode's
+//     virtual card arrives already activated when the flag is off, so
+//     a reviewer walks only flows the build offers.
+REFINEID_ACTIVATION_FEATURE = FEATURE_CARD_ACTIVATION
+REFINEID_ACTIVATION_FEATURE[config=TestFlight] =
+REFINEID_ACTIVATION_FEATURE[config=Release] =
+
 // REFINEID_SLIM_RELAY
 //     Carries a borrowed card over one request and one answer instead
 //     of the session machinery: the pairing's own cipher settles
@@ -125,4 +142,4 @@ REFINEID_STREAM_TRANSPORT_FEATURE =
 // default above on that machine only.
 #include? "LocalFeatures.xcconfig"
 
-SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) $(REFINEID_FEATURES) $(REFINEID_IOS_FLOOR_FEATURE) $(REFINEID_LOCAL_CARD_FEATURE) $(REFINEID_REMOTE_CARD_FEATURE) $(REFINEID_SLIM_RELAY_FEATURE) $(REFINEID_STREAM_TRANSPORT_FEATURE)
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) $(REFINEID_FEATURES) $(REFINEID_IOS_FLOOR_FEATURE) $(REFINEID_LOCAL_CARD_FEATURE) $(REFINEID_REMOTE_CARD_FEATURE) $(REFINEID_ACTIVATION_FEATURE) $(REFINEID_SLIM_RELAY_FEATURE) $(REFINEID_STREAM_TRANSPORT_FEATURE)
