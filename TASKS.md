@@ -9,8 +9,8 @@ protocol milestone.
 - First release: iPhone MVP on iOS 26. RELEASED: 26.8.21 (200), commit
   `cbd4b4a`, approved overnight and READY_FOR_SALE 2026-08-22 - the
   version auto-released on approval (Documentation/releases/26.8.21.md).
-  Still to do post-release: final release tag at `cbd4b4a` (needs owner
-  approval), and set future versions' release option to manual.
+  Tagged `ios-v26.8.21-release.200`, GitHub release published. Still to
+  do: set future versions' release option to manual.
 - Ships: one-step NFC priming, Safari login, document signing and checking,
   PIN changes, USB-C reader signing, demo mode (virtual card starts activated).
 - Gated out of TestFlight/Release: remote card (`REFINEID_REMOTE_CARD`) and
