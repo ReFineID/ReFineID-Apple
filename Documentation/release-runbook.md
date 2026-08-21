@@ -56,10 +56,11 @@ explicitly approved that exact action and candidate:
 - Creating a `dev`, `beta`, `rc`, or final release tag.
 - Attaching a build to an App Store version.
 - Submitting a version to App Review.
-- Releasing an approved version publicly.
 
 Approval for one action does not authorize later actions. In particular,
-approval to upload does not authorize submission or public release.
+approval to upload does not authorize submission. Approval to submit does
+authorize the public release: versions release automatically on App Review
+approval (owner decision 2026-08-22, first applied by 26.8.21).
 
 Never display, copy into a report, commit, or transmit an App Store Connect
 private key. Check only whether the expected key file exists.
@@ -271,22 +272,21 @@ cleaned up in the App Store Connect web interface.
 
 ## 7. Approve and release
 
-The public release is manual. After App Review approval:
+Versions release automatically on App Review approval (owner decision
+2026-08-22): submitting to review is the last human gate. After approval:
 
-1. Confirm the approved build still matches the recorded source commit,
-   version, build, and hardware evidence.
-2. Obtain explicit approval for public release.
-3. Create the final macOS release tag only through the reviewed release-owner
-   process. Do not use `stamp-version.sh --tag`; its current tag command is for
-   the iOS channel naming scheme.
-4. Release manually in App Store Connect.
-5. Record the release decision and UTC time.
-6. Monitor review messages, crash reports, TestFlight/App Store feedback, and
+1. Confirm the released build matches the recorded source commit, version,
+   build, and hardware evidence.
+2. Create the final release tag with owner approval. Do not use
+   `stamp-version.sh --tag`; its current tag command is for the iOS channel
+   naming scheme.
+3. Record the release outcome and UTC time in `Documentation/releases/`.
+4. Monitor review messages, crash reports, TestFlight/App Store feedback, and
    security reports.
 
-If an approved build must not ship, leave manual release stopped and record the
-reason. If a defect is found after public release, do not replace the shipped
-binary. Cut a new reviewed version and follow this runbook again.
+If a submitted build must not ship, remove it from review before approval.
+If a defect is found after public release, do not replace the shipped binary:
+cut a new reviewed version and follow this runbook again.
 
 ## Local Release installation
 
