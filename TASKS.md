@@ -300,14 +300,14 @@ Audited against source 2026-08-16; rescoped 2026-08-21 for the iPhone
 MVP (Documentation/decisions.md, 2026-08-21): the remote card and
 activation are compile-gated out of the shipping configurations, so
 their qualification no longer blocks this release - it blocks turning
-them back on. Each item states only what remains; the resolved halves
-of the original wording are recorded in git history.
+them back on. The waiting macOS 26.8.16 (114) submission was withdrawn
+in App Store Connect on 2026-08-21; until the macOS release decides its
+shape, a macOS candidate cut from this source deliberately fails
+archive inspection, because the inspector still describes the RAPP-on
+macOS topology while the shipping configurations gate the remote card
+off. Each item states only what remains; the resolved halves of the
+original wording are recorded in git history.
 
-- [ ] Withdraw the waiting macOS 26.8.16 (114) submission in App Store
-  Connect. macOS releases later, with its own decided shape; until then
-  a macOS candidate cut from this source deliberately fails archive
-  inspection, because the inspector still describes the RAPP-on macOS
-  topology while the shipping configurations gate the remote card off.
 - [ ] Make the non-UI suite green again:
   `RappIntegrationTests/credentialRejectionRevokesBothPeersWithoutAnotherExecution`
   fails on main (verified also at 2cd5248, before the gating work - six
