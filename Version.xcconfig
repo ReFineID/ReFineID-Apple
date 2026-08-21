@@ -40,6 +40,22 @@
 // behind REFINEID_LOCAL_CARD in Config/Features.xcconfig.
 IPHONEOS_DEPLOYMENT_TARGET = 16.0
 
+// What the store artifact demands is a different question from what the
+// tree can build. The shipping configurations require iOS 26, and iPhone
+// alone: every feature the first release carries needs the NFC smart-card
+// slot, which arrived in iOS 26 and exists on no iPad, and no iPadOS 26
+// device is available to qualify the requester path an iPad would run.
+// Debug and Profile keep the wider floor and both families, so the
+// iPad-requester experiment stays cheap to resume when the remote card
+// returns. The archive inspector holds a candidate to these numbers, so
+// a wrongly cut artifact fails before it is uploaded.
+IPHONEOS_DEPLOYMENT_TARGET[config=TestFlight] = 26.0
+IPHONEOS_DEPLOYMENT_TARGET[config=Release] = 26.0
+
+TARGETED_DEVICE_FAMILY = 1,2
+TARGETED_DEVICE_FAMILY[config=TestFlight] = 1
+TARGETED_DEVICE_FAMILY[config=Release] = 1
+
 DEVELOPMENT_TEAM = 4ZJC3SFJR2
 
 MARKETING_VERSION = 26.8.20

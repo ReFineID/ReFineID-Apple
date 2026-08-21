@@ -678,6 +678,19 @@ private func inspectReleaseArchive(_ archive: URL) {
     }
 
     if layout.platform == "iOS" {
+        guard appPlist["MinimumOSVersion"] as? String == "26.0" else {
+            releaseFail(
+                "the iOS artifact does not require iOS 26.0; shipping "
+                    + "configurations demand it (Version.xcconfig)"
+            )
+        }
+        guard appPlist["UIDeviceFamily"] as? [Int] == [1] else {
+            releaseFail(
+                "the iOS artifact is not iPhone-only; the first release "
+                    + "ships no iPad (decisions.md, 2026-08-21)"
+            )
+        }
+        releaseNote("iPhone-only artifact requiring iOS 26.0")
         guard let usesNonExemptEncryption =
             appPlist["ITSAppUsesNonExemptEncryption"] as? Bool else {
             releaseFail("ITSAppUsesNonExemptEncryption missing from the app Info.plist")
