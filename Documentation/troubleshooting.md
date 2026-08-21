@@ -145,6 +145,21 @@ response. Recreate the site's login conversation first; if the driver is
 still never asked, force-quit Safari, reopen it, and retry. Once a
 `supports` or `sign` line appears, diagnose that exchange instead.
 
+**Confirmed on macOS 2026-08-22, production build.** The same token
+signed in to three TLS 1.2 sites while `card.refineid.fi` (TLS 1.3)
+failed, and a direct `SecKeyCreateSignature` probe through `ctkd`
+completed the exact `ecdsaMessageSHA384` signature the site needs. A
+Release extension writes no trace, but the failure is still observable
+from outside: `log show --info --debug` with
+`process == "ctkd"` recorded Safari evaluating token access dozens of
+times in one second, each connection cancelled within milliseconds and
+no signature ever requested. Safari sent no certificate, and the server
+answered its no-certificate page (here HTTP 403). TLS 1.3 makes the
+state stickier than TLS 1.2: a resumed session ticket skips the
+certificate request entirely, so reloading the page cannot recover.
+Quitting Safari and retrying - a private window works too - recovered
+the site with no card, token, or ReFineID state changed.
+
 ## Uninstalling, and what a trashed app leaves behind
 
 Moving `ReFineID.app` to the Trash removes the app and deregisters the

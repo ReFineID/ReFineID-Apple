@@ -85,6 +85,19 @@ repeat succeeds.
 Setup on macOS is a card access number per card, entered once in the
 Card menu; a card in the contact slot needs none at all.
 
+Re-proven on 2026-08-22 against the production Release build 26.8.21
+installed in /Applications - the store shape, remote card gated off.
+Four sites verified by the owner with a contact reader: `suomi.fi`,
+`oma.posti.fi` and `admin.iki.fi` over TLS 1.2, and `card.refineid.fi`
+over TLS 1.3 after a Safari restart (its first failure was the retained
+dead client-identity path, Documentation/troubleshooting.md). The TLS
+1.3 signing path was also driven directly through `ctkd` against the
+same build: a 130-byte CertificateVerify-shaped message signed with
+`ecdsaSignatureMessageX962SHA384` in 315 ms, 103 DER bytes, verified
+locally against the card's certificate. A Release extension logs
+nothing, so the direct probe and the `ctkd` connection log are the
+observation channels that remain.
+
 ## Every card carries its own access number
 
 A contactless card is sealed until PACE, and PACE is keyed by the six
