@@ -37,91 +37,6 @@ protocol milestone.
 The RAPP physical qualification matrix is not a blocker here; it gates
 re-enabling `REFINEID_REMOTE_CARD` and the macOS release (Phase E below).
 
-## RAPP handoff
-
-Read `Documentation/rapp-implementation-handoff.md` before changing RAPP.
-
-Baseline: Rust `~/src/ReFineID` at
-`c745bb0cbab18b82877ddfa1143690c9fb4ce0ab`, pushed. Apple revision: status
-above; RAPP is compile-gated out of shipping configs since 2026-08-21,
-unchanged in Debug/Profile. Engine: Swift, `CardCore/Sources/RappEngine`;
-its authority is the vendored spec, formal state model, and conformance
-corpus, and its tests fail on disagreement.
-
-Done: pairing, authenticated transport, explicit phone-holder authorization,
-browser auth, document signing, acknowledgements, durable
-selection/revocation, one-violation durable fail-stop. macOS ships separate
-reader and RAPP CTK extensions (smart-card vs network entitlements, never
-both). `cargo test -p refineid-lib-core` green at the pinned revision.
-Activation and PIN management are deliberately not RAPP operations.
-
-Not proved: the physical two-device matrix (Phase E); a hardware-free RAPP UI
-harness — it must run the real Rust coordinators and may virtualize only
-transport and card effects, never inject SwiftUI state; independent interop
-and external security review. The 2026-08-17 iPad-requester run is evidence.
-
-Next: blocker 1; then the hardware-free harness (start at `RappPairingUI`,
-`RappAuthorizationInbox`, `RappPhoneProxyDispatcher`,
-`PhonePersistentTokenRelay`; inject below the dispatcher/card boundary); then
-bounded UI-test shards (pairing, approve/deny, PIN 2, fail-stop,
-revocation/re-pair, VoiceOver, Dynamic Type, fi/sv/en). Push each coherent
-increment; update the handoff when the pinned Rust revision or evidence
-changes.
-
-### RAPP plan
-
-Phases in order; a later phase may start early only if it does not weaken or
-bypass the production protocol path.
-
-- A, reproducible baseline: change spec and formal model first, regenerate
-  and re-vendor corpus/vectors, then the engine; push Rust before the Apple
-  commit that pins it. Accept: clean checkout builds with Xcode alone; the
-  release manager rejects mismatched provenance; both RAPP suites green.
-- B, hardware-free seam: narrow seams for peer transport and card effects,
-  production defaults unchanged; an in-memory duplex transport between two
-  real coordinators carrying real frames (may drop, duplicate, reorder,
-  corrupt, expire; never synthesizes success); Virtual ID Card as the card
-  effects; injectable time/entropy at the test boundary only; tests reach no
-  real reader, NFC, Keychain, or credential store without opt-in. Accept: one
-  process runs pair→session→operation→authorize→execute→acknowledge with real
-  peers; frame mutation produces production fail-stop; no test branch assigns
-  UI state.
-- C, Debug-only UI driver: launch controls for isolated vault, in-memory
-  transport, fixtures, scenarios, rejected outside Debug; pairing driven
-  through the visible controls (scanner replaceable, the URI must be a real
-  offer); editor and sheets localized fi/sv/en and fully accessible; no
-  secrets in accessibility text; shards below the device timeout. Accept:
-  VoiceOver-only walkthrough works; the release manager proves the driver
-  absent from store archives.
-- D, behavior matrix: pairing (offer, review, approval, persistence,
-  reconnect; denial, malformed/expired offer, transport loss per phase,
-  removal, durable revocation, re-pair with new keys); operations (status,
-  browser auth, signing with PIN 2 on the phone only, busy, cancel, expiry,
-  card removal, completion ambiguity, safe reconnect); fail-stop (bad
-  credentials, corruption, replay, sequence violation, identity mismatch —
-  first authenticated violation durably revokes, no retry or silent re-pair;
-  credential rejection clears local state; activation/PIN management always
-  rejected). Accept: every formal transition tested both ways; exact
-  card-command counts proven, retry-floor refusal proves zero; durable state
-  asserted after restart.
-- E, physical qualification: record hashes, versions, devices, card, reader,
-  sanitized start state; QR pairing, status, Safari auth, signing, denial,
-  card removal, relay loss, app/extension restart, one synthetic fail-stop,
-  durable revocation, re-pairing; extensions never claim each other's
-  capability; never spend a real credential retry. Accept: the exact archived
-  candidate passes the whole recorded matrix without dev-only crutches.
-- F, independent interop and review: a minimal independent peer from the
-  published spec and corpus (no shared Rust); cross-run the vectors; external
-  review of crypto, pairing ceremony, transcript binding, replay, privacy,
-  DoS, local-network exposure, teardown; high-severity findings resolved
-  before TestFlight, accepted risks recorded with owner and date. Accept:
-  interop without Apple-private assumptions; docs match code and corpus.
-- G, freeze and distribute: all gates through the release manager; notes from
-  the exact diff, human-reviewed before upload; never rebuild between
-  qualification and upload; record identifiers, provenance, tester groups,
-  rollback decision. Accept: uploads hash-match the qualified exports;
-  archives carry no debug harness.
-
 ## 1. Product and public documentation
 
 - [ ] Publish one supported-hardware table: card generations, key profiles,
@@ -236,3 +151,88 @@ findings survive.
 
 - [ ] Prototype interoperable non-Apple requesters and authorizers after the
   Apple release baseline is frozen.
+
+## RAPP handoff
+
+Read `Documentation/rapp-implementation-handoff.md` before changing RAPP.
+
+Baseline: Rust `~/src/ReFineID` at
+`c745bb0cbab18b82877ddfa1143690c9fb4ce0ab`, pushed. Apple revision: status
+above; RAPP is compile-gated out of shipping configs since 2026-08-21,
+unchanged in Debug/Profile. Engine: Swift, `CardCore/Sources/RappEngine`;
+its authority is the vendored spec, formal state model, and conformance
+corpus, and its tests fail on disagreement.
+
+Done: pairing, authenticated transport, explicit phone-holder authorization,
+browser auth, document signing, acknowledgements, durable
+selection/revocation, one-violation durable fail-stop. macOS ships separate
+reader and RAPP CTK extensions (smart-card vs network entitlements, never
+both). `cargo test -p refineid-lib-core` green at the pinned revision.
+Activation and PIN management are deliberately not RAPP operations.
+
+Not proved: the physical two-device matrix (Phase E); a hardware-free RAPP UI
+harness — it must run the real Rust coordinators and may virtualize only
+transport and card effects, never inject SwiftUI state; independent interop
+and external security review. The 2026-08-17 iPad-requester run is evidence.
+
+Next: blocker 1; then the hardware-free harness (start at `RappPairingUI`,
+`RappAuthorizationInbox`, `RappPhoneProxyDispatcher`,
+`PhonePersistentTokenRelay`; inject below the dispatcher/card boundary); then
+bounded UI-test shards (pairing, approve/deny, PIN 2, fail-stop,
+revocation/re-pair, VoiceOver, Dynamic Type, fi/sv/en). Push each coherent
+increment; update the handoff when the pinned Rust revision or evidence
+changes.
+
+### RAPP plan
+
+Phases in order; a later phase may start early only if it does not weaken or
+bypass the production protocol path.
+
+- A, reproducible baseline: change spec and formal model first, regenerate
+  and re-vendor corpus/vectors, then the engine; push Rust before the Apple
+  commit that pins it. Accept: clean checkout builds with Xcode alone; the
+  release manager rejects mismatched provenance; both RAPP suites green.
+- B, hardware-free seam: narrow seams for peer transport and card effects,
+  production defaults unchanged; an in-memory duplex transport between two
+  real coordinators carrying real frames (may drop, duplicate, reorder,
+  corrupt, expire; never synthesizes success); Virtual ID Card as the card
+  effects; injectable time/entropy at the test boundary only; tests reach no
+  real reader, NFC, Keychain, or credential store without opt-in. Accept: one
+  process runs pair→session→operation→authorize→execute→acknowledge with real
+  peers; frame mutation produces production fail-stop; no test branch assigns
+  UI state.
+- C, Debug-only UI driver: launch controls for isolated vault, in-memory
+  transport, fixtures, scenarios, rejected outside Debug; pairing driven
+  through the visible controls (scanner replaceable, the URI must be a real
+  offer); editor and sheets localized fi/sv/en and fully accessible; no
+  secrets in accessibility text; shards below the device timeout. Accept:
+  VoiceOver-only walkthrough works; the release manager proves the driver
+  absent from store archives.
+- D, behavior matrix: pairing (offer, review, approval, persistence,
+  reconnect; denial, malformed/expired offer, transport loss per phase,
+  removal, durable revocation, re-pair with new keys); operations (status,
+  browser auth, signing with PIN 2 on the phone only, busy, cancel, expiry,
+  card removal, completion ambiguity, safe reconnect); fail-stop (bad
+  credentials, corruption, replay, sequence violation, identity mismatch —
+  first authenticated violation durably revokes, no retry or silent re-pair;
+  credential rejection clears local state; activation/PIN management always
+  rejected). Accept: every formal transition tested both ways; exact
+  card-command counts proven, retry-floor refusal proves zero; durable state
+  asserted after restart.
+- E, physical qualification: record hashes, versions, devices, card, reader,
+  sanitized start state; QR pairing, status, Safari auth, signing, denial,
+  card removal, relay loss, app/extension restart, one synthetic fail-stop,
+  durable revocation, re-pairing; extensions never claim each other's
+  capability; never spend a real credential retry. Accept: the exact archived
+  candidate passes the whole recorded matrix without dev-only crutches.
+- F, independent interop and review: a minimal independent peer from the
+  published spec and corpus (no shared Rust); cross-run the vectors; external
+  review of crypto, pairing ceremony, transcript binding, replay, privacy,
+  DoS, local-network exposure, teardown; high-severity findings resolved
+  before TestFlight, accepted risks recorded with owner and date. Accept:
+  interop without Apple-private assumptions; docs match code and corpus.
+- G, freeze and distribute: all gates through the release manager; notes from
+  the exact diff, human-reviewed before upload; never rebuild between
+  qualification and upload; record identifiers, provenance, tester groups,
+  rollback decision. Accept: uploads hash-match the qualified exports;
+  archives carry no debug harness.
