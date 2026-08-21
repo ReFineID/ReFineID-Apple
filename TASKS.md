@@ -4,10 +4,9 @@ Last reviewed: 2026-08-21. Completed work is removed; this file holds only
 outcomes still required for a beta, an App Store release, or the next
 protocol milestone.
 
-## Status 2026-08-21
+## Status
 
-- First release: iPhone MVP on iOS 26 (decisions.md 2026-08-21). Implemented
-  and pushed; `main` and `origin/main` at `f8f00e6`.
+- First release: iPhone MVP on iOS 26.
 - Ships: one-step NFC priming, Safari login, document signing and checking,
   PIN changes, USB-C reader signing, demo mode (virtual card starts activated).
 - Gated out of TestFlight/Release: remote card (`REFINEID_REMOTE_CARD`) and
@@ -16,15 +15,8 @@ protocol milestone.
   capability, `Config/ReFineID-iOS-Store-Info.plist` (no Bonjour or
   local-network keys). Debug/Profile: floor 16, both families, gates on.
   Enforced by the archive inspector and `RappShippingConfigurationTests`.
-- Verified 2026-08-21: iOS TestFlight, iOS Debug, and macOS TestFlight build
-  clean; store bundle carries reader + discovery extensions only,
-  MinimumOSVersion 26.0, UIDeviceFamily [1]; non-UI suite 528/529 (the one
-  failure is blocker 1).
-- App Store Connect: iOS 26.8.16 (114) awaits the guideline 2.1 demo video;
-  macOS submission withdrawn 2026-08-21. A macOS candidate deliberately fails
-  archive inspection until the macOS release decides its shape.
 
-## 0. Release blockers
+## Release blockers
 
 - [ ] Green the non-UI suite:
   `RappIntegrationTests/credentialRejectionRevokesBothPeersWithoutAnotherExecution`
@@ -37,43 +29,9 @@ protocol milestone.
 The RAPP physical qualification matrix is not a blocker here; it gates
 re-enabling `REFINEID_REMOTE_CARD` and the macOS release (Phase E below).
 
-## 1. Product and public documentation
+## Deterministic safety verification
 
-- [ ] Publish one supported-hardware table: card generations, key profiles,
-  USB readers, iPhone NFC, declared system consumers.
-- [ ] Reconcile public documentation with the implemented PIN 1 cache and
-  retry policy.
-- [ ] Keep fi/sv/en terminology consistent; UI already uses spaced `PIN 1` /
-  `PIN 2`, internal documentation largely does not.
 
-## 2. Repository controls
-
-- [ ] Protect `main` and release tags: no force push, deletion, or unreviewed
-  release; require passing checks.
-- [ ] Enable secret scanning, push protection, bounded dependency updates,
-  dependency review.
-- [ ] Restrict GitHub Apps, Actions, Xcode Cloud, deploy keys, webhooks, and
-  secrets to minimum access.
-- [ ] Add issue/PR guidance prohibiting PINs, PUKs, certificate dumps, full
-  serials, unsanitized traces.
-- [ ] Audit reachable source, fixtures, commits, and tags for license,
-  provenance, secrets, PII.
-
-## 3. Deterministic safety verification
-
-The first three were release blockers until descoped from the MVP on
-2026-08-21; each hardens behavior that already fails safe. Kept so the
-findings survive.
-
-- [ ] Serial-bind the contactless prime store: primes are keyed by the
-  batch-wide ATR digest, so a second same-generation card silently supersedes
-  the first; `PrimedIdentity.tokenSerial` is still optional; no test covers
-  wrong-card-same-ATR.
-- [ ] Close credential-clearing boundaries: no sleep/lock/logout handler; the
-  PIN 2 window can survive a card error for its full 60 s;
-  `CardCredentialStore` writes `AfterFirstUnlockThisDeviceOnly` while its
-  header claims `WhenUnlockedThisDeviceOnly`; the macOS offered-CAN file
-  outlives a crash, sleep, or lock.
 - [ ] Make the retry floor provable: the NFC deadline path transmits PIN 1
   without an immediately preceding probe (doc and exception must agree); zero
   attempts transmits instead of refusing (`refuseBlocked` unreachable);
@@ -83,62 +41,26 @@ findings survive.
   card-command counts for success, rejection, ambiguity, retry refusal.
 - [ ] Cover retry states unknown, malformed, 0–4, pristine, including
   wrong-at-three → two with no later transmission.
-- [ ] Cover removal, reinsertion, fast swap, reader contention, concurrent
-  requests at every credential boundary.
 - [ ] Finish the Virtual ID Card XCUITest harness: state machine, editor,
   VoiceOver, localization, transports, injected failures through the same
   paths as real cards.
-- [ ] Keep release tests deterministic: no sleeps, developer homes,
-  credentials, physical-card mutation, retained logs.
 - [ ] Prove store archives contain no diagnostics, logging, credential APDUs,
   secrets, personal data, or debug-only UI.
 - [ ] Run keyboard, VoiceOver, Dynamic Type, contrast, reduced-motion,
   focus-order, error-announcement, and Accessibility Inspector coverage for
   every shipping state.
 
-## 4. Exact-build hardware evidence
+## Exact-build hardware evidence
 
-- [ ] Maintain a versioned operator procedure and sanitized evidence record
-  per card generation, reader, transport, platform.
-- [ ] Verify activation, partial-activation recovery, authentication, signing
-  and validation, PIN changes, PUK resets, retry refusal against the exact
-  candidate.
-- [ ] Verify iPhone pairing, iPhone-backed Safari auth, peer removal, relay
-  rejection, reconnection, unpaired-requester rejection.
-- [ ] Verify reader/card removal, reinsertion, swap, contention, sleep, wake,
-  extension/app/system restart.
-- [ ] Retain only sanitized results tied to commit, version, build, archive
-  inspection, hardware, approver.
+- [ ] Verify activation
 
-## 5. TestFlight
+## App Store release
 
-- [ ] Repository-owned, platform-specific `What to Test` notes; drafts may be
-  generated from commits, applied only to the exact uploaded build.
-- [ ] Named internal tester groups; distribute the exact approved build.
-- [ ] Exercise clean install, upgrade, downgrade refusal, uninstall,
-  extension disappearance from TestFlight artifacts.
-- [ ] Prepare external groups, Beta App Review info, Virtual ID Card
-  walkthrough, credential-free hardware video.
-- [ ] `beta` builds only after internal evidence; `rc` only after external,
-  hardware, accessibility, privacy, metadata gates.
-- [ ] Freeze the exact tested candidate selected for App Review.
-
-## 6. App Store release
-
-- [ ] Complete localized name, subtitle, description, keywords, screenshots,
-  privacy, age rating, pricing, availability, export compliance,
-  accessibility declarations, review contact, EU trader data.
 - [ ] Give App Review accurate card/reader instructions, Virtual ID Card
-  steps, hardware limitations, extension behavior, and the video.
+  steps, hardware limitations, extension behavior.
 - [ ] Localized `What's New` drafts from the exact diff, human-approved.
-- [ ] Attach only the exact tested candidate; submit through the release
-  manager; retain submission identifier and state.
-- [ ] After approval: final platform tags at the candidate commit; manual
-  release with recorded owner approval.
-- [ ] Publish support and known limitations; define pause, rollback,
-  emergency-update, and monitoring responsibilities.
 
-## 7. Xcode Cloud
+## Xcode Cloud
 
 - [ ] Connect with minimum access and a deterministic verification workflow
   on the committed shared scheme.
@@ -147,7 +69,7 @@ findings survive.
 - [ ] Retain build, test, analysis, inspection, and rc evidence beyond Xcode
   Cloud's retention window.
 
-## 8. RAPP
+## RAPP
 
 - [ ] Prototype interoperable non-Apple requesters and authorizers after the
   Apple release baseline is frozen.
@@ -156,10 +78,7 @@ findings survive.
 
 Read `Documentation/rapp-implementation-handoff.md` before changing RAPP.
 
-Baseline: Rust `~/src/ReFineID` at
-`c745bb0cbab18b82877ddfa1143690c9fb4ce0ab`, pushed. Apple revision: status
-above; RAPP is compile-gated out of shipping configs since 2026-08-21,
-unchanged in Debug/Profile. Engine: Swift, `CardCore/Sources/RappEngine`;
+ Swift, `CardCore/Sources/RappEngine`;
 its authority is the vendored spec, formal state model, and conformance
 corpus, and its tests fail on disagreement.
 
