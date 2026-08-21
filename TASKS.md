@@ -6,8 +6,8 @@ protocol milestone.
 
 ## Status 2026-08-21
 
-- First release: iPhone MVP on iOS 26 (decisions.md 2026-08-21). Implemented;
-  `main` at `620e54a`, 19 commits ahead of `origin/main`, unpushed.
+- First release: iPhone MVP on iOS 26 (decisions.md 2026-08-21). Implemented
+  and pushed; `main` and `origin/main` at `f8f00e6`.
 - Ships: one-step NFC priming, Safari login, document signing and checking,
   PIN changes, USB-C reader signing, demo mode (virtual card starts activated).
 - Gated out of TestFlight/Release: remote card (`REFINEID_REMOTE_CARD`) and
