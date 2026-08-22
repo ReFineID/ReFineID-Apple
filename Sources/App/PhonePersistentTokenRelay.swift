@@ -126,7 +126,13 @@
       case .frame(let frame):
         #if REFINEID_SLIM_RELAY
           if slimSession != nil {
-            deliverInOrder { [weak self] in await self?.receiveSlim(frame) }
+            deliverInOrder { [weak self] in
+              // The delivery may outlive the connection it belongs to;
+              // a frame for a gone connection must not touch the next
+              // one's session.
+              guard let self, await self.connectionID == connectionID else { return }
+              await receiveSlim(frame)
+            }
             return
           }
         #endif
