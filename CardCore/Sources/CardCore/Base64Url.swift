@@ -4,6 +4,11 @@ import Foundation
 
 /// Base64url without padding, the JOSE segment encoding (RFC 7515
 /// section 2).
+///
+/// Deliberately separate from RappEngine's strict base64url: that one
+/// implements the RAPP offer encoding, is pinned by the vendored
+/// conformance corpus, and refuses what its specification refuses, while
+/// this one carries JOSE segments with Foundation's tolerance.
 public enum Base64Url {
   /// Encodes without padding.
   public static func encode(_ data: Data) -> String {

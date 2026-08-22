@@ -130,6 +130,11 @@ public enum DerValues {
 
   /// Longest length this reader accepts, in octets: four covers any
   /// document a signature is taken over.
+  ///
+  /// Deliberately wider than ``DerTlvRecord``'s two-octet cap: that
+  /// parser reads card files bounded by the card's addressing, while
+  /// this reader also parses certificates and revocation lists that
+  /// legitimately exceed 64 KiB.
   internal static let maximumLengthOctets: Int = 4
 
   /// Largest length encodable in the short form.

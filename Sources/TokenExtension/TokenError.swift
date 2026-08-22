@@ -38,9 +38,6 @@ internal enum TokenError: Error {
   /// signing command).
   case signRefused
 
-  /// The holder has disabled the transport this card arrived on.
-  case transportDisabled
-
   /// The stored number was just refused by this card; not retrying yet.
   case unsealAlreadyRefused
 
@@ -58,7 +55,7 @@ internal enum TokenError: Error {
       TKError(.corruptedData)
     case .pinAlreadyRejected, .pinFormatInvalid, .pinRejected, .signRefused:
       TKError(.authenticationFailed)
-    case .activationRequired, .primeMissing, .transportDisabled, .unsealAlreadyRefused,
+    case .activationRequired, .primeMissing, .unsealAlreadyRefused,
       .unsupportedKeyProfile:
       // Not this driver's card. Refusal is safe: the system treats the
       // card as unhandled rather than as broken.

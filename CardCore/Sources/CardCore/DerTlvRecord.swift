@@ -22,6 +22,10 @@ public struct DerTlvRecord: Equatable, Sendable {
 
   /// Longest long-form length encoding accepted: two length bytes,
   /// enough for the largest directly addressable card file.
+  ///
+  /// Deliberately narrower than ``DerReader``'s four-octet cap: that
+  /// reader also parses certificates and revocation lists, while every
+  /// record this parser meets is bounded by the card's addressing.
   private static let maximumLengthByteCount = 2
 
   /// The single-byte tag.

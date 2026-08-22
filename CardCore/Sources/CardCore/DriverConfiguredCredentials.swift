@@ -57,30 +57,6 @@ public enum DriverConfiguredCredentials {
     return stores[Self.classID]
   }
 
-  /// Drops every token configuration except this app's own credential
-  /// entry, and answers how many went.
-  ///
-  /// Destructive, and not a recovery: "everything except ours" includes
-  /// the configuration the system keeps for the card that is working
-  /// right now, so calling this unregisters a live token. It was briefly
-  /// wired into the status screen's refresh as a nudge, where it
-  /// unregistered a card seconds after a successful login and then
-  /// reported the card missing.
-  ///
-  /// It is for the debug reset, which exists to leave nothing behind.
-  /// Anything offering recovery to a holder has to tell a dead
-  /// registration from a live one by something other than ownership.
-  public static func dropEveryTokenConfiguration() -> Int {
-    guard let configuration else { return 0 }
-    let stale = configuration.tokenConfigurations.keys.filter { instance in
-      instance != Self.configurationInstanceID
-    }
-    for instance in stale {
-      configuration.removeTokenConfiguration(for: instance)
-    }
-    return stale.count
-  }
-
   /// Drops only card-identity configurations, preserving stored setup.
   ///
   /// The driver class is ReFineID's private namespace, so every entry

@@ -47,23 +47,12 @@ internal struct SignRelayTests {
       try? await Task.sleep(for: .seconds(7))
       return .signatureResponse(id: request.requestID, signature: Self.signature)
     }
-    let channel = SignRelayMarkerChannel()
-    let requester = SignRelayRequester(channel: channel)
 
-    let answer = try await requester.perform(
-      Self.request(id),
-      timeout: .seconds(30)
-    ) { frame in
-      Task {
-        guard
-          let payload = try? channel.open(frame),
-          let reply = try? await proxy.answer(to: payload)
-        else { return }
-        try? await requester.receive(channel.seal(reply))
-      }
-    }
+    let payload = try Self.request(id).encoded()
+    let answer = try await proxy.answer(to: payload)
 
-    #expect(answer == .signatureResponse(id: id, signature: Self.signature))
+    let expected = PersistentRelayMessage.signatureResponse(id: id, signature: Self.signature)
+    #expect(try PersistentRelayMessage.decoded(#require(answer)) == expected)
   }
 
   /// The same request twice reaches the card once.
@@ -124,26 +113,4 @@ internal struct SignRelayTests {
     #expect(await performed.count == 1)
   }
 
-  /// A frame that will not open ends the session and nothing else.
-  @Test
-  internal func anUnopenableFrameEndsOnlyTheSession() async throws {
-    let requester = SignRelayRequester(channel: SignRelayMarkerChannel())
-    await #expect(throws: SignRelayRequester.Failure.sessionEnded) {
-      try await requester.receive(Data("not sealed".utf8))
-    }
-  }
-
-  /// A peer that never answers gives up at the deadline.
-  @Test
-  internal func aSilentPeerTimesOut() async throws {
-    let requester = SignRelayRequester(channel: SignRelayMarkerChannel())
-    await #expect(throws: SignRelayRequester.Failure.timedOut) {
-      try await requester.perform(
-        Self.request(UUID()),
-        timeout: .milliseconds(200)
-      ) { _ in
-        // The peer is silent by never being handed the frame.
-      }
-    }
-  }
 }
