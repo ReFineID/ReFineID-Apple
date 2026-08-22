@@ -54,13 +54,25 @@ internal enum CryptokiEntryPoints {
   }
 
   /// C_Finalize: pReserved must be nil per the spec.
+  ///
+  /// Section 5.4 has C_Finalize close every session and log every token
+  /// out, so a later C_Initialize starts with no state from this epoch.
   internal static func finalize(reserved: CK_VOID_PTR?) -> CK_RV {
     guard reserved == nil else { return CKR_ARGUMENTS_BAD }
-    return initialized.withLock { state in
+    let outcome = initialized.withLock { (state: inout Bool) -> CK_RV in
       guard state else { return CKR_CRYPTOKI_NOT_INITIALIZED }
       state = false
       return CKR_OK
     }
+    guard outcome == CKR_OK else { return outcome }
+    ModuleRegistry.shared.withLock { registry in
+      registry.sessions.removeAll()
+      for index in registry.tokens.indices {
+        registry.tokens[index].loggedIn = false
+        registry.tokens[index].authenticationContext = nil
+      }
+    }
+    return CKR_OK
   }
 
   /// C_GetInfo: reports the Cryptoki version and module identification.

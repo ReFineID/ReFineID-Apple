@@ -4,6 +4,8 @@ import CCryptoki
 import Foundation
 import Testing
 
+@testable import PKCS11Bridge
+
 /// The interface versions the module publishes, newest first.
 private let currentVersion = CK_VERSION(
   major: CK_BYTE(CRYPTOKI_VERSION_MAJOR),
@@ -150,5 +152,33 @@ internal struct CryptokiModuleTests {
 
     #expect(C_Finalize(nil) == CKR_OK)
     #expect(C_Finalize(nil) == CKR_CRYPTOKI_NOT_INITIALIZED)
+  }
+
+  /// Section 5.4: C_Finalize closes every session and logs every token
+  /// out, so a later C_Initialize starts with no state from this epoch.
+  @Test
+  internal func finalizeClosesSessionsAndLogsTokensOut() {
+    #expect(C_Initialize(nil) == CKR_OK)
+    ModuleRegistry.shared.withLock { registry in
+      registry.tokens = [
+        ModuleRegistry.TokenRecord(
+          slotID: 1,
+          tokenID: "finalize-test",
+          label: "Finalize Test",
+          objects: [],
+          loggedIn: true,
+          authenticationContext: nil)
+      ]
+      registry.sessions[7] = ModuleRegistry.SessionRecord(slotID: 1, flags: 0)
+    }
+
+    #expect(C_Finalize(nil) == CKR_OK)
+
+    let (sessionsLeft, stillLoggedIn) = ModuleRegistry.shared.withLock { registry in
+      (registry.sessions.count, registry.tokens.contains(where: \.loggedIn))
+    }
+    #expect(sessionsLeft == 0)
+    #expect(!stillLoggedIn)
+    ModuleRegistry.shared.withLock { $0.tokens = [] }
   }
 }

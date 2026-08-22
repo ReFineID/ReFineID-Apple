@@ -55,6 +55,13 @@ package enum Asn1 {
     return Data(content)
   }
 
+  /// The full INTEGER encoding of content octets that already carry
+  /// their sign padding, which is how Security.framework hands out a
+  /// certificate serial.
+  package static func integerEncoded(content: Data) -> Data {
+    Data([Asn1IntegerTag]) + lengthOctets(content.count) + content
+  }
+
   /// The definite length octets encoding a content length.
   package static func lengthOctets(_ count: Int) -> Data {
     let longFormThreshold = Int(Asn1LongFormLengthFlag)

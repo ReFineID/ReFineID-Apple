@@ -143,7 +143,10 @@ internal enum IdentityObjects {
       values[CKA_ISSUER] = issuer as Data
     }
     if let serial = SecCertificateCopySerialNumberData(certificate, nil) {
-      values[CKA_SERIAL_NUMBER] = serial as Data
+      // PKCS#11 defines CKA_SERIAL_NUMBER as the DER encoding of the
+      // serial-number INTEGER; Security.framework hands out only its
+      // content octets, so the tag and length go back on here.
+      values[CKA_SERIAL_NUMBER] = Asn1.integerEncoded(content: serial as Data)
     }
     return values
   }
