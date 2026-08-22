@@ -61,11 +61,15 @@
     }
 
     /// Closes the session after the transport reported closure.
+    ///
+    /// A pairing revoked while this driver lived outranks the transport
+    /// as the reason: the close is the revocation's, however the frames
+    /// stopped flowing.
     public func transportClosed() -> [Command] {
       guard !closed else { return [] }
       closed = true
       _ = bridge.closeSession()
-      return [.closed(.transportClosed)]
+      return [.closed(revokedWhileClosing ? .pairRevoked : .transportClosed)]
     }
 
     /// Closes the session at local request.
@@ -73,7 +77,7 @@
       guard !closed else { return [] }
       closed = true
       _ = bridge.closeSession()
-      return [.closed(.localRequest)]
+      return [.closed(revokedWhileClosing ? .pairRevoked : .localRequest)]
     }
 
     internal func commands(_ action: RappBridgeAction) throws -> [Command] {

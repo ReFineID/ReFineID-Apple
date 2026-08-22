@@ -101,7 +101,9 @@ extension RappOperationBridge {
       let revokes = Self.failureRevokesPairing(message)
       if closeSession {
         // The failure result is the last frame this session carries; no
-        // later inbound frame may admit new work (invariant INV-16).
+        // later inbound frame may admit new work (invariant INV-16), and
+        // whatever else is still in flight is classified now.
+        classifyLiveOperations()
         closed = true
         session.close()
       }

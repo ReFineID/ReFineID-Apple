@@ -186,6 +186,10 @@ public final class SecureMessagingChannel: CardChannel {
       var response = unwrapped.payload
       response.append(unwrapped.status)
       return response
+    } catch Failure.malformedCommand {
+      // Refused before the counter advanced and before any byte reached
+      // the card: the channel is untouched and stays usable.
+      throw Failure.malformedCommand
     } catch {
       failed = true
       throw error

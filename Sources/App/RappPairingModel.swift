@@ -85,6 +85,9 @@
     internal var eventTask: Task<Void, Never>?
     internal var reviewedPeerName: String?
 
+    /// The tail of the event-delivery chain; nil between attempts.
+    private var eventDelivery: Task<Void, Never>?
+
     internal var isFinished: Bool {
       switch phase {
       case .paired, .failed:
@@ -223,15 +226,29 @@
       guard let coordinator else { return }
       switch event {
       case .connected:
-        Task { await coordinator.transportConnected() }
+        deliverInOrder { await coordinator.transportConnected() }
       case .frame(let frame):
-        Task { await coordinator.receive(frame) }
+        deliverInOrder { await coordinator.receive(frame) }
       case .closed:
         guard !isFinished else {
           finishAttempt()
           return
         }
-        Task { await coordinator.transportClosed() }
+        deliverInOrder { await coordinator.transportClosed() }
+      }
+    }
+
+    /// Runs `work` after every delivery enqueued before it.
+    ///
+    /// The ceremony's frames arrive back to back and its coordinator
+    /// consumes them in protocol order, so two events racing into the
+    /// actor out of order abort a healthy pairing. One chained task per
+    /// delivery keeps arrival order all the way in.
+    private func deliverInOrder(_ work: @escaping @Sendable () async -> Void) {
+      let previous = eventDelivery
+      eventDelivery = Task {
+        await previous?.value
+        await work()
       }
     }
 
@@ -250,6 +267,7 @@
       coordinator = nil
       eventTask?.cancel()
       eventTask = nil
+      eventDelivery = nil
     }
 
     internal func resetAttempt() {

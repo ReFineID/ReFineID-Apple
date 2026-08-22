@@ -81,10 +81,11 @@ internal struct EstablishedSession {
       throw SessionError.integrityFailure
     } catch {
       // The frame decrypted, so it came from the paired peer holding the
-      // right key, and its contents broke the protocol. This layer only
-      // ends the session; the operation bridge classifies the violation
-      // and applies the pairing effect the specification assigns it.
-      channel = nil
+      // right key, and its contents broke the protocol. The channel stays
+      // open - the cipher state is intact - so the operation bridge can
+      // still seal the close notice the violation owes the peer before it
+      // closes the session and applies the pairing effect.
+      channel = working
       throw SessionError.unexpectedMessage
     }
     channel = working

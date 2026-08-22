@@ -44,15 +44,19 @@ import Foundation
     /// and read on the session's.
     private let lastFoundPeer = OSAllocatedUnfairLock<MCPeerID?>(initialState: nil)
 
-    /// The one peer this channel has taken into its session, written on
-    /// the advertiser's queue and read on the session's.
+    /// The one peer this channel has taken into its session, with when it
+    /// was taken; written on the advertiser's queue and read on the
+    /// session's.
     ///
     /// A device runs more than one process that speaks this service: the
     /// app and its token extension both advertise and both invite. Taking
     /// the second invitation replaced a live session with one belonging to
     /// another process, and when that process went away it closed the
-    /// channel the first was still using.
-    private let acceptedPeer = OSAllocatedUnfairLock<MCPeerID?>(initialState: nil)
+    /// channel the first was still using. The timestamp bounds the claim:
+    /// an accepted peer that never connects would otherwise hold its place
+    /// forever and refuse every later inviter.
+    private let acceptedPeer = OSAllocatedUnfairLock<(peer: MCPeerID, at: Date)?>(
+      initialState: nil)
 
     /// Builds a channel for one role that reports to one owner.
     @preconcurrency
@@ -195,7 +199,7 @@ import Foundation
         // departed peer's place refused every later process forever, which
         // is one working exchange and then none.
         acceptedPeer.withLock { accepted in
-          if accepted?.displayName == peerID.displayName {
+          if accepted?.peer.displayName == peerID.displayName {
             accepted = nil
           }
         }
@@ -261,10 +265,17 @@ import Foundation
       invitationHandler: (Bool, MCSession?) -> Void
     ) {
       let refusedBy = acceptedPeer.withLock { accepted -> String? in
-        if let accepted, accepted.displayName != peerID.displayName {
-          return accepted.displayName
+        // A different peer is refused while the accepted one holds its
+        // place: connected, or accepted so recently its connection may
+        // still be forming. A stale unconnected claim expires, so a peer
+        // that died before ever connecting cannot wedge the channel.
+        if let held = accepted, held.peer.displayName != peerID.displayName,
+          !session.connectedPeers.isEmpty
+            || Date().timeIntervalSince(held.at) < Self.invitationTimeout
+        {
+          return held.peer.displayName
         }
-        accepted = peerID
+        accepted = (peer: peerID, at: Date())
         return nil
       }
       if let refusedBy {

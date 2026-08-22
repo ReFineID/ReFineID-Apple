@@ -60,7 +60,7 @@
         if frame == streamContext?.sessionPreamble {
           establishStream(connectionID: connectionID)
         } else if let coordinator {
-          Task { await coordinator.receive(frame) }
+          deliverInOrder { await coordinator.receive(frame) }
         } else if preCoordinatorFrames.count < Self.maximumPreCoordinatorFrames {
           preCoordinatorFrames.append(frame)
         } else {

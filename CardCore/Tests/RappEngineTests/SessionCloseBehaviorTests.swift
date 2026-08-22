@@ -64,6 +64,31 @@ internal struct SessionCloseBehaviorTests {
     #expect(RappOperationBridge.failureRevokesPairing(message))
   }
 
+  /// A decrypted frame that breaks the protocol must leave the channel
+  /// able to seal the close notice the violation owes the peer.
+  @Test
+  internal func aViolationStillSealsTheCloseNotice() throws {
+    let profiles: [ProfileName] = [.authentication]
+    let peers = try runPairing(offer: makeOffer(profiles: profiles), grants: profiles)
+    var (requester, proxy) = try runSession(peers)
+
+    // Authenticated bytes that are no envelope at all: the proxy decrypts
+    // them, fails the decode, and must classify a violation.
+    let garbage = try requester.sealPayload(Data("not an envelope".utf8))
+    #expect(throws: SessionError.unexpectedMessage) {
+      _ = try proxy.open(garbage)
+    }
+
+    let notice = try proxy.seal(
+      .sessionClose,
+      body: [
+        "reason": .text("protocol_violation"),
+        "last_received_sequence": .unsigned(proxy.lastReceivedSequence),
+      ])
+    let received = try requester.open(notice)
+    #expect(received.messageType == .sessionClose)
+  }
+
   /// One record's failed terminal write must not leave the other live
   /// operations unclassified when the session closes.
   @Test

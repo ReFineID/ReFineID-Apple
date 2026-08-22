@@ -34,6 +34,16 @@ internal struct ScsHttpTests {
   }
 
   @Test
+  internal func refusesAnUnparseableContentLength() {
+    // Garbage or an overflowing number must not fall back to a valid
+    // empty body.
+    let overflow = "POST /sign HTTP/1.1\r\nContent-Length: 18446744073709551616\r\n\r\n"
+    #expect(ScsHttpAssembly.assemble(buffer: Data(overflow.utf8)) == .invalid)
+    let garbage = "POST /sign HTTP/1.1\r\nContent-Length: many\r\n\r\n"
+    #expect(ScsHttpAssembly.assemble(buffer: Data(garbage.utf8)) == .invalid)
+  }
+
+  @Test
   internal func waitsForTheWholeBody() {
     let wire = "POST /sign HTTP/1.1\r\nContent-Length: 10\r\n\r\nhalf"
     #expect(ScsHttpAssembly.assemble(buffer: Data(wire.utf8)) == .needMoreData)
