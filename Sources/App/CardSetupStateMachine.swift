@@ -28,13 +28,13 @@ internal enum CardSetupStateMachine {
   }
 
   internal enum Event: String, CaseIterable, Sendable {
-    case activationSucceeded
-    case classificationActivated
-    case classificationActivationRequired
-    case classificationFailed
-    case classificationRecoveryRequired
-    case classificationWrongCardAccessNumber
-    case destinationDismissed
+    case activationSucceeded = "activation.succeeded"
+    case classificationActivated = "classification.activated"
+    case classificationActivationRequired = "classification.activation-required"
+    case classificationFailed = "classification.failed"
+    case classificationRecoveryRequired = "classification.recovery-required"
+    case classificationWrongCardAccessNumber = "classification.wrong-can"
+    case destinationDismissed = "destination.dismissed"
     case identityForgotten = "identity.forgotten"
     case identityLoaded = "identity.loaded"
     case openDocumentSigning = "signing.open"
