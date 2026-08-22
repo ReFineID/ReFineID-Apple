@@ -33,8 +33,10 @@
     internal let state = OSAllocatedUnfairLock(initialState: State())
     private let completed = DispatchSemaphore(value: 0)
 
-    /// The tail of the frame-delivery chain, appended under its lock.
-    private let frameDelivery = OSAllocatedUnfairLock<Task<Void, Never>?>(initialState: nil)
+    /// Frames enter the coordinator in arrival order through this
+    /// bounded chain.
+    private let frameDelivery = OrderedDelivery(
+      capacity: OrderedDelivery.relayFrameCapacity)
     #if REFINEID_SLIM_RELAY
       internal let pendingSlimRequest = OSAllocatedUnfairLock<Data?>(initialState: nil)
     #endif
@@ -164,20 +166,12 @@
       }
     }
 
-    /// Runs `work` after every delivery enqueued before it.
-    ///
-    /// The coordinator decrypts with a strictly incrementing counter
-    /// nonce, so two frames entering its actor out of order fail
-    /// authentication and fail-stop a healthy session. One chained task
-    /// per delivery keeps arrival order all the way in.
+    /// Runs `work` after every delivery enqueued before it; a peer that
+    /// outruns the bounded chain ends the request as a transport failure.
     private func deliverInOrder(_ work: @escaping @Sendable () async -> Void) {
-      frameDelivery.withLock { chain in
-        let previous = chain
-        chain = Task {
-          await previous?.value
-          await work()
-        }
-      }
+      if frameDelivery.deliver(work) { return }
+      cancelTransport()
+      finish(error: .transport)
     }
 
     /// The pairing this request runs over, selecting the newest when

@@ -6,12 +6,17 @@
 
   extension RappBridgeActionKind {
     /// Whether the step names an operation for the card or the holder.
+    ///
+    /// Exhaustive on purpose: a new kind must be routed here explicitly
+    /// rather than falling silently into the session-level table.
     internal var isOperationStep: Bool {
       switch self {
       case .inspectPrerequisites, .awaitUserApproval, .executeSafeRead,
         .executeCardCommand, .terminal, .cancelled, .advisoryCancellation:
         true
-      default:
+      case .sendFrame, .resultAcknowledgment, .completed, .resultAcknowledged,
+        .peerBusy, .peerUnknownOperation, .ignoredDuplicate, .noAction,
+        .sessionClosed, .pairRevoked:
         false
       }
     }
@@ -144,7 +149,9 @@
           ], for: action)
       case .advisoryCancellation:
         return scheduled([.advisoryCancellation(operationID: operationID)], for: action)
-      default:
+      case .sendFrame, .resultAcknowledgment, .completed, .resultAcknowledged,
+        .peerBusy, .peerUnknownOperation, .ignoredDuplicate, .noAction,
+        .sessionClosed, .pairRevoked:
         throw LocalError.wrongPhase
       }
     }
@@ -169,8 +176,11 @@
         throw LocalError.missingFrame
       case .completed:
         throw LocalError.wrongPhase
-      default:
+      case .ignoredDuplicate, .noAction:
         return scheduled([], for: action)
+      case .inspectPrerequisites, .awaitUserApproval, .executeSafeRead,
+        .executeCardCommand, .terminal, .cancelled, .advisoryCancellation:
+        throw LocalError.wrongPhase
       }
     }
 

@@ -55,8 +55,10 @@
     internal var preCoordinatorFrames: [Data] = []
     internal var relistenPolicy = RelistenPolicy.automatic
 
-    /// The tail of the frame-delivery chain; nil between connections.
-    internal var frameDelivery: Task<Void, Never>?
+    /// Frames enter the coordinator in arrival order through this
+    /// bounded chain; reset between connections.
+    internal let frameDelivery = OrderedDelivery(
+      capacity: OrderedDelivery.relayFrameCapacity)
 
     // MARK: Lifecycle
 
@@ -149,7 +151,11 @@
       coordinator = nil
       dispatcher = nil
       relay = nil
-      frameDelivery = nil
+      frameDelivery.reset()
+      #if REFINEID_SLIM_RELAY
+        slimSession = nil
+        slimProxy = nil
+      #endif
       #if REFINEID_STREAM_TRANSPORT
         streamListener = nil
         streamContext = nil
@@ -268,18 +274,14 @@
       relistenPolicy = .explicitUserActionRequired
     }
 
-    /// Runs `work` after every delivery enqueued before it.
-    ///
-    /// The coordinator decrypts with a strictly incrementing counter
-    /// nonce, so two frames entering its actor out of order fail
-    /// authentication and fail-stop a healthy session. One chained task
-    /// per delivery keeps arrival order all the way in.
+    /// Runs `work` after every delivery enqueued before it, cancelling a
+    /// transport whose peer outruns the bounded chain.
     internal func deliverInOrder(_ work: @escaping @Sendable () async -> Void) {
-      let previous = frameDelivery
-      frameDelivery = Task {
-        await previous?.value
-        await work()
-      }
+      if frameDelivery.deliver(work) { return }
+      relay?.cancel()
+      #if REFINEID_STREAM_TRANSPORT
+        streamListener?.cancel()
+      #endif
     }
 
     internal func hasUsableSelectedPair() -> Bool {

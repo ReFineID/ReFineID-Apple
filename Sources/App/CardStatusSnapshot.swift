@@ -87,14 +87,16 @@ internal struct CardStatusSnapshot: Equatable, Sendable {
   /// - it reads the long-lived watcher the login model owns.
   internal static func publishesAnIdentity() -> Bool {
     // Every token configuration is listed as a token, so the credential
-    // entry the app itself writes must be excluded by name -- counting
-    // it reported "Ready" with no card present, from nothing but a
-    // stored card access number.
+    // entry the app itself writes and a displaced remote-card
+    // registration must both be excluded -- each is listed with no card
+    // present, and counting either reported "Ready" from nothing but
+    // stored configuration.
     let credentialEntries =
       CardTokenNamespace.tokenPrefix + DriverConfiguredCredentials.configurationInstanceID
     return TKTokenWatcher().tokenIDs.contains { identifier in
       CardTokenNamespace.owns(tokenIdentifier: identifier)
         && !identifier.hasPrefix(credentialEntries)
+        && !CardTokenNamespace.isDisplacedRemoteCardToken(tokenIdentifier: identifier)
     }
   }
 

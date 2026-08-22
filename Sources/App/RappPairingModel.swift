@@ -85,8 +85,10 @@
     internal var eventTask: Task<Void, Never>?
     internal var reviewedPeerName: String?
 
-    /// The tail of the event-delivery chain; nil between attempts.
-    private var eventDelivery: Task<Void, Never>?
+    /// Ceremony events enter the coordinator in arrival order through
+    /// this bounded chain; reset between attempts.
+    private let eventDelivery = OrderedDelivery(
+      capacity: OrderedDelivery.relayFrameCapacity)
 
     internal var isFinished: Bool {
       switch phase {
@@ -238,18 +240,11 @@
       }
     }
 
-    /// Runs `work` after every delivery enqueued before it.
-    ///
-    /// The ceremony's frames arrive back to back and its coordinator
-    /// consumes them in protocol order, so two events racing into the
-    /// actor out of order abort a healthy pairing. One chained task per
-    /// delivery keeps arrival order all the way in.
+    /// Runs `work` after every delivery enqueued before it; a peer that
+    /// outruns the bounded chain ends the attempt.
     private func deliverInOrder(_ work: @escaping @Sendable () async -> Void) {
-      let previous = eventDelivery
-      eventDelivery = Task {
-        await previous?.value
-        await work()
-      }
+      if eventDelivery.deliver(work) { return }
+      relay?.cancel()
     }
 
     internal func fail(_ message: String) {
@@ -267,7 +262,7 @@
       coordinator = nil
       eventTask?.cancel()
       eventTask = nil
-      eventDelivery = nil
+      eventDelivery.reset()
     }
 
     internal func resetAttempt() {
