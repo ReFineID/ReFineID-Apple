@@ -20,6 +20,13 @@ public struct RappBridgeAction: Equatable, Sendable {
   public var terminalReason: RappTerminalReason?
   /// Close the session once the accompanying frame has been released.
   public var closeSessionAfterSend: Bool
+  /// Durably revoke the stored pairing before releasing any frame.
+  ///
+  /// Set for the conditions whose pairing effect the specification's
+  /// failure taxonomy names as revocation: a rejected credential and an
+  /// authenticated protocol violation, plus a peer's authenticated
+  /// revocation notice.
+  public var revokesPairing: Bool
   /// When the caller should next poll liveness, on the monotonic clock.
   public var nextPollAtMs: UInt64?
 
@@ -32,6 +39,7 @@ public struct RappBridgeAction: Equatable, Sendable {
     terminalState: String? = nil,
     terminalReason: RappTerminalReason? = nil,
     closeSessionAfterSend: Bool = false,
+    revokesPairing: Bool = false,
     nextPollAtMs: UInt64? = nil
   ) {
     self.kind = kind
@@ -41,6 +49,7 @@ public struct RappBridgeAction: Equatable, Sendable {
     self.terminalState = terminalState
     self.terminalReason = terminalReason
     self.closeSessionAfterSend = closeSessionAfterSend
+    self.revokesPairing = revokesPairing
     self.nextPollAtMs = nextPollAtMs
   }
 }

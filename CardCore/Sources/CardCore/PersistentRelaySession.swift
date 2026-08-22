@@ -39,16 +39,20 @@ import Foundation
     private let lastInviteAt = OSAllocatedUnfairLock<Date?>(initialState: nil)
     private var advertiser: MCNearbyServiceAdvertiser?
     private var browser: MCNearbyServiceBrowser?
-    private var lastFoundPeer: MCPeerID?
 
-    /// The one peer this channel has taken into its session.
+    /// The most recently discovered peer, written on the browser's queue
+    /// and read on the session's.
+    private let lastFoundPeer = OSAllocatedUnfairLock<MCPeerID?>(initialState: nil)
+
+    /// The one peer this channel has taken into its session, written on
+    /// the advertiser's queue and read on the session's.
     ///
     /// A device runs more than one process that speaks this service: the
     /// app and its token extension both advertise and both invite. Taking
     /// the second invitation replaced a live session with one belonging to
     /// another process, and when that process went away it closed the
     /// channel the first was still using.
-    private var acceptedPeer: MCPeerID?
+    private let acceptedPeer = OSAllocatedUnfairLock<MCPeerID?>(initialState: nil)
 
     /// Builds a channel for one role that reports to one owner.
     @preconcurrency
@@ -146,7 +150,7 @@ import Foundation
       }
       guard !wasClosed else { return }
       trace("closed \(String(describing: error))")
-      acceptedPeer = nil
+      acceptedPeer.withLock { $0 = nil }
       advertiser?.stopAdvertisingPeer()
       browser?.stopBrowsingForPeers()
       onEvent(.closed(error))
@@ -190,12 +194,14 @@ import Foundation
         // pairing, its token extension for a signature -- and holding the
         // departed peer's place refused every later process forever, which
         // is one working exchange and then none.
-        if acceptedPeer?.displayName == peerID.displayName {
-          acceptedPeer = nil
+        acceptedPeer.withLock { accepted in
+          if accepted?.displayName == peerID.displayName {
+            accepted = nil
+          }
         }
         if everConnected.withLock({ $0 }) {
           finish(.disconnected)
-        } else if let peer = lastFoundPeer {
+        } else if let peer = lastFoundPeer.withLock({ $0 }) {
           invite(peer)
         }
       case .connecting:
@@ -244,22 +250,28 @@ import Foundation
     /// The first invitation is taken and its peer remembered. A later
     /// invitation is taken only if it is that same peer arriving again,
     /// which is what a dropped connection looks like from here. Anything
-    /// else is refused, because a channel serves one peer at a time and
-    /// the process inviting second is not the one being served.
+    /// else is refused while the accepted peer holds its place - already
+    /// connected or still connecting - because a channel serves one peer
+    /// at a time, and a second peer taken mid-connect would put two peers
+    /// in one session with every frame delivered to both.
     public func advertiser(
       _: MCNearbyServiceAdvertiser,
       didReceiveInvitationFromPeer peerID: MCPeerID,
       withContext _: Data?,
       invitationHandler: (Bool, MCSession?) -> Void
     ) {
-      if let acceptedPeer, acceptedPeer.displayName != peerID.displayName,
-        !session.connectedPeers.isEmpty
-      {
-        trace("refused invitation from \(peerID.displayName), serving \(acceptedPeer.displayName)")
+      let refusedBy = acceptedPeer.withLock { accepted -> String? in
+        if let accepted, accepted.displayName != peerID.displayName {
+          return accepted.displayName
+        }
+        accepted = peerID
+        return nil
+      }
+      if let refusedBy {
+        trace("refused invitation from \(peerID.displayName), serving \(refusedBy)")
         invitationHandler(false, nil)
         return
       }
-      acceptedPeer = peerID
       trace("accepted invitation from \(peerID.displayName)")
       invitationHandler(true, session)
     }
@@ -280,15 +292,17 @@ import Foundation
       withDiscoveryInfo _: [String: String]?
     ) {
       trace("found \(peerID.displayName)")
-      lastFoundPeer = peerID
+      lastFoundPeer.withLock { $0 = peerID }
       invite(peerID)
     }
 
     /// Forgets a vanished peer so a stale invite is not retried.
     public func browser(_: MCNearbyServiceBrowser, lostPeer peerID: MCPeerID) {
       trace("lost \(peerID.displayName)")
-      if lastFoundPeer?.displayName == peerID.displayName {
-        lastFoundPeer = nil
+      lastFoundPeer.withLock { found in
+        if found?.displayName == peerID.displayName {
+          found = nil
+        }
       }
     }
 

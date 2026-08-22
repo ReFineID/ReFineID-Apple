@@ -51,12 +51,18 @@ internal struct RappMessageChannel {
   }
 
   /// Decrypt one frame into a schema-checked, correctly sequenced envelope.
+  ///
+  /// The cipher's counter nonce already refuses a replayed, reordered or
+  /// skipped frame, so a decrypted envelope naming another session or a
+  /// sequence off its nonce position can only be a peer that seals
+  /// nonconforming envelopes - an authenticated protocol violation.
   internal mutating func open(_ frame: Data) throws -> Envelope {
     var decoded: Envelope?
     var guardCopy = sequence
     _ = try channel.open(frame) { plaintext in
       let envelope = try Envelope.decode(plaintext)
-      guardCopy.noteIncoming(sequence: envelope.sequence)
+      try guardCopy.acceptIncoming(
+        sessionIdentifier: envelope.sessionIdentifier, sequence: envelope.sequence)
       decoded = envelope
     }
     guard let envelope = decoded else { throw RappOpenFailure.authenticatedProtocolViolation }

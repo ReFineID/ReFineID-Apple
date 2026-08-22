@@ -114,13 +114,18 @@ internal struct RequesterOperationEngine {
   }
 
   /// Classifies every live operation when the session closes.
+  ///
+  /// Best effort per operation: one record's failed terminal write must
+  /// not leave the rest unclassified, and a record that could not be
+  /// written stays at its last persisted state, which recovery resolves
+  /// the next time this pairing begins operations.
   internal mutating func sessionClosed(
     store: inout some RequesterJournalStore
-  ) throws -> [(operationIdentifier: Data, state: OperationState)] {
+  ) -> [(operationIdentifier: Data, state: OperationState)] {
     var classified: [(operationIdentifier: Data, state: OperationState)] = []
     for index in operations.indices where !operations[index].record.state.isTerminal {
       let operationIdentifier = operations[index].record.operationIdentifier
-      let state = try operations[index].sessionClosed(to: &store)
+      guard let state = try? operations[index].sessionClosed(to: &store) else { continue }
       classified.append((operationIdentifier, state))
     }
     return classified

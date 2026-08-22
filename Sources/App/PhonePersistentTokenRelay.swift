@@ -47,13 +47,16 @@
     #endif
     internal var coordinator: RappConnectionCoordinator?
     #if REFINEID_SLIM_RELAY
-      private var slimSession: SignRelaySession?
-      private var slimProxy: SignRelayProxy?
+      internal var slimSession: SignRelaySession?
+      internal var slimProxy: SignRelayProxy?
     #endif
     internal var dispatcher: RappPhoneProxyDispatcher?
     internal var connectionID: UUID?
     internal var preCoordinatorFrames: [Data] = []
     internal var relistenPolicy = RelistenPolicy.automatic
+
+    /// The tail of the frame-delivery chain; nil between connections.
+    internal var frameDelivery: Task<Void, Never>?
 
     // MARK: Lifecycle
 
@@ -121,12 +124,12 @@
       case .frame(let frame):
         #if REFINEID_SLIM_RELAY
           if slimSession != nil {
-            Task { await receiveSlim(frame) }
+            deliverInOrder { [weak self] in await self?.receiveSlim(frame) }
             return
           }
         #endif
         if let coordinator {
-          Task { await coordinator.receive(frame) }
+          deliverInOrder { await coordinator.receive(frame) }
         } else if preCoordinatorFrames.count < Self.maximumPreCoordinatorFrames {
           preCoordinatorFrames.append(frame)
         } else {
@@ -146,6 +149,7 @@
       coordinator = nil
       dispatcher = nil
       relay = nil
+      frameDelivery = nil
       #if REFINEID_STREAM_TRANSPORT
         streamListener = nil
         streamContext = nil
@@ -188,48 +192,6 @@
         relay?.cancel()
       }
     }
-
-    #if REFINEID_SLIM_RELAY
-      /// Serves the slim relay over the selected pairing.
-      private func establishSlim(
-        pair: RappPairRecord,
-        transport: RappClosureFrameTransport
-      ) throws {
-        let session = try SignRelaySession(role: .proxy, pair: pair, vault: vault)
-        slimSession = session
-        let journal = (try? vault.selectedPairID()).flatMap { pairID in
-          pairID.map { SignRelayVaultJournal(vault: vault, pairID: $0) }
-        }
-        slimProxy = SignRelayProxy(journal: journal) { request in
-          #if REFINEID_LOCAL_CARD
-            return await SlimCardWork.perform(request)
-          #else
-            // A device with no card path can serve nobody else's request.
-            return .failure(id: request.requestID, reason: .cardUnavailable)
-          #endif
-        }
-        _ = transport
-      }
-
-      /// Drives one frame through the slim session and answers what it asks.
-      private func receiveSlim(_ frame: Data) async {
-        guard let session = slimSession, let proxy = slimProxy else { return }
-        let step: SignRelayStep
-        do {
-          step = try await session.receive(frame)
-        } catch {
-          relay?.cancel()
-          return
-        }
-        for outgoing in step.send {
-          try? relay?.send(outgoing)
-        }
-        guard let payload = step.payload else { return }
-        guard let answer = try? await proxy.answer(to: payload) else { return }
-        guard let sealed = try? await session.seal(answer) else { return }
-        try? relay?.send(sealed)
-      }
-    #endif
 
     internal func establishCoordinator(
       connectionID: UUID,
@@ -274,7 +236,9 @@
               self?.observe(event, connectionID: connectionID)
             }
           }
-          Task {
+          // The replay joins the same chain later frames append to, so a
+          // frame arriving during the replay cannot overtake it.
+          deliverInOrder {
             await made.start()
             for frame in earlyFrames {
               await made.receive(frame)
@@ -302,6 +266,20 @@
 
     private func requireExplicitUserAction() {
       relistenPolicy = .explicitUserActionRequired
+    }
+
+    /// Runs `work` after every delivery enqueued before it.
+    ///
+    /// The coordinator decrypts with a strictly incrementing counter
+    /// nonce, so two frames entering its actor out of order fail
+    /// authentication and fail-stop a healthy session. One chained task
+    /// per delivery keeps arrival order all the way in.
+    internal func deliverInOrder(_ work: @escaping @Sendable () async -> Void) {
+      let previous = frameDelivery
+      frameDelivery = Task {
+        await previous?.value
+        await work()
+      }
     }
 
     internal func hasUsableSelectedPair() -> Bool {

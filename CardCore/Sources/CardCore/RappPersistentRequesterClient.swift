@@ -32,6 +32,9 @@
     internal let vault: RappDeviceVault
     internal let state = OSAllocatedUnfairLock(initialState: State())
     private let completed = DispatchSemaphore(value: 0)
+
+    /// The tail of the frame-delivery chain, appended under its lock.
+    private let frameDelivery = OSAllocatedUnfairLock<Task<Void, Never>?>(initialState: nil)
     #if REFINEID_SLIM_RELAY
       internal let pendingSlimRequest = OSAllocatedUnfairLock<Data?>(initialState: nil)
     #endif
@@ -147,16 +150,32 @@
         Task { await establish() }
       case .frame(let frame):
         #if REFINEID_SLIM_RELAY
-          Task { await receiveSlim(frame) }
+          deliverInOrder { [weak self] in await self?.receiveSlim(frame) }
         #else
           let coordinator = state.withLock { $0.coordinator }
-          Task { await coordinator?.receive(frame) }
+          deliverInOrder { await coordinator?.receive(frame) }
         #endif
       case .closed:
         let coordinator = state.withLock { $0.coordinator }
-        Task {
+        deliverInOrder { [weak self] in
           await coordinator?.transportClosed()
-          finish(error: .transport)
+          self?.finish(error: .transport)
+        }
+      }
+    }
+
+    /// Runs `work` after every delivery enqueued before it.
+    ///
+    /// The coordinator decrypts with a strictly incrementing counter
+    /// nonce, so two frames entering its actor out of order fail
+    /// authentication and fail-stop a healthy session. One chained task
+    /// per delivery keeps arrival order all the way in.
+    private func deliverInOrder(_ work: @escaping @Sendable () async -> Void) {
+      frameDelivery.withLock { chain in
+        let previous = chain
+        chain = Task {
+          await previous?.value
+          await work()
         }
       }
     }

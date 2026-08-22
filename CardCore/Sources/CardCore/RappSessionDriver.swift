@@ -179,6 +179,7 @@
       }
       let driver = try RappOperationDriver(
         role: role,
+        pairID: pairID,
         session: session,
         vault: vault,
         maximumLifetimeMilliseconds: maximumLifetimeMilliseconds,

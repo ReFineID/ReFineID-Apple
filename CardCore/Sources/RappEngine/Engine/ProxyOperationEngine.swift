@@ -116,20 +116,6 @@ internal struct ProxyOperationEngine {
     }
   }
 
-  /// Records the single transmission and yields the only executable command.
-  internal mutating func beginCardCommand(
-    operationIdentifier: Data, store: inout some JournalStore
-  ) throws -> PendingCardCommand<AuthorizedCardCommand> {
-    guard let index = index(of: operationIdentifier) else {
-      throw EngineError.unknownLocalOperation
-    }
-    do {
-      return try operations[index].beginCardCommand(to: &store)
-    } catch let error as AuthorizationError {
-      throw engineLocalError(error)
-    }
-  }
-
   /// Retains a completed result before it may be released.
   internal mutating func finishCompleted(
     operationIdentifier: Data, result: OperationResultMessage, store: inout some JournalStore
@@ -166,29 +152,30 @@ internal struct ProxyOperationEngine {
   }
 
   /// Classifies every live operation when the session closes.
+  ///
+  /// Best effort per operation: one record's failed terminal write must
+  /// not leave the rest unclassified, and a record that could not be
+  /// written stays at its last persisted state, which recovery resolves
+  /// the next time this pairing begins operations.
   internal mutating func sessionClosed(
     store: inout some JournalStore
-  ) throws -> [ProxySessionCloseAction] {
+  ) -> [ProxySessionCloseAction] {
     var actions: [ProxySessionCloseAction] = []
     for index in operations.indices {
       let operationIdentifier = operations[index].reference.operationIdentifier
       switch operations[index].stage {
       case .requested, .awaitingConsent, .prepared, .executingSafeRead, .committed:
-        do {
-          _ = try operations[index].receiveCancel(
+        guard
+          (try? operations[index].receiveCancel(
             to: &store, cancellation: operations[index].reference,
-            transmissionProvenNotStarted: true)
-        } catch let error as AuthorizationError {
-          throw engineLocalError(error)
-        }
+            transmissionProvenNotStarted: true)) != nil
+        else { continue }
         actions.append(.cancelled(operationIdentifier: operationIdentifier))
       case .executing:
         actions.append(.continueCardExchange(operationIdentifier: operationIdentifier))
       case .resultPending:
-        do {
-          try operations[index].deliveryBecameUncertain(to: &store)
-        } catch let error as AuthorizationError {
-          throw engineLocalError(error)
+        guard (try? operations[index].deliveryBecameUncertain(to: &store)) != nil else {
+          continue
         }
         actions.append(.deliveryUncertain(operationIdentifier: operationIdentifier))
       case .terminal:

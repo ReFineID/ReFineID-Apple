@@ -4,6 +4,11 @@ import Foundation
 
 /// The unpadded base64url encoding of RFC 4648 section 5.
 ///
+/// Deliberately separate from CardCore's JOSE `Base64Url`: this one
+/// implements the RAPP offer encoding, is pinned by the vendored
+/// conformance corpus, and refuses padding, a remainder-one length, and
+/// any byte outside the alphabet.
+///
 /// Three plain bytes carry twenty-four bits, which the encoding splits into
 /// four characters of six bits each. A final group of one or two bytes
 /// produces two or three characters and no padding.

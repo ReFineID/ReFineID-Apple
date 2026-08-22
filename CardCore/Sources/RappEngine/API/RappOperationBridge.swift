@@ -109,6 +109,13 @@ public final class RappOperationBridge: @unchecked Sendable {
       nowMilliseconds: nowMs)
   }
 
+  /// Whether a failure result's pairing effect is revocation, per the
+  /// specification's failure taxonomy.
+  internal static func failureRevokesPairing(_ message: TypedMessage) -> Bool {
+    guard case .operationResult(let result) = message else { return false }
+    return result.error == .credentialRejected
+  }
+
   /// Names an engine failure in the public vocabulary.
   internal static func bindingError(_ error: EngineError) -> RappBindingError {
     switch error {
@@ -118,46 +125,6 @@ public final class RappOperationBridge: @unchecked Sendable {
       .InvalidInput
     default:
       .WrongPhase
-    }
-  }
-
-  /// The proxy records stored for this pairing.
-  private static func recoveredProxyRecords(
-    vault: RappOperationVault, pairIdentifier: Data
-  ) throws -> [RecoveredProxyRecord] {
-    let stored: [RappStoredProxyJournal]
-    do {
-      stored = try vault.loadProxy(pairId: pairIdentifier)
-    } catch {
-      throw RappBindingError.LocalStateFailure
-    }
-    return try stored.map { entry in
-      do {
-        return RecoveredProxyRecord(
-          record: try ProxyJournalRecord.decode(entry.record),
-          retainedResult: try entry.retainedResult.map(OperationResultMessage.decode))
-      } catch {
-        throw RappBindingError.LocalStateFailure
-      }
-    }
-  }
-
-  /// The requester records stored for this pairing.
-  private static func recoveredRequesterRecords(
-    vault: RappOperationVault, pairIdentifier: Data
-  ) throws -> [RequesterJournalRecord] {
-    let stored: [Data]
-    do {
-      stored = try vault.loadRequester(pairId: pairIdentifier)
-    } catch {
-      throw RappBindingError.LocalStateFailure
-    }
-    return try stored.map { record in
-      do {
-        return try RequesterJournalRecord.decode(record)
-      } catch {
-        throw RappBindingError.LocalStateFailure
-      }
     }
   }
 
@@ -224,20 +191,30 @@ public final class RappOperationBridge: @unchecked Sendable {
 
   /// Consumes one sealed frame from the peer.
   ///
-  /// - Throws: ``RappBindingError/ProtocolFailure`` when the frame does not
-  ///   open or the authenticated peer sent something the protocol forbids.
+  /// The unexpected-input policy (specification section 14.5) decides the
+  /// blast radius here: a frame that fails authenticated decryption closes
+  /// only the session, while a frame that decrypted and then broke the
+  /// protocol is attributable to the peer holding the pair keys and
+  /// revokes the pairing (section 14.6).
+  ///
+  /// - Throws: ``RappBindingError/ProtocolFailure`` when the authenticated
+  ///   peer sent something the protocol forbids outside the modelled
+  ///   violation handling.
   public func receiveFrame(bytes: Data, nowMs: UInt64) throws -> RappBridgeAction {
     try locked {
+      guard !closed else { return RappBridgeAction(kind: .noAction) }
       let envelope: Envelope
       do {
         envelope = try session.open(bytes)
       } catch SessionError.integrityFailure {
+        // Failed authenticated decryption is network-attributable and
+        // has no pairing effect.
         return closingAction(.sessionClosed)
+      } catch SessionError.unexpectedMessage {
+        // The frame decrypted, so it came from the paired peer holding
+        // the right key, and its contents broke the protocol.
+        return violationClose()
       } catch {
-        // Every remaining way a frame can fail to open ends this session
-        // and leaves the pairing standing. A pairing is what the holder
-        // made with a card and a scan; it is not the right price for a
-        // frame this side could not read.
         return closingAction(.sessionClosed)
       }
       if let livenessAction = try livenessReply(to: envelope, nowMs: nowMs) {
@@ -251,7 +228,14 @@ public final class RappOperationBridge: @unchecked Sendable {
           sessionIdentifier: session.sessionIdentifier,
           nowMilliseconds: nowMs)
       } catch {
-        return closingAction(.sessionClosed)
+        // An authenticated body that does not parse is a schema
+        // violation from the peer holding the pair keys.
+        return violationClose()
+      }
+      if case .other = message {
+        // A pairing-phase or readiness message on an established
+        // session has no legal transition and is attributable.
+        return violationClose()
       }
       return try dispatch(message, nowMs: nowMs)
     }
@@ -262,6 +246,7 @@ public final class RappOperationBridge: @unchecked Sendable {
     nowMs: UInt64, challenge: Data, jitterMs: Int64
   ) throws -> RappBridgeAction {
     try locked {
+      guard !closed else { return RappBridgeAction(kind: .noAction) }
       guard let ping = PingChallenge(challenge) else { throw RappBindingError.InvalidInput }
       switch liveness.poll(
         nowMilliseconds: nowMs, nextChallenge: ping, jitterMilliseconds: jitterMs)
@@ -293,19 +278,9 @@ public final class RappOperationBridge: @unchecked Sendable {
   }
 
   /// Closes the session and classifies every operation still in flight.
-  public func closeSession() throws -> RappBridgeAction {
-    try locked {
+  public func closeSession() -> RappBridgeAction {
+    locked {
       guard !closed else { return RappBridgeAction(kind: .noAction) }
-      switch side {
-      case .proxy(var engine):
-        var store = VaultProxyJournalStore(vault: vault, pairIdentifier: pairIdentifier)
-        _ = try? engine.sessionClosed(store: &store)
-        side = .proxy(engine)
-      case .requester(var engine):
-        var store = VaultRequesterJournalStore(vault: vault, pairIdentifier: pairIdentifier)
-        _ = try? engine.sessionClosed(store: &store)
-        side = .requester(engine)
-      }
       return closingAction(.sessionClosed)
     }
   }
