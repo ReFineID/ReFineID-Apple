@@ -87,12 +87,14 @@
 
     internal func commands(_ action: RappBridgeAction) throws -> [Command] {
       if action.revokesPairing {
-        // Revocation is durable before any notice frame is released, so
-        // the pairing is dead even if the notice never arrives. A failed
-        // write still closes and fail-stops this connection; the vault
-        // stays authoritative for the next start.
+        // The revocation is written before any notice frame is released,
+        // so the pairing is dead even if the notice never arrives. The
+        // close is reported as a revocation either way - the protocol
+        // event happened and the app must fail-stop - but a refused
+        // write is retried once here and again on the next incident,
+        // not silently forgotten.
         revokedWhileClosing = true
-        try? vault.revokeDeviceOnly(pairId: pairID, revokedAtMs: clock.wallMilliseconds())
+        revokePairDurably()
       }
       if let frame = action.frame {
         return try scheduled([.send(frame: frame, release: release(for: action))], for: action)
@@ -101,6 +103,20 @@
         return try stepCommands(action)
       }
       return try lifecycleCommands(action)
+    }
+
+    /// Writes the revocation the vault must hold, retrying one refusal.
+    ///
+    /// A pairing already revoked answers the second attempt as done; a
+    /// vault refusing both writes leaves the record for the next
+    /// incident, while the in-memory fail-stop still ends this
+    /// connection.
+    private func revokePairDurably() {
+      let revokedAt = clock.wallMilliseconds()
+      if (try? vault.revokeDeviceOnly(pairId: pairID, revokedAtMs: revokedAt)) != nil {
+        return
+      }
+      try? vault.revokeDeviceOnly(pairId: pairID, revokedAtMs: revokedAt)
     }
 
     /// The release token the transport must return for one frame.
