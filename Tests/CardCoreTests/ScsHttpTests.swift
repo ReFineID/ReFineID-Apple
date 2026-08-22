@@ -26,6 +26,14 @@ internal struct ScsHttpTests {
   }
 
   @Test
+  internal func refusesANegativeContentLength() {
+    // A declared negative length passed every guard and handed a negative
+    // count to the body assembly, which traps; it must be invalid instead.
+    let wire = "POST /sign HTTP/1.1\r\nContent-Length: -1\r\n\r\n"
+    #expect(ScsHttpAssembly.assemble(buffer: Data(wire.utf8)) == .invalid)
+  }
+
+  @Test
   internal func waitsForTheWholeBody() {
     let wire = "POST /sign HTTP/1.1\r\nContent-Length: 10\r\n\r\nhalf"
     #expect(ScsHttpAssembly.assemble(buffer: Data(wire.utf8)) == .needMoreData)

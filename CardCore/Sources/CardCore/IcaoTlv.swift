@@ -93,7 +93,10 @@ internal struct IcaoTlv {
     var length = Int(first)
     if first & BerValues.longFormFlag != 0 {
       let octets = Int(first & BerValues.longFormCountMask)
-      guard octets > 0, start + octets <= bytes.count else { return nil }
+      guard
+        octets > 0, octets <= BerValues.longFormMaximumOctets,
+        start + octets <= bytes.count
+      else { return nil }
       length = 0
       for index in start..<(start + octets) {
         length = length << UInt8.bitWidth | Int(bytes[index])

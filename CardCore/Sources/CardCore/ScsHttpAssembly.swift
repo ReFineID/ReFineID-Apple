@@ -30,7 +30,9 @@ public enum ScsHttpAssembly: Equatable, Sendable {
     guard let request = ScsHttpRequest.parse(head: buffer[..<boundary.lowerBound]) else {
       return .invalid
     }
-    guard request.bodyLength <= ScsValues.httpBodyMaximumLength else { return .invalid }
+    guard (0...ScsValues.httpBodyMaximumLength).contains(request.bodyLength) else {
+      return .invalid
+    }
     let body = buffer[boundary.upperBound...]
     guard body.count >= request.bodyLength else { return .needMoreData }
     return .complete(

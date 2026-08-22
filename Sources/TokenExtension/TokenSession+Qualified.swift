@@ -64,6 +64,13 @@ extension TokenSession {
     } catch let error as CardOperationError {
       TokenLog.error("sign: qualified card failed \(error)")
       throw TKError(.communicationError)
+    } catch {
+      // A PACE refusal, a secure-messaging fault or a transport timeout
+      // is not a wrong PIN: map it so ctkd ends the operation instead of
+      // re-looping the prompt. The window survives - the entry was never
+      // judged by the card.
+      TokenLog.error("sign: qualified failed unmapped \(error)")
+      throw TKError(.communicationError)
     }
   }
 }

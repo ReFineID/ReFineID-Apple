@@ -13,6 +13,12 @@ import Foundation
 /// a background GCD queue so the blocking wait never touches the
 /// cooperative pool or the main thread.
 internal struct SmartCardChannel: CardChannel {
+  /// A transport failure before the card produced a protocol response.
+  internal enum TransportError: Error, Equatable, Sendable {
+    /// CryptoTokenKit did not complete one APDU within the budget.
+    case responseTimedOut
+  }
+
   /// Carries a value across the semaphore boundary; sound because the
   /// semaphore serialises the write before the wait returns.
   private final class Box<Value>: @unchecked Sendable {
@@ -32,28 +38,34 @@ internal struct SmartCardChannel: CardChannel {
   /// by a process no longer interested in it, which is precisely the jam
   /// this timeout exists to end.
   ///
-  /// `@unchecked Sendable` is the audit, not a shrug: the flag is only
-  /// read and written under the lock, and the card is touched on exactly
-  /// one path, to end a session the waiter has already walked away from.
+  /// `@unchecked Sendable` is the audit, not a shrug: both flags are only
+  /// read and written under the lock, and whichever side runs second sees
+  /// the other's flag, so exactly one of them ends an abandoned session.
   private final class SessionWait: @unchecked Sendable {
     private let lock = NSLock()
     private let card: TKSmartCard
     private var waiterGaveUp = false
+    private var sessionArrivedOpen = false
 
     init(card: TKSmartCard) {
       self.card = card
     }
 
-    /// Called by the waiter when its budget runs out.
+    /// Called by the waiter when its budget runs out; ends a session
+    /// whose callback has already delivered it open.
     func giveUp() {
       lock.lock()
       waiterGaveUp = true
+      let orphaned = sessionArrivedOpen
       lock.unlock()
+      guard orphaned else { return }
+      card.endSession()
     }
 
     /// Called by the callback: ends a session nobody is waiting for.
     func releaseIfAbandoned(opened: Bool) {
       lock.lock()
+      sessionArrivedOpen = opened
       let abandoned = waiterGaveUp
       lock.unlock()
       guard opened, abandoned else { return }
@@ -70,6 +82,17 @@ internal struct SmartCardChannel: CardChannel {
 
   /// The same budget, in the units `DispatchSemaphore` wants.
   private static let sessionWaitBudget: DispatchTimeInterval = .seconds(sessionWaitSeconds)
+
+  /// How long one APDU may wait for its reply.
+  ///
+  /// The app's adapter serves both the near-field and the reader paths,
+  /// so the budget is the reader's: room for the card's slowest legal
+  /// answer, while a card pulled mid-APDU - whose callback never fires -
+  /// becomes an error instead of a queue parked forever.
+  private static let responseSeconds: Int = 10
+
+  /// The same budget, in the units `DispatchSemaphore` wants.
+  private static let responseBudget: DispatchTimeInterval = .seconds(responseSeconds)
 
   /// A reader hands back exactly the bytes the card produced, so a
   /// chunked read may ask for the plain chunk.
@@ -92,18 +115,29 @@ internal struct SmartCardChannel: CardChannel {
   /// the entire operation away from shipped builds.
   internal func transmit(_ payload: Data) throws -> Data {
     let reply = Box<Data?>(nil)
+    let transportError = Box<Error?>(nil)
     let semaphore = DispatchSemaphore(value: 0)
     let started = ContinuousClock.now
-    smartCard.transmit(payload) { response, _ in
+    smartCard.transmit(payload) { response, error in
       reply.value = response
+      transportError.value = error
       semaphore.signal()
     }
-    semaphore.wait()
+    guard semaphore.wait(timeout: .now() + Self.responseBudget) == .success else {
+      let elapsed = started.duration(to: ContinuousClock.now)
+      AppTrace.append(
+        CardExchangeTrace.line(request: payload, response: nil, elapsed: elapsed)
+      )
+      throw TransportError.responseTimedOut
+    }
     let elapsed = started.duration(to: ContinuousClock.now)
     AppTrace.append(
       CardExchangeTrace.line(request: payload, response: reply.value, elapsed: elapsed)
     )
     guard let response = reply.value else {
+      if let callbackError = transportError.value {
+        throw callbackError
+      }
       throw CardOperationError.malformedResponse
     }
     return response

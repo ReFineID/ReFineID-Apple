@@ -40,28 +40,34 @@ internal struct SmartCardChannel: CardChannel {
   /// by a process no longer interested in it, which is precisely the jam
   /// this timeout exists to end.
   ///
-  /// `@unchecked Sendable` is the audit, not a shrug: the flag is only
-  /// read and written under the lock, and the card is touched on exactly
-  /// one path, to end a session the waiter has already walked away from.
+  /// `@unchecked Sendable` is the audit, not a shrug: both flags are only
+  /// read and written under the lock, and whichever side runs second sees
+  /// the other's flag, so exactly one of them ends an abandoned session.
   private final class SessionWait: @unchecked Sendable {
     private let lock = NSLock()
     private let card: TKSmartCard
     private var waiterGaveUp = false
+    private var sessionArrivedOpen = false
 
     init(card: TKSmartCard) {
       self.card = card
     }
 
-    /// Called by the waiter when its budget runs out.
+    /// Called by the waiter when its budget runs out; ends a session
+    /// whose callback has already delivered it open.
     func giveUp() {
       lock.lock()
       waiterGaveUp = true
+      let orphaned = sessionArrivedOpen
       lock.unlock()
+      guard orphaned else { return }
+      card.endSession()
     }
 
     /// Called by the callback: ends a session nobody is waiting for.
     func releaseIfAbandoned(opened: Bool) {
       lock.lock()
+      sessionArrivedOpen = opened
       let abandoned = waiterGaveUp
       lock.unlock()
       guard opened, abandoned else { return }

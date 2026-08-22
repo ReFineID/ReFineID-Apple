@@ -72,7 +72,11 @@ public struct ScsHttpRequest: Equatable, Sendable {
       } else if name.caseInsensitiveCompare("Content-Type") == .orderedSame {
         parsedContentType = value
       } else if name.caseInsensitiveCompare("Content-Length") == .orderedSame {
-        parsedLength = Int(value) ?? 0
+        // A negative declared length is a malformed head, and letting it
+        // through would hand a negative count to the body assembly.
+        let declared = Int(value) ?? 0
+        guard declared >= 0 else { return nil }
+        parsedLength = declared
       }
     }
     return Self(

@@ -21,4 +21,9 @@ internal enum BerValues {
 
   /// The remaining bits of that octet, which count those octets.
   internal static let longFormCountMask: UInt8 = 0x7F
+
+  /// The most length octets accepted: four bound every file a travel
+  /// document carries, and more would overflow the length into the
+  /// sign bit.
+  internal static let longFormMaximumOctets = 4
 }

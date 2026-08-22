@@ -160,6 +160,29 @@ internal struct SecureMessagingChannelTests {
     }
   }
 
+  /// Once one protected exchange has failed, the counter cannot be
+  /// trusted to match the card's, so the channel refuses every later
+  /// exchange up front instead of failing its MAC unpredictably.
+  @Test
+  internal func aFailedExchangeFailStopsTheChannel() throws {
+    let card = Self.card(
+      responses: [
+        (WireHex.data(Self.unalignedHex), WireHex.data(Self.successHex)),
+        (Data(), WireHex.data(Self.successHex)),
+      ],
+      fault: .tamperedMac
+    )
+    let channel = try Self.channel(over: card)
+
+    #expect(throws: SecureMessagingChannel.Failure.macMismatch) {
+      try channel.transmit(WireHex.data(Self.selectObjectDirectoryHex))
+    }
+    #expect(throws: SecureMessagingChannel.Failure.desynchronized) {
+      try channel.transmit(WireHex.data(Self.selectObjectDirectoryHex))
+    }
+    #expect(card.receivedHeaders.count == 1)
+  }
+
   @Test
   internal func paddingRoundTripsForAlignedAndUnalignedBodies() throws {
     let card = Self.card(responses: [

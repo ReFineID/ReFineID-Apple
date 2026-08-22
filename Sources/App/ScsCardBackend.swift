@@ -157,7 +157,13 @@
       guard let profile = profile(for: purpose) else {
         throw ScsBackendFailure.signingUnavailable("card certificate unavailable")
       }
-      let scheme: SigningScheme = profile == .ecdsaP384 ? .ecdsa : .rsaPkcs1
+      let scheme: SigningScheme
+      switch profile {
+      case .ecdsaP256, .ecdsaP384:
+        scheme = .ecdsa
+      case .rsa2048, .rsa3072:
+        scheme = .rsaPkcs1
+      }
       let algorithm = SigningAlgorithm(hash: hash, scheme: scheme)
       let expected = profile.expectedSignatureLength
       let outcome: Result<Data, ScsBackendFailure>? = withCard { operations in

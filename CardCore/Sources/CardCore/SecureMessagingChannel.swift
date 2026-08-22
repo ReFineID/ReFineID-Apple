@@ -33,6 +33,11 @@ import Foundation
 public final class SecureMessagingChannel: CardChannel {
   /// Why a protected exchange was refused.
   public enum Failure: Error, Equatable {
+    /// An earlier exchange on this channel failed, so the send-sequence
+    /// counter may no longer match the card's; every later exchange is
+    /// refused up front instead of failing its MAC unpredictably.
+    case desynchronized
+
     /// The response's DO'8E' did not match the checksum computed over the
     /// received data objects. The channel is no longer trustworthy.
     case macMismatch
@@ -47,24 +52,6 @@ public final class SecureMessagingChannel: CardChannel {
 
     /// The protected body would not fit a short-form command.
     case oversizedCommand
-  }
-
-  /// The pieces of a plain command that secure messaging protects
-  /// separately: the header (already carrying the secure-messaging class
-  /// bits, because the MAC covers it in that form), the data field, and Le.
-  private struct PlainCommandParts {
-    /// The four header bytes, class byte already marked.
-    let header: Data
-
-    /// The command data field, empty when the command carries none.
-    let data: Data
-
-    /// The enclosed command's Le, nil when it expects no response data.
-    let expectedLength: UInt8?
-
-    /// Whether the original instruction byte selects DO'85' rather than
-    /// DO'87' for its encrypted command data.
-    let hasOddInstruction: Bool
   }
 
   /// A parsed encrypted data object, preserving its tag because DO'85' and
@@ -87,12 +74,12 @@ public final class SecureMessagingChannel: CardChannel {
   }
 
   /// The four header bytes of any APDU.
-  private static let headerLength: Int = 4
+  internal static let headerLength: Int = 4
 
   /// The largest body a short-form command APDU can carry.
   private static let maximumBodyLength: Int = 255
-  private static let evenInstructionRemainder: UInt8 = 2
-  private static let instructionByteIndex = 1
+  internal static let evenInstructionRemainder: UInt8 = 2
+  internal static let instructionByteIndex = 1
 
   /// Chunked reads over this channel ask for the secure-messaged chunk,
   /// never the plain one.
@@ -119,6 +106,10 @@ public final class SecureMessagingChannel: CardChannel {
   /// The send-sequence counter, pre-incremented in both directions.
   private var sendSequenceCounter: Data
 
+  /// Set once a protected exchange has thrown: from then on the counter
+  /// cannot be trusted to match the card's, and the channel fail-stops.
+  private var failed = false
+
   /// Wraps `channel` in the session `sessionKeys` describes.
   ///
   /// Constructed only on the contactless branch, immediately after a
@@ -130,58 +121,6 @@ public final class SecureMessagingChannel: CardChannel {
     self.encryptionKey = sessionKeys.encryptionKey
     self.macKey = sessionKeys.macKey
     self.sendSequenceCounter = sessionKeys.initialSendSequenceCounter
-  }
-
-  /// Splits a plain short-form command and marks its class byte.
-  ///
-  /// Extended-length APDUs are refused rather than mis-parsed; nothing in
-  /// this driver builds one.
-  private static func commandParts(of plain: Data) throws -> PlainCommandParts {
-    let bytes = Array(plain)
-    guard bytes.count >= Self.headerLength else { throw Failure.malformedCommand }
-    var header = Data(bytes.prefix(Self.headerLength))
-    header[header.startIndex] |= PaceValues.classSecureMessagingBit
-    let hasOddInstruction = !bytes[Self.instructionByteIndex].isMultiple(
-      of: Self.evenInstructionRemainder)
-    if bytes.count == Self.headerLength {
-      return PlainCommandParts(
-        header: header,
-        data: Data(),
-        expectedLength: nil,
-        hasOddInstruction: hasOddInstruction
-      )
-    }
-    if bytes.count == Self.headerLength + 1 {
-      return PlainCommandParts(
-        header: header,
-        data: Data(),
-        expectedLength: bytes[Self.headerLength],
-        hasOddInstruction: hasOddInstruction
-      )
-    }
-    let dataStart = Self.headerLength + 1
-    let dataLength = Int(bytes[Self.headerLength])
-    guard dataLength > 0, bytes.count >= dataStart + dataLength else {
-      throw Failure.malformedCommand
-    }
-    let data = Data(bytes[dataStart..<dataStart + dataLength])
-    if bytes.count == dataStart + dataLength {
-      return PlainCommandParts(
-        header: header,
-        data: data,
-        expectedLength: nil,
-        hasOddInstruction: hasOddInstruction
-      )
-    }
-    guard bytes.count == dataStart + dataLength + 1 else {
-      throw Failure.malformedCommand
-    }
-    return PlainCommandParts(
-      header: header,
-      data: data,
-      expectedLength: bytes[dataStart + dataLength],
-      hasOddInstruction: hasOddInstruction
-    )
   }
 
   /// The secure-messaging data objects carried by a response body.
@@ -218,37 +157,6 @@ public final class SecureMessagingChannel: CardChannel {
     return ResponseObjects(cryptogram: cryptogram, status: status, mac: mac)
   }
 
-  /// ISO 7816-4 padding method 2: append `80`, then `00` to the block
-  /// boundary.
-  ///
-  /// Padding is unconditional, so an already-aligned buffer gains a whole
-  /// extra block. That is what makes stripping it unambiguous.
-  private static func padded(_ data: Data) -> Data {
-    var buffer = data
-    buffer.append(PaceValues.paddingMarkerByte)
-    let remainder = buffer.count % AesCbc.blockSize
-    if remainder != 0 {
-      buffer.append(
-        contentsOf: repeatElement(0, count: AesCbc.blockSize - remainder)
-      )
-    }
-    return buffer
-  }
-
-  /// Strips ISO 7816-4 padding method 2, returning the input unchanged
-  /// when it carries no marker.
-  private static func unpadded(_ data: Data) -> Data {
-    let bytes = Array(data)
-    var end = bytes.count
-    while end > 0, bytes[end - 1] == 0 {
-      end -= 1
-    }
-    guard end > 0, bytes[end - 1] == PaceValues.paddingMarkerByte else {
-      return data
-    }
-    return Data(bytes[0..<(end - 1)])
-  }
-
   /// Protects one plain command, transmits it, and returns the unwrapped
   /// inner response as `payload || SW1 SW2`.
   ///
@@ -267,15 +175,21 @@ public final class SecureMessagingChannel: CardChannel {
   /// transport-level failure the card never protected -- is passed through
   /// untouched.
   public func transmit(_ payload: Data) throws -> Data {
-    let outer = try ContinuedResponse.transmitting(
-      try wrap(payload),
-      over: plainChannel
-    )
-    guard !outer.payload.isEmpty else { return outer.encoded }
-    let unwrapped = try unwrap(outer.payload)
-    var response = unwrapped.payload
-    response.append(unwrapped.status)
-    return response
+    guard !failed else { throw Failure.desynchronized }
+    do {
+      let outer = try ContinuedResponse.transmitting(
+        try wrap(payload),
+        over: plainChannel
+      )
+      guard !outer.payload.isEmpty else { return outer.encoded }
+      let unwrapped = try unwrap(outer.payload)
+      var response = unwrapped.payload
+      response.append(unwrapped.status)
+      return response
+    } catch {
+      failed = true
+      throw error
+    }
   }
 
   /// DO'85' or DO'87' for a command data field.
@@ -304,20 +218,6 @@ public final class SecureMessagingChannel: CardChannel {
       ? PaceValues.oddInstructionCryptogramTag
       : PaceValues.cryptogramTag
     guard let object = DerTlvRecord.encoded(tag: tag, value: value)
-    else {
-      throw Failure.oversizedCommand
-    }
-    return object
-  }
-
-  /// DO'97' for the enclosed command's Le, or empty when it has none.
-  private func expectedLengthObject(for expectedLength: UInt8?) throws -> Data {
-    guard let expectedLength else { return Data() }
-    guard
-      let object = DerTlvRecord.encoded(
-        tag: PaceValues.expectedLengthTag,
-        value: Data([expectedLength])
-      )
     else {
       throw Failure.oversizedCommand
     }

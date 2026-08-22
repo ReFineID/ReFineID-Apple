@@ -265,6 +265,12 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
       // the PIN prompt (it is not a wrong PIN).
       TokenLog.error("sign: card failed \(error)")
       throw TKError(.communicationError)
+    } catch {
+      // A PACE refusal, a secure-messaging fault or a transport timeout
+      // must not escape unmapped either: ctkd answers a raw Swift error
+      // by re-looping the PIN prompt, and none of these is a wrong PIN.
+      TokenLog.error("sign: failed unmapped \(error)")
+      throw TKError(.communicationError)
     }
   }
 
@@ -329,6 +335,17 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
     guard let pin1 = authorized else {
       throw TKError(.authenticationNeeded)
     }
+    return try performedInField(
+      token: token, accessNumber: accessNumber, pin1: pin1, request: request)
+  }
+
+  /// Runs the field signature and maps every way it can end.
+  private func performedInField(
+    token: Token,
+    accessNumber: CardAccessNumber,
+    pin1: consuming Pin1,
+    request: SignRequest
+  ) throws -> Data {
     do {
       let signature = FieldSignature(
         token: token,
@@ -339,6 +356,13 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
       // A timed-out transmit leaves the card and our secure-messaging
       // counter in an unknowable state. End and forget that held session
       // so the next system attempt starts with a genuinely fresh field.
+      token.heldSession.release()
+      throw TKError(.communicationError)
+    } catch let error as SecureMessagingChannel.Failure {
+      // The retained channel is no longer trustworthy and fail-stops, so
+      // a retry through it can only fail the same way. Release the hold;
+      // the next attempt gets tokenNotFound and a genuinely fresh mint.
+      TokenLog.error("sign: secure channel failed \(error)")
       token.heldSession.release()
       throw TKError(.communicationError)
     } catch CardOperationError.sessionUnavailable {
