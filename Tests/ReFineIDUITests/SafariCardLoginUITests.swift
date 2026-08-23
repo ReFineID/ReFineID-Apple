@@ -114,13 +114,13 @@
       matching markers: [String]
     ) -> Bool {
       let webView = safari.webViews.firstMatch
-      for marker in markers
-      where webView.staticTexts
-        .containing(NSPredicate(format: "label CONTAINS[c] %@", marker))
-        .firstMatch
-        .exists
-      {
-        return true
+      for marker in markers {
+        let predicate = NSPredicate(format: "label CONTAINS[cd] %@", marker)
+        if webView.staticTexts.containing(predicate).firstMatch.exists
+          || webView.otherElements.containing(predicate).firstMatch.exists
+        {
+          return true
+        }
       }
       return false
     }
@@ -167,20 +167,15 @@
       safari: XCUIApplication
     ) {
       for name in Self.affirmativeActions {
-        if springboard.buttons[name].exists {
-          springboard.buttons[name].tap()
-          return
-        }
-        if safari.buttons[name].exists {
-          safari.buttons[name].tap()
-          return
-        }
-        if springboard.sheets.buttons[name].exists {
-          springboard.sheets.buttons[name].tap()
-          return
-        }
-        if safari.sheets.buttons[name].exists {
-          safari.sheets.buttons[name].tap()
+        let predicate = NSPredicate(format: "label CONTAINS[cd] %@", name)
+        let candidates = [
+          springboard.buttons.containing(predicate).firstMatch,
+          springboard.sheets.buttons.containing(predicate).firstMatch,
+          safari.buttons.containing(predicate).firstMatch,
+          safari.sheets.buttons.containing(predicate).firstMatch,
+        ]
+        for button in candidates where button.exists && button.isHittable {
+          button.tap()
           return
         }
       }
@@ -191,14 +186,15 @@
       let webView = safari.webViews.firstMatch
       guard webView.exists else { return }
       for action in Self.webInteractiveActions {
-        let button = webView.buttons[action]
-        if button.exists, button.isHittable {
-          button.tap()
-          return
-        }
-        let link = webView.links[action]
-        if link.exists, link.isHittable {
-          link.tap()
+        let predicate = NSPredicate(format: "label CONTAINS[cd] %@", action)
+        let candidates = [
+          webView.buttons.containing(predicate).firstMatch,
+          webView.links.containing(predicate).firstMatch,
+          webView.staticTexts.containing(predicate).firstMatch,
+          webView.otherElements.containing(predicate).firstMatch,
+        ]
+        for element in candidates where element.exists && element.isHittable {
+          element.tap()
           return
         }
       }
