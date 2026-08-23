@@ -12,6 +12,8 @@ import SwiftUI
       static let tapTargetSide: CGFloat = 44
       static let tapTargetOverflow: CGFloat = -10
       static let forgetButtonGap: CGFloat = 4
+      /// Room for the caret and the field's inner inset around three digits.
+      static let groupFieldGutter: CGFloat = 12
     }
 
     // MARK: Computed Properties
@@ -25,15 +27,16 @@ import SwiftUI
           let incoming = RappPairingCode.normalize(newValue)
           if incoming.count > RappPairingCode.groupSize {
             applyPairingDigits(incoming)
-            pairingCodeGroup =
-              RappPairingCode.isValid(incoming) ? nil : .second
+            if !RappPairingCode.isValid(incoming) {
+              schedulePairingFocus(.second)
+            }
             return
           }
           let second = String(
             pairingCodeDigits.dropFirst(RappPairingCode.groupSize))
           applyPairingDigits(incoming + second)
           if incoming.count == RappPairingCode.groupSize {
-            pairingCodeGroup = .second
+            schedulePairingFocus(.second)
           }
         }
       )
@@ -52,7 +55,7 @@ import SwiftUI
           )
           applyPairingDigits(first + second)
           if second.isEmpty {
-            pairingCodeGroup = .first
+            schedulePairingFocus(.first)
           }
         }
       )
@@ -258,23 +261,39 @@ import SwiftUI
       text: Binding<String>,
       group: PairingCodeGroup
     ) -> some View {
-      TextField(prompt, text: text)
+      ZStack(alignment: .leading) {
+        Text(
+          verbatim: String(repeating: "0", count: RappPairingCode.groupSize)
+        )
         .font(.system(.body, design: .monospaced, weight: .bold))
-        .foregroundStyle(.primary)
-        .keyboardType(.numberPad)
-        .multilineTextAlignment(.leading)
-        .focused($pairingCodeGroup, equals: group)
-        .frame(width: Layout.pairingGroupFieldWidth)
+        .hidden()
+        .padding(.horizontal, RemotePairingLayout.groupFieldGutter)
+        .accessibilityHidden(true)
+        TextField(prompt, text: text)
+          .font(.system(.body, design: .monospaced, weight: .bold))
+          .foregroundStyle(.primary)
+          .keyboardType(.numberPad)
+          .textInputAutocapitalization(.never)
+          .autocorrectionDisabled()
+          .multilineTextAlignment(.leading)
+          .focused($pairingCodeGroup, equals: group)
+      }
     }
 
     private func applyPairingDigits(_ digits: String) {
       let normalized = RappPairingCode.normalize(digits)
       pairingCodeDigits = normalized
       if RappPairingCode.isValid(normalized) {
-        pairingCodeGroup = nil
+        schedulePairingFocus(nil)
         pairingModel.acceptPairingCode(normalized)
       } else if pairingModel.phase != .codeEntry {
         pairingModel.startCodeEntry()
+      }
+    }
+
+    private func schedulePairingFocus(_ group: PairingCodeGroup?) {
+      DispatchQueue.main.async {
+        pairingCodeGroup = group
       }
     }
 

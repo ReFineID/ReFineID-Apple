@@ -41,7 +41,6 @@ internal struct CardCredentialsView: View {
     internal static let cacheButtonHorizontalPadding: CGFloat = 12
     internal static let cacheButtonVerticalPadding: CGFloat = 6
     internal static let cacheButtonCornerRadius: CGFloat = 8
-    internal static let pairingGroupFieldWidth: CGFloat = 44
   }
 
   // MARK: Static Properties
