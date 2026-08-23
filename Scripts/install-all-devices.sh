@@ -5,6 +5,11 @@
 # Mac (/Applications), the connected physical iOS device, the iPad
 # simulator, or a subset of those.
 #
+# Run after a feature commit so every machine that can run the app
+# matches the tree. Discover devices at runtime; do not pass stored
+# UDIDs. The stamp rewrite of Version.xcconfig is not part of the
+# feature commit.
+#
 # Usage:
 #   Scripts/install-all-devices.sh [--device-only | --simulator-only | --macos-only] [--prime-mock-card]
 #

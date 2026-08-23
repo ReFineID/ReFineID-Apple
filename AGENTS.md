@@ -8,6 +8,11 @@
   never why it changed. A past bug, a deprecation, the reasoning for a
   fix belongs in the git commit message, not the source.
 - Commit often when compiles and lint is clean.
+- After a feature commit, install that build on every machine that
+  can run it: `Scripts/install-all-devices.sh`. The commit is the
+  cheap backup; Mac, the connected iPhone or iPad, and the iPad
+  simulator must match it. Do not mix the stamp `Version.xcconfig`
+  rewrite into the feature commit.
 - Push when feature is ready.
 - Reusable agent workflows are plain scripts under `Scripts/`, each with a
   usage header, so any agent of any vendor can discover and run them. Keep
