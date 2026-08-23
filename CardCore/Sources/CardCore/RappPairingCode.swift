@@ -90,9 +90,9 @@
     public static func pairingOffer(
       for rawCode: String,
       profiles: [String] = [
-        "fi.eid.card-status.v1",
-        "fi.eid.authentication.v1",
-        "fi.eid.document-signing.v1",
+        "fi.refineid.card-status.v1",
+        "fi.refineid.authentication.v1",
+        "fi.refineid.document-signing.v1",
       ],
       candidate: RappTransportCandidate = RappTransportCandidate(
         profile: rappStreamProfileName(),

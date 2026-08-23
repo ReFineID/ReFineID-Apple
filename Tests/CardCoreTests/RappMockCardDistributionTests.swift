@@ -57,9 +57,9 @@ import Testing
       let code = RappPairingCode.generate()
       let candidateID = "apple-peer-v1.nearby"
       let profiles = [
-        "fi.eid.card-status.v1",
-        "fi.eid.authentication.v1",
-        "fi.eid.document-signing.v1",
+        "fi.refineid.card-status.v1",
+        "fi.refineid.authentication.v1",
+        "fi.refineid.document-signing.v1",
       ]
       let (requester, proxy) = try await makeConnectedPair(
         code: code,

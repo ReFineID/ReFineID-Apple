@@ -17,9 +17,9 @@ import Testing
     // MARK: Static Properties
 
     private static let profiles = [
-      "fi.eid.card-status.v1",
-      "fi.eid.authentication.v1",
-      "fi.eid.document-signing.v1",
+      "fi.refineid.card-status.v1",
+      "fi.refineid.authentication.v1",
+      "fi.refineid.document-signing.v1",
     ]
     private static let transportProfile = "apple-peer-v1"
     private static let candidateID = "apple-peer-v1.nearby"

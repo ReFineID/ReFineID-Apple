@@ -32,7 +32,7 @@ internal struct MessageRegistryTests {
     case .pairingHello:
       ["parameters": .map([:]), "display_name": .text("ReFineID"), "platform": .text("iOS")]
     case .pairingConfirm:
-      ["granted_profiles": .array([.text("fi.eid.authentication.v1")])]
+      ["granted_profiles": .array([.text("fi.refineid.authentication.v1")])]
     case .pairingAbort:
       ["reason": .text("declined")]
     case .sessionReady:
@@ -50,7 +50,7 @@ internal struct MessageRegistryTests {
     switch messageType {
     case .operationRequest:
       [
-        "operation_id": .bytes(operation), "profile": .text("fi.eid.authentication.v1"),
+        "operation_id": .bytes(operation), "profile": .text("fi.refineid.authentication.v1"),
         "action": .text("authenticate"), "request_hash": .bytes(digest),
         "expires_after_ms": .unsigned(expiryMilliseconds), "context": .map([:]),
         "payload": .map([:]),

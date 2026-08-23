@@ -27,7 +27,7 @@ internal final class RappOfferExpiryTests: XCTestCase {
     try RappPairingBridge.createRequesterOffer(
       offerId: Data(repeating: 0x11, count: 32),
       pairingSecret: Data(repeating: 0x22, count: 32),
-      profiles: ["fi.eid.card-status.v1"],
+      profiles: ["fi.refineid.card-status.v1"],
       transports: [
         RappTransportCandidate(
           profile: "local-quic-v1",

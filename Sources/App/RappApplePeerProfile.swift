@@ -26,9 +26,9 @@
 
     /// Only profiles implemented end to end by the current phone executor.
     internal static let supportedCredentialProfiles = [
-      "fi.eid.card-status.v1",
-      "fi.eid.authentication.v1",
-      "fi.eid.document-signing.v1",
+      "fi.refineid.card-status.v1",
+      "fi.refineid.authentication.v1",
+      "fi.refineid.document-signing.v1",
     ]
 
     internal static func isSupported(_ profile: String) -> Bool {
@@ -37,15 +37,15 @@
 
     internal static func label(for profile: String) -> String {
       switch profile {
-      case "fi.eid.card-status.v1":
+      case "fi.refineid.card-status.v1":
         String(localized: "Card status")
-      case "fi.eid.authentication.v1":
+      case "fi.refineid.authentication.v1":
         String(localized: "Browser authentication")
-      case "fi.eid.document-signing.v1":
+      case "fi.refineid.document-signing.v1":
         String(localized: "Document signing")
-      case "fi.eid.activation.v1":
+      case "fi.refineid.activation.v1":
         String(localized: "Card activation")
-      case "fi.eid.pin-management.v1":
+      case "fi.refineid.pin-management.v1":
         String(localized: "PIN management")
       default:
         String(localized: "Unknown access")

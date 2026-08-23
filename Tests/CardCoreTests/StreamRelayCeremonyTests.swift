@@ -26,8 +26,8 @@ import Testing
     private static let emptyCborMapByte: UInt8 = 0xA0
     private static let offerLifetimeMilliseconds: UInt64 = 60_000
     private static let profiles = [
-      "fi.eid.card-status.v1",
-      "fi.eid.authentication.v1",
+      "fi.refineid.card-status.v1",
+      "fi.refineid.authentication.v1",
     ]
 
     // MARK: Static Functions

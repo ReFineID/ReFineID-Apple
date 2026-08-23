@@ -73,7 +73,7 @@ internal struct PairRecordTests {
     let encoded = try makePairRecord().encoded()
     #expect(throws: (any Error).self) {
       _ = try PairRecord.decode(
-        try mutated(encoded, "profiles", .array([.text("fi.eid.unknown.v1")])))
+        try mutated(encoded, "profiles", .array([.text("fi.refineid.unknown.v1")])))
     }
   }
 

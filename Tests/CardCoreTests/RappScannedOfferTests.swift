@@ -14,7 +14,7 @@ import XCTest
     private static let applePeerCandidateID = "apple-peer-v1.nearby"
     private static let streamCandidateID = "stream-1"
     private static let streamEndpoints = ["192.0.2.7:4711", "[2001:db8::17]:4711"]
-    private static let credentialProfiles = ["fi.eid.card-status.v1"]
+    private static let credentialProfiles = ["fi.refineid.card-status.v1"]
 
     /// Deterministic-CBOR initial byte of an empty map.
     private static let emptyMapCBOR = Data([0b1010_0000])

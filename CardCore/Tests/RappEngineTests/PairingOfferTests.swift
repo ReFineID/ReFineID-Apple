@@ -44,7 +44,7 @@ internal struct PairingOfferTests {
       offerIdentifier: filler(0x0a, OfferLimit.offerIdentifierSize),
       pairingSecret: filler(0x0b, OfferLimit.pairingSecretSize),
       suites: [mandatoryPairingSuite, "Noise_XX_25519_ChaChaPoly_SHA256"],
-      profiles: ["fi.eid.document-signing.v1"],
+      profiles: ["fi.refineid.document-signing.v1"],
       transports: [TransportCandidate(profile: "local-quic-v1", candidateIdentifier: "candidate")],
       offerLifetimeMilliseconds: OfferLimit.offerLifetimeMaximumMilliseconds)
     #expect(try PairingOffer.from(uri: single.uri()).transports == single.transports)
@@ -86,7 +86,7 @@ internal struct PairingOfferTests {
         offerIdentifier: filler(0x01, OfferLimit.offerIdentifierSize),
         pairingSecret: filler(0x02, OfferLimit.pairingSecretSize),
         suites: ["Noise_XX_25519_ChaChaPoly_SHA256"],
-        profiles: ["fi.eid.card-status.v1"],
+        profiles: ["fi.refineid.card-status.v1"],
         transports: [TransportCandidate(profile: "p", candidateIdentifier: "c")],
         offerLifetimeMilliseconds: Self.deadlineLifetime)
     }
@@ -99,7 +99,7 @@ internal struct PairingOfferTests {
         offerIdentifier: filler(0x01, OfferLimit.offerIdentifierSize),
         pairingSecret: filler(0x02, OfferLimit.pairingSecretSize),
         suites: [mandatoryPairingSuite],
-        profiles: ["fi.eid.card-status.v1"],
+        profiles: ["fi.refineid.card-status.v1"],
         transports: [TransportCandidate(profile: "p", candidateIdentifier: "c")],
         offerLifetimeMilliseconds: OfferLimit.offerLifetimeMaximumMilliseconds + 1)
     }

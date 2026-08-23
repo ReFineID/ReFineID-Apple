@@ -29,7 +29,7 @@ import XCTest
       let restoredOffer = expectation(description: "restored offer")
       let firstTransport = RecordingTransport()
       let coordinator = try RappPairingCoordinator.requester(
-        profiles: ["fi.eid.authentication.v1"],
+        profiles: ["fi.refineid.authentication.v1"],
         candidates: [
           .init(
             profile: "local-quic-v1",
