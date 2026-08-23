@@ -55,6 +55,7 @@
         let selected = try? await catalog.selectedPair()
         hasPair = selected?.role == .requester
         if !hasPair {
+          PersistentTokenRegistry.withdraw()
           phase = .idle
         } else if let der = PersistentTokenRegistry.publishedCertificateDER(),
           let name = remoteHolderName(inCertificate: der)
@@ -164,11 +165,18 @@
     /// Drops a pairing the peer no longer honours and asks for a fresh one.
     private func discardUnusablePairing() async {
       let catalog = RappPairCatalog(vault: RappDeviceVault())
-      if let selected = try? await catalog.selectedPair() {
-        try? await catalog.revoke(pairID: selected.pairID)
+      if let pairs = try? await catalog.activePairs() {
+        for pair in pairs {
+          try? await catalog.revoke(pairID: pair.pairID)
+        }
       }
-      hasPair = false
-      needsFreshPairing = true
+      try? await catalog.clearSelection()
+      await MainActor.run {
+        PersistentTokenRegistry.withdraw()
+        hasPair = false
+        phase = .idle
+        needsFreshPairing = true
+      }
     }
 
     /// Clears the request once the caller has shown a code.
@@ -206,14 +214,12 @@
     /// worth another attempt with the same pairing.
     fileprivate var leavesPairingUnusable: Bool {
       switch self {
-      case .noActivePair, .noSelectedPair:
+      case .noActivePair, .noSelectedPair, .terminal, .protocolFailure:
         true
-      case .peerNotFound, .timedOut:
+      case .peerNotFound, .timedOut, .transport, .unexpectedResult:
         // A phone that could not be reached says nothing about whether the
         // pairing is good. Discarding it here would make a network away
         // from home cost the holder their pairing.
-        false
-      default:
         false
       }
     }

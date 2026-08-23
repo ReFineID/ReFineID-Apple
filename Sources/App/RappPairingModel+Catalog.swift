@@ -21,6 +21,9 @@
     }
 
     internal func revokeAll() {
+      #if REFINEID_LOCAL_CARD && os(iOS)
+        PhonePersistentTokenRelay.shared.stopListening()
+      #endif
       Task {
         do {
           let active = try await catalog.activePairs()
