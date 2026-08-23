@@ -82,6 +82,10 @@ extension CardCredentialsView {
 
     internal var cardSection: some View {
       Section {
+        if offersNearField, !hasReaderIdentity, identityHolder == nil {
+          cardAccessNumberRow
+          pin1Row
+        }
         #if REFINEID_REMOTE_CARD
           if offersNearField {
             remoteRouteRow
@@ -90,6 +94,12 @@ extension CardCredentialsView {
         if offersNearField || hasReaderIdentity {
           cardManagementButton
         }
+        #if REFINEID_LOCAL_CARD
+          if let failure = primingModel.failure {
+            CredentialOutcomeText(message: failure, tone: .failure)
+              .accessibilityIdentifier("primeFailureMessage")
+          }
+        #endif
       } header: {
         compactSectionHeader("Card")
       }
@@ -129,70 +139,34 @@ extension CardCredentialsView {
   #endif
 
   @ViewBuilder internal var createIdentitySection: some View {
-    Section {
-      cardAccessNumberRow
-    } header: {
-      compactSectionHeader("Connect")
-    }
-    Section {
-      pin1Row
-    } header: {
-      compactSectionHeader("Cache")
-    }
-    if hasConfiguredCard {
-      #if REFINEID_LOCAL_CARD && os(iOS)
-        Section {
-          CardRegistrationSections(
-            canPrepareCredentials: canPrepareIdentity,
-            isDemonstration: isDemonstration,
-            enteredPin1: enteredPin1,
-            cardAccessNumber: registrationCardAccessNumber,
-            storeCardAccessNumber: storeProvenCardAccessNumber,
-            storeVerifiedPin1: storeVerifiedPin1,
-            clearPin1Entry: clearPin1Entry,
-            onRegistrationStarted: {
-              transition(.startConfiguredBrowserRegistration)
-            },
-            onRegistrationFinished: { succeeded in
-              finishBrowserRegistration(succeeded: succeeded)
-            },
-            isRegistered: $isRegistered,
-            model: primingModel
-          )
-          .id(registrationReset)
-        }
-        .listRowBackground(Color.clear)
-        .listRowInsets(EdgeInsets())
-        if let failure = primingModel.failure {
-          Section {
-            CredentialOutcomeText(message: failure, tone: .failure)
-              .accessibilityIdentifier("primeFailureMessage")
-          }
-        }
-      #endif
-    } else {
+    #if os(iOS)
+      EmptyView()
+    #else
       Section {
-        Button {
-          connectIdentityCard()
-        } label: {
-          BrowserAuthenticationEnableLabel()
-        }
-        .buttonStyle(.borderedProminent)
-        .disabled(
-          !isCardAccessNumberEntryComplete
-            || !isPin1EntryComplete
-            || model.isConnecting
-        )
-        .accessibilityIdentifier("connectCard")
+        cardAccessNumberRow
+      } header: {
+        compactSectionHeader("Connect")
       }
-      .listRowBackground(Color.clear)
-      .listRowInsets(EdgeInsets())
-    }
+      Section {
+        pin1Row
+      } header: {
+        compactSectionHeader("Cache")
+      }
+    #endif
   }
 
   @ViewBuilder internal var cardAccessNumberRow: some View {
     #if os(iOS)
       HStack {
+        Image(systemName: "person.text.rectangle")
+          .font(.system(size: PersonRowLabel.iconPointSize))
+          .foregroundStyle(
+            isCardAccessNumberEntryComplete
+              ? Color.accentColor
+              : Color.secondary
+          )
+          .frame(width: PersonRowLabel.iconWidth)
+          .accessibilityHidden(true)
         TextField(
           "Card Access Number (CAN)",
           text: $cardAccessNumberEntry
@@ -247,24 +221,55 @@ extension CardCredentialsView {
   #endif
 
   @ViewBuilder internal var pin1Row: some View {
-    CredentialSecretField(
-      name: String(localized: "Basic Code (PIN 1)"),
-      text: $pin1Entry,
-      revealIdentifier: "pin1FieldReveal"
-    ) {
-      SecureField("Basic Code (PIN 1)", text: $pin1Entry)
-        .font(.body)
-        #if os(iOS)
-          .keyboardType(.numberPad)
-          .textInputAutocapitalization(.never)
-        #endif
-        .autocorrectionDisabled()
-        .focused($isPin1FieldFocused)
-        .accessibilityIdentifier("pin1Field")
-        .onValueChange(of: pin1Entry) { typed in
-          pin1Entry = LimitedDigits.pin1(typed)
+    #if os(iOS)
+      HStack {
+        Image(systemName: "key.card")
+          .font(.system(size: PersonRowLabel.iconPointSize))
+          .foregroundStyle(
+            isPin1Cached ? Color.accentColor : Color.secondary
+          )
+          .frame(width: PersonRowLabel.iconWidth)
+          .accessibilityHidden(true)
+        CredentialSecretField(
+          name: String(localized: "Basic Code (PIN 1)"),
+          text: $pin1Entry,
+          revealIdentifier: "pin1FieldReveal"
+        ) {
+          SecureField("Basic Code (PIN 1)", text: $pin1Entry)
+            .font(.body)
+            .keyboardType(.numberPad)
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+            .focused($isPin1FieldFocused)
+            .accessibilityIdentifier("pin1Field")
+            .onValueChange(of: pin1Entry) { typed in
+              pin1Entry = LimitedDigits.pin1(typed)
+            }
         }
-    }
+        Button(String(localized: "Cache")) {
+          connectIdentityCard()
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .disabled(!canCachePin1)
+        .accessibilityIdentifier("primeStartButton")
+      }
+    #else
+      CredentialSecretField(
+        name: String(localized: "Basic Code (PIN 1)"),
+        text: $pin1Entry,
+        revealIdentifier: "pin1FieldReveal"
+      ) {
+        SecureField("Basic Code (PIN 1)", text: $pin1Entry)
+          .font(.body)
+          .autocorrectionDisabled()
+          .focused($isPin1FieldFocused)
+          .accessibilityIdentifier("pin1Field")
+          .onValueChange(of: pin1Entry) { typed in
+            pin1Entry = LimitedDigits.pin1(typed)
+          }
+      }
+    #endif
   }
 
   #if REFINEID_LOCAL_CARD && os(iOS)

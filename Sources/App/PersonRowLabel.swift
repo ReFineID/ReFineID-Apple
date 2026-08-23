@@ -8,6 +8,9 @@ internal struct PersonRowLabel: View {
   /// different widths.
   internal static let iconWidth: CGFloat = 28
 
+  /// Point size every Card-row symbol uses, including Remote.
+  internal static let iconPointSize: CGFloat = 22
+
   /// Whether an identity is configured behind the row.
   internal let configured: Bool
 
@@ -18,6 +21,7 @@ internal struct PersonRowLabel: View {
           ? "person.fill.checkmark"
           : "person.fill.questionmark"
       )
+      .font(.system(size: Self.iconPointSize))
       .foregroundStyle(Color.accentColor)
       .frame(width: Self.iconWidth)
       .accessibilityHidden(true)

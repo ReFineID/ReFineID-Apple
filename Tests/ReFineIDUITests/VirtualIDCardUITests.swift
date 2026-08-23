@@ -222,16 +222,13 @@
       XCTAssertTrue(key.waitForExistence(timeout: Self.appearTimeout))
       XCTAssertFalse(key.isEnabled, "PIN management was enabled before CAN was complete")
 
-      let enable = app.buttons["connectCard"]
-      XCTAssertTrue(enable.waitForExistence(timeout: Self.appearTimeout))
-      XCTAssertEqual(enable.label, "Enable")
-      let connectHeader = app.staticTexts["Connect"]
-      let browserHeader = app.staticTexts["Cache"]
+      let cache = app.buttons[UITestIdentifiers.primeStartButton]
+      XCTAssertTrue(cache.waitForExistence(timeout: Self.appearTimeout))
+      XCTAssertEqual(cache.label, "Cache")
+      let cardHeader = app.staticTexts["Card"]
       let documentHeader = app.staticTexts["Document"]
-      XCTAssertTrue(connectHeader.exists)
-      XCTAssertTrue(browserHeader.exists)
-      XCTAssertEqual(connectHeader.frame.minX, documentHeader.frame.minX, accuracy: 1)
-      XCTAssertEqual(browserHeader.frame.minX, documentHeader.frame.minX, accuracy: 1)
+      XCTAssertTrue(cardHeader.exists)
+      XCTAssertEqual(cardHeader.frame.minX, documentHeader.frame.minX, accuracy: 1)
 
       let can = app.textFields[UITestIdentifiers.cardAccessNumberField]
       let pin1 = app.secureTextFields[UITestIdentifiers.pin1Field]
@@ -788,15 +785,15 @@
       let pin1Field = app.secureTextFields[UITestIdentifiers.pin1Field]
       XCTAssertTrue(pin1Field.waitForExistence(timeout: Self.appearTimeout))
       focusAndType(pin1Field, value: pin1, in: app)
-      let connect = app.buttons["connectCard"]
+      let cache = app.buttons[UITestIdentifiers.primeStartButton]
       let enabled = XCTNSPredicateExpectation(
         predicate: NSPredicate(format: "enabled == true"),
-        object: connect)
+        object: cache)
       XCTAssertEqual(
         XCTWaiter.wait(for: [enabled], timeout: Self.appearTimeout),
         .completed,
-        "Connect is disabled for complete CAN and PIN 1 entries")
-      connect.tap()
+        "Cache is disabled for complete CAN and PIN 1 entries")
+      cache.tap()
     }
 
     private func openManagement(in app: XCUIApplication) {

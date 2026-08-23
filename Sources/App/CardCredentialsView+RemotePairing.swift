@@ -14,7 +14,6 @@ import SwiftUI
       static let tapTargetSide: CGFloat = 44
       static let tapTargetOverflow: CGFloat = -10
       static let forgetButtonGap: CGFloat = 4
-      static let glyphPointSize: CGFloat = 22
     }
 
     // MARK: Computed Properties
@@ -37,23 +36,23 @@ import SwiftUI
 
     @ViewBuilder internal var remoteRouteRow: some View {
       HStack(spacing: RemotePairingLayout.inputSpacing) {
-        Label {
-          Text(String(localized: "Remote"))
-        } icon: {
+        Group {
           if remoteCardAvailable {
             RemotePairingGlyph(isConnected: pairingModel.hasActivePairs)
           } else {
-            Image(systemName: "key.radiowaves.forward.slash")
-              .font(.system(size: RemotePairingLayout.glyphPointSize))
+            Image(systemName: "key.radiowaves.forward")
+              .font(.system(size: PersonRowLabel.iconPointSize))
               .foregroundStyle(.secondary)
               .accessibilityHidden(true)
           }
         }
-        .foregroundStyle(
-          remoteCardAvailable
-            ? AnyShapeStyle(Color.primary)
-            : AnyShapeStyle(.secondary)
-        )
+        .frame(width: PersonRowLabel.iconWidth)
+        Text(String(localized: "Remote"))
+          .foregroundStyle(
+            remoteCardAvailable
+              ? AnyShapeStyle(Color.primary)
+              : AnyShapeStyle(.secondary)
+          )
         Spacer()
         if remoteCardAvailable {
           remoteRouteTrailingControls

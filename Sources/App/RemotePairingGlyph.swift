@@ -8,7 +8,6 @@
   internal struct RemotePairingGlyph: View {
     private enum Layout {
       static let badgeGlyphSize: CGFloat = 10
-      static let glyphPointSize: CGFloat = 22
     }
 
     /// Whether this device currently has a usable pairing.
@@ -17,7 +16,7 @@
     internal var body: some View {
       ZStack(alignment: .bottomTrailing) {
         Image(systemName: "key.radiowaves.forward")
-          .font(.system(size: Layout.glyphPointSize))
+          .font(.system(size: PersonRowLabel.iconPointSize))
           .replacingSymbolPlainly()
           .foregroundStyle(isConnected ? Color.green : Color.accentColor)
           .accessibilityHidden(true)

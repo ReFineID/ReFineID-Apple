@@ -273,6 +273,27 @@ internal struct CardCredentialsView: View {
         && !model.isConnecting
     }
 
+    /// Whether PIN 1 has been stored on this device.
+    internal var isPin1Cached: Bool {
+      if isDemonstration {
+        return demoMode.hasValidatedConnection
+      }
+      return model.contents.hasPin1
+    }
+
+    /// Whether Cache can start the NFC hold that stores PIN 1.
+    internal var canCachePin1: Bool {
+      guard
+        isCardAccessNumberEntryComplete,
+        isPin1EntryComplete,
+        !model.isConnecting
+      else { return false }
+      #if REFINEID_LOCAL_CARD
+        if primingModel.isRunning { return false }
+      #endif
+      return true
+    }
+
     #if REFINEID_REMOTE_CARD
       /// Whether the remote card route can be taken right now.
       internal var remoteCardAvailable: Bool {

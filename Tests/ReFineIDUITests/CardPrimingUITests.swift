@@ -61,9 +61,7 @@
       Self.storeCredentialsIfGiven(in: app)
       app.swipeUp()
 
-      let connect = app.buttons["connectCard"]
-      let prime = app.buttons[UITestIdentifiers.primeStartButton]
-      let start = connect.waitForExistence(timeout: 2) ? connect : prime
+      let start = app.buttons[UITestIdentifiers.primeStartButton]
       guard start.waitForExistence(timeout: Self.appearTimeout), start.isEnabled else {
         attachScreenshot(app.screenshot(), named: "02-registration-unavailable")
         XCTFail(

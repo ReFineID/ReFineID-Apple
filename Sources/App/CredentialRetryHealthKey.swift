@@ -38,11 +38,13 @@ internal struct CredentialRetryHealthKey: View {
     ZStack(alignment: .bottomTrailing) {
       if let shown = displayedLevel {
         Image(systemName: systemName)
+          .font(.system(size: PersonRowLabel.iconPointSize))
           .replacingSymbol()
           .foregroundStyle(shown.color)
         statusBadge(shown)
       } else {
         Image(systemName: systemName)
+          .font(.system(size: PersonRowLabel.iconPointSize))
           .replacingSymbol()
           .foregroundStyle(
             routeAvailable
