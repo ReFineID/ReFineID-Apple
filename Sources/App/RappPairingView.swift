@@ -124,7 +124,10 @@
     private var codeEntryForm: some View {
       VStack(spacing: Layout.codeSpacing) {
         codeTextField
-        actionOrProgress
+        if case .connecting = model.phase {
+          ProgressView()
+            .controlSize(.regular)
+        }
         if case .failed(let error) = model.phase {
           Text(error)
             .font(.footnote)
@@ -163,23 +166,10 @@
           }
           if RappPairingCode.isValid(normalized) {
             model.acceptPairingCode(normalized)
+          } else if model.phase != .codeEntry {
+            model.startCodeEntry()
           }
         }
-    }
-
-    @ViewBuilder private var actionOrProgress: some View {
-      if case .connecting = model.phase {
-        ProgressView()
-          .controlSize(.regular)
-      } else {
-        Button(String(localized: "Pair")) {
-          model.acceptPairingCode(enteredCode)
-        }
-        .buttonStyle(.borderedProminent)
-        .controlSize(.large)
-        .disabled(!RappPairingCode.isValid(enteredCode))
-        .accessibilityIdentifier("pairButton")
-      }
     }
 
     /// The whole screen a borrowing device shows: the code, centred, as

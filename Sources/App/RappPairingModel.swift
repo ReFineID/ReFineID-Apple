@@ -82,6 +82,7 @@
     internal var relayGeneration: UUID?
     internal var coordinator: RappPairingCoordinator?
     internal var eventTask: Task<Void, Never>?
+    internal var pairingTimeoutTask: Task<Void, Never>?
     internal var reviewedPeerName: String?
 
     /// Ceremony events enter the coordinator in arrival order through
@@ -278,6 +279,8 @@
       coordinator = nil
       eventTask?.cancel()
       eventTask = nil
+      pairingTimeoutTask?.cancel()
+      pairingTimeoutTask = nil
       eventDelivery.reset()
     }
 

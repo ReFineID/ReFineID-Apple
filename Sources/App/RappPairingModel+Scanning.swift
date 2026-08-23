@@ -11,6 +11,7 @@
   /// and pairing with what it describes.
   extension RappPairingModel {
     private static let defaultOfferLifetimeMilliseconds: UInt64 = 180_000
+    private static let pairingTimeoutNanoseconds: UInt64 = 15_000_000_000
 
     internal func startCodeEntry() {
       resetAttempt()
@@ -38,8 +39,22 @@
           lifetimeMilliseconds: Self.defaultOfferLifetimeMilliseconds
         )
         beginPairing(uri)
+        schedulePairingTimeout()
       } catch {
         fail(String(localized: "The pairing code is invalid or expired"))
+      }
+    }
+
+    private func schedulePairingTimeout() {
+      pairingTimeoutTask?.cancel()
+      pairingTimeoutTask = Task { [weak self] in
+        do {
+          try await Task.sleep(nanoseconds: Self.pairingTimeoutNanoseconds)
+          guard let self, !isFinished, phase == .connecting else { return }
+          fail(String(localized: "Could not find a device offering this pairing code."))
+        } catch {
+          // A cancelled timeout attempt needs no recovery.
+        }
       }
     }
 
