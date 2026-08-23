@@ -535,6 +535,7 @@ public final class RappDeviceVault: @unchecked Sendable {
 
 extension Data {
   private static let hexadecimalDigitsPerByte = 2
+  private static let hexadecimalRadix = 16
 
   fileprivate init?(strictHexadecimal value: String) {
     guard value.count.isMultiple(of: Self.hexadecimalDigitsPerByte) else { return nil }
@@ -543,7 +544,7 @@ extension Data {
     var index = value.startIndex
     while index < value.endIndex {
       let next = value.index(index, offsetBy: Self.hexadecimalDigitsPerByte)
-      guard let byte = UInt8(value[index..<next], radix: 16) else { return nil }
+      guard let byte = UInt8(value[index..<next], radix: Self.hexadecimalRadix) else { return nil }
       bytes.append(byte)
       index = next
     }
