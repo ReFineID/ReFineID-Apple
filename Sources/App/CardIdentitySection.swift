@@ -16,6 +16,9 @@ internal struct CardIdentitySection: View {
   /// Pulls the tap target's slack back out of the row's layout.
   private static let tapTargetOverflow: CGFloat = -10
 
+  /// Minimum gap between the holder name and the forget control.
+  private static let forgetButtonGap: CGFloat = 4
+
   /// The complete holder name read from the primed identity certificate.
   internal let holder: String
 
@@ -32,7 +35,7 @@ internal struct CardIdentitySection: View {
           PersonRowLabel(configured: true)
         }
         .accessibilityIdentifier("identityStatus")
-        Spacer(minLength: 4)
+        Spacer(minLength: Self.forgetButtonGap)
         // The forget action lives on the row it removes, pinned to
         // the trailing edge and centered in the row's height; the
         // confirmation dialog still stands in front of it.

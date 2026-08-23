@@ -14,6 +14,7 @@ import SwiftUI
       static let inlineInputWidth: CGFloat = 90
       static let tapTargetSide: CGFloat = 44
       static let tapTargetOverflow: CGFloat = -10
+      static let forgetButtonGap: CGFloat = 4
     }
 
     // MARK: Computed Properties
@@ -129,7 +130,7 @@ import SwiftUI
           } label: {
             PersonRowLabel(configured: true)
           }
-          Spacer(minLength: 4)
+          Spacer(minLength: RemotePairingLayout.forgetButtonGap)
           Button(role: .destructive) {
             withAnimation {
               pairingModel.cancel()

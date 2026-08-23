@@ -42,7 +42,6 @@
       frameDelivery.reset()
     }
 
-
     internal func suspendForPairing() {
       relistenPolicy = .explicitUserActionRequired
       let closing = coordinator
