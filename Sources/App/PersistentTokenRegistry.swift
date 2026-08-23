@@ -148,11 +148,7 @@
       keyItem.canSign = true
       keyItem.canDecrypt = false
       keyItem.canPerformKeyExchange = false
-      #if os(macOS)
-        keyItem.isSuitableForLogin = true
-      #else
-        keyItem.isSuitableForLogin = false
-      #endif
+      keyItem.isSuitableForLogin = true
       // swiftlint:disable:next legacy_objc_type
       let signOperationKey = NSNumber(value: TKTokenOperation.signData.rawValue)
       // PIN 1 is entered on the holder, not on this Mac.

@@ -65,21 +65,8 @@
       #endif
     }
 
-    /// Removes ReFineID's published smart-card identities.
-    ///
-    /// Live reader tokens are already gone with the slot; this clears the
-    /// registrations and driver configurations that would otherwise keep
-    /// offering a card that is no longer here.
     private static func wipeLocalTokens() {
       Task.detached(priority: .utility) {
-        #if os(iOS)
-          let manager = TKSmartCardTokenRegistrationManager.default
-          let tokenIDs = manager.registeredSmartCardTokens
-            .filter(CardTokenNamespace.owns(tokenIdentifier:))
-          for tokenID in tokenIDs {
-            try? manager.unregisterSmartCard(tokenID: tokenID)
-          }
-        #endif
         _ = DriverConfiguredCredentials.dropIdentityTokenConfigurations()
       }
     }
