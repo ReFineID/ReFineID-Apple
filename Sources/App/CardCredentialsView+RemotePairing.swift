@@ -43,7 +43,6 @@ import SwiftUI
         }
         .frame(width: PersonRowLabel.iconWidth)
         Text(String(localized: "Remote"))
-          .foregroundStyle(remoteCardAvailable ? .primary : .secondary)
         Spacer()
         if remoteCardAvailable {
           remoteRouteTrailingControls
