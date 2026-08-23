@@ -52,10 +52,7 @@ internal struct CredentialRetryHealthKey: View {
     }
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text("Change or Reset PINs"))
-    .accessibilityValue(
-      displayedLevel?.accessibilityValue
-        ?? String(localized: "Credential retry status unavailable")
-    )
+    .accessibilityValue(displayedLevel?.accessibilityValue ?? "")
     .onAppear { animateIfNeeded(displayedLevel) }
     .onValueChange(of: displayedLevel) { newLevel in
       animateIfNeeded(newLevel)

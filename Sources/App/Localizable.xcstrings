@@ -1577,23 +1577,6 @@
         }
       }
     },
-    "Credential retry status unavailable": {
-      "extractionState": "manual",
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tunnuslukuyritysten tila ei ole saatavilla"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kodförsökens status är inte tillgänglig"
-          }
-        }
-      }
-    },
     "Current %@": {
       "localizations": {
         "fi": {

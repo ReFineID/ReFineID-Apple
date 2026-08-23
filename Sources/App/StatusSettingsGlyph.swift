@@ -25,17 +25,17 @@
     }
 
     private var accessibilityValue: String {
-      let pins =
-        pinLevel?.accessibilityValue
-        ?? String(localized: "Credential retry status unavailable")
       #if REFINEID_REMOTE_CARD
         let link =
           PersistentTokenRegistry.shared.holderIsAdvertising
           ? String(localized: "Phone connected")
           : String(localized: "Phone not connected")
-        return pins + ", " + link
+        if let pins = pinLevel?.accessibilityValue {
+          return pins + ", " + link
+        }
+        return link
       #else
-        return pins
+        pinLevel?.accessibilityValue ?? ""
       #endif
     }
 
