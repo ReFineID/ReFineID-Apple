@@ -19,21 +19,29 @@
     /// does. Here rather than in the view body only for the view
     /// type's length; it reads shared state, no private field.
     internal var availability: LoginIdentityModel.Availability {
-      if LoginIdentityModel.shared.isReady {
-        .ready
-      } else if hasBorrowedIdentity {
-        .ready
-      } else if CardPresence.shared.isCardPresent {
-        .cardWithoutIdentity
-      } else {
-        .noCard
-      }
+      LoginIdentityModel.resolved(
+        tokenPublished: model.isReady,
+        cardPresent: cardPresence.isCardPresent,
+        holderAdvertising: holderIsAdvertising,
+        hasBorrowedCertificate: hasBorrowedIdentity
+      )
+    }
+
+    /// Whether the paired phone is on the network and serving a card.
+    private var holderIsAdvertising: Bool {
+      #if REFINEID_REMOTE_CARD && REFINEID_STREAM_TRANSPORT
+        remoteRegistry.holderIsAdvertising
+      #elseif REFINEID_REMOTE_CARD
+        remoteRegistry.holderLine != nil
+      #else
+        false
+      #endif
     }
 
     /// Whether a paired phone has already answered with a certificate.
     private var hasBorrowedIdentity: Bool {
       #if REFINEID_REMOTE_CARD
-        PersistentTokenRegistry.shared.holderLine != nil
+        remoteRegistry.holderLine != nil
       #else
         false
       #endif

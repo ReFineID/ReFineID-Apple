@@ -31,8 +31,12 @@
     @ScaledMetric(relativeTo: .body)
     private var minimumWidth: CGFloat = 420
 
-    private let model = LoginIdentityModel.shared
-    @ObservedObject private var retryHealth = CredentialRetryHealth.shared
+    internal let model = LoginIdentityModel.shared
+    @ObservedObject internal var retryHealth = CredentialRetryHealth.shared
+    @ObservedObject internal var cardPresence = CardPresence.shared
+    #if REFINEID_REMOTE_CARD
+      internal let remoteRegistry = PersistentTokenRegistry.shared
+    #endif
     @State private var signing = SignDocumentModel()
 
     /// Notices a card waiting to be taken into use, and carries the
@@ -75,7 +79,7 @@
       #if FEATURE_CONTACTLESS
         contactlessEnabled
           && availability == .cardWithoutIdentity
-          && CardPresence.shared.isContactlessCardPresent
+          && cardPresence.isContactlessCardPresent
       #else
         false
       #endif

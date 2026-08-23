@@ -25,6 +25,12 @@ and on any requester that saw the holder leave. The pairing stays, so
 the next card can use it. `session.close` reason `card_unavailable`
 closes only the session.
 
+A leftover requester identity from an earlier run is not a live person.
+The Mac window names no one, and offers no signing, until a reader
+slot has a card or the paired holder is advertising. Opening the app
+withdraws that leftover; the identity is published again when the
+holder is seen.
+
 NFC is different. The field has no lasting connected state, so a
 stored prime keeps the identity and the advertisement. CryptoTokenKit
 does not name the client that asked for a token: Mail listing

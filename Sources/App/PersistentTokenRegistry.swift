@@ -187,9 +187,15 @@
     /// Fetches and publishes once at launch on the requesting device when
     /// an identity is needed.
     internal func start() {
-      seedHolderLine()
       #if REFINEID_STREAM_TRANSPORT
         startWatchingPresence()
+        // A leftover identity from an earlier run is not a live card.
+        // The pairing stays; publication resumes when the holder is seen.
+        if !holderIsAdvertising {
+          Self.withdrawPublishedIdentity()
+        }
+      #else
+        seedHolderLine()
       #endif
       startFetch(replacing: false)
     }
@@ -207,7 +213,11 @@
     ///
     /// A live reader token does not own the remote-card driver; restoring
     /// here keeps the wireless identity listed beside a plugged-in card.
+    /// A leftover identity is not restored while the holder is absent.
     internal func ensurePublished() {
+      #if REFINEID_STREAM_TRANSPORT
+        guard holderIsAdvertising else { return }
+      #endif
       if !Self.needsIdentity {
         seedHolderLine()
         return
@@ -216,7 +226,8 @@
       Self.publish(der)
     }
 
-    private func seedHolderLine() {
+    /// Fills the person line from a certificate this process already holds.
+    internal func seedHolderLine() {
       guard let der = certificateDER ?? Self.publishedCertificateDER() else { return }
       certificateDER = der
       if holderLine == nil {

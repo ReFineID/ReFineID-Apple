@@ -95,6 +95,28 @@
       refresh()
     }
 
+    /// Combines publication with whether a card or a paired holder is
+    /// actually here.
+    ///
+    /// A leftover token from an earlier run is not a person on this
+    /// window.
+    nonisolated internal static func resolved(
+      tokenPublished: Bool,
+      cardPresent: Bool,
+      holderAdvertising: Bool,
+      hasBorrowedCertificate: Bool
+    ) -> Availability {
+      let hasLiveSource = cardPresent || holderAdvertising
+      let hasIdentity = tokenPublished || hasBorrowedCertificate
+      if hasLiveSource, hasIdentity {
+        return .ready
+      }
+      if hasLiveSource {
+        return .cardWithoutIdentity
+      }
+      return .noCard
+    }
+
     /// Builds a `ctkd` callback with no inherited main-actor isolation.
     ///
     /// `TKTokenWatcher` invokes this on its own XPC queue. Constructing
@@ -185,7 +207,11 @@
         guard observed.insert(identifier).inserted else { continue }
         watcher.addRemovalHandler(Self.removalHandler(for: self), forTokenID: identifier)
       }
-      #if REFINEID_REMOTE_CARD
+      #if REFINEID_REMOTE_CARD && REFINEID_STREAM_TRANSPORT
+        if PersistentTokenRegistry.shared.holderIsAdvertising {
+          PersistentTokenRegistry.shared.ensurePublished()
+        }
+      #elseif REFINEID_REMOTE_CARD
         PersistentTokenRegistry.shared.ensurePublished()
       #endif
     }

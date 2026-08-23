@@ -42,6 +42,8 @@
         holderIsAdvertising = true
         if Self.needsIdentity {
           startFetch(replacing: false)
+        } else {
+          seedHolderLine()
         }
         return
       }
