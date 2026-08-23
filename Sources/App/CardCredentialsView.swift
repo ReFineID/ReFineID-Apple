@@ -26,6 +26,14 @@ internal struct CardCredentialsView: View {
     case pinManagement
   }
 
+  #if os(iOS) && REFINEID_REMOTE_CARD
+    /// The two 3-digit groups of the pairing code.
+    internal enum PairingCodeGroup: Hashable {
+      case first
+      case second
+    }
+  #endif
+
   /// The scanner button beside the printed digits.
   internal enum Layout {
     internal static let canButtonSize = 44.0
@@ -33,6 +41,7 @@ internal struct CardCredentialsView: View {
     internal static let cacheButtonHorizontalPadding: CGFloat = 12
     internal static let cacheButtonVerticalPadding: CGFloat = 6
     internal static let cacheButtonCornerRadius: CGFloat = 8
+    internal static let pairingGroupFieldWidth: CGFloat = 44
   }
 
   // MARK: Static Properties
@@ -101,7 +110,7 @@ internal struct CardCredentialsView: View {
       /// The 6-digit numeric pairing code typed on iPhone.
       @State internal var pairingCodeDigits = ""
 
-      @FocusState internal var isPairingCodeFocused: Bool
+      @FocusState internal var pairingCodeGroup: PairingCodeGroup?
     #endif
   #endif
   // swiftlint:enable private_swiftui_state

@@ -9,8 +9,6 @@ import SwiftUI
 
     private enum RemotePairingLayout {
       static let inputSpacing: CGFloat = 8
-      static let inlineSpacing: CGFloat = 6
-      static let inlineInputWidth: CGFloat = 90
       static let tapTargetSide: CGFloat = 44
       static let tapTargetOverflow: CGFloat = -10
       static let forgetButtonGap: CGFloat = 4
@@ -18,17 +16,43 @@ import SwiftUI
 
     // MARK: Computed Properties
 
-    private var pairingCodeBinding: Binding<String> {
+    private var pairingCodeFirstBinding: Binding<String> {
       Binding(
-        get: { RappPairingCode.formatted(pairingCodeDigits) },
+        get: {
+          String(pairingCodeDigits.prefix(RappPairingCode.groupSize))
+        },
         set: { newValue in
-          let digits = RappPairingCode.normalize(newValue)
-          pairingCodeDigits = digits
-          if RappPairingCode.isValid(digits) {
-            isPairingCodeFocused = false
-            pairingModel.acceptPairingCode(digits)
-          } else if pairingModel.phase != .codeEntry {
-            pairingModel.startCodeEntry()
+          let incoming = RappPairingCode.normalize(newValue)
+          if incoming.count > RappPairingCode.groupSize {
+            applyPairingDigits(incoming)
+            pairingCodeGroup =
+              RappPairingCode.isValid(incoming) ? nil : .second
+            return
+          }
+          let second = String(
+            pairingCodeDigits.dropFirst(RappPairingCode.groupSize))
+          applyPairingDigits(incoming + second)
+          if incoming.count == RappPairingCode.groupSize {
+            pairingCodeGroup = .second
+          }
+        }
+      )
+    }
+
+    private var pairingCodeSecondBinding: Binding<String> {
+      Binding(
+        get: {
+          String(pairingCodeDigits.dropFirst(RappPairingCode.groupSize))
+        },
+        set: { newValue in
+          let first = String(
+            pairingCodeDigits.prefix(RappPairingCode.groupSize))
+          let second = String(
+            RappPairingCode.normalize(newValue).prefix(RappPairingCode.groupSize)
+          )
+          applyPairingDigits(first + second)
+          if second.isEmpty {
+            pairingCodeGroup = .first
           }
         }
       )
@@ -108,15 +132,21 @@ import SwiftUI
     }
 
     @ViewBuilder private var inlinePairingControls: some View {
-      HStack(spacing: RemotePairingLayout.inlineSpacing) {
-        TextField("123 456", text: pairingCodeBinding)
-          .font(.system(.body, design: .monospaced, weight: .semibold))
-          .keyboardType(.numberPad)
-          .multilineTextAlignment(.leading)
-          .focused($isPairingCodeFocused)
-          .frame(width: RemotePairingLayout.inlineInputWidth)
-          .accessibilityIdentifier("pairingCodeEntry")
-
+      HStack(spacing: 0) {
+        pairingCodeGroupField(
+          prompt: "123",
+          text: pairingCodeFirstBinding,
+          group: .first
+        )
+        .accessibilityIdentifier("pairingCodeEntry")
+        Text(verbatim: " ")
+          .font(.system(.body, design: .monospaced, weight: .bold))
+          .accessibilityHidden(true)
+        pairingCodeGroupField(
+          prompt: "456",
+          text: pairingCodeSecondBinding,
+          group: .second
+        )
         if case .connecting = pairingModel.phase {
           ProgressView()
             .controlSize(.small)
@@ -213,17 +243,43 @@ import SwiftUI
 
     // MARK: Functions
 
+    private func pairingCodeGroupField(
+      prompt: String,
+      text: Binding<String>,
+      group: PairingCodeGroup
+    ) -> some View {
+      TextField(prompt, text: text)
+        .font(.system(.body, design: .monospaced, weight: .bold))
+        .foregroundStyle(.primary)
+        .keyboardType(.numberPad)
+        .multilineTextAlignment(.leading)
+        .focused($pairingCodeGroup, equals: group)
+        .frame(width: Layout.pairingGroupFieldWidth)
+    }
+
+    private func applyPairingDigits(_ digits: String) {
+      let normalized = RappPairingCode.normalize(digits)
+      pairingCodeDigits = normalized
+      if RappPairingCode.isValid(normalized) {
+        pairingCodeGroup = nil
+        pairingModel.acceptPairingCode(normalized)
+      } else if pairingModel.phase != .codeEntry {
+        pairingModel.startCodeEntry()
+      }
+    }
+
     private func togglePairingInput() {
       withAnimation {
         if isPairingInputActive {
           isPairingInputActive = false
           pairingModel.cancel()
           pairingCodeDigits = ""
+          pairingCodeGroup = nil
         } else {
           isPairingInputActive = true
           pairingModel.startCodeEntry()
           pairingCodeDigits = ""
-          isPairingCodeFocused = true
+          pairingCodeGroup = .first
         }
       }
     }
