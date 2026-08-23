@@ -56,8 +56,12 @@
         hasPair = selected?.role == .requester
         if !hasPair {
           phase = .idle
+        } else if let der = PersistentTokenRegistry.publishedCertificateDER(),
+          let name = remoteHolderName(inCertificate: der)
+        {
+          phase = .identity(name)
         } else {
-          restorePublishedIdentity()
+          connect()
         }
       }
     }

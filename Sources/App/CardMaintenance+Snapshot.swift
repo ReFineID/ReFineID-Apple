@@ -9,7 +9,7 @@
   extension CardMaintenance {
     /// Runs one card operation on an occupied attached reader after PACE.
     internal static func onReaderCard<Payload: Sendable>(
-      cardAccessNumber: String,
+      cardAccessNumber: String?,
       _ operation: @escaping @Sendable (CardOperations) -> Payload
     ) async -> CardSessionResult<Payload>? {
       guard let manager = TKSmartCardSlotManager.default else { return nil }
@@ -52,10 +52,13 @@
 
     /// Runs one RAPP card operation in one exclusive NFC hold after PACE.
     internal static func onSecureNearFieldCard<Payload: Sendable>(
-      cardAccessNumber: String,
+      cardAccessNumber: String?,
       message: String,
       _ operation: @escaping @Sendable (CardOperations) -> Payload
     ) async -> CardSessionResult<Payload> {
+      guard let cardAccessNumber else {
+        return .wrongCardAccessNumber
+      }
       guard SupportedCardTransports.offersNearField else {
         #if DEBUG
           print("[near-field] refused: platform offers no antenna")
@@ -126,15 +129,16 @@
     ///
     /// Unknown state is a failed connection, never evidence that the card is activated.
     internal static func connectionSnapshot(
-      cardAccessNumber: String
+      cardAccessNumber: String?
     ) async -> ConnectionSnapshotResult {
-      if await DemoMode.shared.isActive {
+      if await DemoMode.shared.isActive, let cardAccessNumber {
         return await DemoMode.shared.connectionSnapshot(
           cardAccessNumber: cardAccessNumber)
       }
       if let readerResult = await readerConnectionSnapshot(cardAccessNumber: cardAccessNumber) {
         return readerResult
       }
+      guard let cardAccessNumber else { return .failed }
       guard SupportedCardTransports.offersNearField else { return .failed }
       guard #available(iOS 26.0, *) else { return .failed }
       let held: NearFieldCardSession
@@ -157,7 +161,7 @@
     }
 
     private static func readerConnectionSnapshot(
-      cardAccessNumber: String
+      cardAccessNumber: String?
     ) async -> ConnectionSnapshotResult? {
       guard let manager = TKSmartCardSlotManager.default else { return nil }
       let occupied = await CardSlotSearch.allOccupied(in: manager).filter { candidate in
@@ -198,7 +202,7 @@
 
     private static func snapshotFromChannel(
       _ channel: SmartCardChannel,
-      cardAccessNumber: String,
+      cardAccessNumber: String?,
       atrScheme: ActivationScheme?
     ) -> ConnectionSnapshotResult {
       do {

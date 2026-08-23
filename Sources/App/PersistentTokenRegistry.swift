@@ -151,46 +151,43 @@
 
     // MARK: Functions
 
-    /// Fetches and publishes once at launch, on the platform whose
-    /// requester runs unattended.
-    ///
-    /// iOS publishes from the visible remote connect instead: a launch
-    /// fetch would surprise the phone's holder with an authorization
-    /// out of nowhere.
+    /// Fetches and publishes once at launch on the requesting device when
+    /// an identity is needed.
     internal func start() {
-      #if os(macOS)
-        startFetch()
-      #endif
+      startFetch()
     }
 
-    #if os(macOS)
-      private func startFetch() {
-        guard !isRunning, Self.needsIdentity else { return }
-        isRunning = true
-        Task.detached(priority: .userInitiated) {
-          let certificateDER: Data?
-          do {
-            let response = try RappPersistentRequesterClient(
-              displayName: "ReFineID Mac"
-            ).perform(.readAuthenticationCertificate)
-            guard case .authenticationCertificate(let certificate) = response else {
-              await Self.shared.finish(nil)
-              return
-            }
-            certificateDER = certificate
-          } catch {
-            certificateDER = nil
+    private func startFetch() {
+      guard !isRunning, Self.needsIdentity else { return }
+      isRunning = true
+      Task.detached(priority: .userInitiated) {
+        let certificateDER: Data?
+        #if os(macOS)
+          let displayName = String(localized: "ReFineID Mac")
+        #else
+          let displayName = String(localized: "ReFineID iPad")
+        #endif
+        do {
+          let response = try RappPersistentRequesterClient(
+            displayName: displayName
+          ).perform(.readAuthenticationCertificate)
+          guard case .authenticationCertificate(let certificate) = response else {
+            await Self.shared.finish(nil)
+            return
           }
-          await Self.shared.finish(certificateDER)
+          certificateDER = certificate
+        } catch {
+          certificateDER = nil
         }
+        await Self.shared.finish(certificateDER)
       }
+    }
 
-      private func finish(_ certificateDER: Data?) {
-        defer { isRunning = false }
-        guard let certificateDER else { return }
-        Self.publish(certificateDER)
-      }
-    #endif
+    private func finish(_ certificateDER: Data?) {
+      defer { isRunning = false }
+      guard let certificateDER else { return }
+      Self.publish(certificateDER)
+    }
 
   }
 #endif

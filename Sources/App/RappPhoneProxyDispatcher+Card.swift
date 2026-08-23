@@ -31,10 +31,7 @@
             coordinator: coordinator)
           return
         }
-        guard let accessNumber = CardCredentialStore.displayedCardAccessNumber() else {
-          await invalid(operationID, coordinator: coordinator)
-          return
-        }
+        let accessNumber = CardCredentialStore.displayedCardAccessNumber()
         let outcome = await RappCardExecutor.readCertificate(
           cardAccessNumber: accessNumber,
           signatureCertificate: operation.kind == .readSignatureCertificate
@@ -51,21 +48,19 @@
       coordinator: RappConnectionCoordinator
     ) async {
       guard
-        let accessNumber = CardCredentialStore.displayedCardAccessNumber(),
         let keyProfile = operation.keyProfile,
         let algorithm = operation.algorithm
       else {
         #if DEBUG
           print(
-            "[stream-holder] card command refused: access number "
-              + "\(CardCredentialStore.displayedCardAccessNumber() != nil), "
-              + "profile \(operation.keyProfile != nil), "
+            "[stream-holder] card command refused: profile \(operation.keyProfile != nil), "
               + "algorithm \(operation.algorithm != nil)")
           fflush(stdout)
         #endif
         await invalid(operationID, coordinator: coordinator)
         return
       }
+      let accessNumber = CardCredentialStore.displayedCardAccessNumber()
       #if DEBUG
         HolderTrace.say("card read starting: \(operation.kind)")
       #endif
@@ -100,7 +95,7 @@
     private func signingOutcome(
       operationID: Data,
       operation: RappOperationDriver.Operation,
-      accessNumber: String,
+      accessNumber: String?,
       keyProfile: RappOperationDriver.KeyProfile,
       algorithm: RappOperationDriver.SignatureAlgorithm
     ) async -> RappCardExecutor.Outcome? {
@@ -134,10 +129,7 @@
       operationID: Data,
       coordinator: RappConnectionCoordinator
     ) async {
-      guard let accessNumber = CardCredentialStore.displayedCardAccessNumber() else {
-        await invalid(operationID, coordinator: coordinator)
-        return
-      }
+      let accessNumber = CardCredentialStore.displayedCardAccessNumber()
       switch await CardMaintenance.connectionSnapshot(
         cardAccessNumber: accessNumber
       ) {
@@ -171,10 +163,7 @@
       operationID: Data,
       coordinator: RappConnectionCoordinator
     ) async {
-      guard let accessNumber = CardCredentialStore.displayedCardAccessNumber() else {
-        await invalid(operationID, coordinator: coordinator)
-        return
-      }
+      let accessNumber = CardCredentialStore.displayedCardAccessNumber()
       let outcome = await RappCardExecutor.readCertificate(
         cardAccessNumber: accessNumber,
         signatureCertificate: false

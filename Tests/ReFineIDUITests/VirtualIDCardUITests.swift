@@ -297,14 +297,14 @@
       selectMenu(
         identifier: UITestIdentifiers.virtualCardScenario,
         option: "activated-nfc",
-        optionIdentifier: "virtualCardScenarioOption.activated-nfc",
-        in: app)
+        in: app,
+        optionIdentifier: "virtualCardScenarioOption.activated-nfc")
       selectMenu(
         identifier: UITestIdentifiers.virtualCardFault,
         option: "nfcDisconnectBeforeConnection",
+        in: app,
         optionIdentifier:
           "virtualCardFaultOption.nfcDisconnectBeforeConnection",
-        in: app,
         scrolling: true)
       applyEditor(in: app)
       connect(accessNumber: "123456", pin1: "1234", in: app)
@@ -387,8 +387,8 @@
       selectMenu(
         identifier: UITestIdentifiers.virtualCardScenario,
         option: "activated-reader",
-        optionIdentifier: "virtualCardScenarioOption.activated-reader",
-        in: app)
+        in: app,
+        optionIdentifier: "virtualCardScenarioOption.activated-reader")
       let stepper = app.steppers[UITestIdentifiers.virtualCardPIN1Attempts]
       scrollTo(stepper, in: app)
       XCTAssertTrue(stepper.waitForExistence(timeout: Self.appearTimeout))
@@ -496,8 +496,8 @@
       selectMenu(
         identifier: UITestIdentifiers.virtualCardFault,
         option: preset,
-        optionIdentifier: "virtualCardFaultOption.\(preset)",
         in: app,
+        optionIdentifier: "virtualCardFaultOption.\(preset)",
         scrolling: true)
       applyEditor(in: app)
     }
@@ -610,8 +610,8 @@
       selectMenu(
         identifier: UITestIdentifiers.virtualCardScenario,
         option: scenario,
-        optionIdentifier: "virtualCardScenarioOption.\(scenario)",
-        in: app)
+        in: app,
+        optionIdentifier: "virtualCardScenarioOption.\(scenario)")
       applyEditor(in: app)
     }
 
@@ -640,8 +640,8 @@
       selectMenu(
         identifier: UITestIdentifiers.virtualCardScenario,
         option: "activated-reader",
-        optionIdentifier: "virtualCardScenarioOption.activated-reader",
-        in: app)
+        in: app,
+        optionIdentifier: "virtualCardScenarioOption.activated-reader")
 
       if pin2Attempts != 5 {
         let stepper = app.steppers[UITestIdentifiers.virtualCardPIN2Attempts]
@@ -654,9 +654,9 @@
         selectMenu(
           identifier: "virtualCardSignatureCertificate",
           option: signatureCertificate,
+          in: app,
           optionIdentifier:
             "virtualCardCertificateOption.\(signatureCertificate)",
-          in: app,
           scrolling: true)
       }
 
@@ -669,8 +669,8 @@
         selectMenu(
           identifier: UITestIdentifiers.virtualCardFault,
           option: fault,
-          optionIdentifier: "virtualCardFaultOption.\(fault)",
           in: app,
+          optionIdentifier: "virtualCardFaultOption.\(fault)",
           scrolling: true)
       }
       applyEditor(in: app)

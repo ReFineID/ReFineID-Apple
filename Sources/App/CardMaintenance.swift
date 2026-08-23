@@ -120,15 +120,18 @@ internal enum CardMaintenance {
   /// as a distinct, recoverable result.
   internal static func connectionOperations(
     over channel: SmartCardChannel,
-    cardAccessNumber: String
+    cardAccessNumber: String?
   ) throws -> CardOperations {
     let operations = CardOperations(channel: channel)
     do {
       try operations.selectFineidApplication()
       return operations
     } catch CardOperationError.selectRejected(.securityNotSatisfied) {
-      guard let offered = CardAccessNumber(digits: cardAccessNumber) else {
-        throw ConnectionFailure.failed
+      guard
+        let cardAccessNumber,
+        let offered = CardAccessNumber(digits: cardAccessNumber)
+      else {
+        throw ConnectionFailure.wrongCardAccessNumber
       }
       try? operations.selectMasterFile()
       let keys: PaceSessionKeys

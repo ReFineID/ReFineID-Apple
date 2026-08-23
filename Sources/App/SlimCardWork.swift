@@ -37,14 +37,12 @@
       algorithm: PersistentRelaySigningAlgorithm,
       digest: Data
     ) async -> PersistentRelayMessage {
-      guard let accessNumber = CardCredentialStore.displayedCardAccessNumber() else {
-        return .failure(id: id, reason: .missingCardAccessNumber)
-      }
       guard
         let relayAlgorithm = RappOperationDriver.SignatureAlgorithm(algorithm.signingAlgorithm)
       else {
         return .failure(id: id, reason: .unsupportedAlgorithm)
       }
+      let accessNumber = CardCredentialStore.displayedCardAccessNumber()
       let outcome = await RappCardExecutor.browserAuthentication(
         cardAccessNumber: accessNumber,
         keyProfile: RappOperationDriver.KeyProfile(profile.cardKeyProfile),

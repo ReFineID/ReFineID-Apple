@@ -47,7 +47,7 @@
     }
 
     internal static func readCertificate(
-      cardAccessNumber: String,
+      cardAccessNumber: String?,
       signatureCertificate: Bool
     ) async -> Outcome {
       let slot: CertificateSlot =
@@ -62,7 +62,7 @@
     }
 
     internal static func withCard(
-      cardAccessNumber: String,
+      cardAccessNumber: String?,
       _ operation: @escaping @Sendable (CardOperations) -> Outcome
     ) async -> Outcome {
       if let readerResult = await CardMaintenance.onReaderCard(
@@ -77,6 +77,9 @@
         case .failed:
           return .refusedBeforeCredentialTransmit(.cardUnavailable)
         }
+      }
+      guard let cardAccessNumber else {
+        return .refusedBeforeCredentialTransmit(.cardUnavailable)
       }
       let result = await CardMaintenance.onSecureNearFieldCard(
         cardAccessNumber: cardAccessNumber,

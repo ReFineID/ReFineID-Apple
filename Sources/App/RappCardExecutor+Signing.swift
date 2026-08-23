@@ -7,7 +7,7 @@
 
   extension RappCardExecutor {
     private struct SignParameters {
-      let cardAccessNumber: String
+      let cardAccessNumber: String?
       let documentPin2: String?
       let role: CredentialRole
       let slot: CertificateSlot
@@ -18,7 +18,7 @@
     }
 
     internal static func browserAuthentication(
-      cardAccessNumber: String,
+      cardAccessNumber: String?,
       keyProfile: RappOperationDriver.KeyProfile,
       algorithm: RappOperationDriver.SignatureAlgorithm,
       digest: Data
@@ -38,7 +38,7 @@
     }
 
     internal static func signDocument(
-      cardAccessNumber: String,
+      cardAccessNumber: String?,
       pin2: String,
       keyProfile: RappOperationDriver.KeyProfile,
       algorithm: RappOperationDriver.SignatureAlgorithm,

@@ -136,7 +136,6 @@
       for operation: RappOperationDriver.Operation
     ) -> Bool {
       let stored = CardCredentialStore.contents()
-      guard stored.hasCardAccessNumber else { return false }
       switch operation.kind {
       case .inspectCard, .readIdentity, .readAuthenticationCertificate,
         .readSignatureCertificate:
