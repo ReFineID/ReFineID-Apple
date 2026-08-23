@@ -39,17 +39,19 @@ internal struct CredentialRetryHealthKey: View {
       if let shown = displayedLevel {
         Image(systemName: systemName)
           .font(.system(size: PersonRowLabel.iconPointSize))
+          .symbolRenderingMode(.monochrome)
           .replacingSymbol()
           .foregroundStyle(shown.color)
         statusBadge(shown)
       } else {
         Image(systemName: systemName)
           .font(.system(size: PersonRowLabel.iconPointSize))
+          .symbolRenderingMode(.monochrome)
           .replacingSymbol()
           .foregroundStyle(
             routeAvailable
-              ? AnyShapeStyle(.green)
-              : AnyShapeStyle(.secondary))
+              ? AnyShapeStyle(Color.green)
+              : AnyShapeStyle(Color.secondary))
       }
     }
     .accessibilityElement(children: .ignore)

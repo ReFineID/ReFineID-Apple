@@ -40,10 +40,10 @@ import SwiftUI
           if remoteCardAvailable {
             RemotePairingGlyph(isConnected: pairingModel.hasActivePairs)
           } else {
-            Image(systemName: "key.radiowaves.forward")
-              .font(.system(size: PersonRowLabel.iconPointSize))
-              .foregroundStyle(.secondary)
-              .accessibilityHidden(true)
+            PersonRowLabel.cardIcon(
+              systemName: "key.radiowaves.forward",
+              lit: false
+            )
           }
         }
         .frame(width: PersonRowLabel.iconWidth)
@@ -58,6 +58,7 @@ import SwiftUI
           remoteRouteTrailingControls
         }
       }
+      .buttonStyle(.borderless)
       .accessibilityIdentifier("remoteCard")
       .onAppear {
         pairingModel.refresh()

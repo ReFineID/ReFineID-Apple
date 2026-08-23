@@ -158,15 +158,10 @@ extension CardCredentialsView {
   @ViewBuilder internal var cardAccessNumberRow: some View {
     #if os(iOS)
       HStack {
-        Image(systemName: "person.text.rectangle")
-          .font(.system(size: PersonRowLabel.iconPointSize))
-          .foregroundStyle(
-            isCardAccessNumberEntryComplete
-              ? Color.accentColor
-              : Color.secondary
-          )
-          .frame(width: PersonRowLabel.iconWidth)
-          .accessibilityHidden(true)
+        PersonRowLabel.cardIcon(
+          systemName: "person.text.rectangle",
+          lit: isCardAccessNumberEntryComplete
+        )
         TextField(
           "Card Access Number (CAN)",
           text: $cardAccessNumberEntry
@@ -189,6 +184,7 @@ extension CardCredentialsView {
           canScanButton
         #endif
       }
+      .buttonStyle(.borderless)
     #else
       TextField(
         "Card Access Number (CAN)",
@@ -223,13 +219,7 @@ extension CardCredentialsView {
   @ViewBuilder internal var pin1Row: some View {
     #if os(iOS)
       HStack {
-        Image(systemName: "key.card")
-          .font(.system(size: PersonRowLabel.iconPointSize))
-          .foregroundStyle(
-            isPin1Cached ? Color.accentColor : Color.secondary
-          )
-          .frame(width: PersonRowLabel.iconWidth)
-          .accessibilityHidden(true)
+        PersonRowLabel.cardIcon(systemName: "key", lit: isPin1Cached)
         CredentialSecretField(
           name: String(localized: "Basic Code (PIN 1)"),
           text: $pin1Entry,
@@ -249,11 +239,17 @@ extension CardCredentialsView {
         Button(String(localized: "Cache")) {
           connectIdentityCard()
         }
-        .buttonStyle(.bordered)
-        .controlSize(.small)
+        .font(.subheadline.weight(.semibold))
+        .padding(.horizontal, Layout.cacheButtonHorizontalPadding)
+        .padding(.vertical, Layout.cacheButtonVerticalPadding)
+        .background(
+          .quaternary,
+          in: RoundedRectangle(cornerRadius: Layout.cacheButtonCornerRadius)
+        )
         .disabled(!canCachePin1)
         .accessibilityIdentifier("primeStartButton")
       }
+      .buttonStyle(.borderless)
     #else
       CredentialSecretField(
         name: String(localized: "Basic Code (PIN 1)"),

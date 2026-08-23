@@ -7,7 +7,7 @@
   /// The Remote key: idle, or green with a check once a pair is live.
   internal struct RemotePairingGlyph: View {
     private enum Layout {
-      static let badgeGlyphSize: CGFloat = 10
+      static let badgeGlyphSize: CGFloat = 12
     }
 
     /// Whether this device currently has a usable pairing.
@@ -17,6 +17,7 @@
       ZStack(alignment: .bottomTrailing) {
         Image(systemName: "key.radiowaves.forward")
           .font(.system(size: PersonRowLabel.iconPointSize))
+          .symbolRenderingMode(.monochrome)
           .replacingSymbolPlainly()
           .foregroundStyle(isConnected ? Color.green : Color.accentColor)
           .accessibilityHidden(true)

@@ -30,6 +30,9 @@ internal struct CardCredentialsView: View {
   internal enum Layout {
     internal static let canButtonSize = 44.0
     internal static let canButtonOuterPadding = -10.0
+    internal static let cacheButtonHorizontalPadding: CGFloat = 12
+    internal static let cacheButtonVerticalPadding: CGFloat = 6
+    internal static let cacheButtonCornerRadius: CGFloat = 8
   }
 
   // MARK: Static Properties

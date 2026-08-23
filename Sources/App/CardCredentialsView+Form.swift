@@ -191,6 +191,8 @@ extension CardCredentialsView {
   ) -> some View {
     HStack {
       icon()
+        .font(.system(size: PersonRowLabel.iconPointSize))
+        .symbolRenderingMode(.monochrome)
         .frame(width: PersonRowLabel.iconWidth)
         .accessibilityHidden(true)
       Text(title)
