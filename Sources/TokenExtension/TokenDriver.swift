@@ -134,6 +134,10 @@ internal final class TokenDriver: TKSmartCardTokenDriver, TKSmartCardTokenDriver
     createTokenFor smartCard: TKSmartCard,
     aid: Data?
   ) throws -> TKSmartCardToken {
+    // CryptoTokenKit does not name the client. Mail listing identities
+    // and Safari signing both arrive here the same way. A registered
+    // contactless token is minted by opening the NFC slot, which is
+    // the Ready to Scan sheet; this callback cannot refuse Mail.
     // The slot name is all there is to classify by before any card I/O.
     let transport = CardTransport.transport(forSlotNamed: smartCard.slot.name)
     let started = ContinuousClock.now

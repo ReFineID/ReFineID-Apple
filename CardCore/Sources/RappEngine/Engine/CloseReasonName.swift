@@ -11,6 +11,5 @@ internal enum CloseReasonName {
   /// Whether this close reason carries the Section 14.6 pairing notice.
   internal static func revokesPairing(_ reason: String) -> Bool {
     reason == pairingRevoked || reason == protocolViolation
-      || reason == cardUnavailable
   }
 }

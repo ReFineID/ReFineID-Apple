@@ -260,11 +260,10 @@ extension RappOperationBridge {
     }
   }
 
-  /// Ends the session and the pairing because the proxy can no longer
-  /// serve the card, per `card_unavailable` in Section 14.6.
+  /// Ends the session because the proxy can no longer serve the card.
   ///
-  /// The best-effort close notice is sealed while the channel still
-  /// exists; the caller releases it and durably revokes the pairing.
+  /// The pairing stays. Households keep the same peers while cards come
+  /// and go; only the published identity leaves with the card.
   public func cardUnavailableClose() -> RappBridgeAction {
     locked {
       guard !closed else { return RappBridgeAction(kind: .noAction) }
@@ -278,10 +277,9 @@ extension RappOperationBridge {
       closed = true
       session.close()
       return RappBridgeAction(
-        kind: .pairRevoked,
+        kind: .sessionClosed,
         frame: notice,
-        closeSessionAfterSend: notice != nil,
-        revokesPairing: true)
+        closeSessionAfterSend: notice != nil)
     }
   }
 

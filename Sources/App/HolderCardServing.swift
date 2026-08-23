@@ -9,12 +9,13 @@
   /// Whether this phone can still serve a card, and what leaves with it.
   ///
   /// A connected reader is a card this device can answer for. Losing it
-  /// wipes the CryptoTokenKit identities that were offering that card,
-  /// revokes every pairing, and stops the holder advertisement so a
-  /// paired requester withdraws its copy and pairing too.
+  /// wipes the CryptoTokenKit identities that were offering that card
+  /// and stops the holder advertisement so a paired requester withdraws
+  /// its copy. The pairing stays: a household keeps the same peers while
+  /// cards come and go.
   ///
   /// A stored NFC prime is different: the field has no lasting connected
-  /// state, so the prime, the advertisement, and the pairing stay.
+  /// state, so the prime and the advertisement stay.
   @MainActor
   internal enum HolderCardServing {
     /// Whether a serving state has been measured this run.
@@ -38,7 +39,7 @@
             PhonePersistentTokenRelay.shared.resumeServing()
           #endif
         } else {
-          dropCardAndPairing()
+          dropReaderTokens()
         }
         return
       }
@@ -50,18 +51,17 @@
         #endif
         return
       }
-      dropCardAndPairing()
+      dropReaderTokens()
     }
 
-    /// Clears identities and pairings that belonged to a reader card.
-    private static func dropCardAndPairing() {
+    /// Clears identities that belonged to a reader card.
+    ///
+    /// Pairing stays.
+    private static func dropReaderTokens() {
       ReaderPin1Cache.shared.clear()
       wipeLocalTokens()
       #if REFINEID_REMOTE_CARD
-        Task {
-          await PhonePersistentTokenRelay.shared.revokeBecauseCardUnavailable()
-          RappPairingModel.revokeEveryStoredPair()
-        }
+        PhonePersistentTokenRelay.shared.stopServing()
       #endif
     }
 

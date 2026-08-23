@@ -64,13 +64,12 @@ internal struct SessionCloseBehaviorTests {
     #expect(RappOperationBridge.failureRevokesPairing(message))
   }
 
-  /// The proxy's card leaving is a pairing-ending close, not a session
-  /// close that leaves the pairing standing.
+  /// The proxy's card leaving closes the session and leaves the pairing.
   @Test
-  internal func cardUnavailableIsAPairingRevokingCloseReason() {
+  internal func cardUnavailableClosesTheSessionOnly() {
     #expect(FieldSpec.closeReasons.contains(CloseReasonName.cardUnavailable))
-    #expect(CloseReasonName.revokesPairing(CloseReasonName.cardUnavailable))
-    #expect(!CloseReasonName.revokesPairing("user_disconnect"))
+    #expect(!CloseReasonName.revokesPairing(CloseReasonName.cardUnavailable))
+    #expect(CloseReasonName.revokesPairing(CloseReasonName.pairingRevoked))
   }
 
   /// A decrypted frame that breaks the protocol must leave the channel

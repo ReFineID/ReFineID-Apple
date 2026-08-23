@@ -18,8 +18,9 @@
     /// Browses for the selected pair's holder advertisement.
     ///
     /// The holder publishes only while it can serve a card. Losing that
-    /// service means the reader card is gone: the borrowed identity and
-    /// the pairing both leave. An NFC prime keeps the holder advertising.
+    /// service means the reader card is gone: the borrowed identity is
+    /// withdrawn. The pairing stays so the next card can use it. An NFC
+    /// prime keeps the holder advertising.
     internal func startWatchingPresence() {
       presence?.cancel()
       presence = nil
@@ -47,11 +48,8 @@
       guard hasSeenHolderAdvertisement, holderIsAdvertising else { return }
       holderIsAdvertising = false
       Self.withdrawPublishedIdentity()
-      RappPairingModel.revokeEveryStoredPair()
-      presence?.cancel()
-      presence = nil
       #if DEBUG
-        print("[persistent-token] holder left, withdrew pairing")
+        print("[persistent-token] holder left, withdrew identity")
         fflush(stdout)
       #endif
     }

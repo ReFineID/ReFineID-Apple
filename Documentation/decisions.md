@@ -13,23 +13,23 @@ card or unplugging the reader ends the token, and the PIN goes with it.
 The token extension process may stay up; the cache must not. NFC still
 uses the durable store the holder wrote at Enable.
 
-## 2026-08-23 Product owns RAPP; the card leaving ends the pairing
+## 2026-08-23 Pairing outlives the card; tokens do not
 
 This repository is the change controller for the Remote Authorization
 Proxy Protocol as ReFineID ships it. When product behaviour needs a
-wire event the draft does not name, the draft is amended here. Working
-around a silent protocol is not an option.
+wire event the draft does not name, the draft is amended here.
 
-Pulling a reader card, or unplugging the reader, ends every pairing
-that was serving that card. NFC primes are not this event: the field
-has no lasting connected state.
+A household keeps pairings. Pulling a reader card, or unplugging the
+reader, withdraws published CryptoTokenKit identities on the holder
+and on any requester that saw the holder leave. The pairing stays, so
+the next card can use it. `session.close` reason `card_unavailable`
+closes only the session.
 
-On an authenticated session the proxy sends `session.close` with
-reason `card_unavailable`, which carries the Section 14.6 revocation
-notice. With no session, each peer revokes locally: the holder because
-the card is gone, the requester because the holder's pair-specific
-advertisement has left. That requester decision is local revocation
-under 14.6, not unauthenticated peer input, so INV-18 still holds.
+NFC is different. The field has no lasting connected state, so a
+stored prime keeps the identity and the advertisement. CryptoTokenKit
+does not name the client that asked for a token: Mail listing
+identities and Safari signing both mint a registered contactless
+token, which is the Ready to Scan sheet. The driver cannot refuse Mail.
 
 ## 2026-08-23 Floor is iOS 26 and macOS 26
 

@@ -688,8 +688,9 @@ close-reason =
 
 A peer that receives `session.close` enters `closing`, stops sending
 application messages, and completes its own close. The reasons
-`pairing_revoked`, `protocol_violation`, and `card_unavailable`
-additionally carry the pairing revocation notice of Section 14.6.
+`pairing_revoked` and `protocol_violation` additionally carry the pairing
+revocation notice of Section 14.6. `card_unavailable` closes only the
+session: the published identity is withdrawn, the pairing remains.
 
 ## 11. Visible liveness
 
@@ -1220,22 +1221,24 @@ and requires a completely new manual QR pairing. RAPP 26.8 has no violation
 counter, grace event, automatic recovery, or restoration of revoked keys.
 
 Entering `revoked` sends, while an authenticated channel still exists, one
-best-effort `session.close` with reason `pairing_revoked`,
-`protocol_violation`, or `card_unavailable`, and then destroys the pair keys.
-A peer receiving any of those reasons on an authenticated channel marks its
-own pairing `revoked`, records that the peer initiated it, closes the
-session, and destroys its keys; the pairing is dead on both sides and both
-users see why. When no channel exists at revocation time, the other peer
+best-effort `session.close` with reason `pairing_revoked` or
+`protocol_violation`, and then destroys the pair keys. A peer receiving either
+reason on an authenticated channel marks its own pairing `revoked`, records
+that the peer initiated it, closes the session, and destroys its keys; the
+pairing is dead on both sides and both users see why. When no channel exists at
+revocation time, the other peer
 discovers the loss as failed session handshakes: after three consecutive
 candidate authentication failures for one pairing an implementation SHOULD
 suggest re-pairing, while leaving stored keys untouched per invariant
 `INV-18`.
 
-`revoked` is entered deliberately: by local user action, by the card or
-reader becoming unavailable to the proxy, or by the authenticated peer
-notice above. Local revocation with no channel simply destroys keys; the
-peer discovers the loss as described. A stored NFC prime is not card
-unavailability: the contactless field has no lasting connected state.
+`revoked` is entered deliberately: by local user action, or by the
+authenticated peer notice above. Local revocation with no channel simply
+destroys keys; the peer discovers the loss as described. A reader card
+leaving, or a reader being unplugged, withdraws published identities and
+closes the session with `card_unavailable` when a channel exists; it does
+not revoke the pairing. A stored NFC prime is not card unavailability:
+the contactless field has no lasting connected state.
 
 ### 14.7 Global event precedence
 
@@ -1293,7 +1296,7 @@ Registered `error` names in RAPP 26.8: `busy`, `unknown_operation`.
 | `session_integrity_failed` | none; channel unusable | closes immediately | none | by commit boundary |
 | `authenticated_protocol_violation` | `session.close` reason `protocol_violation`, best effort | closes | revoked immediately; peer marks revoked | never repeated |
 | `pairing_revoked` | `session.close` reason `pairing_revoked`, best effort | closes | revoked; peer marks revoked | never repeated |
-| `card_unavailable` | `session.close` reason `card_unavailable`, best effort | closes | revoked; peer marks revoked | never repeated |
+| `card_unavailable` | `session.close` reason `card_unavailable`, best effort | closes | none | none |
 | `local_security_shutdown` | none | closes | none | ambiguous if committed |
 
 An ordinary user denial is not an anomaly. It MUST NOT revoke a pairing.
@@ -1764,7 +1767,8 @@ profile. Relative to the originally stamped 26.8.16.85 text:
 ## Appendix D. Card unavailability
 
 Product amendment on wire version 26.8. Pulling the reader card, or
-unplugging the reader, ends the pairing. The proxy sends `session.close`
-with reason `card_unavailable` while an authenticated channel exists.
-That reason carries the Section 14.6 revocation notice. A stored NFC
-prime is not this event.
+unplugging the reader, withdraws published identities. The pairing
+stays so a household can keep the same peers while cards come and go.
+The proxy sends `session.close` with reason `card_unavailable` while an
+authenticated channel exists; that reason does not carry the Section
+14.6 revocation notice. A stored NFC prime is not this event.

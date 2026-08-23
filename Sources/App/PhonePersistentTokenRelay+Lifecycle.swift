@@ -23,15 +23,10 @@
       start()
     }
 
-    /// Sends the card-unavailable close while a session exists, then
-    /// stops advertising.
+    /// Stops advertising without asking the holder to pair again.
     ///
-    /// Pairing revocation is the caller's.
-    internal func revokeBecauseCardUnavailable() async {
-      relistenPolicy = .explicitUserActionRequired
-      if let coord = coordinator {
-        await coord.revokeBecauseCardUnavailable()
-      }
+    /// The pairing remains. A card that comes back listens again.
+    internal func stopServing() {
       tearDownTransport()
     }
 

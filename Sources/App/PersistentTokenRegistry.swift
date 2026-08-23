@@ -80,8 +80,9 @@
 
     /// Removes the published identity.
     ///
-    /// Pairing revocation is separate: a presence loss revokes the pair
-    /// after this returns, and a pairing the holder dropped does too.
+    /// The pairing is separate: a reader card leaving withdraws the
+    /// borrowed certificate and leaves the pair so the next card can
+    /// use it.
     internal static func withdrawPublishedIdentity() {
       guard let driver = driverConfiguration else { return }
       for instanceID in driver.tokenConfigurations.keys {
