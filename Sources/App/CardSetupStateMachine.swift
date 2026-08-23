@@ -11,7 +11,6 @@ internal enum CardSetupStateMachine {
   // State and Event are transcribed from the SCXML grammar in document
   // order, and exhaustive tests compare the two representations case by
   // case. Sorting them by name would break that correspondence.
-  // swiftlint:disable sorted_enum_cases
   internal enum State: String, CaseIterable, Sendable {
     case activationHome
     case activationIdentity
@@ -46,7 +45,6 @@ internal enum CardSetupStateMachine {
     case startConfiguredBrowserRegistration = "browser.registration.start"
     case startManagementClassification = "management.classification.start"
   }
-  // swiftlint:enable sorted_enum_cases
 
   internal enum Destination: Hashable, Sendable {
     case activation
