@@ -187,7 +187,8 @@ internal enum FineidValues {
   internal static let organizationQualifiedKeyReference: UInt8 = 0x82
 
   /// Algorithm-reference hash high-nibble values (S1 v4.2 §3.6.3
-  /// Table 6): SHA-224/256/384/512.
+  /// Table 6): SHA-1/224/256/384/512.
+  internal static let hashNibbleSha1: UInt8 = 0x1
   internal static let hashNibbleSha224: UInt8 = 0x3
   internal static let hashNibbleSha256: UInt8 = 0x4
   internal static let hashNibbleSha384: UInt8 = 0x5

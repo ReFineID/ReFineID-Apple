@@ -128,15 +128,27 @@
           holder = name
           // The same answered certificate becomes the Safari identity;
           // the holder is asked exactly once for both.
+          #if DEBUG
+            print("[RemoteCardModel] publish: publishing certificate for holder=\(name)")
+            fflush(stdout)
+          #endif
           await PersistentTokenRegistry.publish(certificateDER: der)
         } else {
           holder = nil
+          #if DEBUG
+            print("[RemoteCardModel] publish: no authentication certificate response or name")
+            fflush(stdout)
+          #endif
         }
         await self?.finishConnect(holder: holder)
       }
     }
 
     private func finishConnect(holder: String?) {
+      #if DEBUG
+        print("[RemoteCardModel] finishConnect: holder=\(String(describing: holder))")
+        fflush(stdout)
+      #endif
       phase = holder.map(Phase.identity) ?? .failed
       if holder != nil { failureText = nil }
     }

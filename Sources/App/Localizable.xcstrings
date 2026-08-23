@@ -3043,18 +3043,18 @@
         }
       }
     },
-    "Enter the 8-character code shown on your other device to connect.": {
+    "Enter the code shown on your other device to connect.": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Syötä toisessa laitteessa näkyvä 8-merkkinen koodi yhdistääksesi."
+            "value": "Syötä toisessa laitteessa näkyvä koodi yhdistääksesi."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ange den 8 tecken långa koden som visas på din andra enhet för att ansluta."
+            "value": "Ange koden som visas på din andra enhet för att ansluta."
           }
         }
       }
@@ -3064,13 +3064,13 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Syötä tämä koodi ReFineID-sovellukseen iPhonessa muodostaaksesi laiteparin."
+            "value": "Syötä koodi ReFineID-sovellukseen iPhonessa."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ange denna kod i ReFineID på din iPhone för att parkoppla."
+            "value": "Ange koden i ReFineID på din iPhone."
           }
         }
       }

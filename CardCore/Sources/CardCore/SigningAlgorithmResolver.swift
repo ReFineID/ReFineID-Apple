@@ -17,6 +17,8 @@ import Security
       ("ecdsaDigestSHA512", .ecdsaSignatureDigestX962SHA512),
       ("ecdsaMessageSHA512", .ecdsaSignatureMessageX962SHA512),
       ("rsaRaw", .rsaSignatureRaw),
+      ("rsaDigPKCS1SHA1", .rsaSignatureDigestPKCS1v15SHA1),
+      ("rsaMsgPKCS1SHA1", .rsaSignatureMessagePKCS1v15SHA1),
       ("rsaDigestPSSSHA256", .rsaSignatureDigestPSSSHA256),
       ("rsaMessagePSSSHA256", .rsaSignatureMessagePSSSHA256),
       ("rsaDigestPKCS1SHA256", .rsaSignatureDigestPKCS1v15SHA256),

@@ -92,12 +92,24 @@ internal final class PersistentTokenDriver: TKTokenDriver,
       keyObjectID: Any,
       algorithm: TKTokenKeyAlgorithm
     ) -> Bool {
-      operation == .signData
+      let supported =
+        operation == .signData
         && (keyObjectID as? String) == PersistentTokenIdentity.keyObjectID
         && SigningAlgorithmResolver.advertises(
           algorithm,
           profile: persistentToken.profile
         )
+      #if DEBUG
+        print(
+          """
+          [PersistentTokenDriver] supports: op=\(operation.rawValue) \
+          algo=\(SigningAlgorithmResolver.describe(algorithm)) \
+          profile=\(String(describing: persistentToken.profile)) -> \(supported)
+          """
+        )
+        fflush(stdout)
+      #endif
+      return supported
     }
 
     fileprivate func tokenSession(

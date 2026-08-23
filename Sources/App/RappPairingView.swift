@@ -117,12 +117,6 @@
       VStack(spacing: Layout.headerSpacing) {
         Text(String(localized: "Enter Pairing Code"))
           .font(.title2.bold())
-        Text(
-          String(localized: "Enter the 8-character code shown on your other device to connect.")
-        )
-        .font(.subheadline)
-        .foregroundStyle(.secondary)
-        .multilineTextAlignment(.center)
       }
       .padding(.horizontal)
     }
@@ -143,7 +137,7 @@
     }
 
     private var codeTextField: some View {
-      TextField("ABCD-1234", text: $enteredCode)
+      TextField("ABC1", text: $enteredCode)
         .font(.system(size: Layout.inputFontSize, weight: .semibold, design: .monospaced))
         .multilineTextAlignment(.center)
         .textCase(.uppercase)
@@ -164,9 +158,8 @@
         .accessibilityIdentifier("pairingCodeEntry")
         .onValueChange(of: enteredCode) { newValue in
           let normalized = RappPairingCode.normalize(newValue)
-          let formatted = RappPairingCode.format(normalized)
-          if enteredCode != formatted {
-            enteredCode = formatted
+          if enteredCode != normalized {
+            enteredCode = normalized
           }
           if RappPairingCode.isValid(normalized) {
             model.acceptPairingCode(normalized)
@@ -204,16 +197,15 @@
       VStack(spacing: Layout.headerSpacing) {
         Text(String(localized: "Pairing Code"))
           .font(.title2.bold())
-        Text(String(localized: "Enter this code in ReFineID on your iPhone to pair."))
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
-          .multilineTextAlignment(.center)
       }
       .padding(.horizontal)
     }
 
     @ViewBuilder private var borrowedCodeBody: some View {
       if case .offer(let code) = model.phase {
+        #if DEBUG
+          _ = print("[pairing view] displaying code: \(code)")
+        #endif
         VStack(spacing: Layout.codeSpacing) {
           codeCard(code)
           copyCodeButton(code)

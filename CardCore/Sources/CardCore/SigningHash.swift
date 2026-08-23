@@ -5,6 +5,9 @@
 /// Carried as the high nibble of the MSE:SET algorithm-reference byte
 /// (FINEID S1 v4.2 §3.6.3 Table 6).
 public enum SigningHash: Equatable, Sendable {
+  /// SHA-1 (high nibble 1).
+  case sha1
+
   /// SHA-224 (high nibble 3).
   case sha224
 
@@ -16,6 +19,9 @@ public enum SigningHash: Equatable, Sendable {
 
   /// SHA-512 (high nibble 6).
   case sha512
+
+  /// SHA-1 digest width.
+  private static let sha1ByteCount = 20
 
   /// SHA-224 digest width.
   private static let sha224ByteCount = 28
@@ -32,6 +38,8 @@ public enum SigningHash: Equatable, Sendable {
   /// Exact digest size this hash contributes to PSO:HASH.
   public var digestByteCount: Int {
     switch self {
+    case .sha1:
+      Self.sha1ByteCount
     case .sha224:
       Self.sha224ByteCount
     case .sha256:
@@ -46,6 +54,8 @@ public enum SigningHash: Equatable, Sendable {
   /// The high nibble contributed to the algorithm-reference byte.
   internal var highNibble: UInt8 {
     switch self {
+    case .sha1:
+      FineidValues.hashNibbleSha1
     case .sha224:
       FineidValues.hashNibbleSha224
     case .sha256:

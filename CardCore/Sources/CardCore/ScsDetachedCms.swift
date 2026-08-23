@@ -45,6 +45,8 @@ public struct ScsDetachedCms {
     }
     let algorithmOid =
       switch hash {
+      case .sha1:
+        SignOids.sha1
       case .sha224, .sha256:
         SignOids.sha256
       case .sha384:

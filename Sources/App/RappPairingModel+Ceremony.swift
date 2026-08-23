@@ -19,7 +19,15 @@
       guard self.coordinator === coordinator else { return }
       switch event {
       case .offerReady(let uri):
-        phase = .offer(uri)
+        #if DEBUG
+          print("[pairing] offerReady event received with URI: \(uri)")
+          print("[pairing] pairingCode is: \(String(describing: pairingCode))")
+        #endif
+        if let code = pairingCode {
+          phase = .offer(code)
+        } else {
+          phase = .offer(uri)
+        }
       case .offerRestored(let uri):
         restoreRequesterOffer(uri, coordinator: coordinator)
       case .reviewPeer(let peer):
@@ -57,7 +65,11 @@
       _ uri: String,
       coordinator: RappPairingCoordinator
     ) {
-      phase = .offer(uri)
+      if let code = pairingCode {
+        phase = .offer(code)
+      } else {
+        phase = .offer(uri)
+      }
       relay?.cancel()
       let replacement = makeRelay(role: .host)
       let replacementTransport = makeTransport(relay: replacement)

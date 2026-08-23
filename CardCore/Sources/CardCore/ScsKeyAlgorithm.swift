@@ -15,6 +15,8 @@ public enum ScsKeyAlgorithm: Equatable, Sendable {
   /// The protocol's digest-name spelling for `hash`.
   public static func scsName(hash: SigningHash) -> String {
     switch hash {
+    case .sha1:
+      "SHA1"
     case .sha224:
       "SHA224"
     case .sha256:
@@ -27,9 +29,11 @@ public enum ScsKeyAlgorithm: Equatable, Sendable {
   }
 
   /// Parses the protocol's digest-name spelling; the SCS surface
-  /// accepts SHA-256, SHA-384 and SHA-512 (v1.3 §2.5.2).
+  /// accepts SHA-1, SHA-256, SHA-384 and SHA-512 (v1.3 §2.5.2).
   public static func hash(named name: String) -> SigningHash? {
     switch name {
+    case "SHA1":
+      .sha1
     case "SHA256":
       .sha256
     case "SHA384":

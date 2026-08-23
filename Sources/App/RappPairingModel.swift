@@ -126,6 +126,9 @@
       #endif
       let code = customCode.map(RappPairingCode.normalize) ?? RappPairingCode.generate()
       pairingCode = code
+      #if DEBUG
+        print("[pairing] generated code: \(code)")
+      #endif
       let relay = makeRelay(role: .host)
       let transport = makeTransport(relay: relay)
       publish(
@@ -163,7 +166,11 @@
           guard let self, self.coordinator === coordinator, !isFinished,
             let uri = coordinator.offerURI
           else { return }
-          phase = .offer(RappPairingCode.format(code))
+          #if DEBUG
+            print("[pairing] setting phase to .offer with code: \(code)")
+            print("[pairing] URI is: \(uri)")
+          #endif
+          phase = .offer(code)
           relay.start(sharingOfferURI: uri)
         }
       } catch {

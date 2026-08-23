@@ -79,6 +79,16 @@ public enum CardSignRequestResolver {
   /// RSA client-authentication and qualified-signature shapes.
   private static let rsaShapes: [Shape] = [
     Shape(
+      secKeyAlgorithm: .rsaSignatureDigestPKCS1v15SHA1,
+      hash: .sha1,
+      scheme: .rsaPkcs1,
+      hashesMessage: false),
+    Shape(
+      secKeyAlgorithm: .rsaSignatureMessagePKCS1v15SHA1,
+      hash: .sha1,
+      scheme: .rsaPkcs1,
+      hashesMessage: true),
+    Shape(
       secKeyAlgorithm: .rsaSignatureDigestPSSSHA256,
       hash: .sha256,
       scheme: .rsaPss,
@@ -186,6 +196,8 @@ public enum CardSignRequestResolver {
   /// Hashes one message according to the selected exact shape.
   private static func hash(_ input: Data, with hash: SigningHash) -> Data {
     switch hash {
+    case .sha1:
+      Data(Insecure.SHA1.hash(data: input))
     case .sha224:
       // No SHA-224 message form is advertised.
       input

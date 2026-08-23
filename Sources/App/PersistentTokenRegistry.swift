@@ -45,8 +45,20 @@
     /// Publishes an already-fetched certificate as the persistent
     /// identity.
     internal static func publish(certificateDER: Data) {
-      guard shared.isRunning == false else { return }
-      publish(certificateDER)
+      #if DEBUG
+        print(
+          "[PersistentTokenRegistry] publish: certificateDER=\(certificateDER.count)B isRunning=\(shared.isRunning)"
+        )
+        fflush(stdout)
+      #endif
+      guard shared.isRunning == false else {
+        #if DEBUG
+          print("[PersistentTokenRegistry] publish: skipping, isRunning=true")
+          fflush(stdout)
+        #endif
+        return
+      }
+      Self.publish(certificateDER)
     }
 
     /// Withdraws every identity this driver has published.
@@ -83,24 +95,70 @@
     }
 
     private static func publish(_ certificateDER: Data) {
+      #if DEBUG
+        print("[PersistentTokenRegistry] publish: starting")
+        fflush(stdout)
+      #endif
+
+      guard let driver = driverConfiguration else {
+        #if DEBUG
+          print("[PersistentTokenRegistry] publish: no driver configuration")
+          fflush(stdout)
+        #endif
+        return
+      }
+
+      guard let certificate = SecCertificateCreateWithData(nil, certificateDER as CFData) else {
+        #if DEBUG
+          print("[PersistentTokenRegistry] publish: failed to create certificate from DER")
+          fflush(stdout)
+        #endif
+        return
+      }
+
+      guard let profile = CardKeyProfile.resolve(fromCertificate: certificate) else {
+        #if DEBUG
+          print("[PersistentTokenRegistry] publish: failed to resolve profile from certificate")
+          fflush(stdout)
+        #endif
+        return
+      }
+
       guard
-        let driver = driverConfiguration,
-        let certificate = SecCertificateCreateWithData(
-          nil,
-          certificateDER as CFData
-        ),
-        CardKeyProfile.resolve(fromCertificate: certificate) != nil,
         let certificateItem = TKTokenKeychainCertificate(
           certificate: certificate,
           objectID: PersistentTokenIdentity.certificateObjectID
-        ),
+        )
+      else {
+        #if DEBUG
+          print("[PersistentTokenRegistry] publish: failed to create certificate item")
+          fflush(stdout)
+        #endif
+        return
+      }
+
+      guard
         let keyItem = TKTokenKeychainKey(
           certificate: certificate,
           objectID: PersistentTokenIdentity.keyObjectID
         )
       else {
+        #if DEBUG
+          print("[PersistentTokenRegistry] publish: failed to create key item")
+          fflush(stdout)
+        #endif
         return
       }
+
+      #if DEBUG
+        print(
+          """
+          [PersistentTokenRegistry] publish: driver=\(driver), profile=\(profile), \
+          certItem=\(certificateItem), keyItem=\(keyItem)
+          """
+        )
+        fflush(stdout)
+      #endif
 
       let instanceID =
         PersistentTokenIdentity.instancePrefix
