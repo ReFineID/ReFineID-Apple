@@ -276,7 +276,7 @@ internal struct CardCredentialsView: View {
       /// Whether the remote card route can be taken right now.
       internal var remoteCardAvailable: Bool {
         if !offersNearField { return true }
-        return (hasIdentity || hasReaderIdentity) && model.contents.hasPin1
+        return hasIdentity || hasReaderIdentity
       }
     #endif
 

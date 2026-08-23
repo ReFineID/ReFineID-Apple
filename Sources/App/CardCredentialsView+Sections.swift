@@ -130,12 +130,12 @@ extension CardCredentialsView {
     Section {
       cardAccessNumberRow
     } header: {
-      compactSectionHeader("Connect Identity Card")
+      compactSectionHeader("Connect")
     }
     Section {
       pin1Row
     } header: {
-      compactSectionHeader("Browser authentication")
+      compactSectionHeader("PIN 1 Cache")
     }
     if hasConfiguredCard {
       #if REFINEID_LOCAL_CARD && os(iOS)
