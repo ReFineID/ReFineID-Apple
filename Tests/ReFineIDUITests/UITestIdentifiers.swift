@@ -17,9 +17,6 @@
 /// it, so this is the register that keeps the two sides honest.
 
 internal enum UITestIdentifiers {
-  /// The public site in the About box, under every other About line.
-  internal static let productSite = "productSite"
-
   /// The six-digit entry field, present until an identity is set.
   internal static let cardAccessNumberField = "cardAccessNumberField"
 
