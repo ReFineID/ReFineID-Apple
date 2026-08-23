@@ -79,12 +79,12 @@ public enum CertificateSlot: Equatable, Sendable, CaseIterable {
 
     case .issuing:
       [
-        Location(directory: .masterFile, file: .issuingCertificate),
-        Location(directory: .masterFile, file: .organizationIssuingCertificate),
+        Location(directory: .rootFile, file: .issuingCertificate),
+        Location(directory: .rootFile, file: .organizationIssuingCertificate),
       ]
 
     case .root:
-      [Location(directory: .masterFile, file: .rootCertificate)]
+      [Location(directory: .rootFile, file: .rootCertificate)]
     }
   }
 }

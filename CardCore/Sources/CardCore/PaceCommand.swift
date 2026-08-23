@@ -72,10 +72,10 @@ internal enum PaceCommand {
   ///
   /// Provenance: `select_mf` in the donor
   /// `crates/refineid-lib-core/src/pkcs15.rs`.
-  internal static func selectMasterFileVariants() -> [Data] {
+  internal static func selectRootFileVariants() -> [Data] {
     [
-      PaceValues.selectMasterFileByIdentifier,
-      PaceValues.selectMasterFileByName,
+      PaceValues.selectRootFileByIdentifier,
+      PaceValues.selectRootFileByName,
     ]
   }
 

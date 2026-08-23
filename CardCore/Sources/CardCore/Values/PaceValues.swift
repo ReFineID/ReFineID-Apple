@@ -277,27 +277,27 @@ internal enum PaceValues {
   private static let selectNoResponseData: UInt8 = 0x0C
 
   /// Length of a master-file identifier.
-  private static let masterFileIdentifierLength: UInt8 = 0x02
+  private static let rootFileIdentifierLength: UInt8 = 0x02
 
   /// High byte of the master file identifier `3F00`.
-  private static let masterFileIdentifierHigh: UInt8 = 0x3F
+  private static let rootFileIdentifierHigh: UInt8 = 0x3F
 
   /// Low byte of the master file identifier `3F00`.
-  private static let masterFileIdentifierLow: UInt8 = 0x00
+  private static let rootFileIdentifierLow: UInt8 = 0x00
 
   /// SELECT master file by identifier: the first encoding tried.
   ///
   /// A FINEID card refuses PACE's MSE:Set AT unless the session is at
   /// master-file level, and contactless discovery leaves an application
   /// selected instead.
-  internal static let selectMasterFileByIdentifier = Data([
+  internal static let selectRootFileByIdentifier = Data([
     Iso7816Values.classInterindustry,
     selectInstruction,
     selectByIdentifier,
     selectNoResponseData,
-    masterFileIdentifierLength,
-    masterFileIdentifierHigh,
-    masterFileIdentifierLow,
+    rootFileIdentifierLength,
+    rootFileIdentifierHigh,
+    rootFileIdentifierLow,
   ])
 
   /// SELECT master file by name: the fallback encoding.
@@ -305,13 +305,13 @@ internal enum PaceValues {
   /// Cards differ in which of the two they accept, so both are tried in
   /// this order. Established against real cards, not read off a
   /// specification.
-  internal static let selectMasterFileByName = Data([
+  internal static let selectRootFileByName = Data([
     Iso7816Values.classInterindustry,
     selectInstruction,
     selectByName,
     selectNoResponseData,
-    masterFileIdentifierLength,
-    masterFileIdentifierHigh,
-    masterFileIdentifierLow,
+    rootFileIdentifierLength,
+    rootFileIdentifierHigh,
+    rootFileIdentifierLow,
   ])
 }

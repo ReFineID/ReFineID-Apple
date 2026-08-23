@@ -94,7 +94,7 @@ extension Token {
       // PACE has to start at master-file level: the card refuses
       // MSE:Set AT with 6985 anywhere else. Best effort: PACE is the
       // step whose failure should be the one reported.
-      try? CardOperations(channel: channel).selectMasterFile()
+      try? CardOperations(channel: channel).selectRootFile()
       do {
         let keys = try PaceEstablishment(channel: channel).establish(with: accessNumber)
         RefusedUnseal.shared.clear()

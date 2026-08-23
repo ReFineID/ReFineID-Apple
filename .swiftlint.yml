@@ -72,13 +72,6 @@
 
 strict: true
 
-# "Master File" (MF) is normative ISO 7816-4 protocol vocabulary - the
-# root of every smart card's file system. Allow it as a domain term;
-# the rule's other flagged terms stay in force.
-inclusive_language:
-  override_allowed_terms:
-    - master
-
 # Every source file opens with the copyright and licence header. The
 # rule forbids "Copyright" by default (to strip Xcode's auto-header),
 # so it is pointed at the header that is wanted instead.

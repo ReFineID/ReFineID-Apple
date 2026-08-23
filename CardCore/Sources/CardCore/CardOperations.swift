@@ -147,8 +147,8 @@ public struct CardOperations {
     case .pkcs15Application:
       try selectFineidApplication()
 
-    case .masterFile:
-      try selectMasterFile()
+    case .rootFile:
+      try selectRootFile()
 
     case .esignApplication:
       // By name first: the file-identifier variant can answer
@@ -158,7 +158,7 @@ public struct CardOperations {
       // directory. The name is the S4-2 v4.0 §4.6.21 selector; the
       // file-identifier form stays as the fallback for cards that
       // refuse selection by name.
-      try selectMasterFile()
+      try selectRootFile()
       try selectFirstThatSucceeds([
         .selectApplication(.esignDirectory),
         .selectFile(.esignDirectory, selectionP1: Iso7816Values.selectByFileIdP1),
@@ -180,7 +180,7 @@ public struct CardOperations {
   /// here parses, and the fixed suite is what runs either way. An
   /// absent file throws at selection, like any other missing EF.
   public func readCardAccessInfo() throws -> [CardAccessFile.SecurityInfo] {
-    try selectMasterFile()
+    try selectRootFile()
     return CardAccessFile.parse(try readSelectedFile(.cardAccess))
   }
 
@@ -193,10 +193,10 @@ public struct CardOperations {
   /// the eMRTD application, and MSE:Set AT from an applet context is
   /// answered `6985`, so the contactless caller makes the master file
   /// current before the first PACE command.
-  public func selectMasterFile() throws {
+  public func selectRootFile() throws {
     try selectFirstThatSucceeds([
-      .selectFile(.masterFile, selectionP1: Iso7816Values.selectByFileIdP1),
-      .selectFile(.masterFile, selectionP1: Iso7816Values.selectByAidP1),
+      .selectFile(.rootFile, selectionP1: Iso7816Values.selectByFileIdP1),
+      .selectFile(.rootFile, selectionP1: Iso7816Values.selectByAidP1),
     ])
   }
 

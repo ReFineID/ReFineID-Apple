@@ -12,7 +12,7 @@ public struct FileIdentifier: Equatable, Sendable {
   public static let tokenInfo = Self(value: FineidValues.fileIdTokenInfo)
 
   /// The master file (root).
-  public static let masterFile = Self(value: FineidValues.fileIdMasterFile)
+  public static let rootFile = Self(value: FineidValues.fileIdRootFile)
 
   /// EF.COM: the travel-document application's inventory of the
   /// data groups this card carries.

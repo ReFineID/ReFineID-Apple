@@ -63,7 +63,7 @@ internal enum FineidValues {
 
   /// The master file (root) selected before reaching MF-level EFs
   /// (ISO 7816-4).
-  internal static let fileIdMasterFile: UInt16 = 0x3F00
+  internal static let fileIdRootFile: UInt16 = 0x3F00
 
   /// The ICAO eMRTD LDS application.
   ///

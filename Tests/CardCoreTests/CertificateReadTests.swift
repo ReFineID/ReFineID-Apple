@@ -23,7 +23,7 @@ internal struct CertificateReadTests {
   }
 
   @Test
-  internal func issuingCertificateReadsUnderTheMasterFile() throws {
+  internal func issuingCertificateReadsUnderTheRootFile() throws {
     // Issuer chain lives under MF: select MF, select EF.4336, read.
     let der = String(repeating: "CD", count: 8)
     let channel = ScriptedChannel([
@@ -38,7 +38,7 @@ internal struct CertificateReadTests {
   }
 
   @Test
-  internal func masterFileSelectFallsBackToSelectByName() throws {
+  internal func rootFileSelectFallsBackToSelectByName() throws {
     // First MF variant (P1=00) is refused; the by-name variant (P1=04)
     // is tried and succeeds.
     let der = "EEFF"

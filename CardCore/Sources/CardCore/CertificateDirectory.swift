@@ -9,10 +9,10 @@ public enum CertificateDirectory: Equatable, Sendable {
   /// §4.6.21-4.6.22).
   case esignApplication
 
-  /// Directly under the master file.
-  case masterFile
-
   /// Directly under the PKCS#15 application DF (already current after
   /// selecting the eID application).
   case pkcs15Application
+
+  /// Directly under the master file (ISO 7816-4 MF, FID 3F00).
+  case rootFile
 }

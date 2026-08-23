@@ -54,7 +54,7 @@
         // at the master file. PACE itself is the authoritative check --
         // its first command is the one that has to be accepted -- so a
         // refused reposition is not turned into a failure here.
-        try? CardOperations(channel: channel).selectMasterFile()
+        try? CardOperations(channel: channel).selectRootFile()
         progress(String(localized: "Opening a connection to the card."))
         let keys: PaceSessionKeys
         do {

@@ -232,7 +232,7 @@
         DispatchQueue.global(qos: .userInitiated).async {
           let answer = try? SmartCardChannel(carried.card).withSession {
             channel -> Answer? in
-            try? CardOperations(channel: channel).selectMasterFile()
+            try? CardOperations(channel: channel).selectRootFile()
             guard
               let keys = try? PaceEstablishment(channel: channel).establish(
                 with: accessNumber

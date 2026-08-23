@@ -59,7 +59,7 @@ internal enum ReaderSignature {
   ) throws -> any CardChannel {
     guard let accessNumber else { return channel }
     let started = ContinuousClock.now
-    try? CardOperations(channel: channel).selectMasterFile()
+    try? CardOperations(channel: channel).selectRootFile()
     let keys = try PaceEstablishment(channel: channel).establish(with: accessNumber)
     TokenLog.info(
       "sign: PACE ok ms="

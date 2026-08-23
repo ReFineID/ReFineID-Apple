@@ -145,7 +145,7 @@
           lines.append("session: open")
           // The same order the signature uses: master file first,
           // because the card refuses MSE:Set AT anywhere else.
-          try? CardOperations(channel: channel).selectMasterFile()
+          try? CardOperations(channel: channel).selectRootFile()
           _ = try PaceEstablishment(channel: channel).establish(with: accessNumber)
         }
       } catch {
