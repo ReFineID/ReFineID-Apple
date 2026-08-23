@@ -20,31 +20,31 @@ import CryptoTokenKit
 /// itself, and it is the only one of the three that can change between
 /// two devices running the same binary.
 public enum SupportedCardTransports {
-    /// The transports this device can offer.
-    public static var current: CardTransportSelection {
-        #if canImport(CoreNFC)
-        if #available(iOS 26.0, *), Self.deviceHasNearFieldSlot {
-            return .all
-        }
-        return .readerOnly
-        #else
-        return .readerOnly
-        #endif
-    }
-
+  /// The transports this device can offer.
+  public static var current: CardTransportSelection {
     #if canImport(CoreNFC)
+      if #available(iOS 26.0, *), Self.deviceHasNearFieldSlot {
+        return .all
+      }
+      return .readerOnly
+    #else
+      return .readerOnly
+    #endif
+  }
+
+  #if canImport(CoreNFC)
     /// Whether this particular device has a contactless slot to open.
     @available(iOS 26.0, *)
     private static var deviceHasNearFieldSlot: Bool {
-        TKSmartCardSlotManager.default?.isNFCSupported() ?? false
+      TKSmartCardSlotManager.default?.isNFCSupported() ?? false
     }
-    #endif
+  #endif
 
-    /// Whether the holder can be offered a near-field choice at all.
-    ///
-    /// When false the settings UI hides the near-field control rather than
-    /// showing a disabled one: a Mac has no antenna to switch on.
-    public static var offersNearField: Bool {
-        current.permits(.nearField)
-    }
+  /// Whether the holder can be offered a near-field choice at all.
+  ///
+  /// When false the settings UI hides the near-field control rather than
+  /// showing a disabled one: a Mac has no antenna to switch on.
+  public static var offersNearField: Bool {
+    current.permits(.nearField)
+  }
 }

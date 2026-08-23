@@ -2,6 +2,6 @@
 
 /// What becomes of the current session.
 internal enum SessionDisposition: Equatable, Sendable {
-    case closeImmediately
-    case keep
+  case closeImmediately
+  case keep
 }

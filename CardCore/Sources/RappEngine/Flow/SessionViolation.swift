@@ -5,9 +5,9 @@ import Foundation
 
 /// The authenticated violations that end a pairing on first occurrence.
 internal enum SessionViolation: Equatable {
-    case duplicateReady
-    case malformedMessage
-    case parameterMismatch
-    case unexpectedMessage
-    case wireViolation
+  case duplicateReady
+  case malformedMessage
+  case parameterMismatch
+  case unexpectedMessage
+  case wireViolation
 }

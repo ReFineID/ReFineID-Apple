@@ -4,7 +4,7 @@ import Foundation
 
 /// What the stream channel reports to its one owner.
 public enum StreamRelayEvent: Sendable {
-    case closed(StreamRelayTransportError)
-    case connected
-    case frame(Data)
+  case closed(StreamRelayTransportError)
+  case connected
+  case frame(Data)
 }

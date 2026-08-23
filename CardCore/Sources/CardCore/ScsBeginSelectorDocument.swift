@@ -7,18 +7,18 @@ import Foundation
 /// compatibility while certificate selection remains local (DVV SCS
 /// specification v1.3 §2.7.2).
 internal struct ScsBeginSelectorDocument: Codable {
-    /// Accepted key algorithms, lowercase (`rsa`, `ec`).
-    internal let keyalgorithms: [String]
+  /// Accepted key algorithms, lowercase (`rsa`, `ec`).
+  internal let keyalgorithms: [String]
 
-    /// Requested key usages, by their X.509 names.
-    internal let keyusages: [String]
+  /// Requested key usages, by their X.509 names.
+  internal let keyusages: [String]
 
-    /// Decodes with the specification's optionality.
-    internal init(from decoder: any Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.keyalgorithms =
-            try container.decodeIfPresent([String].self, forKey: .keyalgorithms) ?? []
-        self.keyusages =
-            try container.decodeIfPresent([String].self, forKey: .keyusages) ?? []
-    }
+  /// Decodes with the specification's optionality.
+  internal init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    self.keyalgorithms =
+      try container.decodeIfPresent([String].self, forKey: .keyalgorithms) ?? []
+    self.keyusages =
+      try container.decodeIfPresent([String].self, forKey: .keyusages) ?? []
+  }
 }

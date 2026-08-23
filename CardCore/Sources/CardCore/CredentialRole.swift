@@ -5,7 +5,7 @@
 /// Distinct roles are never interchangeable: PIN2 has its own rules (never
 /// cached), and the PUK is not a PIN.
 public enum CredentialRole: CaseIterable, Equatable, Sendable {
-    case pin1
-    case pin2
-    case puk
+  case pin1
+  case pin2
+  case puk
 }

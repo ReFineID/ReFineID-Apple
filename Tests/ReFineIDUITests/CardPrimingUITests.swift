@@ -2,22 +2,22 @@
 
 #if os(iOS)
 
-import XCTest
+  import XCTest
 
-/// One setup run, keeping the card in place through the two system NFC
-/// fields, ending in a card the system can ask for.
-///
-/// The holder-facing screen deliberately contains no progress or result
-/// report. The test therefore verifies the persistent CryptoTokenKit
-/// registration through the app's diagnostic report.
-///
-/// The card must be resting on the phone before the run and stay there.
-/// The test brings the device's credentials up to date first when the
-/// environment carries them, so it does not depend on the setup test
-/// having run before it: XCTest promises no ordering between classes, and
-/// a device round trip is too expensive to spend learning that.
-@MainActor
-internal final class CardPrimingUITests: XCTestCase {
+  /// One setup run, keeping the card in place through the two system NFC
+  /// fields, ending in a card the system can ask for.
+  ///
+  /// The holder-facing screen deliberately contains no progress or result
+  /// report. The test therefore verifies the persistent CryptoTokenKit
+  /// registration through the app's diagnostic report.
+  ///
+  /// The card must be resting on the phone before the run and stay there.
+  /// The test brings the device's credentials up to date first when the
+  /// environment carries them, so it does not depend on the setup test
+  /// having run before it: XCTest promises no ordering between classes, and
+  /// a device round trip is too expensive to spend learning that.
+  @MainActor
+  internal final class CardPrimingUITests: XCTestCase {
     // MARK: Static Properties
 
     /// How long the two-field setup takes: Core NFC PACE and metadata reads,
@@ -37,49 +37,49 @@ internal final class CardPrimingUITests: XCTestCase {
     /// would make this test unusable for the case it is most often wanted
     /// in.
     private static func storeCredentialsIfGiven(in app: XCUIApplication) {
-        _ = CardSetupScreen.enterCredentials(
-            cardAccessNumber: UITestEnvironment.cardAccessNumber,
-            pin1: UITestEnvironment.pin1,
-            in: app)
+      _ = CardSetupScreen.enterCredentials(
+        cardAccessNumber: UITestEnvironment.cardAccessNumber,
+        pin1: UITestEnvironment.pin1,
+        in: app)
     }
 
     // MARK: Overridden Functions
 
     override internal func setUpWithError() throws {
-        try super.setUpWithError()
-        try XCTSkipUnless(
-            UITestEnvironment.realCardTestsEnabled,
-            "Set TEST_RUNNER_\(UITestEnvironment.realCardTestsVariable)=1 to run physical-card tests")
+      try super.setUpWithError()
+      try XCTSkipUnless(
+        UITestEnvironment.realCardTestsEnabled,
+        "Set TEST_RUNNER_\(UITestEnvironment.realCardTestsVariable)=1 to run physical-card tests")
     }
 
     // MARK: Functions
 
     /// Starts Safari setup from the card form and asserts registration.
     internal func testRegistersCardForSafari() {
-        let app = UITestApp.launch()
-        attachScreenshot(app.screenshot(), named: "01-setup-opened")
-        Self.storeCredentialsIfGiven(in: app)
-        app.swipeUp()
+      let app = UITestApp.launch()
+      attachScreenshot(app.screenshot(), named: "01-setup-opened")
+      Self.storeCredentialsIfGiven(in: app)
+      app.swipeUp()
 
-        let connect = app.buttons["connectCard"]
-        let prime = app.buttons[UITestIdentifiers.primeStartButton]
-        let start = connect.waitForExistence(timeout: 2) ? connect : prime
-        guard start.waitForExistence(timeout: Self.appearTimeout), start.isEnabled else {
-            attachScreenshot(app.screenshot(), named: "02-registration-unavailable")
-            XCTFail(
-                "Safari setup would not start from the current credential state")
-            return
-        }
-        attachScreenshot(app.screenshot(), named: "02-registration-ready")
-        start.tap()
+      let connect = app.buttons["connectCard"]
+      let prime = app.buttons[UITestIdentifiers.primeStartButton]
+      let start = connect.waitForExistence(timeout: 2) ? connect : prime
+      guard start.waitForExistence(timeout: Self.appearTimeout), start.isEnabled else {
+        attachScreenshot(app.screenshot(), named: "02-registration-unavailable")
+        XCTFail(
+          "Safari setup would not start from the current credential state")
+        return
+      }
+      attachScreenshot(app.screenshot(), named: "02-registration-ready")
+      start.tap()
 
-        let identity = app.staticTexts[UITestIdentifiers.identityStatus]
-        let registered = identity.waitForExistence(timeout: Self.primeTimeout)
-        attachScreenshot(app.screenshot(), named: "03-registration-finished")
-        XCTAssertTrue(
-            registered,
-            "the card was not registered for Safari")
+      let identity = app.staticTexts[UITestIdentifiers.identityStatus]
+      let registered = identity.waitForExistence(timeout: Self.primeTimeout)
+      attachScreenshot(app.screenshot(), named: "03-registration-finished")
+      XCTAssertTrue(
+        registered,
+        "the card was not registered for Safari")
     }
-}
+  }
 
 #endif

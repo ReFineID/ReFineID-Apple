@@ -2,14 +2,14 @@
 
 #if os(macOS)
 
-import Foundation
+  import Foundation
 
-/// The keys the app's runtime settings live under, in one place so a
-/// window and the Settings pane bind the same stored value.
-///
-/// `UserDefaults`-backed through `@AppStorage`; a change in Settings
-/// reaches every window that reads the key.
-internal enum AppSettings {
+  /// The keys the app's runtime settings live under, in one place so a
+  /// window and the Settings pane bind the same stored value.
+  ///
+  /// `UserDefaults`-backed through `@AppStorage`; a change in Settings
+  /// reaches every window that reads the key.
+  internal enum AppSettings {
     /// Whether contactless cards are served: the CAN entry appears and
     /// numbers are offered only when this is on.
     ///
@@ -17,6 +17,6 @@ internal enum AppSettings {
     /// on the antenna rather than inserted - and the holder who wants
     /// it turns it on in Settings; contact readers need no setting.
     internal static let contactlessEnabled = "contactlessEnabled"
-}
+  }
 
 #endif

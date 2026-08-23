@@ -1,9 +1,9 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
 #if os(iOS) && REFINEID_REMOTE_CARD
-internal enum RappAuthorizationDecision: Sendable, Equatable {
+  internal enum RappAuthorizationDecision: Sendable, Equatable {
     case approved
     case approvedDocumentSignature(pin2: String)
     case denied
-}
+  }
 #endif

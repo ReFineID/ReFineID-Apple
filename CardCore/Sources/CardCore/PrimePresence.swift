@@ -16,19 +16,19 @@ import Foundation
 /// digest of the card's answer to reset or of its certificate, not a
 /// serial and not a name.
 public struct PrimePresence: Equatable, Sendable {
-    /// The name this card is primed under.
-    public let instance: String
+  /// The name this card is primed under.
+  public let instance: String
 
-    /// Whether the record carries a card access number PACE can run with.
-    public let hasCardAccessNumber: Bool
+  /// Whether the record carries a card access number PACE can run with.
+  public let hasCardAccessNumber: Bool
 
-    /// Size of the stored authentication certificate, in bytes.
-    public let certificateBytes: Int
+  /// Size of the stored authentication certificate, in bytes.
+  public let certificateBytes: Int
 
-    /// Size of the stored issuing-CA certificate, or zero when the card
-    /// offered none.
-    public let issuerBytes: Int
+  /// Size of the stored issuing-CA certificate, or zero when the card
+  /// offered none.
+  public let issuerBytes: Int
 
-    /// Whether the record carries the token serial the prime read.
-    public let hasTokenSerial: Bool
+  /// Whether the record carries the token serial the prime read.
+  public let hasTokenSerial: Bool
 }

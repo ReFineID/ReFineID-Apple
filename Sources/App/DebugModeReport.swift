@@ -2,19 +2,19 @@
 
 #if DEBUG
 
-/// What one debug mode produced: the lines to print, and whether the
-/// mode achieved what it was asked for.
-///
-/// The success flag is the contract a driving script reads, because a
-/// shell loop has to tell a failed measurement from a finished one
-/// without parsing the text above it. Every mode answers with one of
-/// these, so there is one exit rule rather than one per probe -- the
-/// three card probes used to exit zero whatever they had just printed,
-/// which made `--sign-probe && next-step` run the next step after a card
-/// that had refused.
-///
-/// DEBUG only.
-internal struct DebugModeReport {
+  /// What one debug mode produced: the lines to print, and whether the
+  /// mode achieved what it was asked for.
+  ///
+  /// The success flag is the contract a driving script reads, because a
+  /// shell loop has to tell a failed measurement from a finished one
+  /// without parsing the text above it. Every mode answers with one of
+  /// these, so there is one exit rule rather than one per probe -- the
+  /// three card probes used to exit zero whatever they had just printed,
+  /// which made `--sign-probe && next-step` run the next step after a card
+  /// that had refused.
+  ///
+  /// DEBUG only.
+  internal struct DebugModeReport {
     /// What the card probes put in a line that reports a failure.
     ///
     /// Their text is the measurement, and it is written for a person
@@ -30,8 +30,8 @@ internal struct DebugModeReport {
 
     /// A report that states its own outcome.
     internal init(lines: [String], succeeded: Bool) {
-        self.lines = lines
-        self.succeeded = succeeded
+      self.lines = lines
+      self.succeeded = succeeded
     }
 
     /// A report judged by its own text: failed if any line reports a
@@ -40,10 +40,10 @@ internal struct DebugModeReport {
     /// For the card probes, which narrate a sequence of steps and mark the
     /// ones that did not work rather than stopping at the first.
     internal init(lines: [String]) {
-        self.init(
-            lines: lines,
-            succeeded: !lines.contains { $0.contains(Self.failureMarker) })
+      self.init(
+        lines: lines,
+        succeeded: !lines.contains { $0.contains(Self.failureMarker) })
     }
-}
+  }
 
 #endif

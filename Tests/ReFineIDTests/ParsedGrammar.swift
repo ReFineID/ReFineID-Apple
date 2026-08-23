@@ -5,7 +5,7 @@ import Foundation
 @testable import ReFineID
 
 internal struct ParsedGrammar {
-    internal let initialState: CardSetupStateMachine.State
-    internal let states: Set<CardSetupStateMachine.State>
-    internal let transitions: [CardSetupStateMachine.Transition]
+  internal let initialState: CardSetupStateMachine.State
+  internal let states: Set<CardSetupStateMachine.State>
+  internal let transitions: [CardSetupStateMachine.Transition]
 }

@@ -7,29 +7,29 @@ import Foundation
 /// The digest is already hashed, so no document or challenge content reaches
 /// the engine.
 public struct RappOperationDescriptor: Equatable, Sendable {
-    /// Which operation is being asked for.
-    public var kind: RappOperationKind
-    /// The origin or document name to show the holder.
-    public var displayContext: String?
-    /// The key the operation uses, when it uses one.
-    public var keyProfile: RappCardKeyProfile?
-    /// The signature algorithm, when the operation signs.
-    public var algorithm: RappSignatureAlgorithm?
-    /// The already-hashed value to be signed.
-    public var digest: Data
+  /// Which operation is being asked for.
+  public var kind: RappOperationKind
+  /// The origin or document name to show the holder.
+  public var displayContext: String?
+  /// The key the operation uses, when it uses one.
+  public var keyProfile: RappCardKeyProfile?
+  /// The signature algorithm, when the operation signs.
+  public var algorithm: RappSignatureAlgorithm?
+  /// The already-hashed value to be signed.
+  public var digest: Data
 
-    /// Describes one operation for the holder.
-    public init(
-        kind: RappOperationKind,
-        displayContext: String?,
-        keyProfile: RappCardKeyProfile?,
-        algorithm: RappSignatureAlgorithm?,
-        digest: Data
-    ) {
-        self.kind = kind
-        self.displayContext = displayContext
-        self.keyProfile = keyProfile
-        self.algorithm = algorithm
-        self.digest = digest
-    }
+  /// Describes one operation for the holder.
+  public init(
+    kind: RappOperationKind,
+    displayContext: String?,
+    keyProfile: RappCardKeyProfile?,
+    algorithm: RappSignatureAlgorithm?,
+    digest: Data
+  ) {
+    self.kind = kind
+    self.displayContext = displayContext
+    self.keyProfile = keyProfile
+    self.algorithm = algorithm
+    self.digest = digest
+  }
 }

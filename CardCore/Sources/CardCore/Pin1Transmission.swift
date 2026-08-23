@@ -7,6 +7,6 @@
 /// the single VERIFY command. It is noncopyable for the same reason its
 /// source is: transmit-once is a compile-time property.
 public struct Pin1Transmission: ~Copyable {
-    /// The digits, still owned by the zeroizing store.
-    internal let store: ZeroizingDigitStore
+  /// The digits, still owned by the zeroizing store.
+  internal let store: ZeroizingDigitStore
 }

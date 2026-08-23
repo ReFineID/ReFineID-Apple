@@ -4,6 +4,6 @@ import Foundation
 
 /// What arrives with a peer result.
 internal enum RequesterResultAction: Equatable {
-    case sendAcknowledgement(TypedMessage)
-    case terminal(state: OperationState, error: ResultError)
+  case sendAcknowledgement(TypedMessage)
+  case terminal(state: OperationState, error: ResultError)
 }

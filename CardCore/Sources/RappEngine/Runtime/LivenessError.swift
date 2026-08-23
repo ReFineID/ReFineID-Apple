@@ -4,5 +4,5 @@ import Foundation
 
 /// A liveness policy that could not describe a schedule.
 internal enum LivenessError: Error, Equatable {
-    case invalidConfiguration
+  case invalidConfiguration
 }

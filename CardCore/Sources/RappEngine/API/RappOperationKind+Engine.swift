@@ -5,22 +5,22 @@
 /// The public names are the ones callers already wrote against, so they are
 /// kept even where the engine spells a value differently.
 extension RappOperationKind {
-    internal init(_ operation: CardOperation) {
-        switch operation {
-        case .inspectCard:
-            self = .inspectCard
+  internal init(_ operation: CardOperation) {
+    switch operation {
+    case .inspectCard:
+      self = .inspectCard
 
-        case .readIdentity:
-            self = .readIdentity
+    case .readIdentity:
+      self = .readIdentity
 
-        case .readCertificate(let kind):
-            self = kind == .signature ? .readSignatureCertificate : .readAuthenticationCertificate
+    case .readCertificate(let kind):
+      self = kind == .signature ? .readSignatureCertificate : .readAuthenticationCertificate
 
-        case .browserAuthenticate:
-            self = .browserAuthenticate
+    case .browserAuthenticate:
+      self = .browserAuthenticate
 
-        case .signDocument:
-            self = .signDocument
-        }
+    case .signDocument:
+      self = .signDocument
     }
+  }
 }

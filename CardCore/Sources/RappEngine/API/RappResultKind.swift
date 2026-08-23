@@ -2,8 +2,8 @@
 
 /// Which answer an operation result carries.
 public enum RappResultKind: Sendable {
-    case certificate
-    case identity
-    case inspection
-    case signature
+  case certificate
+  case identity
+  case inspection
+  case signature
 }

@@ -115,50 +115,36 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		3D0000000000000000000001 /* App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = App;
 			sourceTree = "<group>";
 		};
 		3D0000000000000000000002 /* TokenExtension */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = TokenExtension;
 			sourceTree = "<group>";
 		};
 		3D0000000000000000000003 /* CardCoreTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = CardCoreTests;
 			sourceTree = "<group>";
 		};
 		3D0000000000000000000004 /* DiscoveryExtension */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = DiscoveryExtension;
 			sourceTree = "<group>";
 		};
 		3D0000000000000000000005 /* ReFineIDUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = ReFineIDUITests;
 			sourceTree = "<group>";
 		};
 		721332542F5154E8E8C01D4B /* RappTokenExtension */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = RappTokenExtension;
 			sourceTree = "<group>";
 		};
 		BD0000000000000000000002 /* ReFineIDTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = ReFineIDTests;
 			sourceTree = "<group>";
 		};

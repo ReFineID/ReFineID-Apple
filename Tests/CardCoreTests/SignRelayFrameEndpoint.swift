@@ -9,22 +9,22 @@ import Foundation
 /// suspend the sender inside its own actor while the peer tried to reply
 /// into that same actor.
 internal actor SignRelayFrameEndpoint {
-    private var receiver: (@Sendable (Data) async -> Void)?
+  private var receiver: (@Sendable (Data) async -> Void)?
 
-    /// Names who receives what this endpoint sends.
-    internal func install(_ receiver: @escaping @Sendable (Data) async -> Void) {
-        self.receiver = receiver
-    }
+  /// Names who receives what this endpoint sends.
+  internal func install(_ receiver: @escaping @Sendable (Data) async -> Void) {
+    self.receiver = receiver
+  }
 
-    /// Hands one frame to the peer.
-    internal func send(_ frame: Data) async {
-        guard let receiver else { return }
-        Task { await receiver(frame) }
-        await Task.yield()
-    }
+  /// Hands one frame to the peer.
+  internal func send(_ frame: Data) async {
+    guard let receiver else { return }
+    Task { await receiver(frame) }
+    await Task.yield()
+  }
 
-    /// Ends this direction.
-    internal func close() {
-        receiver = nil
-    }
+  /// Ends this direction.
+  internal func close() {
+    receiver = nil
+  }
 }

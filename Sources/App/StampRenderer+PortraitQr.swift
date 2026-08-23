@@ -2,11 +2,11 @@
 
 #if os(macOS)
 
-import CardCore
-import Foundation
+  import CardCore
+  import Foundation
 
-/// The portrait QR variant, kept apart from the identity-only mark.
-extension StampRenderer {
+  /// The portrait QR variant, kept apart from the identity-only mark.
+  extension StampRenderer {
     /// The two red rings around the machine-readable square.
     private static let portraitOuterRadius = 72.0
     private static let portraitInnerRadius = 69.0
@@ -52,341 +52,341 @@ extension StampRenderer {
     /// The larger portrait grid required to reach the inner red ring while
     /// keeping the QR itself square and untouched.
     internal static func portraitFieldSide(forQrSide qrSide: Int) -> Int? {
-        guard qrSide > 0 else { return nil }
-        let module = Self.portraitSquareSize / Double(qrSide)
-        var fieldSide = Int(
-            ceil(Self.portraitInnerRadius * Self.portraitHalves / module)
-        )
-        if !(fieldSide - qrSide).isMultiple(of: Self.portraitGridParity) {
-            fieldSide += 1
-        }
-        return max(qrSide, fieldSide)
+      guard qrSide > 0 else { return nil }
+      let module = Self.portraitSquareSize / Double(qrSide)
+      var fieldSide = Int(
+        ceil(Self.portraitInnerRadius * Self.portraitHalves / module)
+      )
+      if !(fieldSide - qrSide).isMultiple(of: Self.portraitGridParity) {
+        fieldSide += 1
+      }
+      return max(qrSide, fieldSide)
     }
 
     /// A complete round stamp containing the portrait QR and, when present,
     /// the card's handwriting.
     internal static func portraitMark(
-        _ artwork: QrPortrait.Artwork,
-        signature: SignatureArtwork.Artwork?,
-        givenName: String,
-        surname: String
+      _ artwork: QrPortrait.Artwork,
+      signature: SignatureArtwork.Artwork?,
+      givenName: String,
+      surname: String
     ) -> StampMark {
-        let centre = (x: 0.0, y: 0.0)
-        var body = "q\n"
-        body += Self.portraitTilt()
-        body += Self.portraitQr(artwork, centre: centre)
-        body += "\(Self.portraitInkColour) RG"
-        body += " \(Self.portraitInkColour) rg\n"
-        body += Self.portraitCircle(
-            radius: Self.portraitOuterRadius,
-            lineWidth: Self.portraitOuterLineWidth
-        )
-        body += Self.portraitCircle(
-            radius: Self.portraitInnerRadius,
-            lineWidth: Self.portraitInnerLineWidth
-        )
-        if let signature {
-            body += Self.handwritingAcrossPortraitQr(signature)
-        }
-        body += Self.portraitCurvedNames(
-            givenName: givenName,
-            surname: surname
-        )
-        body += "Q\nQ\n"
-        return StampMark(radius: Self.portraitOuterRadius, operators: body)
+      let centre = (x: 0.0, y: 0.0)
+      var body = "q\n"
+      body += Self.portraitTilt()
+      body += Self.portraitQr(artwork, centre: centre)
+      body += "\(Self.portraitInkColour) RG"
+      body += " \(Self.portraitInkColour) rg\n"
+      body += Self.portraitCircle(
+        radius: Self.portraitOuterRadius,
+        lineWidth: Self.portraitOuterLineWidth
+      )
+      body += Self.portraitCircle(
+        radius: Self.portraitInnerRadius,
+        lineWidth: Self.portraitInnerLineWidth
+      )
+      if let signature {
+        body += Self.handwritingAcrossPortraitQr(signature)
+      }
+      body += Self.portraitCurvedNames(
+        givenName: givenName,
+        surname: surname
+      )
+      body += "Q\nQ\n"
+      return StampMark(radius: Self.portraitOuterRadius, operators: body)
     }
 
     /// The black portrait-stippled QR and its circular hedcut extension.
     private static func portraitQr(
-        _ artwork: QrPortrait.Artwork,
-        centre: (x: Double, y: Double)
+      _ artwork: QrPortrait.Artwork,
+      centre: (x: Double, y: Double)
     ) -> String {
-        guard
-            artwork.side > 0,
-            artwork.fieldSide >= artwork.side,
-            artwork.fieldDarkness.count == artwork.fieldSide * artwork.fieldSide
-        else {
-            return ""
-        }
-        let module = Self.portraitSquareSize / Double(artwork.side)
-        let codeSize = module * Double(artwork.side)
-        let left = centre.x - codeSize / Self.portraitHalves
-        let bottom = centre.y - codeSize / Self.portraitHalves
-        var body = "q\n"
-        body += Self.portraitClip(radius: Self.portraitInnerRadius)
-        body += "0 0 0 rg\n"
-        body += Self.portraitField(
+      guard
+        artwork.side > 0,
+        artwork.fieldSide >= artwork.side,
+        artwork.fieldDarkness.count == artwork.fieldSide * artwork.fieldSide
+      else {
+        return ""
+      }
+      let module = Self.portraitSquareSize / Double(artwork.side)
+      let codeSize = module * Double(artwork.side)
+      let left = centre.x - codeSize / Self.portraitHalves
+      let bottom = centre.y - codeSize / Self.portraitHalves
+      var body = "q\n"
+      body += Self.portraitClip(radius: Self.portraitInnerRadius)
+      body += "0 0 0 rg\n"
+      body += Self.portraitField(
+        artwork,
+        centre: centre,
+        module: module
+      )
+      body += Self.qrBackground(centre: centre)
+      for row in 0..<artwork.side {
+        for column in 0..<artwork.side {
+          body += Self.portraitModule(
             artwork,
-            centre: centre,
+            row: row,
+            column: column,
+            origin: (x: left, y: bottom),
             module: module
-        )
-        body += Self.qrBackground(centre: centre)
-        for row in 0..<artwork.side {
-            for column in 0..<artwork.side {
-                body += Self.portraitModule(
-                    artwork,
-                    row: row,
-                    column: column,
-                    origin: (x: left, y: bottom),
-                    module: module
-                )
-            }
+          )
         }
-        return body + "Q\n"
+      }
+      return body + "Q\n"
     }
 
     /// Extends the same sampled portrait across the circular stamp field.
     private static func portraitField(
-        _ artwork: QrPortrait.Artwork,
-        centre: (x: Double, y: Double),
-        module: Double
+      _ artwork: QrPortrait.Artwork,
+      centre: (x: Double, y: Double),
+      module: Double
     ) -> String {
-        let fieldSize = module * Double(artwork.fieldSide)
-        let origin = (
-            x: centre.x - fieldSize / Self.portraitHalves,
-            y: centre.y - fieldSize / Self.portraitHalves
-        )
-        let codeHalf = Self.portraitSquareSize / Self.portraitHalves
-        let radiusSquared = Self.portraitInnerRadius * Self.portraitInnerRadius
-        var body = ""
-        for row in 0..<artwork.fieldSide {
-            for column in 0..<artwork.fieldSide {
-                let point = (
-                    x: origin.x
-                        + (Double(column) + Self.portraitHalfModule) * module,
-                    y: origin.y
-                        + (Double(artwork.fieldSide - row) - Self.portraitHalfModule)
-                        * module
-                )
-                let relativeX = point.x - centre.x
-                let relativeY = point.y - centre.y
-                guard
-                    relativeX * relativeX + relativeY * relativeY <= radiusSquared,
-                    abs(relativeX) > codeHalf || abs(relativeY) > codeHalf
-                else {
-                    continue
-                }
-                let darkness =
-                    artwork.fieldDarkness[row * artwork.fieldSide + column]
-                    * Self.extensionToneScale
-                guard darkness > Self.extensionDotThreshold else { continue }
-                if Self.portraitExtensionUsesCentralDot(row: row, column: column) {
-                    let radius =
-                        module
-                        * (Self.dataDotBaseRadius
-                            + Self.dataDotDarknessShare * darkness)
-                    body += Self.portraitFilledCircle(centre: point, radius: radius)
-                } else if darkness > Self.peripheralDotThreshold {
-                    body += Self.peripheralDots(
-                        centre: point,
-                        darkness: darkness,
-                        module: module
-                    )
-                }
-            }
+      let fieldSize = module * Double(artwork.fieldSide)
+      let origin = (
+        x: centre.x - fieldSize / Self.portraitHalves,
+        y: centre.y - fieldSize / Self.portraitHalves
+      )
+      let codeHalf = Self.portraitSquareSize / Self.portraitHalves
+      let radiusSquared = Self.portraitInnerRadius * Self.portraitInnerRadius
+      var body = ""
+      for row in 0..<artwork.fieldSide {
+        for column in 0..<artwork.fieldSide {
+          let point = (
+            x: origin.x
+              + (Double(column) + Self.portraitHalfModule) * module,
+            y: origin.y
+              + (Double(artwork.fieldSide - row) - Self.portraitHalfModule)
+              * module
+          )
+          let relativeX = point.x - centre.x
+          let relativeY = point.y - centre.y
+          guard
+            relativeX * relativeX + relativeY * relativeY <= radiusSquared,
+            abs(relativeX) > codeHalf || abs(relativeY) > codeHalf
+          else {
+            continue
+          }
+          let darkness =
+            artwork.fieldDarkness[row * artwork.fieldSide + column]
+            * Self.extensionToneScale
+          guard darkness > Self.extensionDotThreshold else { continue }
+          if Self.portraitExtensionUsesCentralDot(row: row, column: column) {
+            let radius =
+              module
+              * (Self.dataDotBaseRadius
+                + Self.dataDotDarknessShare * darkness)
+            body += Self.portraitFilledCircle(centre: point, radius: radius)
+          } else if darkness > Self.peripheralDotThreshold {
+            body += Self.peripheralDots(
+              centre: point,
+              darkness: darkness,
+              module: module
+            )
+          }
         }
-        return body
+      }
+      return body
     }
 
     /// Gives the QR light modules an opaque background, with no outer border.
     private static func qrBackground(centre: (x: Double, y: Double)) -> String {
-        let left = centre.x - Self.portraitSquareSize / Self.portraitHalves
-        let bottom = centre.y - Self.portraitSquareSize / Self.portraitHalves
-        var body = "1 1 1 rg \(Self.portraitNumber(left))"
-        body += " \(Self.portraitNumber(bottom))"
-        body += " \(Self.portraitNumber(Self.portraitSquareSize))"
-        body += " \(Self.portraitNumber(Self.portraitSquareSize)) re f\n"
-        return body + "0 0 0 rg\n"
+      let left = centre.x - Self.portraitSquareSize / Self.portraitHalves
+      let bottom = centre.y - Self.portraitSquareSize / Self.portraitHalves
+      var body = "1 1 1 rg \(Self.portraitNumber(left))"
+      body += " \(Self.portraitNumber(bottom))"
+      body += " \(Self.portraitNumber(Self.portraitSquareSize))"
+      body += " \(Self.portraitNumber(Self.portraitSquareSize)) re f\n"
+      return body + "0 0 0 rg\n"
     }
 
     /// Clips the portrait field at the inner ring; the rings are drawn later.
     private static func portraitClip(radius: Double) -> String {
-        var body = "\(Self.portraitNumber(radius)) 0.0000 m\n"
-        body += Self.portraitCircleCurves(radius: radius)
-        return body + "h W n\n"
+      var body = "\(Self.portraitNumber(radius)) 0.0000 m\n"
+      body += Self.portraitCircleCurves(radius: radius)
+      return body + "h W n\n"
     }
 
     /// One structural square, data dot, or peripheral stipple cluster.
     private static func portraitModule(
-        _ artwork: QrPortrait.Artwork,
-        row: Int,
-        column: Int,
-        origin: (x: Double, y: Double),
-        module: Double
+      _ artwork: QrPortrait.Artwork,
+      row: Int,
+      column: Int,
+      origin: (x: Double, y: Double),
+      module: Double
     ) -> String {
-        let index = row * artwork.side + column
-        let centre = (
-            x: origin.x + (Double(column) + Self.portraitHalfModule) * module,
-            y: origin.y
-                + (Double(artwork.side - row) - Self.portraitHalfModule) * module
+      let index = row * artwork.side + column
+      let centre = (
+        x: origin.x + (Double(column) + Self.portraitHalfModule) * module,
+        y: origin.y
+          + (Double(artwork.side - row) - Self.portraitHalfModule) * module
+      )
+      if artwork.functionModules[index] {
+        guard artwork.treated[index] else { return "" }
+        return Self.functionModule(
+          centre: centre,
+          side: module,
+          darkness: artwork.darkness[index]
         )
-        if artwork.functionModules[index] {
-            guard artwork.treated[index] else { return "" }
-            return Self.functionModule(
-                centre: centre,
-                side: module,
-                darkness: artwork.darkness[index]
-            )
-        }
-        if artwork.treated[index] {
-            let radius =
-                module
-                * (Self.dataDotBaseRadius
-                    + Self.dataDotDarknessShare * artwork.darkness[index])
-            return Self.portraitFilledCircle(centre: centre, radius: radius)
-        }
-        guard
-            artwork.darkness[index] > Self.peripheralDotThreshold,
-            artwork.treated[index] == artwork.original[index]
-        else {
-            return ""
-        }
-        return Self.peripheralDots(
-            centre: centre,
-            darkness: artwork.darkness[index],
-            module: module
-        )
+      }
+      if artwork.treated[index] {
+        let radius =
+          module
+          * (Self.dataDotBaseRadius
+            + Self.dataDotDarknessShare * artwork.darkness[index])
+        return Self.portraitFilledCircle(centre: centre, radius: radius)
+      }
+      guard
+        artwork.darkness[index] > Self.peripheralDotThreshold,
+        artwork.treated[index] == artwork.original[index]
+      else {
+        return ""
+      }
+      return Self.peripheralDots(
+        centre: centre,
+        darkness: artwork.darkness[index],
+        module: module
+      )
     }
 
     /// One circular structural module, still shaped by the portrait tone.
     private static func functionModule(
-        centre: (x: Double, y: Double),
-        side: Double,
-        darkness: Double
+      centre: (x: Double, y: Double),
+      side: Double,
+      darkness: Double
     ) -> String {
-        let radius =
-            side
-            * (Self.functionDotBaseRadius
-                + Self.functionDotDarknessShare * darkness)
-        return Self.portraitFilledCircle(centre: centre, radius: radius)
+      let radius =
+        side
+        * (Self.functionDotBaseRadius
+          + Self.functionDotDarknessShare * darkness)
+      return Self.portraitFilledCircle(centre: centre, radius: radius)
     }
 
     /// Four tiny dots that add tone without changing a light QR module.
     private static func peripheralDots(
-        centre: (x: Double, y: Double),
-        darkness: Double,
-        module: Double
+      centre: (x: Double, y: Double),
+      darkness: Double,
+      module: Double
     ) -> String {
-        let radius =
-            module
-            * min(
-                Self.peripheralDotMaximumRadius,
-                Self.peripheralDotBaseRadius
-                    + darkness * Self.peripheralDotDarknessShare
-            )
-        let offset = module * Self.peripheralDotOffset
-        var body = ""
-        for shiftX in [-offset, offset] {
-            for shiftY in [-offset, offset] {
-                body += Self.portraitFilledCircle(
-                    centre: (centre.x + shiftX, centre.y + shiftY),
-                    radius: radius
-                )
-            }
+      let radius =
+        module
+        * min(
+          Self.peripheralDotMaximumRadius,
+          Self.peripheralDotBaseRadius
+            + darkness * Self.peripheralDotDarknessShare
+        )
+      let offset = module * Self.peripheralDotOffset
+      var body = ""
+      for shiftX in [-offset, offset] {
+        for shiftY in [-offset, offset] {
+          body += Self.portraitFilledCircle(
+            centre: (centre.x + shiftX, centre.y + shiftY),
+            radius: radius
+          )
         }
-        return body
+      }
+      return body
     }
 
     /// The holder's handwriting across the QR, with no baseline or name.
     private static func handwritingAcrossPortraitQr(
-        _ artwork: SignatureArtwork.Artwork
+      _ artwork: SignatureArtwork.Artwork
     ) -> String {
-        let inkWidth = artwork.inkRight - artwork.inkLeft
-        let inkHeight = artwork.inkTop - artwork.inkBottom
-        guard inkWidth > 0, inkHeight > 0 else { return "" }
-        let scale = min(
-            Self.portraitSignatureWidth / inkWidth,
-            Self.portraitSignatureHeight / inkHeight
-        )
-        let left = -(inkWidth * scale) / Self.portraitHalves
-        let bottom =
-            -(artwork.inkBottom + inkHeight / Self.portraitHalves) * scale
-        var body = "q \(Self.portraitNumber(scale)) 0 0"
-        body += " \(Self.portraitNumber(scale))"
-        body += " \(Self.portraitNumber(left - artwork.inkLeft * scale))"
-        body += " \(Self.portraitNumber(bottom)) cm\n"
-        body += artwork.operators
-        return body + "Q\n"
+      let inkWidth = artwork.inkRight - artwork.inkLeft
+      let inkHeight = artwork.inkTop - artwork.inkBottom
+      guard inkWidth > 0, inkHeight > 0 else { return "" }
+      let scale = min(
+        Self.portraitSignatureWidth / inkWidth,
+        Self.portraitSignatureHeight / inkHeight
+      )
+      let left = -(inkWidth * scale) / Self.portraitHalves
+      let bottom =
+        -(artwork.inkBottom + inkHeight / Self.portraitHalves) * scale
+      var body = "q \(Self.portraitNumber(scale)) 0 0"
+      body += " \(Self.portraitNumber(scale))"
+      body += " \(Self.portraitNumber(left - artwork.inkLeft * scale))"
+      body += " \(Self.portraitNumber(bottom)) cm\n"
+      body += artwork.operators
+      return body + "Q\n"
     }
 
     /// A circle used for one red ring.
     private static func portraitCircle(radius: Double, lineWidth: Double) -> String {
-        var body = "\(Self.portraitNumber(lineWidth)) w\n"
-        body += "\(Self.portraitNumber(radius)) 0.0000 m\n"
-        body += Self.portraitCircleCurves(radius: radius)
-        return body + "h\nS\n"
+      var body = "\(Self.portraitNumber(lineWidth)) w\n"
+      body += "\(Self.portraitNumber(radius)) 0.0000 m\n"
+      body += Self.portraitCircleCurves(radius: radius)
+      return body + "h\nS\n"
     }
 
     /// A filled circle used for one hedcut dot.
     private static func portraitFilledCircle(
-        centre: (x: Double, y: Double),
-        radius: Double
+      centre: (x: Double, y: Double),
+      radius: Double
     ) -> String {
-        var body = "\(Self.portraitNumber(centre.x + radius))"
-        body += " \(Self.portraitNumber(centre.y)) m\n"
-        body += Self.portraitCircleCurves(radius: radius, centre: centre)
-        return body + "h f\n"
+      var body = "\(Self.portraitNumber(centre.x + radius))"
+      body += " \(Self.portraitNumber(centre.y)) m\n"
+      body += Self.portraitCircleCurves(radius: radius, centre: centre)
+      return body + "h f\n"
     }
 
     /// Four Bezier quarters, optionally translated from the origin.
     private static func portraitCircleCurves(
-        radius: Double,
-        centre: (x: Double, y: Double) = (0, 0)
+      radius: Double,
+      centre: (x: Double, y: Double) = (0, 0)
     ) -> String {
-        let pull = Self.portraitArcControl * radius
-        var body = ""
-        for quarter in 0..<Self.portraitQuarterTurns {
-            let opens = Double(quarter) * Self.portraitQuarterTurn
-            let closes = opens + Self.portraitQuarterTurn
-            let start = Self.portraitPoint(centre, radius: radius, angle: opens)
-            let end = Self.portraitPoint(centre, radius: radius, angle: closes)
-            let leaving = (
-                x: start.x - pull * sin(opens),
-                y: start.y + pull * cos(opens)
-            )
-            let arriving = (
-                x: end.x + pull * sin(closes),
-                y: end.y - pull * cos(closes)
-            )
-            body += "\(Self.portraitNumber(leaving.x))"
-            body += " \(Self.portraitNumber(leaving.y))"
-            body += " \(Self.portraitNumber(arriving.x))"
-            body += " \(Self.portraitNumber(arriving.y))"
-            body += " \(Self.portraitNumber(end.x))"
-            body += " \(Self.portraitNumber(end.y)) c\n"
-        }
-        return body
+      let pull = Self.portraitArcControl * radius
+      var body = ""
+      for quarter in 0..<Self.portraitQuarterTurns {
+        let opens = Double(quarter) * Self.portraitQuarterTurn
+        let closes = opens + Self.portraitQuarterTurn
+        let start = Self.portraitPoint(centre, radius: radius, angle: opens)
+        let end = Self.portraitPoint(centre, radius: radius, angle: closes)
+        let leaving = (
+          x: start.x - pull * sin(opens),
+          y: start.y + pull * cos(opens)
+        )
+        let arriving = (
+          x: end.x + pull * sin(closes),
+          y: end.y - pull * cos(closes)
+        )
+        body += "\(Self.portraitNumber(leaving.x))"
+        body += " \(Self.portraitNumber(leaving.y))"
+        body += " \(Self.portraitNumber(arriving.x))"
+        body += " \(Self.portraitNumber(arriving.y))"
+        body += " \(Self.portraitNumber(end.x))"
+        body += " \(Self.portraitNumber(end.y)) c\n"
+      }
+      return body
     }
 
     /// One point on a circle.
     private static func portraitPoint(
-        _ centre: (x: Double, y: Double),
-        radius: Double,
-        angle: Double
+      _ centre: (x: Double, y: Double),
+      radius: Double,
+      angle: Double
     ) -> (x: Double, y: Double) {
-        (
-            x: centre.x + radius * cos(angle),
-            y: centre.y + radius * sin(angle)
-        )
+      (
+        x: centre.x + radius * cos(angle),
+        y: centre.y + radius * sin(angle)
+      )
     }
 
     /// The random clockwise transform applied to the whole stamp.
     private static func portraitTilt() -> String {
-        let degrees = Double.random(
-            in: Self.portraitLeastTilt...Self.portraitMostTilt
-        )
-        let turn = -degrees * Double.pi / Self.portraitHalfTurnDegrees
-        let cosine = cos(turn)
-        let sine = sin(turn)
-        return "q \(Self.portraitNumber(cosine)) \(Self.portraitNumber(sine))"
-            + " \(Self.portraitNumber(-sine)) \(Self.portraitNumber(cosine))"
-            + " 0.0000 0.0000 cm\n"
+      let degrees = Double.random(
+        in: Self.portraitLeastTilt...Self.portraitMostTilt
+      )
+      let turn = -degrees * Double.pi / Self.portraitHalfTurnDegrees
+      let cosine = cos(turn)
+      let sine = sin(turn)
+      return "q \(Self.portraitNumber(cosine)) \(Self.portraitNumber(sine))"
+        + " \(Self.portraitNumber(-sine)) \(Self.portraitNumber(cosine))"
+        + " 0.0000 0.0000 cm\n"
     }
 
     /// One number in PDF decimal notation.
     private static func portraitNumber(_ value: Double) -> String {
-        String(format: "%.4f", value)
+      String(format: "%.4f", value)
     }
-}
+  }
 
 #endif

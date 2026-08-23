@@ -4,11 +4,11 @@ import Foundation
 
 /// One entry of a described corpus map.
 internal struct CorpusMapEntry: Decodable {
-    private enum CodingKeys: String, CodingKey {
-        case key = "key"
-        case value = "value"
-    }
+  private enum CodingKeys: String, CodingKey {
+    case key = "key"
+    case value = "value"
+  }
 
-    internal let key: String
-    internal let value: CorpusValue
+  internal let key: String
+  internal let value: CorpusValue
 }

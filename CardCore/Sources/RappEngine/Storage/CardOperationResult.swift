@@ -8,10 +8,10 @@ import Foundation
 
 /// Typed output of one completed card operation.
 internal enum CardOperationResult: Equatable {
-    case inspection(CardInspection)
-    case identity(displayName: String, personIdentifier: String)
-    case certificate(Data)
-    case signature(Data)
+  case inspection(CardInspection)
+  case identity(displayName: String, personIdentifier: String)
+  case certificate(Data)
+  case signature(Data)
 }
 
 // swiftlint:enable sorted_enum_cases

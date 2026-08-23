@@ -2,70 +2,70 @@
 
 #if os(macOS)
 
-import CardCore
-import CoreText
-import Foundation
+  import CardCore
+  import CoreText
+  import Foundation
 
-/// Draws the signature's visible mark: a ring carrying the identity
-/// the certificate states and, when available, the holder's own
-/// handwriting.
-///
-/// Every part is vector. Nothing here is evidence - the signature is
-/// the evidence, and it is in the file - so the mark says what was
-/// signed and by whom, and claims nothing a reader could not check.
-internal enum StampRenderer {
+  /// Draws the signature's visible mark: a ring carrying the identity
+  /// the certificate states and, when available, the holder's own
+  /// handwriting.
+  ///
+  /// Every part is vector. Nothing here is evidence - the signature is
+  /// the evidence, and it is in the file - so the mark says what was
+  /// signed and by whom, and claims nothing a reader could not check.
+  internal enum StampRenderer {
     /// What the mark states.
     internal struct Statement {
-        /// The holder as a person reads it.
-        internal let name: String
+      /// The holder as a person reads it.
+      internal let name: String
 
-        /// The certificate's separately stated given name.
-        internal let givenName: String
+      /// The certificate's separately stated given name.
+      internal let givenName: String
 
-        /// The certificate's separately stated surname.
-        internal let surname: String
+      /// The certificate's separately stated surname.
+      internal let surname: String
 
-        /// The identifier stated under it.
-        internal let identifier: String
+      /// The identifier stated under it.
+      internal let identifier: String
 
-        /// The holder's traced handwriting, or nil when the card has none.
-        internal let signature: SignatureArtwork.Artwork?
+      /// The holder's traced handwriting, or nil when the card has none.
+      internal let signature: SignatureArtwork.Artwork?
 
-        /// A signed QR matrix treated with the holder's portrait.
-        internal let qrPortrait: QrPortrait.Artwork?
+      /// A signed QR matrix treated with the holder's portrait.
+      internal let qrPortrait: QrPortrait.Artwork?
 
-        internal init(
-            name: String,
-            identifier: String,
-            signature: SignatureArtwork.Artwork?,
-            givenName: String,
-            surname: String
-        ) {
-            self.init(
-                name: name,
-                identifier: identifier,
-                signature: signature,
-                qrPortrait: nil,
-                givenName: givenName,
-                surname: surname
-            )
-        }
+      internal init(
+        name: String,
+        identifier: String,
+        signature: SignatureArtwork.Artwork?,
+        givenName: String,
+        surname: String
+      ) {
+        self.init(
+          name: name,
+          identifier: identifier,
+          signature: signature,
+          qrPortrait: nil,
+          givenName: givenName,
+          surname: surname
+        )
+      }
 
-        internal init(
-            name: String,
-            identifier: String,
-            signature: SignatureArtwork.Artwork?,
-            qrPortrait: QrPortrait.Artwork?,
-            givenName: String,
-            surname: String
-        ) {
-            self.name = name
-            self.givenName = givenName
-            self.surname = surname
-            self.identifier = identifier
-            self.signature = signature
-            self.qrPortrait = qrPortrait
-        }
+      internal init(
+        name: String,
+        identifier: String,
+        signature: SignatureArtwork.Artwork?,
+        qrPortrait: QrPortrait.Artwork?,
+        givenName: String,
+        surname: String
+      ) {
+        self.name = name
+        self.givenName = givenName
+        self.surname = surname
+        self.identifier = identifier
+        self.signature = signature
+        self.qrPortrait = qrPortrait
+      }
     }
 
     /// The ring.
@@ -144,36 +144,36 @@ internal enum StampRenderer {
 
     /// The page carrying the mark.
     internal static func mark(_ statement: Statement) -> StampMark {
-        if let portraitArtwork = statement.qrPortrait {
-            return Self.portraitMark(
-                portraitArtwork,
-                signature: statement.signature,
-                givenName: statement.givenName,
-                surname: statement.surname
-            )
-        }
-        let centreX = 0.0
-        let centreY = 0.0
-        var body = "q\n"
-        body += Self.tilt(about: (centreX, centreY))
-        let centre = (x: centreX, y: centreY)
-        body += "\(Self.inkColour) RG \(Self.inkColour) rg\n"
-        body += Self.circle(
-            centre: centre, radius: Self.outerRadius, lineWidth: Self.outerLineWidth
+      if let portraitArtwork = statement.qrPortrait {
+        return Self.portraitMark(
+          portraitArtwork,
+          signature: statement.signature,
+          givenName: statement.givenName,
+          surname: statement.surname
         )
-        body += Self.circle(
-            centre: centre, radius: Self.innerRadius, lineWidth: Self.innerLineWidth
+      }
+      let centreX = 0.0
+      let centreY = 0.0
+      var body = "q\n"
+      body += Self.tilt(about: (centreX, centreY))
+      let centre = (x: centreX, y: centreY)
+      body += "\(Self.inkColour) RG \(Self.inkColour) rg\n"
+      body += Self.circle(
+        centre: centre, radius: Self.outerRadius, lineWidth: Self.outerLineWidth
+      )
+      body += Self.circle(
+        centre: centre, radius: Self.innerRadius, lineWidth: Self.innerLineWidth
+      )
+      if let signature = statement.signature {
+        body += Self.handwriting(signature, centre: (centreX, centreY))
+        body += Self.identityBelowHandwriting(
+          statement, centre: (centreX, centreY)
         )
-        if let signature = statement.signature {
-            body += Self.handwriting(signature, centre: (centreX, centreY))
-            body += Self.identityBelowHandwriting(
-                statement, centre: (centreX, centreY)
-            )
-        } else {
-            body += Self.centredIdentity(statement, centre: (centreX, centreY))
-        }
-        body += "Q\nQ\n"
-        return StampMark(radius: Self.outerRadius, operators: body)
+      } else {
+        body += Self.centredIdentity(statement, centre: (centreX, centreY))
+      }
+      body += "Q\nQ\n"
+      return StampMark(radius: Self.outerRadius, operators: body)
     }
 
     /// One number, written the way PDF reads them.
@@ -184,21 +184,21 @@ internal enum StampRenderer {
     /// right angles to fixed places writes them as 0.0000, which is
     /// what they are.
     private static func number(_ value: Double) -> String {
-        String(format: "%.4f", value)
+      String(format: "%.4f", value)
     }
 
     /// A turn of up to `maximumTilt` degrees clockwise, about the
     /// ring's own centre, so no two stamps land at the same angle.
     private static func tilt(about centre: (x: Double, y: Double)) -> String {
-        let degrees = Double.random(in: Self.leastTilt...Self.mostTilt)
-        let turn = -degrees * Double.pi / Self.halfTurnDegrees
-        let cosine = cos(turn)
-        let sine = sin(turn)
-        let shiftX = centre.x - centre.x * cosine + centre.y * sine
-        let shiftY = centre.y - centre.x * sine - centre.y * cosine
-        return "q \(Self.number(cosine)) \(Self.number(sine))"
-            + " \(Self.number(-sine)) \(Self.number(cosine))"
-            + " \(Self.number(shiftX)) \(Self.number(shiftY)) cm\n"
+      let degrees = Double.random(in: Self.leastTilt...Self.mostTilt)
+      let turn = -degrees * Double.pi / Self.halfTurnDegrees
+      let cosine = cos(turn)
+      let sine = sin(turn)
+      let shiftX = centre.x - centre.x * cosine + centre.y * sine
+      let shiftY = centre.y - centre.x * sine - centre.y * cosine
+      return "q \(Self.number(cosine)) \(Self.number(sine))"
+        + " \(Self.number(-sine)) \(Self.number(cosine))"
+        + " \(Self.number(shiftX)) \(Self.number(shiftY)) cm\n"
     }
 
     /// The holder's handwriting, fitted to the line it stands on.
@@ -209,30 +209,30 @@ internal enum StampRenderer {
     /// leave it. The writing starts where the line starts and ends
     /// before it does.
     private static func handwriting(
-        _ artwork: SignatureArtwork.Artwork,
-        centre: (x: Double, y: Double)
+      _ artwork: SignatureArtwork.Artwork,
+      centre: (x: Double, y: Double)
     ) -> String {
-        let inkWidth = artwork.inkRight - artwork.inkLeft
-        guard inkWidth > 0 else { return "" }
-        let room = Self.baselineHalfWidth * Self.halves
-        let scale = room / inkWidth
-        let left = centre.x - Self.baselineHalfWidth
-        let sits = centre.y - Self.baselineDrop + Self.signatureLift
-        // The operators are in the image's own coordinates, so the
-        // translation carries the ink's own corner to the line's end.
-        var body = "q \(Self.number(scale)) 0 0 \(Self.number(scale))"
-        body += " \(Self.number(left - artwork.inkLeft * scale))"
-        body += " \(Self.number(sits - artwork.inkBottom * scale)) cm\n"
-        body += artwork.operators
-        body += "Q\n"
-        body += "\(Self.number(Self.baselineWidth)) w "
-        body +=
-            "\(Self.number(centre.x - Self.baselineHalfWidth))"
-            + " \(Self.number(centre.y - Self.baselineDrop)) m "
-        body +=
-            "\(Self.number(centre.x + Self.baselineHalfWidth))"
-            + " \(Self.number(centre.y - Self.baselineDrop)) l S\n"
-        return body
+      let inkWidth = artwork.inkRight - artwork.inkLeft
+      guard inkWidth > 0 else { return "" }
+      let room = Self.baselineHalfWidth * Self.halves
+      let scale = room / inkWidth
+      let left = centre.x - Self.baselineHalfWidth
+      let sits = centre.y - Self.baselineDrop + Self.signatureLift
+      // The operators are in the image's own coordinates, so the
+      // translation carries the ink's own corner to the line's end.
+      var body = "q \(Self.number(scale)) 0 0 \(Self.number(scale))"
+      body += " \(Self.number(left - artwork.inkLeft * scale))"
+      body += " \(Self.number(sits - artwork.inkBottom * scale)) cm\n"
+      body += artwork.operators
+      body += "Q\n"
+      body += "\(Self.number(Self.baselineWidth)) w "
+      body +=
+        "\(Self.number(centre.x - Self.baselineHalfWidth))"
+        + " \(Self.number(centre.y - Self.baselineDrop)) m "
+      body +=
+        "\(Self.number(centre.x + Self.baselineHalfWidth))"
+        + " \(Self.number(centre.y - Self.baselineDrop)) l S\n"
+      return body
     }
 
     /// The name, on two lines: who, then the identifier.
@@ -242,55 +242,55 @@ internal enum StampRenderer {
     /// has to shrink to fit; on two it reads like a signature block,
     /// and each line is short enough to stay legible.
     private static func identityBelowHandwriting(
-        _ statement: Statement,
-        centre: (x: Double, y: Double)
+      _ statement: Statement,
+      centre: (x: Double, y: Double)
     ) -> String {
-        var body = Self.line(
-            statement.name,
-            centre: centre,
-            baseline: centre.y - Self.baselineDrop - Self.nameDrop,
-            size: Self.nameSize,
-            ceiling: Self.nameCeiling
-        )
-        guard !statement.identifier.isEmpty else { return body }
-        body += Self.line(
-            statement.identifier,
-            centre: centre,
-            baseline:
-                centre.y - Self.baselineDrop - Self.nameDrop - Self.nameLineGap,
-            size: Self.nameSize * Self.identifierShare,
-            ceiling: Self.nameCeiling * Self.identifierShare
-        )
-        return body
+      var body = Self.line(
+        statement.name,
+        centre: centre,
+        baseline: centre.y - Self.baselineDrop - Self.nameDrop,
+        size: Self.nameSize,
+        ceiling: Self.nameCeiling
+      )
+      guard !statement.identifier.isEmpty else { return body }
+      body += Self.line(
+        statement.identifier,
+        centre: centre,
+        baseline:
+          centre.y - Self.baselineDrop - Self.nameDrop - Self.nameLineGap,
+        size: Self.nameSize * Self.identifierShare,
+        ceiling: Self.nameCeiling * Self.identifierShare
+      )
+      return body
     }
 
     /// The certificate name and SATU, centred when there is no handwriting.
     private static func centredIdentity(
-        _ statement: Statement,
-        centre: (x: Double, y: Double)
+      _ statement: Statement,
+      centre: (x: Double, y: Double)
     ) -> String {
-        guard !statement.identifier.isEmpty else {
-            return Self.line(
-                statement.name,
-                centre: centre,
-                baseline: centre.y - Self.identitySingleLineDrop,
-                size: Self.nameSize,
-                ceiling: Self.nameCeiling
-            )
-        }
+      guard !statement.identifier.isEmpty else {
         return Self.line(
-            statement.name,
-            centre: centre,
-            baseline: centre.y + Self.identityNameLift,
-            size: Self.nameSize,
-            ceiling: Self.nameCeiling
+          statement.name,
+          centre: centre,
+          baseline: centre.y - Self.identitySingleLineDrop,
+          size: Self.nameSize,
+          ceiling: Self.nameCeiling
         )
+      }
+      return Self.line(
+        statement.name,
+        centre: centre,
+        baseline: centre.y + Self.identityNameLift,
+        size: Self.nameSize,
+        ceiling: Self.nameCeiling
+      )
         + Self.line(
-            statement.identifier,
-            centre: centre,
-            baseline: centre.y - Self.identityIdentifierDrop,
-            size: Self.nameSize * Self.identifierShare,
-            ceiling: Self.nameCeiling * Self.identifierShare
+          statement.identifier,
+          centre: centre,
+          baseline: centre.y - Self.identityIdentifierDrop,
+          size: Self.nameSize * Self.identifierShare,
+          ceiling: Self.nameCeiling * Self.identifierShare
         )
     }
 
@@ -303,25 +303,25 @@ internal enum StampRenderer {
     /// narrows as a line sits lower - so each line is measured at its
     /// own height rather than sharing the one above.
     private static func line(
-        _ text: String,
-        centre: (x: Double, y: Double),
-        baseline: Double,
-        size: Double,
-        ceiling: Double
+      _ text: String,
+      centre: (x: Double, y: Double),
+      baseline: Double,
+      size: Double,
+      ceiling: Double
     ) -> String {
-        let height = abs(baseline - centre.y)
-        guard height < Self.innerRadius else { return "" }
-        let halfChord =
-            (Self.innerRadius * Self.innerRadius - height * height).squareRoot()
-        let room = halfChord * Self.halves - Self.nameMargin
-        let measured = TextOutline.line(text, font: "Helvetica", size: size)
-        guard measured.width > 0 else { return "" }
-        let chosen = min(size * room / measured.width, ceiling)
-        let drawn = TextOutline.line(text, font: "Helvetica", size: chosen)
-        // On the ring's own axis: both lines centred under the writing,
-        // which is what makes a round stamp look round.
-        return "q 1 0 0 1 \(Self.number(centre.x)) \(Self.number(baseline)) cm\n"
-            + "\(drawn.operators)Q\n"
+      let height = abs(baseline - centre.y)
+      guard height < Self.innerRadius else { return "" }
+      let halfChord =
+        (Self.innerRadius * Self.innerRadius - height * height).squareRoot()
+      let room = halfChord * Self.halves - Self.nameMargin
+      let measured = TextOutline.line(text, font: "Helvetica", size: size)
+      guard measured.width > 0 else { return "" }
+      let chosen = min(size * room / measured.width, ceiling)
+      let drawn = TextOutline.line(text, font: "Helvetica", size: chosen)
+      // On the ring's own axis: both lines centred under the writing,
+      // which is what makes a round stamp look round.
+      return "q 1 0 0 1 \(Self.number(centre.x)) \(Self.number(baseline)) cm\n"
+        + "\(drawn.operators)Q\n"
     }
 
     /// A circle, as four Bezier quarters.
@@ -330,31 +330,31 @@ internal enum StampRenderer {
     /// ends, which is what makes four curves indistinguishable from a
     /// circle at any zoom.
     private static func circle(
-        centre: (x: Double, y: Double),
-        radius: Double,
-        lineWidth: Double
+      centre: (x: Double, y: Double),
+      radius: Double,
+      lineWidth: Double
     ) -> String {
-        let pull = Self.arcControl * radius
-        var body = "\(Self.number(lineWidth)) w\n"
-        body += "\(Self.number(centre.x + radius)) \(Self.number(centre.y)) m\n"
-        for quarter in 0..<Self.quarterTurns {
-            let opens = Double(quarter) * Self.quarterTurn
-            let closes = opens + Self.quarterTurn
-            let start = (
-                x: centre.x + radius * cos(opens), y: centre.y + radius * sin(opens)
-            )
-            let end = (
-                x: centre.x + radius * cos(closes), y: centre.y + radius * sin(closes)
-            )
-            let leaving = (x: start.x - pull * sin(opens), y: start.y + pull * cos(opens))
-            let arriving = (x: end.x + pull * sin(closes), y: end.y - pull * cos(closes))
-            body +=
-                "\(Self.number(leaving.x)) \(Self.number(leaving.y))"
-                + " \(Self.number(arriving.x)) \(Self.number(arriving.y))"
-                + " \(Self.number(end.x)) \(Self.number(end.y)) c\n"
-        }
-        return body + "h\nS\n"
+      let pull = Self.arcControl * radius
+      var body = "\(Self.number(lineWidth)) w\n"
+      body += "\(Self.number(centre.x + radius)) \(Self.number(centre.y)) m\n"
+      for quarter in 0..<Self.quarterTurns {
+        let opens = Double(quarter) * Self.quarterTurn
+        let closes = opens + Self.quarterTurn
+        let start = (
+          x: centre.x + radius * cos(opens), y: centre.y + radius * sin(opens)
+        )
+        let end = (
+          x: centre.x + radius * cos(closes), y: centre.y + radius * sin(closes)
+        )
+        let leaving = (x: start.x - pull * sin(opens), y: start.y + pull * cos(opens))
+        let arriving = (x: end.x + pull * sin(closes), y: end.y - pull * cos(closes))
+        body +=
+          "\(Self.number(leaving.x)) \(Self.number(leaving.y))"
+          + " \(Self.number(arriving.x)) \(Self.number(arriving.y))"
+          + " \(Self.number(end.x)) \(Self.number(end.y)) c\n"
+      }
+      return body + "h\nS\n"
     }
-}
+  }
 
 #endif

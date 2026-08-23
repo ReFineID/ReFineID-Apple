@@ -25,70 +25,70 @@ import Foundation
 /// after it. Skip those groups and the historical bytes are what remain,
 /// however many `T0` promised.
 public struct AnswerToReset: Equatable, Sendable {
-    /// Hex of the historical bytes: the card model's name in every
-    /// framing.
-    ///
-    /// The same card answers differently on each interface and through
-    /// each reader, and the historical bytes are the part that identifies
-    /// it in all of them (`Documentation/card-types.md`). One card MODEL,
-    /// not one card: a production batch shares the answer, so this keys
-    /// which stored numbers are worth trying, never which card is present.
-    public var modelKey: String {
-        historicalBytes.map { String(format: "%02x", $0) }.joined()
+  /// Hex of the historical bytes: the card model's name in every
+  /// framing.
+  ///
+  /// The same card answers differently on each interface and through
+  /// each reader, and the historical bytes are the part that identifies
+  /// it in all of them (`Documentation/card-types.md`). One card MODEL,
+  /// not one card: a production batch shares the answer, so this keys
+  /// which stored numbers are worth trying, never which card is present.
+  public var modelKey: String {
+    historicalBytes.map { String(format: "%02x", $0) }.joined()
+  }
+
+  /// The historical bytes, in order.
+  public let historicalBytes: [UInt8]
+
+  /// Parses `bytes`, or answers nil when they are not an answer to reset
+  /// this can make sense of.
+  ///
+  /// Nil is returned rather than an empty reading, because "this card
+  /// says nothing about itself" and "this is not something we can read"
+  /// deserve different words on a screen.
+  public init?(bytes: Data) {
+    let raw = Array(bytes)
+    guard raw.count > AnswerToResetValues.formatByteIndex else { return nil }
+    let format = raw[AnswerToResetValues.formatByteIndex]
+    let count = Int(format & AnswerToResetValues.historicalCountMask)
+    var next = format >> AnswerToResetValues.interfacePresenceShift
+    var index = AnswerToResetValues.formatByteIndex + 1
+
+    // Each group announces the next one. TA, TB and TC carry no
+    // structure worth reading here and are stepped over; only TD says
+    // whether another group follows.
+    while next & AnswerToResetValues.protocolByteBit != 0 {
+      for bit in AnswerToResetValues.interfaceByteBits where next & bit != 0 {
+        index += 1
+      }
+      guard index < raw.count else { return nil }
+      let protocolByte = raw[index]
+      index += 1
+      next = protocolByte >> AnswerToResetValues.interfacePresenceShift
+    }
+    for bit in AnswerToResetValues.interfaceByteBits where next & bit != 0 {
+      index += 1
     }
 
-    /// The historical bytes, in order.
-    public let historicalBytes: [UInt8]
+    guard index + count <= raw.count else { return nil }
+    self.historicalBytes = Array(raw[index..<(index + count)])
+  }
 
-    /// Parses `bytes`, or answers nil when they are not an answer to reset
-    /// this can make sense of.
-    ///
-    /// Nil is returned rather than an empty reading, because "this card
-    /// says nothing about itself" and "this is not something we can read"
-    /// deserve different words on a screen.
-    public init?(bytes: Data) {
-        let raw = Array(bytes)
-        guard raw.count > AnswerToResetValues.formatByteIndex else { return nil }
-        let format = raw[AnswerToResetValues.formatByteIndex]
-        let count = Int(format & AnswerToResetValues.historicalCountMask)
-        var next = format >> AnswerToResetValues.interfacePresenceShift
-        var index = AnswerToResetValues.formatByteIndex + 1
-
-        // Each group announces the next one. TA, TB and TC carry no
-        // structure worth reading here and are stepped over; only TD says
-        // whether another group follows.
-        while next & AnswerToResetValues.protocolByteBit != 0 {
-            for bit in AnswerToResetValues.interfaceByteBits where next & bit != 0 {
-                index += 1
-            }
-            guard index < raw.count else { return nil }
-            let protocolByte = raw[index]
-            index += 1
-            next = protocolByte >> AnswerToResetValues.interfacePresenceShift
-        }
-        for bit in AnswerToResetValues.interfaceByteBits where next & bit != 0 {
-            index += 1
-        }
-
-        guard index + count <= raw.count else { return nil }
-        self.historicalBytes = Array(raw[index..<(index + count)])
-    }
-
-    /// Whether `bytes` is the answer a PC/SC reader synthesizes for a
-    /// card on its contactless interface.
-    ///
-    /// A contactless card has no answer to reset of its own; the reader
-    /// constructs one with a fixed prefix (PC/SC part 3), and that
-    /// prefix says which interface the card is on without opening a
-    /// session or sending the card anything. A reader's slot answer is
-    /// enough to ask this of.
-    public static func indicatesContactlessInterface(bytes: Data) -> Bool {
-        let prefix = AnswerToResetValues.synthesizedContactlessPrefix
-        let masks = AnswerToResetValues.synthesizedContactlessMasks
-        guard bytes.count > prefix.count else { return false }
-        return zip(Array(bytes.prefix(prefix.count)), zip(prefix, masks))
-            .allSatisfy { byte, expectation in
-                byte & expectation.1 == expectation.0
-            }
-    }
+  /// Whether `bytes` is the answer a PC/SC reader synthesizes for a
+  /// card on its contactless interface.
+  ///
+  /// A contactless card has no answer to reset of its own; the reader
+  /// constructs one with a fixed prefix (PC/SC part 3), and that
+  /// prefix says which interface the card is on without opening a
+  /// session or sending the card anything. A reader's slot answer is
+  /// enough to ask this of.
+  public static func indicatesContactlessInterface(bytes: Data) -> Bool {
+    let prefix = AnswerToResetValues.synthesizedContactlessPrefix
+    let masks = AnswerToResetValues.synthesizedContactlessMasks
+    guard bytes.count > prefix.count else { return false }
+    return zip(Array(bytes.prefix(prefix.count)), zip(prefix, masks))
+      .allSatisfy { byte, expectation in
+        byte & expectation.1 == expectation.0
+      }
+  }
 }

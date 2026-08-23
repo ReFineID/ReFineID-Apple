@@ -2,6 +2,6 @@
 
 /// Which side of a pairing an endpoint is.
 public enum RappEndpointRole: Sendable {
-    case proxy
-    case requester
+  case proxy
+  case requester
 }

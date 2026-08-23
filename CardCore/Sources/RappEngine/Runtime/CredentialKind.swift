@@ -4,7 +4,7 @@
 
 /// Which credential a card refused.
 internal enum CredentialKind: String, CaseIterable, Sendable {
-    case cardAccessNumber = "can"
-    case pin1 = "pin1"
-    case pin2 = "pin2"
+  case cardAccessNumber = "can"
+  case pin1 = "pin1"
+  case pin2 = "pin2"
 }

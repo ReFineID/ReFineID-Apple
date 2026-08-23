@@ -15,75 +15,75 @@ import XCTest
 /// test suite is not entitled to do that.
 @MainActor
 internal final class CredentialConfirmationUITests: XCTestCase {
-    /// Digits that are certainly not this card's PIN, and are never
-    /// sent: the form is abandoned while they are still on screen.
-    private static let unusedEntry = "0000"
+  /// Digits that are certainly not this card's PIN, and are never
+  /// sent: the form is abandoned while they are still on screen.
+  private static let unusedEntry = "0000"
 
-    /// Filling in a PIN change and pressing Change asks first, and the
-    /// question names the credential rather than the task.
-    internal func testChangingAPinAsksBeforeSpendingAnAttempt() throws {
-        let app = try management()
-        try fillChangeForm(app)
-        app.buttons["managementChangePIN1"].click()
-        let confirm = app.buttons[UITestIdentifiers.managementConfirm]
-        XCTAssertTrue(
-            confirm.waitForExistence(timeout: 5),
-            "Change went to the card without asking"
-        )
-        attachScreenshot(app.screenshot(), named: "confirm-change-pin1")
-        XCTAssertTrue(
-            confirm.label.contains("PIN 1"),
-            "the confirming button does not name the credential: \(confirm.label)"
-        )
-    }
+  /// Filling in a PIN change and pressing Change asks first, and the
+  /// question names the credential rather than the task.
+  internal func testChangingAPinAsksBeforeSpendingAnAttempt() throws {
+    let app = try management()
+    try fillChangeForm(app)
+    app.buttons["managementChangePIN1"].click()
+    let confirm = app.buttons[UITestIdentifiers.managementConfirm]
+    XCTAssertTrue(
+      confirm.waitForExistence(timeout: 5),
+      "Change went to the card without asking"
+    )
+    attachScreenshot(app.screenshot(), named: "confirm-change-pin1")
+    XCTAssertTrue(
+      confirm.label.contains("PIN 1"),
+      "the confirming button does not name the credential: \(confirm.label)"
+    )
+  }
 
-    /// Cancelling leaves the card untouched and the form intact, so a
-    /// holder who opened the question by reflex loses nothing.
-    internal func testCancellingSendsNothingToTheCard() throws {
-        let app = try management()
-        try fillChangeForm(app)
-        app.buttons["managementChangePIN1"].click()
-        let cancel = app.buttons[UITestIdentifiers.managementCancel]
-        XCTAssertTrue(cancel.waitForExistence(timeout: 5), "no way to abandon the operation")
-        cancel.click()
-        XCTAssertFalse(
-            app.buttons[UITestIdentifiers.managementConfirm].waitForExistence(timeout: 2),
-            "the question stayed open after it was abandoned"
-        )
-        // The entries survive, so correcting one digit does not mean
-        // typing all three fields again.
-        XCTAssertTrue(
-            app.buttons["managementChangePIN1"].isEnabled,
-            "the form was cleared by a cancelled operation"
-        )
-    }
+  /// Cancelling leaves the card untouched and the form intact, so a
+  /// holder who opened the question by reflex loses nothing.
+  internal func testCancellingSendsNothingToTheCard() throws {
+    let app = try management()
+    try fillChangeForm(app)
+    app.buttons["managementChangePIN1"].click()
+    let cancel = app.buttons[UITestIdentifiers.managementCancel]
+    XCTAssertTrue(cancel.waitForExistence(timeout: 5), "no way to abandon the operation")
+    cancel.click()
+    XCTAssertFalse(
+      app.buttons[UITestIdentifiers.managementConfirm].waitForExistence(timeout: 2),
+      "the question stayed open after it was abandoned"
+    )
+    // The entries survive, so correcting one digit does not mean
+    // typing all three fields again.
+    XCTAssertTrue(
+      app.buttons["managementChangePIN1"].isEnabled,
+      "the form was cleared by a cancelled operation"
+    )
+  }
 
-    /// Opens the management window, or skips when no card is present.
-    private func management() throws -> XCUIApplication {
-        let app = UITestApp.launch()
-        let button = app.buttons[UITestIdentifiers.pinManagementButton]
-        try XCTSkipUnless(
-            button.waitForExistence(timeout: 10),
-            "no card present; management window unavailable"
-        )
-        button.click()
-        let action = app.descendants(matching: .any)[UITestIdentifiers.managementTask]
-        XCTAssertTrue(action.waitForExistence(timeout: 10), "management window did not open")
-        return app
-    }
+  /// Opens the management window, or skips when no card is present.
+  private func management() throws -> XCUIApplication {
+    let app = UITestApp.launch()
+    let button = app.buttons[UITestIdentifiers.pinManagementButton]
+    try XCTSkipUnless(
+      button.waitForExistence(timeout: 10),
+      "no card present; management window unavailable"
+    )
+    button.click()
+    let action = app.descendants(matching: .any)[UITestIdentifiers.managementTask]
+    XCTAssertTrue(action.waitForExistence(timeout: 10), "management window did not open")
+    return app
+  }
 
-    /// Fills the PIN1 change form with entries that are never sent.
-    private func fillChangeForm(_ app: XCUIApplication) throws {
-        let fields = ["Current", "New", "Repeat"].map { suffix in
-            app.secureTextFields["managementChangePIN1\(suffix)"]
-        }
-        try XCTSkipUnless(
-            fields[0].waitForExistence(timeout: 5),
-            "the window did not open on Change PIN 1"
-        )
-        for field in fields {
-            field.click()
-            field.typeText(Self.unusedEntry)
-        }
+  /// Fills the PIN1 change form with entries that are never sent.
+  private func fillChangeForm(_ app: XCUIApplication) throws {
+    let fields = ["Current", "New", "Repeat"].map { suffix in
+      app.secureTextFields["managementChangePIN1\(suffix)"]
     }
+    try XCTSkipUnless(
+      fields[0].waitForExistence(timeout: 5),
+      "the window did not open on Change PIN 1"
+    )
+    for field in fields {
+      field.click()
+      field.typeText(Self.unusedEntry)
+    }
+  }
 }

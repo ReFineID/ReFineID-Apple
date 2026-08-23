@@ -3,19 +3,19 @@
 import Foundation
 
 #if canImport(Network)
-import Network
+  import Network
 
-/// Accepts one `fi.refineid.stream.v1` connection and carries frames over it.
-///
-/// The card holder listens and the requester dials, which is the opposite
-/// of the nearby transport and is why this exists: peer discovery there
-/// depends on a mechanism two system generations no longer agree on, while
-/// a published service and a dialled port are carried by the plain name
-/// service both of them still speak.
-///
-/// The transport carries opaque frames and never decodes protocol or card
-/// data; peer authentication belongs to the session above it.
-public final class StreamRelayListener: @unchecked Sendable {
+  /// Accepts one `fi.refineid.stream.v1` connection and carries frames over it.
+  ///
+  /// The card holder listens and the requester dials, which is the opposite
+  /// of the nearby transport and is why this exists: peer discovery there
+  /// depends on a mechanism two system generations no longer agree on, while
+  /// a published service and a dialled port are carried by the plain name
+  /// service both of them still speak.
+  ///
+  /// The transport carries opaque frames and never decodes protocol or card
+  /// data; peer authentication belongs to the session above it.
+  public final class StreamRelayListener: @unchecked Sendable {
     /// The Bonjour type this publishes and a dialer browses for.
     public static let serviceType = "_refineid-stream._tcp"
 
@@ -30,23 +30,23 @@ public final class StreamRelayListener: @unchecked Sendable {
     /// What the listener last reported, for a caller diagnosing a dialer
     /// that cannot reach it.
     public var state: String {
-        queue.sync { lastState }
+      queue.sync { lastState }
     }
 
     /// The port this bound, once it is listening.
     public var port: UInt16? {
-        queue.sync { listener?.port?.rawValue }
+      queue.sync { listener?.port?.rawValue }
     }
 
     /// Listens under `displayName`, reporting to one owner.
     @preconcurrency
     public init(onEvent: @escaping @Sendable (StreamRelayEvent) -> Void) {
-        self.onEvent = onEvent
+      self.onEvent = onEvent
     }
 
     /// Publishes the service and waits for one dialer.
     public func start(displayName: String) {
-        queue.async { self.publish(displayName: displayName) }
+      queue.async { self.publish(displayName: displayName) }
     }
 
     /// Sends one frame to the dialer, or throws when none is connected.
@@ -55,126 +55,126 @@ public final class StreamRelayListener: @unchecked Sendable {
     /// reported rather than dropped: a caller that sends too early otherwise
     /// waits for an answer to a message the peer never received.
     public func send(_ frame: Data) throws {
-        guard let encoded = StreamRelayFraming.encode(frame) else {
-            throw StreamRelayTransportError.invalidFrameLength
-        }
-        let open: NWConnection? = queue.sync { connection }
-        guard let open else { throw StreamRelayTransportError.notConnected }
-        open.send(
-            content: encoded,
-            completion: .contentProcessed { _ in
-                // A send that failed is reported by the connection's own state.
-            })
+      guard let encoded = StreamRelayFraming.encode(frame) else {
+        throw StreamRelayTransportError.invalidFrameLength
+      }
+      let open: NWConnection? = queue.sync { connection }
+      guard let open else { throw StreamRelayTransportError.notConnected }
+      open.send(
+        content: encoded,
+        completion: .contentProcessed { _ in
+          // A send that failed is reported by the connection's own state.
+        })
     }
 
     /// Stops listening and reports the channel closed.
     public func cancel() {
-        queue.async {
-            self.connection?.cancel()
-            self.listener?.cancel()
-            self.finish(.cancelled)
-        }
+      queue.async {
+        self.connection?.cancel()
+        self.listener?.cancel()
+        self.finish(.cancelled)
+      }
     }
 
     private func publish(displayName: String) {
-        // Plain TCP: a listener that also offers a peer-to-peer link accepts
-        // on that link and not on the network the dialer is using.
-        let parameters = NWParameters.tcp
-        let made: NWListener
-        do {
-            made = try NWListener(using: parameters)
-        } catch {
-            finish(.unreachable)
-            return
-        }
-        made.service = NWListener.Service(
-            name: displayName,
-            type: Self.serviceType
-        )
-        made.newConnectionHandler = { [weak self] connection in
-            self?.accept(connection)
-        }
-        made.stateUpdateHandler = { [weak self] state in
-            self?.queue.async { self?.lastState = String(describing: state) }
-            guard case .failed = state else { return }
-            self?.queue.async { self?.finish(.unreachable) }
-        }
-        listener = made
-        made.start(queue: queue)
+      // Plain TCP: a listener that also offers a peer-to-peer link accepts
+      // on that link and not on the network the dialer is using.
+      let parameters = NWParameters.tcp
+      let made: NWListener
+      do {
+        made = try NWListener(using: parameters)
+      } catch {
+        finish(.unreachable)
+        return
+      }
+      made.service = NWListener.Service(
+        name: displayName,
+        type: Self.serviceType
+      )
+      made.newConnectionHandler = { [weak self] connection in
+        self?.accept(connection)
+      }
+      made.stateUpdateHandler = { [weak self] state in
+        self?.queue.async { self?.lastState = String(describing: state) }
+        guard case .failed = state else { return }
+        self?.queue.async { self?.finish(.unreachable) }
+      }
+      listener = made
+      made.start(queue: queue)
     }
 
     private func accept(_ candidate: NWConnection) {
-        queue.async {
-            guard self.connection == nil else {
-                candidate.cancel()
-                return
-            }
-            self.connection = candidate
-            candidate.stateUpdateHandler = { [weak self] state in
-                switch state {
-                case .ready:
-                    self?.onEvent(.connected)
-
-                case .failed(let error):
-                    self?.queue.async { self?.finish(.disconnected) }
-
-                case .cancelled:
-                    self?.queue.async { self?.finish(.disconnected) }
-
-                default:
-                    break
-                }
-            }
-            candidate.start(queue: self.queue)
-            self.receiveNext(candidate)
+      queue.async {
+        guard self.connection == nil else {
+          candidate.cancel()
+          return
         }
+        self.connection = candidate
+        candidate.stateUpdateHandler = { [weak self] state in
+          switch state {
+          case .ready:
+            self?.onEvent(.connected)
+
+          case .failed(let error):
+            self?.queue.async { self?.finish(.disconnected) }
+
+          case .cancelled:
+            self?.queue.async { self?.finish(.disconnected) }
+
+          default:
+            break
+          }
+        }
+        candidate.start(queue: self.queue)
+        self.receiveNext(candidate)
+      }
     }
 
     private func receiveNext(_ connection: NWConnection) {
-        connection.receive(
-            minimumIncompleteLength: 1,
-            maximumLength: StreamRelayFraming.maximumPayloadByteCount
-        ) { [weak self] data, _, isComplete, error in
-            guard let self else { return }
-            queue.async { [weak self] in
-                guard let self else { return }
-                if let data, !data.isEmpty {
-                    pending.append(data)
-                    drainFrames()
-                }
-                if isComplete || error != nil {
-                    finish(.disconnected)
-                    return
-                }
-                receiveNext(connection)
-            }
+      connection.receive(
+        minimumIncompleteLength: 1,
+        maximumLength: StreamRelayFraming.maximumPayloadByteCount
+      ) { [weak self] data, _, isComplete, error in
+        guard let self else { return }
+        queue.async { [weak self] in
+          guard let self else { return }
+          if let data, !data.isEmpty {
+            pending.append(data)
+            drainFrames()
+          }
+          if isComplete || error != nil {
+            finish(.disconnected)
+            return
+          }
+          receiveNext(connection)
         }
+      }
     }
 
     private func drainFrames() {
-        while true {
-            guard pending.count >= StreamRelayFraming.lengthPrefixByteCount else { return }
-            let prefix = pending.prefix(StreamRelayFraming.lengthPrefixByteCount)
-            guard let length = StreamRelayFraming.payloadByteCount(lengthPrefix: Data(prefix)) else {
-                finish(.malformedFrame)
-                return
-            }
-            let total = StreamRelayFraming.lengthPrefixByteCount + length
-            guard pending.count >= total else { return }
-            let payload = pending.dropFirst(StreamRelayFraming.lengthPrefixByteCount).prefix(length)
-            pending = Data(pending.dropFirst(total))
-            onEvent(.frame(Data(payload)))
+      while true {
+        guard pending.count >= StreamRelayFraming.lengthPrefixByteCount else { return }
+        let prefix = pending.prefix(StreamRelayFraming.lengthPrefixByteCount)
+        guard let length = StreamRelayFraming.payloadByteCount(lengthPrefix: Data(prefix)) else {
+          finish(.malformedFrame)
+          return
         }
+        let total = StreamRelayFraming.lengthPrefixByteCount + length
+        guard pending.count >= total else { return }
+        let payload = pending.dropFirst(StreamRelayFraming.lengthPrefixByteCount).prefix(length)
+        pending = Data(pending.dropFirst(total))
+        onEvent(.frame(Data(payload)))
+      }
     }
 
     private func finish(_ error: StreamRelayTransportError) {
-        guard !isFinished else { return }
-        isFinished = true
-        connection?.cancel()
-        connection = nil
-        listener?.cancel()
-        listener = nil
-        onEvent(.closed(error))
+      guard !isFinished else { return }
+      isFinished = true
+      connection?.cancel()
+      connection = nil
+      listener?.cancel()
+      listener = nil
+      onEvent(.closed(error))
     }
-}
+  }
 #endif

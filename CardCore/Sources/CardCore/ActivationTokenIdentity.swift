@@ -9,18 +9,18 @@ import Foundation
 /// the extension's authoritative, event-driven answer to the app;
 /// an unactivated card must never be exposed as a usable identity.
 public enum ActivationTokenIdentity {
-    /// The prefix reserved for activation-required token instance identifiers.
-    public static let instancePrefix = "activation-required-"
+  /// The prefix reserved for activation-required token instance identifiers.
+  public static let instancePrefix = "activation-required-"
 
-    /// Returns a stable activation-required instance identifier for a slot.
-    public static func instanceID(forSlotNamed slotName: String) -> String {
-        let encoded =
-            slotName.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? "reader"
-        return instancePrefix + encoded
-    }
+  /// Returns a stable activation-required instance identifier for a slot.
+  public static func instanceID(forSlotNamed slotName: String) -> String {
+    let encoded =
+      slotName.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? "reader"
+    return instancePrefix + encoded
+  }
 
-    /// Returns whether a CryptoTokenKit identifier represents activation state.
-    public static func recognizes(tokenID: String) -> Bool {
-        tokenID.contains(":" + instancePrefix)
-    }
+  /// Returns whether a CryptoTokenKit identifier represents activation state.
+  public static func recognizes(tokenID: String) -> Bool {
+    tokenID.contains(":" + instancePrefix)
+  }
 }

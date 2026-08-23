@@ -6,12 +6,12 @@
 
 /// A typed card operation.
 public enum RappOperationKind: Sendable {
-    case inspectCard
-    case readIdentity
-    case readAuthenticationCertificate
-    case readSignatureCertificate
-    case browserAuthenticate
-    case signDocument
+  case inspectCard
+  case readIdentity
+  case readAuthenticationCertificate
+  case readSignatureCertificate
+  case browserAuthenticate
+  case signDocument
 }
 
 // swiftlint:enable sorted_enum_cases

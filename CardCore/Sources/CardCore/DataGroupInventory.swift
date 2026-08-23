@@ -11,27 +11,27 @@ import Foundation
 /// which every later command in the session fails for a reason that
 /// has nothing to do with the command.
 public struct DataGroupInventory: Equatable, Sendable {
-    /// The tag each listed data group is named by.
-    private let markers: [UInt8]
+  /// The tag each listed data group is named by.
+  private let markers: [UInt8]
 
-    /// Whether the card carries the holder's handwritten signature.
-    public var carriesDisplayedSignature: Bool {
-        markers.contains(FineidValues.dataGroupSevenMarker)
-    }
+  /// Whether the card carries the holder's handwritten signature.
+  public var carriesDisplayedSignature: Bool {
+    markers.contains(FineidValues.dataGroupSevenMarker)
+  }
 
-    /// Whether the card carries the holder's facial image.
-    public var carriesDisplayedPortrait: Bool {
-        markers.contains(FineidValues.dataGroupTwoMarker)
-    }
+  /// Whether the card carries the holder's facial image.
+  public var carriesDisplayedPortrait: Bool {
+    markers.contains(FineidValues.dataGroupTwoMarker)
+  }
 
-    /// How many data groups the card announced, for diagnostics.
-    public var count: Int {
-        markers.count
-    }
+  /// How many data groups the card announced, for diagnostics.
+  public var count: Int {
+    markers.count
+  }
 
-    /// Reads the list EF.COM published, which is a run of one-byte
-    /// tags and is empty when the card listed nothing.
-    internal init(listing: Data) {
-        self.markers = Array(listing)
-    }
+  /// Reads the list EF.COM published, which is a run of one-byte
+  /// tags and is empty when the card listed nothing.
+  internal init(listing: Data) {
+    self.markers = Array(listing)
+  }
 }

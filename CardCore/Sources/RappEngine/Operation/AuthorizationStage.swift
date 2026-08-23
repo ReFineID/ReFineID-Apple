@@ -8,14 +8,14 @@ import Foundation
 
 /// The phase an authorization has reached.
 internal enum AuthorizationStage: Equatable {
-    case requested
-    case awaitingConsent
-    case prepared
-    case executingSafeRead
-    case committed
-    case executing
-    case resultPending
-    case terminal
+  case requested
+  case awaitingConsent
+  case prepared
+  case executingSafeRead
+  case committed
+  case executing
+  case resultPending
+  case terminal
 }
 
 // swiftlint:enable sorted_enum_cases

@@ -7,30 +7,30 @@
 /// serial printed on the card, which is not an identity.
 /// The value never appears in logs.
 public struct TokenSerial: Equatable, Hashable, Sendable {
-    /// A real serial is short; anything longer is a parser or transport
-    /// fault refused at construction.
-    public static let maximumLength: Int = 64
+  /// A real serial is short; anything longer is a parser or transport
+  /// fault refused at construction.
+  public static let maximumLength: Int = 64
 
-    /// First printable ASCII byte (the space is deliberately excluded).
-    private static let printableMinimum: UInt8 = 33
+  /// First printable ASCII byte (the space is deliberately excluded).
+  private static let printableMinimum: UInt8 = 33
 
-    /// Last printable ASCII byte.
-    private static let printableMaximum: UInt8 = 126
+  /// Last printable ASCII byte.
+  private static let printableMaximum: UInt8 = 126
 
-    /// The full serial value.
-    public let value: String
+  /// The full serial value.
+  public let value: String
 
-    /// Refuses empty, oversized, and non-printable-ASCII values.
-    public init?(value: String) {
-        let bytes = Array(value.utf8)
-        guard !bytes.isEmpty, bytes.count <= Self.maximumLength else { return nil }
-        guard
-            bytes.allSatisfy({ byte in
-                byte >= Self.printableMinimum && byte <= Self.printableMaximum
-            })
-        else {
-            return nil
-        }
-        self.value = value
+  /// Refuses empty, oversized, and non-printable-ASCII values.
+  public init?(value: String) {
+    let bytes = Array(value.utf8)
+    guard !bytes.isEmpty, bytes.count <= Self.maximumLength else { return nil }
+    guard
+      bytes.allSatisfy({ byte in
+        byte >= Self.printableMinimum && byte <= Self.printableMaximum
+      })
+    else {
+      return nil
     }
+    self.value = value
+  }
 }

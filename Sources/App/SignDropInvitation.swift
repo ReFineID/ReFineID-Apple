@@ -2,11 +2,11 @@
 
 #if os(macOS)
 
-import SwiftUI
+  import SwiftUI
 
-/// The empty drop area: an invitation to drop documents, and the
-/// chooser for whoever prefers a panel.
-internal struct SignDropInvitation: View {
+  /// The empty drop area: an invitation to drop documents, and the
+  /// chooser for whoever prefers a panel.
+  internal struct SignDropInvitation: View {
     private static let spacing: CGFloat = 6
 
     /// Whether a drag is over the area, which tints the invitation.
@@ -16,20 +16,20 @@ internal struct SignDropInvitation: View {
     internal let choose: () -> Void
 
     internal var body: some View {
-        VStack(spacing: Self.spacing) {
-            Image(systemName: "doc.badge.plus")
-                .font(.title)
-                .foregroundStyle(
-                    targeted ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary)
-                )
-                .accessibilityHidden(true)
-            Text("Drop documents here to sign them")
-                .foregroundStyle(.secondary)
-            Button("Choose…", action: choose)
-                .buttonStyle(.link)
-                .accessibilityIdentifier("signChooseDocument")
-        }
+      VStack(spacing: Self.spacing) {
+        Image(systemName: "doc.badge.plus")
+          .font(.title)
+          .foregroundStyle(
+            targeted ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary)
+          )
+          .accessibilityHidden(true)
+        Text("Drop documents here to sign them")
+          .foregroundStyle(.secondary)
+        Button("Choose…", action: choose)
+          .buttonStyle(.link)
+          .accessibilityIdentifier("signChooseDocument")
+      }
     }
-}
+  }
 
 #endif

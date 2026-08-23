@@ -6,14 +6,14 @@
 
 /// Why an operation ended without an answer.
 public enum RappTerminalReason: Sendable {
-    case userDenied
-    case requestExpired
-    case cancelled
-    case requestInvalidOrUnsupported
-    case retryPolicyRefused
-    case credentialRejected
-    case cardRemovedBeforeTransmit
-    case cardCompletionAmbiguous
+  case userDenied
+  case requestExpired
+  case cancelled
+  case requestInvalidOrUnsupported
+  case retryPolicyRefused
+  case credentialRejected
+  case cardRemovedBeforeTransmit
+  case cardCompletionAmbiguous
 }
 
 // swiftlint:enable sorted_enum_cases

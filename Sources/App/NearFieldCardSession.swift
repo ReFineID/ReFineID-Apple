@@ -2,62 +2,62 @@
 
 #if REFINEID_LOCAL_CARD && os(iOS)
 
-import CryptoTokenKit
-import Foundation
+  import CryptoTokenKit
+  import Foundation
 
-/// One hold of the card against the phone's own antenna: the system NFC
-/// slot, the live card in it, and the single line of text the holder can
-/// read while the system sheet is up.
-///
-/// `update(message:)` is the ONLY instruction that reaches the holder
-/// once the sheet is presented -- there is no app UI in front of it --
-/// so every step of a flow built on this type says what it is doing
-/// through it.
-///
-/// Opening the slot is retried while the system answers "busy". `nfcd`
-/// releases the radio asynchronously after a previous hold, so a second
-/// attempt shortly after a first is normal rather than exceptional; a
-/// Busy answer costs about 2.5 seconds by itself, which is why the
-/// retry budget is counted in attempts and not in a deadline.
-///
-/// The card is only usable inside its exclusive session: a sessionless
-/// `TKSmartCard.transmit` on the Built-in NFC Slot is parked by `ctkd`
-/// forever -- it neither answers nor fails. This type therefore hands
-/// out no bare card. Card I/O goes through ``withCardSession(_:)``,
-/// which begins the session before the first APDU.
-///
-/// Ending is asymmetric on purpose, and ``isMissing`` is what says so.
-/// The app's own hold may end when its work is done, but a session held
-/// across a system-driven mint must be released only when the slot is
-/// genuinely `.missing`: releasing it on any other non-`validCard`
-/// state was measured tearing a signature down part way through a read.
-///
-/// Provenance: `SafariIdentityPrime.openOneSystemNFCSession`,
-/// `createSystemRegistrationSlot`, `isBusyNFCError` and
-/// `waitForSmartCard` in the donor
-/// `platform/apple/RefineID/Local/SafariIdentityPrime+OneSystemNFC.swift`
-/// and `SafariIdentityPrime+SystemSlot.swift`.
-///
-/// `@unchecked Sendable` is the deliberate bridge across CryptoTokenKit:
-/// the slot and the card are not `Sendable`, they are stored once at
-/// init and never reassigned, and the one place two threads could touch
-/// the slot at the same time -- the arrival watch -- keeps it behind a
-/// lock.
-@available(iOS 26.0, *)
-internal final class NearFieldCardSession: @unchecked Sendable {
+  /// One hold of the card against the phone's own antenna: the system NFC
+  /// slot, the live card in it, and the single line of text the holder can
+  /// read while the system sheet is up.
+  ///
+  /// `update(message:)` is the ONLY instruction that reaches the holder
+  /// once the sheet is presented -- there is no app UI in front of it --
+  /// so every step of a flow built on this type says what it is doing
+  /// through it.
+  ///
+  /// Opening the slot is retried while the system answers "busy". `nfcd`
+  /// releases the radio asynchronously after a previous hold, so a second
+  /// attempt shortly after a first is normal rather than exceptional; a
+  /// Busy answer costs about 2.5 seconds by itself, which is why the
+  /// retry budget is counted in attempts and not in a deadline.
+  ///
+  /// The card is only usable inside its exclusive session: a sessionless
+  /// `TKSmartCard.transmit` on the Built-in NFC Slot is parked by `ctkd`
+  /// forever -- it neither answers nor fails. This type therefore hands
+  /// out no bare card. Card I/O goes through ``withCardSession(_:)``,
+  /// which begins the session before the first APDU.
+  ///
+  /// Ending is asymmetric on purpose, and ``isMissing`` is what says so.
+  /// The app's own hold may end when its work is done, but a session held
+  /// across a system-driven mint must be released only when the slot is
+  /// genuinely `.missing`: releasing it on any other non-`validCard`
+  /// state was measured tearing a signature down part way through a read.
+  ///
+  /// Provenance: `SafariIdentityPrime.openOneSystemNFCSession`,
+  /// `createSystemRegistrationSlot`, `isBusyNFCError` and
+  /// `waitForSmartCard` in the donor
+  /// `platform/apple/RefineID/Local/SafariIdentityPrime+OneSystemNFC.swift`
+  /// and `SafariIdentityPrime+SystemSlot.swift`.
+  ///
+  /// `@unchecked Sendable` is the deliberate bridge across CryptoTokenKit:
+  /// the slot and the card are not `Sendable`, they are stored once at
+  /// init and never reassigned, and the one place two threads could touch
+  /// the slot at the same time -- the arrival watch -- keeps it behind a
+  /// lock.
+  @available(iOS 26.0, *)
+  internal final class NearFieldCardSession: @unchecked Sendable {
     /// Why a hold never reached a live card.
     internal enum Failure: Error, Equatable {
-        /// The radio was still busy after every retry.
-        case antennaBusy
+      /// The radio was still busy after every retry.
+      case antennaBusy
 
-        /// The slot opened but no card ever became valid in it.
-        case cardNeverArrived
+      /// The slot opened but no card ever became valid in it.
+      case cardNeverArrived
 
-        /// The holder closed the system sheet before presenting a card.
-        case dismissed
+      /// The holder closed the system sheet before presenting a card.
+      case dismissed
 
-        /// The system would not give this app an NFC slot at all.
-        case slotRefused
+      /// The system would not give this app an NFC slot at all.
+      case slotRefused
     }
 
     /// The slot, and the card once it arrives, behind a lock.
@@ -67,36 +67,36 @@ internal final class NearFieldCardSession: @unchecked Sendable {
     /// values; neither `TKSmartCardSlot` nor `TKSmartCard` is `Sendable`,
     /// so both live in here and are touched only under the lock.
     private final class Arrival: @unchecked Sendable {
-        private let lock = NSLock()
-        private let slot: TKSmartCardSlot
-        private var card: TKSmartCard?
+      private let lock = NSLock()
+      private let slot: TKSmartCardSlot
+      private var card: TKSmartCard?
 
-        init(slot: TKSmartCardSlot) {
-            self.slot = slot
-        }
+      init(slot: TKSmartCardSlot) {
+        self.slot = slot
+      }
 
-        /// The card, taken from the slot the first time the slot reports a
-        /// valid one, and the same card on every later call.
-        func take() -> TKSmartCard? {
-            lock.lock()
-            defer { lock.unlock() }
-            if card == nil, slot.state == .validCard {
-                card = slot.makeSmartCard()
-            }
-            return card
+      /// The card, taken from the slot the first time the slot reports a
+      /// valid one, and the same card on every later call.
+      func take() -> TKSmartCard? {
+        lock.lock()
+        defer { lock.unlock() }
+        if card == nil, slot.state == .validCard {
+          card = slot.makeSmartCard()
         }
+        return card
+      }
     }
 
     /// How a wait for the card ended.
     private enum Arrived {
-        /// A live card is in the slot.
-        case arrived(TKSmartCard)
+      /// A live card is in the slot.
+      case arrived(TKSmartCard)
 
-        /// The holder closed the sheet.
-        case dismissed
+      /// The holder closed the sheet.
+      case dismissed
 
-        /// The wait ran out with the sheet still up.
-        case neverArrived
+      /// The wait ran out with the sheet still up.
+      case neverArrived
     }
 
     /// How many times a busy radio is retried before giving up.
@@ -132,12 +132,12 @@ internal final class NearFieldCardSession: @unchecked Sendable {
     /// answers nothing must be refused rather than folded into a shared
     /// identifier.
     internal var answerToReset: Data {
-        slot.atr?.bytes ?? Data()
+      slot.atr?.bytes ?? Data()
     }
 
     /// Whether the slot still holds a valid card right now.
     internal var holdsValidCard: Bool {
-        slot.state == .validCard
+      slot.state == .validCard
     }
 
     /// Whether the slot is gone for good.
@@ -146,13 +146,13 @@ internal final class NearFieldCardSession: @unchecked Sendable {
     /// other non-`validCard` state can be a card that is still there and
     /// still answering.
     internal var isMissing: Bool {
-        slot.state == .missing
+      slot.state == .missing
     }
 
     private init(session: TKSmartCardSlotNFCSession, slot: TKSmartCardSlot, card: TKSmartCard) {
-        self.session = session
-        self.slot = slot
-        self.card = card
+      self.session = session
+      self.slot = slot
+      self.card = card
     }
 
     /// Opens the system NFC slot and waits for a live card in it.
@@ -161,68 +161,68 @@ internal final class NearFieldCardSession: @unchecked Sendable {
     /// the right spot on the phone. The returned session owns the sheet
     /// until ``end()``.
     internal static func open(message: String) async throws -> NearFieldCardSession {
-        guard let manager = TKSmartCardSlotManager.default else {
-            throw Failure.slotRefused
-        }
-        let opened = try await openSlot(manager: manager, message: message)
-        guard let openedName = opened.slotName, let openedSlot = manager.slotNamed(openedName) else {
-            opened.end()
-            throw Failure.slotRefused
-        }
-        switch await Self.waitForCard(in: openedSlot, named: openedName, from: manager) {
-        case .arrived(let live):
-            return Self(session: opened, slot: openedSlot, card: live)
+      guard let manager = TKSmartCardSlotManager.default else {
+        throw Failure.slotRefused
+      }
+      let opened = try await openSlot(manager: manager, message: message)
+      guard let openedName = opened.slotName, let openedSlot = manager.slotNamed(openedName) else {
+        opened.end()
+        throw Failure.slotRefused
+      }
+      switch await Self.waitForCard(in: openedSlot, named: openedName, from: manager) {
+      case .arrived(let live):
+        return Self(session: opened, slot: openedSlot, card: live)
 
-        case .dismissed:
-            opened.end()
-            throw Failure.dismissed
+      case .dismissed:
+        opened.end()
+        throw Failure.dismissed
 
-        case .neverArrived:
-            opened.end()
-            throw Failure.cardNeverArrived
-        }
+      case .neverArrived:
+        opened.end()
+        throw Failure.cardNeverArrived
+      }
     }
 
     /// Asks for the slot, retrying only while the answer says busy.
     private static func openSlot(
-        manager: TKSmartCardSlotManager,
-        message: String
+      manager: TKSmartCardSlotManager,
+      message: String
     ) async throws -> TKSmartCardSlotNFCSession {
-        for attempt in 1...Self.busyRetryLimit {
-            if attempt > 1 {
-                try? await Task.sleep(for: Self.busyRetryInterval)
-            }
-            switch await createSlot(manager: manager, message: message) {
-            case .success(let opened):
-                return opened
-
-            case .failure(let error):
-                guard isBusy(error) else { throw Failure.slotRefused }
-            }
+      for attempt in 1...Self.busyRetryLimit {
+        if attempt > 1 {
+          try? await Task.sleep(for: Self.busyRetryInterval)
         }
-        throw Failure.antennaBusy
+        switch await createSlot(manager: manager, message: message) {
+        case .success(let opened):
+          return opened
+
+        case .failure(let error):
+          guard isBusy(error) else { throw Failure.slotRefused }
+        }
+      }
+      throw Failure.antennaBusy
     }
 
     /// One call into `createNFCSlot`, as a value.
     private static func createSlot(
-        manager: TKSmartCardSlotManager,
-        message: String
+      manager: TKSmartCardSlotManager,
+      message: String
     ) async -> Result<TKSmartCardSlotNFCSession, any Error> {
-        await withCheckedContinuation { continuation in
-            manager.createNFCSlot(message: message) { opened, error in
-                guard let opened else {
-                    continuation.resume(returning: .failure(error ?? Failure.slotRefused))
-                    return
-                }
-                continuation.resume(returning: .success(opened))
-            }
+      await withCheckedContinuation { continuation in
+        manager.createNFCSlot(message: message) { opened, error in
+          guard let opened else {
+            continuation.resume(returning: .failure(error ?? Failure.slotRefused))
+            return
+          }
+          continuation.resume(returning: .success(opened))
         }
+      }
     }
 
     /// Whether this refusal is the radio still being held elsewhere.
     private static func isBusy(_ error: any Error) -> Bool {
-        (error as NSError).localizedDescription
-            .localizedCaseInsensitiveContains(Self.busyErrorFragment)
+      (error as NSError).localizedDescription
+        .localizedCaseInsensitiveContains(Self.busyErrorFragment)
     }
 
     /// Waits for the slot to hold a valid card, or gives up.
@@ -240,28 +240,28 @@ internal final class NearFieldCardSession: @unchecked Sendable {
     /// seconds of a flow that is already over, with its sound still
     /// running.
     private static func waitForCard(
-        in openedSlot: TKSmartCardSlot,
-        named slotName: String,
-        from manager: TKSmartCardSlotManager
+      in openedSlot: TKSmartCardSlot,
+      named slotName: String,
+      from manager: TKSmartCardSlotManager
     ) async -> Arrived {
-        let arrival = Arrival(slot: openedSlot)
-        let observation = openedSlot.observe(\.state, options: [.initial, .new]) { _, _ in
-            _ = arrival.take()
-        }
-        defer { observation.invalidate() }
-        for _ in 1...Self.arrivalPollLimit {
-            if let found = arrival.take() {
-                return .arrived(found)
-            }
-            guard manager.slotNames.contains(slotName) else {
-                return .dismissed
-            }
-            try? await Task.sleep(for: Self.arrivalPollInterval)
-        }
+      let arrival = Arrival(slot: openedSlot)
+      let observation = openedSlot.observe(\.state, options: [.initial, .new]) { _, _ in
+        _ = arrival.take()
+      }
+      defer { observation.invalidate() }
+      for _ in 1...Self.arrivalPollLimit {
         if let found = arrival.take() {
-            return .arrived(found)
+          return .arrived(found)
         }
-        return .neverArrived
+        guard manager.slotNames.contains(slotName) else {
+          return .dismissed
+        }
+        try? await Task.sleep(for: Self.arrivalPollInterval)
+      }
+      if let found = arrival.take() {
+        return .arrived(found)
+      }
+      return .neverArrived
     }
 
     /// Replaces the line of text on the system sheet.
@@ -270,12 +270,12 @@ internal final class NearFieldCardSession: @unchecked Sendable {
     /// still there and the work can still finish, the holder just reads a
     /// staler sentence.
     internal func update(message: String) {
-        try? session.update(message: message)
+      try? session.update(message: message)
     }
 
     /// Ends the hold and dismisses the system sheet.
     internal func end() {
-        session.end()
+      session.end()
     }
 
     /// Runs `body` inside the card's exclusive session.
@@ -284,10 +284,10 @@ internal final class NearFieldCardSession: @unchecked Sendable {
     /// it returns. Nothing else may transmit: a sessionless exchange on
     /// this slot never comes back.
     internal func withCardSession<Value>(
-        _ body: (SmartCardChannel) throws -> Value
+      _ body: (SmartCardChannel) throws -> Value
     ) throws -> Value {
-        try SmartCardChannel(card).withSession(body)
+      try SmartCardChannel(card).withSession(body)
     }
-}
+  }
 
 #endif

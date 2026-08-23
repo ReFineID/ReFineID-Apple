@@ -11,22 +11,22 @@ import Foundation
 /// locale-formatted duration would change shape with the device language
 /// and stop comparing.
 public enum TraceTiming {
-    /// Milliseconds in one second.
-    private static let millisecondsPerSecond: Double = 1_000
+  /// Milliseconds in one second.
+  private static let millisecondsPerSecond: Double = 1_000
 
-    /// Attoseconds in one millisecond: `Duration` counts the sub-second
-    /// part in attoseconds.
-    private static let attosecondsPerMillisecond: Double = 1_000_000_000_000_000
+  /// Attoseconds in one millisecond: `Duration` counts the sub-second
+  /// part in attoseconds.
+  private static let attosecondsPerMillisecond: Double = 1_000_000_000_000_000
 
-    /// One decimal place, which is finer than a card exchange resolves.
-    private static let format: String = "%.1f"
+  /// One decimal place, which is finer than a card exchange resolves.
+  private static let format: String = "%.1f"
 
-    /// The elapsed time in milliseconds, one decimal place, no unit.
-    public static func milliseconds(_ elapsed: Duration) -> String {
-        let parts = elapsed.components
-        let value =
-            Double(parts.seconds) * Self.millisecondsPerSecond
-            + Double(parts.attoseconds) / Self.attosecondsPerMillisecond
-        return String(format: Self.format, value)
-    }
+  /// The elapsed time in milliseconds, one decimal place, no unit.
+  public static func milliseconds(_ elapsed: Duration) -> String {
+    let parts = elapsed.components
+    let value =
+      Double(parts.seconds) * Self.millisecondsPerSecond
+      + Double(parts.attoseconds) / Self.attosecondsPerMillisecond
+    return String(format: Self.format, value)
+  }
 }

@@ -7,18 +7,18 @@ import Foundation
 /// The value is never described in a log or an error, so a debug description
 /// would only leak it.
 internal struct PingChallenge: Equatable, CustomStringConvertible {
-    /// Bytes in the challenge a ping carries and a pong echoes.
-    internal static let byteCount = 32
+  /// Bytes in the challenge a ping carries and a pong echoes.
+  internal static let byteCount = 32
 
-    private let value: Data
+  private let value: Data
 
-    internal var bytes: Data { value }
+  internal var bytes: Data { value }
 
-    internal var description: String { "PingChallenge([redacted])" }
+  internal var description: String { "PingChallenge([redacted])" }
 
-    /// Builds a challenge from platform random bytes.
-    internal init?(_ bytes: Data) {
-        guard bytes.count == Self.byteCount else { return nil }
-        value = bytes
-    }
+  /// Builds a challenge from platform random bytes.
+  internal init?(_ bytes: Data) {
+    guard bytes.count == Self.byteCount else { return nil }
+    value = bytes
+  }
 }

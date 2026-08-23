@@ -69,9 +69,12 @@ refined type validates in its initializer or it does not exist.
 
 ## Swift rules, mechanically enforced
 
-Enforcement is `Scripts/lint.sh`: swift-format owns layout, SwiftLint
-(strict, all rules minus the justified carve register in `.swiftlint.yml`)
-owns defects, and two custom rules encode this document:
+Enforcement is `Scripts/lint.sh` (also the pre-commit hook). Run that
+script. `swiftlint lint --enable-all-rules` and SwiftLint `--format` are
+not the gate: the first ignores the carve register, the second fights
+swift-format. swift-format owns layout, SwiftLint (strict, all rules
+minus the justified carve register in `.swiftlint.yml`) owns defects,
+and two custom rules encode this document:
 
 - **`raw_byte_array_in_api`** - no `func`/`init` carries a raw `[UInt8]`
   across an API boundary. `Data`/`String` are too broadly legitimate to

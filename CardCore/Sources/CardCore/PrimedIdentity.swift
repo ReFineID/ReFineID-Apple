@@ -30,69 +30,69 @@ import Foundation
 /// The two copies had to be kept in sync by review; this one record lives
 /// in the module the app and the extension both link.
 public struct PrimedIdentity: Codable, Equatable, Sendable {
-    /// Proof carried only by a prime whose live-card activation check passed.
-    ///
-    /// The single case makes unchecked and legacy records fail decoding
-    /// instead of silently becoming eligible for token publication.
-    public enum ActivationCheck: String, Codable, Equatable, Sendable {
-        case passed = "passed"
-    }
+  /// Proof carried only by a prime whose live-card activation check passed.
+  ///
+  /// The single case makes unchecked and legacy records fail decoding
+  /// instead of silently becoming eligible for token publication.
+  public enum ActivationCheck: String, Codable, Equatable, Sendable {
+    case passed = "passed"
+  }
 
-    /// Six digits from the front of the card.
-    ///
-    /// Never logged, never displayed, never included in an error.
-    public let can: String
+  /// Six digits from the front of the card.
+  ///
+  /// Never logged, never displayed, never included in an error.
+  public let can: String
 
-    /// The DER authentication certificate read from the card while priming.
-    public let certDER: Data
+  /// The DER authentication certificate read from the card while priming.
+  public let certDER: Data
 
-    /// The DER issuing-CA certificate, when the prime read one.
-    public let issuerDER: Data?
+  /// The DER issuing-CA certificate, when the prime read one.
+  public let issuerDER: Data?
 
-    /// The card's PKCS#15 token serial, when the prime read one.
-    public let tokenSerial: String?
+  /// The card's PKCS#15 token serial, when the prime read one.
+  public let tokenSerial: String?
 
-    /// Proof that no known citizen-card activation state blocked this prime.
-    public let activationCheck: ActivationCheck
+  /// Proof that no known citizen-card activation state blocked this prime.
+  public let activationCheck: ActivationCheck
 
-    /// Core NFC historical/application bytes that bind a staged record to
-    /// the immediately following CryptoTokenKit field.
-    ///
-    /// Persistent ATR lookup records leave this nil.
-    public let contactlessIdentification: Data?
+  /// Core NFC historical/application bytes that bind a staged record to
+  /// the immediately following CryptoTokenKit field.
+  ///
+  /// Persistent ATR lookup records leave this nil.
+  public let contactlessIdentification: Data?
 
-    /// Creation time of a short-lived staged registration record.
-    ///
-    /// Persistent ATR lookup records leave this nil.
-    public let stagedAt: Date?
+  /// Creation time of a short-lived staged registration record.
+  ///
+  /// Persistent ATR lookup records leave this nil.
+  public let stagedAt: Date?
 
-    /// Refuses anything that could not have come from a real prime.
-    ///
-    /// The card access number must be six digits, the certificate must
-    /// carry bytes, and a serial, if present, must be a plausible one.
-    /// This is the only way to construct the record, so every reader has
-    /// evidence the check happened -- including the reader that decoded it
-    /// from the keychain, which reconstructs it through this initializer
-    /// rather than trusting what was stored.
-    public init?(
-        can: String,
-        certificate: Data,
-        issuer: Data?,
-        tokenSerial: String?,
-        activationCheck: ActivationCheck,
-        contactlessIdentification: Data? = nil,
-        stagedAt: Date? = nil
-    ) {
-        guard CardAccessNumber(digits: can) != nil else { return nil }
-        guard !certificate.isEmpty else { return nil }
-        if let tokenSerial, TokenSerial(value: tokenSerial) == nil { return nil }
-        if let contactlessIdentification, contactlessIdentification.isEmpty { return nil }
-        self.can = can
-        self.certDER = certificate
-        self.issuerDER = issuer
-        self.tokenSerial = tokenSerial
-        self.activationCheck = activationCheck
-        self.contactlessIdentification = contactlessIdentification
-        self.stagedAt = stagedAt
-    }
+  /// Refuses anything that could not have come from a real prime.
+  ///
+  /// The card access number must be six digits, the certificate must
+  /// carry bytes, and a serial, if present, must be a plausible one.
+  /// This is the only way to construct the record, so every reader has
+  /// evidence the check happened -- including the reader that decoded it
+  /// from the keychain, which reconstructs it through this initializer
+  /// rather than trusting what was stored.
+  public init?(
+    can: String,
+    certificate: Data,
+    issuer: Data?,
+    tokenSerial: String?,
+    activationCheck: ActivationCheck,
+    contactlessIdentification: Data? = nil,
+    stagedAt: Date? = nil
+  ) {
+    guard CardAccessNumber(digits: can) != nil else { return nil }
+    guard !certificate.isEmpty else { return nil }
+    if let tokenSerial, TokenSerial(value: tokenSerial) == nil { return nil }
+    if let contactlessIdentification, contactlessIdentification.isEmpty { return nil }
+    self.can = can
+    self.certDER = certificate
+    self.issuerDER = issuer
+    self.tokenSerial = tokenSerial
+    self.activationCheck = activationCheck
+    self.contactlessIdentification = contactlessIdentification
+    self.stagedAt = stagedAt
+  }
 }

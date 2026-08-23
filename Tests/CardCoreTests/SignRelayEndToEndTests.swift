@@ -7,18 +7,18 @@ import Testing
 @testable import CardCore
 
 #if canImport(RappEngine)
-import RappEngine
+  import RappEngine
 
-/// The slim relay over a real pairing and a real handshake: a requester
-/// asks a proxy to sign, and the answer comes back.
-@Suite
-internal struct SignRelayEndToEndTests {
+  /// The slim relay over a real pairing and a real handshake: a requester
+  /// asks a proxy to sign, and the answer comes back.
+  @Suite
+  internal struct SignRelayEndToEndTests {
     // MARK: Static Properties
 
     private static let profiles = [
-        "fi.refineid.card-status.v1",
-        "fi.refineid.authentication.v1",
-        "fi.refineid.document-signing.v1"
+      "fi.refineid.card-status.v1",
+      "fi.refineid.authentication.v1",
+      "fi.refineid.document-signing.v1",
     ]
     private static let transportProfile = "apple-peer-v1"
     private static let candidateID = "apple-peer-v1.nearby"
@@ -29,45 +29,45 @@ internal struct SignRelayEndToEndTests {
     /// One request crosses a session established over a stored pairing.
     @Test
     internal func aRequestCrossesAnEstablishedSession() async throws {
-        let paired = try await SignRelayPairing.make(
-            profiles: Self.profiles,
-            transportProfile: Self.transportProfile,
-            candidateID: Self.candidateID
-        )
-        defer { paired.deleteKeychainServices() }
+      let paired = try await SignRelayPairing.make(
+        profiles: Self.profiles,
+        transportProfile: Self.transportProfile,
+        candidateID: Self.candidateID
+      )
+      defer { paired.deleteKeychainServices() }
 
-        let requesterSession = try SignRelaySession(
-            role: .requester,
-            pair: try RappPairRecord.loadFromVault(
-                pairId: paired.requesterPairID, vault: paired.requesterVault),
-            vault: paired.requesterVault
-        )
-        let proxySession = try SignRelaySession(
-            role: .proxy,
-            pair: try RappPairRecord.loadFromVault(
-                pairId: paired.proxyPairID, vault: paired.proxyVault),
-            vault: paired.proxyVault
-        )
+      let requesterSession = try SignRelaySession(
+        role: .requester,
+        pair: try RappPairRecord.loadFromVault(
+          pairId: paired.requesterPairID, vault: paired.requesterVault),
+        vault: paired.requesterVault
+      )
+      let proxySession = try SignRelaySession(
+        role: .proxy,
+        pair: try RappPairRecord.loadFromVault(
+          pairId: paired.proxyPairID, vault: paired.proxyVault),
+        vault: paired.proxyVault
+      )
 
-        let wire = SignRelayWire(requester: requesterSession, proxy: proxySession)
-        await wire.answerWith { request in
-            .signatureResponse(id: request.requestID, signature: Self.signature)
-        }
-        try await wire.establish()
+      let wire = SignRelayWire(requester: requesterSession, proxy: proxySession)
+      await wire.answerWith { request in
+        .signatureResponse(id: request.requestID, signature: Self.signature)
+      }
+      try await wire.establish()
 
-        #expect(await requesterSession.isEstablished)
-        #expect(await proxySession.isEstablished)
+      #expect(await requesterSession.isEstablished)
+      #expect(await proxySession.isEstablished)
 
-        let id = UUID()
-        let answer = try await wire.ask(
-            .signatureRequest(
-                id: id,
-                profile: .ecdsaP256,
-                algorithm: .ecdsaSHA256,
-                digest: Data(repeating: 0xA5, count: 32)
-            ))
+      let id = UUID()
+      let answer = try await wire.ask(
+        .signatureRequest(
+          id: id,
+          profile: .ecdsaP256,
+          algorithm: .ecdsaSHA256,
+          digest: Data(repeating: 0xA5, count: 32)
+        ))
 
-        #expect(answer == .signatureResponse(id: id, signature: Self.signature))
+      #expect(answer == .signatureResponse(id: id, signature: Self.signature))
     }
-}
+  }
 #endif

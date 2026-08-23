@@ -2,20 +2,20 @@
 
 #if REFINEID_LOCAL_CARD && os(iOS)
 
-import CardCore
-import CryptoTokenKit
-import SwiftUI
+  import CardCore
+  import CryptoTokenKit
+  import SwiftUI
 
-/// The single identity-creation action embedded below both credentials,
-/// named for what it does: the certificate is read off the card over
-/// PACE and stored, and that stored read is the identity.
-///
-/// Apple's NFC sheets own live progress and completion. Persistent card
-/// and Safari state belongs in Diagnostics, not below this button. The
-/// parent owns ``isRegistered``: a stored identity replaces this whole
-/// setup section, not just this button.
-@available(iOS 26.0, *)
-internal struct CardRegistrationSections: View {
+  /// The single identity-creation action embedded below both credentials,
+  /// named for what it does: the certificate is read off the card over
+  /// PACE and stored, and that stored read is the identity.
+  ///
+  /// Apple's NFC sheets own live progress and completion. Persistent card
+  /// and Safari state belongs in Diagnostics, not below this button. The
+  /// parent owns ``isRegistered``: a stored identity replaces this whole
+  /// setup section, not just this button.
+  @available(iOS 26.0, *)
+  internal struct CardRegistrationSections: View {
     // MARK: Static Properties
 
     /// Stable automation names; changing one never changes visible copy.
@@ -29,11 +29,11 @@ internal struct CardRegistrationSections: View {
     /// A registration without its prime or stored PIN cannot sign. Treating
     /// that stale index as ready hid the mint action after a revocation.
     internal static var hasRegisteredIdentity: Bool {
-        let credentials = CardCredentialStore.contents()
-        return credentials.hasPin1
-            && !PrimeStore.primedHolderNames().isEmpty
-            && TKSmartCardTokenRegistrationManager.default.registeredSmartCardTokens
-            .contains { CardTokenNamespace.owns(tokenIdentifier: $0) }
+      let credentials = CardCredentialStore.contents()
+      return credentials.hasPin1
+        && !PrimeStore.primedHolderNames().isEmpty
+        && TKSmartCardTokenRegistrationManager.default.registeredSmartCardTokens
+          .contains { CardTokenNamespace.owns(tokenIdentifier: $0) }
     }
 
     // MARK: Properties
@@ -65,10 +65,10 @@ internal struct CardRegistrationSections: View {
 
     /// Lets the application flow enter and leave its registration state.
     internal var onRegistrationStarted: @MainActor () -> Void = {
-        // optional hook; default is a no-op
+      // optional hook; default is a no-op
     }
     internal var onRegistrationFinished: @MainActor (Bool) -> Void = { _ in
-        // optional hook; default is a no-op
+      // optional hook; default is a no-op
     }
 
     // MARK: SwiftUI Properties
@@ -92,54 +92,55 @@ internal struct CardRegistrationSections: View {
     /// A demonstration opens no slot it depends on, so an iPad's missing
     /// antenna is no reason to withhold the button from one.
     private var isTransportReady: Bool {
-        model.allowsNearField || isDemonstration
+      model.allowsNearField || isDemonstration
     }
 
     /// Lets the device test observe the completed operation without
     /// putting a diagnostic result row back into the holder's UI.
     private var actionIdentifier: String {
-        switch model.lastRunResult {
-        case .notRun, .succeeded:
-            Self.startIdentifier
+      switch model.lastRunResult {
+      case .notRun, .succeeded:
+        Self.startIdentifier
 
-        case .failed:
-            Self.failedIdentifier
-        }
+      case .failed:
+        Self.failedIdentifier
+      }
     }
 
     // MARK: Content Properties
 
     internal var body: some View {
-        // The one primary action of the screen, so it is the one filled,
-        // full-width control: the credential rows above collect, this
-        // commits. Everything after the tap is Apple's NFC sheet.
-        Button {
-            Task { @MainActor in
-                guard let pin1 = enteredPin1(), let accessNumber = cardAccessNumber() else { return }
-                onRegistrationStarted()
-                let succeeded = await Self.registerIdentity(
-                    cardAccessNumber: accessNumber,
-                    pin1: pin1,
-                    model: model,
-                    commit: IdentityCommitments(
-                        storeCardAccessNumber: storeCardAccessNumber,
-                        storeVerifiedPin1: storeVerifiedPin1,
-                        clearPin1Entry: clearPin1Entry) { isRegistered = true })
-                onRegistrationFinished(succeeded)
-            }
-        } label: {
-            BrowserAuthenticationEnableLabel()
+      // The one primary action of the screen, so it is the one filled,
+      // full-width control: the credential rows above collect, this
+      // commits. Everything after the tap is Apple's NFC sheet.
+      Button {
+        Task { @MainActor in
+          guard let pin1 = enteredPin1(), let accessNumber = cardAccessNumber() else { return }
+          onRegistrationStarted()
+          let succeeded = await Self.registerIdentity(
+            cardAccessNumber: accessNumber,
+            pin1: pin1,
+            model: model,
+            commit: IdentityCommitments(
+              storeCardAccessNumber: storeCardAccessNumber,
+              storeVerifiedPin1: storeVerifiedPin1,
+              clearPin1Entry: clearPin1Entry
+            ) { isRegistered = true })
+          onRegistrationFinished(succeeded)
         }
-        .buttonStyle(.borderedProminent)
-        .accessibilityIdentifier(actionIdentifier)
-        .disabled(
-            model.isRunning
-                || !canPrepareCredentials
-                || !isTransportReady
-        )
-        .onAppear {
-            model.refresh()
-        }
+      } label: {
+        BrowserAuthenticationEnableLabel()
+      }
+      .buttonStyle(.borderedProminent)
+      .accessibilityIdentifier(actionIdentifier)
+      .disabled(
+        model.isRunning
+          || !canPrepareCredentials
+          || !isTransportReady
+      )
+      .onAppear {
+        model.refresh()
+      }
     }
 
     // MARK: Static Functions
@@ -153,20 +154,20 @@ internal struct CardRegistrationSections: View {
     /// the entered PIN.
     @MainActor
     internal static func registerIdentity(
-        cardAccessNumber: String,
-        pin1: String,
-        model: CardPrimingModel,
-        commit: IdentityCommitments
+      cardAccessNumber: String,
+      pin1: String,
+      model: CardPrimingModel,
+      commit: IdentityCommitments
     ) async -> Bool {
-        defer { commit.clearPin1Entry() }
-        await model.prime(cardAccessNumber: cardAccessNumber, pin1: pin1)
-        guard case .succeeded = model.lastRunResult,
-              commit.storeCardAccessNumber(cardAccessNumber),
-              commit.storeVerifiedPin1(pin1)
-        else { return false }
-        commit.markRegistered()
-        return true
+      defer { commit.clearPin1Entry() }
+      await model.prime(cardAccessNumber: cardAccessNumber, pin1: pin1)
+      guard case .succeeded = model.lastRunResult,
+        commit.storeCardAccessNumber(cardAccessNumber),
+        commit.storeVerifiedPin1(pin1)
+      else { return false }
+      commit.markRegistered()
+      return true
     }
-}
+  }
 
 #endif

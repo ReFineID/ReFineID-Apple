@@ -3,15 +3,15 @@
 import Foundation
 
 #if canImport(Network)
-import Network
+  import Network
 
-/// Finds a card holder publishing the stream transport.
-///
-/// This browses with the plain name service rather than the nearby
-/// framework. Both are fed by the same records, but only one of them
-/// hands the result to the app on a device whose system generation
-/// differs from its peer's.
-public final class StreamRelayBrowser: @unchecked Sendable {
+  /// Finds a card holder publishing the stream transport.
+  ///
+  /// This browses with the plain name service rather than the nearby
+  /// framework. Both are fed by the same records, but only one of them
+  /// hands the result to the app on a device whose system generation
+  /// differs from its peer's.
+  public final class StreamRelayBrowser: @unchecked Sendable {
     private let onFound: @Sendable (NWEndpoint) -> Void
     private let name: String?
     private let queue = DispatchQueue(label: "fi.refineid.stream-browser")
@@ -24,45 +24,45 @@ public final class StreamRelayBrowser: @unchecked Sendable {
     /// which it wants says so; a caller that does not takes the first.
     @preconcurrency
     public init(
-        matching name: String? = nil,
-        onFound: @escaping @Sendable (NWEndpoint) -> Void
+      matching name: String? = nil,
+      onFound: @escaping @Sendable (NWEndpoint) -> Void
     ) {
-        self.name = name
-        self.onFound = onFound
+      self.name = name
+      self.onFound = onFound
     }
 
     /// Starts browsing.
     public func start() {
-        let parameters = NWParameters.tcp
-        parameters.includePeerToPeer = true
-        let made = NWBrowser(
-            for: .bonjour(type: StreamRelayListener.serviceType, domain: nil),
-            using: parameters
-        )
-        made.browseResultsChangedHandler = { [weak self] results, _ in
-            guard let self else { return }
-            let wanted = results.first { result in
-                guard let name else { return true }
-                guard case .service(let serviceName, _, _, _) = result.endpoint else { return false }
-                return serviceName == name
-            }
-            guard let first = wanted else { return }
-            queue.async { [weak self] in
-                guard let self, !reported else { return }
-                reported = true
-                onFound(first.endpoint)
-            }
+      let parameters = NWParameters.tcp
+      parameters.includePeerToPeer = true
+      let made = NWBrowser(
+        for: .bonjour(type: StreamRelayListener.serviceType, domain: nil),
+        using: parameters
+      )
+      made.browseResultsChangedHandler = { [weak self] results, _ in
+        guard let self else { return }
+        let wanted = results.first { result in
+          guard let name else { return true }
+          guard case .service(let serviceName, _, _, _) = result.endpoint else { return false }
+          return serviceName == name
         }
-        browser = made
-        made.start(queue: queue)
+        guard let first = wanted else { return }
+        queue.async { [weak self] in
+          guard let self, !reported else { return }
+          reported = true
+          onFound(first.endpoint)
+        }
+      }
+      browser = made
+      made.start(queue: queue)
     }
 
     /// Stops browsing.
     public func cancel() {
-        queue.async {
-            self.browser?.cancel()
-            self.browser = nil
-        }
+      queue.async {
+        self.browser?.cancel()
+        self.browser = nil
+      }
     }
-}
+  }
 #endif

@@ -14,20 +14,20 @@
 /// ownership (`Pin1`, `Pin1Transmission`) or holds it behind a mutex
 /// (`AcceptedPin1Memory`), so it is never mutated while shared.
 internal final class ZeroizingDigitStore: @unchecked Sendable {
-    /// The raw digit bytes.
-    ///
-    /// Internal so only the module's own boundary code (fingerprinting, the
-    /// future transport) can read them; this class is the sanctioned
-    /// bytes-to-type boundary in the lint exception register.
-    internal private(set) var bytes: [UInt8]
+  /// The raw digit bytes.
+  ///
+  /// Internal so only the module's own boundary code (fingerprinting, the
+  /// future transport) can read them; this class is the sanctioned
+  /// bytes-to-type boundary in the lint exception register.
+  internal private(set) var bytes: [UInt8]
 
-    internal init(bytes: [UInt8]) {
-        self.bytes = bytes
-    }
+  internal init(bytes: [UInt8]) {
+    self.bytes = bytes
+  }
 
-    deinit {
-        for index in bytes.indices {
-            bytes[index] = 0
-        }
+  deinit {
+    for index in bytes.indices {
+      bytes[index] = 0
     }
+  }
 }

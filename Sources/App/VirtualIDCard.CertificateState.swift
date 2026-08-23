@@ -2,12 +2,12 @@
 
 #if os(iOS)
 
-import CardCore
+  import CardCore
 
-extension VirtualIDCard.CertificateState {
+  extension VirtualIDCard.CertificateState {
     internal var localizedName: String {
-        VirtualIDCardOverlayLocalization.certificateStateName(self)
+      VirtualIDCardOverlayLocalization.certificateStateName(self)
     }
-}
+  }
 
 #endif

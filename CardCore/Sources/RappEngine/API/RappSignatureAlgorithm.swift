@@ -2,12 +2,12 @@
 
 /// A registered signature algorithm.
 public enum RappSignatureAlgorithm: Sendable {
-    case ecdsaSha224
-    case ecdsaSha256
-    case ecdsaSha384
-    case ecdsaSha512
-    case rsaPkcs1Sha256
-    case rsaPkcs1Sha384
-    case rsaPkcs1Sha512
-    case rsaPssSha256
+  case ecdsaSha224
+  case ecdsaSha256
+  case ecdsaSha384
+  case ecdsaSha512
+  case rsaPkcs1Sha256
+  case rsaPkcs1Sha384
+  case rsaPkcs1Sha512
+  case rsaPssSha256
 }

@@ -4,8 +4,8 @@ import Foundation
 
 /// A refused journal transition.
 internal enum JournalError: Error, Equatable {
-    case alreadyTransmitted
-    case invalidState(state: OperationState)
-    case persistence
-    case requestHashMismatch
+  case alreadyTransmitted
+  case invalidState(state: OperationState)
+  case persistence
+  case requestHashMismatch
 }

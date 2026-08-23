@@ -2,54 +2,54 @@
 
 #if os(macOS)
 
-import CoreGraphics
-import CoreText
-import Foundation
+  import CoreGraphics
+  import CoreText
+  import Foundation
 
-/// Turns a line of text into PDF path operators.
-///
-/// The stamp draws no text, only shapes. A page's font resources
-/// belong to the document, not to a mark laid over it, and every
-/// font-shaped thing on this stamp has gone wrong at least once:
-/// accents written in one encoding and read in another, advances
-/// measured at a size where they come back rounded, a font name a
-/// page might already mean something else by. Outlines have none of
-/// those failure modes and render identically in every reader.
-///
-/// What is given up is selectable, searchable text. For a mark that
-/// is a picture of a rubber stamp, that is the right side of the
-/// trade.
-internal enum TextOutline {
+  /// Turns a line of text into PDF path operators.
+  ///
+  /// The stamp draws no text, only shapes. A page's font resources
+  /// belong to the document, not to a mark laid over it, and every
+  /// font-shaped thing on this stamp has gone wrong at least once:
+  /// accents written in one encoding and read in another, advances
+  /// measured at a size where they come back rounded, a font name a
+  /// page might already mean something else by. Outlines have none of
+  /// those failure modes and render identically in every reader.
+  ///
+  /// What is given up is selectable, searchable text. For a mark that
+  /// is a picture of a rubber stamp, that is the right side of the
+  /// trade.
+  internal enum TextOutline {
     /// Which half of a circular stamp carries a curved line.
     internal enum Arc {
-        case bottom
-        case top
+      case bottom
+      case top
     }
 
     /// Typography and geometry for one curved line.
     internal struct Curve {
-        internal let font: String
-        internal let size: Double
-        internal let radius: Double
-        internal let tracking: Double
-        internal let maximumSpan: Double
-        internal let arc: Arc
+      internal let font: String
+      internal let size: Double
+      internal let radius: Double
+      internal let tracking: Double
+      internal let maximumSpan: Double
+      internal let arc: Arc
     }
 
     /// A traced line: its operators, centred on the origin, and how
     /// wide it came out.
     internal struct Line {
-        /// Operators filling the glyphs.
-        internal let operators: String
+      /// Operators filling the glyphs.
+      internal let operators: String
 
-        /// The line's width at the requested size.
-        internal let width: Double
+      /// The line's width at the requested size.
+      internal let width: Double
     }
 
     /// One CoreText glyph and its advance in the tracing coordinate space.
     private struct CurvedGlyph {
-        let path: CGPath
-        let advance: Double
+      let path: CGPath
+      let advance: Double
     }
 
     /// The size glyphs are measured and traced at, large enough that
@@ -82,226 +82,226 @@ internal enum TextOutline {
     /// Traces one line, centred horizontally on the origin and
     /// sitting on it.
     internal static func line(
-        _ text: String,
-        font: String,
-        size: Double
+      _ text: String,
+      font: String,
+      size: Double
     ) -> Line {
-        let traced = CTFontCreateWithName(font as CFString, Self.traceSize, nil)
-        let scale = size / Self.traceSize
-        var body = ""
-        var pen = 0.0
-        var leftmost = Double.greatestFiniteMagnitude
-        var rightmost = -Double.greatestFiniteMagnitude
-        for character in text {
-            // One glyph slot per code unit. A character outside the basic
-            // plane is two units, and CoreText writes one glyph per unit -
-            // told the length while given room for one, it writes past the
-            // end.
-            var codeUnits = Array(String(character).utf16)
-            var glyphs = [CGGlyph](repeating: 0, count: codeUnits.count)
-            guard
-                CTFontGetGlyphsForCharacters(
-                    traced, &codeUnits, &glyphs, codeUnits.count
-                ),
-                var glyph = glyphs.first
-            else {
-                continue
-            }
-            var advance = CGSize.zero
-            CTFontGetAdvancesForGlyphs(traced, .horizontal, &glyph, &advance, 1)
-            if let path = CTFontCreatePathForGlyph(traced, glyph, nil) {
-                body += Self.operators(of: path, offsetBy: pen)
-                let box = path.boundingBoxOfPath
-                leftmost = min(leftmost, Double(box.minX) + pen)
-                rightmost = max(rightmost, Double(box.maxX) + pen)
-            }
-            pen += Double(advance.width)
+      let traced = CTFontCreateWithName(font as CFString, Self.traceSize, nil)
+      let scale = size / Self.traceSize
+      var body = ""
+      var pen = 0.0
+      var leftmost = Double.greatestFiniteMagnitude
+      var rightmost = -Double.greatestFiniteMagnitude
+      for character in text {
+        // One glyph slot per code unit. A character outside the basic
+        // plane is two units, and CoreText writes one glyph per unit -
+        // told the length while given room for one, it writes past the
+        // end.
+        var codeUnits = Array(String(character).utf16)
+        var glyphs = [CGGlyph](repeating: 0, count: codeUnits.count)
+        guard
+          CTFontGetGlyphsForCharacters(
+            traced, &codeUnits, &glyphs, codeUnits.count
+          ),
+          var glyph = glyphs.first
+        else {
+          continue
         }
-        // Measured from the glyph outlines rather than from the sum of
-        // their advances. The two disagreed - by half - and it is the
-        // outlines a reader draws, so a line centred and sized by the
-        // advances ran off the ring it was fitted to.
-        guard leftmost <= rightmost else {
-            return Line(operators: "", width: 0)
+        var advance = CGSize.zero
+        CTFontGetAdvancesForGlyphs(traced, .horizontal, &glyph, &advance, 1)
+        if let path = CTFontCreatePathForGlyph(traced, glyph, nil) {
+          body += Self.operators(of: path, offsetBy: pen)
+          let box = path.boundingBoxOfPath
+          leftmost = min(leftmost, Double(box.minX) + pen)
+          rightmost = max(rightmost, Double(box.maxX) + pen)
         }
-        let inkWidth = (rightmost - leftmost) * scale
-        // Centred on the origin by its ink, not by its advances: a
-        // round stamp reads as a stamp when what is inside it shares
-        // the ring's axis.
-        let centring = -(leftmost + rightmost) / Self.halves * scale
-        let factor = String(format: "%.\(Self.scaleDecimals)f", scale)
-        let placed =
-            "q \(factor) 0 0 \(factor)"
-            + " \(Self.number(centring)) 0 cm\n\(body)Q\n"
-        return Line(operators: placed, width: inkWidth)
+        pen += Double(advance.width)
+      }
+      // Measured from the glyph outlines rather than from the sum of
+      // their advances. The two disagreed - by half - and it is the
+      // outlines a reader draws, so a line centred and sized by the
+      // advances ran off the ring it was fitted to.
+      guard leftmost <= rightmost else {
+        return Line(operators: "", width: 0)
+      }
+      let inkWidth = (rightmost - leftmost) * scale
+      // Centred on the origin by its ink, not by its advances: a
+      // round stamp reads as a stamp when what is inside it shares
+      // the ring's axis.
+      let centring = -(leftmost + rightmost) / Self.halves * scale
+      let factor = String(format: "%.\(Self.scaleDecimals)f", scale)
+      let placed =
+        "q \(factor) 0 0 \(factor)"
+        + " \(Self.number(centring)) 0 cm\n\(body)Q\n"
+      return Line(operators: placed, width: inkWidth)
     }
 
     /// Traces a line one glyph at a time around a circular baseline.
     internal static func curvedLine(
-        _ text: String,
-        curve: Curve
+      _ text: String,
+      curve: Curve
     ) -> String {
-        guard
-            !text.isEmpty,
-            curve.size > 0,
-            curve.radius > 0,
-            curve.maximumSpan > 0
-        else {
-            return ""
-        }
-        let font = CTFontCreateWithName(
-            curve.font as CFString,
-            Self.traceSize,
-            nil
-        )
-        let glyphs = Self.curvedGlyphs(in: text, font: font)
-        guard !glyphs.isEmpty else { return "" }
-        let gapCount = Double(max(glyphs.count - 1, 0))
-        let requestedScale = curve.size / Self.traceSize
-        let requestedWidth =
-            glyphs.map(\.advance).reduce(0, +) * requestedScale
-            + curve.tracking * gapCount
-        guard requestedWidth > 0 else { return "" }
-        let fit = min(
-            1,
-            curve.radius * curve.maximumSpan / requestedWidth
-        )
-        return Self.curvedOperators(
-            glyphs,
-            scale: requestedScale * fit,
-            tracking: curve.tracking * fit,
-            radius: curve.radius,
-            arc: curve.arc
-        )
+      guard
+        !text.isEmpty,
+        curve.size > 0,
+        curve.radius > 0,
+        curve.maximumSpan > 0
+      else {
+        return ""
+      }
+      let font = CTFontCreateWithName(
+        curve.font as CFString,
+        Self.traceSize,
+        nil
+      )
+      let glyphs = Self.curvedGlyphs(in: text, font: font)
+      guard !glyphs.isEmpty else { return "" }
+      let gapCount = Double(max(glyphs.count - 1, 0))
+      let requestedScale = curve.size / Self.traceSize
+      let requestedWidth =
+        glyphs.map(\.advance).reduce(0, +) * requestedScale
+        + curve.tracking * gapCount
+      guard requestedWidth > 0 else { return "" }
+      let fit = min(
+        1,
+        curve.radius * curve.maximumSpan / requestedWidth
+      )
+      return Self.curvedOperators(
+        glyphs,
+        scale: requestedScale * fit,
+        tracking: curve.tracking * fit,
+        radius: curve.radius,
+        arc: curve.arc
+      )
     }
 
     /// CoreText glyphs for a line, retaining their tracing-size advances.
     private static func curvedGlyphs(
-        in text: String,
-        font: CTFont
+      in text: String,
+      font: CTFont
     ) -> [CurvedGlyph] {
-        var answer = [CurvedGlyph]()
-        for character in text {
-            var codeUnits = Array(String(character).utf16)
-            var found = [CGGlyph](repeating: 0, count: codeUnits.count)
-            guard
-                CTFontGetGlyphsForCharacters(
-                    font, &codeUnits, &found, codeUnits.count
-                ),
-                var glyph = found.first
-            else {
-                continue
-            }
-            var advance = CGSize.zero
-            CTFontGetAdvancesForGlyphs(font, .horizontal, &glyph, &advance, 1)
-            guard let path = CTFontCreatePathForGlyph(font, glyph, nil) else {
-                continue
-            }
-            answer.append(
-                CurvedGlyph(path: path, advance: Double(advance.width))
-            )
+      var answer = [CurvedGlyph]()
+      for character in text {
+        var codeUnits = Array(String(character).utf16)
+        var found = [CGGlyph](repeating: 0, count: codeUnits.count)
+        guard
+          CTFontGetGlyphsForCharacters(
+            font, &codeUnits, &found, codeUnits.count
+          ),
+          var glyph = found.first
+        else {
+          continue
         }
-        return answer
+        var advance = CGSize.zero
+        CTFontGetAdvancesForGlyphs(font, .horizontal, &glyph, &advance, 1)
+        guard let path = CTFontCreatePathForGlyph(font, glyph, nil) else {
+          continue
+        }
+        answer.append(
+          CurvedGlyph(path: path, advance: Double(advance.width))
+        )
+      }
+      return answer
     }
 
     /// Places already measured glyphs along the selected circular baseline.
     private static func curvedOperators(
-        _ glyphs: [CurvedGlyph],
-        scale: Double,
-        tracking: Double,
-        radius: Double,
-        arc: Arc
+      _ glyphs: [CurvedGlyph],
+      scale: Double,
+      tracking: Double,
+      radius: Double,
+      arc: Arc
     ) -> String {
-        let advances = glyphs.map { $0.advance * scale }
-        let gapCount = Double(max(glyphs.count - 1, 0))
-        let width = advances.reduce(0, +) + tracking * gapCount
-        var cursor = -width / Self.halves
-        var body = ""
-        for index in glyphs.indices {
-            let advance = advances[index]
-            let distance = cursor + advance / Self.halves
-            let turn = distance / radius
-            let baseline = Self.curvedBaseline(radius: radius, turn: turn, arc: arc)
-            let rotation = arc == .top ? -turn : turn
-            let cosine = cos(rotation)
-            let sine = sin(rotation)
-            let shiftX = baseline.x - advance / Self.halves * cosine
-            let shiftY = baseline.y - advance / Self.halves * sine
-            body += "q \(Self.matrixNumber(scale * cosine))"
-            body += " \(Self.matrixNumber(scale * sine))"
-            body += " \(Self.matrixNumber(-scale * sine))"
-            body += " \(Self.matrixNumber(scale * cosine))"
-            body += " \(Self.matrixNumber(shiftX))"
-            body += " \(Self.matrixNumber(shiftY)) cm\n"
-            body += Self.operators(of: glyphs[index].path, offsetBy: 0)
-            body += "Q\n"
-            cursor += advance + tracking
-        }
-        return body
+      let advances = glyphs.map { $0.advance * scale }
+      let gapCount = Double(max(glyphs.count - 1, 0))
+      let width = advances.reduce(0, +) + tracking * gapCount
+      var cursor = -width / Self.halves
+      var body = ""
+      for index in glyphs.indices {
+        let advance = advances[index]
+        let distance = cursor + advance / Self.halves
+        let turn = distance / radius
+        let baseline = Self.curvedBaseline(radius: radius, turn: turn, arc: arc)
+        let rotation = arc == .top ? -turn : turn
+        let cosine = cos(rotation)
+        let sine = sin(rotation)
+        let shiftX = baseline.x - advance / Self.halves * cosine
+        let shiftY = baseline.y - advance / Self.halves * sine
+        body += "q \(Self.matrixNumber(scale * cosine))"
+        body += " \(Self.matrixNumber(scale * sine))"
+        body += " \(Self.matrixNumber(-scale * sine))"
+        body += " \(Self.matrixNumber(scale * cosine))"
+        body += " \(Self.matrixNumber(shiftX))"
+        body += " \(Self.matrixNumber(shiftY)) cm\n"
+        body += Self.operators(of: glyphs[index].path, offsetBy: 0)
+        body += "Q\n"
+        cursor += advance + tracking
+      }
+      return body
     }
 
     /// One glyph baseline on the selected half of a circle.
     private static func curvedBaseline(
-        radius: Double,
-        turn: Double,
-        arc: Arc
+      radius: Double,
+      turn: Double,
+      arc: Arc
     ) -> (x: Double, y: Double) {
-        let vertical = radius * cos(turn)
-        return (
-            x: radius * sin(turn),
-            y: arc == .top ? vertical : -vertical
-        )
+      let vertical = radius * cos(turn)
+      return (
+        x: radius * sin(turn),
+        y: arc == .top ? vertical : -vertical
+      )
     }
 
     /// One glyph's path as operators, shifted along the line.
     private static func operators(of path: CGPath, offsetBy pen: Double) -> String {
-        var body = ""
-        path.applyWithBlock { element in
-            let points = element.pointee.points
-            switch element.pointee.type {
-            case .moveToPoint:
-                body += "\(Self.at(points[Self.firstPoint], pen)) m\n"
+      var body = ""
+      path.applyWithBlock { element in
+        let points = element.pointee.points
+        switch element.pointee.type {
+        case .moveToPoint:
+          body += "\(Self.at(points[Self.firstPoint], pen)) m\n"
 
-            case .addLineToPoint:
-                body += "\(Self.at(points[Self.firstPoint], pen)) l\n"
+        case .addLineToPoint:
+          body += "\(Self.at(points[Self.firstPoint], pen)) l\n"
 
-            case .addQuadCurveToPoint:
-                body +=
-                    "\(Self.at(points[Self.firstPoint], pen)) \(Self.at(points[Self.secondPoint], pen)) v\n"
+        case .addQuadCurveToPoint:
+          body +=
+            "\(Self.at(points[Self.firstPoint], pen)) \(Self.at(points[Self.secondPoint], pen)) v\n"
 
-            case .addCurveToPoint:
-                body +=
-                    "\(Self.at(points[Self.firstPoint], pen)) \(Self.at(points[Self.secondPoint], pen))"
-                    + " \(Self.at(points[Self.thirdPoint], pen)) c\n"
+        case .addCurveToPoint:
+          body +=
+            "\(Self.at(points[Self.firstPoint], pen)) \(Self.at(points[Self.secondPoint], pen))"
+            + " \(Self.at(points[Self.thirdPoint], pen)) c\n"
 
-            case .closeSubpath:
-                body += "h\n"
+        case .closeSubpath:
+          body += "h\n"
 
-            @unknown default:
-                break
-            }
+        @unknown default:
+          break
         }
-        return body.isEmpty ? "" : body + "f\n"
+      }
+      return body.isEmpty ? "" : body + "f\n"
     }
 
     /// One number, written the way PDF reads them: no exponents.
     private static func number(_ value: Double) -> String {
-        String(format: "%.\(Self.decimals)f", value)
+      String(format: "%.\(Self.decimals)f", value)
     }
 
     /// Matrix values retain the same precision as the ordinary line scale.
     private static func matrixNumber(_ value: Double) -> String {
-        String(format: "%.\(Self.scaleDecimals)f", value)
+      String(format: "%.\(Self.scaleDecimals)f", value)
     }
 
     /// One point, shifted and rounded.
     private static func at(_ point: CGPoint, _ pen: Double) -> String {
-        String(
-            format: "%.\(Self.decimals)f %.\(Self.decimals)f",
-            Double(point.x) + pen,
-            Double(point.y)
-        )
+      String(
+        format: "%.\(Self.decimals)f %.\(Self.decimals)f",
+        Double(point.x) + pen,
+        Double(point.y)
+      )
     }
-}
+  }
 
 #endif

@@ -50,7 +50,7 @@ internal let expectedOperationResultHex = """
   """
 
 internal let expectedOfferHashHex =
-    "e580a49c70482101809c185ccd0855771f22321dc777c0b093a6df7a7d83d286"
+  "e580a49c70482101809c185ccd0855771f22321dc777c0b093a6df7a7d83d286"
 
 internal let expectedOfferUri = """
   rapp:qGZzY2hlbWVkcmFwcGZzdWl0ZXOBeCROb2lzZV9YWHBzazNfMjU1MTlfQ2hhQ2hhUG9seV9TSEEyNTZ\

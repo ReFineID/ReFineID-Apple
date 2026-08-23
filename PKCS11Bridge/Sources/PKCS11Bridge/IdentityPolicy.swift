@@ -16,40 +16,40 @@ import Security
 /// applications and exposes only the contentCommitment identities, so
 /// a signing key picker cannot offer the wrong key.
 internal enum IdentityPolicy {
-    /// The contentCommitment (nonRepudiation) bit in the key-usage mask
-    /// reported by SecCertificateCopyValues.
-    private static let contentCommitmentBit = 2
+  /// The contentCommitment (nonRepudiation) bit in the key-usage mask
+  /// reported by SecCertificateCopyValues.
+  private static let contentCommitmentBit = 2
 
-    /// The marker in the loaded library's file name that selects the
-    /// signing profile.
-    private static let signingNameMarker = "_sign"
+  /// The marker in the loaded library's file name that selects the
+  /// signing profile.
+  private static let signingNameMarker = "_sign"
 
-    /// Whether this copy of the module was loaded under the signing
-    /// name.
-    internal static let isSigningProfile: Bool = {
-        var info = Dl_info()
-        guard dladdr(#dsohandle, &info) != 0, let cName = info.dli_fname else {
-            return false
-        }
-        let fileName = URL(fileURLWithPath: String(cString: cName)).lastPathComponent
-        return fileName.contains(signingNameMarker)
-    }()
-
-    /// Whether the module exposes the identity behind this certificate.
-    internal static func exposes(_ certificate: SecCertificate) -> Bool {
-        let committing = keyUsage(certificate) & contentCommitmentBit != 0
-        return isSigningProfile ? committing : !committing
+  /// Whether this copy of the module was loaded under the signing
+  /// name.
+  internal static let isSigningProfile: Bool = {
+    var info = Dl_info()
+    guard dladdr(#dsohandle, &info) != 0, let cName = info.dli_fname else {
+      return false
     }
+    let fileName = URL(fileURLWithPath: String(cString: cName)).lastPathComponent
+    return fileName.contains(signingNameMarker)
+  }()
 
-    /// The certificate's key-usage bitmask; zero when absent.
-    private static func keyUsage(_ certificate: SecCertificate) -> Int {
-        let wanted = [kSecOIDKeyUsage] as CFArray
-        guard
-            let values = SecCertificateCopyValues(certificate, wanted, nil)
-                as? [String: [String: Any]],
-            let usage = values[kSecOIDKeyUsage as String],
-            let mask = usage[kSecPropertyKeyValue as String] as? Int
-        else { return 0 }
-        return mask
-    }
+  /// Whether the module exposes the identity behind this certificate.
+  internal static func exposes(_ certificate: SecCertificate) -> Bool {
+    let committing = keyUsage(certificate) & contentCommitmentBit != 0
+    return isSigningProfile ? committing : !committing
+  }
+
+  /// The certificate's key-usage bitmask; zero when absent.
+  private static func keyUsage(_ certificate: SecCertificate) -> Int {
+    let wanted = [kSecOIDKeyUsage] as CFArray
+    guard
+      let values = SecCertificateCopyValues(certificate, wanted, nil)
+        as? [String: [String: Any]],
+      let usage = values[kSecOIDKeyUsage as String],
+      let mask = usage[kSecPropertyKeyValue as String] as? Int
+    else { return 0 }
+    return mask
+  }
 }

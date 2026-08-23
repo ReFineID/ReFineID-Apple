@@ -4,9 +4,9 @@ import Foundation
 
 /// Why a Noise operation could not be carried out.
 internal enum NoiseError: Error {
-    case handshakeIncomplete
-    case malformedMessage
-    case missingKeyMaterial
-    case nonEmptyPayload
-    case wrongTurn
+  case handshakeIncomplete
+  case malformedMessage
+  case missingKeyMaterial
+  case nonEmptyPayload
+  case wrongTurn
 }

@@ -1,29 +1,29 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
 #if canImport(MultipeerConnectivity) && canImport(RappEngine)
-import Foundation
-import Network
-import os
-import RappEngine
-/// Single-use synchronous facade for CryptoTokenKit and registry callbacks.
-///
-/// The blocking boundary contains no protocol logic; an actor-owned RAPP
-/// coordinator performs the authenticated asynchronous exchange.
-public final class RappPersistentRequesterClient: @unchecked Sendable {
+  import Foundation
+  import Network
+  import os
+  import RappEngine
+  /// Single-use synchronous facade for CryptoTokenKit and registry callbacks.
+  ///
+  /// The blocking boundary contains no protocol logic; an actor-owned RAPP
+  /// coordinator performs the authenticated asynchronous exchange.
+  public final class RappPersistentRequesterClient: @unchecked Sendable {
     // MARK: Nested Types
 
     internal struct State: Sendable {
-        internal var started = false
-        internal var connected = false
-        internal var operationStarted = false
-        internal var completed = false
-        internal var coordinator: RappConnectionCoordinator?
-        #if REFINEID_SLIM_RELAY
+      internal var started = false
+      internal var connected = false
+      internal var operationStarted = false
+      internal var completed = false
+      internal var coordinator: RappConnectionCoordinator?
+      #if REFINEID_SLIM_RELAY
         internal var slimSession: SignRelaySession?
         internal var slimRequestID: UUID?
-        #endif
-        internal var response: RappRequesterResponse?
-        internal var error: RappRequesterClientError?
+      #endif
+      internal var response: RappRequesterResponse?
+      internal var error: RappRequesterClientError?
     }
 
     // MARK: Properties
@@ -37,44 +37,44 @@ public final class RappPersistentRequesterClient: @unchecked Sendable {
     /// Frames enter the coordinator in arrival order through this
     /// bounded chain.
     private let frameDelivery = OrderedDelivery(
-        capacity: OrderedDelivery.relayFrameCapacity)
+      capacity: OrderedDelivery.relayFrameCapacity)
     #if REFINEID_SLIM_RELAY
-    internal let pendingSlimRequest = OSAllocatedUnfairLock<Data?>(initialState: nil)
+      internal let pendingSlimRequest = OSAllocatedUnfairLock<Data?>(initialState: nil)
     #endif
     internal var operation: RappRequesterOperation?
 
     #if REFINEID_STREAM_TRANSPORT
-    internal var browser: StreamRelayBrowser?
-    internal var dialer: StreamRelaySession?
+      internal var browser: StreamRelayBrowser?
+      internal var dialer: StreamRelaySession?
     #else
-    internal lazy var relay = PersistentRelaySession(
+      internal lazy var relay = PersistentRelaySession(
         role: .host,
         displayName: displayName
-    ) { [weak self] event in
+      ) { [weak self] event in
         self?.receive(event)
-    }
+      }
     #endif
 
     internal lazy var transport = RappClosureFrameTransport(
-        sender: { [weak self] frame in
-            guard let self else { throw RappRequesterClientError.transport }
-            try await sendOverTransport(frame)
-        },
-        closer: { [weak self] in
-            self?.cancelTransport()
-        }
+      sender: { [weak self] frame in
+        guard let self else { throw RappRequesterClientError.transport }
+        try await sendOverTransport(frame)
+      },
+      closer: { [weak self] in
+        self?.cancelTransport()
+      }
     )
 
     /// Builds a one-shot client that connects over the persistent relay
     /// and resolves its pair from the vault.
     public init(
-        displayName: String,
-        policy: RappRequesterPolicy = .interactive,
-        vault: RappDeviceVault = RappDeviceVault()
+      displayName: String,
+      policy: RappRequesterPolicy = .interactive,
+      vault: RappDeviceVault = RappDeviceVault()
     ) {
-        self.displayName = displayName
-        self.policy = policy
-        self.vault = vault
+      self.displayName = displayName
+      self.policy = policy
+      self.vault = vault
     }
 
     // MARK: Functions
@@ -85,54 +85,54 @@ public final class RappPersistentRequesterClient: @unchecked Sendable {
     /// performs at most one operation; a second call fails as a protocol
     /// error.
     public func perform(_ operation: RappRequesterOperation) throws -> RappRequesterResponse {
-        let accepted = state.withLock { state -> Bool in
-            guard !state.started else { return false }
-            state.started = true
-            return true
-        }
-        guard accepted else { throw RappRequesterClientError.protocolFailure }
-        self.operation = operation
-        startTransport()
+      let accepted = state.withLock { state -> Bool in
+        guard !state.started else { return false }
+        state.started = true
+        return true
+      }
+      guard accepted else { throw RappRequesterClientError.protocolFailure }
+      self.operation = operation
+      startTransport()
 
-        // A device that is not on this network is not slow, it is absent,
-        // and waiting the full operation lifetime to say so leaves the holder
-        // watching a spinner for two minutes over a question already
-        // answered. Discovery is given its own, much shorter deadline.
-        // The first wait consumes the signal, so an answer that arrives
-        // inside the discovery window must not be waited for a second time:
-        // nothing would ever signal again and a settled request would sit out
-        // the whole operation lifetime.
-        var settled = completed.wait(timeout: .now() + policy.discoveryTimeout) == .success
-        if !settled, !state.withLock({ $0.connected }) {
-            state.withLock { state in
-                guard !state.completed else { return }
-                state.completed = true
-                state.error = .peerNotFound
-            }
-            cancelTransport()
-            throw RappRequesterClientError.peerNotFound
+      // A device that is not on this network is not slow, it is absent,
+      // and waiting the full operation lifetime to say so leaves the holder
+      // watching a spinner for two minutes over a question already
+      // answered. Discovery is given its own, much shorter deadline.
+      // The first wait consumes the signal, so an answer that arrives
+      // inside the discovery window must not be waited for a second time:
+      // nothing would ever signal again and a settled request would sit out
+      // the whole operation lifetime.
+      var settled = completed.wait(timeout: .now() + policy.discoveryTimeout) == .success
+      if !settled, !state.withLock({ $0.connected }) {
+        state.withLock { state in
+          guard !state.completed else { return }
+          state.completed = true
+          state.error = .peerNotFound
         }
-
-        if !settled {
-            settled = completed.wait(timeout: .now() + policy.synchronousWaitTimeout) == .success
-        }
-        guard settled else {
-            let coordinator = state.withLock { state -> RappConnectionCoordinator? in
-                guard !state.completed else { return state.coordinator }
-                state.completed = true
-                state.error = .timedOut
-                return state.coordinator
-            }
-            Task { await coordinator?.close() }
-            cancelTransport()
-            throw RappRequesterClientError.timedOut
-        }
-
         cancelTransport()
-        return try state.withLock { state in
-            if let response = state.response { return response }
-            throw state.error ?? RappRequesterClientError.transport
+        throw RappRequesterClientError.peerNotFound
+      }
+
+      if !settled {
+        settled = completed.wait(timeout: .now() + policy.synchronousWaitTimeout) == .success
+      }
+      guard settled else {
+        let coordinator = state.withLock { state -> RappConnectionCoordinator? in
+          guard !state.completed else { return state.coordinator }
+          state.completed = true
+          state.error = .timedOut
+          return state.coordinator
         }
+        Task { await coordinator?.close() }
+        cancelTransport()
+        throw RappRequesterClientError.timedOut
+      }
+
+      cancelTransport()
+      return try state.withLock { state in
+        if let response = state.response { return response }
+        throw state.error ?? RappRequesterClientError.transport
+      }
     }
 
     // MARK: Lifecycle
@@ -140,41 +140,41 @@ public final class RappPersistentRequesterClient: @unchecked Sendable {
     /// The most recently made pairing, which is the one to use when the
     /// holder has not chosen among several.
     private static func newestPairID(in vault: RappDeviceVault) async throws -> Data? {
-        try await RappPairCatalog(vault: vault)
-            .activePairs()
-            .max { $0.createdAtMilliseconds < $1.createdAtMilliseconds }?
-            .pairID
+      try await RappPairCatalog(vault: vault)
+        .activePairs()
+        .max { $0.createdAtMilliseconds < $1.createdAtMilliseconds }?
+        .pairID
     }
 
     internal func receive(_ event: PersistentRelayEvent) {
-        switch event {
-        case .connected:
-            state.withLock { $0.connected = true }
-            Task { await establish() }
+      switch event {
+      case .connected:
+        state.withLock { $0.connected = true }
+        Task { await establish() }
 
-        case .frame(let frame):
-            #if REFINEID_SLIM_RELAY
-            deliverInOrder { [weak self] in await self?.receiveSlim(frame) }
-            #else
-            let coordinator = state.withLock { $0.coordinator }
-            deliverInOrder { await coordinator?.receive(frame) }
-            #endif
+      case .frame(let frame):
+        #if REFINEID_SLIM_RELAY
+          deliverInOrder { [weak self] in await self?.receiveSlim(frame) }
+        #else
+          let coordinator = state.withLock { $0.coordinator }
+          deliverInOrder { await coordinator?.receive(frame) }
+        #endif
 
-        case .closed:
-            let coordinator = state.withLock { $0.coordinator }
-            deliverInOrder { [weak self] in
-                await coordinator?.transportClosed()
-                self?.finish(error: .transport)
-            }
+      case .closed:
+        let coordinator = state.withLock { $0.coordinator }
+        deliverInOrder { [weak self] in
+          await coordinator?.transportClosed()
+          self?.finish(error: .transport)
         }
+      }
     }
 
     /// Runs `work` after every delivery enqueued before it; a peer that
     /// outruns the bounded chain ends the request as a transport failure.
     private func deliverInOrder(_ work: @escaping @Sendable () async -> Void) {
-        if frameDelivery.deliver(work) { return }
-        cancelTransport()
-        finish(error: .transport)
+      if frameDelivery.deliver(work) { return }
+      cancelTransport()
+      finish(error: .transport)
     }
 
     /// The pairing this request runs over, selecting the newest when
@@ -185,45 +185,45 @@ public final class RappPersistentRequesterClient: @unchecked Sendable {
     /// the one they made to use. Refusing here asked for a fresh code the
     /// holder had already scanned.
     internal func resolvedPairID() async throws -> Data? {
-        let pairIDs = try vault.activePairIDs()
-        guard !pairIDs.isEmpty else { return nil }
-        if let selected = try vault.selectedPairID() {
-            guard pairIDs.contains(selected) else {
-                try vault.clearSelectedPair()
-                return nil
-            }
-            return selected
+      let pairIDs = try vault.activePairIDs()
+      guard !pairIDs.isEmpty else { return nil }
+      if let selected = try vault.selectedPairID() {
+        guard pairIDs.contains(selected) else {
+          try vault.clearSelectedPair()
+          return nil
         }
-        if let newest = try await Self.newestPairID(in: vault) {
-            try vault.selectPair(pairID: newest)
-            return newest
-        }
-        return nil
+        return selected
+      }
+      if let newest = try await Self.newestPairID(in: vault) {
+        try vault.selectPair(pairID: newest)
+        return newest
+      }
+      return nil
     }
 
     /// Settles the request with the answer the holder gave.
     internal func finish(response: RappRequesterResponse) {
-        settle(response: response, error: nil)
+      settle(response: response, error: nil)
     }
 
     /// Settles the request with the reason it produced no answer.
     internal func finish(error: RappRequesterClientError) {
-        settle(response: nil, error: error)
+      settle(response: nil, error: error)
     }
 
     /// Records the outcome and releases the blocking caller, once.
     private func settle(
-        response: RappRequesterResponse?,
-        error: RappRequesterClientError?
+      response: RappRequesterResponse?,
+      error: RappRequesterClientError?
     ) {
-        let shouldSignal = state.withLock { state -> Bool in
-            guard !state.completed else { return false }
-            state.completed = true
-            state.response = response
-            state.error = error
-            return true
-        }
-        if shouldSignal { completed.signal() }
+      let shouldSignal = state.withLock { state -> Bool in
+        guard !state.completed else { return false }
+        state.completed = true
+        state.response = response
+        state.error = error
+        return true
+      }
+      if shouldSignal { completed.signal() }
     }
-}
+  }
 #endif

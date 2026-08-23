@@ -18,51 +18,51 @@ import Foundation
 ///
 /// `@unchecked Sendable` is sound because every access takes the lock.
 internal final class RefusedUnseal: @unchecked Sendable {
-    internal static let shared = RefusedUnseal()
+  internal static let shared = RefusedUnseal()
 
-    /// Seconds a refusal blocks the identical retry.
-    ///
-    /// Long enough that a card resting on the antenna is not hammered,
-    /// short enough that lifting the card, checking the number and trying
-    /// again meets a fresh attempt.
-    private static let retryHoldoffSeconds = 30
+  /// Seconds a refusal blocks the identical retry.
+  ///
+  /// Long enough that a card resting on the antenna is not hammered,
+  /// short enough that lifting the card, checking the number and trying
+  /// again meets a fresh attempt.
+  private static let retryHoldoffSeconds = 30
 
-    /// The holdoff as the clock measures it.
-    private static let retryHoldoff: Duration = .seconds(retryHoldoffSeconds)
+  /// The holdoff as the clock measures it.
+  private static let retryHoldoff: Duration = .seconds(retryHoldoffSeconds)
 
-    private let lock = NSLock()
-    private var fingerprint: Data?
-    private var answerToReset: Data?
-    private var refusedAt: ContinuousClock.Instant?
+  private let lock = NSLock()
+  private var fingerprint: Data?
+  private var answerToReset: Data?
+  private var refusedAt: ContinuousClock.Instant?
 
-    /// Whether this exact number was just refused for this card.
-    internal func isRefused(fingerprint: Data, answerToReset: Data?) -> Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        guard let refusedAt,
-              fingerprint == self.fingerprint,
-              answerToReset == self.answerToReset
-        else {
-            return false
-        }
-        return refusedAt.duration(to: ContinuousClock.now) < Self.retryHoldoff
+  /// Whether this exact number was just refused for this card.
+  internal func isRefused(fingerprint: Data, answerToReset: Data?) -> Bool {
+    lock.lock()
+    defer { lock.unlock() }
+    guard let refusedAt,
+      fingerprint == self.fingerprint,
+      answerToReset == self.answerToReset
+    else {
+      return false
     }
+    return refusedAt.duration(to: ContinuousClock.now) < Self.retryHoldoff
+  }
 
-    /// Records a refusal the next offer must not repeat.
-    internal func record(fingerprint: Data, answerToReset: Data?) {
-        lock.lock()
-        self.fingerprint = fingerprint
-        self.answerToReset = answerToReset
-        refusedAt = ContinuousClock.now
-        lock.unlock()
-    }
+  /// Records a refusal the next offer must not repeat.
+  internal func record(fingerprint: Data, answerToReset: Data?) {
+    lock.lock()
+    self.fingerprint = fingerprint
+    self.answerToReset = answerToReset
+    refusedAt = ContinuousClock.now
+    lock.unlock()
+  }
 
-    /// Drops the latch; a successful unseal earns the next one a try.
-    internal func clear() {
-        lock.lock()
-        fingerprint = nil
-        answerToReset = nil
-        refusedAt = nil
-        lock.unlock()
-    }
+  /// Drops the latch; a successful unseal earns the next one a try.
+  internal func clear() {
+    lock.lock()
+    fingerprint = nil
+    answerToReset = nil
+    refusedAt = nil
+    lock.unlock()
+  }
 }

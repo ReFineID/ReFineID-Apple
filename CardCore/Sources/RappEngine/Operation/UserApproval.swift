@@ -7,13 +7,13 @@ import Foundation
 /// The approval carries the request hash, so it authorizes that request and
 /// no other. Moving it to a different request fails the comparison.
 internal struct UserApproval: Equatable {
-    internal let operationIdentifier: Data
-    internal let requestHash: Data
-    internal let approvedAtMilliseconds: UInt64
+  internal let operationIdentifier: Data
+  internal let requestHash: Data
+  internal let approvedAtMilliseconds: UInt64
 
-    internal init(for request: OperationRequest, approvedAtMilliseconds: UInt64) throws {
-        self.operationIdentifier = request.operationIdentifier
-        self.requestHash = try request.requestHash()
-        self.approvedAtMilliseconds = approvedAtMilliseconds
-    }
+  internal init(for request: OperationRequest, approvedAtMilliseconds: UInt64) throws {
+    self.operationIdentifier = request.operationIdentifier
+    self.requestHash = try request.requestHash()
+    self.approvedAtMilliseconds = approvedAtMilliseconds
+  }
 }

@@ -22,36 +22,36 @@ import Foundation
 /// Provenance: lifted from the ReFineID iOS browser donor
 /// `Sources/ReFineIDBrowserKit/Crypto/KDF.swift`.
 internal enum PaceKeyDerivation {
-    /// Which of the three PACE keys a derivation produces.
-    ///
-    /// The raw value is the Doc 9303 counter appended to the secret, so the
-    /// enumeration is the only place those numbers appear.
-    internal enum KeyKind: UInt32 {
-        /// The secure-messaging encryption key, counter one.
-        case encryption = 1
+  /// Which of the three PACE keys a derivation produces.
+  ///
+  /// The raw value is the Doc 9303 counter appended to the secret, so the
+  /// enumeration is the only place those numbers appear.
+  internal enum KeyKind: UInt32 {
+    /// The secure-messaging encryption key, counter one.
+    case encryption = 1
 
-        /// The secure-messaging authentication key, counter two.
-        case mac = 2
+    /// The secure-messaging authentication key, counter two.
+    case mac = 2
 
-        /// The key derived from the shared password that decrypts the PACE
-        /// nonce, counter three.
-        case password = 3
+    /// The key derived from the shared password that decrypts the PACE
+    /// nonce, counter three.
+    case password = 3
+  }
+
+  /// The derived key length in bytes: the whole SHA-256 digest, which is
+  /// exactly an AES-256 key.
+  internal static let derivedKeyLength = SHA256.byteCount
+
+  /// Derives one PACE key from `secret`.
+  ///
+  /// For the session keys `secret` is the shared secret agreed by the key
+  /// agreement; for `password` it is the encoded password, and the card
+  /// access number that produced it must never outlive the derivation.
+  internal static func derivedKey(from secret: Data, for kind: KeyKind) -> Data {
+    var input = secret
+    withUnsafeBytes(of: kind.rawValue.bigEndian) { counterBytes in
+      input.append(contentsOf: counterBytes)
     }
-
-    /// The derived key length in bytes: the whole SHA-256 digest, which is
-    /// exactly an AES-256 key.
-    internal static let derivedKeyLength = SHA256.byteCount
-
-    /// Derives one PACE key from `secret`.
-    ///
-    /// For the session keys `secret` is the shared secret agreed by the key
-    /// agreement; for `password` it is the encoded password, and the card
-    /// access number that produced it must never outlive the derivation.
-    internal static func derivedKey(from secret: Data, for kind: KeyKind) -> Data {
-        var input = secret
-        withUnsafeBytes(of: kind.rawValue.bigEndian) { counterBytes in
-            input.append(contentsOf: counterBytes)
-        }
-        return Data(SHA256.hash(data: input))
-    }
+    return Data(SHA256.hash(data: input))
+  }
 }

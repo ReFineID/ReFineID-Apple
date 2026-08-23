@@ -15,12 +15,12 @@ import Foundation
 /// keychain the rest of the system already uses. The trade is recorded
 /// here rather than repeated at five call sites.
 internal enum KeychainPlatform {
-    /// Whether `kSecUseDataProtectionKeychain` may be requested.
-    internal static var usesDataProtection: Bool {
-        #if os(iOS)
-        true
-        #else
-        false
-        #endif
-    }
+  /// Whether `kSecUseDataProtectionKeychain` may be requested.
+  internal static var usesDataProtection: Bool {
+    #if os(iOS)
+      true
+    #else
+      false
+    #endif
+  }
 }

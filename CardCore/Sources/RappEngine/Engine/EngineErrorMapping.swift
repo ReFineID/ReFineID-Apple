@@ -7,43 +7,43 @@ import Foundation
 /// A failure the peer caused is a protocol violation; the same failure caused
 /// locally is a programming error, which is why the two mappings differ.
 internal func enginePeerError(_ error: AuthorizationError) -> EngineError {
-    switch error {
-    case .journal(let journal):
-        engineJournalError(journal)
+  switch error {
+  case .journal(let journal):
+    engineJournalError(journal)
 
-    case .expired:
-        .peerRequestExpired
+  case .expired:
+    .peerRequestExpired
 
-    case .commitMismatch:
-        .authenticatedProtocolViolation(.referenceMismatch)
+  case .commitMismatch:
+    .authenticatedProtocolViolation(.referenceMismatch)
 
-    case .wrongStage:
-        .authenticatedProtocolViolation(.illegalOperationTransition)
+  case .wrongStage:
+    .authenticatedProtocolViolation(.illegalOperationTransition)
 
-    case .approvalMismatch, .invalidResult:
-        .localInvariantFailure
-    }
+  case .approvalMismatch, .invalidResult:
+    .localInvariantFailure
+  }
 }
 
 /// Maps an authorization failure the local caller caused.
 internal func engineLocalError(_ error: AuthorizationError) -> EngineError {
-    switch error {
-    case .journal(let journal):
-        engineJournalError(journal)
+  switch error {
+  case .journal(let journal):
+    engineJournalError(journal)
 
-    case .expired, .approvalMismatch, .commitMismatch, .wrongStage, .invalidResult:
-        .invalidLocalTransition
-    }
+  case .expired, .approvalMismatch, .commitMismatch, .wrongStage, .invalidResult:
+    .invalidLocalTransition
+  }
 }
 
 /// Maps a journal failure, keeping persistence distinct from an invariant
 /// breach so a caller can tell a storage outage from a corrupted record.
 internal func engineJournalError(_ error: JournalError) -> EngineError {
-    switch error {
-    case .persistence:
-        .persistence
+  switch error {
+  case .persistence:
+    .persistence
 
-    case .invalidState, .requestHashMismatch, .alreadyTransmitted:
-        .localInvariantFailure
-    }
+  case .invalidState, .requestHashMismatch, .alreadyTransmitted:
+    .localInvariantFailure
+  }
 }

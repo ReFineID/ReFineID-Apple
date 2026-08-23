@@ -2,23 +2,23 @@
 
 #if DEBUG && os(iOS) && REFINEID_REMOTE_CARD
 
-import CardCore
-import Foundation
+  import CardCore
+  import Foundation
 
-/// Pairs with an offer handed in on the command line.
-///
-/// Pairing needs two devices and a camera, and a device driven from a
-/// cable has neither a holder nor a view of the other's screen. This
-/// stands in for the scan so the whole ceremony -- dial, handshake,
-/// confirmation, and the record both sides keep -- can be driven and
-/// measured without a hand on either device.
-///
-/// It grants exactly what the scan grants and nothing more: the offer
-/// still has to be live, the peer still has to answer the handshake, and
-/// the pairing still ends in the same vault. The offer is never printed.
-///
-/// DEBUG only.
-internal enum DebugPairWithOffer {
+  /// Pairs with an offer handed in on the command line.
+  ///
+  /// Pairing needs two devices and a camera, and a device driven from a
+  /// cable has neither a holder nor a view of the other's screen. This
+  /// stands in for the scan so the whole ceremony -- dial, handshake,
+  /// confirmation, and the record both sides keep -- can be driven and
+  /// measured without a hand on either device.
+  ///
+  /// It grants exactly what the scan grants and nothing more: the offer
+  /// still has to be live, the peer still has to answer the handshake, and
+  /// the pairing still ends in the same vault. The offer is never printed.
+  ///
+  /// DEBUG only.
+  internal enum DebugPairWithOffer {
     // MARK: Static Properties
 
     /// How long a pairing is allowed to take.
@@ -41,40 +41,40 @@ internal enum DebugPairWithOffer {
     /// Runs one pairing and reports whether a record came out of it.
     @MainActor
     internal static func run(offerURI: String) async -> DebugModeReport {
-        let model = RappPairingModel()
-        // A length, never the offer: it answers whether the whole of it
-        // survived the cable, which is the one thing a caller cannot see.
-        DebugConsole.emit("pair-with-offer: offer characters: " + String(offerURI.count))
-        let trimmed = offerURI.trimmingCharacters(in: .whitespacesAndNewlines)
-        let normalizedCode = RappPairingCode.normalize(trimmed)
-        if trimmed.count <= maxPairingCodeLength, RappPairingCode.isValid(normalizedCode) {
-            model.acceptPairingCode(normalizedCode)
-        } else {
-            model.acceptOfferWithoutScanning(trimmed)
-        }
+      let model = RappPairingModel()
+      // A length, never the offer: it answers whether the whole of it
+      // survived the cable, which is the one thing a caller cannot see.
+      DebugConsole.emit("pair-with-offer: offer characters: " + String(offerURI.count))
+      let trimmed = offerURI.trimmingCharacters(in: .whitespacesAndNewlines)
+      let normalizedCode = RappPairingCode.normalize(trimmed)
+      if trimmed.count <= maxPairingCodeLength, RappPairingCode.isValid(normalizedCode) {
+        model.acceptPairingCode(normalizedCode)
+      } else {
+        model.acceptOfferWithoutScanning(trimmed)
+      }
 
-        for _ in 0..<attempts {
-            switch model.phase {
-            case .paired(let summary):
-                return DebugModeReport(
-                    lines: [
-                        "pair-with-offer: paired over " + summary.transportProfile,
-                        "pair-with-offer: pairings held: " + String(heldPairCount())
-                    ],
-                    succeeded: true)
+      for _ in 0..<attempts {
+        switch model.phase {
+        case .paired(let summary):
+          return DebugModeReport(
+            lines: [
+              "pair-with-offer: paired over " + summary.transportProfile,
+              "pair-with-offer: pairings held: " + String(heldPairCount()),
+            ],
+            succeeded: true)
 
-            case .failed(let message):
-                return DebugModeReport(
-                    lines: ["pair-with-offer: " + message],
-                    succeeded: false)
-
-            case .connecting, .idle, .offer, .codeEntry:
-                try? await Task.sleep(for: pause)
-            }
-        }
-        return DebugModeReport(
-            lines: ["pair-with-offer: the peer never completed the ceremony"],
+        case .failed(let message):
+          return DebugModeReport(
+            lines: ["pair-with-offer: " + message],
             succeeded: false)
+
+        case .connecting, .idle, .offer, .codeEntry:
+          try? await Task.sleep(for: pause)
+        }
+      }
+      return DebugModeReport(
+        lines: ["pair-with-offer: the peer never completed the ceremony"],
+        succeeded: false)
     }
 
     /// Makes an offer, prints it, and waits for a peer to take it.
@@ -86,47 +86,47 @@ internal enum DebugPairWithOffer {
     /// alone.
     @MainActor
     internal static func offer() async -> DebugModeReport {
-        let model = RappPairingModel()
-        model.createOffer()
+      let model = RappPairingModel()
+      model.createOffer()
 
-        var announced = false
-        for _ in 0..<attempts {
-            switch model.phase {
-            case .offer(let uri):
-                if !announced {
-                    announced = true
-                    DebugConsole.emit(offerPrefix + uri)
-                }
-                try? await Task.sleep(for: pause)
+      var announced = false
+      for _ in 0..<attempts {
+        switch model.phase {
+        case .offer(let uri):
+          if !announced {
+            announced = true
+            DebugConsole.emit(offerPrefix + uri)
+          }
+          try? await Task.sleep(for: pause)
 
-            case .paired(let summary):
-                return DebugModeReport(
-                    lines: [
-                        "offer-remote-reader: paired over " + summary.transportProfile,
-                        "offer-remote-reader: pairings held: " + String(heldPairCount())
-                    ],
-                    succeeded: true)
+        case .paired(let summary):
+          return DebugModeReport(
+            lines: [
+              "offer-remote-reader: paired over " + summary.transportProfile,
+              "offer-remote-reader: pairings held: " + String(heldPairCount()),
+            ],
+            succeeded: true)
 
-            case .failed(let message):
-                return DebugModeReport(
-                    lines: ["offer-remote-reader: " + message],
-                    succeeded: false)
-
-            case .connecting, .idle, .codeEntry:
-                try? await Task.sleep(for: pause)
-            }
-        }
-        return DebugModeReport(
-            lines: ["offer-remote-reader: no peer took the offer"],
+        case .failed(let message):
+          return DebugModeReport(
+            lines: ["offer-remote-reader: " + message],
             succeeded: false)
+
+        case .connecting, .idle, .codeEntry:
+          try? await Task.sleep(for: pause)
+        }
+      }
+      return DebugModeReport(
+        lines: ["offer-remote-reader: no peer took the offer"],
+        succeeded: false)
     }
 
     /// How many pairings this device holds after the attempt.
     ///
     /// A count, never an identifier: it answers whether the record landed.
     private static func heldPairCount() -> Int {
-        ((try? RappDeviceVault().activePairIDs()) ?? []).count
+      ((try? RappDeviceVault().activePairIDs()) ?? []).count
     }
-}
+  }
 
 #endif

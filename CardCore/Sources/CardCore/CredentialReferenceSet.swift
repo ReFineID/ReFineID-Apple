@@ -15,21 +15,21 @@
 /// `referenceDataNotFound` without touching any retry counter, so
 /// asking costs nothing but one command.
 public enum CredentialReferenceSet: Equatable, Sendable {
-    /// FINEID S1 v4.2 §3.5.2 numbering, the citizen cards.
-    case citizen
+  /// FINEID S1 v4.2 §3.5.2 numbering, the citizen cards.
+  case citizen
 
-    /// FINEID S4-2 v4.0 §4.2 security-data-object numbering, the
-    /// organization cards.
-    case organization
+  /// FINEID S4-2 v4.0 §4.2 security-data-object numbering, the
+  /// organization cards.
+  case organization
 
-    /// The VERIFY P2 reference for a role under this numbering.
-    internal func reference(for role: CredentialRole) -> UInt8 {
-        switch self {
-        case .citizen:
-            FineidValues.reference(for: role)
+  /// The VERIFY P2 reference for a role under this numbering.
+  internal func reference(for role: CredentialRole) -> UInt8 {
+    switch self {
+    case .citizen:
+      FineidValues.reference(for: role)
 
-        case .organization:
-            FineidValues.organizationReference(for: role)
-        }
+    case .organization:
+      FineidValues.organizationReference(for: role)
     }
+  }
 }

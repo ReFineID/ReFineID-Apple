@@ -10,8 +10,8 @@
 /// Every rule in the formal model names the role or roles that implement it,
 /// so an endpoint runs exactly the projection belonging to it.
 internal enum EndpointRole: String, CaseIterable, Sendable {
-    case requester = "requester"
-    case proxy = "proxy"
+  case requester = "requester"
+  case proxy = "proxy"
 }
 
 // swiftlint:enable sorted_enum_cases

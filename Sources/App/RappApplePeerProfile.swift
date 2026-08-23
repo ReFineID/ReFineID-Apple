@@ -2,18 +2,18 @@
 
 #if REFINEID_REMOTE_CARD
 
-import CardCore
-import Foundation
-import RappEngine
-import SwiftUI
+  import CardCore
+  import Foundation
+  import RappEngine
+  import SwiftUI
 
-#if os(iOS)
-import UIKit
-#elseif os(macOS)
-import AppKit
-#endif
+  #if os(iOS)
+    import UIKit
+  #elseif os(macOS)
+    import AppKit
+  #endif
 
-internal enum RappApplePeerProfile {
+  internal enum RappApplePeerProfile {
     internal static let name = "apple-peer-v1"
     internal static let candidateID = "apple-peer-v1.nearby"
 
@@ -26,35 +26,35 @@ internal enum RappApplePeerProfile {
 
     /// Only profiles implemented end to end by the current phone executor.
     internal static let supportedCredentialProfiles = [
-        "fi.refineid.card-status.v1",
-        "fi.refineid.authentication.v1",
-        "fi.refineid.document-signing.v1"
+      "fi.refineid.card-status.v1",
+      "fi.refineid.authentication.v1",
+      "fi.refineid.document-signing.v1",
     ]
 
     internal static func isSupported(_ profile: String) -> Bool {
-        supportedCredentialProfiles.contains(profile)
+      supportedCredentialProfiles.contains(profile)
     }
 
     internal static func label(for profile: String) -> String {
-        switch profile {
-        case "fi.refineid.card-status.v1":
-            String(localized: "Card status")
+      switch profile {
+      case "fi.refineid.card-status.v1":
+        String(localized: "Card status")
 
-        case "fi.refineid.authentication.v1":
-            String(localized: "Browser authentication")
+      case "fi.refineid.authentication.v1":
+        String(localized: "Browser authentication")
 
-        case "fi.refineid.document-signing.v1":
-            String(localized: "Document signing")
+      case "fi.refineid.document-signing.v1":
+        String(localized: "Document signing")
 
-        case "fi.refineid.activation.v1":
-            String(localized: "Card activation")
+      case "fi.refineid.activation.v1":
+        String(localized: "Card activation")
 
-        case "fi.refineid.pin-management.v1":
-            String(localized: "PIN management")
+      case "fi.refineid.pin-management.v1":
+        String(localized: "PIN management")
 
-        default:
-            String(localized: "Unknown access")
-        }
+      default:
+        String(localized: "Unknown access")
+      }
     }
-}
+  }
 #endif

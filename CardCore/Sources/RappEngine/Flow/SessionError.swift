@@ -9,16 +9,16 @@ import Foundation
 /// not attributable to the peer and ends only the session, while an
 /// authenticated violation ends the pairing.
 internal enum SessionError: Error, Equatable {
-    case closed
-    case duplicateReady
-    case integrityFailure
-    case message(MessageFieldError)
-    case noise
+  case closed
+  case duplicateReady
+  case integrityFailure
+  case message(MessageFieldError)
+  case noise
 
-    /// An authenticated violation. The caller must end the stored pairing.
-    case pairingMustEnd(cause: SessionViolation)
-    case parameterMismatch
-    case readyIncomplete
-    case roleViolation
-    case unexpectedMessage
+  /// An authenticated violation. The caller must end the stored pairing.
+  case pairingMustEnd(cause: SessionViolation)
+  case parameterMismatch
+  case readyIncomplete
+  case roleViolation
+  case unexpectedMessage
 }

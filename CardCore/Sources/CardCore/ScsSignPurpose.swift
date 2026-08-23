@@ -9,9 +9,9 @@
 /// cover an origin-bound challenge, a qualified signature covers the
 /// document the holder chose to sign.
 public enum ScsSignPurpose: Equatable, Sendable {
-    /// The PIN1-gated authentication key.
-    case authentication
+  /// The PIN1-gated authentication key.
+  case authentication
 
-    /// The PIN2-gated qualified-signature key.
-    case qualified
+  /// The PIN2-gated qualified-signature key.
+  case qualified
 }

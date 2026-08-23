@@ -4,11 +4,11 @@ import Foundation
 
 /// A handshake token as written in a Noise message pattern.
 internal enum NoiseToken {
-    case ephemeral
-    case ephemeralEphemeral
-    case ephemeralStatic
-    case presharedKey
-    case staticEphemeral
-    case staticKey
-    case staticStatic
+  case ephemeral
+  case ephemeralEphemeral
+  case ephemeralStatic
+  case presharedKey
+  case staticEphemeral
+  case staticKey
+  case staticStatic
 }

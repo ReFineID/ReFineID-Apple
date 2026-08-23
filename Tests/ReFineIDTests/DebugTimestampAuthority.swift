@@ -2,18 +2,18 @@
 
 #if DEBUG && os(macOS)
 
-import Foundation
-import Security
+  import Foundation
+  import Security
 
-@testable import CardCore
+  @testable import CardCore
 
-/// A generated timestamping-only identity for hermetic signing tests.
-internal struct DebugTimestampAuthority {
+  /// A generated timestamping-only identity for hermetic signing tests.
+  internal struct DebugTimestampAuthority {
     /// Failures mean the test identity could not be constructed.
     internal enum Failure: Error {
-        case certificate
-        case key
-        case signature
+      case certificate
+      case key
+      case signature
     }
 
     internal static let p256KeySize = 256
@@ -33,17 +33,17 @@ internal struct DebugTimestampAuthority {
 
     /// SHA-256 AlgorithmIdentifier.
     internal static var sha256Algorithm: Data {
-        DerEncoder.sequence([
-            DerEncoder.objectIdentifier(SignOids.sha256),
-            DerEncoder.null()
-        ])
+      DerEncoder.sequence([
+        DerEncoder.objectIdentifier(SignOids.sha256),
+        DerEncoder.null(),
+      ])
     }
 
     /// ECDSA-with-SHA-256 AlgorithmIdentifier.
     internal static var ecdsaSha256Algorithm: Data {
-        DerEncoder.sequence([
-            DerEncoder.objectIdentifier(SignOids.ecdsaWithSha256)
-        ])
+      DerEncoder.sequence([
+        DerEncoder.objectIdentifier(SignOids.ecdsaWithSha256)
+      ])
     }
 
     /// The self-signed timestamping certificate.
@@ -57,57 +57,57 @@ internal struct DebugTimestampAuthority {
 
     /// Creates a fresh P-256 key and timestamping-only certificate.
     internal static func make() throws -> Self {
-        let attributes: [CFString: Any] = [
-            kSecAttrKeyType: kSecAttrKeyTypeECSECPrimeRandom,
-            kSecAttrKeySizeInBits: Self.p256KeySize
-        ]
-        var error: Unmanaged<CFError>?
-        guard
-            let generatedKey = SecKeyCreateRandomKey(
-                attributes as CFDictionary,
-                &error
-            )
-        else {
-            _ = error?.takeRetainedValue()
-            throw Failure.key
-        }
-        let encodedName = Self.encodedName(Self.commonName)
-        let encodedCertificate = try Self.certificate(
-            key: generatedKey,
-            name: encodedName
+      let attributes: [CFString: Any] = [
+        kSecAttrKeyType: kSecAttrKeyTypeECSECPrimeRandom,
+        kSecAttrKeySizeInBits: Self.p256KeySize,
+      ]
+      var error: Unmanaged<CFError>?
+      guard
+        let generatedKey = SecKeyCreateRandomKey(
+          attributes as CFDictionary,
+          &error
         )
-        guard
-            SecCertificateCreateWithData(nil, encodedCertificate as CFData) != nil
-        else {
-            throw Failure.certificate
-        }
-        return Self(
-            certificate: encodedCertificate,
-            key: generatedKey,
-            name: encodedName
-        )
+      else {
+        _ = error?.takeRetainedValue()
+        throw Failure.key
+      }
+      let encodedName = Self.encodedName(Self.commonName)
+      let encodedCertificate = try Self.certificate(
+        key: generatedKey,
+        name: encodedName
+      )
+      guard
+        SecCertificateCreateWithData(nil, encodedCertificate as CFData) != nil
+      else {
+        throw Failure.certificate
+      }
+      return Self(
+        certificate: encodedCertificate,
+        key: generatedKey,
+        name: encodedName
+      )
     }
 
     /// Creates one Security.framework signature.
     internal static func sign(
-        _ value: Data,
-        key: SecKey,
-        algorithm: SecKeyAlgorithm
+      _ value: Data,
+      key: SecKey,
+      algorithm: SecKeyAlgorithm
     ) throws -> Data {
-        var error: Unmanaged<CFError>?
-        guard
-            let signature = SecKeyCreateSignature(
-                key,
-                algorithm,
-                value as CFData,
-                &error
-            )
-        else {
-            _ = error?.takeRetainedValue()
-            throw Failure.signature
-        }
-        return signature as Data
+      var error: Unmanaged<CFError>?
+      guard
+        let signature = SecKeyCreateSignature(
+          key,
+          algorithm,
+          value as CFData,
+          &error
+        )
+      else {
+        _ = error?.takeRetainedValue()
+        throw Failure.signature
+      }
+      return signature as Data
     }
-}
+  }
 
 #endif

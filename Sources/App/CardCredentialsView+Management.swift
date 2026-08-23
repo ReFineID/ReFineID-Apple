@@ -3,22 +3,22 @@
 import SwiftUI
 
 extension CardCredentialsView {
-    private var managementDestination: some View {
-        #if os(iOS)
-        CardManagementView(cardAccessNumber: managementCardAccessNumber)
-        #else
-        CardManagementView()
-        #endif
-    }
+  private var managementDestination: some View {
+    #if os(iOS)
+      CardManagementView(cardAccessNumber: managementCardAccessNumber)
+    #else
+      CardManagementView()
+    #endif
+  }
 
-    internal var managementSection: some View {
-        Section("Manage") {
-            NavigationLink {
-                managementDestination
-            } label: {
-                Label("Personal Identification Numbers (PINs)", systemImage: "key")
-            }
-            .accessibilityIdentifier("manageCard")
-        }
+  internal var managementSection: some View {
+    Section("Manage") {
+      NavigationLink {
+        managementDestination
+      } label: {
+        Label("Personal Identification Numbers (PINs)", systemImage: "key")
+      }
+      .accessibilityIdentifier("manageCard")
     }
+  }
 }

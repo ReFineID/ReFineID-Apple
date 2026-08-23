@@ -2,25 +2,25 @@
 
 #if os(macOS)
 
-import Foundation
+  import Foundation
 
-extension SignDocumentModel {
+  extension SignDocumentModel {
     /// A signed portrait QR could not be turned into a printable mark.
     internal enum StampPreparationFailure: Error {
-        case rendering
+      case rendering
     }
 
     /// One localized failure vocabulary, shared with iOS.
     internal static func message(for error: Error) -> String {
-        if error is StampPreparationFailure {
-            return String(
-                localized: "error.stampRendering",
-                defaultValue:
-                    "The signed portrait QR could not be rendered. Nothing was written.",
-                table: "DocumentSigning")
-        }
-        return DocumentSigningMessage.message(for: error)
+      if error is StampPreparationFailure {
+        return String(
+          localized: "error.stampRendering",
+          defaultValue:
+            "The signed portrait QR could not be rendered. Nothing was written.",
+          table: "DocumentSigning")
+      }
+      return DocumentSigningMessage.message(for: error)
     }
-}
+  }
 
 #endif

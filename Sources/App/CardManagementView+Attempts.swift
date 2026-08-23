@@ -5,124 +5,124 @@ import SwiftUI
 
 #if os(macOS)
 
-/// How a retry counter is shown: the number against a full card, a
-/// colour band, and a marker so the band never rests on colour alone.
-///
-/// The bands are this app's own rule made visible. Full is green;
-/// below full is orange, because something has already gone wrong
-/// once; one or two is red, the range it refuses to work in; and
-/// zero is blue, because blocked is not a warning but an instruction
-/// - the PUK undoes it.
-extension CardManagementView {
+  /// How a retry counter is shown: the number against a full card, a
+  /// colour band, and a marker so the band never rests on colour alone.
+  ///
+  /// The bands are this app's own rule made visible. Full is green;
+  /// below full is orange, because something has already gone wrong
+  /// once; one or two is red, the range it refuses to work in; and
+  /// zero is blue, because blocked is not a warning but an instruction
+  /// - the PUK undoes it.
+  extension CardManagementView {
     /// The marker beside each count, so the band is never carried by
     /// colour alone.
     private static func attemptsSymbol(_ outcome: RetryProbeOutcome?) -> String {
-        switch outcome {
-        case .remaining(let count):
-            if count.isBlocked {
-                "arrow.counterclockwise.circle.fill"
-            } else if count.attemptsRemaining < RetryFloor.minimumAttemptsToProceed {
-                "xmark.octagon.fill"
-            } else if count.attemptsRemaining < RetryCount.pristineAllowance {
-                "exclamationmark.triangle.fill"
-            } else {
-                "checkmark.circle.fill"
-            }
-
-        case .verified:
-            "checkmark.circle.fill"
-
-        case .locked:
-            "arrow.counterclockwise.circle.fill"
-
-        case .invalidated:
-            "xmark.octagon.fill"
-
-        case .noInformation, .other, .none:
-            "questionmark.circle"
+      switch outcome {
+      case .remaining(let count):
+        if count.isBlocked {
+          "arrow.counterclockwise.circle.fill"
+        } else if count.attemptsRemaining < RetryFloor.minimumAttemptsToProceed {
+          "xmark.octagon.fill"
+        } else if count.attemptsRemaining < RetryCount.pristineAllowance {
+          "exclamationmark.triangle.fill"
+        } else {
+          "checkmark.circle.fill"
         }
+
+      case .verified:
+        "checkmark.circle.fill"
+
+      case .locked:
+        "arrow.counterclockwise.circle.fill"
+
+      case .invalidated:
+        "xmark.octagon.fill"
+
+      case .noInformation, .other, .none:
+        "questionmark.circle"
+      }
     }
 
     /// What VoiceOver says for one reading.
     private static func attemptsSpoken(_ outcome: RetryProbeOutcome?) -> String {
-        switch outcome {
-        case .remaining(let count):
-            if count.isBlocked {
-                String(localized: "blocked - unblock with the PUK")
-            } else if count.attemptsRemaining >= RetryFloor.minimumAttemptsToProceed {
-                String(localized: "\(count.attemptsRemaining) attempts remaining")
-            } else {
-                String(localized: "\(count.attemptsRemaining) attempts remaining - low")
-            }
-
-        case .verified:
-            String(localized: "verified this session")
-
-        case .locked:
-            String(localized: "blocked - unblock with the PUK")
-
-        case .invalidated:
-            String(localized: "invalidated - contact the issuer")
-
-        case .noInformation, .other:
-            String(localized: "state unknown")
-
-        case .none:
-            String(localized: "no card present")
+      switch outcome {
+      case .remaining(let count):
+        if count.isBlocked {
+          String(localized: "blocked - unblock with the PUK")
+        } else if count.attemptsRemaining >= RetryFloor.minimumAttemptsToProceed {
+          String(localized: "\(count.attemptsRemaining) attempts remaining")
+        } else {
+          String(localized: "\(count.attemptsRemaining) attempts remaining - low")
         }
+
+      case .verified:
+        String(localized: "verified this session")
+
+      case .locked:
+        String(localized: "blocked - unblock with the PUK")
+
+      case .invalidated:
+        String(localized: "invalidated - contact the issuer")
+
+      case .noInformation, .other:
+        String(localized: "state unknown")
+
+      case .none:
+        String(localized: "no card present")
+      }
     }
 
     /// One probe outcome as a short cell, counted against a full card.
     private static func attemptsText(_ outcome: RetryProbeOutcome?) -> String {
-        switch outcome {
-        case .remaining(let count):
-            "\(count.attemptsRemaining)/\(RetryCount.pristineAllowance)"
+      switch outcome {
+      case .remaining(let count):
+        "\(count.attemptsRemaining)/\(RetryCount.pristineAllowance)"
 
-        case .verified:
-            String(localized: "verified")
+      case .verified:
+        String(localized: "verified")
 
-        case .locked:
-            String(localized: "blocked")
+      case .locked:
+        String(localized: "blocked")
 
-        case .invalidated:
-            String(localized: "invalidated")
+      case .invalidated:
+        String(localized: "invalidated")
 
-        case .noInformation, .other:
-            String(localized: "unknown")
+      case .noInformation, .other:
+        String(localized: "unknown")
 
-        case .none:
-            String(localized: "no card")
-        }
+      case .none:
+        String(localized: "no card")
+      }
     }
 
     /// Full is green, short of full is orange, refused is red, and
     /// blocked is blue - blocked being the one state that is not a
     /// warning but an instruction: the PUK undoes it.
     private static func attemptsColor(_ outcome: RetryProbeOutcome?) -> Color {
-        switch outcome {
-        case .remaining(let count):
-            if count.isBlocked {
-                .blue
-            } else if count.attemptsRemaining < RetryFloor.minimumAttemptsToProceed {
-                .red
-            } else if count.attemptsRemaining < RetryCount.pristineAllowance {
-                .orange
-            } else {
-                .green
-            }
-
-        case .verified:
-            .green
-
-        case .locked:
-            .blue
-
-        case .invalidated:
-            .red
-
-        case .noInformation, .other, .none:
-            .secondary
+      switch outcome {
+      case .remaining(let count):
+        if count.isBlocked {
+          .blue
+        } else if count.attemptsRemaining < RetryFloor.minimumAttemptsToProceed {
+          .red
+        } else if count.attemptsRemaining < RetryCount.pristineAllowance {
+          .orange
+        } else {
+          .green
         }
+
+      case .verified:
+        .green
+
+      case .locked:
+        .blue
+
+      case .invalidated:
+        .red
+
+      case .noInformation, .other, .none:
+        .secondary
+      }
     }
 
     /// One credential's reading.
@@ -132,19 +132,19 @@ extension CardManagementView {
     /// relies on colour alone when it is not.
     @ViewBuilder
     internal func attemptsEntry(
-        _ name: String,
-        _ outcome: RetryProbeOutcome?
+      _ name: String,
+      _ outcome: RetryProbeOutcome?
     ) -> some View {
-        HStack(spacing: Self.rowSymbolSpacing) {
-            Text("\(name) \(Self.attemptsText(outcome))")
-                .monospacedDigit()
-            Image(systemName: Self.attemptsSymbol(outcome))
-        }
-        .foregroundStyle(Self.attemptsColor(outcome))
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(name)
-        .accessibilityValue(Self.attemptsSpoken(outcome))
+      HStack(spacing: Self.rowSymbolSpacing) {
+        Text("\(name) \(Self.attemptsText(outcome))")
+          .monospacedDigit()
+        Image(systemName: Self.attemptsSymbol(outcome))
+      }
+      .foregroundStyle(Self.attemptsColor(outcome))
+      .accessibilityElement(children: .combine)
+      .accessibilityLabel(name)
+      .accessibilityValue(Self.attemptsSpoken(outcome))
     }
-}
+  }
 
 #endif

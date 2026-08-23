@@ -7,23 +7,23 @@
 
 /// The role a transition rule applies to.
 internal enum RuleRole: String, CaseIterable, Sendable {
-    case requester = "requester"
-    case proxy = "proxy"
-    case both = "both"
+  case requester = "requester"
+  case proxy = "proxy"
+  case both = "both"
 
-    /// Whether an endpoint in `role` implements rules carrying this value.
-    internal func includes(_ role: EndpointRole) -> Bool {
-        switch self {
-        case .both:
-            true
+  /// Whether an endpoint in `role` implements rules carrying this value.
+  internal func includes(_ role: EndpointRole) -> Bool {
+    switch self {
+    case .both:
+      true
 
-        case .requester:
-            role == .requester
+    case .requester:
+      role == .requester
 
-        case .proxy:
-            role == .proxy
-        }
+    case .proxy:
+      role == .proxy
     }
+  }
 }
 
 // swiftlint:enable sorted_enum_cases

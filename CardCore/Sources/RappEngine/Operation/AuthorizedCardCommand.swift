@@ -8,5 +8,5 @@ import Foundation
 /// holds those locally and the platform adapter maps this semantic operation
 /// onto the reviewed card protocol.
 internal struct AuthorizedCardCommand: Equatable {
-    internal let operation: CardOperation
+  internal let operation: CardOperation
 }

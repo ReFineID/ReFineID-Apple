@@ -7,7 +7,7 @@ import Testing
 
 /// One report line.
 internal enum EngineReport {
-    internal static func check(_ passed: Bool, _ label: String) {
-        #expect(passed, "\(label)")
-    }
+  internal static func check(_ passed: Bool, _ label: String) {
+    #expect(passed, "\(label)")
+  }
 }

@@ -10,25 +10,25 @@
 /// A session instance exists per connection attempt; `absent` means no live
 /// instance for the pairing, and `closed` is terminal for the instance.
 internal enum SessionState: String, CaseIterable, Sendable {
-    case absent = "absent"
-    /// Requester only.
-    case connecting = "connecting"
-    case authenticating = "authenticating"
-    case healthy = "healthy"
-    case checking = "checking"
-    case closing = "closing"
-    case closed = "closed"
+  case absent = "absent"
+  /// Requester only.
+  case connecting = "connecting"
+  case authenticating = "authenticating"
+  case healthy = "healthy"
+  case checking = "checking"
+  case closing = "closing"
+  case closed = "closed"
 
-    /// Whether the session can still carry authenticated traffic.
-    internal var carriesAuthenticatedTraffic: Bool {
-        switch self {
-        case .healthy, .checking:
-            true
+  /// Whether the session can still carry authenticated traffic.
+  internal var carriesAuthenticatedTraffic: Bool {
+    switch self {
+    case .healthy, .checking:
+      true
 
-        case .absent, .connecting, .authenticating, .closing, .closed:
-            false
-        }
+    case .absent, .connecting, .authenticating, .closing, .closed:
+      false
     }
+  }
 }
 
 // swiftlint:enable sorted_enum_cases

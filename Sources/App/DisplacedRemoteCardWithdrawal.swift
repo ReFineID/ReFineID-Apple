@@ -18,30 +18,30 @@ import os.log
 /// another process: the first screen's task calls it, and it leaves the
 /// main actor before touching the store.
 internal enum DisplacedRemoteCardWithdrawal {
-    #if DEBUG
+  #if DEBUG
     /// Withdrawal counts, in development builds only.
     ///
     /// Never an identifier. A production build writes no diagnostics.
     private static let log = Logger(
-        subsystem: "fi.refineid.ReFineID", category: "displaced-remote-card"
+      subsystem: "fi.refineid.ReFineID", category: "displaced-remote-card"
     )
-    #endif
+  #endif
 
-    /// Whether this run already withdrew.
-    @MainActor private static var performed = false
+  /// Whether this run already withdrew.
+  @MainActor private static var performed = false
 
-    /// Withdraws once per run, off the main actor.
-    @MainActor
-    internal static func performOnce() {
-        guard !performed else { return }
-        performed = true
-        Task.detached(priority: .utility) {
-            let dropped = DriverConfiguredCredentials.dropDisplacedRemoteCardConfigurations()
-            #if DEBUG
-            Self.log.info("withdrew \(dropped) displaced remote-card configuration(s)")
-            #else
-            _ = dropped
-            #endif
-        }
+  /// Withdraws once per run, off the main actor.
+  @MainActor
+  internal static func performOnce() {
+    guard !performed else { return }
+    performed = true
+    Task.detached(priority: .utility) {
+      let dropped = DriverConfiguredCredentials.dropDisplacedRemoteCardConfigurations()
+      #if DEBUG
+        Self.log.info("withdrew \(dropped) displaced remote-card configuration(s)")
+      #else
+        _ = dropped
+      #endif
     }
+  }
 }

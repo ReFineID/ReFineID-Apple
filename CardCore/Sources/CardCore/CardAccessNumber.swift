@@ -25,44 +25,44 @@ import Foundation
 /// `Sources/ReFineIDBrowserKit/Card/Pace.swift`, whose `establish` took the
 /// six digits as a bare `String` and validated them inline.
 public struct CardAccessNumber: Sendable {
-    /// The exact number of digits a card access number carries.
-    public static let digitCount: Int = 6
+  /// The exact number of digits a card access number carries.
+  public static let digitCount: Int = 6
 
-    /// ASCII "0", the lowest byte a digit may encode as.
-    private static let asciiDigitMinimum: UInt8 = 48
+  /// ASCII "0", the lowest byte a digit may encode as.
+  private static let asciiDigitMinimum: UInt8 = 48
 
-    /// ASCII "9", the highest byte a digit may encode as.
-    private static let asciiDigitMaximum: UInt8 = 57
+  /// ASCII "9", the highest byte a digit may encode as.
+  private static let asciiDigitMaximum: UInt8 = 57
 
-    /// The owned, zeroizing digit storage.
-    private let store: ZeroizingDigitStore
+  /// The owned, zeroizing digit storage.
+  private let store: ZeroizingDigitStore
 
-    /// Validates and takes ownership of the entered digits.
-    ///
-    /// Refuses anything that is not exactly six ASCII digits; there is no
-    /// other way to construct a `CardAccessNumber`, so every downstream use
-    /// has compile-time evidence that validation happened.
-    public init?(digits: String) {
-        let bytes = Array(digits.utf8)
-        guard
-            bytes.count == Self.digitCount,
-            bytes.allSatisfy({ byte in
-                byte >= Self.asciiDigitMinimum && byte <= Self.asciiDigitMaximum
-            })
-        else {
-            return nil
-        }
-        self.store = ZeroizingDigitStore(bytes: bytes)
+  /// Validates and takes ownership of the entered digits.
+  ///
+  /// Refuses anything that is not exactly six ASCII digits; there is no
+  /// other way to construct a `CardAccessNumber`, so every downstream use
+  /// has compile-time evidence that validation happened.
+  public init?(digits: String) {
+    let bytes = Array(digits.utf8)
+    guard
+      bytes.count == Self.digitCount,
+      bytes.allSatisfy({ byte in
+        byte >= Self.asciiDigitMinimum && byte <= Self.asciiDigitMaximum
+      })
+    else {
+      return nil
     }
+    self.store = ZeroizingDigitStore(bytes: bytes)
+  }
 
-    /// The PACE password key derived from these digits.
-    ///
-    /// ICAO Doc 9303 part 11 section 9.7.2 encodes the CAN password as its
-    /// ASCII digits with no further transformation, so the derivation input
-    /// is exactly the stored bytes. This is the only thing the type exposes:
-    /// callers get a derived key, never the digits, so no caller is in a
-    /// position to log or transmit the CAN itself.
-    internal func derivedPasswordKey() -> Data {
-        PaceKeyDerivation.derivedKey(from: Data(store.bytes), for: .password)
-    }
+  /// The PACE password key derived from these digits.
+  ///
+  /// ICAO Doc 9303 part 11 section 9.7.2 encodes the CAN password as its
+  /// ASCII digits with no further transformation, so the derivation input
+  /// is exactly the stored bytes. This is the only thing the type exposes:
+  /// callers get a derived key, never the digits, so no caller is in a
+  /// position to log or transmit the CAN itself.
+  internal func derivedPasswordKey() -> Data {
+    PaceKeyDerivation.derivedKey(from: Data(store.bytes), for: .password)
+  }
 }

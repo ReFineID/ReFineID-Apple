@@ -4,5 +4,5 @@ import Foundation
 
 /// Where a requester's durable operation records are written.
 internal protocol RequesterJournalStore {
-    mutating func persist(_ record: RequesterJournalRecord) throws
+  mutating func persist(_ record: RequesterJournalRecord) throws
 }

@@ -14,56 +14,56 @@ import SwiftUI
 /// access control, and this window never spends a near-last attempt.
 /// Entries are never stored and never echoed anywhere.
 internal struct CardManagementView: View {
-    // MARK: Nested Types
+  // MARK: Nested Types
 
-    /// The four things this window does to a credential in use.
-    ///
-    /// Each is one tab, named in full. The action and the credential
-    /// are read together or not at all: a holder who means PIN 2 must
-    /// not reach PIN 1, and must not have to make two choices to say
-    /// one thing.
-    ///
-    /// Reset rather than unblock: the card resets the retry counter and
-    /// takes a new value whether or not the credential was blocked, so
-    /// someone who has forgotten a PIN does not have to exhaust it
-    /// first to be allowed a new one.
-    internal enum ManagementTask: CaseIterable, Identifiable, Equatable {
-        case changePin1
-        case changePin2
-        case resetPin1
-        case resetPin2
+  /// The four things this window does to a credential in use.
+  ///
+  /// Each is one tab, named in full. The action and the credential
+  /// are read together or not at all: a holder who means PIN 2 must
+  /// not reach PIN 1, and must not have to make two choices to say
+  /// one thing.
+  ///
+  /// Reset rather than unblock: the card resets the retry counter and
+  /// takes a new value whether or not the credential was blocked, so
+  /// someone who has forgotten a PIN does not have to exhaust it
+  /// first to be allowed a new one.
+  internal enum ManagementTask: CaseIterable, Identifiable, Equatable {
+    case changePin1
+    case changePin2
+    case resetPin1
+    case resetPin2
 
-        // MARK: Computed Properties
+    // MARK: Computed Properties
 
-        internal var id: Self { self }
+    internal var id: Self { self }
 
-        /// The tab's label, naming the action and the credential.
-        internal var name: String {
-            switch self {
-            case .changePin1:
-                String(localized: "Change Basic PIN 1")
+    /// The tab's label, naming the action and the credential.
+    internal var name: String {
+      switch self {
+      case .changePin1:
+        String(localized: "Change Basic PIN 1")
 
-            case .changePin2:
-                String(localized: "Change Signature PIN 2")
+      case .changePin2:
+        String(localized: "Change Signature PIN 2")
 
-            case .resetPin1:
-                String(localized: "Reset Basic PIN 1")
+      case .resetPin1:
+        String(localized: "Reset Basic PIN 1")
 
-            case .resetPin2:
-                String(localized: "Reset Signature PIN 2")
-            }
-        }
+      case .resetPin2:
+        String(localized: "Reset Signature PIN 2")
+      }
     }
+  }
 
-    private struct ReaderReadKey: Equatable {
-        let isPresent: Bool
-        let isReady: Bool
-        let transport: CardMaintenance.Transport
-    }
+  private struct ReaderReadKey: Equatable {
+    let isPresent: Bool
+    let isReady: Bool
+    let transport: CardMaintenance.Transport
+  }
 
-    // MARK: Static Properties
+  // MARK: Static Properties
 
-    #if os(macOS)
+  #if os(macOS)
     /// Internal, not private: the counter presentation lives in
     /// CardManagementView+Attempts.swift and lays out the same row.
     internal static let rowSymbolSpacing: CGFloat = 4
@@ -79,432 +79,434 @@ internal struct CardManagementView: View {
     /// The window's own width, which grows with the text inside it.
     @ScaledMetric(relativeTo: .body)
     private var windowWidth: CGFloat = 560
+  #endif
+
+  // MARK: SwiftUI Properties
+
+  @ObservedObject private var cardPresence = CardPresence.shared
+  @ObservedObject private var retryHealth = CredentialRetryHealth.shared
+  @Environment(\.dismiss)
+  private var dismiss
+  @StateObject private var model: CardManagementModel
+  @State private var task: ManagementTask
+  @State private var hasChosenTask = false
+
+  // MARK: Properties
+
+  private let startsWithReaderCard: Bool
+  private let usesProvidedCardAccessNumber: Bool
+  private let activationRequired: Bool
+  private let onActivationSucceeded: () -> Void
+
+  // MARK: Computed Properties
+
+  private var readerCardIsPresent: Bool {
+    #if os(iOS)
+      if DemoMode.shared.isActive {
+        return DemoMode.shared.isReaderCardPresent
+      }
     #endif
+    return cardPresence.hasCompletedInitialScan
+      ? cardPresence.isReaderCardPresent
+      : startsWithReaderCard
+  }
 
-    // MARK: SwiftUI Properties
+  private var readerCardIsReady: Bool {
+    #if os(iOS)
+      if DemoMode.shared.isActive {
+        return DemoMode.shared.isReaderCardPresent
+      }
+    #endif
+    return cardPresence.hasCompletedInitialScan && cardPresence.isReaderCardReady
+  }
 
-    @ObservedObject private var cardPresence = CardPresence.shared
-    @ObservedObject private var retryHealth = CredentialRetryHealth.shared
-    @Environment(\.dismiss)
-    private var dismiss
-    @StateObject private var model: CardManagementModel
-    @State private var task: ManagementTask
-    @State private var hasChosenTask = false
+  private var readerReadKey: ReaderReadKey {
+    ReaderReadKey(
+      isPresent: readerCardIsPresent,
+      isReady: readerCardIsReady,
+      transport: model.transport
+    )
+  }
 
-    // MARK: Properties
+  /// The tasks this card can actually be asked to do.
+  ///
+  /// Activation is offered only while the card is still in its
+  /// factory state; for a card in use there is no such operation,
+  /// and showing it would invite a retry spent for nothing.
+  /// Whether this card is still waiting to be taken into use.
+  ///
+  /// Activation sets both PINs from the code in the issuance letter,
+  /// so while it is available there is nothing else to offer: a PIN
+  /// that has never been set cannot be changed, and resetting one
+  /// would be a second door to the same operation with a retry spent
+  /// on getting there.
+  private var awaitsActivation: Bool {
+    activationRequired || model.offersActivation
+  }
 
-    private let startsWithReaderCard: Bool
-    private let usesProvidedCardAccessNumber: Bool
-    private let activationRequired: Bool
-    private let onActivationSucceeded: () -> Void
+  /// A critical card is a recovery workflow, never a PIN-change workflow.
+  private var availableTasks: [ManagementTask] {
+    switch retryHealth.recovery {
+    case .resetPin1, .resetPin2:
+      [.resetPin1, .resetPin2]
 
-    // MARK: Computed Properties
+    case .useOtherSoftware, .unrecoverable:
+      []
 
-    private var readerCardIsPresent: Bool {
-        #if os(iOS)
-        if DemoMode.shared.isActive {
-            return DemoMode.shared.isReaderCardPresent
-        }
-        #endif
-        return cardPresence.hasCompletedInitialScan
-            ? cardPresence.isReaderCardPresent
-            : startsWithReaderCard
+    case nil:
+      ManagementTask.allCases
     }
+  }
 
-    private var readerCardIsReady: Bool {
-        #if os(iOS)
-        if DemoMode.shared.isActive {
-            return DemoMode.shared.isReaderCardPresent
-        }
-        #endif
-        return cardPresence.hasCompletedInitialScan && cardPresence.isReaderCardReady
-    }
+  // MARK: Content Properties
 
-    private var readerReadKey: ReaderReadKey {
-        ReaderReadKey(
-            isPresent: readerCardIsPresent,
-            isReady: readerCardIsReady,
-            transport: model.transport
+  internal var body: some View {
+    taskSection
+      #if os(macOS)
+        .frame(minWidth: windowWidth)
+      #else
+        .navigationTitle(
+          awaitsActivation ? "ReFineID" : "Personal Identification Numbers"
         )
-    }
-
-    /// The tasks this card can actually be asked to do.
-    ///
-    /// Activation is offered only while the card is still in its
-    /// factory state; for a card in use there is no such operation,
-    /// and showing it would invite a retry spent for nothing.
-    /// Whether this card is still waiting to be taken into use.
-    ///
-    /// Activation sets both PINs from the code in the issuance letter,
-    /// so while it is available there is nothing else to offer: a PIN
-    /// that has never been set cannot be changed, and resetting one
-    /// would be a second door to the same operation with a retry spent
-    /// on getting there.
-    private var awaitsActivation: Bool {
-        activationRequired || model.offersActivation
-    }
-
-    /// A critical card is a recovery workflow, never a PIN-change workflow.
-    private var availableTasks: [ManagementTask] {
-        switch retryHealth.recovery {
-        case .resetPin1, .resetPin2:
-            [.resetPin1, .resetPin2]
-
-        case .useOtherSoftware, .unrecoverable:
-            []
-
-        case nil:
-            ManagementTask.allCases
+        .navigationBarTitleDisplayMode(awaitsActivation ? .large : .inline)
+      #endif
+      #if os(macOS)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+          if !awaitsActivation, model.report != nil {
+            attemptsBar
+          }
         }
-    }
-
-    // MARK: Content Properties
-
-    internal var body: some View {
-        taskSection
-            #if os(macOS)
-            .frame(minWidth: windowWidth)
-            #else
-            .navigationTitle(
-            awaitsActivation ? "ReFineID" : "Personal Identification Numbers"
-            )
-            .navigationBarTitleDisplayMode(awaitsActivation ? .large : .inline)
-            #endif
-            #if os(macOS)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                if !awaitsActivation, model.report != nil {
-                    attemptsBar
-                }
+      #endif
+      #if os(macOS)
+        .task { await model.refresh() }
+      #endif
+      #if os(iOS)
+        .task(id: readerReadKey) {
+          if readerCardIsPresent {
+            model.transport = .reader
+            guard readerCardIsReady else { return }
+            // The token insertion event has already classified this as
+            // an unactivated card. Do not hold the activation form behind
+            // a second full credential probe; activation performs its own
+            // retry-floor checks inside the exclusive card session.
+            if awaitsActivation {
+              #if FEATURE_CARD_ACTIVATION
+                await model.detectActivationScheme()
+              #endif
+              // Gated, the destination is a refusal that asks the card
+              // for nothing, so nothing is probed either.
+            } else {
+              await model.refresh()
             }
-            #endif
-            #if os(macOS)
-            .task { await model.refresh() }
-            #endif
-            #if os(iOS)
-            .task(id: readerReadKey) {
-                if readerCardIsPresent {
-                    model.transport = .reader
-                    guard readerCardIsReady else { return }
-                    // The token insertion event has already classified this as
-                    // an unactivated card. Do not hold the activation form behind
-                    // a second full credential probe; activation performs its own
-                    // retry-floor checks inside the exclusive card session.
-                    if awaitsActivation {
-                        #if FEATURE_CARD_ACTIVATION
-                        await model.detectActivationScheme()
-                        #endif
-                        // Gated, the destination is a refusal that asks the card
-                        // for nothing, so nothing is probed either.
-                    } else {
-                        await model.refresh()
-                    }
-                } else if model.transport == .reader {
-                    model.cardRemoved()
-                    dismiss()
-                }
-            }
-            #endif
-            .onValueChange(of: model.report) { report in
-                suggestTask(from: report)
-            }
-            #if os(macOS)
-            .announcesOutcome(model.failure)
-            .announcesOutcome(model.notice)
-        #endif
-    }
+          } else if model.transport == .reader {
+            model.cardRemoved()
+            dismiss()
+          }
+        }
+      #endif
+      .onValueChange(of: model.report) { report in
+        suggestTask(from: report)
+      }
+      #if os(macOS)
+        .announcesOutcome(model.failure)
+        .announcesOutcome(model.notice)
+      #endif
+  }
 
-    /// The counters, pinned along the foot of the window.
-    ///
-    /// A status bar rather than a section: these are what the window
-    /// is judged against, not what it is for, so they stay pinned
-    /// along the foot without taking a place in the form. They are
-    /// still the numbers that decide whether the task can run, so the
-    /// bar says so in words when one of them refuses.
-    #if os(macOS)
+  /// The counters, pinned along the foot of the window.
+  ///
+  /// A status bar rather than a section: these are what the window
+  /// is judged against, not what it is for, so they stay pinned
+  /// along the foot without taking a place in the form. They are
+  /// still the numbers that decide whether the task can run, so the
+  /// bar says so in words when one of them refuses.
+  #if os(macOS)
     @ViewBuilder private var attemptsBar: some View {
-        VStack(alignment: .leading, spacing: Self.barLineSpacing) {
-            HStack(spacing: Self.attemptsSpacing) {
-                Text("Attempts left:")
-                    .foregroundStyle(.secondary)
-                attemptsEntry("PIN 1", model.report?.pin1)
-                attemptsEntry("PIN 2", model.report?.pin2)
-                attemptsEntry("PUK", model.report?.puk)
-                Spacer()
-            }
+      VStack(alignment: .leading, spacing: Self.barLineSpacing) {
+        HStack(spacing: Self.attemptsSpacing) {
+          Text("Attempts left:")
+            .foregroundStyle(.secondary)
+          attemptsEntry("PIN 1", model.report?.pin1)
+          attemptsEntry("PIN 2", model.report?.pin2)
+          attemptsEntry("PUK", model.report?.puk)
+          Spacer()
         }
-        .font(.footnote)
-        .padding(.horizontal, Self.barHorizontalPadding)
-        .padding(.vertical, Self.barVerticalPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.bar)
+      }
+      .font(.footnote)
+      .padding(.horizontal, Self.barHorizontalPadding)
+      .padding(.vertical, Self.barVerticalPadding)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .background(.bar)
     }
+  #endif
+
+  /// One segment per task, and only the chosen one on screen.
+  ///
+  /// A segmented control rather than tabs: this view is a pane of
+  /// the settings window, whose tab bar is the window's own - a
+  /// nested TabView's items are hoisted up beside the panes, four
+  /// tasks impersonating four settings panes. The segments keep
+  /// what the tabs gave: every task the card allows named in full
+  /// and visible at once, so the credential is chosen with the
+  /// action in a single act.
+  @ViewBuilder private var taskSection: some View {
+    if awaitsActivation {
+      #if FEATURE_CARD_ACTIVATION
+        Form {
+          connectionSection
+          CardActivationSection(
+            model: model,
+            onActivated: activationCompleted)
+          CardOutcomeSection(model: model)
+        }
+        .formStyle(.grouped)
+      #else
+        // The destination still exists; the build's answer differs. No
+        // connection section either: a form that cannot act on the card
+        // has no business inviting one.
+        Form {
+          CardActivationUnavailableSection()
+        }
+        .formStyle(.grouped)
+      #endif
+    } else {
+      Form {
+        // The card's problem is the first thing on the page; the
+        // forms to solve it follow.
+        recoveryGuidanceSection
+        connectionSection
+        let tasks = availableTasks
+        if !tasks.isEmpty {
+          Picker("Task", selection: $task) {
+            ForEach(tasks) { candidate in
+              Text(candidate.name).tag(candidate)
+            }
+          }
+          // Every task name gets a full-width line of its own: the
+          // floating menu and the segmented bar both truncated the
+          // longer localizations.
+          #if os(iOS)
+            .pickerStyle(.inline)
+          #else
+            .pickerStyle(.radioGroup)
+          #endif
+          .labelsHidden()
+          .accessibilityIdentifier("managementTask")
+          if model.notice == nil, tasks.contains(task) {
+            page(for: task)
+          }
+        }
+        CardOutcomeSection(model: model)
+      }
+      .formStyle(.grouped)
+      .disabled(model.working)
+      .onValueChange(of: task) { _ in
+        hasChosenTask = true
+        model.clearOutcome()
+      }
+    }
+  }
+
+  @ViewBuilder private var recoveryGuidanceSection: some View {
+    if model.failure == nil, model.notice == nil {
+      switch retryHealth.recovery {
+      case .resetPin1:
+        Section {
+          CredentialOutcomeText(
+            message: CredentialOutcomeMessage.recoveryGuidance(for: .pin1),
+            tone: .notice)
+        }
+
+      case .resetPin2:
+        Section {
+          CredentialOutcomeText(
+            message: CredentialOutcomeMessage.recoveryGuidance(for: .pin2),
+            tone: .notice)
+        }
+
+      case .useOtherSoftware:
+        Section {
+          CredentialOutcomeText(
+            message: CredentialOutcomeMessage.otherSoftwareRecovery(),
+            tone: .failure)
+        }
+
+      case .unrecoverable:
+        Section {
+          CredentialOutcomeText(
+            message: CredentialOutcomeMessage.unrecoverableCard(),
+            tone: .failure)
+        }
+
+      case nil:
+        spentAttemptsSection
+      }
+    }
+  }
+
+  /// The yellow key's explanation: which codes have spent attempts,
+  /// how many remain, and that one correct entry restores them all.
+  @ViewBuilder private var spentAttemptsSection: some View {
+    if retryHealth.level == .warning, let report = retryHealth.report {
+      let spent = Self.spentAttempts(report)
+      if !spent.isEmpty {
+        Section {
+          CredentialOutcomeText(
+            message: CredentialOutcomeMessage.spentAttemptsNotice(spent),
+            tone: .notice)
+        }
+      }
+    }
+  }
+
+  @ViewBuilder private var connectionSection: some View {
+    #if os(iOS)
+      if !readerCardIsPresent,
+        model.transport == .nearField,
+        !usesProvidedCardAccessNumber
+      {
+        Section("NFC") {
+          TextField("Card Access Number (CAN)", text: $model.cardAccessNumber)
+            .textContentType(.oneTimeCode)
+            .keyboardType(.numberPad)
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+            .onValueChange(of: model.cardAccessNumber) { typed in
+              model.cardAccessNumber = LimitedDigits.cardAccessNumber(typed)
+            }
+            .accessibilityIdentifier("managementCardAccessNumber")
+          Button("Read card") {
+            Task { await model.refresh() }
+          }
+          .disabled(model.cardOperationInProgress || !model.canContactCard)
+          .accessibilityIdentifier("managementReadCard")
+        }
+      }
     #endif
+  }
 
-    /// One segment per task, and only the chosen one on screen.
-    ///
-    /// A segmented control rather than tabs: this view is a pane of
-    /// the settings window, whose tab bar is the window's own - a
-    /// nested TabView's items are hoisted up beside the panes, four
-    /// tasks impersonating four settings panes. The segments keep
-    /// what the tabs gave: every task the card allows named in full
-    /// and visible at once, so the credential is chosen with the
-    /// action in a single act.
-    @ViewBuilder private var taskSection: some View {
-        if awaitsActivation {
-            #if FEATURE_CARD_ACTIVATION
-            Form {
-                connectionSection
-                CardActivationSection(
-                    model: model,
-                    onActivated: activationCompleted)
-                CardOutcomeSection(model: model)
-            }
-            .formStyle(.grouped)
-            #else
-            // The destination still exists; the build's answer differs. No
-            // connection section either: a form that cannot act on the card
-            // has no business inviting one.
-            Form {
-                CardActivationUnavailableSection()
-            }
-            .formStyle(.grouped)
-            #endif
-        } else {
-            Form {
-                // The card's problem is the first thing on the page; the
-                // forms to solve it follow.
-                recoveryGuidanceSection
-                connectionSection
-                let tasks = availableTasks
-                if !tasks.isEmpty {
-                    Picker("Task", selection: $task) {
-                        ForEach(tasks) { candidate in
-                            Text(candidate.name).tag(candidate)
-                        }
-                    }
-                    // Every task name gets a full-width line of its own: the
-                    // floating menu and the segmented bar both truncated the
-                    // longer localizations.
-                    #if os(iOS)
-                    .pickerStyle(.inline)
-                    #else
-                    .pickerStyle(.radioGroup)
-                    #endif
-                    .labelsHidden()
-                    .accessibilityIdentifier("managementTask")
-                    if model.notice == nil, tasks.contains(task) {
-                        page(for: task)
-                    }
-                }
-                CardOutcomeSection(model: model)
-            }
-            .formStyle(.grouped)
-            .disabled(model.working)
-            .onValueChange(of: task) { _ in
-                hasChosenTask = true
-                model.clearOutcome()
-            }
-        }
+  // MARK: Lifecycle
+
+  internal init(
+    readerCardIsPresent: Bool = false,
+    activationRequired: Bool = false,
+    cardAccessNumber: String? = nil,
+    activationScheme: ActivationScheme? = nil,
+    activationNeeds: CardActivationNeeds? = nil,
+    onActivationSucceeded: @escaping () -> Void = {
+      // optional hook; default is a no-op
     }
+  ) {
+    startsWithReaderCard = readerCardIsPresent
+    self.activationRequired = activationRequired
+    let providesCardAccessNumber =
+      cardAccessNumber?.count == CardAccessNumber.digitCount
+    usesProvidedCardAccessNumber = providesCardAccessNumber
+    self.onActivationSucceeded = onActivationSucceeded
+    // Built before the wrapper, because a state object takes its value as
+    // an escaping autoclosure, which cannot read a half-initialised view.
+    let initialModel = CardManagementModel(
+      transport: readerCardIsPresent
+        ? .reader
+        : (providesCardAccessNumber ? .nearField : nil),
+      activationRequired: activationRequired,
+      cardAccessNumber: cardAccessNumber,
+      activationScheme: activationScheme,
+      activationNeeds: activationNeeds
+    )
+    _model = StateObject(wrappedValue: initialModel)
+    _task = State(
+      initialValue: Self.initialTask(
+        for: CredentialRetryHealth.shared.recovery)
+    )
+  }
 
-    @ViewBuilder private var recoveryGuidanceSection: some View {
-        if model.failure == nil, model.notice == nil {
-            switch retryHealth.recovery {
-            case .resetPin1:
-                Section {
-                    CredentialOutcomeText(
-                        message: CredentialOutcomeMessage.recoveryGuidance(for: .pin1),
-                        tone: .notice)
-                }
+  // MARK: Static Functions
 
-            case .resetPin2:
-                Section {
-                    CredentialOutcomeText(
-                        message: CredentialOutcomeMessage.recoveryGuidance(for: .pin2),
-                        tone: .notice)
-                }
+  private static func initialTask(
+    for recovery: CredentialRetryHealth.Recovery?
+  ) -> ManagementTask {
+    switch recovery {
+    case .resetPin1:
+      .resetPin1
 
-            case .useOtherSoftware:
-                Section {
-                    CredentialOutcomeText(
-                        message: CredentialOutcomeMessage.otherSoftwareRecovery(),
-                        tone: .failure)
-                }
+    case .resetPin2:
+      .resetPin2
 
-            case .unrecoverable:
-                Section {
-                    CredentialOutcomeText(
-                        message: CredentialOutcomeMessage.unrecoverableCard(),
-                        tone: .failure)
-                }
-
-            case nil:
-                spentAttemptsSection
-            }
-        }
+    case .useOtherSoftware, .unrecoverable, nil:
+      .changePin1
     }
+  }
 
-    /// The yellow key's explanation: which codes have spent attempts,
-    /// how many remain, and that one correct entry restores them all.
-    @ViewBuilder private var spentAttemptsSection: some View {
-        if retryHealth.level == .warning, let report = retryHealth.report {
-            let spent = Self.spentAttempts(report)
-            if !spent.isEmpty {
-                Section {
-                    CredentialOutcomeText(
-                        message: CredentialOutcomeMessage.spentAttemptsNotice(spent),
-                        tone: .notice)
-                }
-            }
-        }
+  // MARK: Content Methods
+
+  private static func spentAttempts(
+    _ report: CredentialProbeReport
+  ) -> [(name: String, remaining: RetryCount)] {
+    [("PIN 1", report.pin1), ("PIN 2", report.pin2), ("PUK", report.puk)]
+      .compactMap { name, outcome in
+        guard case .remaining(let count) = outcome, !count.isPristine
+        else { return nil }
+        return (name, count)
+      }
+  }
+
+  /// The form one tab shows.
+  @ViewBuilder
+  private func page(for task: ManagementTask) -> some View {
+    switch task {
+    case .changePin1:
+      CredentialChangeSection(model: model, credential: .pin1)
+
+    case .changePin2:
+      CredentialChangeSection(model: model, credential: .pin2)
+
+    case .resetPin1:
+      CredentialUnblockSection(model: model, target: .pin1)
+
+    case .resetPin2:
+      CredentialUnblockSection(model: model, target: .pin2)
     }
+  }
 
-    @ViewBuilder private var connectionSection: some View {
-        #if os(iOS)
-        if !readerCardIsPresent,
-           model.transport == .nearField,
-           !usesProvidedCardAccessNumber {
-            Section("NFC") {
-                TextField("Card Access Number (CAN)", text: $model.cardAccessNumber)
-                    .textContentType(.oneTimeCode)
-                    .keyboardType(.numberPad)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .onValueChange(of: model.cardAccessNumber) { typed in
-                        model.cardAccessNumber = LimitedDigits.cardAccessNumber(typed)
-                    }
-                    .accessibilityIdentifier("managementCardAccessNumber")
-                Button("Read card") {
-                    Task { await model.refresh() }
-                }
-                .disabled(model.cardOperationInProgress || !model.canContactCard)
-                .accessibilityIdentifier("managementReadCard")
-            }
-        }
-        #endif
+  // MARK: Functions
+
+  private func activationCompleted() {
+    onActivationSucceeded()
+    dismiss()
+  }
+
+  /// Opens on what the card needs, until the holder chooses.
+  private func suggestTask(from report: CredentialProbeReport?) {
+    guard !awaitsActivation, let report else { return }
+    let recoveryTask: ManagementTask? =
+      switch retryHealth.recovery {
+      case .resetPin1:
+        .resetPin1
+
+      case .resetPin2:
+        .resetPin2
+
+      case .useOtherSoftware, .unrecoverable, nil:
+        nil
+      }
+    if let recoveryTask {
+      if !availableTasks.contains(task)
+        || (!hasChosenTask && model.notice == nil)
+      {
+        task = recoveryTask
+      }
+      return
     }
-
-    // MARK: Lifecycle
-
-    internal init(
-        readerCardIsPresent: Bool = false,
-        activationRequired: Bool = false,
-        cardAccessNumber: String? = nil,
-        activationScheme: ActivationScheme? = nil,
-        activationNeeds: CardActivationNeeds? = nil,
-        onActivationSucceeded: @escaping () -> Void = {
-            // optional hook; default is a no-op
-        }
-    ) {
-        startsWithReaderCard = readerCardIsPresent
-        self.activationRequired = activationRequired
-        let providesCardAccessNumber =
-            cardAccessNumber?.count == CardAccessNumber.digitCount
-        usesProvidedCardAccessNumber = providesCardAccessNumber
-        self.onActivationSucceeded = onActivationSucceeded
-        // Built before the wrapper, because a state object takes its value as
-        // an escaping autoclosure, which cannot read a half-initialised view.
-        let initialModel = CardManagementModel(
-            transport: readerCardIsPresent
-                ? .reader
-                : (providesCardAccessNumber ? .nearField : nil),
-            activationRequired: activationRequired,
-            cardAccessNumber: cardAccessNumber,
-            activationScheme: activationScheme,
-            activationNeeds: activationNeeds
-        )
-        _model = StateObject(wrappedValue: initialModel)
-        _task = State(
-            initialValue: Self.initialTask(
-                for: CredentialRetryHealth.shared.recovery)
-        )
+    guard !hasChosenTask else { return }
+    let blocked: [RetryProbeOutcome] = [.locked, .invalidated]
+    // Land on the credential that is actually blocked, so the form in
+    // front of the holder spends the one they came for. PIN 1 first
+    // when both are: it is the one a card needs to be usable at all.
+    if blocked.contains(report.pin1) {
+      task = .resetPin1
+    } else if blocked.contains(report.pin2) {
+      task = .resetPin2
     }
-
-    // MARK: Static Functions
-
-    private static func initialTask(
-        for recovery: CredentialRetryHealth.Recovery?
-    ) -> ManagementTask {
-        switch recovery {
-        case .resetPin1:
-            .resetPin1
-
-        case .resetPin2:
-            .resetPin2
-
-        case .useOtherSoftware, .unrecoverable, nil:
-            .changePin1
-        }
-    }
-
-    // MARK: Content Methods
-
-    private static func spentAttempts(
-        _ report: CredentialProbeReport
-    ) -> [(name: String, remaining: RetryCount)] {
-        [("PIN 1", report.pin1), ("PIN 2", report.pin2), ("PUK", report.puk)]
-            .compactMap { name, outcome in
-                guard case .remaining(let count) = outcome, !count.isPristine
-                else { return nil }
-                return (name, count)
-            }
-    }
-
-    /// The form one tab shows.
-    @ViewBuilder
-    private func page(for task: ManagementTask) -> some View {
-        switch task {
-        case .changePin1:
-            CredentialChangeSection(model: model, credential: .pin1)
-
-        case .changePin2:
-            CredentialChangeSection(model: model, credential: .pin2)
-
-        case .resetPin1:
-            CredentialUnblockSection(model: model, target: .pin1)
-
-        case .resetPin2:
-            CredentialUnblockSection(model: model, target: .pin2)
-        }
-    }
-
-    // MARK: Functions
-
-    private func activationCompleted() {
-        onActivationSucceeded()
-        dismiss()
-    }
-
-    /// Opens on what the card needs, until the holder chooses.
-    private func suggestTask(from report: CredentialProbeReport?) {
-        guard !awaitsActivation, let report else { return }
-        let recoveryTask: ManagementTask? =
-            switch retryHealth.recovery {
-            case .resetPin1:
-                .resetPin1
-
-            case .resetPin2:
-                .resetPin2
-
-            case .useOtherSoftware, .unrecoverable, nil:
-                nil
-            }
-        if let recoveryTask {
-            if !availableTasks.contains(task)
-                || (!hasChosenTask && model.notice == nil) {
-                task = recoveryTask
-            }
-            return
-        }
-        guard !hasChosenTask else { return }
-        let blocked: [RetryProbeOutcome] = [.locked, .invalidated]
-        // Land on the credential that is actually blocked, so the form in
-        // front of the holder spends the one they came for. PIN 1 first
-        // when both are: it is the one a card needs to be usable at all.
-        if blocked.contains(report.pin1) {
-            task = .resetPin1
-        } else if blocked.contains(report.pin2) {
-            task = .resetPin2
-        }
-    }
+  }
 }

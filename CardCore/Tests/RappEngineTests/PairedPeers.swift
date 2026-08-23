@@ -6,8 +6,8 @@ import Foundation
 
 /// One completed pairing, as both peers ended up holding it.
 internal struct PairedPeers {
-    internal let requester: PairRecord
-    internal let proxy: PairRecord
-    internal let requesterPairIdentifier: Data
-    internal let proxyPairIdentifier: Data
+  internal let requester: PairRecord
+  internal let proxy: PairRecord
+  internal let requesterPairIdentifier: Data
+  internal let proxyPairIdentifier: Data
 }

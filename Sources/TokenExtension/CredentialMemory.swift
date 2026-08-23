@@ -9,10 +9,10 @@ import CardCore
 /// this state lives at process scope (release plan section 4.3). It
 /// holds only non-reversible fingerprints, never a PIN.
 internal enum CredentialMemory {
-    internal static let rejectedPins = RejectedPinMemory()
+  internal static let rejectedPins = RejectedPinMemory()
 
-    /// Card-bound PIN1 values accepted during this process lifetime.
-    ///
-    /// In-memory, zeroized, never persisted.
-    internal static let acceptedPin1 = AcceptedPin1Memory()
+  /// Card-bound PIN1 values accepted during this process lifetime.
+  ///
+  /// In-memory, zeroized, never persisted.
+  internal static let acceptedPin1 = AcceptedPin1Memory()
 }

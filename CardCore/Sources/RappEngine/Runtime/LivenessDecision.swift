@@ -8,16 +8,16 @@ import Foundation
 
 /// What a timer tick asks the session to do.
 internal enum LivenessDecision: Equatable {
-    /// Nothing is due.
-    case noAction
-    /// Send a ping carrying this challenge.
-    case sendPing(PingChallenge)
-    /// A probe went unanswered; the next one is due at this monotonic time.
-    case probeMissed(nextProbeAtMilliseconds: UInt64)
-    /// Repeated loss closes this session and nothing further.
-    case closeSession
-    /// The tracker was already closed.
-    case alreadyClosed
+  /// Nothing is due.
+  case noAction
+  /// Send a ping carrying this challenge.
+  case sendPing(PingChallenge)
+  /// A probe went unanswered; the next one is due at this monotonic time.
+  case probeMissed(nextProbeAtMilliseconds: UInt64)
+  /// Repeated loss closes this session and nothing further.
+  case closeSession
+  /// The tracker was already closed.
+  case alreadyClosed
 }
 
 // swiftlint:enable sorted_enum_cases

@@ -18,38 +18,38 @@ import SwiftUI
 /// the shorter value back to the state that the field is bound to, which
 /// is a change, which redraws.
 internal enum LimitedDigits {
-    /// A card access number: six ASCII digits and no more.
-    internal static func cardAccessNumber(_ text: String) -> String {
-        Self.digits(text, maximumCount: CardAccessNumber.digitCount)
-    }
+  /// A card access number: six ASCII digits and no more.
+  internal static func cardAccessNumber(_ text: String) -> String {
+    Self.digits(text, maximumCount: CardAccessNumber.digitCount)
+  }
 
-    /// PIN1: ASCII digits up to the supported maximum.
-    internal static func pin1(_ text: String) -> String {
-        Self.digits(text, maximumCount: Pin1.maximumDigitCount)
-    }
+  /// PIN1: ASCII digits up to the supported maximum.
+  internal static func pin1(_ text: String) -> String {
+    Self.digits(text, maximumCount: Pin1.maximumDigitCount)
+  }
 
-    /// PIN2: ASCII digits up to the supported maximum.
-    internal static func pin2(_ text: String) -> String {
-        Self.digits(text, maximumCount: Pin2.maximumDigitCount)
-    }
+  /// PIN2: ASCII digits up to the supported maximum.
+  internal static func pin2(_ text: String) -> String {
+    Self.digits(text, maximumCount: Pin2.maximumDigitCount)
+  }
 
-    /// Any PIN entry: ASCII digits up to the shared PIN maximum, which
-    /// PIN1 and PIN2 both have.
-    internal static func pin(_ text: String) -> String {
-        Self.digits(text, maximumCount: Pin1.maximumDigitCount)
-    }
+  /// Any PIN entry: ASCII digits up to the shared PIN maximum, which
+  /// PIN1 and PIN2 both have.
+  internal static func pin(_ text: String) -> String {
+    Self.digits(text, maximumCount: Pin1.maximumDigitCount)
+  }
 
-    /// A PUK or activation entry: ASCII digits up to the PUK maximum.
-    internal static func puk(_ text: String) -> String {
-        Self.digits(text, maximumCount: Puk.maximumDigitCount)
-    }
+  /// A PUK or activation entry: ASCII digits up to the PUK maximum.
+  internal static func puk(_ text: String) -> String {
+    Self.digits(text, maximumCount: Puk.maximumDigitCount)
+  }
 
-    /// Keeps only ASCII digits, in order, up to `maximumCount`.
-    private static func digits(_ text: String, maximumCount: Int) -> String {
-        let asciiDigits = UInt8(ascii: "0")...UInt8(ascii: "9")
-        let bytes = text.utf8.lazy
-            .filter { byte in asciiDigits.contains(byte) }
-            .prefix(maximumCount)
-        return String(bytes: bytes, encoding: .ascii) ?? ""
-    }
+  /// Keeps only ASCII digits, in order, up to `maximumCount`.
+  private static func digits(_ text: String, maximumCount: Int) -> String {
+    let asciiDigits = UInt8(ascii: "0")...UInt8(ascii: "9")
+    let bytes = text.utf8.lazy
+      .filter { byte in asciiDigits.contains(byte) }
+      .prefix(maximumCount)
+    return String(bytes: bytes, encoding: .ascii) ?? ""
+  }
 }

@@ -5,5 +5,5 @@ import Foundation
 /// Rejection of a stored pairing, matching the single coarse failure the
 /// binding boundary reports.
 internal enum PairRecordError: Error, Equatable {
-    case invalidInput
+  case invalidInput
 }

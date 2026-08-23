@@ -2,6 +2,6 @@
 
 /// The result of a rule that fired: the next state and the ordered actions.
 internal struct RappTransition<State: Equatable & Sendable>: Sendable, Equatable {
-    internal let state: State
-    internal let actions: [RappAction]
+  internal let state: State
+  internal let actions: [RappAction]
 }

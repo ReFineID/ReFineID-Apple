@@ -8,121 +8,121 @@ import SwiftUI
 /// Tint is reinforced by a differently shaped system badge and a VoiceOver
 /// value, so health is never communicated by color alone.
 internal struct CredentialRetryHealthKey: View {
-    /// The badge rides on the key glyph, small enough not to hide it.
-    private enum Layout {
-        static let badgeGlyphSize: CGFloat = 8
+  /// The badge rides on the key glyph, small enough not to hide it.
+  private enum Layout {
+    static let badgeGlyphSize: CGFloat = 8
+  }
+
+  private static var uiAutomationDisablesMotion: Bool {
+    #if DEBUG
+      ProcessInfo.processInfo.arguments.contains("--ui-test-disable-motion")
+    #else
+      false
+    #endif
+  }
+
+  internal let level: CredentialRetryHealth.Level?
+  internal let systemName: String
+
+  /// Whether the route this key opens can be taken right now.
+  ///
+  /// An unprobed key on an open route is green -- no known issue --
+  /// while a closed route greys out like its row.
+  internal let routeAvailable: Bool
+
+  @Environment(\.accessibilityReduceMotion)
+  private var reduceMotion
+  @State private var animationTrigger = false
+
+  internal var body: some View {
+    ZStack(alignment: .bottomTrailing) {
+      if let shown = displayedLevel {
+        Image(systemName: systemName)
+          .replacingSymbol()
+          .foregroundStyle(shown.color)
+        statusBadge(shown)
+      } else {
+        Image(systemName: systemName)
+          .replacingSymbol()
+          .foregroundStyle(
+            routeAvailable
+              ? AnyShapeStyle(.green)
+              : AnyShapeStyle(.secondary))
+      }
     }
-
-    private static var uiAutomationDisablesMotion: Bool {
-        #if DEBUG
-        ProcessInfo.processInfo.arguments.contains("--ui-test-disable-motion")
-        #else
-        false
-        #endif
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(Text("Change or Reset PINs"))
+    .accessibilityValue(
+      displayedLevel?.accessibilityValue
+        ?? String(localized: "Credential retry status unavailable")
+    )
+    .onAppear { animateIfNeeded(displayedLevel) }
+    .onValueChange(of: displayedLevel) { newLevel in
+      animateIfNeeded(newLevel)
     }
+  }
 
-    internal let level: CredentialRetryHealth.Level?
-    internal let systemName: String
+  /// A closed route never wears a cached health level.
+  ///
+  /// The keys grey out with their row until the card is verified
+  /// again, whatever the last report said.
+  private var displayedLevel: CredentialRetryHealth.Level? {
+    routeAvailable ? level : nil
+  }
 
-    /// Whether the route this key opens can be taken right now.
-    ///
-    /// An unprobed key on an open route is green -- no known issue --
-    /// while a closed route greys out like its row.
-    internal let routeAvailable: Bool
+  internal init(
+    level: CredentialRetryHealth.Level?,
+    systemName: String = "key",
+    routeAvailable: Bool = true
+  ) {
+    self.level = level
+    self.systemName = systemName
+    self.routeAvailable = routeAvailable
+  }
 
-    @Environment(\.accessibilityReduceMotion)
-    private var reduceMotion
-    @State private var animationTrigger = false
+  @ViewBuilder
+  private func statusBadge(
+    _ level: CredentialRetryHealth.Level
+  ) -> some View {
+    switch level {
+    case .pristine:
+      badge(level)
 
-    internal var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            if let shown = displayedLevel {
-                Image(systemName: systemName)
-                    .replacingSymbol()
-                    .foregroundStyle(shown.color)
-                statusBadge(shown)
-            } else {
-                Image(systemName: systemName)
-                    .replacingSymbol()
-                    .foregroundStyle(
-                        routeAvailable
-                            ? AnyShapeStyle(.green)
-                            : AnyShapeStyle(.secondary))
-            }
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("Change or Reset PINs"))
-        .accessibilityValue(
-            displayedLevel?.accessibilityValue
-                ?? String(localized: "Credential retry status unavailable")
-        )
-        .onAppear { animateIfNeeded(displayedLevel) }
-        .onValueChange(of: displayedLevel) { newLevel in
-            animateIfNeeded(newLevel)
-        }
+    case .warning:
+      badge(level)
+        .pulsingSymbol(value: animationTrigger)
+
+    case .critical:
+      badge(level)
+        .bouncingSymbol(value: animationTrigger)
     }
+  }
 
-    /// A closed route never wears a cached health level.
-    ///
-    /// The keys grey out with their row until the card is verified
-    /// again, whatever the last report said.
-    private var displayedLevel: CredentialRetryHealth.Level? {
-        routeAvailable ? level : nil
+  private func badge(_ level: CredentialRetryHealth.Level) -> some View {
+    Image(systemName: level.badge)
+      .accessibilityHidden(true)
+      .font(.system(size: Layout.badgeGlyphSize, weight: .bold))
+      .foregroundStyle(level.color)
+      .background(.background, in: Circle())
+  }
+
+  /// Motion calls attention only to degraded states.
+  ///
+  /// Yielding one render pass lets an initially degraded badge exist
+  /// before its effect begins. Yellow pulses once; red repeats until the
+  /// state changes. There is no timing constant, and Reduce Motion
+  /// suppresses both. UI automation also opts out: XCTest waits for
+  /// animation quiescence before taps, while the red state intentionally
+  /// never becomes quiescent for a holder.
+  private func animateIfNeeded(_ level: CredentialRetryHealth.Level?) {
+    guard
+      !reduceMotion,
+      !Self.uiAutomationDisablesMotion,
+      level == .warning || level == .critical
+    else { return }
+    Task { @MainActor in
+      await Task.yield()
+      animationTrigger.toggle()
     }
-
-    internal init(
-        level: CredentialRetryHealth.Level?,
-        systemName: String = "key",
-        routeAvailable: Bool = true
-    ) {
-        self.level = level
-        self.systemName = systemName
-        self.routeAvailable = routeAvailable
-    }
-
-    @ViewBuilder
-    private func statusBadge(
-        _ level: CredentialRetryHealth.Level
-    ) -> some View {
-        switch level {
-        case .pristine:
-            badge(level)
-
-        case .warning:
-            badge(level)
-                .pulsingSymbol(value: animationTrigger)
-
-        case .critical:
-            badge(level)
-                .bouncingSymbol(value: animationTrigger)
-        }
-    }
-
-    private func badge(_ level: CredentialRetryHealth.Level) -> some View {
-        Image(systemName: level.badge)
-            .accessibilityHidden(true)
-            .font(.system(size: Layout.badgeGlyphSize, weight: .bold))
-            .foregroundStyle(level.color)
-            .background(.background, in: Circle())
-    }
-
-    /// Motion calls attention only to degraded states.
-    ///
-    /// Yielding one render pass lets an initially degraded badge exist
-    /// before its effect begins. Yellow pulses once; red repeats until the
-    /// state changes. There is no timing constant, and Reduce Motion
-    /// suppresses both. UI automation also opts out: XCTest waits for
-    /// animation quiescence before taps, while the red state intentionally
-    /// never becomes quiescent for a holder.
-    private func animateIfNeeded(_ level: CredentialRetryHealth.Level?) {
-        guard
-            !reduceMotion,
-            !Self.uiAutomationDisablesMotion,
-            level == .warning || level == .critical
-        else { return }
-        Task { @MainActor in
-            await Task.yield()
-            animationTrigger.toggle()
-        }
-    }
+  }
 }

@@ -2,8 +2,8 @@
 
 /// The key a card operation uses.
 public enum RappCardKeyProfile: Sendable {
-    case ecdsaP256
-    case ecdsaP384
-    case rsa2048
-    case rsa3072
+  case ecdsaP256
+  case ecdsaP384
+  case rsa2048
+  case rsa3072
 }

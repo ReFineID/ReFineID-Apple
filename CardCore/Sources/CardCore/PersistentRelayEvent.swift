@@ -3,13 +3,13 @@
 import Foundation
 
 #if canImport(MultipeerConnectivity)
-@preconcurrency import MultipeerConnectivity
-import os
+  @preconcurrency import MultipeerConnectivity
+  import os
 
-/// What the channel reports to its one owner.
-public enum PersistentRelayEvent: Sendable {
+  /// What the channel reports to its one owner.
+  public enum PersistentRelayEvent: Sendable {
     case closed(PersistentRelayTransportError)
     case connected
     case frame(Data)
-}
+  }
 #endif

@@ -4,6 +4,6 @@ import Foundation
 
 /// The registered error vocabulary, named once.
 internal enum EngineErrorName {
-    internal static let busy = "busy"
-    internal static let unknownOperation = "unknown_operation"
+  internal static let busy = "busy"
+  internal static let unknownOperation = "unknown_operation"
 }

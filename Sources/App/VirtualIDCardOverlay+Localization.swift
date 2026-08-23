@@ -2,15 +2,15 @@
 
 #if os(iOS)
 
-import Foundation
+  import Foundation
 
-internal func virtualCardLocalized(
+  internal func virtualCardLocalized(
     _ key: StaticString,
     defaultValue: String.LocalizationValue
-) -> String {
+  ) -> String {
     VirtualIDCardOverlayLocalization.localizedText(
-        key,
-        defaultValue: defaultValue)
-}
+      key,
+      defaultValue: defaultValue)
+  }
 
 #endif
