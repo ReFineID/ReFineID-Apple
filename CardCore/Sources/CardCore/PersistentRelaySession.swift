@@ -230,7 +230,9 @@ import Foundation
       didReceive _: InputStream,
       withName _: String,
       fromPeer _: MCPeerID
-    ) {}
+    ) {
+      // streams are not part of the protocol
+    }
 
     /// Resources are not part of the protocol; ignored.
     public func session(
@@ -238,7 +240,9 @@ import Foundation
       didStartReceivingResourceWithName _: String,
       fromPeer _: MCPeerID,
       with _: Progress
-    ) {}
+    ) {
+      // resources are not part of the protocol
+    }
 
     /// Resources are not part of the protocol; ignored.
     public func session(
@@ -247,7 +251,9 @@ import Foundation
       fromPeer _: MCPeerID,
       at _: URL?,
       withError _: (any Error)?
-    ) {}
+    ) {
+      // resources are not part of the protocol
+    }
 
     /// Accepts one inviter into the encrypted session, and only that one.
     ///
