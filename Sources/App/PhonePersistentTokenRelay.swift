@@ -70,16 +70,18 @@
       // A proxy without an antenna is not a proxy: only near-field
       // devices advertise as the card holder.
       guard SupportedCardTransports.offersNearField else { return }
-      guard relay == nil, coordinator == nil,
-        relistenPolicy == .automatic,
-        hasUsableSelectedPair()
-      else { return }
-
       #if REFINEID_STREAM_TRANSPORT
-        guard streamListener == nil else { return }
+        guard streamListener == nil, coordinator == nil,
+          relistenPolicy == .automatic,
+          hasUsableSelectedPair()
+        else { return }
         guard let context = PhoneStreamPairContext.resolve(vault: vault) else { return }
         startListening(context)
       #else
+        guard relay == nil, coordinator == nil,
+          relistenPolicy == .automatic,
+          hasUsableSelectedPair()
+        else { return }
         let nearbyConnectionID = UUID()
         let nearby = PersistentRelaySession(
           role: .cardHolder,
@@ -101,16 +103,25 @@
     /// It never restores a revoked pair; the vault remains authoritative.
     internal func resumeAfterUserAction() {
       relistenPolicy = .automatic
-      if relay == nil, coordinator == nil { start() }
+      #if REFINEID_STREAM_TRANSPORT
+        if streamListener == nil, coordinator == nil { start() }
+      #else
+        if relay == nil, coordinator == nil { start() }
+      #endif
     }
 
     internal func suspendForPairing() {
       relistenPolicy = .explicitUserActionRequired
       let closing = coordinator
+      coordinator = nil
       relay?.cancel()
+      relay = nil
       #if REFINEID_STREAM_TRANSPORT
         streamListener?.cancel()
+        streamListener = nil
+        streamContext = nil
       #endif
+      connectionID = nil
       Task { await closing?.close() }
     }
 
