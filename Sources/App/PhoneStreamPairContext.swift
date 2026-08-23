@@ -22,9 +22,10 @@
     /// Resolves the listening facts for the selected pair; nil when no
     /// pair is selected or the pair cannot be loaded.
     internal static func resolve(vault: RappDeviceVault) -> Self? {
+      guard let pair = try? PhoneProxyPairSelection.resolveSelectedPair(vault: vault)
+      else { return nil }
+      let metadata = pair.metadata()
       guard
-        let pair = try? PhoneProxyPairSelection.resolveSelectedPair(vault: vault),
-        let metadata = pair.metadata(),
         let preamble = try? rappStreamSessionPreamble(
           rendezvousToken: metadata.rendezvousToken
         )

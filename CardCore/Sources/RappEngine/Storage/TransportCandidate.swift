@@ -3,7 +3,7 @@
 import Foundation
 
 /// Public rendezvous candidate an offer advertises.
-internal struct TransportCandidate: Equatable {
+internal struct TransportCandidate: Equatable, Sendable {
   internal var profile: String
   internal var candidateIdentifier: String
   internal var parameters: [String: WireValue]

@@ -95,9 +95,11 @@ import Foundation
         self?.accept(connection)
       }
       made.stateUpdateHandler = { [weak self] state in
-        self?.queue.async { self?.lastState = String(describing: state) }
+        guard let self else { return }
+        let description = String(describing: state)
+        queue.async { self.lastState = description }
         guard case .failed = state else { return }
-        self?.queue.async { self?.finish(.unreachable) }
+        queue.async { self.finish(.unreachable) }
       }
       listener = made
       made.start(queue: queue)
@@ -111,15 +113,13 @@ import Foundation
         }
         self.connection = candidate
         candidate.stateUpdateHandler = { [weak self] state in
+          guard let self else { return }
           switch state {
           case .ready:
-            self?.onEvent(.connected)
+            onEvent(.connected)
 
-          case .failed(let error):
-            self?.queue.async { self?.finish(.disconnected) }
-
-          case .cancelled:
-            self?.queue.async { self?.finish(.disconnected) }
+          case .failed, .cancelled:
+            queue.async { self.finish(.disconnected) }
 
           default:
             break

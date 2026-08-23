@@ -9,6 +9,10 @@
 // Consumers: Java SunPKCS11, Firefox/NSS, OpenSSH.
 import PackageDescription
 
+private let warningsAsErrors: [SwiftSetting] = [
+  .treatAllWarnings(as: .error)
+]
+
 private let package = Package(
   name: "PKCS11Bridge",
   platforms: [
@@ -21,9 +25,19 @@ private let package = Package(
     // The PKCS#11 C ABI: type/constant subset, all 68 entry-point
     // prototypes, the exported function list, and stubs for the
     // entry points the bridge does not implement.
-    .target(name: "CCryptoki"),
+    .target(
+      name: "CCryptoki",
+      cSettings: [
+        .unsafeFlags(["-Werror"])
+      ]),
     // The implemented entry points, exported with C names via @_cdecl.
-    .target(name: "PKCS11Bridge", dependencies: ["CCryptoki"]),
-    .testTarget(name: "PKCS11BridgeTests", dependencies: ["PKCS11Bridge", "CCryptoki"]),
+    .target(
+      name: "PKCS11Bridge",
+      dependencies: ["CCryptoki"],
+      swiftSettings: warningsAsErrors),
+    .testTarget(
+      name: "PKCS11BridgeTests",
+      dependencies: ["PKCS11Bridge", "CCryptoki"],
+      swiftSettings: warningsAsErrors),
   ]
 )

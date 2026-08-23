@@ -231,9 +231,9 @@ extension CardCredentialsView {
             clearPin1Entry: clearPin1Entry
           ) { isRegistered = true })
         finishIdentitySetup(succeeded: succeeded)
-        return
+      #else
+        transition(.classificationFailed)
       #endif
-      transition(.classificationFailed)
     }
   }
 

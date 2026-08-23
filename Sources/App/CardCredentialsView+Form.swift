@@ -224,7 +224,7 @@ extension CardCredentialsView {
       switch destination {
       case .activation:
         #if DEBUG
-          DebugConsole.emit("navigation-destination: activation")
+          let _: Void = DebugConsole.emit("navigation-destination: activation")
         #endif
         if let activationScheme, let activationNeeds {
           CardManagementView(
@@ -239,7 +239,7 @@ extension CardCredentialsView {
 
       case .pinManagement:
         #if DEBUG
-          DebugConsole.emit("navigation-destination: PIN management")
+          let _: Void = DebugConsole.emit("navigation-destination: PIN management")
         #endif
         if hasReaderIdentity {
           CardManagementView(readerCardIsPresent: true)

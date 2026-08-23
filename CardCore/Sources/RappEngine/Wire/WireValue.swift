@@ -7,7 +7,7 @@ import Foundation
 ///
 /// Nothing outside these cases is representable, so an encoder cannot emit a
 /// type the peer is required to reject.
-internal enum WireValue: Equatable {
+internal enum WireValue: Equatable, Sendable {
   case array([Self])
   case boolean(Bool)
   case bytes(Data)

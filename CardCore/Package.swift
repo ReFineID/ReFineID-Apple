@@ -7,6 +7,13 @@
 // the token extension both consume it.
 import PackageDescription
 
+// Xcode injects -suppress-warnings on local package products, which
+// conflicts with -warnings-as-errors. App targets already treat warnings
+// as errors. Tests are command-line only, so they keep the flag.
+private let warningsAsErrors: [SwiftSetting] = [
+  .treatAllWarnings(as: .error)
+]
+
 private let package = Package(
   name: "CardCore",
   platforms: [
@@ -47,7 +54,8 @@ private let package = Package(
     .testTarget(
       name: "RappEngineTests",
       dependencies: ["RappEngine"],
-      path: "Tests/RappEngineTests"),
+      path: "Tests/RappEngineTests",
+      swiftSettings: warningsAsErrors),
     // Objective-C, because catching an Objective-C exception is a
     // thing only Objective-C can do.
     .target(name: "ObjCExceptionGuard"),

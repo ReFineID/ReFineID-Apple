@@ -61,8 +61,10 @@
       /// both derived from the pairing this request will run over.
       private func rendezvousFacts() async -> (name: String, preamble: Data)? {
         guard let pairID = try? await resolvedPairID(),
-          let pair = try? RappPairRecord.loadFromVault(pairId: pairID, vault: vault),
-          let metadata = pair.metadata(),
+          let pair = try? RappPairRecord.loadFromVault(pairId: pairID, vault: vault)
+        else { return nil }
+        let metadata = pair.metadata()
+        guard
           let preamble = try? rappStreamSessionPreamble(
             rendezvousToken: metadata.rendezvousToken
           )

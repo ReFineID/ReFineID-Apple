@@ -55,22 +55,21 @@
           }
         }
         .sheet(
-          item: Binding(
-            get: { authorizationInbox.request },
-            set: { presented in
-              guard
-                presented == nil,
-                let pending = authorizationInbox.request
-              else { return }
+          isPresented: Binding(
+            get: { authorizationInbox.request != nil },
+            set: { shown in
+              guard !shown, let pending = authorizationInbox.request else { return }
               authorizationInbox.deny(pending.requestID)
             }
           )
-        ) { request in
-          RappAuthorizationView(
-            request: request,
-            inbox: authorizationInbox
-          )
-          .presentationDetents([.medium, .large])
+        ) {
+          if let request = authorizationInbox.request {
+            RappAuthorizationView(
+              request: request,
+              inbox: authorizationInbox
+            )
+            .presentationDetents([.medium, .large])
+          }
         }
       }
     #endif

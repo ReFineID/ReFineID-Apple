@@ -69,8 +69,10 @@ import Foundation
         NI_NUMERICHOST
       )
       guard result == 0 else { return nil }
-      let text = String(cString: host)
-      return text.isEmpty ? nil : text
+      let bytes = host.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }
+      guard let text = String(bytes: Data(bytes), encoding: .utf8), !text.isEmpty
+      else { return nil }
+      return text
     }
   }
 #endif

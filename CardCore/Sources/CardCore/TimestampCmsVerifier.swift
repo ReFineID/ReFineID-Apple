@@ -647,7 +647,7 @@ internal enum TimestampCmsVerifier {
     of element: DerReader.Element,
     in encoded: Data
   ) -> Data {
-    var reader = DerReader(encoded)
+    let reader = DerReader(encoded)
     return reader.data(of: element)
   }
 
@@ -655,7 +655,7 @@ internal enum TimestampCmsVerifier {
     of element: DerReader.Element,
     in encoded: Data
   ) -> Data {
-    var reader = DerReader(encoded)
+    let reader = DerReader(encoded)
     return reader.contentData(of: element)
   }
 }

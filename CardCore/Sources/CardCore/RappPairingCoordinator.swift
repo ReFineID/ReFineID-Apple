@@ -261,7 +261,7 @@
         uri: scannedOfferURI,
         startedAtMonotonicMs: startedAtMonotonicMilliseconds
       )
-      return try RappPairingCoordinator(
+      return RappPairingCoordinator(
         role: .proxy,
         bridge: bridge,
         offerURI: nil,

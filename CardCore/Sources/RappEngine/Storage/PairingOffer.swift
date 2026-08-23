@@ -13,7 +13,7 @@ internal let offerSchemeName = "rapp"
 ///
 /// The bearer secret is carried only to reach the QR payload and the pairing
 /// handshake; it is deliberately absent from the hashed form.
-internal struct PairingOffer {
+internal struct PairingOffer: Sendable {
   internal let offerIdentifier: Data
   internal let pairingSecret: Data
   internal let suites: [String]
