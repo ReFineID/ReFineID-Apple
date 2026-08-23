@@ -1,0 +1,96 @@
+// Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
+
+#if REFINEID_LOCAL_CARD && os(iOS) && REFINEID_REMOTE_CARD
+  import CardCore
+  import Foundation
+  import Security
+
+  internal typealias RappNfcCardExecutor = RappCardExecutor
+
+  /// The physical-card boundary for the iPhone RAPP proxy.
+  ///
+  /// Each call connects through an attached card reader or an NFC hold. Safe reads
+  /// never accept credentials. Consequential calls validate the live certificate
+  /// and retry state before constructing a one-shot PIN transmission. Once that
+  /// transmission begins, every unclassified transport/card failure is completion-ambiguous
+  /// rather than permission to retry.
+  internal enum RappCardExecutor {
+    internal enum Refusal: Sendable, Equatable {
+      case cardUnavailable
+      case certificateUnavailable
+      case credentialBlocked(CredentialRole)
+      case credentialInvalidated(CredentialRole)
+      case invalidCredential(CredentialRole)
+      case keyOrAlgorithmMismatch
+      case retryFloor(CredentialRole, RetryFloorVerdict)
+    }
+
+    internal enum Rejection: Sendable, Equatable {
+      case cardAccessNumber
+      case credential(CredentialRole, remaining: RetryCount?)
+    }
+
+    internal enum Outcome: Sendable, Equatable {
+      case completionAmbiguous
+      case refusedBeforeCredentialTransmit(Refusal)
+      case rejected(Rejection)
+      case result(Data)
+    }
+
+    internal struct Identity {
+      internal let publicKey: SecKey
+      internal let request: SignRequest
+    }
+
+    private static var holdMessage: String {
+      String(localized: "Hold your identity card near the top of the iPhone.")
+    }
+
+    internal static func readCertificate(
+      cardAccessNumber: String,
+      signatureCertificate: Bool
+    ) async -> Outcome {
+      let slot: CertificateSlot =
+        signatureCertificate ? .qualifiedSignature : .authentication
+      return await withCard(cardAccessNumber: cardAccessNumber) { operations in
+        do {
+          return .result(try operations.readCertificate(slot))
+        } catch {
+          return .refusedBeforeCredentialTransmit(.certificateUnavailable)
+        }
+      }
+    }
+
+    internal static func withCard(
+      cardAccessNumber: String,
+      _ operation: @escaping @Sendable (CardOperations) -> Outcome
+    ) async -> Outcome {
+      if let readerResult = await CardMaintenance.onReaderCard(
+        cardAccessNumber: cardAccessNumber,
+        operation
+      ) {
+        switch readerResult {
+        case .connected(let outcome):
+          return outcome
+        case .wrongCardAccessNumber:
+          return .rejected(.cardAccessNumber)
+        case .failed:
+          return .refusedBeforeCredentialTransmit(.cardUnavailable)
+        }
+      }
+      let result = await CardMaintenance.onSecureNearFieldCard(
+        cardAccessNumber: cardAccessNumber,
+        message: holdMessage,
+        operation
+      )
+      switch result {
+      case .connected(let outcome):
+        return outcome
+      case .wrongCardAccessNumber:
+        return .rejected(.cardAccessNumber)
+      case .failed:
+        return .refusedBeforeCredentialTransmit(.cardUnavailable)
+      }
+    }
+  }
+#endif

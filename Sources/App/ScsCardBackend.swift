@@ -145,7 +145,7 @@
     ) throws -> Data {
       let digest: Data
       switch hash {
-      case .sha224:
+      case .sha1, .sha224:
         throw ScsBackendFailure.signingUnavailable("unsupported digest")
       case .sha256:
         digest = Data(SHA256.hash(data: data))

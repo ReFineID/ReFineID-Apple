@@ -45,7 +45,7 @@
       else {
         return .failure(id: id, reason: .unsupportedAlgorithm)
       }
-      let outcome = await RappNfcCardExecutor.browserAuthentication(
+      let outcome = await RappCardExecutor.browserAuthentication(
         cardAccessNumber: accessNumber,
         keyProfile: RappOperationDriver.KeyProfile(profile.cardKeyProfile),
         algorithm: relayAlgorithm,

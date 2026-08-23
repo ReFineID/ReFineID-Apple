@@ -35,7 +35,7 @@
           await invalid(operationID, coordinator: coordinator)
           return
         }
-        let outcome = await RappNfcCardExecutor.readCertificate(
+        let outcome = await RappCardExecutor.readCertificate(
           cardAccessNumber: accessNumber,
           signatureCertificate: operation.kind == .readSignatureCertificate
         )
@@ -103,10 +103,10 @@
       accessNumber: String,
       keyProfile: RappOperationDriver.KeyProfile,
       algorithm: RappOperationDriver.SignatureAlgorithm
-    ) async -> RappNfcCardExecutor.Outcome? {
+    ) async -> RappCardExecutor.Outcome? {
       switch operation.kind {
       case .browserAuthenticate:
-        await RappNfcCardExecutor.browserAuthentication(
+        await RappCardExecutor.browserAuthentication(
           cardAccessNumber: accessNumber,
           keyProfile: keyProfile,
           algorithm: algorithm,
@@ -114,7 +114,7 @@
         )
       case .signDocument:
         if let pin2 = pin2ByOperation.removeValue(forKey: operationID) {
-          await RappNfcCardExecutor.signDocument(
+          await RappCardExecutor.signDocument(
             cardAccessNumber: accessNumber,
             pin2: pin2,
             keyProfile: keyProfile,
@@ -175,7 +175,7 @@
         await invalid(operationID, coordinator: coordinator)
         return
       }
-      let outcome = await RappNfcCardExecutor.readCertificate(
+      let outcome = await RappCardExecutor.readCertificate(
         cardAccessNumber: accessNumber,
         signatureCertificate: false
       )
