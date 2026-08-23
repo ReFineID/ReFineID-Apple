@@ -21,6 +21,9 @@
   /// observed hanging for tens of seconds and answering empty while
   /// Safari was using the very same identity.
   internal enum PublishedIdentityName {
+
+    // MARK: Static Properties
+
     #if DEBUG
       /// Query outcomes, in development builds only.
       ///
@@ -30,6 +33,14 @@
         subsystem: "fi.refineid.ReFineID", category: "identity-name"
       )
     #endif
+
+    /// How many times the lookup queries the keychain before giving up.
+    private static let lookupAttempts = 20
+
+    /// How long the lookup waits between attempts.
+    private static let lookupInterval: TimeInterval = 0.1
+
+    // MARK: Static Functions
 
     #if os(macOS)
       /// The holder's name from whichever ReFineID token is published,
@@ -55,6 +66,23 @@
     /// its contents and answers from them, so the caller names one it
     /// has proved live rather than asking the keychain at large.
     internal static func name(ofTokenIdentifier tokenIdentifier: String?) -> String? {
+      for attempt in 1...lookupAttempts {
+        if let name = queryName(ofTokenIdentifier: tokenIdentifier) {
+          #if DEBUG
+            if attempt > 1 {
+              Self.log.info("certificate query succeeded on attempt \(attempt)")
+            }
+          #endif
+          return name
+        }
+        if attempt < lookupAttempts {
+          Thread.sleep(forTimeInterval: lookupInterval)
+        }
+      }
+      return nil
+    }
+
+    private static func queryName(ofTokenIdentifier tokenIdentifier: String?) -> String? {
       var query: [CFString: Any] = [
         kSecClass: kSecClassCertificate,
         kSecAttrAccessGroup: kSecAttrAccessGroupToken,

@@ -49,6 +49,9 @@
     /// published.
     @Published internal private(set) var liveReaderTokenIdentifiers: [String] = []
 
+    /// Monotonically increasing revision of the reader tokens.
+    @Published internal private(set) var generation = 0
+
     /// Watches physical token publication and removal.
     private let watcher = TKTokenWatcher()
 
@@ -93,7 +96,7 @@
       if DemoMode.shared.isActive {
         return isActive ? [DemoMode.shared.holderName] : []
       }
-      return liveReaderTokenIdentifiers
+      return liveReaderTokenIdentifiers.map { "\($0):\(generation)" }
     }
 
     // MARK: Lifecycle
@@ -152,6 +155,7 @@
 
     /// Lists live reader tokens while excluding persistent NFC registrations.
     internal func refresh() {
+      generation &+= 1
       if DemoMode.shared.isActive {
         liveReaderTokenIdentifiers = []
         return

@@ -383,14 +383,11 @@ internal struct CardCredentialsView: View {
     }
 
     /// Who the connected reader's card says they are, one row per card.
-    ///
-    /// The reader message stands in for a card whose name cannot be
-    /// read: a live token with no readable name is still a card present.
     private var readerIdentitySection: some View {
       Section {
         if readerHolders.isEmpty {
-          Text(readerMessage)
-            .foregroundStyle(.secondary)
+          ProgressView()
+            .frame(maxWidth: .infinity, alignment: .center)
         } else {
           ForEach(readerHolders, id: \.self) { holder in
             LabeledContent {
@@ -404,16 +401,6 @@ internal struct CardCredentialsView: View {
         }
       } header: {
         compactSectionHeader("Identity")
-      }
-    }
-
-    /// Distinguishes one usable reader from several without exposing
-    /// card data.
-    private var readerMessage: String {
-      if (readerModel?.liveReaderTokenCount ?? 0) == 1 {
-        String(localized: "USB-C reader connected with ID card.")
-      } else {
-        String(localized: "USB-C readers connected with ID cards.")
       }
     }
 
