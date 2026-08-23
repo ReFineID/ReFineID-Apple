@@ -13,6 +13,7 @@
     internal let requireExplicitReconnect: @MainActor @Sendable () -> Void
     internal var pin1ByOperation: [Data: String] = [:]
     internal var pin2ByOperation: [Data: String] = [:]
+    internal var pin2Window = Pin2Window()
 
     // MARK: Lifecycle
 
@@ -78,6 +79,7 @@
     private func cleanup() async {
       pin1ByOperation.removeAll(keepingCapacity: false)
       pin2ByOperation.removeAll(keepingCapacity: false)
+      pin2Window.forget()
       await inbox.cancelAll()
     }
 
@@ -103,6 +105,11 @@
         return
       }
       if operation.kind.isSafeRead {
+        try? await coordinator.approve(operationID: operationID)
+        return
+      }
+      if operation.kind == .signDocument, let pin2 = pin2Window.current() {
+        pin2ByOperation[operationID] = pin2
         try? await coordinator.approve(operationID: operationID)
         return
       }
@@ -144,6 +151,7 @@
           try? await coordinator.requestInvalidOrUnsupported(operationID: operationID)
           return
         }
+        pin2Window.hold(pin2)
         pin2ByOperation[operationID] = pin2
         try? await coordinator.approve(operationID: operationID)
 

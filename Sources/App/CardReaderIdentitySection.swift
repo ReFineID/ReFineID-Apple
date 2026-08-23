@@ -23,7 +23,6 @@
 
     internal var body: some View {
       Group {
-        identitySection
         if !hasPin1 {
           authSection
           if let failureMessage {
@@ -32,6 +31,7 @@
             }
           }
         }
+        identitySection
       }
     }
 

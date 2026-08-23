@@ -52,9 +52,7 @@ extension CardCredentialsView {
     internal var signingSection: some View {
       Section {
         verifyRouteButton
-        if offersNearField || hasReaderIdentity {
-          signRouteButton
-        }
+        signRouteButton
       } header: {
         compactSectionHeader(
           verbatim: String(

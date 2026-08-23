@@ -59,16 +59,7 @@
         await coordinator.close()
 
       case .rejected(let rejection):
-        switch rejection {
-        case .cardAccessNumber:
-          CardCredentialStore.forgetAll()
-
-        case .credential(.pin1, _):
-          CardCredentialStore.forgetPin1()
-
-        case .credential(.pin2, _), .credential(.puk, _):
-          break
-        }
+        applyRejectedCredential(rejection)
         await requireExplicitReconnect()
         try? await coordinator.credentialRejected(operationID: operationID)
 
@@ -92,6 +83,22 @@
       }
     }
 
+    private func applyRejectedCredential(_ rejection: RappCardExecutor.Rejection) {
+      switch rejection {
+      case .cardAccessNumber:
+        CardCredentialStore.forgetAll()
+
+      case .credential(.pin1, _):
+        CardCredentialStore.forgetPin1()
+
+      case .credential(.pin2, _):
+        pin2Window.forget()
+
+      case .credential(.puk, _):
+        break
+      }
+    }
+
     internal func invalid(
       _ operationID: Data,
       coordinator: RappConnectionCoordinator
@@ -103,6 +110,7 @@
       guard let operationID else {
         pin1ByOperation.removeAll(keepingCapacity: false)
         pin2ByOperation.removeAll(keepingCapacity: false)
+        pin2Window.forget()
         await inbox.cancelAll()
         return
       }

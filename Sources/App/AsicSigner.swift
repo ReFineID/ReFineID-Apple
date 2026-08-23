@@ -69,7 +69,7 @@ internal enum AsicSigner {
     guard !objects.isEmpty, AsicContainer.areNamesUsable(objects) else {
       throw Failure.unusableName
     }
-    #if os(macOS) && REFINEID_REMOTE_CARD
+    #if REFINEID_REMOTE_CARD
       if await MainActor.run(body: { DocumentSigner.usesRappSigning }) {
         return try await Self.signRemotely(objects)
       }
@@ -102,7 +102,7 @@ internal enum AsicSigner {
     }
   }
 
-  #if os(macOS) && REFINEID_REMOTE_CARD
+  #if REFINEID_REMOTE_CARD
     /// Signs canonical XAdES bytes through the selected phone.
     ///
     /// PIN 2 is entered on the authorizer and never crosses the RAPP

@@ -46,9 +46,11 @@
       XCTAssertTrue(
         element(UITestIdentifiers.verifyDocuments, in: app).exists,
         "verifying a document needs no card and must stay offered")
+      let sign = element(UITestIdentifiers.signDocuments, in: app)
+      XCTAssertTrue(sign.exists, "signing is offered once a paired identity exists")
+      XCTAssertFalse(sign.isEnabled, "signing stays closed until a person is named")
 
       for absent in [
-        UITestIdentifiers.signDocuments,
         UITestIdentifiers.pinManagementButton,
         UITestIdentifiers.remoteCard,
         UITestIdentifiers.cardAccessNumberField,

@@ -63,7 +63,7 @@
     /// the last minute.
     private var canSign: Bool {
       signing.pending != nil
-        && (Self.isEntryComplete(pin2) || pin2Cache.isWarm)
+        && (!asksLocalPin2 || Self.isEntryComplete(pin2) || pin2Cache.isWarm)
         && !signing.working
         // Not while the card is being read for the stamp: it is one
         // card, and asking it to sign mid-read is asking it to be in
@@ -284,29 +284,25 @@
     @ViewBuilder private var signatureSection: some View {
       if signing.pending != nil {
         let pinTitle =
-          pin2Cache.isWarm
-          ? String(localized: "PIN 2 (remembered)")
-          : String(localized: "PIN 2")
+          pin2Cache.isWarm ? String(localized: "PIN 2 (remembered)") : String(localized: "PIN 2")
         Section {
           SignatureFormatRow(documents: signing.queued, format: $format)
-          CredentialSecretField(
-            name: pinTitle,
-            text: $pin2,
-            revealIdentifier: "signPin2Reveal"
-          ) {
-            SecureField(pinTitle, text: $pin2)
-              .onChange(of: pin2) { _, typed in
-                pin2 = LimitedDigits.pin(typed)
-              }
-              .focused($pinFocused)
-              .onSubmit { sign() }
-              .accessibilityIdentifier("signPin2")
+          if asksLocalPin2 {
+            CredentialSecretField(
+              name: pinTitle,
+              text: $pin2,
+              revealIdentifier: "signPin2Reveal"
+            ) {
+              SecureField(pinTitle, text: $pin2)
+                .onChange(of: pin2) { _, typed in
+                  pin2 = LimitedDigits.pin(typed)
+                }
+                .focused($pinFocused)
+                .onSubmit { sign() }
+                .accessibilityIdentifier("signPin2")
+            }
           }
-          // The visible stamp is drawn into the PDF's signed revision;
-          // a container carries the file unchanged, so there is
-          // nothing to draw it into. The whole feature is compiled in
-          // only when Config/Features.xcconfig says so - without it,
-          // no stamp is ever offered or requested.
+          // Stamp is drawn into the signed PDF revision only.
           #if FEATURE_PDF_STAMP
             if format == .pades {
               StampRow(signing: signing, accessNumber: $accessNumber)
@@ -320,7 +316,7 @@
           #endif
           actionRow
         }
-        .onAppear { pinFocused = true }
+        .onAppear { if asksLocalPin2 { pinFocused = true } }
       }
     }
 
@@ -424,10 +420,8 @@
       let destination =
         separately ? nil : SignedOutput.chooseFile(for: signing.queued, format: format)
       guard separately ? folder != nil : destination != nil else { return }
-      // The freshly typed PIN wins; an empty field falls back to the
-      // one a signature accepted within the last minute.
       let entry = Self.isEntryComplete(pin2) ? pin2 : (pin2Cache.current() ?? "")
-      guard !entry.isEmpty else { return }
+      if asksLocalPin2, entry.isEmpty { return }
       pin2 = ""
       let number = accessNumber
       let chosenFormat = format
@@ -450,13 +444,19 @@
         // value is always known good and never spends an attempt; any
         // failure forgets it and asks for the PIN again.
         if signing.lastActionSignedSomething {
-          pin2Cache.remember(entry)
+          if asksLocalPin2 { pin2Cache.remember(entry) }
           signing.clearQueue()
-        } else {
+        } else if asksLocalPin2 {
           pin2Cache.clear()
         }
       }
     }
+
+    // PIN 2 for a paired phone is collected on that phone, not here.
+    // It is not stored in the iPhone app. The phone holds it in memory
+    // for at most one minute so a pile of documents is one prompt.
+    // A local reader still collects PIN 2 in this window.
+    // The Mac does not send PIN 2.
   }
 
 #endif

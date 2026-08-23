@@ -65,16 +65,16 @@ internal enum DocumentSigner {
 
   // MARK: Static Computed Properties
 
-  #if os(macOS) && REFINEID_REMOTE_CARD
+  #if REFINEID_REMOTE_CARD
     /// A selected RAPP phone is the signing device only when no local reader
     /// card is ready.
     ///
     /// The two paths never silently retry one another after an
     /// authenticated or credential-bearing operation has begun.
     @MainActor internal static var usesRappSigning: Bool {
-      guard !CardPresence.shared.isReaderCardReady else { return false }
-      let selected = try? RappDeviceVault().selectedPairID()
-      return (selected) != nil
+      !SupportedCardTransports.offersNearField
+        && !CardPresence.shared.isReaderCardReady
+        && (try? RappDeviceVault().selectedPairID()) != nil
     }
 
     /// Builds the same locally verified card material as the reader path while
@@ -332,7 +332,7 @@ internal enum DocumentSigner {
       throw Failure.document(error)
     }
     let digest = prepared.digest
-    #if os(macOS) && REFINEID_REMOTE_CARD
+    #if REFINEID_REMOTE_CARD
       if await MainActor.run(body: { Self.usesRappSigning }) {
         return try await Self.remoteCardMaterial(
           prepared: prepared,

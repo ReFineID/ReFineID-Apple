@@ -253,7 +253,17 @@ internal struct CardCredentialsView: View {
   #if os(iOS)
     /// Whether a qualified signature can start right now.
     internal var signingAvailable: Bool {
-      hasReaderIdentity || isCardAccessNumberEntryComplete
+      hasIdentity || hasReaderIdentity || isCardAccessNumberEntryComplete
+        || hasRemoteSigningIdentity
+    }
+
+    /// Whether a paired phone has already named a person to sign as.
+    private var hasRemoteSigningIdentity: Bool {
+      #if REFINEID_REMOTE_CARD
+        remoteModel.holder != nil
+      #else
+        false
+      #endif
     }
 
     /// Whether the credential management route can be taken right now.

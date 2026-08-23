@@ -39,6 +39,15 @@
       #endif
     }
 
+    /// Whether this window collects PIN 2, or the paired phone does.
+    internal var asksLocalPin2: Bool {
+      #if REFINEID_REMOTE_CARD
+        !DocumentSigner.usesRappSigning
+      #else
+        true
+      #endif
+    }
+
     /// The signature style every dropped document can take.
     ///
     /// A container suits any file; a PAdES signature suits only a PDF.
