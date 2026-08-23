@@ -5,6 +5,26 @@ controls iPhone scope. `Documentation/release-plan.md` controls
 macOS scope and shared security behavior. This file records the concrete
 values chosen under them.
 
+## 2026-08-23 6-character pairing code and persistent Diffie-Hellman reconnection
+
+The pairing ceremony and connection lifecycle between borrowing devices
+(iPad, Mac) and provider devices (iPhone) are improved for usability and
+resilience.
+
+Pairing codes transition from an 8-character hyphenated format
+(`ABCD-1234`) to a 6-character hyphen-free alphanumeric format (`K7P9M2`).
+With 36 symbols, 6 characters provide 31.0 bits of entropy (2.18 billion
+combinations), exceeding Bluetooth passkey pairing ($10^6$) while fitting
+into standard auto-advancing text input cells without requiring keyboard mode
+switching.
+
+Noise XXpsk3 with Curve25519 ensures zero-knowledge pairing: the code is never
+sent across the wire and is discarded immediately after key agreement.
+Subsequent reconnections use stored static Curve25519 keys and silent
+mDNS rendezvous tokens, restoring connections automatically without user
+prompts. Full details are documented in
+`Documentation/pairing-and-connection-improvement-plan.md`.
+
 ## 2026-08-22 macOS ships with the remote card gated off
 
 The macOS app goes to the App Store carrying the same gates as the

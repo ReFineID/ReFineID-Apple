@@ -43,7 +43,12 @@
       // A length, never the offer: it answers whether the whole of it
       // survived the cable, which is the one thing a caller cannot see.
       DebugConsole.emit("pair-with-offer: offer characters: " + String(offerURI.count))
-      model.acceptOfferWithoutScanning(offerURI)
+      let normalizedCode = RappPairingCode.normalize(offerURI)
+      if RappPairingCode.isValid(normalizedCode) {
+        model.acceptPairingCode(normalizedCode)
+      } else {
+        model.acceptOfferWithoutScanning(offerURI)
+      }
 
       for _ in 0..<attempts {
         switch model.phase {
