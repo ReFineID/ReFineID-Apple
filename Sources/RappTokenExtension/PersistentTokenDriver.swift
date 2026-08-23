@@ -176,7 +176,7 @@ internal final class PersistentTokenDriver: TKTokenDriver,
     }
   }
 
-  internal override init() {
+  override internal init() {
     super.init()
     delegate = self
   }
