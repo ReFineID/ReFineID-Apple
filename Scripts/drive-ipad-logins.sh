@@ -71,12 +71,26 @@ for booted_non_ipad in $(xcrun simctl list devices booted 2>/dev/null | grep -v 
 done
 xcrun simctl boot "$IPAD_UDID" 2>/dev/null || true
 
+clean_safari() {
+  echo "==> Clearing Safari tabs and state on iPad simulator..."
+  xcrun simctl terminate "$IPAD_UDID" com.apple.mobilesafari 2>/dev/null || true
+  rm -f "/Users/pk/Library/Developer/CoreSimulator/Devices/$IPAD_UDID/data/Library/Safari/SafariTabs.db"* \
+        "/Users/pk/Library/Developer/CoreSimulator/Devices/$IPAD_UDID/data/Library/Safari/BrowserState.db"* \
+        "/Users/pk/Library/Developer/CoreSimulator/Devices/$IPAD_UDID/data/Library/Safari/CloudTabs.db"* 2>/dev/null || true
+  local data_container
+  data_container="$(xcrun simctl get_app_container "$IPAD_UDID" com.apple.mobilesafari data 2>/dev/null || true)"
+  if [[ -n "$data_container" && -d "$data_container" ]]; then
+    rm -rf "$data_container/Library/Safari/"* "$data_container/Library/Saved Application State/"* "$data_container/Library/Caches/"* 2>/dev/null || true
+  fi
+}
+
 run_direct_login() {
   local target_url="$1"
   local site_name="$2"
+  clean_safari
   echo "==> Direct opening Safari on iPad simulator to: $target_url ($site_name)"
   xcrun simctl openurl "$IPAD_UDID" "$target_url"
-  sleep 3
+  sleep 4
   local timestamp
   timestamp="$(date +%Y%m%d_%H%M%S)"
   local screenshot_path="/tmp/ipad_login_${site_name}_${timestamp}.png"
@@ -87,6 +101,7 @@ run_direct_login() {
 run_uitest_login() {
   local test_method="$1"
   local site_name="$2"
+  clean_safari
   echo "==> Running XCUITest driver for $site_name ($test_method)..."
   TEST_RUNNER_REFINEID_REAL_CARD_TESTS=1 \
   TEST_RUNNER_REFINEID_SAFARI_OPEN_VIA_APP=1 \
