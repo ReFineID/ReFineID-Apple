@@ -30,18 +30,6 @@ import Security
 /// `SafariIdentityPrime.storePrimedIdentity` in
 /// `platform/apple/RefineID/Local/SafariIdentityPrime+PrimeStore.swift`.
 public enum PrimeStore {
-  /// A contactless lookup result and the field purpose it represents.
-  public struct ContactlessMatch: Sendable {
-    /// The identity metadata to publish.
-    public let identity: PrimedIdentity
-
-    /// True only for the app's one-time registration field.
-    ///
-    /// The token extension must publish without taking a card session in
-    /// this field. Later signing fields take and retain the session.
-    public let isRegistrationField: Bool
-  }
-
   /// One decoded keychain record, still named only inside this store.
   private struct StoredItem {
     let account: String
@@ -330,6 +318,11 @@ public enum PrimeStore {
   /// here spends no card session and asks the holder for nothing.
   public static func primedAuthenticationCertificates() -> [Data] {
     presenceOrderedItems().map(\.identity.certDER)
+  }
+
+  /// The stored primed identities this device holds.
+  public static func storedIdentities() -> [PrimedIdentity] {
+    presenceOrderedItems().map(\.identity)
   }
 
   /// The stored primes ``presence()`` reports, in the order it reports
