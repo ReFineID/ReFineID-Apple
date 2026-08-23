@@ -5,6 +5,24 @@ controls iPhone scope. `Documentation/release-plan.md` controls
 macOS scope and shared security behavior. This file records the concrete
 values chosen under them.
 
+## 2026-08-23 Product owns RAPP; the card leaving ends the pairing
+
+This repository is the change controller for the Remote Authorization
+Proxy Protocol as ReFineID ships it. When product behaviour needs a
+wire event the draft does not name, the draft is amended here. Working
+around a silent protocol is not an option.
+
+Pulling a reader card, or unplugging the reader, ends every pairing
+that was serving that card. NFC primes are not this event: the field
+has no lasting connected state.
+
+On an authenticated session the proxy sends `session.close` with
+reason `card_unavailable`, which carries the Section 14.6 revocation
+notice. With no session, each peer revokes locally: the holder because
+the card is gone, the requester because the holder's pair-specific
+advertisement has left. That requester decision is local revocation
+under 14.6, not unauthenticated peer input, so INV-18 still holds.
+
 ## 2026-08-23 Floor is iOS 26 and macOS 26
 
 Debug, Profile, TestFlight, and Release share one floor: 26.0. The

@@ -26,7 +26,7 @@ internal struct FieldSpec {
 
   internal static let closeReasons: Set<String> = [
     "user_disconnect", "policy", "credential_rejected", "protocol_violation",
-    "pairing_revoked", "shutdown",
+    "pairing_revoked", "card_unavailable", "shutdown",
   ]
 
   internal static let operationStatuses: Set<String> = [

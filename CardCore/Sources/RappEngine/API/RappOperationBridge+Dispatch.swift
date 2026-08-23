@@ -87,8 +87,7 @@ extension RappOperationBridge {
       // too (specification section 14.6). Every other reason closes only
       // the session.
       if case .text(let reason)? = envelope.body["reason"],
-        reason == CloseReasonName.pairingRevoked
-          || reason == CloseReasonName.protocolViolation
+        CloseReasonName.revokesPairing(reason)
       {
         var action = closingAction(.pairRevoked)
         action.revokesPairing = true
@@ -258,6 +257,31 @@ extension RappOperationBridge {
       var store = VaultRequesterJournalStore(vault: vault, pairIdentifier: pairIdentifier)
       _ = engine.sessionClosed(store: &store)
       side = .requester(engine)
+    }
+  }
+
+  /// Ends the session and the pairing because the proxy can no longer
+  /// serve the card, per `card_unavailable` in Section 14.6.
+  ///
+  /// The best-effort close notice is sealed while the channel still
+  /// exists; the caller releases it and durably revokes the pairing.
+  public func cardUnavailableClose() -> RappBridgeAction {
+    locked {
+      guard !closed else { return RappBridgeAction(kind: .noAction) }
+      classifyLiveOperations()
+      let notice = try? session.seal(
+        .sessionClose,
+        body: [
+          "reason": .text(CloseReasonName.cardUnavailable),
+          "last_received_sequence": .unsigned(session.lastReceivedSequence),
+        ])
+      closed = true
+      session.close()
+      return RappBridgeAction(
+        kind: .pairRevoked,
+        frame: notice,
+        closeSessionAfterSend: notice != nil,
+        revokesPairing: true)
     }
   }
 

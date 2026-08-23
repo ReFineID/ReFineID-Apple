@@ -23,9 +23,9 @@ public struct RappBridgeAction: Equatable, Sendable {
   /// Durably revoke the stored pairing before releasing any frame.
   ///
   /// Set for the conditions whose pairing effect the specification's
-  /// failure taxonomy names as revocation: a rejected credential and an
-  /// authenticated protocol violation, plus a peer's authenticated
-  /// revocation notice.
+  /// failure taxonomy names as revocation: a rejected credential, an
+  /// authenticated protocol violation, a peer's authenticated
+  /// revocation notice, and the proxy's card becoming unavailable.
   public var revokesPairing: Bool
   /// When the caller should next poll liveness, on the monotonic clock.
   public var nextPollAtMs: UInt64?

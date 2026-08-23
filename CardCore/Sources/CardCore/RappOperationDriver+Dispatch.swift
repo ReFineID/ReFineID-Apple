@@ -88,6 +88,17 @@
       return [.closed(revokedWhileClosing ? .pairRevoked : .localRequest)]
     }
 
+    /// Ends the session and the pairing because the card can no longer
+    /// be served.
+    public func revokeBecauseCardUnavailable() -> [Command] {
+      guard !closed else { return [] }
+      do {
+        return try commands(bridge.cardUnavailableClose())
+      } catch {
+        return close()
+      }
+    }
+
     internal func commands(_ action: RappBridgeAction) throws -> [Command] {
       if action.revokesPairing {
         // The revocation is written before any notice frame is released,

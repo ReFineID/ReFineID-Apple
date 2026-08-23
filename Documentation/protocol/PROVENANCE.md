@@ -10,8 +10,10 @@ corpus in `../rapp-conformance/` is generated from the same revision and is
 replayed by the test suite, so a change here that the engine does not follow
 fails the build rather than drifting silently.
 
-Do not edit these files here. Change them at the canonical source, regenerate
-the corpus, and re-vendor all three together.
+The ReFineID product is the change controller for this protocol. Amend
+these files here when product behaviour needs a wire event the draft
+does not name, regenerate the corpus that the change touches, and keep
+the engine on the same revision. A silent workaround is not a substitute.
 
 `../rapp-conformance/rapp-transport-v26.8.17.233.json` records post-handshake
 frames generated from the canonical Rust engine at wire version 26.8, using the

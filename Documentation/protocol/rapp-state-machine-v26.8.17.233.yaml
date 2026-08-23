@@ -285,7 +285,7 @@ pairing:
       to: revoked
       actions: [destroy_pair_keys, show_revoked]
     - from: paired_connected
-      event: peer_revocation_notice     # produced by peer_close_received with reason pairing_revoked or protocol_violation
+      event: peer_revocation_notice     # produced by peer_close_received with reason pairing_revoked, protocol_violation, or card_unavailable
       role: both
       to: revoked
       actions: [record_peer_initiated, close_session, destroy_pair_keys, show_revoked]

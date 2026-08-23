@@ -472,6 +472,26 @@
       }
     }
 
+    /// Ends the session and the pairing because the card can no longer
+    /// be served.
+    public func revokeBecauseCardUnavailable() async {
+      switch phase {
+      case .handshaking:
+        _ = await handshake.close()
+        await finish(.localRequest)
+
+      case .operating:
+        guard let operation else {
+          await finish(.localRequest)
+          return
+        }
+        await handleOperation(await operation.revokeBecauseCardUnavailable())
+
+      case .closed:
+        return
+      }
+    }
+
     private func scheduleLiveness(at deadline: UInt64) {
       guard phase == .operating else { return }
       livenessTask?.cancel()

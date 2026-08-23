@@ -58,8 +58,10 @@
       ReaderPin1Cache.shared.clear()
       wipeLocalTokens()
       #if REFINEID_REMOTE_CARD
-        RappPairingModel.revokeEveryStoredPair()
-        PhonePersistentTokenRelay.shared.stopListening()
+        Task {
+          await PhonePersistentTokenRelay.shared.revokeBecauseCardUnavailable()
+          RappPairingModel.revokeEveryStoredPair()
+        }
       #endif
     }
 
