@@ -32,7 +32,7 @@ internal struct CardIdentitySection: View {
           PersonRowLabel(configured: true)
         }
         .accessibilityIdentifier("identityStatus")
-        Spacer(minLength: 0)
+        Spacer(minLength: 4)
         // The forget action lives on the row it removes, pinned to
         // the trailing edge and centered in the row's height; the
         // confirmation dialog still stands in front of it.

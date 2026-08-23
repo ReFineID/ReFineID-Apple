@@ -129,7 +129,7 @@ import SwiftUI
           } label: {
             PersonRowLabel(configured: true)
           }
-          Spacer(minLength: 0)
+          Spacer(minLength: 4)
           Button(role: .destructive) {
             withAnimation {
               pairingModel.cancel()

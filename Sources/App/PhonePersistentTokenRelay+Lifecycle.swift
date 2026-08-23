@@ -31,6 +31,8 @@
         relay = nil
       #endif
       if let coord = coordinator {
+        // Notify the remote side that the transport is closed intentionally.
+        Task { await coord.transportClosed() }
         Task { await coord.close() }
       }
       coordinator = nil
@@ -39,6 +41,7 @@
       preCoordinatorFrames.removeAll(keepingCapacity: false)
       frameDelivery.reset()
     }
+
 
     internal func suspendForPairing() {
       relistenPolicy = .explicitUserActionRequired
