@@ -8,7 +8,9 @@
   /// System randomness at the byte counts the Rust core publishes.
   public struct RappPlatformEntropy: Sendable {
     /// Creates a stateless entropy source.
-    public init() {}
+    public init() {
+      // platform default
+    }
 
     /// Returns a fresh pairing offer identifier.
     public func offerID() throws -> Data {
