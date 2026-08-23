@@ -47,7 +47,8 @@ the block's, which is what makes `Match user` fire.
 
 The system PIN dialog appears when the connection is signed -- the
 token uses the protected authentication path, so no PIN is typed into
-the terminal. `ControlMaster` reuse avoids a dialog per connection.
+the terminal. Reusing a multiplexed ssh session avoids a dialog per
+connection.
 
 That dialog cannot be answered over a remote or headless session.
 `REFINEID_PKCS11_PIN_ENTRY=textual` withdraws the protected
