@@ -122,15 +122,19 @@ extension CardCredentialsView {
         }
       #endif
       .onValueChange(of: isCardAccessNumberEntryComplete) { complete in
-        if !complete {
-          pin1Entry = ""
-          isPin1FieldFocused = false
+        if complete {
           #if os(iOS)
-            if isDemonstration {
-              demoMode.forgetIdentity()
-            }
+            isPin1FieldFocused = true
           #endif
+          return
         }
+        pin1Entry = ""
+        isPin1FieldFocused = false
+        #if os(iOS)
+          if isDemonstration {
+            demoMode.forgetIdentity()
+          }
+        #endif
       }
       .onValueChange(of: cardAccessNumberEntry) { entered in
         model.invalidateCardStatus()

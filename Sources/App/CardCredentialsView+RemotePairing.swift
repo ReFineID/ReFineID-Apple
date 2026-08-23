@@ -112,7 +112,7 @@ import SwiftUI
         TextField("123 456", text: pairingCodeBinding)
           .font(.system(.body, design: .monospaced, weight: .semibold))
           .keyboardType(.numberPad)
-          .multilineTextAlignment(.trailing)
+          .multilineTextAlignment(.leading)
           .focused($isPairingCodeFocused)
           .frame(width: RemotePairingLayout.inlineInputWidth)
           .accessibilityIdentifier("pairingCodeEntry")
