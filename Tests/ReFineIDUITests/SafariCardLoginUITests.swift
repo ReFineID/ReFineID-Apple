@@ -253,11 +253,55 @@
       )
     }
 
+    /// Ensures an identity is actively published to CryptoTokenKit.
+    private func ensureCryptoTokenIdentityReady() -> Bool {
+      let app = XCUIApplication()
+      app.launch()
+      let forgetButton = app.buttons["forgetRemoteIdentity"]
+      if !forgetButton.exists {
+        let connectButton = app.buttons["connectRemoteReader"]
+        if connectButton.waitForExistence(timeout: 4) {
+          connectButton.tap()
+          _ = forgetButton.waitForExistence(timeout: 15)
+        }
+      }
+      return forgetButton.exists
+    }
+
+    /// Opens the target site in Safari via direct app open or address typing.
+    private func navigateToSite(
+      _ targetSite: String,
+      in safari: XCUIApplication,
+      address: XCUIElement
+    ) {
+      if UITestEnvironment.opensViaApp {
+        let launcherApp = XCUIApplication()
+        launcherApp.launchArguments = ["--open-safari", targetSite]
+        launcherApp.launch()
+        _ = safari.wait(for: .runningForeground, timeout: Self.launchTimeout)
+      } else {
+        address.tap()
+        if !safari.keyboards.element.waitForExistence(timeout: Self.fieldTimeout) {
+          address.tap()
+          _ = safari.keyboards.element.waitForExistence(timeout: Self.fieldTimeout)
+        }
+        address.typeText(targetSite + "\n")
+      }
+    }
+
     /// Unified login driver across target sites.
     private func driveLogin(
       targetSite: String,
       successMarkers: [String]
     ) {
+      guard ensureCryptoTokenIdentityReady() else {
+        XCTFail(
+          "ReFineID is not in connected state: no identity in CryptoTokenKit."
+            + " Connect/pair remote reader before running Safari login test."
+        )
+        return
+      }
+
       let safari = XCUIApplication(bundleIdentifier: Self.safariBundleIdentifier)
       safari.launch()
       XCTAssertTrue(
@@ -272,25 +316,7 @@
         XCTFail("Safari showed no address field to type into")
         return
       }
-      if UITestEnvironment.opensViaApp {
-        // A simulator's Safari does not reliably hand the address field
-        // keyboard focus to a synthesized tap, so the app opens the page
-        // and Safari comes forward already loading it.
-        let app = XCUIApplication()
-        app.launchArguments = ["--open-safari", targetSite]
-        app.launch()
-        _ = safari.wait(for: .runningForeground, timeout: Self.launchTimeout)
-      } else {
-        // Safari's address field takes a tap to focus and does not report
-        // that focus synchronously, so typing straight after the tap fails
-        // with "neither element nor any descendant has keyboard focus".
-        address.tap()
-        if !safari.keyboards.element.waitForExistence(timeout: Self.fieldTimeout) {
-          address.tap()
-          _ = safari.keyboards.element.waitForExistence(timeout: Self.fieldTimeout)
-        }
-        address.typeText(targetSite + "\n")
-      }
+      navigateToSite(targetSite, in: safari, address: address)
       attachScreenshot(safari.screenshot(), named: "02-site-requested")
 
       let observation = watch(safari, matching: successMarkers)
