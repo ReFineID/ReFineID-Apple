@@ -23,20 +23,13 @@
           print("[pairing] offerReady event received with URI: \(uri)")
           print("[pairing] pairingCode is: \(String(describing: pairingCode))")
         #endif
-        if let code = pairingCode {
-          phase = .offer(code)
-        } else {
-          phase = .offer(uri)
-        }
+        phase = pairingCode.map { .offer($0) } ?? .offer(uri)
 
       case .offerRestored(let uri):
         restoreRequesterOffer(uri, coordinator: coordinator)
 
       case .reviewPeer(let peer):
         reviewedPeerName = peer.displayName
-        // The scan of the offer QR, carrying its 256-bit bearer secret, is the
-        // human consent that authorizes this pairing and its public reads. Only
-        // a device that saw the code can reach this point, on either side, so
         Task { [weak coordinator] in
           await coordinator?.approve(
             grantedProfiles: RappApplePeerProfile.supportedCredentialProfiles
@@ -44,33 +37,39 @@
         }
 
       case .paired(let pair):
-        do {
-          try vault.selectPair(pairID: pair.pairID)
-          if let reviewedPeerName {
-            RappPairNames.remember(reviewedPeerName, pairID: pair.pairID)
-          }
-          supersedeOlderPairings(with: pair.pairID)
-          selectedPairID = pair.pairID
-          phase = .paired(pair)
-          refresh()
-          finishAttempt()
-          resumeRegularRelay()
-          #if os(macOS)
-            PersistentTokenRegistry.shared.startAfterPairing()
-            // After the completed ceremony has released its coordinator,
-            // mint the next code this Settings pane exists to show.
-            createOffer()
-          #endif
-        } catch {
-          fail(String(localized: "The paired device could not be selected"))
-        }
+        handlePaired(pair)
 
       case .closed(let reason):
         guard !isFinished else { return }
         #if DEBUG
           print("[pairing] closed \(String(describing: reason))")
         #endif
-        fail(String(localized: "Pairing ended before it was completed"))
+        #if os(macOS)
+          createOffer()
+        #else
+          fail(String(localized: "Pairing ended before it was completed"))
+        #endif
+      }
+    }
+
+    private func handlePaired(_ pair: RappPairingCoordinator.PairSummary) {
+      do {
+        try vault.selectPair(pairID: pair.pairID)
+        if let reviewedPeerName {
+          RappPairNames.remember(reviewedPeerName, pairID: pair.pairID)
+        }
+        supersedeOlderPairings(with: pair.pairID)
+        selectedPairID = pair.pairID
+        phase = .paired(pair)
+        refresh()
+        finishAttempt()
+        resumeRegularRelay()
+        #if os(macOS)
+          PersistentTokenRegistry.shared.startAfterPairing()
+          createOffer()
+        #endif
+      } catch {
+        fail(String(localized: "The paired device could not be selected"))
       }
     }
 
@@ -78,11 +77,7 @@
       _ uri: String,
       coordinator: RappPairingCoordinator
     ) {
-      if let code = pairingCode {
-        phase = .offer(code)
-      } else {
-        phase = .offer(uri)
-      }
+      phase = pairingCode.map { .offer($0) } ?? .offer(uri)
       relay?.cancel()
       let replacement = makeRelay(role: .host)
       let replacementTransport = makeTransport(relay: replacement)

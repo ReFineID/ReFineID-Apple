@@ -22,11 +22,6 @@
             .tracking(Layout.trackingSpacing)
             .accessibilityIdentifier("pairingCode")
             .accessibilityLabel(code)
-        } else if case .failed(let error) = model.phase {
-          Text(error)
-            .font(.footnote)
-            .foregroundStyle(.red)
-            .multilineTextAlignment(.center)
         } else {
           ProgressView()
         }
@@ -38,6 +33,11 @@
       }
       .onDisappear {
         model.cancel()
+      }
+      .onChange(of: model.phase) { _, phase in
+        if case .failed = phase {
+          model.createOffer()
+        }
       }
     }
   }
