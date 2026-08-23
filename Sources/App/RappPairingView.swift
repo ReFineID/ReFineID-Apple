@@ -41,11 +41,14 @@
     @State private var copied = false
 
     /// Whether this device can only borrow a card, never serve one.
+    ///
+    /// The stream listener is the phone. iPad (no near field) and Mac
+    /// therefore always offer; an iPhone with near field always accepts.
     private var borrowsOnly: Bool {
       #if os(iOS)
         return !SupportedCardTransports.offersNearField
       #else
-        return false
+        return true
       #endif
     }
 
