@@ -87,7 +87,9 @@ internal final class CredentialRetryHealth: ObservableObject {
 
   // MARK: Lifecycle
 
-  private init() {}
+  private init() {
+    // singleton
+  }
 
   // MARK: Static Functions
 
