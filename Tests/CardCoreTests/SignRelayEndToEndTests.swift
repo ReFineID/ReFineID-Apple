@@ -51,23 +51,23 @@ import Testing
 
       let wire = SignRelayWire(requester: requesterSession, proxy: proxySession)
       await wire.answerWith { request in
-        .signatureResponse(id: request.requestID, signature: Self.signature)
+        .signatureResponse(requestID: request.requestID, signature: Self.signature)
       }
       try await wire.establish()
 
       #expect(await requesterSession.isEstablished)
       #expect(await proxySession.isEstablished)
 
-      let id = UUID()
+      let requestID = UUID()
       let answer = try await wire.ask(
         .signatureRequest(
-          id: id,
+          requestID: requestID,
           profile: .ecdsaP256,
           algorithm: .ecdsaSHA256,
           digest: Data(repeating: 0xA5, count: 32)
         ))
 
-      #expect(answer == .signatureResponse(id: id, signature: Self.signature))
+      #expect(answer == .signatureResponse(requestID: requestID, signature: Self.signature))
     }
   }
 #endif

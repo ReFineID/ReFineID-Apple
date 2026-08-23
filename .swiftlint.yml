@@ -72,6 +72,13 @@
 
 strict: true
 
+identifier_name:
+  excluded:
+    - i
+    - x
+    - y
+    - z
+
 # Every source file opens with the copyright and licence header. The
 # rule forbids "Copyright" by default (to strip Xcode's auto-header),
 # so it is pointed at the header that is wanted instead.

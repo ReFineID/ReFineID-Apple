@@ -27,18 +27,12 @@ import Foundation
 /// holder's name.
 internal struct DiagnosticsSnapshot: Sendable {
   /// One titled block of lines.
-  internal struct Section: Identifiable, Sendable {
+  internal struct Section: Sendable {
     /// What the block is about; also its identity in a list.
     internal let title: String
 
     /// The lines, in the order they were collected.
     internal let lines: [String]
-
-    /// Identity for `ForEach`: the title, which is unique by
-    /// construction.
-    internal var id: String {
-      title
-    }
   }
 
   /// What is printed for a section that found nothing.

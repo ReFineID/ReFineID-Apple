@@ -72,7 +72,7 @@
           }
         }
       }
-      ForEach(rows) { row in
+      ForEach(rows, id: \.rowIndex) { row in
         signatureSection(row)
       }
       Section {

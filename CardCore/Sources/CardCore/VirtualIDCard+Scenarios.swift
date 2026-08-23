@@ -4,7 +4,7 @@
 /// scenario can queue against it.
 extension VirtualIDCard {
   /// A preset snapshot the virtual card can start from or reset to.
-  public enum Scenario: String, CaseIterable, Identifiable, Sendable {
+  public enum Scenario: String, CaseIterable, Sendable {
     case factoryFreshNearField = "factory-fresh-nfc"
     case legacyFactoryFreshNearField = "legacy-factory-fresh-nfc"
     case partialActivationNearField = "partial-activation-nfc"
@@ -16,9 +16,6 @@ extension VirtualIDCard {
     case pin2RecoveryReader = "pin2-recovery-reader"
     case pukRecoveryRefusedReader = "puk-recovery-refused-reader"
     case absent = "absent"
-
-    /// The value itself as its stable identity.
-    public var id: Self { self }
 
     /// Whether the scenario connects over the near-field transport.
     public var usesNearField: Bool {
@@ -150,7 +147,7 @@ extension VirtualIDCard {
   }
 
   /// A card operation that a queued fault can intercept.
-  public enum Operation: String, CaseIterable, Identifiable, Sendable {
+  public enum Operation: String, CaseIterable, Sendable {
     case any = "any"
     case connect = "connect"
     case probeCredentials = "probeCredentials"
@@ -164,9 +161,6 @@ extension VirtualIDCard {
     case publishToken = "publishToken"
     case authenticateSignature = "authenticateSignature"
     case qualifiedSignature = "qualifiedSignature"
-
-    /// The value itself as its stable identity.
-    public var id: Self { self }
   }
 
   /// The point within an operation at which a fault fires.
@@ -174,25 +168,19 @@ extension VirtualIDCard {
   /// A fault before the command prevents the card from acting; a fault
   /// after card execution loses only the response, leaving the card's
   /// state change in place.
-  public enum FaultPhase: String, CaseIterable, Identifiable, Sendable {
+  public enum FaultPhase: String, CaseIterable, Sendable {
     case beforeCommand = "beforeCommand"
     case afterCardExecution = "afterCardExecution"
-
-    /// The value itself as its stable identity.
-    public var id: Self { self }
   }
 
   /// The failure surfaced to the caller when a fault fires.
-  public enum FaultEffect: String, CaseIterable, Identifiable, Sendable {
+  public enum FaultEffect: String, CaseIterable, Sendable {
     case connectionLost = "connectionLost"
     case readerDisconnected = "readerDisconnected"
     case cardRemoved = "cardRemoved"
     case timeout = "timeout"
     case malformedResponse = "malformedResponse"
     case tokenNotPublished = "tokenNotPublished"
-
-    /// The value itself as its stable identity.
-    public var id: Self { self }
   }
 
   /// A deterministic transport failure queued against one operation.
@@ -221,7 +209,7 @@ extension VirtualIDCard {
   }
 
   /// A named fault queue for common failure demonstrations.
-  public enum FaultPreset: String, CaseIterable, Identifiable, Sendable {
+  public enum FaultPreset: String, CaseIterable, Sendable {
     case noFault = "noFault"
     case nfcDisconnectBeforeConnection = "nfcDisconnectBeforeConnection"
     case readerFailsCounterQuery = "readerFailsCounterQuery"
@@ -232,9 +220,6 @@ extension VirtualIDCard {
     case tokenPublicationFailure = "tokenPublicationFailure"
     case cardRemovedDuringSignature = "cardRemovedDuringSignature"
     case responseLostAfterSignature = "responseLostAfterSignature"
-
-    /// The value itself as its stable identity.
-    public var id: Self { self }
 
     /// Whether the fault can only occur on the near-field transport.
     public var usesNearField: Bool {

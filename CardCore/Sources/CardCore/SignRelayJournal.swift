@@ -9,9 +9,9 @@ import Foundation
 /// would otherwise reach the card again on the retry, and a PIN attempt
 /// spent that way does not come back.
 public protocol SignRelayJournal: Sendable {
-  /// The answer already given for `id`, if there is one.
-  func answer(for id: UUID) throws -> PersistentRelayMessage?
+  /// The answer already given for `requestID`, if there is one.
+  func answer(for requestID: UUID) throws -> PersistentRelayMessage?
 
-  /// Records the answer given for `id`.
-  func record(_ answer: PersistentRelayMessage, for id: UUID) throws
+  /// Records the answer given for `requestID`.
+  func record(_ answer: PersistentRelayMessage, for requestID: UUID) throws
 }

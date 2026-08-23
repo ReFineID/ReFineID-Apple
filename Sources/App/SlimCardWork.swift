@@ -17,22 +17,23 @@
       _ request: PersistentRelayMessage
     ) async -> PersistentRelayMessage {
       switch request {
-      case .identityRequest(let id):
+      case .identityRequest(let requestID):
         guard let primed = PrimeStore.primedAuthenticationCertificates().first else {
-          return .failure(id: id, reason: .cardUnavailable)
+          return .failure(requestID: requestID, reason: .cardUnavailable)
         }
-        return .identityResponse(id: id, certificateDER: primed)
+        return .identityResponse(requestID: requestID, certificateDER: primed)
 
-      case .signatureRequest(let id, let profile, let algorithm, let digest):
-        return await sign(id: id, profile: profile, algorithm: algorithm, digest: digest)
+      case .signatureRequest(let requestID, let profile, let algorithm, let digest):
+        return await sign(
+          requestID: requestID, profile: profile, algorithm: algorithm, digest: digest)
 
       case .failure, .identityResponse, .signatureResponse:
-        return .failure(id: request.requestID, reason: .unsupportedAlgorithm)
+        return .failure(requestID: request.requestID, reason: .unsupportedAlgorithm)
       }
     }
 
     private static func sign(
-      id: UUID,
+      requestID: UUID,
       profile: PersistentRelayCardProfile,
       algorithm: PersistentRelaySigningAlgorithm,
       digest: Data
@@ -40,7 +41,7 @@
       guard
         let relayAlgorithm = RappOperationDriver.SignatureAlgorithm(algorithm.signingAlgorithm)
       else {
-        return .failure(id: id, reason: .unsupportedAlgorithm)
+        return .failure(requestID: requestID, reason: .unsupportedAlgorithm)
       }
       let accessNumber = CardCredentialStore.displayedCardAccessNumber()
       let outcome = await RappCardExecutor.browserAuthentication(
@@ -51,19 +52,19 @@
       )
       switch outcome {
       case .result(let signature):
-        return .signatureResponse(id: id, signature: signature)
+        return .signatureResponse(requestID: requestID, signature: signature)
 
       case .rejected(.cardAccessNumber):
-        return .failure(id: id, reason: .wrongCardAccessNumber)
+        return .failure(requestID: requestID, reason: .wrongCardAccessNumber)
 
       case .rejected:
-        return .failure(id: id, reason: .pin1Rejected(remaining: nil))
+        return .failure(requestID: requestID, reason: .pin1Rejected(remaining: nil))
 
       case .refusedBeforeCredentialTransmit:
-        return .failure(id: id, reason: .cardUnavailable)
+        return .failure(requestID: requestID, reason: .cardUnavailable)
 
       case .completionAmbiguous:
-        return .failure(id: id, reason: .communication)
+        return .failure(requestID: requestID, reason: .communication)
       }
     }
   }

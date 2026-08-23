@@ -52,7 +52,7 @@
           return
         }
         let requestID = UUID()
-        guard let request = SignRelayOperation.request(for: operation, id: requestID) else {
+        guard let request = SignRelayOperation.request(for: operation, requestID: requestID) else {
           finish(error: .unexpectedResult)
           return
         }

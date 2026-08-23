@@ -24,9 +24,9 @@ internal struct SignRelayTests {
     }
   }
 
-  private static func request(_ id: UUID) -> PersistentRelayMessage {
+  private static func request(_ requestID: UUID) -> PersistentRelayMessage {
     .signatureRequest(
-      id: id,
+      requestID: requestID,
       profile: .ecdsaP256,
       algorithm: .ecdsaSHA256,
       digest: digest
@@ -41,16 +41,17 @@ internal struct SignRelayTests {
   /// survived: the antenna takes seconds, and nothing here is counting.
   @Test
   internal func aSlowCardReadStillAnswers() async throws {
-    let id = UUID()
+    let requestID = UUID()
     let proxy = SignRelayProxy { request in
       try? await Task.sleep(for: .seconds(7))
-      return .signatureResponse(id: request.requestID, signature: Self.signature)
+      return .signatureResponse(requestID: request.requestID, signature: Self.signature)
     }
 
-    let payload = try Self.request(id).encoded()
+    let payload = try Self.request(requestID).encoded()
     let answer = try await proxy.answer(to: payload)
 
-    let expected = PersistentRelayMessage.signatureResponse(id: id, signature: Self.signature)
+    let expected = PersistentRelayMessage.signatureResponse(
+      requestID: requestID, signature: Self.signature)
     #expect(try PersistentRelayMessage.decoded(#require(answer)) == expected)
   }
 
@@ -60,18 +61,19 @@ internal struct SignRelayTests {
   /// guarantee worth the machinery it takes.
   @Test
   internal func aRepeatedRequestReachesTheCardOnce() async throws {
-    let id = UUID()
+    let requestID = UUID()
     let performed = SignRelayPerformanceCounter()
     let proxy = SignRelayProxy { request in
       await performed.increment()
-      return .signatureResponse(id: request.requestID, signature: Self.signature)
+      return .signatureResponse(requestID: request.requestID, signature: Self.signature)
     }
 
-    let payload = try Self.request(id).encoded()
+    let payload = try Self.request(requestID).encoded()
     let first = try await proxy.answer(to: payload)
     let second = try await proxy.answer(to: payload)
 
-    let expected = PersistentRelayMessage.signatureResponse(id: id, signature: Self.signature)
+    let expected = PersistentRelayMessage.signatureResponse(
+      requestID: requestID, signature: Self.signature)
     #expect(try PersistentRelayMessage.decoded(#require(first)) == expected)
     #expect(try PersistentRelayMessage.decoded(#require(second)) == expected)
     #expect(await performed.count == 1)
@@ -84,7 +86,7 @@ internal struct SignRelayTests {
   /// same pairing answers from what the first one wrote down.
   @Test
   internal func aRestartDoesNotReachTheCardTwice() async throws {
-    let id = UUID()
+    let requestID = UUID()
     let vault = RappDeviceVault(
       accessGroup: nil,
       servicePrefix: "fi.refineid.tests.slim.journal.\(UUID().uuidString)")
@@ -92,22 +94,23 @@ internal struct SignRelayTests {
     defer { Self.deleteJournal(vault: vault, pairID: pairID) }
     let journal = SignRelayVaultJournal(vault: vault, pairID: pairID)
     let performed = SignRelayPerformanceCounter()
-    let payload = try Self.request(id).encoded()
+    let payload = try Self.request(requestID).encoded()
 
     let before = SignRelayProxy(journal: journal) { request in
       await performed.increment()
-      return .signatureResponse(id: request.requestID, signature: Self.signature)
+      return .signatureResponse(requestID: request.requestID, signature: Self.signature)
     }
     _ = try await before.answer(to: payload)
 
     // The process ends here, and a new proxy comes up on the same pairing.
     let after = SignRelayProxy(journal: journal) { request in
       await performed.increment()
-      return .signatureResponse(id: request.requestID, signature: Self.signature)
+      return .signatureResponse(requestID: request.requestID, signature: Self.signature)
     }
     let replayed = try await after.answer(to: payload)
 
-    let expected = PersistentRelayMessage.signatureResponse(id: id, signature: Self.signature)
+    let expected = PersistentRelayMessage.signatureResponse(
+      requestID: requestID, signature: Self.signature)
     #expect(try PersistentRelayMessage.decoded(#require(replayed)) == expected)
     #expect(await performed.count == 1)
   }

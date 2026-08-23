@@ -62,7 +62,7 @@
                 presented == nil,
                 let pending = authorizationInbox.request
               else { return }
-              authorizationInbox.deny(pending.id)
+              authorizationInbox.deny(pending.requestID)
             }
           )
         ) { request in

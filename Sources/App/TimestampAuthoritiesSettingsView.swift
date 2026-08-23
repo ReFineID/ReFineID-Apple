@@ -64,7 +64,7 @@
     @ViewBuilder private var table: some View {
       List {
         columnHeader
-        ForEach(Bindable(model).rows) { $row in
+        ForEach(Bindable(model).rows, id: \.rowID) { $row in
           tableRow($row)
         }
         .onMove { source, destination in
@@ -114,15 +114,15 @@
           text: row.address
         )
         .textFieldStyle(.plain)
-        .focused($focusedRow, equals: row.wrappedValue.id)
+        .focused($focusedRow, equals: row.wrappedValue.rowID)
         TextField("Username", text: row.username)
           .textFieldStyle(.plain)
           .frame(width: credentialWidth)
-          .focused($focusedRow, equals: row.wrappedValue.id)
+          .focused($focusedRow, equals: row.wrappedValue.rowID)
         SecureField("Password", text: row.password)
           .textFieldStyle(.plain)
           .frame(width: credentialWidth)
-          .focused($focusedRow, equals: row.wrappedValue.id)
+          .focused($focusedRow, equals: row.wrappedValue.rowID)
         deleteControl(row.wrappedValue)
       }
     }
@@ -150,7 +150,7 @@
         Spacer().frame(width: badgeWidth)
       } else {
         Button {
-          model.rows.removeAll { $0.id == row.id }
+          model.rows.removeAll { $0.rowID == row.rowID }
         } label: {
           Image(systemName: "trash")
             .foregroundStyle(.secondary)

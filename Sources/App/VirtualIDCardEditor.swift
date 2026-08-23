@@ -46,7 +46,7 @@
         virtualCardLocalized("section.scenario", defaultValue: "Scenario")
       ) {
         Menu {
-          ForEach(Self.offeredScenarios) { candidate in
+          ForEach(Self.offeredScenarios, id: \.self) { candidate in
             Button {
               scenario = candidate
             } label: {
@@ -185,7 +185,7 @@
                 defaultValue: "Generation"),
               selection: $draft.card.generation
             ) {
-              ForEach(VirtualIDCard.Generation.allCases) { generation in
+              ForEach(VirtualIDCard.Generation.allCases, id: \.self) { generation in
                 Text(generation.localizedName).tag(generation)
               }
             }
@@ -360,7 +360,7 @@
               defaultValue: "Next deterministic fault")
           ) {
             Menu {
-              ForEach(Self.offeredFaultPresets) { preset in
+              ForEach(Self.offeredFaultPresets, id: \.self) { preset in
                 Button {
                   faultPreset = preset
                 } label: {
@@ -427,7 +427,7 @@
     }
 
     private var certificateChoices: some View {
-      ForEach(VirtualIDCard.CertificateState.allCases) { state in
+      ForEach(VirtualIDCard.CertificateState.allCases, id: \.self) { state in
         Text(state.localizedName)
           .tag(state)
           .accessibilityIdentifier(

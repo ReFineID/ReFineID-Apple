@@ -27,15 +27,13 @@ internal struct CardManagementView: View {
   /// takes a new value whether or not the credential was blocked, so
   /// someone who has forgotten a PIN does not have to exhaust it
   /// first to be allowed a new one.
-  internal enum ManagementTask: CaseIterable, Identifiable, Equatable {
+  internal enum ManagementTask: CaseIterable, Equatable {
     case changePin1
     case changePin2
     case resetPin1
     case resetPin2
 
     // MARK: Computed Properties
-
-    internal var id: Self { self }
 
     /// The tab's label, naming the action and the credential.
     internal var name: String {
@@ -278,7 +276,7 @@ internal struct CardManagementView: View {
         let tasks = availableTasks
         if !tasks.isEmpty {
           Picker("Task", selection: $task) {
-            ForEach(tasks) { candidate in
+            ForEach(tasks, id: \.self) { candidate in
               Text(candidate.name).tag(candidate)
             }
           }

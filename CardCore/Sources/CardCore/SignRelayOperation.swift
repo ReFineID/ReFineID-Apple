@@ -15,18 +15,19 @@
     ///
     /// - Parameters:
     ///   - operation: what the caller wants from the card.
-    ///   - id: the identifier correlating request and answer.
+    ///   - requestID: the identifier correlating request and answer.
     /// - Returns: the message to send, or nil when unsupported.
     public static func request(
       for operation: RappRequesterOperation,
-      id: UUID
+      requestID: UUID
     ) -> PersistentRelayMessage? {
       switch operation {
       case .readAuthenticationCertificate:
-        .identityRequest(id: id)
+        .identityRequest(requestID: requestID)
 
       case .browserAuthentication(_, let keyProfile, let algorithm, let digest):
-        profiled(id: id, keyProfile: keyProfile, algorithm: algorithm, digest: digest)
+        profiled(
+          requestID: requestID, keyProfile: keyProfile, algorithm: algorithm, digest: digest)
 
       case .readSignatureCertificate, .documentSigning:
         nil
@@ -57,7 +58,7 @@
     }
 
     private static func profiled(
-      id: UUID,
+      requestID: UUID,
       keyProfile: RappOperationDriver.KeyProfile,
       algorithm: RappOperationDriver.SignatureAlgorithm,
       digest: Data
@@ -66,7 +67,7 @@
         return nil
       }
       return .signatureRequest(
-        id: id,
+        requestID: requestID,
         profile: PersistentRelayCardProfile(keyProfile.cardKeyProfile),
         algorithm: wireAlgorithm,
         digest: digest

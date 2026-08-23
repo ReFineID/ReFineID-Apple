@@ -22,8 +22,8 @@
     }
 
     /// One signature's report with its revocation basis.
-    internal struct SignatureRow: Identifiable, Sendable {
-      internal let id: Int
+    internal struct SignatureRow: Sendable {
+      internal let rowIndex: Int
       internal let report: DocumentVerification.SignatureReport
       internal var revocation: Revocation
     }
@@ -111,7 +111,7 @@
         do {
           let report = try DocumentVerification.verify(document: document)
           let rows = report.signatures.enumerated().map { index, signature in
-            SignatureRow(id: index, report: signature, revocation: .checking)
+            SignatureRow(rowIndex: index, report: signature, revocation: .checking)
           }
           await self?.finish(
             .report(rows, documentTimestampedAt: report.documentTimestampedAt))
@@ -139,7 +139,7 @@
       for row in rows {
         let outcome = await Self.liveRevocation(of: row.report)
         guard case .report(var current, let stamped) = phase else { return }
-        guard let index = current.firstIndex(where: { $0.id == row.id })
+        guard let index = current.firstIndex(where: { $0.rowIndex == row.rowIndex })
         else { continue }
         current[index].revocation = outcome
         phase = .report(current, documentTimestampedAt: stamped)

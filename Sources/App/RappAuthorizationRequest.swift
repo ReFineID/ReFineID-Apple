@@ -7,14 +7,14 @@
   ///
   /// The digest, PIN 1, CAN, keys, and wire frame are deliberately absent.
   /// SwiftUI receives only bounded display context and an action category.
-  internal struct RappAuthorizationRequest: Identifiable, Sendable, Equatable {
+  internal struct RappAuthorizationRequest: Sendable, Equatable {
     internal enum Action: Sendable, Equatable {
       case browserAuthentication
       case documentSignature
       case shareCardInformation
     }
 
-    internal let id: String
+    internal let requestID: String
     internal let requester: String
     internal let action: Action
   }

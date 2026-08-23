@@ -5,11 +5,9 @@ import CryptoTokenKit
 import Foundation
 
 extension CardMaintenance {
-  internal enum Transport: String, CaseIterable, Identifiable, Sendable {
+  internal enum Transport: String, CaseIterable, Sendable {
     case nearField = "nearField"
     case reader = "reader"
-
-    internal var id: Self { self }
 
     internal var name: String {
       switch self {

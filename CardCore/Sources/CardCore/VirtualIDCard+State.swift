@@ -4,36 +4,27 @@
 /// certificates, and the snapshot that pairs them.
 extension VirtualIDCard {
   /// How the simulated device reaches the card.
-  public enum Transport: String, CaseIterable, Identifiable, Sendable {
+  public enum Transport: String, CaseIterable, Sendable {
     case nearField = "nearField"
     case reader = "reader"
-
-    /// The value itself as its stable identity.
-    public var id: Self { self }
   }
 
   /// The card generation, which decides what the activation entry is.
   ///
   /// Legacy cards accept their PUK as the activation code; current cards
   /// ship a preset activation PIN.
-  public enum Generation: String, CaseIterable, Identifiable, Sendable {
+  public enum Generation: String, CaseIterable, Sendable {
     case activationCodeIsPuk = "activationCodeIsPuk"
     case presetActivationPIN = "presetActivationPIN"
-
-    /// The value itself as its stable identity.
-    public var id: Self { self }
   }
 
   /// The condition of one on-card certificate as reads report it.
-  public enum CertificateState: String, CaseIterable, Identifiable, Sendable {
+  public enum CertificateState: String, CaseIterable, Sendable {
     case valid = "valid"
     case expired = "expired"
     case revoked = "revoked"
     case unreadable = "unreadable"
     case missing = "missing"
-
-    /// The value itself as its stable identity.
-    public var id: Self { self }
   }
 
   /// One PIN or PUK as stored on the simulated card.

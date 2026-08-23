@@ -105,7 +105,7 @@
         return
       }
       let request = RappAuthorizationRequest(
-        id: operationID.base64EncodedString(),
+        requestID: operationID.base64EncodedString(),
         requester: await Self.requesterName()
           ?? operation.displayContext
           ?? String(localized: "Paired device"),

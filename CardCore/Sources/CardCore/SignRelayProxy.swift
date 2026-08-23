@@ -42,24 +42,24 @@ public actor SignRelayProxy {
   /// - Throws: when the payload is not a request this relay carries.
   public func answer(to payload: Data) async throws -> Data? {
     let request = try PersistentRelayMessage.decoded(payload)
-    let id = request.requestID
-    if let answer = try alreadyAnswered(id) {
+    let requestID = request.requestID
+    if let answer = try alreadyAnswered(requestID) {
       return try answer.encoded()
     }
-    guard !running.contains(id) else { return nil }
-    running.insert(id)
+    guard !running.contains(requestID) else { return nil }
+    running.insert(requestID)
     let answer = await perform(request)
-    running.remove(id)
-    answered[id] = answer
-    try? journal?.record(answer, for: id)
+    running.remove(requestID)
+    answered[requestID] = answer
+    try? journal?.record(answer, for: requestID)
     return try answer.encoded()
   }
 
   /// What was already answered for this request, here or in the journal.
-  private func alreadyAnswered(_ id: UUID) throws -> PersistentRelayMessage? {
-    if let answer = answered[id] { return answer }
-    guard let journalled = try journal?.answer(for: id) else { return nil }
-    answered[id] = journalled
+  private func alreadyAnswered(_ requestID: UUID) throws -> PersistentRelayMessage? {
+    if let answer = answered[requestID] { return answer }
+    guard let journalled = try journal?.answer(for: requestID) else { return nil }
+    answered[requestID] = journalled
     return journalled
   }
 }

@@ -56,14 +56,14 @@
 
     internal func cancelAll() {
       guard let request else { return }
-      complete(request.id, with: .denied)
+      complete(request.requestID, with: .denied)
     }
 
     private func complete(
       _ requestID: String,
       with decision: RappAuthorizationDecision
     ) {
-      guard request?.id == requestID, let continuation else { return }
+      guard request?.requestID == requestID, let continuation else { return }
       self.request = nil
       self.continuation = nil
       continuation.resume(returning: decision)

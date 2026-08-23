@@ -117,20 +117,20 @@
     private func approve() {
       switch request.action {
       case .browserAuthentication:
-        inbox.approve(request.id)
+        inbox.approve(request.requestID)
 
       case .documentSignature:
-        inbox.approveDocumentSignature(request.id, pin2: pin2)
+        inbox.approveDocumentSignature(request.requestID, pin2: pin2)
         pin2 = ""
 
       case .shareCardInformation:
-        inbox.approve(request.id)
+        inbox.approve(request.requestID)
       }
     }
 
     private func deny() {
       pin2 = ""
-      inbox.deny(request.id)
+      inbox.deny(request.requestID)
     }
   }
 #endif

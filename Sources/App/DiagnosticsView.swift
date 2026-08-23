@@ -36,7 +36,7 @@ internal struct DiagnosticsView: View {
         capabilitySection
       #endif
       if let snapshot {
-        ForEach(snapshot.sections) { section in
+        ForEach(snapshot.sections, id: \.title) { section in
           reportSection(section)
         }
       } else {

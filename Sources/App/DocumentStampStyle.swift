@@ -5,7 +5,7 @@
   import Foundation
 
   /// The visible mark placed on a signed PDF.
-  internal enum DocumentStampStyle: String, CaseIterable, Identifiable, Sendable {
+  internal enum DocumentStampStyle: String, CaseIterable, Sendable {
     /// The portrait carrying a card-signed QR attestation.
     case portraitQr = "portrait-qr"
 
@@ -17,8 +17,6 @@
 
     /// The preference holding an explicit non-default choice.
     private static let preferenceKey = "documentStampStyle"
-
-    internal var id: String { rawValue }
 
     /// Whether signing needs the larger DG2 portrait read.
     internal var readsPortrait: Bool { self == .portraitQr }

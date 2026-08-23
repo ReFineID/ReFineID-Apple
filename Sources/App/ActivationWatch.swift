@@ -157,11 +157,11 @@
     private func startManagementRefreshIfNeeded() {
       guard managementRefresh == nil else { return }
       managementRefreshID += 1
-      let id = managementRefreshID
+      let refreshGeneration = managementRefreshID
       managementRefresh = Task { @MainActor [weak self] in
         guard let self else { return }
         await management.refresh()
-        guard managementRefreshID == id, !Task.isCancelled else { return }
+        guard managementRefreshID == refreshGeneration, !Task.isCancelled else { return }
         managementRefresh = nil
       }
     }

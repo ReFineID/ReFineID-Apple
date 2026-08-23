@@ -17,17 +17,17 @@ public struct SignRelayVaultJournal: SignRelayJournal {
   }
 
   /// The request's identifier as the sixteen bytes the vault stores.
-  private static func identifier(_ id: UUID) -> Data {
-    withUnsafeBytes(of: id.uuid) { Data($0) }
+  private static func identifier(_ requestID: UUID) -> Data {
+    withUnsafeBytes(of: requestID.uuid) { Data($0) }
   }
 
-  /// The answer already given for `id`, if the vault kept one.
+  /// The answer already given for `requestID`, if the vault kept one.
   ///
-  /// - Parameter id: the request to look up.
+  /// - Parameter requestID: the request to look up.
   /// - Returns: the answer, or nil when this request has none.
   /// - Throws: when the vault cannot be read.
-  public func answer(for id: UUID) throws -> PersistentRelayMessage? {
-    let wanted = Self.identifier(id)
+  public func answer(for requestID: UUID) throws -> PersistentRelayMessage? {
+    let wanted = Self.identifier(requestID)
     for stored in try vault.loadProxy(pairID: pairID) where stored.record == wanted {
       guard let retained = stored.retainedResult else { return nil }
       return try PersistentRelayMessage.decoded(retained)
@@ -35,17 +35,17 @@ public struct SignRelayVaultJournal: SignRelayJournal {
     return nil
   }
 
-  /// Records the answer given for `id`.
+  /// Records the answer given for `requestID`.
   ///
   /// - Parameters:
   ///   - answer: what the card produced.
-  ///   - id: the request it answers.
+  ///   - requestID: the request it answers.
   /// - Throws: when the vault cannot be written.
-  public func record(_ answer: PersistentRelayMessage, for id: UUID) throws {
+  public func record(_ answer: PersistentRelayMessage, for requestID: UUID) throws {
     try vault.persistProxyResult(
       pairID: pairID,
-      operationID: Self.identifier(id),
-      record: Self.identifier(id),
+      operationID: Self.identifier(requestID),
+      record: Self.identifier(requestID),
       result: try answer.encoded()
     )
   }

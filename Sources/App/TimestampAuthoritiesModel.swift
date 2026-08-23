@@ -22,8 +22,8 @@
     /// The identity must not be the address itself - rows are edited
     /// in place, and a row whose identity changed with every
     /// keystroke would lose focus after the first one.
-    internal struct Row: Identifiable, Equatable {
-      internal let id = UUID()
+    internal struct Row: Equatable {
+      internal let rowID = UUID()
       internal var address = ""
       internal var username = ""
       internal var password = ""
@@ -57,7 +57,7 @@
     internal init() {
       let loaded = Self.loadedRows()
       rows = loaded
-      saved = Dictionary(uniqueKeysWithValues: loaded.map { ($0.id, $0) })
+      saved = Dictionary(uniqueKeysWithValues: loaded.map { ($0.rowID, $0) })
     }
 
     /// The stored authorities as rows, with the open line appended.
@@ -76,7 +76,7 @@
 
     /// The empty row at the bottom, waiting for the next authority.
     internal func isOpenLine(_ row: Row) -> Bool {
-      row.isBlank && row.id == rows.last?.id
+      row.isBlank && row.rowID == rows.last?.rowID
     }
 
     /// Writes what changed and keeps the open line open.
@@ -84,21 +84,21 @@
       tidy(keeping: focused)
       scheduleCompletions()
       TimestampAuthorityStore.save(rows.map(\.address).filter { !$0.isEmpty })
-      for row in rows where !row.address.isEmpty && saved[row.id] != row {
+      for row in rows where !row.address.isEmpty && saved[row.rowID] != row {
         TimestampAuthorityStore.saveCredentials(
           username: row.username, password: row.password, for: row.address
         )
       }
       forgetOrphans()
-      saved = Dictionary(uniqueKeysWithValues: rows.map { ($0.id, $0) })
+      saved = Dictionary(uniqueKeysWithValues: rows.map { ($0.rowID, $0) })
     }
 
     /// A blank row is kept only as the open line at the bottom, or
     /// while the cursor is still in it.
     internal func tidy(keeping focused: UUID?) {
-      let lastIdentity = rows.last?.id
+      let lastIdentity = rows.last?.rowID
       rows.removeAll { row in
-        row.isBlank && row.id != lastIdentity && row.id != focused
+        row.isBlank && row.rowID != lastIdentity && row.rowID != focused
       }
       if rows.last?.isBlank != true {
         rows.append(Row())
@@ -126,9 +126,9 @@
     /// and when.
     private func scheduleCompletions() {
       for row in rows
-      where !row.address.isEmpty && saved[row.id]?.address != row.address {
-        completions[row.id]?.cancel()
-        let (entry, identity) = (row.address, row.id)
+      where !row.address.isEmpty && saved[row.rowID]?.address != row.address {
+        completions[row.rowID]?.cancel()
+        let (entry, identity) = (row.address, row.rowID)
         completions[identity] = Task { @MainActor in
           try? await Task.sleep(for: Self.typingRestDelay)
           guard !Task.isCancelled, !entry.contains("://") else { return }
@@ -143,7 +143,7 @@
       Task { @MainActor in
         guard
           let completed = await AuthoritySchemeResolver.complete(entry),
-          let index = rows.firstIndex(where: { $0.id == identity }),
+          let index = rows.firstIndex(where: { $0.rowID == identity }),
           rows[index].address == entry
         else { return }
         rows[index].address = completed

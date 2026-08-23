@@ -14,8 +14,8 @@
       static let fileNameLines = 2
     }
 
-    private struct Input: Identifiable {
-      let id = UUID()
+    private struct Input {
+      let inputID = UUID()
       let name: String
       let data: Data
       let isPDF: Bool
@@ -106,13 +106,13 @@
 
     private var documentSection: some View {
       Section(text("signing.section", "Documents")) {
-        ForEach(inputs) { input in
+        ForEach(inputs, id: \.inputID) { input in
           HStack {
             Image(systemName: input.isPDF ? "doc.richtext" : "doc")
             Text(input.name).lineLimit(Layout.fileNameLines)
             Spacer()
             Button(role: .destructive) {
-              inputs.removeAll { $0.id == input.id }
+              inputs.removeAll { $0.inputID == input.inputID }
               normalizeFormat()
             } label: {
               Image(systemName: "minus.circle.fill")

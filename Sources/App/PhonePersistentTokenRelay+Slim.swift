@@ -23,7 +23,7 @@
           return await SlimCardWork.perform(request)
         #else
           // A device with no card path can serve nobody else's request.
-          return .failure(id: request.requestID, reason: .cardUnavailable)
+          return .failure(requestID: request.requestID, reason: .cardUnavailable)
         #endif
       }
       _ = transport
