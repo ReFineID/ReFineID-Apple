@@ -261,6 +261,7 @@ internal struct CardCredentialsView: View {
     private var hasRemoteSigningIdentity: Bool {
       #if REFINEID_REMOTE_CARD
         remoteModel.holder != nil
+          && PersistentTokenRegistry.shared.holderLine != nil
       #else
         false
       #endif

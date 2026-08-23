@@ -18,6 +18,7 @@
       session: NearFieldCardSession,
       progress: Progress
     ) async -> Bool {
+      await MainActor.run { HolderCardServing.availabilityChanged() }
       let manager = TKSmartCardTokenRegistrationManager.default
       let tokenID = await Self.tokenID(for: instance, session: session)
       if manager.registeredSmartCardTokens.contains(tokenID) {

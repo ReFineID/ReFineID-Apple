@@ -126,6 +126,9 @@ internal final class CardPresence: ObservableObject {
     }
     if readerPresent != isReaderCardPresent {
       isReaderCardPresent = readerPresent
+      #if os(iOS) && REFINEID_LOCAL_CARD
+        HolderCardServing.availabilityChanged()
+      #endif
     }
     if readerReady != isReaderCardReady {
       isReaderCardReady = readerReady

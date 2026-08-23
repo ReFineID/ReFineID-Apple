@@ -121,4 +121,38 @@ internal struct StreamRelayLoopbackTests {
     let dialerFinally = await dialed.reported
     #expect(answered == fromListener, "dialer saw: \(dialerFinally)")
   }
+
+  /// Presence reports a find and then a loss when the listener stops.
+  @Test
+  internal func presenceReportsFindThenLoss() async throws {
+    let name = "ReFineID test \(UUID().uuidString.prefix(6))"
+    let box = StreamRelayPresenceBox()
+    let listener = StreamRelayListener { _ in
+      // presence only watches the name; it does not take a dial
+    }
+    listener.start(displayName: name)
+    defer { listener.cancel() }
+
+    let presence = StreamRelayPresence(matching: name) { present in
+      Task { await box.add(present) }
+    }
+    presence.start()
+    defer { presence.cancel() }
+
+    var sawPresent = false
+    for _ in 0..<Self.attempts where !sawPresent {
+      sawPresent = await box.contains(true)
+      if !sawPresent { try await Task.sleep(for: Self.pause) }
+    }
+    #expect(sawPresent, "presence never saw the listener")
+
+    listener.cancel()
+
+    var sawAbsent = false
+    for _ in 0..<Self.attempts where !sawAbsent {
+      sawAbsent = await box.sawTrueThenFalse
+      if !sawAbsent { try await Task.sleep(for: Self.pause) }
+    }
+    #expect(sawAbsent, "presence never saw the listener leave")
+  }
 }

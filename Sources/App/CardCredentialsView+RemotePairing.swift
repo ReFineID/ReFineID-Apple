@@ -127,7 +127,9 @@ import SwiftUI
     }
 
     @ViewBuilder private var remoteIdentityRow: some View {
-      if case .identity(let holder) = remoteModel.phase {
+      if case .identity(let holder) = remoteModel.phase,
+        PersistentTokenRegistry.shared.holderLine != nil
+      {
         HStack {
           LabeledContent {
             Text(holder)

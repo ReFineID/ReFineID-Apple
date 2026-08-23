@@ -193,8 +193,14 @@ internal struct ReFineIDApp: App {
 
     // RAPP authenticates the selected peer above the opaque transport. There
     // is deliberately no legacy protocol downgrade when RAPP is unavailable.
+    #if REFINEID_LOCAL_CARD && os(iOS)
+      HolderCardServing.availabilityChanged()
+    #endif
     #if REFINEID_LOCAL_CARD && os(iOS) && REFINEID_REMOTE_CARD
       PhonePersistentTokenRelay.shared.start()
+      if !SupportedCardTransports.offersNearField {
+        PersistentTokenRegistry.shared.start()
+      }
     #elseif REFINEID_REMOTE_CARD
       PersistentTokenRegistry.shared.start()
     #endif

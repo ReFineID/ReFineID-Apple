@@ -59,7 +59,7 @@
         await coordinator.close()
 
       case .rejected(let rejection):
-        applyRejectedCredential(rejection)
+        await applyRejectedCredential(rejection)
         await requireExplicitReconnect()
         try? await coordinator.credentialRejected(operationID: operationID)
 
@@ -83,7 +83,7 @@
       }
     }
 
-    private func applyRejectedCredential(_ rejection: RappCardExecutor.Rejection) {
+    private func applyRejectedCredential(_ rejection: RappCardExecutor.Rejection) async {
       switch rejection {
       case .cardAccessNumber:
         CardCredentialStore.forgetAll()

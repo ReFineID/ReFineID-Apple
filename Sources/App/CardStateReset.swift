@@ -51,6 +51,9 @@ internal enum CardStateReset {
 
     PrimeStore.forgetAll()
     lines.append("ReFineID prime store: cleared")
+    #if os(iOS) && REFINEID_LOCAL_CARD
+      Task { @MainActor in HolderCardServing.availabilityChanged() }
+    #endif
 
     let revoked = Self.revokeEveryPairing()
     lines.append("ReFineID pairings revoked: \(revoked)")

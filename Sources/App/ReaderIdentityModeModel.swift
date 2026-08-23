@@ -160,8 +160,12 @@
         return
       }
       guard Self.hasReaderSlot else {
-        if !liveReaderTokenIdentifiers.isEmpty {
+        let hadReaderTokens = !liveReaderTokenIdentifiers.isEmpty
+        if hadReaderTokens {
           retryHealth.clear()
+          #if REFINEID_LOCAL_CARD
+            ReaderPin1Cache.shared.clear()
+          #endif
         }
         liveReaderTokenIdentifiers = []
         return

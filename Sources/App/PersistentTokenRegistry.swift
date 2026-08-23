@@ -29,7 +29,7 @@
       ]
     }
 
-    private static var needsIdentity: Bool {
+    internal static var needsIdentity: Bool {
       driverConfiguration?.tokenConfigurations.isEmpty ?? true
     }
 
@@ -42,6 +42,18 @@
     private var certificateDER: Data?
 
     private var isRunning = false
+
+    /// Whether the holder's stream advertisement has been seen this run.
+    internal var hasSeenHolderAdvertisement = false
+
+    /// Whether that advertisement is on the network right now.
+    ///
+    /// Loss after a find is the signal to withdraw the borrowed identity.
+    internal var holderIsAdvertising = false
+
+    #if REFINEID_STREAM_TRANSPORT
+      internal var presence: StreamRelayPresence?
+    #endif
 
     // MARK: Lifecycle
 
@@ -63,6 +75,14 @@
     /// holder has dropped has to leave the registry too; leaving it there
     /// would keep offering a card this device can no longer reach.
     internal static func withdraw() {
+      withdrawPublishedIdentity()
+    }
+
+    /// Removes the published identity without stopping the presence watch.
+    ///
+    /// A card that left is not a pairing that ended: the watch stays so
+    /// a later advertisement can publish again.
+    internal static func withdrawPublishedIdentity() {
       guard let driver = driverConfiguration else { return }
       for instanceID in driver.tokenConfigurations.keys {
         driver.removeTokenConfiguration(for: instanceID)
@@ -167,12 +187,18 @@
     /// an identity is needed.
     internal func start() {
       seedHolderLine()
+      #if REFINEID_STREAM_TRANSPORT
+        startWatchingPresence()
+      #endif
       startFetch(replacing: false)
     }
 
     /// Fetches the borrowed certificate after a pairing, replacing any
     /// identity a previous pair left behind.
     internal func startAfterPairing() {
+      #if REFINEID_STREAM_TRANSPORT
+        startWatchingPresence()
+      #endif
       startFetch(replacing: true)
     }
 
@@ -197,7 +223,7 @@
       }
     }
 
-    private func startFetch(replacing: Bool) {
+    internal func startFetch(replacing: Bool) {
       guard !isRunning else { return }
       guard replacing || Self.needsIdentity else { return }
       isRunning = true
@@ -224,8 +250,9 @@
       }
     }
 
-    private func finish(_ certificateDER: Data?) {
+    fileprivate func finish(_ certificateDER: Data?) {
       defer { isRunning = false }
+      guard !hasSeenHolderAdvertisement || holderIsAdvertising else { return }
       guard let certificateDER else { return }
       Self.publish(certificateDER)
     }
