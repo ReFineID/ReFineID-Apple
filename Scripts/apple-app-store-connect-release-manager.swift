@@ -743,9 +743,9 @@ private func inspectReleaseArchive(_ archive: URL) {
   }
 
   if layout.platform == "iOS" {
-    guard appPlist["MinimumOSVersion"] as? String == "26.6" else {
+    guard appPlist["MinimumOSVersion"] as? String == "26.0" else {
       releaseFail(
-        "the iOS artifact does not require iOS 26.6; shipping "
+        "the iOS artifact does not require iOS 26.0; shipping "
           + "configurations demand it (Version.xcconfig)"
       )
     }
@@ -764,7 +764,7 @@ private func inspectReleaseArchive(_ archive: URL) {
           + "compatibility mode, where no feature can run"
       )
     }
-    releaseNote("iPhone-only artifact requiring iOS 26.6 and an NFC antenna")
+    releaseNote("iPhone-only artifact requiring iOS 26.0 and an NFC antenna")
     guard
       let usesNonExemptEncryption =
         appPlist["ITSAppUsesNonExemptEncryption"] as? Bool

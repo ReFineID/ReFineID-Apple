@@ -5,11 +5,13 @@ controls iPhone scope. `Documentation/release-plan.md` controls
 macOS scope and shared security behavior. This file records the concrete
 values chosen under them.
 
-## 2026-08-23 Floor is iOS 26.6 and macOS 26.6
+## 2026-08-23 Floor is iOS 26 and macOS 26
 
-Debug, Profile, TestFlight, and Release share one floor. The iOS 16
-Debug path is gone. An iPad without an antenna can still be a requester
-on iPadOS 26.6 with `REFINEID_LOCAL_CARD` off.
+Debug, Profile, TestFlight, and Release share one floor: 26.0. The
+NFC smart-card APIs arrived in 26.0; later 26.x point releases are
+the same product. The iOS 16 Debug path is gone. An iPad without an
+antenna can still be a requester on iPadOS 26 with
+`REFINEID_LOCAL_CARD` off.
 
 ## 2026-08-23 6-character pairing code and persistent Diffie-Hellman reconnection
 
@@ -88,9 +90,9 @@ dead end. PIN management stays: it operates on an activated card, and
 a wrong entry there spends a retry the holder chose to risk, which is
 inherent to cards rather than to this app.
 
-The floor is iOS 26.6 and macOS 26.6 in every configuration. The
+The floor is iOS 26.0 and macOS 26.0 in every configuration. The
 iPad-requester path still exists as a Debug/Profile family, but it
-runs on iPadOS 26.6, not iOS 16.
+runs on iPadOS 26, not iOS 16.
 
 ## 2026-08-13 A demonstration mode ships on iPhone, for one launch only
 

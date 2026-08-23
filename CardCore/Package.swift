@@ -10,9 +10,9 @@ import PackageDescription
 private let package = Package(
   name: "CardCore",
   platforms: [
-    // The app floor is iOS 26.6 and macOS 26.6; CardCore matches it.
-    .iOS("26.6"),
-    .macOS("26.6"),
+    // The app floor is iOS 26 and macOS 26; CardCore matches it.
+    .iOS("26.0"),
+    .macOS("26.0"),
   ],
   products: [
     .library(name: "CardCore", targets: ["CardCore"])

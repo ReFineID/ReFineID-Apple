@@ -12,7 +12,7 @@ import PackageDescription
 private let package = Package(
   name: "PKCS11Bridge",
   platforms: [
-    .macOS("26.6")
+    .macOS("26.0")
   ],
   products: [
     .library(name: "PKCS11Bridge", type: .dynamic, targets: ["PKCS11Bridge"])

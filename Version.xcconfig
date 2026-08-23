@@ -29,23 +29,24 @@
 // public identifier - it is stamped into every signed binary - so it
 // belongs here where a fork changes it once.
 // The oldest systems the app runs on, in one place rather than repeated
-// in every target. The floor is iOS 26.6 and macOS 26.6: the NFC
-// smart-card slot, CryptoTokenKit's 26 APIs, and the shipping product
-// all live there. Debug, Profile, TestFlight, and Release share it.
-IPHONEOS_DEPLOYMENT_TARGET = 26.6
-MACOSX_DEPLOYMENT_TARGET = 26.6
+// in every target. The floor is iOS 26 and macOS 26: the NFC smart-card
+// slot and CryptoTokenKit's 26 APIs arrived in 26.0. Point releases
+// (26.5, ...) are the same product. Debug, Profile, TestFlight, and
+// Release share it.
+IPHONEOS_DEPLOYMENT_TARGET = 26.0
+MACOSX_DEPLOYMENT_TARGET = 26.0
 
 // What the store artifact demands matches the tree. The shipping
 // configurations are iPhone alone: every feature the first release
 // carries needs the NFC smart-card slot, which exists on no iPad.
-// Debug and Profile keep both families so an iPad on 26.6 can still
+// Debug and Profile keep both families so an iPad on 26 can still
 // be a requester. The archive inspector holds a candidate to these
 // numbers, so a wrongly cut artifact fails before it is uploaded.
-IPHONEOS_DEPLOYMENT_TARGET[config=TestFlight] = 26.6
-IPHONEOS_DEPLOYMENT_TARGET[config=Release] = 26.6
+IPHONEOS_DEPLOYMENT_TARGET[config=TestFlight] = 26.0
+IPHONEOS_DEPLOYMENT_TARGET[config=Release] = 26.0
 
 // The same fact as a compilation condition. Every configuration is
-// floor 26.6, so the 26 spelling is always on. Defined beside the
+// floor 26, so the 26 spelling is always on. Defined beside the
 // floor so the two can never disagree.
 REFINEID_IOS_FLOOR_FEATURE = REFINEID_IOS_FLOOR_26
 
