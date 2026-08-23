@@ -102,46 +102,46 @@
       guard phase != .connecting else { return }
       phase = .connecting
       Task.detached(priority: .userInitiated) { [weak self] in
-        let response: RappRequesterResponse?
-        var failure: String?
-        do {
-          response = try RappPersistentRequesterClient(
-            displayName: String(localized: "ReFineID iPad")
-          ).perform(.readAuthenticationCertificate)
-        } catch let error as RappRequesterClientError {
-          response = nil
-          failure = remoteFailureText(for: error)
-          // A pairing the other side cannot answer is not a pairing. Rather
-          // than dial silence again, discard it so the next step is a code.
-          if error.leavesPairingUnusable {
-            await self?.discardUnusablePairing()
-          }
-        } catch {
-          response = nil
-          failure = String(localized: "The remote card could not be read.")
-        }
-        await self?.setFailureText(failure)
-        let holder: String?
-        if case .authenticationCertificate(let der) = response,
-          let name = remoteHolderName(inCertificate: der)
-        {
-          holder = name
-          // The same answered certificate becomes the Safari identity;
-          // the holder is asked exactly once for both.
-          #if DEBUG
-            print("[RemoteCardModel] publish: publishing certificate for holder=\(name)")
-            fflush(stdout)
-          #endif
-          await PersistentTokenRegistry.publish(certificateDER: der)
-        } else {
-          holder = nil
-          #if DEBUG
-            print("[RemoteCardModel] publish: no authentication certificate response or name")
-            fflush(stdout)
-          #endif
-        }
-        await self?.finishConnect(holder: holder)
+        await self?.performConnect()
       }
+    }
+
+    private func performConnect() async {
+      let response: RappRequesterResponse?
+      var failure: String?
+      do {
+        response = try RappPersistentRequesterClient(
+          displayName: String(localized: "ReFineID iPad")
+        ).perform(.readAuthenticationCertificate)
+      } catch let error as RappRequesterClientError {
+        response = nil
+        failure = remoteFailureText(for: error)
+        if error.leavesPairingUnusable {
+          await discardUnusablePairing()
+        }
+      } catch {
+        response = nil
+        failure = String(localized: "The remote card could not be read.")
+      }
+      await MainActor.run { setFailureText(failure) }
+      let holder: String?
+      if case .authenticationCertificate(let der) = response,
+        let name = remoteHolderName(inCertificate: der)
+      {
+        holder = name
+        #if DEBUG
+          print("[RemoteCardModel] publish: publishing certificate for holder=\(name)")
+          fflush(stdout)
+        #endif
+        await MainActor.run { PersistentTokenRegistry.publish(certificateDER: der) }
+      } else {
+        holder = nil
+        #if DEBUG
+          print("[RemoteCardModel] publish: no authentication certificate response or name")
+          fflush(stdout)
+        #endif
+      }
+      finishConnect(holder: holder)
     }
 
     private func finishConnect(holder: String?) {

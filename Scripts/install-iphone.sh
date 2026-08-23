@@ -3,6 +3,8 @@
 
 set -euo pipefail
 
+UUID=$(xcrun devicectl list devices | grep -Eo '[0-9A-F]{8}(-[0-9A-F]{4}){3}-[0-9A-F]{12}')
+
 cd "$(dirname "$0")/.."
 
 echo "Building for iPhone..."
@@ -10,14 +12,14 @@ xcodebuild \
   -project ReFineID.xcodeproj \
   -scheme ReFineID \
   -configuration Debug \
-  -destination 'id=8830EBA0-0A26-5B3E-BE48-A974338DC57B' \
+  -destination "id=$UUID" \
   -derivedDataPath build/DerivedData \
   build \
   | tail -5
 
 echo "Installing to iPhone..."
 xcrun devicectl device install app \
-  --device 8830EBA0-0A26-5B3E-BE48-A974338DC57B \
+  --device $UUID \
   build/DerivedData/Build/Products/Debug-iphoneos/ReFineID.app \
   2>&1 | grep -E "App installed|bundleID"
 

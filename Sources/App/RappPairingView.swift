@@ -210,6 +210,9 @@
           codeCard(code)
           copyCodeButton(code)
         }
+        #if DEBUG
+          .onAppear { print("[pairing view] displaying code: \(code)") }
+        #endif
       } else if case .connecting = model.phase {
         VStack(spacing: Layout.connectingSpacing) {
           ProgressView()

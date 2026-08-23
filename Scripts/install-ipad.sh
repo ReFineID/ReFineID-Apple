@@ -3,6 +3,8 @@
 
 set -euo pipefail
 
+UUID=$(xcrun simctl list devices available -j | jq -r '.devices[][] | select((.name | startswith("iPad")) and .state == "Booted") | .udid')
+
 cd "$(dirname "$0")/.."
 
 echo "Building for iPad simulator..."
@@ -17,7 +19,7 @@ xcodebuild \
 
 echo "Installing to iPad simulator..."
 xcrun simctl install \
-  5A803C24-0C62-4249-934A-50EB31519887 \
+  $UUID \
   build/Build/Products/Debug-iphonesimulator/ReFineID.app
 
 echo "Done."
