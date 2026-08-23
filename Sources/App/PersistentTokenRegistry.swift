@@ -38,6 +38,9 @@
     /// Who the borrowed certificate names, for the identity row.
     internal private(set) var holderLine: String?
 
+    /// The certificate last published, so a reader mint can restore it.
+    private var certificateDER: Data?
+
     private var isRunning = false
 
     // MARK: Lifecycle
@@ -65,6 +68,7 @@
         driver.removeTokenConfiguration(for: instanceID)
       }
       shared.holderLine = nil
+      shared.certificateDER = nil
     }
 
     /// The certificate this driver is currently offering, if any.
@@ -138,16 +142,19 @@
       }
 
       let instanceID = PersistentTokenIdentity.instancePrefix + serialPart
+      // One borrowed identity. addTokenConfiguration appends; leftover
+      // instance names from earlier publishes stay in Safari's picker.
+      for existingID in driver.tokenConfigurations.keys {
+        driver.removeTokenConfiguration(for: existingID)
+      }
       let configuration = driver.addTokenConfiguration(for: instanceID)
       // The leaf and its key, and nothing else. Publishing the issuer
       // beside them stopped the browser forming an identity at all:
       // measured on the requester, a configuration of three items was
       // never offered, and the same two were offered at once.
       configuration.keychainItems = [certificateItem, keyItem]
+      shared.certificateDER = certificateDER
       shared.holderLine = DistinguishedName.holderLine(fromCertificate: certificateDER)
-      #if os(macOS)
-        LoginIdentityModel.shared.refresh()
-      #endif
       #if DEBUG
         print("[persistent-token] published \(instanceID)")
         fflush(stdout)
@@ -169,9 +176,25 @@
       startFetch(replacing: true)
     }
 
+    /// Writes the borrowed certificate again if this process still holds it.
+    ///
+    /// A live reader token does not own the remote-card driver; restoring
+    /// here keeps the wireless identity listed beside a plugged-in card.
+    internal func ensurePublished() {
+      if !Self.needsIdentity {
+        seedHolderLine()
+        return
+      }
+      guard let der = certificateDER ?? Self.publishedCertificateDER() else { return }
+      Self.publish(der)
+    }
+
     private func seedHolderLine() {
-      guard holderLine == nil, let der = Self.publishedCertificateDER() else { return }
-      holderLine = DistinguishedName.holderLine(fromCertificate: der)
+      guard let der = certificateDER ?? Self.publishedCertificateDER() else { return }
+      certificateDER = der
+      if holderLine == nil {
+        holderLine = DistinguishedName.holderLine(fromCertificate: der)
+      }
     }
 
     private func startFetch(replacing: Bool) {
@@ -179,7 +202,7 @@
       guard replacing || Self.needsIdentity else { return }
       isRunning = true
       Task.detached(priority: .userInitiated) {
-        let certificateDER: Data?
+        let fetched: Data?
         #if os(macOS)
           let displayName = String(localized: "ReFineID Mac")
         #else
@@ -193,11 +216,11 @@
             await Self.shared.finish(nil)
             return
           }
-          certificateDER = certificate
+          fetched = certificate
         } catch {
-          certificateDER = nil
+          fetched = nil
         }
-        await Self.shared.finish(certificateDER)
+        await Self.shared.finish(fetched)
       }
     }
 

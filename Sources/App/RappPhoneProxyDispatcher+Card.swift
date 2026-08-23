@@ -103,9 +103,12 @@
     ) async -> RappCardExecutor.Outcome? {
       switch operation.kind {
       case .browserAuthenticate:
+        guard let pin1 = pin1ByOperation.removeValue(forKey: operationID) else {
+          return nil
+        }
         return await RappCardExecutor.browserAuthentication(
           cardAccessNumber: accessNumber,
-          pin1: nil,
+          pin1: pin1,
           keyProfile: keyProfile,
           algorithm: algorithm,
           digest: operation.digest

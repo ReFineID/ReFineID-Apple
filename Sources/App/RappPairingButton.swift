@@ -17,15 +17,19 @@
     @Binding internal var isPresented: Bool
     @State private var hasSelectedPair = false
 
+    private var isConnected: Bool {
+      hasSelectedPair || PersistentTokenRegistry.shared.holderLine != nil
+    }
+
     internal var body: some View {
       Button {
         isPresented = true
       } label: {
-        RemotePairingGlyph(isConnected: hasSelectedPair)
+        RemotePairingGlyph(isConnected: isConnected)
       }
       .accessibilityLabel(String(localized: "Remote"))
       .accessibilityValue(
-        hasSelectedPair ? "Paired device selected" : "No paired device selected"
+        isConnected ? "Paired device selected" : "No paired device selected"
       )
       .task(id: isPresented) {
         let catalog = RappPairCatalog(vault: RappDeviceVault())

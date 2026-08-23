@@ -101,10 +101,12 @@
 
     internal func cancel(_ operationID: Data?) async {
       guard let operationID else {
+        pin1ByOperation.removeAll(keepingCapacity: false)
         pin2ByOperation.removeAll(keepingCapacity: false)
         await inbox.cancelAll()
         return
       }
+      pin1ByOperation.removeValue(forKey: operationID)
       pin2ByOperation.removeValue(forKey: operationID)
       await inbox.cancel(operationID.base64EncodedString())
     }

@@ -12,7 +12,9 @@
     internal let request: RappAuthorizationRequest
     internal let inbox: RappAuthorizationInbox
 
+    @State private var pin1 = ""
     @State private var pin2 = ""
+    @FocusState private var pin1Focused: Bool
     @FocusState private var pin2Focused: Bool
 
     private var title: LocalizedStringKey {
@@ -32,6 +34,9 @@
       NavigationStack {
         Form {
           requesterSection
+          if request.action == .browserAuthentication {
+            authPin1Section
+          }
           if request.action == .documentSignature {
             signPin2Section
           }
@@ -41,11 +46,19 @@
         .navigationBarTitleDisplayMode(.inline)
         .interactiveDismissDisabled()
         .onAppear {
-          if request.action == .documentSignature {
+          switch request.action {
+          case .browserAuthentication:
+            pin1Focused = true
+
+          case .documentSignature:
             pin2Focused = true
+
+          case .shareCardInformation:
+            break
           }
         }
         .onDisappear {
+          pin1 = ""
           pin2 = ""
         }
       }
@@ -56,6 +69,25 @@
         LabeledContent("Requester") {
           Text(request.requester)
             .multilineTextAlignment(.trailing)
+        }
+      }
+    }
+
+    private var authPin1Section: some View {
+      Section("Authentication") {
+        CredentialSecretField(
+          name: String(localized: "Basic (PIN 1)"),
+          text: $pin1,
+          revealIdentifier: "rappPin1Reveal"
+        ) {
+          SecureField("Basic (PIN 1)", text: $pin1)
+            .keyboardType(.numberPad)
+            .textContentType(.none)
+            .onValueChange(of: pin1) { typed in
+              pin1 = LimitedDigits.pin(typed)
+            }
+            .focused($pin1Focused)
+            .accessibilityIdentifier("rappPin1")
         }
       }
     }
@@ -104,7 +136,7 @@
     private var canApprove: Bool {
       switch request.action {
       case .browserAuthentication:
-        true
+        Pin1(digits: pin1) != nil
 
       case .documentSignature:
         Pin2(digits: pin2) != nil
@@ -117,7 +149,8 @@
     private func approve() {
       switch request.action {
       case .browserAuthentication:
-        inbox.approve(request.requestID)
+        inbox.approveBrowserAuthentication(request.requestID, pin1: pin1)
+        pin1 = ""
 
       case .documentSignature:
         inbox.approveDocumentSignature(request.requestID, pin2: pin2)
@@ -129,6 +162,7 @@
     }
 
     private func deny() {
+      pin1 = ""
       pin2 = ""
       inbox.deny(request.requestID)
     }

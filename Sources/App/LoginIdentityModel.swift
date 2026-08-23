@@ -185,6 +185,9 @@
         guard observed.insert(identifier).inserted else { continue }
         watcher.addRemovalHandler(Self.removalHandler(for: self), forTokenID: identifier)
       }
+      #if REFINEID_REMOTE_CARD
+        PersistentTokenRegistry.shared.ensurePublished()
+      #endif
     }
 
     /// Performs one software "reinsertion" for this card appearance.
