@@ -23,6 +23,8 @@
   repository.
 - Less is more. Terse is better.
 - Do not leak personal or private information in commits.
+- Never store device UUIDs or UDIDs in version control; discover
+  connected hardware and booted simulators dynamically at runtime.
 - When stuck, research with fellow AI available.
 - If something is not working, it is by default a bug in OUR code (or
   test harness), not a feature of the platform. "Impossible/blocked"

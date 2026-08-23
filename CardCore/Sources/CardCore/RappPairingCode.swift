@@ -12,8 +12,11 @@
 
     // MARK: Static Properties
 
-    /// The standard character length of an alphanumeric pairing code.
-    public static let codeLength = 4
+    /// The standard character length of a numeric pairing code.
+    public static let codeLength = 6
+
+    /// The number of digits in one formatted group.
+    public static let groupSize = 3
 
     private static let sha256ByteCount = 32
     private static let defaultOfferIdByteCount = 16
@@ -21,30 +24,41 @@
     @usableFromInline internal static let defaultLifetimeMilliseconds: UInt64 = 180_000
     @usableFromInline internal static let emptyCborMap = Data([0b1010_0000])
 
-    /// Uppercase alphanumeric alphabet [A-Z0-9] excluding O and 0 to avoid confusion.
-    private static let alphabet: [Character] = Array("123456789ABCDEFGHIJKLMNPQRSTUVWXYZ")
+    /// Decimal digits alphabet [0-9].
+    private static let alphabet: [Character] = Array("0123456789")
 
     // MARK: Static Functions
 
-    /// Generates a fresh cryptographically secure random 4-character pairing code.
+    /// Generates a fresh cryptographically secure random 6-digit numeric pairing code.
     public static func generate() -> String {
       var bytes = [UInt8](repeating: 0, count: codeLength)
       _ = SecRandomCopyBytes(kSecRandomDefault, codeLength, &bytes)
       return String(bytes.map { alphabet[Int($0) % alphabet.count] })
     }
 
-    /// Normalizes raw input: removes whitespace and non-alphanumeric characters, uppercases.
+    /// Normalizes raw input: extracts only digits and truncates to code length.
     public static func normalize(_ input: String) -> String {
-      let filtered = input.uppercased().filter { char in
-        ("A"..."Z").contains(char) || ("0"..."9").contains(char)
+      let filtered = input.filter { char in
+        ("0"..."9").contains(char)
       }
       return String(filtered.prefix(codeLength))
     }
 
-    /// Checks if a string is a valid complete 4-character pairing code.
+    /// Formats a numeric pairing code with a space after 3 digits (e.g., "123 456").
+    public static func formatted(_ input: String) -> String {
+      let digits = normalize(input)
+      if digits.count > groupSize {
+        let firstPart = digits.prefix(groupSize)
+        let secondPart = digits.dropFirst(groupSize)
+        return "\(firstPart) \(secondPart)"
+      }
+      return digits
+    }
+
+    /// Checks if a string is a valid complete 6-digit pairing code.
     public static func isValid(_ code: String) -> Bool {
-      let filtered = code.uppercased().filter { char in
-        ("A"..."Z").contains(char) || ("0"..."9").contains(char)
+      let filtered = code.filter { char in
+        ("0"..."9").contains(char)
       }
       return filtered.count == codeLength
     }

@@ -8,34 +8,37 @@ import Testing
 #if canImport(RappEngine)
   import RappEngine
 
-  @Suite("RAPP 4-character pairing code and ceremony")
+  @Suite("RAPP 6-digit pairing code and ceremony")
   internal struct RappPairingCodeTests {
 
-    @Test("Generates 4-character uppercase alphanumeric codes")
+    @Test("Generates 6-digit numeric codes")
     internal func testCodeGeneration() {
       for _ in 0..<20 {
         let code = RappPairingCode.generate()
-        #expect(code.count == 4)
+        #expect(code.count == 6)
         #expect(RappPairingCode.isValid(code))
         #expect(RappPairingCode.normalize(code) == code)
       }
     }
 
-    @Test("Normalizes codes with lowercase")
-    internal func testNormalization() {
-      let raw = "k9x7"
+    @Test("Normalizes and formats numeric codes")
+    internal func testNormalizationAndFormatting() {
+      let raw = "123-456"
       let normalized = RappPairingCode.normalize(raw)
-      #expect(normalized == "K9X7")
+      #expect(normalized == "123456")
       #expect(RappPairingCode.isValid(normalized))
+      #expect(RappPairingCode.formatted("123456") == "123 456")
+      #expect(RappPairingCode.formatted("123") == "123")
+      #expect(RappPairingCode.formatted("1234") == "123 4")
 
-      #expect(!RappPairingCode.isValid("ABC"))
-      #expect(!RappPairingCode.isValid("ABCD1234"))
+      #expect(!RappPairingCode.isValid("123"))
+      #expect(!RappPairingCode.isValid("12345678"))
     }
 
     @Test("Deterministically derives identical pairing secrets and offer URIs")
     internal func testDeterministicDerivation() throws {
-      let code1 = "ABC1"
-      let code2 = "abc1"
+      let code1 = "123456"
+      let code2 = "123456"
 
       let secret1 = RappPairingCode.pairingSecret(for: code1)
       let secret2 = RappPairingCode.pairingSecret(for: code2)
@@ -58,9 +61,9 @@ import Testing
     }
 
     @Test(
-      "Completes end-to-end pairing ceremony between Requester and Proxy using 4-character code")
-    internal func testPairingCeremonyWithFourCharCode() async throws {
-      let code = "K9X7"
+      "Completes end-to-end pairing ceremony between Requester and Proxy using 6-digit code")
+    internal func testPairingCeremonyWithSixDigitCode() async throws {
+      let code = "123456"
       let candidateID = "apple-peer-v1.nearby"
       let profiles = [
         "fi.eid.card-status.v1",

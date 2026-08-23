@@ -88,6 +88,19 @@ internal struct CardCredentialsView: View {
 
     /// Whether the document verification screen is pushed.
     @State internal var showsDocumentVerify = false
+
+    #if REFINEID_REMOTE_CARD
+      /// Pairing model that drives inline pairing on both iPad and iPhone.
+      @StateObject internal var pairingModel = RappPairingModel()
+
+      /// Whether the inline 6-digit pairing code field is expanded on iPhone.
+      @State internal var isPairingInputActive = false
+
+      /// The 6-digit numeric pairing code typed on iPhone.
+      @State internal var pairingCodeDigits = ""
+
+      @FocusState internal var isPairingCodeFocused: Bool
+    #endif
   #endif
   // swiftlint:enable private_swiftui_state
 
@@ -100,9 +113,6 @@ internal struct CardCredentialsView: View {
     #if REFINEID_REMOTE_CARD
       /// The requester's view of the selected remote card.
       internal let remoteModel: RemoteCardModel
-
-      /// Opens the remote reader connections owned by the root.
-      internal let openRemoteReader: () -> Void
     #endif
   #endif
 
@@ -300,12 +310,10 @@ internal struct CardCredentialsView: View {
     #if REFINEID_REMOTE_CARD
       internal init(
         readerModel: ReaderIdentityModeModel?,
-        remoteModel: RemoteCardModel,
-        openRemoteReader: @escaping () -> Void
+        remoteModel: RemoteCardModel
       ) {
         self.readerModel = readerModel
         self.remoteModel = remoteModel
-        self.openRemoteReader = openRemoteReader
       }
     #else
       internal init(readerModel: ReaderIdentityModeModel?) {

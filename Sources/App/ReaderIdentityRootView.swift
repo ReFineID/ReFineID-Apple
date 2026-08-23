@@ -16,7 +16,6 @@
       @StateObject private var remoteModel = RemoteCardModel()
 
       @ObservedObject private var authorizationInbox = RappAuthorizationInbox.shared
-      @State private var showsRappPairing = false
     #endif
 
     internal var body: some View {
@@ -42,8 +41,7 @@
         NavigationStack {
           CardCredentialsView(
             readerModel: model,
-            remoteModel: remoteModel,
-            openRemoteReader: { showsRappPairing = true }
+            remoteModel: remoteModel
           )
         }
         .onAppear {
@@ -56,25 +54,6 @@
             remoteModel.refresh()
           }
         }
-        .onValueChange(of: authorizationInbox.request?.id) { _ in
-          // One presenter can hold one sheet: a pending authorization takes
-          // the stage from the pairing sheet.
-          if authorizationInbox.request != nil {
-            showsRappPairing = false
-          }
-        }
-        .sheet(
-          isPresented: $showsRappPairing,
-          onDismiss: {
-            // Pairing is the means, not the end: the holder asked for an
-            // identity, so a pairing that now exists is read straight away
-            // rather than waiting behind the same button a second time.
-            remoteModel.refreshThenConnect()
-          },
-          content: {
-            RappPairingView()
-          }
-        )
         .sheet(
           item: Binding(
             get: { authorizationInbox.request },

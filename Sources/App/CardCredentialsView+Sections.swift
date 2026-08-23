@@ -64,31 +64,6 @@ extension CardCredentialsView {
       }
     }
 
-    #if REFINEID_REMOTE_CARD
-      private var remoteRouteButton: some View {
-        Button {
-          openRemoteReader()
-        } label: {
-          navigationRow(String(localized: "Remote")) {
-            Image(
-              systemName: remoteCardAvailable
-                ? "key.radiowaves.forward"
-                : "key.radiowaves.forward.slash"
-            )
-            .foregroundStyle(
-              remoteCardAvailable
-                ? AnyShapeStyle(Color.accentColor)
-                : AnyShapeStyle(.secondary)
-            )
-            .accessibilityHidden(true)
-          }
-        }
-        .tint(.primary)
-        .accessibilityIdentifier("remoteCard")
-        .disabled(!remoteCardAvailable)
-      }
-    #endif
-
     private var cardManagementButton: some View {
       Button {
         openCardManagement()
@@ -111,7 +86,10 @@ extension CardCredentialsView {
       Section {
         #if REFINEID_REMOTE_CARD
           if offersNearField {
-            remoteRouteButton
+            remoteRouteRow
+            if isPairingInputActive {
+              remotePairingInputRow
+            }
           }
         #endif
         if offersNearField || hasReaderIdentity {
@@ -120,6 +98,16 @@ extension CardCredentialsView {
       } header: {
         compactSectionHeader("Card")
       }
+      #if REFINEID_REMOTE_CARD
+        .onReceive(pairingModel.$phase) { phase in
+          if case .paired = phase {
+            withAnimation {
+              isPairingInputActive = false
+              pairingCodeDigits = ""
+            }
+          }
+        }
+      #endif
     }
 
     internal var readerIdentitySection: some View {
@@ -134,65 +122,6 @@ extension CardCredentialsView {
           await CardReaderPinStore.verifyAndSave(pin1, model: model)
         }
       )
-    }
-  #endif
-
-  #if os(iOS) && REFINEID_REMOTE_CARD
-    @ViewBuilder private var remoteIdentityContent: some View {
-      switch remoteModel.phase {
-      case .connecting:
-        ProgressView()
-      case .identity(let holder):
-        HStack(spacing: Self.holderActionSpacing) {
-          Text(holder)
-            .textSelection(.enabled)
-            .accessibilityIdentifier("remoteCardHolder")
-          Button {
-            remoteModel.forget()
-          } label: {
-            Image(systemName: "minus.circle.fill")
-              .foregroundStyle(.red)
-          }
-          .buttonStyle(.borderless)
-          .accessibilityIdentifier("forgetRemoteIdentity")
-          .accessibilityLabel(String(localized: "Forget identity"))
-        }
-      case .idle, .failed:
-        Button(String(localized: "Connect Remote Reader")) {
-          if remoteModel.hasPair {
-            remoteModel.connect()
-          } else {
-            openRemoteReader()
-          }
-        }
-        .accessibilityIdentifier("connectRemoteReader")
-      }
-    }
-
-    internal var remoteReaderSection: some View {
-      Section {
-        LabeledContent {
-          remoteIdentityContent
-        } label: {
-          PersonRowLabel(configured: remoteModel.holder != nil)
-        }
-        if remoteModel.phase == .failed {
-          Text(remoteModel.failureText ?? String(localized: "The remote card could not be read."))
-            .foregroundStyle(.secondary)
-        }
-      } header: {
-        compactSectionHeader("Identity")
-      }
-      .onValueChange(of: remoteModel.needsFreshPairing) { needsFresh in
-        if needsFresh {
-          remoteModel.acknowledgeFreshPairing()
-          openRemoteReader()
-        }
-      }
-    }
-  #else
-    internal var remoteReaderSection: some View {
-      EmptyView()
     }
   #endif
 
