@@ -225,8 +225,8 @@
         let rotation = arc == .top ? -turn : turn
         let cosine = cos(rotation)
         let sine = sin(rotation)
-        let shiftX = baseline.x - advance / Self.halves * cosine
-        let shiftY = baseline.y - advance / Self.halves * sine
+        let shiftX = baseline.horizontal - advance / Self.halves * cosine
+        let shiftY = baseline.vertical - advance / Self.halves * sine
         body += "q \(Self.matrixNumber(scale * cosine))"
         body += " \(Self.matrixNumber(scale * sine))"
         body += " \(Self.matrixNumber(-scale * sine))"
@@ -245,11 +245,11 @@
       radius: Double,
       turn: Double,
       arc: Arc
-    ) -> (x: Double, y: Double) {
+    ) -> (horizontal: Double, vertical: Double) {
       let vertical = radius * cos(turn)
       return (
-        x: radius * sin(turn),
-        y: arc == .top ? vertical : -vertical
+        horizontal: radius * sin(turn),
+        vertical: arc == .top ? vertical : -vertical
       )
     }
 

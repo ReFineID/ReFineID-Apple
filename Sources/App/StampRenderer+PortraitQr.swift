@@ -71,7 +71,7 @@
       givenName: String,
       surname: String
     ) -> StampMark {
-      let centre = (x: 0.0, y: 0.0)
+      let centre = (horizontal: 0.0, vertical: 0.0)
       var body = "q\n"
       body += Self.portraitTilt()
       body += Self.portraitQr(artwork, centre: centre)
@@ -99,7 +99,7 @@
     /// The black portrait-stippled QR and its circular hedcut extension.
     private static func portraitQr(
       _ artwork: QrPortrait.Artwork,
-      centre: (x: Double, y: Double)
+      centre: (horizontal: Double, vertical: Double)
     ) -> String {
       guard
         artwork.side > 0,
@@ -110,8 +110,8 @@
       }
       let module = Self.portraitSquareSize / Double(artwork.side)
       let codeSize = module * Double(artwork.side)
-      let left = centre.x - codeSize / Self.portraitHalves
-      let bottom = centre.y - codeSize / Self.portraitHalves
+      let left = centre.horizontal - codeSize / Self.portraitHalves
+      let bottom = centre.vertical - codeSize / Self.portraitHalves
       var body = "q\n"
       body += Self.portraitClip(radius: Self.portraitInnerRadius)
       body += "0 0 0 rg\n"
@@ -127,7 +127,7 @@
             artwork,
             row: row,
             column: column,
-            origin: (x: left, y: bottom),
+            origin: (horizontal: left, vertical: bottom),
             module: module
           )
         }
@@ -138,13 +138,13 @@
     /// Extends the same sampled portrait across the circular stamp field.
     private static func portraitField(
       _ artwork: QrPortrait.Artwork,
-      centre: (x: Double, y: Double),
+      centre: (horizontal: Double, vertical: Double),
       module: Double
     ) -> String {
       let fieldSize = module * Double(artwork.fieldSide)
       let origin = (
-        x: centre.x - fieldSize / Self.portraitHalves,
-        y: centre.y - fieldSize / Self.portraitHalves
+        horizontal: centre.horizontal - fieldSize / Self.portraitHalves,
+        vertical: centre.vertical - fieldSize / Self.portraitHalves
       )
       let codeHalf = Self.portraitSquareSize / Self.portraitHalves
       let radiusSquared = Self.portraitInnerRadius * Self.portraitInnerRadius
@@ -152,14 +152,14 @@
       for row in 0..<artwork.fieldSide {
         for column in 0..<artwork.fieldSide {
           let point = (
-            x: origin.x
+            horizontal: origin.horizontal
               + (Double(column) + Self.portraitHalfModule) * module,
-            y: origin.y
+            vertical: origin.vertical
               + (Double(artwork.fieldSide - row) - Self.portraitHalfModule)
               * module
           )
-          let relativeX = point.x - centre.x
-          let relativeY = point.y - centre.y
+          let relativeX = point.horizontal - centre.horizontal
+          let relativeY = point.vertical - centre.vertical
           guard
             relativeX * relativeX + relativeY * relativeY <= radiusSquared,
             abs(relativeX) > codeHalf || abs(relativeY) > codeHalf
@@ -189,9 +189,9 @@
     }
 
     /// Gives the QR light modules an opaque background, with no outer border.
-    private static func qrBackground(centre: (x: Double, y: Double)) -> String {
-      let left = centre.x - Self.portraitSquareSize / Self.portraitHalves
-      let bottom = centre.y - Self.portraitSquareSize / Self.portraitHalves
+    private static func qrBackground(centre: (horizontal: Double, vertical: Double)) -> String {
+      let left = centre.horizontal - Self.portraitSquareSize / Self.portraitHalves
+      let bottom = centre.vertical - Self.portraitSquareSize / Self.portraitHalves
       var body = "1 1 1 rg \(Self.portraitNumber(left))"
       body += " \(Self.portraitNumber(bottom))"
       body += " \(Self.portraitNumber(Self.portraitSquareSize))"
@@ -211,13 +211,13 @@
       _ artwork: QrPortrait.Artwork,
       row: Int,
       column: Int,
-      origin: (x: Double, y: Double),
+      origin: (horizontal: Double, vertical: Double),
       module: Double
     ) -> String {
       let index = row * artwork.side + column
       let centre = (
-        x: origin.x + (Double(column) + Self.portraitHalfModule) * module,
-        y: origin.y
+        horizontal: origin.horizontal + (Double(column) + Self.portraitHalfModule) * module,
+        vertical: origin.vertical
           + (Double(artwork.side - row) - Self.portraitHalfModule) * module
       )
       if artwork.functionModules[index] {
@@ -250,7 +250,7 @@
 
     /// One circular structural module, still shaped by the portrait tone.
     private static func functionModule(
-      centre: (x: Double, y: Double),
+      centre: (horizontal: Double, vertical: Double),
       side: Double,
       darkness: Double
     ) -> String {
@@ -263,7 +263,7 @@
 
     /// Four tiny dots that add tone without changing a light QR module.
     private static func peripheralDots(
-      centre: (x: Double, y: Double),
+      centre: (horizontal: Double, vertical: Double),
       darkness: Double,
       module: Double
     ) -> String {
@@ -279,7 +279,7 @@
       for shiftX in [-offset, offset] {
         for shiftY in [-offset, offset] {
           body += Self.portraitFilledCircle(
-            centre: (centre.x + shiftX, centre.y + shiftY),
+            centre: (centre.horizontal + shiftX, centre.vertical + shiftY),
             radius: radius
           )
         }
@@ -319,11 +319,11 @@
 
     /// A filled circle used for one hedcut dot.
     private static func portraitFilledCircle(
-      centre: (x: Double, y: Double),
+      centre: (horizontal: Double, vertical: Double),
       radius: Double
     ) -> String {
-      var body = "\(Self.portraitNumber(centre.x + radius))"
-      body += " \(Self.portraitNumber(centre.y)) m\n"
+      var body = "\(Self.portraitNumber(centre.horizontal + radius))"
+      body += " \(Self.portraitNumber(centre.vertical)) m\n"
       body += Self.portraitCircleCurves(radius: radius, centre: centre)
       return body + "h f\n"
     }
@@ -331,7 +331,7 @@
     /// Four Bezier quarters, optionally translated from the origin.
     private static func portraitCircleCurves(
       radius: Double,
-      centre: (x: Double, y: Double) = (0, 0)
+      centre: (horizontal: Double, vertical: Double) = (0, 0)
     ) -> String {
       let pull = Self.portraitArcControl * radius
       var body = ""
@@ -341,32 +341,32 @@
         let start = Self.portraitPoint(centre, radius: radius, angle: opens)
         let end = Self.portraitPoint(centre, radius: radius, angle: closes)
         let leaving = (
-          x: start.x - pull * sin(opens),
-          y: start.y + pull * cos(opens)
+          horizontal: start.horizontal - pull * sin(opens),
+          vertical: start.vertical + pull * cos(opens)
         )
         let arriving = (
-          x: end.x + pull * sin(closes),
-          y: end.y - pull * cos(closes)
+          horizontal: end.horizontal + pull * sin(closes),
+          vertical: end.vertical - pull * cos(closes)
         )
-        body += "\(Self.portraitNumber(leaving.x))"
-        body += " \(Self.portraitNumber(leaving.y))"
-        body += " \(Self.portraitNumber(arriving.x))"
-        body += " \(Self.portraitNumber(arriving.y))"
-        body += " \(Self.portraitNumber(end.x))"
-        body += " \(Self.portraitNumber(end.y)) c\n"
+        body += "\(Self.portraitNumber(leaving.horizontal))"
+        body += " \(Self.portraitNumber(leaving.vertical))"
+        body += " \(Self.portraitNumber(arriving.horizontal))"
+        body += " \(Self.portraitNumber(arriving.vertical))"
+        body += " \(Self.portraitNumber(end.horizontal))"
+        body += " \(Self.portraitNumber(end.vertical)) c\n"
       }
       return body
     }
 
     /// One point on a circle.
     private static func portraitPoint(
-      _ centre: (x: Double, y: Double),
+      _ centre: (horizontal: Double, vertical: Double),
       radius: Double,
       angle: Double
-    ) -> (x: Double, y: Double) {
+    ) -> (horizontal: Double, vertical: Double) {
       (
-        x: centre.x + radius * cos(angle),
-        y: centre.y + radius * sin(angle)
+        horizontal: centre.horizontal + radius * cos(angle),
+        vertical: centre.vertical + radius * sin(angle)
       )
     }
 

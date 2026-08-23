@@ -103,12 +103,9 @@
 
 strict: true
 
+# Empty on purpose: SwiftLint's default i / id / x / y / z list is not used.
 identifier_name:
-  excluded:
-    - i
-    - x
-    - y
-    - z
+  excluded: []
 
 # Default file_header forbids "Copyright" (Xcode auto-headers). Point it
 # at the header this tree uses.

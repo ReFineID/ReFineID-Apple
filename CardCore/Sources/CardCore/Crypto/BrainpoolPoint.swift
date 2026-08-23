@@ -24,7 +24,7 @@ public struct BrainpoolPoint: Equatable, Sendable {
     U384.byteCount * uncompressedCoordinateCount + 1
 
   /// The affine coordinates, or nil for the point at infinity.
-  private let affine: (x: U384, y: U384)?
+  private let affine: (affineX: U384, affineY: U384)?
 
   /// True when this is the point at infinity.
   public var isInfinity: Bool {
@@ -33,12 +33,12 @@ public struct BrainpoolPoint: Equatable, Sendable {
 
   /// The affine `x` coordinate, or nil at infinity.
   public var affineX: U384? {
-    affine?.x
+    affine?.affineX
   }
 
   /// The affine `y` coordinate, or nil at infinity.
   public var affineY: U384? {
-    affine?.y
+    affine?.affineY
   }
 
   /// The point with these coordinates, or nil when they are not a canonical
@@ -46,11 +46,11 @@ public struct BrainpoolPoint: Equatable, Sendable {
   ///
   /// Rejects a coordinate at or above the field prime, which is a
   /// non-canonical encoding, and any pair that is off the curve.
-  public init?(x horizontal: U384, y vertical: U384) {
-    guard horizontal < BrainpoolP384r1.prime, vertical < BrainpoolP384r1.prime else {
+  public init?(affineX: U384, affineY: U384) {
+    guard affineX < BrainpoolP384r1.prime, affineY < BrainpoolP384r1.prime else {
       return nil
     }
-    let candidate = Self(onCurveX: horizontal, onCurveY: vertical)
+    let candidate = Self(onCurveX: affineX, onCurveY: affineY)
     guard candidate.isOnCurve() else { return nil }
     self = candidate
   }
@@ -66,7 +66,7 @@ public struct BrainpoolPoint: Equatable, Sendable {
   }
 
   /// The point with the given optional coordinates, nil meaning infinity.
-  private init(affine: (x: U384, y: U384)?) {
+  private init(affine: (affineX: U384, affineY: U384)?) {
     self.affine = affine
   }
 
@@ -75,7 +75,7 @@ public struct BrainpoolPoint: Equatable, Sendable {
   public static func == (lhs: Self, rhs: Self) -> Bool {
     guard let left = lhs.affine else { return rhs.affine == nil }
     guard let right = rhs.affine else { return false }
-    return left.x == right.x && left.y == right.y
+    return left.affineX == right.affineX && left.affineY == right.affineY
   }
 
   /// The point carried by a SEC1 uncompressed encoding `04 || X || Y`, or nil
@@ -93,7 +93,7 @@ public struct BrainpoolPoint: Equatable, Sendable {
     else {
       return nil
     }
-    return Self(x: horizontal, y: vertical)
+    return Self(affineX: horizontal, affineY: vertical)
   }
 
   /// True when the point satisfies `y^2 = x^3 + A*x + B` over GF(p).
@@ -102,8 +102,8 @@ public struct BrainpoolPoint: Equatable, Sendable {
   /// true.
   public func isOnCurve() -> Bool {
     guard let point = affine else { return true }
-    let horizontal = FieldP384(point.x)
-    let vertical = FieldP384(point.y)
+    let horizontal = FieldP384(point.affineX)
+    let vertical = FieldP384(point.affineY)
     let left = vertical.squared()
     let cubed = horizontal.squared().multiplied(by: horizontal)
     let linear = BrainpoolP384r1.coefficientA.multiplied(by: horizontal)
@@ -114,7 +114,8 @@ public struct BrainpoolPoint: Equatable, Sendable {
   /// The additive inverse `(x, -y)`.
   public func negated() -> Self {
     guard let point = affine else { return .infinity }
-    return Self(onCurveX: point.x, onCurveY: FieldP384(point.y).negated().value())
+    return Self(
+      onCurveX: point.affineX, onCurveY: FieldP384(point.affineY).negated().value())
   }
 
   /// This point added to itself, by the affine tangent formula.
@@ -123,8 +124,8 @@ public struct BrainpoolPoint: Equatable, Sendable {
   /// at infinity; that shows up here as a zero denominator.
   public func doubled() -> Self {
     guard let point = affine else { return .infinity }
-    let horizontal = FieldP384(point.x)
-    let vertical = FieldP384(point.y)
+    let horizontal = FieldP384(point.affineX)
+    let vertical = FieldP384(point.affineY)
     guard let inverseDenominator = vertical.adding(vertical).inverted() else {
       return .infinity
     }
@@ -143,13 +144,13 @@ public struct BrainpoolPoint: Equatable, Sendable {
   public func adding(_ other: Self) -> Self {
     guard let left = affine else { return other }
     guard let right = other.affine else { return self }
-    guard left.x != right.x else {
-      return left.y == right.y ? doubled() : .infinity
+    guard left.affineX != right.affineX else {
+      return left.affineY == right.affineY ? doubled() : .infinity
     }
-    let leftX = FieldP384(left.x)
-    let leftY = FieldP384(left.y)
-    let rightX = FieldP384(right.x)
-    let rightY = FieldP384(right.y)
+    let leftX = FieldP384(left.affineX)
+    let leftY = FieldP384(left.affineY)
+    let rightX = FieldP384(right.affineX)
+    let rightY = FieldP384(right.affineY)
     guard let inverseDenominator = rightX.subtracting(leftX).inverted() else {
       return .infinity
     }
@@ -164,8 +165,8 @@ public struct BrainpoolPoint: Equatable, Sendable {
   public func encodeUncompressed() -> Data? {
     guard let point = affine else { return nil }
     var encoded = Data([Sec1Values.uncompressedPointTag])
-    encoded.append(point.x.bigEndianBytes())
-    encoded.append(point.y.bigEndianBytes())
+    encoded.append(point.affineX.bigEndianBytes())
+    encoded.append(point.affineY.bigEndianBytes())
     return encoded
   }
 }

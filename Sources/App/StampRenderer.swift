@@ -156,7 +156,7 @@
       let centreY = 0.0
       var body = "q\n"
       body += Self.tilt(about: (centreX, centreY))
-      let centre = (x: centreX, y: centreY)
+      let centre = (horizontal: centreX, vertical: centreY)
       body += "\(Self.inkColour) RG \(Self.inkColour) rg\n"
       body += Self.circle(
         centre: centre, radius: Self.outerRadius, lineWidth: Self.outerLineWidth
@@ -189,13 +189,13 @@
 
     /// A turn of up to `maximumTilt` degrees clockwise, about the
     /// ring's own centre, so no two stamps land at the same angle.
-    private static func tilt(about centre: (x: Double, y: Double)) -> String {
+    private static func tilt(about centre: (horizontal: Double, vertical: Double)) -> String {
       let degrees = Double.random(in: Self.leastTilt...Self.mostTilt)
       let turn = -degrees * Double.pi / Self.halfTurnDegrees
       let cosine = cos(turn)
       let sine = sin(turn)
-      let shiftX = centre.x - centre.x * cosine + centre.y * sine
-      let shiftY = centre.y - centre.x * sine - centre.y * cosine
+      let shiftX = centre.horizontal - centre.horizontal * cosine + centre.vertical * sine
+      let shiftY = centre.vertical - centre.horizontal * sine - centre.vertical * cosine
       return "q \(Self.number(cosine)) \(Self.number(sine))"
         + " \(Self.number(-sine)) \(Self.number(cosine))"
         + " \(Self.number(shiftX)) \(Self.number(shiftY)) cm\n"
@@ -210,14 +210,14 @@
     /// before it does.
     private static func handwriting(
       _ artwork: SignatureArtwork.Artwork,
-      centre: (x: Double, y: Double)
+      centre: (horizontal: Double, vertical: Double)
     ) -> String {
       let inkWidth = artwork.inkRight - artwork.inkLeft
       guard inkWidth > 0 else { return "" }
       let room = Self.baselineHalfWidth * Self.halves
       let scale = room / inkWidth
-      let left = centre.x - Self.baselineHalfWidth
-      let sits = centre.y - Self.baselineDrop + Self.signatureLift
+      let left = centre.horizontal - Self.baselineHalfWidth
+      let sits = centre.vertical - Self.baselineDrop + Self.signatureLift
       // The operators are in the image's own coordinates, so the
       // translation carries the ink's own corner to the line's end.
       var body = "q \(Self.number(scale)) 0 0 \(Self.number(scale))"
@@ -227,11 +227,11 @@
       body += "Q\n"
       body += "\(Self.number(Self.baselineWidth)) w "
       body +=
-        "\(Self.number(centre.x - Self.baselineHalfWidth))"
-        + " \(Self.number(centre.y - Self.baselineDrop)) m "
+        "\(Self.number(centre.horizontal - Self.baselineHalfWidth))"
+        + " \(Self.number(centre.vertical - Self.baselineDrop)) m "
       body +=
-        "\(Self.number(centre.x + Self.baselineHalfWidth))"
-        + " \(Self.number(centre.y - Self.baselineDrop)) l S\n"
+        "\(Self.number(centre.horizontal + Self.baselineHalfWidth))"
+        + " \(Self.number(centre.vertical - Self.baselineDrop)) l S\n"
       return body
     }
 
@@ -243,12 +243,12 @@
     /// and each line is short enough to stay legible.
     private static func identityBelowHandwriting(
       _ statement: Statement,
-      centre: (x: Double, y: Double)
+      centre: (horizontal: Double, vertical: Double)
     ) -> String {
       var body = Self.line(
         statement.name,
         centre: centre,
-        baseline: centre.y - Self.baselineDrop - Self.nameDrop,
+        baseline: centre.vertical - Self.baselineDrop - Self.nameDrop,
         size: Self.nameSize,
         ceiling: Self.nameCeiling
       )
@@ -257,7 +257,7 @@
         statement.identifier,
         centre: centre,
         baseline:
-          centre.y - Self.baselineDrop - Self.nameDrop - Self.nameLineGap,
+          centre.vertical - Self.baselineDrop - Self.nameDrop - Self.nameLineGap,
         size: Self.nameSize * Self.identifierShare,
         ceiling: Self.nameCeiling * Self.identifierShare
       )
@@ -267,13 +267,13 @@
     /// The certificate name and SATU, centred when there is no handwriting.
     private static func centredIdentity(
       _ statement: Statement,
-      centre: (x: Double, y: Double)
+      centre: (horizontal: Double, vertical: Double)
     ) -> String {
       guard !statement.identifier.isEmpty else {
         return Self.line(
           statement.name,
           centre: centre,
-          baseline: centre.y - Self.identitySingleLineDrop,
+          baseline: centre.vertical - Self.identitySingleLineDrop,
           size: Self.nameSize,
           ceiling: Self.nameCeiling
         )
@@ -281,14 +281,14 @@
       return Self.line(
         statement.name,
         centre: centre,
-        baseline: centre.y + Self.identityNameLift,
+        baseline: centre.vertical + Self.identityNameLift,
         size: Self.nameSize,
         ceiling: Self.nameCeiling
       )
         + Self.line(
           statement.identifier,
           centre: centre,
-          baseline: centre.y - Self.identityIdentifierDrop,
+          baseline: centre.vertical - Self.identityIdentifierDrop,
           size: Self.nameSize * Self.identifierShare,
           ceiling: Self.nameCeiling * Self.identifierShare
         )
@@ -304,12 +304,12 @@
     /// own height rather than sharing the one above.
     private static func line(
       _ text: String,
-      centre: (x: Double, y: Double),
+      centre: (horizontal: Double, vertical: Double),
       baseline: Double,
       size: Double,
       ceiling: Double
     ) -> String {
-      let height = abs(baseline - centre.y)
+      let height = abs(baseline - centre.vertical)
       guard height < Self.innerRadius else { return "" }
       let halfChord =
         (Self.innerRadius * Self.innerRadius - height * height).squareRoot()
@@ -320,7 +320,7 @@
       let drawn = TextOutline.line(text, font: "Helvetica", size: chosen)
       // On the ring's own axis: both lines centred under the writing,
       // which is what makes a round stamp look round.
-      return "q 1 0 0 1 \(Self.number(centre.x)) \(Self.number(baseline)) cm\n"
+      return "q 1 0 0 1 \(Self.number(centre.horizontal)) \(Self.number(baseline)) cm\n"
         + "\(drawn.operators)Q\n"
     }
 
@@ -330,28 +330,36 @@
     /// ends, which is what makes four curves indistinguishable from a
     /// circle at any zoom.
     private static func circle(
-      centre: (x: Double, y: Double),
+      centre: (horizontal: Double, vertical: Double),
       radius: Double,
       lineWidth: Double
     ) -> String {
       let pull = Self.arcControl * radius
       var body = "\(Self.number(lineWidth)) w\n"
-      body += "\(Self.number(centre.x + radius)) \(Self.number(centre.y)) m\n"
+      body += "\(Self.number(centre.horizontal + radius)) \(Self.number(centre.vertical)) m\n"
       for quarter in 0..<Self.quarterTurns {
         let opens = Double(quarter) * Self.quarterTurn
         let closes = opens + Self.quarterTurn
         let start = (
-          x: centre.x + radius * cos(opens), y: centre.y + radius * sin(opens)
+          horizontal: centre.horizontal + radius * cos(opens),
+          vertical: centre.vertical + radius * sin(opens)
         )
         let end = (
-          x: centre.x + radius * cos(closes), y: centre.y + radius * sin(closes)
+          horizontal: centre.horizontal + radius * cos(closes),
+          vertical: centre.vertical + radius * sin(closes)
         )
-        let leaving = (x: start.x - pull * sin(opens), y: start.y + pull * cos(opens))
-        let arriving = (x: end.x + pull * sin(closes), y: end.y - pull * cos(closes))
+        let leaving = (
+          horizontal: start.horizontal - pull * sin(opens),
+          vertical: start.vertical + pull * cos(opens)
+        )
+        let arriving = (
+          horizontal: end.horizontal + pull * sin(closes),
+          vertical: end.vertical - pull * cos(closes)
+        )
         body +=
-          "\(Self.number(leaving.x)) \(Self.number(leaving.y))"
-          + " \(Self.number(arriving.x)) \(Self.number(arriving.y))"
-          + " \(Self.number(end.x)) \(Self.number(end.y)) c\n"
+          "\(Self.number(leaving.horizontal)) \(Self.number(leaving.vertical))"
+          + " \(Self.number(arriving.horizontal)) \(Self.number(arriving.vertical))"
+          + " \(Self.number(end.horizontal)) \(Self.number(end.vertical)) c\n"
       }
       return body + "h\nS\n"
     }

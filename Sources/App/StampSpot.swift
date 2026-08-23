@@ -114,20 +114,20 @@
         rowScan: for row in 0..<rows {
           for column in 0..<columns {
             let centre = (
-              x: box.maxX - room - Double(column) * Self.searchStep,
-              y: box.minY + room + Double(row) * Self.searchStep
+              horizontal: box.maxX - room - Double(column) * Self.searchStep,
+              vertical: box.minY + room + Double(row) * Self.searchStep
             )
             // Columns run left and rows run up, so once either passes
             // the page's edge nothing further along it can fit.
-            guard centre.x - room >= box.minX else { break }
-            guard centre.y + room <= box.maxY else { break rowScan }
+            guard centre.horizontal - room >= box.minX else { break }
+            guard centre.vertical + room <= box.maxY else { break rowScan }
             guard Self.isBlank(around: centre, reach: room, ink: ink, box: box)
             else {
               continue
             }
             return Spot(
-              acrossPage: centre.x - box.minX,
-              upPage: centre.y - box.minY,
+              acrossPage: centre.horizontal - box.minX,
+              upPage: centre.vertical - box.minY,
               share: share
             )
           }
@@ -168,23 +168,23 @@
 
     /// Whether every point around a centre is blank.
     private static func isBlank(
-      around centre: (x: Double, y: Double),
+      around centre: (horizontal: Double, vertical: Double),
       reach: Double,
       ink: [UInt8],
       box: CGRect
     ) -> Bool {
       let width = Int(box.width * Self.renderScale)
       let height = Int(box.height * Self.renderScale)
-      let left = Int((centre.x - reach - box.minX) * Self.renderScale)
-      let right = Int((centre.x + reach - box.minX) * Self.renderScale)
+      let left = Int((centre.horizontal - reach - box.minX) * Self.renderScale)
+      let right = Int((centre.horizontal + reach - box.minX) * Self.renderScale)
       // The page's coordinates count up from its foot; the rendered
       // rows count down from its head. A bitmap context draws with its
       // origin at the bottom left but stores the top row first, so a
       // region read without turning it over is read from the opposite
       // end of the page - which is worse than no search at all, since
       // it calls the crowded foot empty and the empty head crowded.
-      let bottom = Int((centre.y - reach - box.minY) * Self.renderScale)
-      let top = Int((centre.y + reach - box.minY) * Self.renderScale)
+      let bottom = Int((centre.vertical - reach - box.minY) * Self.renderScale)
+      let top = Int((centre.vertical + reach - box.minY) * Self.renderScale)
       guard left >= 0, bottom >= 0, right < width, top < height else {
         return false
       }
