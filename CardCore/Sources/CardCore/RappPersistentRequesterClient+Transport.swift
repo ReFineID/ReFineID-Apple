@@ -62,7 +62,7 @@
       private func rendezvousFacts() async -> (name: String, preamble: Data)? {
         guard let pairID = try? await resolvedPairID(),
           let pair = try? RappPairRecord.loadFromVault(pairId: pairID, vault: vault),
-          let metadata = try? pair.metadata(),
+          let metadata = pair.metadata(),
           let preamble = try? rappStreamSessionPreamble(
             rendezvousToken: metadata.rendezvousToken
           )

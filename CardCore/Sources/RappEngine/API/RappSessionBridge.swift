@@ -2,10 +2,6 @@
 
 import Foundation
 
-// Two steps read state that needs no validation today, but each is declared
-// throwing because the interface declares it so and every caller writes `try`.
-// swiftlint:disable unneeded_throws_rethrows
-
 /// One authenticated session over a stored pairing.
 ///
 /// The session is ephemeral: it authenticates the pairing's keys, verifies
@@ -177,7 +173,7 @@ public final class RappSessionBridge: @unchecked Sendable {
   }
 
   /// Whether the session is healthy and may carry operations.
-  public func isEstablished() throws -> Bool {
+  public func isEstablished() -> Bool {
     locked {
       guard case .established(let session) = phase else { return false }
       return session.isOpen
@@ -185,7 +181,7 @@ public final class RappSessionBridge: @unchecked Sendable {
   }
 
   /// Closes the session and spends the bridge.
-  public func closeSession() throws {
+  public func closeSession() {
     locked { phase = .closed }
   }
 
@@ -255,5 +251,3 @@ public final class RappSessionBridge: @unchecked Sendable {
     return try body()
   }
 }
-
-// swiftlint:enable unneeded_throws_rethrows

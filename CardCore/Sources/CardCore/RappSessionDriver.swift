@@ -62,7 +62,7 @@
       clock: RappPlatformClock = RappPlatformClock()
     ) throws {
       self.role = role
-      self.pairID = try pair.metadata().pairId
+      self.pairID = pair.metadata().pairId
       self.vault = vault
       self.entropy = entropy
       self.clock = clock
@@ -166,7 +166,7 @@
 
     /// Whether both this driver and the underlying session are established.
     public func isEstablished() -> Bool {
-      state == .established && (try? session.isEstablished()) == true
+      state == .established && session.isEstablished()
     }
 
     /// Transfers the established Noise session into the durable operation
@@ -178,7 +178,7 @@
       maximumLifetimeMilliseconds: UInt64,
       liveness: RappOperationDriver.Liveness
     ) throws -> RappOperationDriver {
-      guard state == .established, (try? session.isEstablished()) == true else {
+      guard state == .established, session.isEstablished() else {
         throw RappOperationDriver.LocalError.wrongPhase
       }
       let driver = try RappOperationDriver(
@@ -203,7 +203,7 @@
 
     private func closeSession() {
       if state != .closed {
-        try? session.closeSession()
+        session.closeSession()
         state = .closed
       }
     }

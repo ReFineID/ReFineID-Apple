@@ -65,7 +65,7 @@ import XCTest
         startedAtMonotonicMs: startedAt
       )
       let uri = try bridge.offerUri(nowMonotonicMs: clock.monotonicMilliseconds())
-      try bridge.cancelPairing()
+      bridge.cancelPairing()
 
       let candidates = try RappScannedOffer.candidates(scannedOfferURI: uri)
       XCTAssertEqual(candidates.count, 2)

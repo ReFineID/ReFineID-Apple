@@ -28,7 +28,7 @@
 
     /// Whether the session can carry payloads.
     public var isEstablished: Bool {
-      (try? bridge.isEstablished()) ?? false
+      bridge.isEstablished()
     }
 
     /// Begins a session over `pair`.

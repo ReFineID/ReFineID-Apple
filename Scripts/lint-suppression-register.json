@@ -1,72 +1,7 @@
 {
-  "description": "Exact suppression comments permitted in gated Swift sources. Edit this file in the same commit as the matching source change.",
+  "description": "Exact suppression comments permitted in gated Swift sources. Only cases that cannot be expressed without breaking a protocol, an @objc witness, or a published name. Edit this file in the same commit as the matching source change.",
   "swiftlint": [
     {
-      "file": "CardCore/Sources/CardCore/PdfDocumentIndex.swift",
-      "command": "disable:next",
-      "rules": [
-        "pattern_matching_keywords"
-      ],
-      "count": 1
-    },
-    {
-      "file": "CardCore/Sources/CardCore/Values/AnswerToResetValues.swift",
-      "command": "disable:next",
-      "rules": [
-        "no_magic_numbers"
-      ],
-      "count": 3
-    },
-    {
-      "file": "CardCore/Sources/CardCore/Values/CardAccessValues.swift",
-      "command": "disable",
-      "rules": [
-        "no_magic_numbers",
-        "sorted_enum_cases"
-      ],
-      "count": 1
-    },
-    {
-      "file": "CardCore/Sources/CardCore/Values/CardAccessValues.swift",
-      "command": "disable:next",
-      "rules": [
-        "blanket_disable_command"
-      ],
-      "count": 1
-    },
-    {
-      "file": "CardCore/Sources/CardCore/Values/FineidCardTypeValues.swift",
-      "command": "disable",
-      "rules": [
-        "no_magic_numbers"
-      ],
-      "count": 1
-    },
-    {
-      "file": "CardCore/Sources/CardCore/Values/FineidCardTypeValues.swift",
-      "command": "enable",
-      "rules": [
-        "no_magic_numbers"
-      ],
-      "count": 1
-    },
-    {
-      "file": "CardCore/Sources/CardCore/Values/RsaPkcs1Sha256EncodedMessage.swift",
-      "command": "disable",
-      "rules": [
-        "no_magic_numbers"
-      ],
-      "count": 1
-    },
-    {
-      "file": "CardCore/Sources/CardCore/Values/RsaPkcs1Sha256EncodedMessage.swift",
-      "command": "enable",
-      "rules": [
-        "no_magic_numbers"
-      ],
-      "count": 1
-    },
-    {
       "file": "CardCore/Sources/RappEngine/API/RappBindingError.swift",
       "command": "disable",
       "rules": [
@@ -133,40 +68,6 @@
       "count": 1
     },
     {
-      "file": "CardCore/Sources/RappEngine/API/RappOperationBridge+Dispatch.swift",
-      "command": "disable",
-      "rules": [
-        "cyclomatic_complexity"
-      ],
-      "count": 1
-    },
-    {
-      "file": "CardCore/Sources/RappEngine/API/RappOperationBridge+Dispatch.swift",
-      "command": "enable",
-      "rules": [
-        "cyclomatic_complexity"
-      ],
-      "count": 1
-    },
-    {
-      "file": "CardCore/Sources/RappEngine/API/RappOperationBridge.swift",
-      "command": "disable",
-      "rules": [
-        "function_parameter_count",
-        "type_body_length"
-      ],
-      "count": 1
-    },
-    {
-      "file": "CardCore/Sources/RappEngine/API/RappOperationBridge.swift",
-      "command": "enable",
-      "rules": [
-        "function_parameter_count",
-        "type_body_length"
-      ],
-      "count": 1
-    },
-    {
       "file": "CardCore/Sources/RappEngine/API/RappOperationKind.swift",
       "command": "disable",
       "rules": [
@@ -215,56 +116,6 @@
       "count": 1
     },
     {
-      "file": "CardCore/Sources/RappEngine/API/RappPairRecord.swift",
-      "command": "disable",
-      "rules": [
-        "unneeded_throws_rethrows"
-      ],
-      "count": 1
-    },
-    {
-      "file": "CardCore/Sources/RappEngine/API/RappPairRecord.swift",
-      "command": "enable",
-      "rules": [
-        "unneeded_throws_rethrows"
-      ],
-      "count": 1
-    },
-    {
-      "file": "CardCore/Sources/RappEngine/API/RappPairingBridge.swift",
-      "command": "disable",
-      "rules": [
-        "function_parameter_count",
-        "unneeded_throws_rethrows"
-      ],
-      "count": 1
-    },
-    {
-      "file": "CardCore/Sources/RappEngine/API/RappPairingBridge.swift",
-      "command": "disable",
-      "rules": [
-        "type_body_length"
-      ],
-      "count": 1
-    },
-    {
-      "file": "CardCore/Sources/RappEngine/API/RappPairingBridge.swift",
-      "command": "enable",
-      "rules": [
-        "function_parameter_count",
-        "unneeded_throws_rethrows"
-      ],
-      "count": 1
-    },
-    {
-      "file": "CardCore/Sources/RappEngine/API/RappPairingBridge.swift",
-      "command": "enable",
-      "rules": [
-        "type_body_length"
-      ],
-      "count": 1
-    },
-    {
       "file": "CardCore/Sources/RappEngine/API/RappPeerHello.swift",
       "command": "disable",
       "rules": [
@@ -277,22 +128,6 @@
       "command": "enable",
       "rules": [
         "discouraged_optional_collection"
-      ],
-      "count": 1
-    },
-    {
-      "file": "CardCore/Sources/RappEngine/API/RappSessionBridge.swift",
-      "command": "disable",
-      "rules": [
-        "unneeded_throws_rethrows"
-      ],
-      "count": 1
-    },
-    {
-      "file": "CardCore/Sources/RappEngine/API/RappSessionBridge.swift",
-      "command": "enable",
-      "rules": [
-        "unneeded_throws_rethrows"
       ],
       "count": 1
     },
@@ -343,22 +178,6 @@
       "command": "enable",
       "rules": [
         "discouraged_optional_collection"
-      ],
-      "count": 1
-    },
-    {
-      "file": "CardCore/Sources/RappEngine/Engine/ProxyOperationEngine.swift",
-      "command": "disable",
-      "rules": [
-        "type_body_length"
-      ],
-      "count": 1
-    },
-    {
-      "file": "CardCore/Sources/RappEngine/Engine/ProxyOperationEngine.swift",
-      "command": "enable",
-      "rules": [
-        "type_body_length"
       ],
       "count": 1
     },
@@ -555,22 +374,6 @@
       "count": 1
     },
     {
-      "file": "CardCore/Sources/RappEngine/State/RappRule.swift",
-      "command": "disable",
-      "rules": [
-        "identifier_name"
-      ],
-      "count": 1
-    },
-    {
-      "file": "CardCore/Sources/RappEngine/State/RappRule.swift",
-      "command": "enable",
-      "rules": [
-        "identifier_name"
-      ],
-      "count": 1
-    },
-    {
       "file": "CardCore/Sources/RappEngine/State/RuleRole.swift",
       "command": "disable",
       "rules": [
@@ -699,38 +502,6 @@
       "count": 1
     },
     {
-      "file": "CardCore/Tests/RappEngineTests/ModelEntry.swift",
-      "command": "disable",
-      "rules": [
-        "identifier_name"
-      ],
-      "count": 1
-    },
-    {
-      "file": "CardCore/Tests/RappEngineTests/ModelEntry.swift",
-      "command": "enable",
-      "rules": [
-        "identifier_name"
-      ],
-      "count": 1
-    },
-    {
-      "file": "CardCore/Tests/RappEngineTests/ParsedRule.swift",
-      "command": "disable",
-      "rules": [
-        "identifier_name"
-      ],
-      "count": 1
-    },
-    {
-      "file": "CardCore/Tests/RappEngineTests/ParsedRule.swift",
-      "command": "enable",
-      "rules": [
-        "identifier_name"
-      ],
-      "count": 1
-    },
-    {
       "file": "Sources/App/CardAccessNumberCapturePipeline.swift",
       "command": "disable",
       "rules": [
@@ -745,14 +516,6 @@
         "no_magic_numbers"
       ],
       "count": 1
-    },
-    {
-      "file": "Sources/App/CardCredentialsView+Form.swift",
-      "command": "disable:next",
-      "rules": [
-        "redundant_discardable_let"
-      ],
-      "count": 2
     },
     {
       "file": "Sources/App/CardCredentialsView.swift",
@@ -771,38 +534,6 @@
       "count": 1
     },
     {
-      "file": "Sources/App/CardMaintenance+Snapshot.swift",
-      "command": "disable",
-      "rules": [
-        "async_without_await"
-      ],
-      "count": 1
-    },
-    {
-      "file": "Sources/App/CardMaintenance+Snapshot.swift",
-      "command": "enable",
-      "rules": [
-        "async_without_await"
-      ],
-      "count": 1
-    },
-    {
-      "file": "Sources/App/CardMaintenance+Transport.swift",
-      "command": "disable",
-      "rules": [
-        "explicit_enum_raw_value"
-      ],
-      "count": 1
-    },
-    {
-      "file": "Sources/App/CardMaintenance+Transport.swift",
-      "command": "enable",
-      "rules": [
-        "explicit_enum_raw_value"
-      ],
-      "count": 1
-    },
-    {
       "file": "Sources/App/CardPrimingStep.swift",
       "command": "disable",
       "rules": [
@@ -815,14 +546,6 @@
       "command": "enable",
       "rules": [
         "sorted_enum_cases"
-      ],
-      "count": 1
-    },
-    {
-      "file": "Sources/App/DebugDiagnosticsReport.swift",
-      "command": "disable:next",
-      "rules": [
-        "pattern_matching_keywords"
       ],
       "count": 1
     },
@@ -831,14 +554,6 @@
       "command": "disable:next",
       "rules": [
         "unneeded_escaping"
-      ],
-      "count": 1
-    },
-    {
-      "file": "Sources/App/DiagnosticsView.swift",
-      "command": "disable:next",
-      "rules": [
-        "no_magic_numbers"
       ],
       "count": 1
     },

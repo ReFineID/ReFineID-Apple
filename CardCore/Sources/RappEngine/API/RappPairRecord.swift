@@ -2,10 +2,6 @@
 
 import Foundation
 
-// Describing a record needs no validation today, but the interface declares
-// it throwing and every caller writes `try`.
-// swiftlint:disable unneeded_throws_rethrows
-
 /// A stored pairing.
 ///
 /// The record holds the pairing's keys, so it is never handed out as bytes
@@ -40,10 +36,7 @@ public final class RappPairRecord: @unchecked Sendable {
   }
 
   /// What the pairing says about itself, without its keys.
-  ///
-  /// - Throws: ``RappBindingError/InvalidInput`` when the record
-  ///   cannot be described.
-  public func metadata() throws -> RappPairMetadata {
+  public func metadata() -> RappPairMetadata {
     RappPairMetadata(
       pairId: record.pairIdentifier,
       role: RappEndpointRole(record.role),
@@ -89,5 +82,3 @@ public final class RappPairRecord: @unchecked Sendable {
     }
   }
 }
-
-// swiftlint:enable unneeded_throws_rethrows

@@ -2,15 +2,13 @@
 
 import Foundation
 
-// This file is a registry table, and that is the exemptions'
-// justification: every number below is an arc or a selector assigned by
-// the documents named on it, and the tables exist to be read against
-// those documents. Naming each arc separately would hide the pattern
-// the table exists to show -- which identifiers differ only by their
-// mapping, and which domain parameters are cheaper than the one in use.
-// The cases are in registered arc order for the same reason.
-// swiftlint:disable:next blanket_disable_command
-// swiftlint:disable no_magic_numbers sorted_enum_cases
+// This file is a registry table: every number below is an arc or a
+// selector assigned by the documents named on it, and the tables exist
+// to be read against those documents. Naming each arc separately would
+// hide the pattern the table exists to show -- which identifiers differ
+// only by their mapping, and which domain parameters are cheaper than
+// the one in use. The cases are in registered arc order for the same
+// reason.
 /// The tags, arcs and registered identifiers EF.CardAccess is written
 /// in (ICAO 9303-11 section 9.2.11; BSI TR-03110-3 appendix A).
 internal enum CardAccessValues {

@@ -273,7 +273,7 @@
         clock: clock,
         offerDeadlineMilliseconds: deadline(
           startedAt: startedAtMonotonicMilliseconds,
-          lifetime: try bridge.offerTtlMs()
+          lifetime: bridge.offerTtlMs()
         )
       )
     }
@@ -490,7 +490,7 @@
       let record = try bridge.finishPairing(createdAtMs: clock.wallMilliseconds())
       do {
         try record.persistDeviceOnly(vault: vault)
-        let summary = PairSummary(try record.metadata())
+        let summary = PairSummary(record.metadata())
         state = .completed
         offerExpiryTask?.cancel()
         offerExpiryTask = nil
@@ -507,7 +507,7 @@
       state = .closed
       offerExpiryTask?.cancel()
       offerExpiryTask = nil
-      try? bridge.cancelPairing()
+      bridge.cancelPairing()
       await transport.close()
       continuation.yield(.closed(reason))
       continuation.finish()

@@ -1,11 +1,9 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-// This file is a byte table, and that is the exemption's justification:
-// every literal below is one byte of a card's answer to reset, quoted
-// from the document named below. Naming each byte individually would
-// hide the pattern the table exists to show -- which bytes the cards
-// share and which ones tell them apart.
-// swiftlint:disable no_magic_numbers
+// This file is a byte table: every literal below is one byte of a
+// card's answer to reset, quoted from the document named below. Naming
+// each byte individually would hide the pattern the table exists to
+// show -- which bytes the cards share and which ones tell them apart.
 /// The cards DVV issues, by their historical bytes.
 ///
 /// Provenance: *Technology note - ATR/ATS bytes* v1.0, DVV ICT Unit,
@@ -156,5 +154,3 @@ internal enum FineidCardTypeValues {
     }
   }
 }
-
-// swiftlint:enable no_magic_numbers

@@ -8,7 +8,7 @@
 # `--enable-all-rules`? It ignores `disabled_rules` and config, so it cannot
 # honour the carve register below. Instead every opt-in rule is enumerated;
 # combined with the default rule set this is "all rules on, minus what is
-# truly impossible" (verified complete against SwiftLint 0.65.0).
+# truly impossible".
 #
 # Carve register -- opt-in rules deliberately OMITTED, each justified:
 #
@@ -78,6 +78,12 @@ strict: true
 inclusive_language:
   override_allowed_terms:
     - master
+
+# `to` is the formal model's destination field name (RappRule, ParsedRule).
+identifier_name:
+  excluded:
+    - id
+    - to
 
 # Every source file opens with the copyright and licence header. The
 # rule forbids "Copyright" by default (to strip Xcode's auto-header),

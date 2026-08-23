@@ -30,7 +30,7 @@ cd "$(dirname "$0")/.."
 
 # SHA-256 of .swiftlint-baseline.json. Paying debt down rewrites the
 # baseline and this digest in the same commit.
-BaselineSha256=93fb8207054c38bb6cd6344d847ca0f9a990667fa32cdab525e1090f601b2f57
+BaselineSha256=547ac975518e493022f112a5de56ff41e6d6c0520348d736f5df85552a01982a
 
 format_paths=(
   Sources Tests

@@ -19,7 +19,6 @@ internal enum AnswerToResetValues {
   /// A set rather than three separately named constants, because the
   /// parser walks them as one.
   internal static let interfaceByteBits: [UInt8] = [
-    // swiftlint:disable:next no_magic_numbers
     0x01, 0x02, 0x04,
   ]
 
@@ -36,14 +35,12 @@ internal enum AnswerToResetValues {
   /// else in the prefix does not, which is what makes the prefix
   /// answer "which interface is this card on" without any card I/O.
   internal static let synthesizedContactlessPrefix: [UInt8] = [
-    // swiftlint:disable:next no_magic_numbers
     0x3B, 0x80, 0x80, 0x01,
   ]
 
   /// The historical-count nibble, masked away when comparing the
   /// prefix above.
   internal static let synthesizedContactlessMasks: [UInt8] = [
-    // swiftlint:disable:next no_magic_numbers
     0xFF, 0xF0, 0xFF, 0xFF,
   ]
 }

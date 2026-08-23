@@ -2,7 +2,6 @@
 
 // The model names this field `to`; these types mirror the document's rules
 // verbatim so the comparison reads field for field.
-// swiftlint:disable identifier_name
 
 import Foundation
 
@@ -22,5 +21,3 @@ internal struct ModelEntry: Hashable, Comparable {
 
   internal static func < (lhs: Self, rhs: Self) -> Bool { lhs.label < rhs.label }
 }
-
-// swiftlint:enable identifier_name

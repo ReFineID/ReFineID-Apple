@@ -34,8 +34,8 @@
         uri: scannedOfferURI,
         startedAtMonotonicMs: clock.monotonicMilliseconds()
       )
-      defer { try? bridge.cancelPairing() }
-      return try bridge.offerCandidates().map { candidate in
+      defer { bridge.cancelPairing() }
+      return bridge.offerCandidates().map { candidate in
         Candidate(
           profile: candidate.profile,
           candidateID: candidate.candidateId,

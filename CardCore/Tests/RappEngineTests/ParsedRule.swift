@@ -2,7 +2,6 @@
 
 // The model names this field `to`; these types mirror the document's rules
 // verbatim so the comparison reads field for field.
-// swiftlint:disable identifier_name
 
 import Foundation
 
@@ -17,5 +16,3 @@ internal struct ParsedRule {
   internal var to = ""
   internal var actions: [String] = []
 }
-
-// swiftlint:enable identifier_name

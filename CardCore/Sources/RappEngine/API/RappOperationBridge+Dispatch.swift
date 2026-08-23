@@ -2,10 +2,6 @@
 
 import Foundation
 
-// The dispatch tables are long because the protocol has that many outcomes;
-// each arm is one line of mapping.
-// swiftlint:disable cyclomatic_complexity
-
 /// Turning an engine dispatch into the caller's next step.
 extension RappOperationBridge {
   /// Classifies one authenticated message on whichever side runs here.
@@ -14,45 +10,58 @@ extension RappOperationBridge {
   /// takes the specification's first-incident revocation rather than
   /// escaping as an error the caller cannot classify.
   internal func dispatch(_ message: TypedMessage, nowMs: UInt64) throws -> RappBridgeAction {
-    // The engine is a value, so its new state is stored before the action is
-    // built. Building an action reads the engine to describe the operation the
-    // message just created, and a deferred store would leave that read looking
-    // at the state from before the message arrived.
     switch side {
     case .proxy(var engine):
-      var store = VaultProxyJournalStore(vault: vault, pairIdentifier: pairIdentifier)
-      let dispatch: ProxyDispatch
-      do {
-        dispatch = try mapping {
-          try engine.receive(
-            message, store: &store, nowMilliseconds: nowMs,
-            maximumLifetimeMilliseconds: maximumLifetimeMilliseconds)
-        }
-      } catch let error as RappBindingError where error == .ProtocolFailure {
-        side = .proxy(engine)
-        return violationClose()
-      } catch {
-        side = .proxy(engine)
-        throw error
-      }
-      side = .proxy(engine)
-      return try action(for: dispatch)
-
+      return try dispatchProxy(&engine, message: message, nowMs: nowMs)
     case .requester(var engine):
-      var store = VaultRequesterJournalStore(vault: vault, pairIdentifier: pairIdentifier)
-      let dispatch: RequesterDispatch
-      do {
-        dispatch = try mapping { try engine.receive(message, store: &store) }
-      } catch let error as RappBindingError where error == .ProtocolFailure {
-        side = .requester(engine)
-        return violationClose()
-      } catch {
-        side = .requester(engine)
-        throw error
-      }
-      side = .requester(engine)
-      return try action(for: dispatch)
+      return try dispatchRequester(&engine, message: message, nowMs: nowMs)
     }
+  }
+
+  /// Runs one proxy-side receive and stores the engine's new state first.
+  private func dispatchProxy(
+    _ engine: inout ProxyOperationEngine,
+    message: TypedMessage,
+    nowMs: UInt64
+  ) throws -> RappBridgeAction {
+    var store = VaultProxyJournalStore(vault: vault, pairIdentifier: pairIdentifier)
+    let dispatch: ProxyDispatch
+    do {
+      dispatch = try mapping {
+        try engine.receive(
+          message, store: &store, nowMilliseconds: nowMs,
+          maximumLifetimeMilliseconds: maximumLifetimeMilliseconds)
+      }
+    } catch let error as RappBindingError where error == .ProtocolFailure {
+      side = .proxy(engine)
+      return violationClose()
+    } catch {
+      side = .proxy(engine)
+      throw error
+    }
+    side = .proxy(engine)
+    return try action(for: dispatch)
+  }
+
+  /// Runs one requester-side receive and stores the engine's new state first.
+  private func dispatchRequester(
+    _ engine: inout RequesterOperationEngine,
+    message: TypedMessage,
+    nowMs _: UInt64
+  ) throws -> RappBridgeAction {
+    var store = VaultRequesterJournalStore(vault: vault, pairIdentifier: pairIdentifier)
+    let dispatch: RequesterDispatch
+    do {
+      dispatch = try mapping { try engine.receive(message, store: &store) }
+    } catch let error as RappBindingError where error == .ProtocolFailure {
+      side = .requester(engine)
+      return violationClose()
+    } catch {
+      side = .requester(engine)
+      throw error
+    }
+    side = .requester(engine)
+    return try action(for: dispatch)
   }
 
   /// Answers a liveness ping, or records a pong, before the operation layer
@@ -305,5 +314,3 @@ extension RappOperationBridge {
     }
   }
 }
-
-// swiftlint:enable cyclomatic_complexity

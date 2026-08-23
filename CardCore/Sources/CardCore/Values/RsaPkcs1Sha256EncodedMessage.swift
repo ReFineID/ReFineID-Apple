@@ -17,7 +17,6 @@ public struct RsaPkcs1Sha256EncodedMessage: Equatable, Sendable {
   private static let minimumPaddingByteCount = 8
 
   // Fixed PKCS#1 and SHA-256 DigestInfo wire values.
-  // swiftlint:disable no_magic_numbers
   private static let blockPrefix: [UInt8] = [0x00, 0x01]
   private static let paddingByte: UInt8 = 0xFF
   private static let separatorByte: UInt8 = 0x00
@@ -25,7 +24,6 @@ public struct RsaPkcs1Sha256EncodedMessage: Equatable, Sendable {
     0x30, 0x31, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01,
     0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20,
   ]
-  // swiftlint:enable no_magic_numbers
 
   /// The SHA-256 digest recovered from the validated block.
   public let digest: Data

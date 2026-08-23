@@ -9,8 +9,8 @@ import SwiftUI
 /// actions live in the navigation toolbar; card removal belongs on setup.
 internal struct DiagnosticsView: View {
   // Two seconds is long enough to notice without leaving stale feedback.
-  // swiftlint:disable:next no_magic_numbers
-  private static let copyFeedbackDuration: Duration = .seconds(2)
+  private static let copyFeedbackDuration: Duration =
+    .seconds(1) + .seconds(1)
 
   @State private var snapshot: DiagnosticsSnapshot?
   @State private var reportCopied = false

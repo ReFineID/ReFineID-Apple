@@ -1,0 +1,7 @@
+parent_config: ../../../../.swiftlint.yml
+inclusive_language:
+  override_allowed_terms:
+    - master
+disabled_rules:
+  - no_magic_numbers
+  - sorted_enum_cases

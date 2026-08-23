@@ -6,11 +6,8 @@ import Foundation
 
 extension CardMaintenance {
   internal enum Transport: String, CaseIterable, Identifiable, Sendable {
-    // SwiftLint's explicit and redundant raw-value rules conflict for String enums.
-    // swiftlint:disable explicit_enum_raw_value
-    case nearField
-    case reader
-    // swiftlint:enable explicit_enum_raw_value
+    case nearField = "nearField"
+    case reader = "reader"
 
     internal var id: Self { self }
 

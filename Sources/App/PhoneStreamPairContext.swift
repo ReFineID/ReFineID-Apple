@@ -24,7 +24,7 @@
     internal static func resolve(vault: RappDeviceVault) -> Self? {
       guard
         let pair = try? PhoneProxyPairSelection.resolveSelectedPair(vault: vault),
-        let metadata = try? pair.metadata(),
+        let metadata = pair.metadata(),
         let preamble = try? rappStreamSessionPreamble(
           rendezvousToken: metadata.rendezvousToken
         )

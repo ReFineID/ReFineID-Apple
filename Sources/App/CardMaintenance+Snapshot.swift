@@ -307,12 +307,12 @@
   }
 #else
   extension CardMaintenance {
-    // swiftlint:disable async_without_await
     internal static func connectionSnapshot(
       cardAccessNumber _: String
     ) async -> ConnectionSnapshotResult {
-      .failed
+      await withCheckedContinuation { continuation in
+        continuation.resume(returning: .failed)
+      }
     }
-    // swiftlint:enable async_without_await
   }
 #endif

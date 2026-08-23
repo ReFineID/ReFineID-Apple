@@ -34,7 +34,7 @@
             throw CatalogError.duplicatePairIdentifier
           }
           let pair = try RappPairRecord.loadFromVault(pairId: pairID, vault: vault)
-          return RappPairingCoordinator.PairSummary(try pair.metadata())
+          return RappPairingCoordinator.PairSummary(pair.metadata())
         }
     }
 
@@ -47,7 +47,7 @@
     public func selectedPair() throws -> RappPairingCoordinator.PairSummary? {
       guard let pairID = try vault.selectedPairID() else { return nil }
       let pair = try load(pairID: pairID)
-      return RappPairingCoordinator.PairSummary(try pair.metadata())
+      return RappPairingCoordinator.PairSummary(pair.metadata())
     }
 
     /// Marks one pair as selected after proving it loads.

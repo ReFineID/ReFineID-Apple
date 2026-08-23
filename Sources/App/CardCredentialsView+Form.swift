@@ -224,8 +224,7 @@ extension CardCredentialsView {
       switch destination {
       case .activation:
         #if DEBUG
-          // swiftlint:disable:next redundant_discardable_let
-          let _ = DebugConsole.emit("navigation-destination: activation")
+          DebugConsole.emit("navigation-destination: activation")
         #endif
         if let activationScheme, let activationNeeds {
           CardManagementView(
@@ -240,8 +239,7 @@ extension CardCredentialsView {
 
       case .pinManagement:
         #if DEBUG
-          // swiftlint:disable:next redundant_discardable_let
-          let _ = DebugConsole.emit("navigation-destination: PIN management")
+          DebugConsole.emit("navigation-destination: PIN management")
         #endif
         if hasReaderIdentity {
           CardManagementView(readerCardIsPresent: true)

@@ -3,7 +3,6 @@
 // The model names this field `to`, and the tables below are read line for
 // line against the document, so the field keeps the document's name rather
 // than a longer synonym.
-// swiftlint:disable identifier_name
 
 /// One rule of the formal model.
 ///
@@ -76,8 +75,6 @@ internal struct RappRule<State: Equatable & Sendable, Event: Equatable & Sendabl
     from.contains(state) && self.event == candidate && role.includes(endpoint)
   }
 }
-
-// swiftlint:enable identifier_name
 
 /// Resolves an event against a rule table.
 ///

@@ -265,7 +265,6 @@ internal struct PdfDocumentIndex {
     case .direct(let offset):
       return Self.directBody(at: offset, in: document)
 
-    // swiftlint:disable:next pattern_matching_keywords
     case .compressed(let container, let position):
       return compressedBody(
         of: number, container: container, position: position, in: document
