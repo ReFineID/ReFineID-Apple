@@ -26,13 +26,13 @@ internal final class ActivationRequiredToken: TKSmartCardToken, TKTokenDelegate 
     configuration.keychainItems = []
   }
 
+  // swiftlint:disable:next unneeded_throws_rethrows
   /// CryptoTokenKit asks every token for sessions while discovering its
   /// metadata, even when it has no keychain items.
   ///
   /// A benign empty session answers that query without pretending the
   /// card vanished. The @objc delegate requirement fixes the throwing
   /// signature even though this implementation cannot fail.
-  // swiftlint:disable:next unneeded_throws_rethrows
   internal func createSession(_: TKToken) throws -> TKTokenSession {
     TKSmartCardTokenSession(token: self)
   }

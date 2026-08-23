@@ -220,9 +220,13 @@
       /// Result kind that selects which optional fields are populated.
       public let kind: ResultKind
       /// Whether PIN 1 still carries its factory value; inspection only.
-      public let pin1Factory: Bool?
+      public let pin1FactoryReported: Bool
+      /// Whether PIN 1 still carries its factory value when reported.
+      public let pin1Factory: Bool
       /// Whether PIN 2 still carries its factory value; inspection only.
-      public let pin2Factory: Bool?
+      public let pin2FactoryReported: Bool
+      /// Whether PIN 2 still carries its factory value when reported.
+      public let pin2Factory: Bool
       /// Remaining PIN 1 attempts when the card reported them.
       public let pin1Attempts: UInt8?
       /// Remaining PIN 2 attempts when the card reported them.
@@ -238,8 +242,10 @@
 
       internal init(_ value: RappOperationResult) {
         kind = ResultKind(value.kind)
-        pin1Factory = value.pin1Factory
-        pin2Factory = value.pin2Factory
+        pin1FactoryReported = value.pin1Factory != nil
+        pin1Factory = value.pin1Factory ?? false
+        pin2FactoryReported = value.pin2Factory != nil
+        pin2Factory = value.pin2Factory ?? false
         pin1Attempts = value.pin1Attempts
         pin2Attempts = value.pin2Attempts
         pukAttempts = value.pukAttempts
@@ -293,7 +299,7 @@
 
     /// A token that the transport must return after it has released a frame.
     public enum FrameRelease: Sendable, Equatable {
-      case none
+      case noRelease
       case resultAcknowledgment(operationID: Data)
       case closeSession
     }

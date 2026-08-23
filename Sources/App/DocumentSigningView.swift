@@ -2,11 +2,6 @@
 
 #if os(iOS)
 
-  /// How many lines a document name may wrap to in the list.
-  private enum Layout {
-    static let fileNameLines = 2
-  }
-
   import CardCore
   import Foundation
   import SwiftUI
@@ -15,6 +10,10 @@
   /// Multi-document qualified signing over a reader or Core NFC session.
   @MainActor
   internal struct DocumentSigningView: View {
+    private enum Layout {
+      static let fileNameLines = 2
+    }
+
     private struct Input: Identifiable {
       let id = UUID()
       let name: String

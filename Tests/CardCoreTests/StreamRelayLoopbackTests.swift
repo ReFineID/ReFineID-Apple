@@ -58,7 +58,9 @@ internal struct StreamRelayLoopbackTests {
     }
     let service = try #require(endpoint, "the browser never found the listener")
 
-    let dialer = StreamRelaySession(service: service, preamble: greeting) { _ in return }
+    let dialer = StreamRelaySession(service: service, preamble: greeting) { _ in
+      // this probe only dials; it does not handle frames
+    }
     dialer.start()
     defer { dialer.cancel() }
 

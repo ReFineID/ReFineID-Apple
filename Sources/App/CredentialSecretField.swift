@@ -11,16 +11,13 @@ import SwiftUI
 /// digits within the longest supported secret; the caller's own field
 /// applies its exact bounds. Validation is the final result at the end
 /// of the row.
-/// Geometry for the secret row, outside the generic type because a
-/// generic cannot hold stored statics.
-private enum Geometry {
-  static let lineLimit = 1
-  static let buttonSize = 44.0
-  static let negativePadding = -10.0
-  static let indicatorSize = 24.0
-}
-
 internal struct CredentialSecretField<Field: View, Validation: View>: View {
+  private enum Geometry {
+    static let lineLimit = 1
+    static let buttonSize = 44.0
+    static let negativePadding = -10.0
+    static let indicatorSize = 24.0
+  }
 
   // MARK: SwiftUI Properties
 

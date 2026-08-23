@@ -268,6 +268,7 @@ internal struct CardCredentialsView: View {
           ) {
             Image(systemName: Self.verificationSymbolName)
               .foregroundStyle(Color.accentColor)
+              .accessibilityHidden(true)
           }
         }
         .tint(.primary)
@@ -289,7 +290,9 @@ internal struct CardCredentialsView: View {
                 .foregroundStyle(
                   signingAvailable
                     ? AnyShapeStyle(Color.accentColor)
-                    : AnyShapeStyle(.secondary))
+                    : AnyShapeStyle(.secondary)
+                )
+                .accessibilityHidden(true)
             }
           }
           .tint(.primary)

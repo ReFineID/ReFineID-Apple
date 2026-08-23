@@ -35,7 +35,7 @@
 
       do {
         switch release {
-        case .none:
+        case .noRelease:
           return []
         case .resultAcknowledgment(let operationID):
           let result = try bridge.acknowledgmentReleased(operationId: operationID)
@@ -127,7 +127,7 @@
         }
         return .resultAcknowledgment(operationID: operationID)
       }
-      return action.closeSessionAfterSend ? .closeSession : .none
+      return action.closeSessionAfterSend ? .closeSession : .noRelease
     }
 
     /// Commands for the steps that name an operation.

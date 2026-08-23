@@ -1,3 +1,4 @@
+// Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 // SPDX-License-Identifier: EUPL-1.2
 
 import Foundation
@@ -74,7 +75,7 @@ internal enum CardSetupStateMachine {
 
   internal enum Reduction: Equatable, Sendable {
     case rejected
-    case transitioned(to: State)
+    case transitioned(target: State)
   }
 
   internal static let initialState = State.home
@@ -160,6 +161,6 @@ internal enum CardSetupStateMachine {
       return .rejected
     }
     precondition(matches.dropFirst().isEmpty, "Ambiguous card-setup transition")
-    return .transitioned(to: transition.target)
+    return .transitioned(target: transition.target)
   }
 }

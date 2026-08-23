@@ -743,17 +743,17 @@
       let overlayReady = XCTNSPredicateExpectation(
         predicate: NSPredicate(format: "exists == true AND hittable == true"),
         object: overlay)
-      XCTAssertTrue(
-        XCTWaiter.wait(for: [overlayReady], timeout: Self.appearTimeout)
-          == .completed,
+      XCTAssertEqual(
+        XCTWaiter.wait(for: [overlayReady], timeout: Self.appearTimeout),
+        .completed,
         "floating Virtual ID Card did not become ready")
     }
 
     private func selectMenu(
       identifier: String,
       option: String,
-      optionIdentifier: String? = nil,
       in app: XCUIApplication,
+      optionIdentifier: String? = nil,
       scrolling: Bool = false
     ) {
       // A menu surfaces as its own control and again as its label; either opens it.
@@ -907,14 +907,14 @@
       }
 
       guard
-        let x = value(at: 1),
-        let y = value(at: 2),
+        let originX = value(at: 1),
+        let originY = value(at: 2),
         let width = value(at: 3),
         let height = value(at: 4)
       else {
         return nil
       }
-      return CGVector(dx: x + width / 2, dy: y + height / 2)
+      return CGVector(dx: originX + width / 2, dy: originY + height / 2)
     }
 
     private func scrollTo(_ element: XCUIElement, in app: XCUIApplication) {

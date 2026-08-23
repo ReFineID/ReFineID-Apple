@@ -272,7 +272,7 @@ internal final class VirtualIDCardTests: XCTestCase {
     }
 
     for preset in VirtualIDCard.FaultPreset.allCases {
-      if preset == .none {
+      if preset == .noFault {
         XCTAssertTrue(preset.faults.isEmpty)
       } else {
         XCTAssertFalse(preset.faults.isEmpty, "\(preset.rawValue) has no fault")

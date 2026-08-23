@@ -205,15 +205,6 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
       "Token.init(primed): published, profile=\(String(describing: material.profile))")
   }
 
-  /// Gives back the held session when the token itself goes away.
-  ///
-  /// The slot observation covers the card leaving; this covers `ctkd`
-  /// dropping the token for any other reason. A session left open on the
-  /// phone's own antenna keeps the radio, and the next hold then meets
-  /// the busy answer ``NearFieldCardSession`` has to retry through -
-  /// about 2.5 seconds of the holder's time for nothing.
-  // MARK: Functions
-
   /// Irreversibly disables this token instance and releases its card session.
   internal func revokeCurrentInstance() {
     revocationLock.lock()
@@ -222,6 +213,13 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
     heldSession.release()
   }
 
+  /// Gives back the held session when the token itself goes away.
+  ///
+  /// The slot observation covers the card leaving; this covers `ctkd`
+  /// dropping the token for any other reason. A session left open on the
+  /// phone's own antenna keeps the radio, and the next hold then meets
+  /// the busy answer ``NearFieldCardSession`` has to retry through -
+  /// about 2.5 seconds of the holder's time for nothing.
   deinit {
     heldSession.release()
     // Last chance to get the trace out of a process ctkd is dropping: a

@@ -211,7 +211,7 @@ extension VirtualIDCard {
 
   /// A named fault queue for common failure demonstrations.
   public enum FaultPreset: String, CaseIterable, Identifiable, Sendable {
-    case none
+    case noFault
     case nfcDisconnectBeforeConnection
     case readerFailsCounterQuery
     case cardRemovedDuringPINChange
@@ -233,7 +233,7 @@ extension VirtualIDCard {
     /// The fault queue this preset enqueues.
     public var faults: [Fault] {
       switch self {
-      case .none:
+      case .noFault:
         []
       case .nfcDisconnectBeforeConnection:
         [Fault(operation: .connect, phase: .beforeCommand, effect: .connectionLost)]

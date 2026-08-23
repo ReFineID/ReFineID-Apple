@@ -31,7 +31,7 @@
 
     @State private var draft: VirtualIDCard.Snapshot
     @State private var scenario = VirtualIDCard.Scenario.factoryFreshNearField
-    @State private var faultPreset = VirtualIDCard.FaultPreset.none
+    @State private var faultPreset = VirtualIDCard.FaultPreset.noFault
 
     // MARK: Properties
 
@@ -77,7 +77,7 @@
         .tint(.primary)
         .onValueChange(of: scenario) { selected in
           draft = Self.deviceScoped(selected.snapshot)
-          faultPreset = .none
+          faultPreset = .noFault
         }
         .pickerStyle(.menu)
         .accessibilityIdentifier("virtualCardScenario")
@@ -452,7 +452,7 @@
       _faultPreset = State(
         initialValue: VirtualIDCard.FaultPreset.allCases.first { preset in
           preset.faults == current.faults
-        } ?? .none)
+        } ?? .noFault)
     }
 
     // MARK: Static Functions

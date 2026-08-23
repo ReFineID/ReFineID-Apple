@@ -355,12 +355,12 @@ internal enum CardMaintenance {
       }
     #endif
   #else
-    /// The first wireless connection is an iOS-only operation.
-    ///
-    /// Keeping the unavailable implementation explicit lets shared UI
-    /// models compile for macOS without pretending that a reader session
-    /// is an NFC setup flow. The signature stays async so shared callers
-    /// await one shape on both platforms.
+    // The first wireless connection is an iOS-only operation.
+    //
+    // Keeping the unavailable implementation explicit lets shared UI
+    // models compile for macOS without pretending that a reader session
+    // is an NFC setup flow. The signature stays async so shared callers
+    // await one shape on both platforms.
     // swiftlint:disable async_without_await
     internal static func connectionSnapshot(
       cardAccessNumber _: String

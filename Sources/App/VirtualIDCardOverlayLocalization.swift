@@ -84,7 +84,7 @@
 
     internal static func faultPresetName(_ preset: VirtualIDCard.FaultPreset) -> String {
       switch preset {
-      case .none:
+      case .noFault:
         localizedText("fault.none", defaultValue: "None")
       case .nfcDisconnectBeforeConnection:
         localizedText(

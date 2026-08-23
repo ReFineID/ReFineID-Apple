@@ -1,3 +1,4 @@
+// Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 // SPDX-License-Identifier: EUPL-1.2
 
 import Foundation
@@ -19,8 +20,8 @@ internal final class CardSetupStateMachineTests: XCTestCase {
     let delegate = GrammarParserDelegate()
     parser?.delegate = delegate
 
-    XCTAssertTrue(
-      parser?.parse() == true, parser?.parserError?.localizedDescription ?? "SCXML parse failed")
+    XCTAssertEqual(
+      parser?.parse(), true, parser?.parserError?.localizedDescription ?? "SCXML parse failed")
     XCTAssertTrue(delegate.errors.isEmpty, delegate.errors.joined(separator: "\n"))
 
     return ParsedGrammar(
@@ -169,7 +170,7 @@ internal final class CardSetupStateMachineTests: XCTestCase {
   ) {
     XCTAssertEqual(
       CardSetupStateMachine.reduce(state: source, event: event),
-      .transitioned(to: target),
+      .transitioned(target: target),
       file: file,
       line: line
     )
