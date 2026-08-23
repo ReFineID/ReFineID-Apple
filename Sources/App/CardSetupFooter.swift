@@ -12,11 +12,9 @@ internal struct CardSetupFooter: View {
   private static let basePadding: CGFloat = 12
   private static let padding = basePadding
   private static let verticalPadding = basePadding
-  private static let demoBackgroundRed: (red: Double, green: Double, blue: Double) = (
-    red: 0.68,
-    green: 0.04,
-    blue: 0.04
-  )
+  private static let demoBackgroundRedComponent: Double = 0.68
+  private static let demoBackgroundGreenComponent: Double = 0.04
+  private static let demoBackgroundBlueComponent: Double = 0.04
 
   #if DEBUG
     /// Read from the bundle at run time: the stamp scripts renumber
@@ -62,9 +60,9 @@ internal struct CardSetupFooter: View {
         .frame(maxWidth: .infinity)
         .background(
           Color(
-            red: Self.demoBackgroundRed.red,
-            green: Self.demoBackgroundRed.green,
-            blue: Self.demoBackgroundRed.blue
+            red: Self.demoBackgroundRedComponent,
+            green: Self.demoBackgroundGreenComponent,
+            blue: Self.demoBackgroundBlueComponent
           ),
           ignoresSafeAreaEdges: .bottom)
     #endif
