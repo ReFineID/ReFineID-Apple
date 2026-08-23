@@ -161,7 +161,9 @@ internal struct CredentialOperationConfirmation: ViewModifier {
           // Clearing `pending` here invalidates `presenting:` before either
           // button closure can run. Alerts have explicit Confirm and Cancel
           // actions, and those are the sole owners of this state transition.
-          set: { _ in }
+          set: { _ in
+            // UIKit drives dismissal through explicit alert actions
+          }
         ),
         presenting: pending
       ) { operation in

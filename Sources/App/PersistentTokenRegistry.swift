@@ -38,7 +38,9 @@
 
     // MARK: Lifecycle
 
-    private init() {}
+    private init() {
+      // singleton
+    }
 
     // MARK: Static Functions
 

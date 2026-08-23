@@ -65,8 +65,12 @@
     internal let clearPin1Entry: @MainActor () -> Void
 
     /// Lets the application flow enter and leave its registration state.
-    internal var onRegistrationStarted: @MainActor () -> Void = {}
-    internal var onRegistrationFinished: @MainActor (Bool) -> Void = { _ in }
+    internal var onRegistrationStarted: @MainActor () -> Void = {
+      // optional hook; default is a no-op
+    }
+    internal var onRegistrationFinished: @MainActor (Bool) -> Void = { _ in
+      // optional hook; default is a no-op
+    }
 
     // MARK: SwiftUI Properties
 

@@ -384,7 +384,9 @@ internal struct CardManagementView: View {
     cardAccessNumber: String? = nil,
     activationScheme: ActivationScheme? = nil,
     activationNeeds: CardActivationNeeds? = nil,
-    onActivationSucceeded: @escaping () -> Void = {}
+    onActivationSucceeded: @escaping () -> Void = {
+      // optional hook; default is a no-op
+    }
   ) {
     startsWithReaderCard = readerCardIsPresent
     self.activationRequired = activationRequired

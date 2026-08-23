@@ -17,7 +17,9 @@
     @Published internal private(set) var request: RappAuthorizationRequest?
     private var continuation: CheckedContinuation<RappAuthorizationDecision, Never>?
 
-    private init() {}
+    private init() {
+      // singleton
+    }
 
     internal func ask(
       _ offered: RappAuthorizationRequest
