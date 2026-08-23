@@ -103,14 +103,15 @@ extension Token {
     keychainKey.canDecrypt = false
     keychainKey.canPerformKeyExchange = false
     keychainKey.isSuitableForLogin = true
-    // The signature is gated behind PIN1: this constraint is what makes
-    // CryptoTokenKit call beginAuth (the PIN sheet) before signing. Absent
-    // it, the system signs without asking, our sign has no PIN, and Safari
-    // fails with the identity selected but no prompt. The constraints map
-    // requires NSNumber operation keys (the CryptoTokenKit ObjC API).
-    // swiftlint:disable:next legacy_objc_type
-    let signOperationKey = NSNumber(value: TKTokenOperation.signData.rawValue)
-    keychainKey.constraints = [signOperationKey: Pin1AuthOperation.signDataConstraint]
+    if interface != .fieldWithDeadline {
+      // The signature is gated behind PIN1: this constraint is what makes
+      // CryptoTokenKit call beginAuth (the PIN sheet) before signing. The
+      // contactless path signs from its stored credential inside the
+      // two-second field deadline and sets no constraint here.
+      // swiftlint:disable:next legacy_objc_type
+      let signOperationKey = NSNumber(value: TKTokenOperation.signData.rawValue)
+      keychainKey.constraints = [signOperationKey: Pin1AuthOperation.signDataConstraint]
+    }
     keychainCertificate.label = Self.authenticationLabel
     keychainKey.label = Self.authenticationLabel
 

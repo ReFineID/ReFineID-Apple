@@ -123,7 +123,7 @@ internal enum CardMaintenance {
     do {
       try operations.selectFineidApplication()
       return operations
-    } catch CardOperationError.selectRejected(.securityNotSatisfied) {
+    } catch {
       guard
         let cardAccessNumber,
         let offered = CardAccessNumber(digits: cardAccessNumber)
@@ -150,8 +150,6 @@ internal enum CardMaintenance {
         throw ConnectionFailure.failed
       }
       return secureOperations
-    } catch {
-      throw ConnectionFailure.failed
     }
   }
 
@@ -200,7 +198,7 @@ internal enum CardMaintenance {
     do {
       try operations.selectFineidApplication()
       return operations
-    } catch CardOperationError.selectRejected(.securityNotSatisfied) {
+    } catch {
       let offered =
         cardAccessNumber.flatMap(CardAccessNumber.init(digits:))
         ?? CardCredentialStore.cardAccessNumber()
@@ -224,8 +222,6 @@ internal enum CardMaintenance {
         return nil
       }
       return secureOperations
-    } catch {
-      return nil
     }
   }
 
