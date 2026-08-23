@@ -24,6 +24,20 @@ internal enum CardSetupStateMachine {
     case pinManagementHome
     case pinManagementIdentity
     case registeringBrowser
+
+    internal var destination: CardSetupStateMachine.Destination? {
+      switch self {
+      case .activationHome, .activationIdentity:
+        .activation
+      case .pinManagementHome, .pinManagementIdentity:
+        .pinManagement
+      case .documentSigningHome, .documentSigningIdentity:
+        .signDocuments
+      case .home, .identityHome, .classifyingBrowser, .classifyingManagementHome,
+        .classifyingManagementIdentity, .registeringBrowser:
+        nil
+      }
+    }
   }
 
   internal enum Event: String, CaseIterable, Sendable {
@@ -147,21 +161,5 @@ internal enum CardSetupStateMachine {
     }
     precondition(matches.dropFirst().isEmpty, "Ambiguous card-setup transition")
     return .transitioned(to: transition.target)
-  }
-}
-
-extension CardSetupStateMachine.State {
-  internal var destination: CardSetupStateMachine.Destination? {
-    switch self {
-    case .activationHome, .activationIdentity:
-      .activation
-    case .pinManagementHome, .pinManagementIdentity:
-      .pinManagement
-    case .documentSigningHome, .documentSigningIdentity:
-      .signDocuments
-    case .home, .identityHome, .classifyingBrowser, .classifyingManagementHome,
-      .classifyingManagementIdentity, .registeringBrowser:
-      nil
-    }
   }
 }
