@@ -170,7 +170,7 @@
       keyItem.label = "ReFineID authentication key"
       keyItem.canSign = true
       keyItem.constraints = [
-        NSNumber(value: TKTokenOperation.signData.rawValue): true
+        TKTokenOperation.signData.rawValue: true
       ]
       // The leaf and its key, and nothing else. Publishing the issuer
       // beside them stopped the browser forming an identity at all:
