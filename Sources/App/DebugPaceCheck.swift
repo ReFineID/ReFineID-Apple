@@ -132,7 +132,7 @@
       return holder.slot
     }
 
-    /// Opens a session, selects master file, runs PACE, and reports.
+    /// Opens a session, selects main file, runs PACE, and reports.
     private static func run(
       on card: TKSmartCard,
       accessNumber: CardAccessNumber,
@@ -143,9 +143,9 @@
       do {
         try SmartCardChannel(card).withSession { channel in
           lines.append("session: open")
-          // The same order the signature uses: master file first,
+          // The same order the signature uses: main file first,
           // because the card refuses MSE:Set AT anywhere else.
-          try? CardOperations(channel: channel).selectRootFile()
+          try? CardOperations(channel: channel).selectMainFile()
           _ = try PaceEstablishment(channel: channel).establish(with: accessNumber)
         }
       } catch {

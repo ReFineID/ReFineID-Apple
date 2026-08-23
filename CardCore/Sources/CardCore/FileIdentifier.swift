@@ -11,8 +11,8 @@ public struct FileIdentifier: Equatable, Sendable {
   /// full hardware serial.
   public static let tokenInfo = Self(value: FineidValues.fileIdTokenInfo)
 
-  /// The master file (root).
-  public static let rootFile = Self(value: FineidValues.fileIdRootFile)
+  /// The ISO 7816-4 main file (MF, FID 3F00).
+  public static let mainFile = Self(value: FineidValues.fileIdMainFile)
 
   /// EF.COM: the travel-document application's inventory of the
   /// data groups this card carries.

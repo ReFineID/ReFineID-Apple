@@ -44,17 +44,17 @@
       step: StepReport
     ) throws -> Payload {
       try sheet.session.withCardSession { channel in
-        // PACE runs from the master file. The card was discovered by
+        // PACE runs from the main file. The card was discovered by
         // selecting the eMRTD application, and MSE:Set AT from an applet
-        // context is answered 6985, so the master file is made current on
+        // context is answered 6985, so the main file is made current on
         // the plain channel before the first PACE command.
         //
         // Best effort on purpose: card generations differ in which SELECT
         // variant they acknowledge, and one that refuses both may still be
-        // at the master file. PACE itself is the authoritative check --
+        // at the main file. PACE itself is the authoritative check --
         // its first command is the one that has to be accepted -- so a
         // refused reposition is not turned into a failure here.
-        try? CardOperations(channel: channel).selectRootFile()
+        try? CardOperations(channel: channel).selectMainFile()
         progress(String(localized: "Opening a connection to the card."))
         let keys: PaceSessionKeys
         do {

@@ -276,42 +276,42 @@ internal enum PaceValues {
   /// SELECT P2: return no file control information.
   private static let selectNoResponseData: UInt8 = 0x0C
 
-  /// Length of a master-file identifier.
-  private static let rootFileIdentifierLength: UInt8 = 0x02
+  /// Length of a main-file identifier.
+  private static let mainFileIdentifierLength: UInt8 = 0x02
 
-  /// High byte of the master file identifier `3F00`.
-  private static let rootFileIdentifierHigh: UInt8 = 0x3F
+  /// High byte of the main file identifier `3F00`.
+  private static let mainFileIdentifierHigh: UInt8 = 0x3F
 
-  /// Low byte of the master file identifier `3F00`.
-  private static let rootFileIdentifierLow: UInt8 = 0x00
+  /// Low byte of the main file identifier `3F00`.
+  private static let mainFileIdentifierLow: UInt8 = 0x00
 
-  /// SELECT master file by identifier: the first encoding tried.
+  /// SELECT main file by identifier: the first encoding tried.
   ///
   /// A FINEID card refuses PACE's MSE:Set AT unless the session is at
-  /// master-file level, and contactless discovery leaves an application
+  /// main-file level, and contactless discovery leaves an application
   /// selected instead.
-  internal static let selectRootFileByIdentifier = Data([
+  internal static let selectMainFileByIdentifier = Data([
     Iso7816Values.classInterindustry,
     selectInstruction,
     selectByIdentifier,
     selectNoResponseData,
-    rootFileIdentifierLength,
-    rootFileIdentifierHigh,
-    rootFileIdentifierLow,
+    mainFileIdentifierLength,
+    mainFileIdentifierHigh,
+    mainFileIdentifierLow,
   ])
 
-  /// SELECT master file by name: the fallback encoding.
+  /// SELECT main file by name: the fallback encoding.
   ///
   /// Cards differ in which of the two they accept, so both are tried in
   /// this order. Established against real cards, not read off a
   /// specification.
-  internal static let selectRootFileByName = Data([
+  internal static let selectMainFileByName = Data([
     Iso7816Values.classInterindustry,
     selectInstruction,
     selectByName,
     selectNoResponseData,
-    rootFileIdentifierLength,
-    rootFileIdentifierHigh,
-    rootFileIdentifierLow,
+    mainFileIdentifierLength,
+    mainFileIdentifierHigh,
+    mainFileIdentifierLow,
   ])
 }

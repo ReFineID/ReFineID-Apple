@@ -130,7 +130,7 @@ internal enum CardMaintenance {
       else {
         throw ConnectionFailure.wrongCardAccessNumber
       }
-      try? operations.selectRootFile()
+      try? operations.selectMainFile()
       let keys: PaceSessionKeys
       do {
         keys = try PaceEstablishment(channel: channel).establish(with: offered)
@@ -205,7 +205,7 @@ internal enum CardMaintenance {
         cardAccessNumber.flatMap(CardAccessNumber.init(digits:))
         ?? CardCredentialStore.cardAccessNumber()
       guard let offered else { return nil }
-      try? operations.selectRootFile()
+      try? operations.selectMainFile()
       let keys: PaceSessionKeys
       do {
         keys = try PaceEstablishment(channel: channel).establish(with: offered)

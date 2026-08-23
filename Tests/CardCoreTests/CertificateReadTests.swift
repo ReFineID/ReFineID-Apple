@@ -23,7 +23,7 @@ internal struct CertificateReadTests {
   }
 
   @Test
-  internal func issuingCertificateReadsUnderTheRootFile() throws {
+  internal func issuingCertificateReadsUnderTheMainFile() throws {
     // Issuer chain lives under MF: select MF, select EF.4336, read.
     let der = String(repeating: "CD", count: 8)
     let channel = ScriptedChannel([
@@ -38,7 +38,7 @@ internal struct CertificateReadTests {
   }
 
   @Test
-  internal func rootFileSelectFallsBackToSelectByName() throws {
+  internal func mainFileSelectFallsBackToSelectByName() throws {
     // First MF variant (P1=00) is refused; the by-name variant (P1=04)
     // is tried and succeeds.
     let der = "EEFF"
@@ -92,7 +92,7 @@ internal struct CertificateReadTests {
   @Test
   internal func organizationIssuingCertificateReadsFromEf4333() throws {
     // The organization card keeps its issuing CA in EF.4333 under the
-    // master file (S4-2 v4.0 §4.6.6): the citizen home EF.4336 is
+    // main file (S4-2 v4.0 §4.6.6): the citizen home EF.4336 is
     // refused, the organization home answers.
     let der = String(repeating: "4A", count: 8)
     let channel = ScriptedChannel([

@@ -14,7 +14,7 @@ public enum CertificateSlot: Equatable, Sendable, CaseIterable {
   case authentication
 
   /// The issuing intermediate CA that chains the authentication leaf
-  /// upward, under the master file: EF.4336 on the citizen card,
+  /// upward, under the main file: EF.4336 on the citizen card,
   /// EF.4333 on the organization card (S4-2 v4.0 §4.6.6).
   case issuing
 
@@ -23,7 +23,7 @@ public enum CertificateSlot: Equatable, Sendable, CaseIterable {
   /// DF.ESIGN on the organization card (S4-2 v4.0 §4.6.22).
   case qualifiedSignature
 
-  /// The on-card root CA: EF.4334, under the master file on both
+  /// The on-card root CA: EF.4334, under the main file on both
   /// generations (S4-2 v4.0 §4.6.7).
   case root
 
@@ -79,12 +79,12 @@ public enum CertificateSlot: Equatable, Sendable, CaseIterable {
 
     case .issuing:
       [
-        Location(directory: .rootFile, file: .issuingCertificate),
-        Location(directory: .rootFile, file: .organizationIssuingCertificate),
+        Location(directory: .mainFile, file: .issuingCertificate),
+        Location(directory: .mainFile, file: .organizationIssuingCertificate),
       ]
 
     case .root:
-      [Location(directory: .rootFile, file: .rootCertificate)]
+      [Location(directory: .mainFile, file: .rootCertificate)]
     }
   }
 }

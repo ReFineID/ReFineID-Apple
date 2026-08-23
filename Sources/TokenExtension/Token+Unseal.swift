@@ -91,10 +91,10 @@ extension Token {
     let started = ContinuousClock.now
     var lastFailure: any Error = TokenError.primeMissing
     for (index, accessNumber) in candidates.enumerated() {
-      // PACE has to start at master-file level: the card refuses
+      // PACE has to start at main-file level: the card refuses
       // MSE:Set AT with 6985 anywhere else. Best effort: PACE is the
       // step whose failure should be the one reported.
-      try? CardOperations(channel: channel).selectRootFile()
+      try? CardOperations(channel: channel).selectMainFile()
       do {
         let keys = try PaceEstablishment(channel: channel).establish(with: accessNumber)
         RefusedUnseal.shared.clear()
@@ -133,7 +133,7 @@ extension Token {
   ///
   /// The serial is read before the issuer because the leaf read leaves the
   /// PKCS#15 application selected, while the issuer read navigates to the
-  /// master file.
+  /// main file.
   private static func certificates(
     read operations: CardOperations
   ) throws -> PublishedIdentity {

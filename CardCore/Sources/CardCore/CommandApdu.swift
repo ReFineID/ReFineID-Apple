@@ -74,7 +74,7 @@ public struct CommandApdu: Equatable, Sendable {
   /// SELECT a file by identifier with an explicit P1, no response data:
   /// `00 A4 <p1> 0C 02 FID` (ISO 7816-4 §11.1.1).
   ///
-  /// Card generations accept different P1 encodings for the master file
+  /// Card generations accept different P1 encodings for the main file
   /// and child directories; `CardOperations` tries the proven variants
   /// in order (ported from the reference implementation), so the P1 is
   /// a named value chosen by the caller, never a bare literal.

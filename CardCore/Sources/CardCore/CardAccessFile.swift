@@ -4,7 +4,7 @@ import Foundation
 
 /// What a card advertises it can do before any secure channel exists.
 ///
-/// EF.CardAccess sits in the master file and is readable with no
+/// EF.CardAccess sits in the main file and is readable with no
 /// authentication -- that is its purpose: a terminal cannot run PACE
 /// until the card has told it which variants and domain parameters it
 /// supports (ICAO 9303-11 section 9.2.11).

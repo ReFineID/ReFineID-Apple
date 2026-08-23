@@ -63,7 +63,7 @@ internal enum PaceCommand {
   /// `classByte` selects chaining: the first three rounds set the chaining
   /// bit, the last one clears it, and that is how the card learns the
   /// exchange is over.
-  /// The two SELECT encodings tried, in order, to reach master file.
+  /// The two SELECT encodings tried, in order, to reach main file.
   ///
   /// Cards differ in which they accept: the first selects by file
   /// identifier, the second by name. Both were established against real
@@ -72,10 +72,10 @@ internal enum PaceCommand {
   ///
   /// Provenance: `select_mf` in the donor
   /// `crates/refineid-lib-core/src/pkcs15.rs`.
-  internal static func selectRootFileVariants() -> [Data] {
+  internal static func selectMainFileVariants() -> [Data] {
     [
-      PaceValues.selectRootFileByIdentifier,
-      PaceValues.selectRootFileByName,
+      PaceValues.selectMainFileByIdentifier,
+      PaceValues.selectMainFileByName,
     ]
   }
 

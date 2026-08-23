@@ -42,14 +42,14 @@ public struct PaceEstablishment {
     /// The card answered a PACE command with something other than success.
     case cardRejected(StatusWord)
 
+    /// The card would not return to main-file level, where PACE has to
+    /// start. Carries the last status word seen, or nil when the card
+    /// answered nothing usable at all.
+    case mainFileRefused(StatusWord?)
+
     /// A response was not the dynamic authentication data the round
     /// expects, or a command could not be encoded within the short form.
     case malformedResponse
-
-    /// The card would not return to master-file level, where PACE has to
-    /// start. Carries the last status word seen, or nil when the card
-    /// answered nothing usable at all.
-    case rootFileRefused(StatusWord?)
 
     /// A point the protocol requires to be finite was the point at
     /// infinity, so it has neither an encoding nor an x-coordinate.

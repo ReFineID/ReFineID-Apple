@@ -147,8 +147,8 @@ public struct CardOperations {
     case .pkcs15Application:
       try selectFineidApplication()
 
-    case .rootFile:
-      try selectRootFile()
+    case .mainFile:
+      try selectMainFile()
 
     case .esignApplication:
       // By name first: the file-identifier variant can answer
@@ -158,7 +158,7 @@ public struct CardOperations {
       // directory. The name is the S4-2 v4.0 §4.6.21 selector; the
       // file-identifier form stays as the fallback for cards that
       // refuse selection by name.
-      try selectRootFile()
+      try selectMainFile()
       try selectFirstThatSucceeds([
         .selectApplication(.esignDirectory),
         .selectFile(.esignDirectory, selectionP1: Iso7816Values.selectByFileIdP1),
@@ -169,7 +169,7 @@ public struct CardOperations {
   /// Reads and parses EF.CardAccess: what PACE variants and domain
   /// parameters this card advertises.
   ///
-  /// Runs on the plain channel from the master file, before any secure
+  /// Runs on the plain channel from the main file, before any secure
   /// channel exists -- the file is readable unauthenticated because a
   /// terminal needs it to know how to open one. Nothing in the login
   /// path calls this; it answers whether a cheaper suite than the fixed
@@ -180,23 +180,23 @@ public struct CardOperations {
   /// here parses, and the fixed suite is what runs either way. An
   /// absent file throws at selection, like any other missing EF.
   public func readCardAccessInfo() throws -> [CardAccessFile.SecurityInfo] {
-    try selectRootFile()
+    try selectMainFile()
     return CardAccessFile.parse(try readSelectedFile(.cardAccess))
   }
 
-  /// Selects the master file, trying the proven wire variants in order
+  /// Selects the main file, trying the proven wire variants in order
   /// (select-by-file-id, then select-by-name) since card generations
   /// differ.
   ///
-  /// Public because PACE runs from the master file and nothing else can
+  /// Public because PACE runs from the main file and nothing else can
   /// put the card there. A contactless card is discovered by selecting
   /// the eMRTD application, and MSE:Set AT from an applet context is
-  /// answered `6985`, so the contactless caller makes the master file
+  /// answered `6985`, so the contactless caller makes the main file
   /// current before the first PACE command.
-  public func selectRootFile() throws {
+  public func selectMainFile() throws {
     try selectFirstThatSucceeds([
-      .selectFile(.rootFile, selectionP1: Iso7816Values.selectByFileIdP1),
-      .selectFile(.rootFile, selectionP1: Iso7816Values.selectByAidP1),
+      .selectFile(.mainFile, selectionP1: Iso7816Values.selectByFileIdP1),
+      .selectFile(.mainFile, selectionP1: Iso7816Values.selectByAidP1),
     ])
   }
 

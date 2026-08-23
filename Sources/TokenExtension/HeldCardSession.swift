@@ -156,7 +156,7 @@ internal final class HeldCardSession: @unchecked Sendable {
       guard let plain else {
         throw CardOperationError.sessionUnavailable
       }
-      try? CardOperations(channel: plain).selectRootFile()
+      try? CardOperations(channel: plain).selectMainFile()
       let keys = try PaceEstablishment(channel: plain).establish(with: accessNumber)
       let secure = SecureMessagingChannel(wrapping: plain, sessionKeys: keys)
       try CardOperations(channel: secure).selectFineidApplication()

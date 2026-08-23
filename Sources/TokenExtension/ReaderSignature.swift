@@ -48,7 +48,7 @@ internal enum ReaderSignature {
   /// The channel to work in: the plain one for a contact card, or a
   /// secure-messaging one for a card on an antenna.
   ///
-  /// PACE has to start at master-file level -- the card refuses MSE:Set
+  /// PACE has to start at main-file level -- the card refuses MSE:Set
   /// AT with 6985 anywhere else -- and the select is best effort, as
   /// everywhere else this runs: PACE is the step whose failure is worth
   /// reporting. Internal, not private: ``QualifiedSignature`` unseals
@@ -59,7 +59,7 @@ internal enum ReaderSignature {
   ) throws -> any CardChannel {
     guard let accessNumber else { return channel }
     let started = ContinuousClock.now
-    try? CardOperations(channel: channel).selectRootFile()
+    try? CardOperations(channel: channel).selectMainFile()
     let keys = try PaceEstablishment(channel: channel).establish(with: accessNumber)
     TokenLog.info(
       "sign: PACE ok ms="

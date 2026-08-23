@@ -132,7 +132,7 @@
       channel: some CardChannel,
       accessNumber: CardAccessNumber
     ) -> [String] {
-      // PACE runs from the master file, and the read above left it
+      // PACE runs from the main file, and the read above left it
       // current, so the handshake starts where it must.
       let started = ContinuousClock.now
       do {

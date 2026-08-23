@@ -21,7 +21,7 @@ internal final class SyntheticPaceCard: CardChannel {
   /// expects.
   internal struct Rejected: Error, Equatable {}
 
-  /// SELECT, which the terminal issues to reach master file before PACE.
+  /// SELECT, which the terminal issues to reach main file before PACE.
   ///
   /// A real card refuses MSE:Set AT anywhere else, so the terminal always
   /// sends this first and this card has to answer it.

@@ -61,9 +61,9 @@ internal enum FineidValues {
   /// hardware serial).
   internal static let fileIdTokenInfo: UInt16 = 0x5032
 
-  /// The master file (root) selected before reaching MF-level EFs
-  /// (ISO 7816-4).
-  internal static let fileIdRootFile: UInt16 = 0x3F00
+  /// The ISO 7816-4 main file (MF, FID 3F00), selected before reaching
+  /// MF-level EFs.
+  internal static let fileIdMainFile: UInt16 = 0x3F00
 
   /// The ICAO eMRTD LDS application.
   ///
@@ -104,7 +104,7 @@ internal enum FineidValues {
   internal static let dataGroupTwoMarker: UInt8 = 0x75
 
   /// EF.CardAccess: the SecurityInfos a terminal reads BEFORE PACE to
-  /// learn which variants the card supports, under the master file
+  /// learn which variants the card supports, under the main file
   /// (ICAO 9303-11 section 9.2.11).
   ///
   /// Freely readable by design: the terminal cannot open a secure
@@ -129,11 +129,11 @@ internal enum FineidValues {
   /// algorithm: read the certificate and let its public key say.
   ///
   /// The same two bytes name the organization card's issuing CA under
-  /// the master file, which is a different file; identifiers are
+  /// the main file, which is a different file; identifiers are
   /// unique only within a directory.
   internal static let fileIdSecondAuthCertificate: UInt16 = 0x4333
 
-  /// EF.4334: the on-card issuing root CA, under the master file.
+  /// EF.4334: the on-card issuing root CA, under the main file.
   internal static let fileIdRootCertificate: UInt16 = 0x4334
 
   /// EF.4335: the second qualified-signature certificate
@@ -142,16 +142,16 @@ internal enum FineidValues {
   internal static let fileIdSecondSignatureCertificate: UInt16 = 0x4335
 
   /// EF.4336: the on-card issuing intermediate CA (DVV Citizen
-  /// Certificates G4E), under the master file - the certificate that
+  /// Certificates G4E), under the main file - the certificate that
   /// chains the auth leaf toward the root.
   internal static let fileIdIssuingCertificate: UInt16 = 0x4336
 
   /// EF.4333: the organization card's on-card issuing intermediate CA,
-  /// under the master file (FINEID S4-2 v4.0 §4.6.6).
+  /// under the main file (FINEID S4-2 v4.0 §4.6.6).
   internal static let fileIdOrganizationIssuingCertificate: UInt16 = 0x4333
 
   /// DF.ESIGN: the organization card's signature directory, under the
-  /// master file; EF.4332 lives inside it there (FINEID S4-2 v4.0
+  /// main file; EF.4332 lives inside it there (FINEID S4-2 v4.0
   /// §4.6.21-4.6.22).
   internal static let fileIdEsignDirectory: UInt16 = 0x5016
 

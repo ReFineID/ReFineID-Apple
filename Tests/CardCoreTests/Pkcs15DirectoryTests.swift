@@ -7,7 +7,7 @@ import Testing
 @Suite
 internal struct Pkcs15DirectoryTests {
   /// EF.ODF naming EF.5037 for certificates and EF.5034 for keys, each
-  /// as a full path from the master file.
+  /// as a full path from the main file.
   private let objectDirectory = WireHex.data(
     "A00A300804063F0050155034"
       + "A40A300804063F0050155037"
