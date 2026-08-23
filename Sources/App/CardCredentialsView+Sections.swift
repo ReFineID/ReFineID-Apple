@@ -211,6 +211,23 @@ extension CardCredentialsView {
     }
   #endif
 
+  #if os(iOS)
+    private var pin1CacheButton: some View {
+      Button(String(localized: "Cache")) {
+        connectIdentityCard()
+      }
+      .font(.subheadline.weight(.semibold))
+      .padding(.horizontal, Layout.cacheButtonHorizontalPadding)
+      .padding(.vertical, Layout.cacheButtonVerticalPadding)
+      .background(
+        .quaternary,
+        in: RoundedRectangle(cornerRadius: Layout.cacheButtonCornerRadius)
+      )
+      .disabled(!canCachePin1)
+      .accessibilityIdentifier("primeStartButton")
+    }
+  #endif
+
   @ViewBuilder internal var pin1Row: some View {
     #if os(iOS)
       HStack {
@@ -231,18 +248,10 @@ extension CardCredentialsView {
               pin1Entry = LimitedDigits.pin1(typed)
             }
         }
-        Button(String(localized: "Cache")) {
-          connectIdentityCard()
+        .alignmentGuide(.listRowSeparatorLeading) { dimensions in
+          dimensions[.leading]
         }
-        .font(.subheadline.weight(.semibold))
-        .padding(.horizontal, Layout.cacheButtonHorizontalPadding)
-        .padding(.vertical, Layout.cacheButtonVerticalPadding)
-        .background(
-          .quaternary,
-          in: RoundedRectangle(cornerRadius: Layout.cacheButtonCornerRadius)
-        )
-        .disabled(!canCachePin1)
-        .accessibilityIdentifier("primeStartButton")
+        pin1CacheButton
       }
       .buttonStyle(.borderless)
     #else
