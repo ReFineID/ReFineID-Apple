@@ -1,6 +1,18 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "CFBundleName" : {
+      "comment" : "Bundle name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "ReFineID"
+          }
+        }
+      }
+    },
     "Demo Mode" : {
       "comment" : "Home Screen quick action, declared as UIApplicationShortcutItemTitle in Config/ReFineID-iOS-Info.plist. The English title in the plist is the key.",
       "extractionState" : "manual",
@@ -15,6 +27,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Demoläge"
+          }
+        }
+      }
+    },
+    "NSHumanReadableCopyright" : {
+      "comment" : "Copyright (human-readable)",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copyright 2026 Petri Koistinen"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copyright 2026 Petri Koistinen"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copyright 2026 Petri Koistinen"
           }
         }
       }

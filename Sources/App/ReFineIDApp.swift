@@ -41,8 +41,14 @@ internal struct ReFineIDApp: App {
       .windowResizability(.contentSize)
       // No help book ships, so the Help menu it would open does not
       // belong. Replacing the group with nothing leaves the menu with
-      // no item, and MainMenuPruner removes the empty shell.
+      // no item, and MainMenuPruner removes the empty shell. About is
+      // kept and given the site under the version and copyright.
       .commands {
+        CommandGroup(replacing: .appInfo) {
+          Button("About ReFineID") {
+            ProductSite.presentAboutPanel()
+          }
+        }
         CommandGroup(replacing: .help) {
           // Intentionally empty: no help item, so no Help menu.
         }

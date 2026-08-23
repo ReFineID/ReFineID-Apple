@@ -45,6 +45,11 @@ extension CardCredentialsView {
           CredentialOutcomeText(message: failure, tone: .failure)
         }
       }
+      #if os(iOS)
+        if !isHolding {
+          aboutSection
+        }
+      #endif
     }
     #if os(iOS)
       .listSections(spacing: Self.sectionSpacing)
@@ -184,6 +189,20 @@ extension CardCredentialsView {
         }
       }
   }
+
+  #if os(iOS)
+    /// The site, under every other section on this screen.
+    internal var aboutSection: some View {
+      Section {
+        Link(destination: ProductSite.url) {
+          Text(verbatim: ProductSite.label)
+        }
+        .accessibilityIdentifier("productSite")
+      } header: {
+        compactSectionHeader("About")
+      }
+    }
+  #endif
 
   internal func navigationRow(
     _ title: String,
