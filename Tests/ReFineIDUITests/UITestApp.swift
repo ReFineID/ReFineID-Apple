@@ -11,53 +11,53 @@ import XCTest
 /// device nobody is watching.
 @MainActor
 internal enum UITestApp {
-  /// Launches the app under test in a stated language.
-  ///
-  /// The language is pinned rather than inherited. A run on a Mac set
-  /// to Finnish draws Finnish control titles, and a test that matched
-  /// the English title found no control at all and blamed the window.
-  /// Naming the language keeps a matched title a fact about the app
-  /// rather than about the machine, and lets a test ask for a
-  /// translation deliberately.
-  internal static func launch() -> XCUIApplication {
-    Self.launch(language: "en")
-  }
+    /// Launches the app under test in a stated language.
+    ///
+    /// The language is pinned rather than inherited. A run on a Mac set
+    /// to Finnish draws Finnish control titles, and a test that matched
+    /// the English title found no control at all and blamed the window.
+    /// Naming the language keeps a matched title a fact about the app
+    /// rather than about the machine, and lets a test ask for a
+    /// translation deliberately.
+    internal static func launch() -> XCUIApplication {
+        Self.launch(language: "en")
+    }
 
-  /// Launches the app under test in the named language.
-  internal static func launch(language: String) -> XCUIApplication {
-    Self.launch(language: language, arguments: [])
-  }
+    /// Launches the app under test in the named language.
+    internal static func launch(language: String) -> XCUIApplication {
+        Self.launch(language: language, arguments: [])
+    }
 
-  /// Launches the app under test with further arguments of its own.
-  internal static func launch(arguments: [String]) -> XCUIApplication {
-    Self.launch(language: "en", arguments: arguments)
-  }
+    /// Launches the app under test with further arguments of its own.
+    internal static func launch(arguments: [String]) -> XCUIApplication {
+        Self.launch(language: "en", arguments: arguments)
+    }
 
-  /// Launches a deterministic virtual card scenario with no hardware or secret.
-  internal static func launchVirtualCard(
-    scenario: String
-  ) -> XCUIApplication {
-    Self.launch(arguments: ["--virtual-card", scenario])
-  }
+    /// Launches a deterministic virtual card scenario with no hardware or secret.
+    internal static func launchVirtualCard(
+        scenario: String
+    ) -> XCUIApplication {
+        Self.launch(arguments: ["--virtual-card", scenario])
+    }
 
-  /// Enters virtual mode with no card so all test state is configured in UI.
-  internal static func launchVirtualCard() -> XCUIApplication {
-    Self.launchVirtualCard(scenario: "absent")
-  }
+    /// Enters virtual mode with no card so all test state is configured in UI.
+    internal static func launchVirtualCard() -> XCUIApplication {
+        Self.launchVirtualCard(scenario: "absent")
+    }
 
-  /// Launches the app under test in the named language, with further
-  /// arguments only the test asking for them needs.
-  internal static func launch(
-    language: String,
-    arguments: [String]
-  ) -> XCUIApplication {
-    let app = XCUIApplication()
-    app.launchArguments +=
-      [
-        "-AppleLanguages", "(\(language))",
-        "--ui-test-disable-motion",
-      ] + arguments
-    app.launch()
-    return app
-  }
+    /// Launches the app under test in the named language, with further
+    /// arguments only the test asking for them needs.
+    internal static func launch(
+        language: String,
+        arguments: [String]
+    ) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments +=
+            [
+                "-AppleLanguages", "(\(language))",
+                "--ui-test-disable-motion"
+            ] + arguments
+        app.launch()
+        return app
+    }
 }

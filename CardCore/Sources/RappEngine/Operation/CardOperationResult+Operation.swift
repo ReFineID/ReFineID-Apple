@@ -3,17 +3,18 @@
 import Foundation
 
 extension CardOperationResult {
-  /// Whether this output can answer the operation that was requested.
-  internal func answers(_ operation: CardOperation) -> Bool {
-    switch (self, operation) {
-    case (.inspection, .inspectCard),
-      (.identity, .readIdentity),
-      (.certificate, .readCertificate),
-      (.signature, .browserAuthenticate),
-      (.signature, .signDocument):
-      true
-    default:
-      false
+    /// Whether this output can answer the operation that was requested.
+    internal func answers(_ operation: CardOperation) -> Bool {
+        switch (self, operation) {
+        case (.inspection, .inspectCard),
+             (.identity, .readIdentity),
+             (.certificate, .readCertificate),
+             (.signature, .browserAuthenticate),
+             (.signature, .signDocument):
+            true
+
+        default:
+            false
+        }
     }
-  }
 }

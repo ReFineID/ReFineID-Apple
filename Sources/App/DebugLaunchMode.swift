@@ -2,16 +2,16 @@
 
 #if DEBUG
 
-  /// One cable-side debug mode, named by the flag that selects it.
-  ///
-  /// The vocabulary only: what each mode does lives in
-  /// ``DebugLaunchModes``, which dispatches them, and in
-  /// ``DebugSceneRunnerView``, which hosts the ones that need a window.
-  /// Keeping the names here means a new mode is added in one place and
-  /// cannot be spelled two ways.
-  ///
-  /// DEBUG only. A release build knows none of these flags.
-  internal enum DebugLaunchMode: String, CaseIterable, Sendable {
+/// One cable-side debug mode, named by the flag that selects it.
+///
+/// The vocabulary only: what each mode does lives in
+/// ``DebugLaunchModes``, which dispatches them, and in
+/// ``DebugSceneRunnerView``, which hosts the ones that need a window.
+/// Keeping the names here means a new mode is added in one place and
+/// cannot be spelled two ways.
+///
+/// DEBUG only. A release build knows none of these flags.
+internal enum DebugLaunchMode: String, CaseIterable, Sendable {
     /// Read the factory-activation signals over NFC without changing the card.
     case activationProbe = "--activation-probe"
 
@@ -124,19 +124,20 @@
     /// drives a reader that needs no interface, and is finished before a
     /// window would have existed.
     internal var needsScene: Bool {
-      switch self {
-      case .diagnostics, .forgetCan, .localNetworkProbe, .paceCheck,
-        .resetCardState, .selectPair, .setCan, .setPin1, .signDocument,
-        .signProbe, .tokenPublishProbe, .trace:
-        false
-      case .activationProbe, .browseProbe, .ctkSignProbe, .listenProbe, .managementProbe,
-        .offerRemoteReader, .openSafari, .pairWithOffer, .prime, .remoteIdentityProbe,
-        .remoteSignProbe:
-        // MultipeerConnectivity browses only for an app that has a window.
-        // A probe that runs before one exists finds the peer's name in the
-        // service records and is never handed the peer itself.
-        true
-      }
+        switch self {
+        case .diagnostics, .forgetCan, .localNetworkProbe, .paceCheck,
+             .resetCardState, .selectPair, .setCan, .setPin1, .signDocument,
+             .signProbe, .tokenPublishProbe, .trace:
+            false
+
+        case .activationProbe, .browseProbe, .ctkSignProbe, .listenProbe, .managementProbe,
+             .offerRemoteReader, .openSafari, .pairWithOffer, .prime, .remoteIdentityProbe,
+             .remoteSignProbe:
+            // MultipeerConnectivity browses only for an app that has a window.
+            // A probe that runs before one exists finds the peer's name in the
+            // service records and is never handed the peer itself.
+            true
+        }
     }
 
     /// Whether the flag is followed by a value on the command line.
@@ -144,21 +145,24 @@
     /// Three modes take one, all of them digits, and the value is read
     /// from the command line at each launch and never committed anywhere.
     internal var takesValue: Bool {
-      switch self {
-      case .activationProbe, .browseProbe, .ctkSignProbe, .diagnostics, .forgetCan,
-        .listenProbe, .offerRemoteReader, .openSafari, .paceCheck, .prime,
-        .remoteIdentityProbe, .remoteSignProbe, .resetCardState, .tokenPublishProbe,
-        .trace:
-        false
-      case .localNetworkProbe:
-        true
-      case .managementProbe, .selectPair, .setCan, .setPin1,
-        .signDocument, .signProbe:
-        true
-      case .pairWithOffer:
-        false
-      }
+        switch self {
+        case .activationProbe, .browseProbe, .ctkSignProbe, .diagnostics, .forgetCan,
+             .listenProbe, .offerRemoteReader, .openSafari, .paceCheck, .prime,
+             .remoteIdentityProbe, .remoteSignProbe, .resetCardState, .tokenPublishProbe,
+             .trace:
+            false
+
+        case .localNetworkProbe:
+            true
+
+        case .managementProbe, .selectPair, .setCan, .setPin1,
+             .signDocument, .signProbe:
+            true
+
+        case .pairWithOffer:
+            false
+        }
     }
-  }
+}
 
 #endif

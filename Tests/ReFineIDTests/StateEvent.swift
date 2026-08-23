@@ -5,6 +5,6 @@ import Foundation
 @testable import ReFineID
 
 internal struct StateEvent: Hashable {
-  internal let state: CardSetupStateMachine.State
-  internal let event: CardSetupStateMachine.Event
+    internal let state: CardSetupStateMachine.State
+    internal let event: CardSetupStateMachine.Event
 }

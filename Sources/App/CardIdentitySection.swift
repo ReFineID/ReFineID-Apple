@@ -10,51 +10,51 @@ import SwiftUI
 /// before the keychain can answer for it, and minting one over near field
 /// opens a scan sheet on a screen nobody asked to scan from.
 internal struct CardIdentitySection: View {
-  /// The minimum comfortable tap target.
-  private static let tapTargetSide: CGFloat = 44
+    /// The minimum comfortable tap target.
+    private static let tapTargetSide: CGFloat = 44
 
-  /// Pulls the tap target's slack back out of the row's layout.
-  private static let tapTargetOverflow: CGFloat = -10
+    /// Pulls the tap target's slack back out of the row's layout.
+    private static let tapTargetOverflow: CGFloat = -10
 
-  /// Minimum gap between the holder name and the forget control.
-  private static let forgetButtonGap: CGFloat = 4
+    /// Minimum gap between the holder name and the forget control.
+    private static let forgetButtonGap: CGFloat = 4
 
-  /// The complete holder name read from the primed identity certificate.
-  internal let holder: String
+    /// The complete holder name read from the primed identity certificate.
+    internal let holder: String
 
-  /// Removes the device-local identity after the parent confirms the action.
-  internal let forget: () -> Void
+    /// Removes the device-local identity after the parent confirms the action.
+    internal let forget: () -> Void
 
-  internal var body: some View {
-    Section {
-      HStack {
-        LabeledContent {
-          Text(holder)
-            .textSelection(.enabled)
-        } label: {
-          PersonRowLabel(configured: true)
+    internal var body: some View {
+        Section {
+            HStack {
+                LabeledContent {
+                    Text(holder)
+                        .textSelection(.enabled)
+                } label: {
+                    PersonRowLabel(configured: true)
+                }
+                .accessibilityIdentifier("identityStatus")
+                Spacer(minLength: Self.forgetButtonGap)
+                // The forget action lives on the row it removes, pinned to
+                // the trailing edge and centered in the row's height; the
+                // confirmation dialog still stands in front of it.
+                Button(role: .destructive, action: forget) {
+                    Image(systemName: "minus.circle")
+                        .font(.title3)
+                        .foregroundStyle(.red)
+                }
+                .buttonStyle(.plain)
+                .frame(width: Self.tapTargetSide, height: Self.tapTargetSide)
+                .contentShape(Rectangle())
+                .padding(Self.tapTargetOverflow)
+                .accessibilityLabel(Text("Forget identity"))
+                .accessibilityIdentifier("forgetCardIdentityButton")
+            }
+        } header: {
+            Text("Identity")
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .listRowInsets(EdgeInsets())
         }
-        .accessibilityIdentifier("identityStatus")
-        Spacer(minLength: Self.forgetButtonGap)
-        // The forget action lives on the row it removes, pinned to
-        // the trailing edge and centered in the row's height; the
-        // confirmation dialog still stands in front of it.
-        Button(role: .destructive, action: forget) {
-          Image(systemName: "minus.circle")
-            .font(.title3)
-            .foregroundStyle(.red)
-        }
-        .buttonStyle(.plain)
-        .frame(width: Self.tapTargetSide, height: Self.tapTargetSide)
-        .contentShape(Rectangle())
-        .padding(Self.tapTargetOverflow)
-        .accessibilityLabel(Text("Forget identity"))
-        .accessibilityIdentifier("forgetCardIdentityButton")
-      }
-    } header: {
-      Text("Identity")
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .listRowInsets(EdgeInsets())
     }
-  }
 }

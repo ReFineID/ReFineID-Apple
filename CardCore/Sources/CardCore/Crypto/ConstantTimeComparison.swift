@@ -22,13 +22,13 @@ import Foundation
 /// `Sources/ReFineIDBrowserKit/Card/SecureMessaging.swift`, which carried
 /// one private copy each.
 internal enum ConstantTimeComparison {
-  /// True when both buffers have the same length and the same contents.
-  internal static func equal(_ lhs: Data, _ rhs: Data) -> Bool {
-    guard lhs.count == rhs.count else { return false }
-    var difference: UInt8 = 0
-    for (left, right) in zip(lhs, rhs) {
-      difference |= left ^ right
+    /// True when both buffers have the same length and the same contents.
+    internal static func equal(_ lhs: Data, _ rhs: Data) -> Bool {
+        guard lhs.count == rhs.count else { return false }
+        var difference: UInt8 = 0
+        for (left, right) in zip(lhs, rhs) {
+            difference |= left ^ right
+        }
+        return difference == 0
     }
-    return difference == 0
-  }
 }

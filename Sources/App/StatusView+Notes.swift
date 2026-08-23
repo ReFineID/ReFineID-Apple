@@ -2,16 +2,16 @@
 
 #if os(macOS)
 
-  import CardCore
-  import Foundation
+import CardCore
+import Foundation
 
-  /// The two questions the window asks about text rather than about the
-  /// card: what to say while it is busy, and whether an entry could yet
-  /// be a PIN.
-  ///
-  /// Neither reads the window's own state, so both live here and leave
-  /// the view itself to the parts that do.
-  extension StatusView {
+/// The two questions the window asks about text rather than about the
+/// card: what to say while it is busy, and whether an entry could yet
+/// be a PIN.
+///
+/// Neither reads the window's own state, so both live here and leave
+/// the view itself to the parts that do.
+extension StatusView {
     /// What the identity row and the offered features key on.
     ///
     /// Reads two observed facts - the token's publication and the
@@ -19,13 +19,13 @@
     /// does. Here rather than in the view body only for the view
     /// type's length; it reads shared state, no private field.
     internal var availability: LoginIdentityModel.Availability {
-      if LoginIdentityModel.shared.isReady {
-        .ready
-      } else if CardPresence.shared.isCardPresent {
-        .cardWithoutIdentity
-      } else {
-        .noCard
-      }
+        if LoginIdentityModel.shared.isReady {
+            .ready
+        } else if CardPresence.shared.isCardPresent {
+            .cardWithoutIdentity
+        } else {
+            .noCard
+        }
     }
 
     /// The signature style every dropped document can take.
@@ -34,10 +34,10 @@
     /// So a batch takes PAdES when every document is a PDF, and a
     /// container otherwise.
     internal static func sharedFormat(for urls: [URL]) -> SignatureFormat {
-      let everyOneAPdf = urls.allSatisfy { url in
-        SignatureFormat.available(for: url).contains(.pades)
-      }
-      return everyOneAPdf ? .pades : .asice
+        let everyOneAPdf = urls.allSatisfy { url in
+            SignatureFormat.available(for: url).contains(.pades)
+        }
+        return everyOneAPdf ? .pades : .asice
     }
 
     /// What the drop area reads as: the file when there is one, how
@@ -47,11 +47,11 @@
     /// the size rather than reciting a stack of file names into a
     /// value that cannot be navigated.
     internal static func pileValue(_ documents: [URL]) -> String {
-      guard let first = documents.first else {
-        return String(localized: "none chosen")
-      }
-      guard documents.count > 1 else { return first.lastPathComponent }
-      return String(localized: "\(documents.count) documents")
+        guard let first = documents.first else {
+            return String(localized: "none chosen")
+        }
+        guard documents.count > 1 else { return first.lastPathComponent }
+        return String(localized: "\(documents.count) documents")
     }
 
     /// What the card is busy with, or nothing when it is not.
@@ -61,19 +61,19 @@
     /// section that appears and disappears steps the window every
     /// time the card is touched.
     internal static func progressNote(_ signing: SignDocumentModel) -> String? {
-      if signing.working {
-        return String(localized: "Signing document…")
-      }
-      if signing.readingStamp {
-        return String(localized: "Reading the card…")
-      }
-      return nil
+        if signing.working {
+            return String(localized: "Signing document…")
+        }
+        if signing.readingStamp {
+            return String(localized: "Reading the card…")
+        }
+        return nil
     }
 
     /// Whether an entry could be a PIN2 at all.
     internal static func isEntryComplete(_ entry: String) -> Bool {
-      (Pin2.minimumDigitCount...Pin2.maximumDigitCount).contains(entry.count)
+        (Pin2.minimumDigitCount...Pin2.maximumDigitCount).contains(entry.count)
     }
-  }
+}
 
 #endif

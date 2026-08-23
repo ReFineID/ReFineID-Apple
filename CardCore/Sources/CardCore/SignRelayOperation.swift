@@ -1,15 +1,15 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
 #if canImport(MultipeerConnectivity)
-  import Foundation
+import Foundation
 
-  /// Says what the slim relay can ask for, and reads what comes back.
-  ///
-  /// Two operations, which are the two a browser identity needs: the
-  /// certificate it offers, and the signature that proves the key. Document
-  /// signing is not here, because it needs a PIN entered per signature and
-  /// the slim message set carries no place to put one.
-  public enum SignRelayOperation {
+/// Says what the slim relay can ask for, and reads what comes back.
+///
+/// Two operations, which are the two a browser identity needs: the
+/// certificate it offers, and the signature that proves the key. Document
+/// signing is not here, because it needs a PIN entered per signature and
+/// the slim message set carries no place to put one.
+public enum SignRelayOperation {
     /// The request that carries `operation`, or nil when the slim relay has
     /// no message for it.
     ///
@@ -18,17 +18,19 @@
     ///   - id: the identifier correlating request and answer.
     /// - Returns: the message to send, or nil when unsupported.
     public static func request(
-      for operation: RappRequesterOperation,
-      id: UUID
+        for operation: RappRequesterOperation,
+        id: UUID
     ) -> PersistentRelayMessage? {
-      switch operation {
-      case .readAuthenticationCertificate:
-        .identityRequest(id: id)
-      case .browserAuthentication(_, let keyProfile, let algorithm, let digest):
-        profiled(id: id, keyProfile: keyProfile, algorithm: algorithm, digest: digest)
-      case .readSignatureCertificate, .documentSigning:
-        nil
-      }
+        switch operation {
+        case .readAuthenticationCertificate:
+            .identityRequest(id: id)
+
+        case .browserAuthentication(_, let keyProfile, let algorithm, let digest):
+            profiled(id: id, keyProfile: keyProfile, algorithm: algorithm, digest: digest)
+
+        case .readSignatureCertificate, .documentSigning:
+            nil
+        }
     }
 
     /// What `answer` means for `operation`, or nil when it answers something
@@ -39,34 +41,36 @@
     ///   - operation: what was asked for.
     /// - Returns: the response to hand the caller, or nil.
     public static func response(
-      from answer: PersistentRelayMessage,
-      for operation: RappRequesterOperation
+        from answer: PersistentRelayMessage,
+        for operation: RappRequesterOperation
     ) -> RappRequesterResponse? {
-      switch (operation, answer) {
-      case (.readAuthenticationCertificate, .identityResponse(_, let der)):
-        der.isEmpty ? nil : .authenticationCertificate(der)
-      case (.browserAuthentication, .signatureResponse(_, let signature)):
-        signature.isEmpty ? nil : .signature(signature)
-      default:
-        nil
-      }
+        switch (operation, answer) {
+        case (.readAuthenticationCertificate, .identityResponse(_, let der)):
+            der.isEmpty ? nil : .authenticationCertificate(der)
+
+        case (.browserAuthentication, .signatureResponse(_, let signature)):
+            signature.isEmpty ? nil : .signature(signature)
+
+        default:
+            nil
+        }
     }
 
     private static func profiled(
-      id: UUID,
-      keyProfile: RappOperationDriver.KeyProfile,
-      algorithm: RappOperationDriver.SignatureAlgorithm,
-      digest: Data
+        id: UUID,
+        keyProfile: RappOperationDriver.KeyProfile,
+        algorithm: RappOperationDriver.SignatureAlgorithm,
+        digest: Data
     ) -> PersistentRelayMessage? {
-      guard let wireAlgorithm = PersistentRelaySigningAlgorithm(algorithm.signingAlgorithm) else {
-        return nil
-      }
-      return .signatureRequest(
-        id: id,
-        profile: PersistentRelayCardProfile(keyProfile.cardKeyProfile),
-        algorithm: wireAlgorithm,
-        digest: digest
-      )
+        guard let wireAlgorithm = PersistentRelaySigningAlgorithm(algorithm.signingAlgorithm) else {
+            return nil
+        }
+        return .signatureRequest(
+            id: id,
+            profile: PersistentRelayCardProfile(keyProfile.cardKeyProfile),
+            algorithm: wireAlgorithm,
+            digest: digest
+        )
     }
-  }
+}
 #endif

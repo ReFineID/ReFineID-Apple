@@ -7,7 +7,7 @@
 /// taxonomy, and an absent rule is handled by an unexpected-input policy
 /// class. Collapsing the last two would lose that distinction.
 internal enum RappTransitionOutcome<State: Equatable & Sendable>: Sendable, Equatable {
-  case fire(RappTransition<State>)
-  case guardFailed(RappGuard)
-  case noRule
+    case fire(RappTransition<State>)
+    case guardFailed(RappGuard)
+    case noRule
 }

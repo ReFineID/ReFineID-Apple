@@ -3,14 +3,13 @@
 import Foundation
 
 extension ProtocolErrorMessage {
-  /// The exact `error` wire body, omitting an absent operation identifier.
-  internal var wireBody: [String: WireValue] {
-    var body: [String: WireValue] = ["error": .text(name)]
-    if case .unknownOperation(let operationIdentifier) = self,
-      let operationIdentifier
-    {
-      body["operation_id"] = .bytes(operationIdentifier)
+    /// The exact `error` wire body, omitting an absent operation identifier.
+    internal var wireBody: [String: WireValue] {
+        var body: [String: WireValue] = ["error": .text(name)]
+        if case .unknownOperation(let operationIdentifier) = self,
+           let operationIdentifier {
+            body["operation_id"] = .bytes(operationIdentifier)
+        }
+        return body
     }
-    return body
-  }
 }

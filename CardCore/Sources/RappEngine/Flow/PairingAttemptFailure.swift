@@ -8,6 +8,6 @@ import Foundation
 ///
 /// The offer is deliberately not printable: it holds the one-use secret.
 internal struct PairingAttemptFailure: Error {
-  internal let error: PairingError
-  internal let offer: PairingOffer
+    internal let error: PairingError
+    internal let offer: PairingOffer
 }

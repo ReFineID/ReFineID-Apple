@@ -2,36 +2,36 @@
 
 #if REFINEID_LOCAL_CARD && os(iOS)
 
-  import AudioToolbox
-  import UIKit
+import AudioToolbox
+import UIKit
 
-  /// Says out loud that a hold is running, and how it ended.
-  ///
-  /// The system NFC sheet cannot: `TKSmartCardSlotNFCSession` carries a
-  /// message and `endSession` and nothing else, so it dismisses with the
-  /// same checkmark whether the hold registered an identity or died at
-  /// PACE. A holder is also looking at the card rather than the screen
-  /// for the several seconds a hold takes, which is exactly when they
-  /// most need to know it is still working.
-  ///
-  /// So there are three sounds and they mean three different things:
-  /// the provisioning tone repeating for as long as the card is being
-  /// read, the card-provisioned pling when an identity is registered,
-  /// and the card-error tone when one is not. The repeating tone is what
-  /// makes the two outcomes legible -- it stops, and what replaces it is
-  /// the answer.
-  ///
-  /// All three are the sounds iOS itself uses while provisioning a card,
-  /// taken from the system sound library by name (``UISoundLibrary``),
-  /// because that is exactly what a hold is doing. Haptics are
-  /// `UINotificationFeedbackGenerator`, likewise the system's own.
-  ///
-  /// Both obey the phone's switches: a silenced phone plays nothing, and
-  /// a phone with system haptics off feels nothing. The haptic is why
-  /// there are two channels -- it still fires on a silenced phone, so a
-  /// failed hold is never completely quiet.
-  @MainActor
-  internal enum CardPrimingFeedback {
+/// Says out loud that a hold is running, and how it ended.
+///
+/// The system NFC sheet cannot: `TKSmartCardSlotNFCSession` carries a
+/// message and `endSession` and nothing else, so it dismisses with the
+/// same checkmark whether the hold registered an identity or died at
+/// PACE. A holder is also looking at the card rather than the screen
+/// for the several seconds a hold takes, which is exactly when they
+/// most need to know it is still working.
+///
+/// So there are three sounds and they mean three different things:
+/// the provisioning tone repeating for as long as the card is being
+/// read, the card-provisioned pling when an identity is registered,
+/// and the card-error tone when one is not. The repeating tone is what
+/// makes the two outcomes legible -- it stops, and what replaces it is
+/// the answer.
+///
+/// All three are the sounds iOS itself uses while provisioning a card,
+/// taken from the system sound library by name (``UISoundLibrary``),
+/// because that is exactly what a hold is doing. Haptics are
+/// `UINotificationFeedbackGenerator`, likewise the system's own.
+///
+/// Both obey the phone's switches: a silenced phone plays nothing, and
+/// a phone with system haptics off feels nothing. The haptic is why
+/// there are two channels -- it still fires on a silenced phone, so a
+/// failed hold is never completely quiet.
+@MainActor
+internal enum CardPrimingFeedback {
     /// The repeating tick, running while the hold is.
     private static var ticking: Task<Void, Never>?
 
@@ -88,15 +88,15 @@
     /// Safe to call twice: a second start replaces the first rather than
     /// layering a second tick over it.
     internal static func startWorking() {
-      Self.stopWorking()
-      Self.ticking = Task { @MainActor in
-        for _ in 1...Self.workingRepeatLimit where !Task.isCancelled {
-          AudioServicesPlaySystemSound(
-            UISoundLibrary.soundID(
-              named: Self.workingSoundName, fallback: Self.workingFallbackID))
-          try? await Task.sleep(for: Self.workingInterval)
+        Self.stopWorking()
+        Self.ticking = Task { @MainActor in
+            for _ in 1...Self.workingRepeatLimit where !Task.isCancelled {
+                AudioServicesPlaySystemSound(
+                    UISoundLibrary.soundID(
+                        named: Self.workingSoundName, fallback: Self.workingFallbackID))
+                try? await Task.sleep(for: Self.workingInterval)
+            }
         }
-      }
     }
 
     /// Stops the tick and reports the outcome, by sound and by haptic.
@@ -105,22 +105,22 @@
     /// pocket is felt and not heard, one on a desk is heard and not
     /// felt.
     internal static func report(succeeded: Bool) {
-      Self.stopWorking()
-      let generator = UINotificationFeedbackGenerator()
-      generator.notificationOccurred(succeeded ? .success : .error)
-      AudioServicesPlaySystemSound(
-        succeeded
-          ? UISoundLibrary.soundID(
-            named: Self.successSoundName, fallback: Self.successFallbackID)
-          : UISoundLibrary.soundID(
-            named: Self.failureSoundName, fallback: Self.failureFallbackID))
+        Self.stopWorking()
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(succeeded ? .success : .error)
+        AudioServicesPlaySystemSound(
+            succeeded
+                ? UISoundLibrary.soundID(
+                    named: Self.successSoundName, fallback: Self.successFallbackID)
+                : UISoundLibrary.soundID(
+                    named: Self.failureSoundName, fallback: Self.failureFallbackID))
     }
 
     /// Ends the tick without saying anything about the outcome.
     internal static func stopWorking() {
-      Self.ticking?.cancel()
-      Self.ticking = nil
+        Self.ticking?.cancel()
+        Self.ticking = nil
     }
-  }
+}
 
 #endif

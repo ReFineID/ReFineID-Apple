@@ -7,15 +7,15 @@ import Foundation
 /// The engine holds no storage of its own; a pairing exists exactly where the
 /// caller puts it, and the engine only asks.
 public protocol RappPairVault: AnyObject, Sendable {
-  /// Writes a pairing that must never leave this device.
-  func insertDeviceOnly(pairId: Data, record: Data) throws
+    /// Writes a pairing that must never leave this device.
+    func insertDeviceOnly(pairId: Data, record: Data) throws
 
-  /// Reads a stored pairing, or nothing when none carries the identifier.
-  func loadDeviceOnly(pairId: Data) throws -> Data?
+    /// Reads a stored pairing, or nothing when none carries the identifier.
+    func loadDeviceOnly(pairId: Data) throws -> Data?
 
-  /// Destroys the pairing's keys and records when it ended.
-  func revokeDeviceOnly(pairId: Data, revokedAtMs: UInt64) throws
+    /// Destroys the pairing's keys and records when it ended.
+    func revokeDeviceOnly(pairId: Data, revokedAtMs: UInt64) throws
 
-  /// Whether the identifier names a pairing that has ended.
-  func isRevoked(pairId: Data) throws -> Bool
+    /// Whether the identifier names a pairing that has ended.
+    func isRevoked(pairId: Data) throws -> Bool
 }

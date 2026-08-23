@@ -4,7 +4,7 @@ import Foundation
 
 /// Why a vendored vector could not be read.
 internal enum CorpusError: Error {
-  case invalidHex
-  case missingHandshake(name: String)
-  case notAMap(String)
+    case invalidHex
+    case missingHandshake(name: String)
+    case notAMap(String)
 }

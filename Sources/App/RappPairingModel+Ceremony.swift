@@ -2,92 +2,96 @@
 
 #if REFINEID_REMOTE_CARD
 
-  import CardCore
-  import Foundation
-  import RappEngine
-  import SwiftUI
+import CardCore
+import Foundation
+import RappEngine
+import SwiftUI
 
-  /// Milliseconds in one second, for the stamp a revocation carries.
-  private let millisecondsPerSecond: TimeInterval = 1_000
+/// Milliseconds in one second, for the stamp a revocation carries.
+private let millisecondsPerSecond: TimeInterval = 1_000
 
-  /// What the model does with each event the pairing ceremony reports.
-  extension RappPairingModel {
+/// What the model does with each event the pairing ceremony reports.
+extension RappPairingModel {
     internal func receive(
-      _ event: RappPairingCoordinator.Event,
-      from coordinator: RappPairingCoordinator
+        _ event: RappPairingCoordinator.Event,
+        from coordinator: RappPairingCoordinator
     ) {
-      guard self.coordinator === coordinator else { return }
-      switch event {
-      case .offerReady(let uri):
-        #if DEBUG
-          print("[pairing] offerReady event received with URI: \(uri)")
-          print("[pairing] pairingCode is: \(String(describing: pairingCode))")
-        #endif
-        if let code = pairingCode {
-          phase = .offer(code)
-        } else {
-          phase = .offer(uri)
+        guard self.coordinator === coordinator else { return }
+        switch event {
+        case .offerReady(let uri):
+            #if DEBUG
+            print("[pairing] offerReady event received with URI: \(uri)")
+            print("[pairing] pairingCode is: \(String(describing: pairingCode))")
+            #endif
+            if let code = pairingCode {
+                phase = .offer(code)
+            } else {
+                phase = .offer(uri)
+            }
+
+        case .offerRestored(let uri):
+            restoreRequesterOffer(uri, coordinator: coordinator)
+
+        case .reviewPeer(let peer):
+            reviewedPeerName = peer.displayName
+            // The scan of the offer QR, carrying its 256-bit bearer secret, is the
+            // human consent that authorizes this pairing and its public reads. Only
+            // a device that saw the code can reach this point, on either side, so
+            Task { [weak coordinator] in
+                await coordinator?.approve(
+                    grantedProfiles: RappApplePeerProfile.supportedCredentialProfiles
+                )
+            }
+
+        case .paired(let pair):
+            do {
+                try vault.selectPair(pairID: pair.pairID)
+                if let reviewedPeerName {
+                    RappPairNames.remember(reviewedPeerName, pairID: pair.pairID)
+                }
+                supersedeOlderPairings(with: pair.pairID)
+                selectedPairID = pair.pairID
+                phase = .paired(pair)
+                refresh()
+                finishAttempt()
+                resumeRegularRelay()
+            } catch {
+                fail(String(localized: "The paired device could not be selected"))
+            }
+
+        case .closed(let reason):
+            guard !isFinished else { return }
+            #if DEBUG
+            print("[pairing] closed \(String(describing: reason))")
+            #endif
+            fail(String(localized: "Pairing ended before it was completed"))
         }
-      case .offerRestored(let uri):
-        restoreRequesterOffer(uri, coordinator: coordinator)
-      case .reviewPeer(let peer):
-        reviewedPeerName = peer.displayName
-        // The scan of the offer QR, carrying its 256-bit bearer secret, is the
-        // human consent that authorizes this pairing and its public reads. Only
-        // a device that saw the code can reach this point, on either side, so
-        Task { [weak coordinator] in
-          await coordinator?.approve(
-            grantedProfiles: RappApplePeerProfile.supportedCredentialProfiles
-          )
-        }
-      case .paired(let pair):
-        do {
-          try vault.selectPair(pairID: pair.pairID)
-          if let reviewedPeerName {
-            RappPairNames.remember(reviewedPeerName, pairID: pair.pairID)
-          }
-          supersedeOlderPairings(with: pair.pairID)
-          selectedPairID = pair.pairID
-          phase = .paired(pair)
-          refresh()
-          finishAttempt()
-          resumeRegularRelay()
-        } catch {
-          fail(String(localized: "The paired device could not be selected"))
-        }
-      case .closed(let reason):
-        guard !isFinished else { return }
-        #if DEBUG
-          print("[pairing] closed \(String(describing: reason))")
-        #endif
-        fail(String(localized: "Pairing ended before it was completed"))
-      }
     }
 
     internal func restoreRequesterOffer(
-      _ uri: String,
-      coordinator: RappPairingCoordinator
+        _ uri: String,
+        coordinator: RappPairingCoordinator
     ) {
-      if let code = pairingCode {
-        phase = .offer(code)
-      } else {
-        phase = .offer(uri)
-      }
-      relay?.cancel()
-      let replacement = makeRelay(role: .host)
-      let replacementTransport = makeTransport(relay: replacement)
-      relay = replacement
-      Task { @MainActor [weak self] in
-        guard await coordinator.replaceTransport(replacementTransport),
-          let self,
-          self.coordinator === coordinator,
-          !isFinished
-        else {
-          self?.fail(String(localized: "Pairing could not be started"))
-          return
+        if let code = pairingCode {
+            phase = .offer(code)
+        } else {
+            phase = .offer(uri)
         }
-        replacement.start(sharingOfferURI: uri)
-      }
+        relay?.cancel()
+        let replacement = makeRelay(role: .host)
+        let replacementTransport = makeTransport(relay: replacement)
+        relay = replacement
+        Task { @MainActor [weak self] in
+            guard await coordinator.replaceTransport(replacementTransport),
+                  let self,
+                  self.coordinator === coordinator,
+                  !isFinished
+            else {
+                self?.fail(String(localized: "Pairing could not be started"))
+                return
+            }
+            replacement.start(sharingOfferURI: uri)
+        }
     }
 
     /// Revokes the pairings the new one replaces.
@@ -101,16 +105,16 @@
     /// pairs with more than one other, and those records are not this one's
     /// to revoke.
     internal func supersedeOlderPairings(with keptPairID: Data) {
-      guard let keptName = RappPairNames.name(forPairID: keptPairID) else { return }
-      let superseded = ((try? vault.activePairIDs()) ?? [])
-        .filter { pairID in
-          pairID != keptPairID && RappPairNames.name(forPairID: pairID) == keptName
+        guard let keptName = RappPairNames.name(forPairID: keptPairID) else { return }
+        let superseded = ((try? vault.activePairIDs()) ?? [])
+            .filter { pairID in
+                pairID != keptPairID && RappPairNames.name(forPairID: pairID) == keptName
+            }
+        let now = UInt64(Date().timeIntervalSince1970 * millisecondsPerSecond)
+        for pairID in superseded {
+            try? vault.revokePair(pairID: pairID, revokedAtMilliseconds: now)
+            RappPairNames.forget(pairID: pairID)
         }
-      let now = UInt64(Date().timeIntervalSince1970 * millisecondsPerSecond)
-      for pairID in superseded {
-        try? vault.revokePair(pairID: pairID, revokedAtMilliseconds: now)
-        RappPairNames.forget(pairID: pairID)
-      }
     }
-  }
+}
 #endif

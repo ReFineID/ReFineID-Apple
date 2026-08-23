@@ -9,16 +9,16 @@ import Foundation
 /// produces stay the state tables' description rather than becoming a second
 /// implementation here.
 internal enum RuntimeReceive: Equatable {
-  /// Input with no effect, and the class that says so.
-  case discarded(UnexpectedInputClass)
-  /// An exact echo restored liveness.
-  case livenessRestored(RappSecurityOutcome)
-  /// An authenticated message for the caller.
-  case message(Envelope)
-  /// An authenticated violation ended the pairing.
-  case pairingEnded(RappSecurityOutcome)
-  /// A frame the runtime produced centrally, ready to send.
-  case send(BinaryFrame)
-  /// The session closed; the pairing is untouched.
-  case sessionClosed(RappSecurityOutcome)
+    /// Input with no effect, and the class that says so.
+    case discarded(UnexpectedInputClass)
+    /// An exact echo restored liveness.
+    case livenessRestored(RappSecurityOutcome)
+    /// An authenticated message for the caller.
+    case message(Envelope)
+    /// An authenticated violation ended the pairing.
+    case pairingEnded(RappSecurityOutcome)
+    /// A frame the runtime produced centrally, ready to send.
+    case send(BinaryFrame)
+    /// The session closed; the pairing is untouched.
+    case sessionClosed(RappSecurityOutcome)
 }

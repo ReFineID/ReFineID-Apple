@@ -12,29 +12,29 @@ import os
 ///
 /// The memory stores only non-reversible fingerprints - never a PIN.
 public final class RejectedPinMemory: Sendable {
-  private let rejected = OSAllocatedUnfairLock<Set<PinFingerprint>>(initialState: [])
+    private let rejected = OSAllocatedUnfairLock<Set<PinFingerprint>>(initialState: [])
 
-  /// Creates an empty memory; the driver owns one per process.
-  public init() {
-    // Starts empty by definition: nothing has been rejected yet.
-  }
-
-  /// Records that the card bound into the fingerprint rejected this PIN.
-  public func recordRejection(_ fingerprint: PinFingerprint) {
-    rejected.withLock { set in
-      // The insertion report is deliberately dropped: recording a
-      // rejection twice is the same fact, not new information.
-      _ = set.insert(fingerprint)
+    /// Creates an empty memory; the driver owns one per process.
+    public init() {
+        // Starts empty by definition: nothing has been rejected yet.
     }
-  }
 
-  /// True when this exact PIN was already rejected by the card bound into
-  /// the fingerprint.
-  ///
-  /// The caller must refuse the operation without touching the card.
-  public func isKnownRejected(_ fingerprint: PinFingerprint) -> Bool {
-    rejected.withLock { set in
-      set.contains(fingerprint)
+    /// Records that the card bound into the fingerprint rejected this PIN.
+    public func recordRejection(_ fingerprint: PinFingerprint) {
+        rejected.withLock { set in
+            // The insertion report is deliberately dropped: recording a
+            // rejection twice is the same fact, not new information.
+            _ = set.insert(fingerprint)
+        }
     }
-  }
+
+    /// True when this exact PIN was already rejected by the card bound into
+    /// the fingerprint.
+    ///
+    /// The caller must refuse the operation without touching the card.
+    public func isKnownRejected(_ fingerprint: PinFingerprint) -> Bool {
+        rejected.withLock { set in
+            set.contains(fingerprint)
+        }
+    }
 }

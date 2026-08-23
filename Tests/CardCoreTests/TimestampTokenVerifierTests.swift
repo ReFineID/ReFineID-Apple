@@ -2,19 +2,19 @@
 
 #if os(macOS)
 
-  @testable import CardCore
-  import Foundation
-  import Testing
+@testable import CardCore
+import Foundation
+import Testing
 
-  /// CMS, ESS, EKU and trust checks over a fixed RFC 3161 fixture.
-  @Suite
-  internal struct TimestampTokenVerifierTests {
+/// CMS, ESS, EKU and trust checks over a fixed RFC 3161 fixture.
+@Suite
+internal struct TimestampTokenVerifierTests {
     /// A locally generated ECDSA RFC 3161 token.
     ///
     /// Its TSTInfo is over the SHA-384 digest of empty input and its
     /// certificate is restricted to timestamping by a critical EKU.
     private static let token = Self.decode(
-      """
+        """
       MIIFmAYJKoZIhvcNAQcCoIIFiTCCBYUCAQMxDzANBglghkgBZQMEAgEFADCBsAYLKoZIhvcNAQkQ
       AQSggaAEgZ0wgZoCAQEGAyoDBDBBMA0GCWCGSAFlAwQCAgUABDA4sGCnUayWOEzZMn6xseNqIf23
       ERS+B0NMDMe/Y/bh2idO3r/nb2X71RrS8UiYuVsCAQEYDzIwMjYwODA0MDc1MzI1WjAKAgEBgAIB
@@ -46,7 +46,7 @@
 
     /// The exact signer certificate, used as the test trust anchor.
     private static let signer = Self.decode(
-      """
+        """
       MIIBszCCAVigAwIBAgIUMHfE/GmdSvG3+CQRxHSnFzfP2IwwCgYIKoZIzj0EAwIwHDEaMBgGA1UE
       AwwRUmVGaW5lSUQgVGVzdCBUU0EwHhcNMjYwODA0MDc1MzI1WhcNMzYwODAxMDc1MzI1WjAcMRow
       GAYDVQQDDBFSZUZpbmVJRCBUZXN0IFRTQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABEma/2Y8
@@ -60,12 +60,12 @@
 
     /// X.509 BasicConstraints `cA = TRUE` field.
     private static let certificateAuthorityConstraint = DerEncoder.tlv(
-      DerValues.tagBoolean, Data([DerValues.booleanTrue])
+        DerValues.tagBoolean, Data([DerValues.booleanTrue])
     )
 
     /// X.509 BasicConstraints `cA = TRUE`.
     private static let certificateAuthorityBasicConstraints = DerEncoder.sequence(
-      [Self.certificateAuthorityConstraint]
+        [Self.certificateAuthorityConstraint]
     )
 
     /// X.509 BasicConstraints default to an end entity when empty.
@@ -73,21 +73,21 @@
 
     /// KeyUsage bits for a normal signing leaf and a CA-only key.
     private static let signingKeyUsage = DerEncoder.tlv(
-      DerValues.tagBitString,
-      Data([0, UInt8(1) << UInt8(7)])
+        DerValues.tagBitString,
+        Data([0, UInt8(1) << UInt8(7)])
     )
     private static let certificateAuthorityKeyUsage = DerEncoder.tlv(
-      DerValues.tagBitString,
-      Data([0, UInt8(1) << UInt8(2)])
+        DerValues.tagBitString,
+        Data([0, UInt8(1) << UInt8(2)])
     )
     private static let malformedUnusedKeyUsage = DerEncoder.tlv(
-      DerValues.tagBitString,
-      Data([7, UInt8(1) << UInt8(6)])
+        DerValues.tagBitString,
+        Data([7, UInt8(1) << UInt8(6)])
     )
 
     /// Base64 fixture text with its line breaks ignored.
     private static func decode(_ encoded: String) -> Data {
-      Data(base64Encoded: encoded, options: .ignoreUnknownCharacters) ?? Data()
+        Data(base64Encoded: encoded, options: .ignoreUnknownCharacters) ?? Data()
     }
 
     /// A structurally sufficient certificate carrying controlled profile
@@ -95,159 +95,159 @@
     ///
     /// The profile check runs before the caller anchor is used.
     private static func timestampSignerCertificate(
-      basicConstraints: Data,
-      keyUsage: Data
+        basicConstraints: Data,
+        keyUsage: Data
     ) -> Data {
-      let extensions = DerEncoder.sequence([
-        DerEncoder.sequence([
-          DerEncoder.objectIdentifier(SignOids.extendedKeyUsage),
-          DerEncoder.tlv(
-            DerValues.tagBoolean, Data([DerValues.booleanTrue])
-          ),
-          DerEncoder.octetString(
+        let extensions = DerEncoder.sequence([
             DerEncoder.sequence([
-              DerEncoder.objectIdentifier(SignOids.timestampingKeyPurpose)
+                DerEncoder.objectIdentifier(SignOids.extendedKeyUsage),
+                DerEncoder.tlv(
+                    DerValues.tagBoolean, Data([DerValues.booleanTrue])
+                ),
+                DerEncoder.octetString(
+                    DerEncoder.sequence([
+                        DerEncoder.objectIdentifier(SignOids.timestampingKeyPurpose)
+                    ])
+                )
+            ]),
+            DerEncoder.sequence([
+                DerEncoder.objectIdentifier(SignOids.basicConstraints),
+                DerEncoder.octetString(basicConstraints)
+            ]),
+            DerEncoder.sequence([
+                DerEncoder.objectIdentifier(SignOids.keyUsage),
+                DerEncoder.tlv(
+                    DerValues.tagBoolean, Data([DerValues.booleanTrue])
+                ),
+                DerEncoder.octetString(keyUsage)
             ])
-          ),
-        ]),
-        DerEncoder.sequence([
-          DerEncoder.objectIdentifier(SignOids.basicConstraints),
-          DerEncoder.octetString(basicConstraints),
-        ]),
-        DerEncoder.sequence([
-          DerEncoder.objectIdentifier(SignOids.keyUsage),
-          DerEncoder.tlv(
-            DerValues.tagBoolean, Data([DerValues.booleanTrue])
-          ),
-          DerEncoder.octetString(keyUsage),
-        ]),
-      ])
-      let publicKey = DerEncoder.sequence([
-        DerEncoder.sequence([]),
-        DerEncoder.tlv(DerValues.tagBitString, Data([0, 1])),
-      ])
-      let tbs = DerEncoder.sequence([
-        DerEncoder.integer(1),
-        DerEncoder.sequence([]),
-        DerEncoder.sequence([]),
-        DerEncoder.sequence([]),
-        DerEncoder.sequence([]),
-        publicKey,
-        DerEncoder.tlv(DerValues.tagContext3Constructed, extensions),
-      ])
-      return DerEncoder.sequence([tbs])
+        ])
+        let publicKey = DerEncoder.sequence([
+            DerEncoder.sequence([]),
+            DerEncoder.tlv(DerValues.tagBitString, Data([0, 1]))
+        ])
+        let tbs = DerEncoder.sequence([
+            DerEncoder.integer(1),
+            DerEncoder.sequence([]),
+            DerEncoder.sequence([]),
+            DerEncoder.sequence([]),
+            DerEncoder.sequence([]),
+            publicKey,
+            DerEncoder.tlv(DerValues.tagContext3Constructed, extensions)
+        ])
+        return DerEncoder.sequence([tbs])
     }
 
     @Test
     internal func validSignatureAndExplicitAnchorAreAccepted() throws {
-      let verified = try TimestampTokenVerifier.verify(
-        Self.token, trustedCertificates: [Self.signer]
-      )
-      #expect(verified.token == Self.token)
-      #expect(verified.signerCertificate == Self.signer)
-      #expect(verified.embeddedCertificates.contains(Self.signer))
-      #expect(verified.verifiedCertificateChain == [Self.signer])
-      #expect(verified.trustedCertificate == Self.signer)
-      #expect(verified.generatedAt == Date(timeIntervalSince1970: 1_785_830_005))
+        let verified = try TimestampTokenVerifier.verify(
+            Self.token, trustedCertificates: [Self.signer]
+        )
+        #expect(verified.token == Self.token)
+        #expect(verified.signerCertificate == Self.signer)
+        #expect(verified.embeddedCertificates.contains(Self.signer))
+        #expect(verified.verifiedCertificateChain == [Self.signer])
+        #expect(verified.trustedCertificate == Self.signer)
+        #expect(verified.generatedAt == Date(timeIntervalSince1970: 1_785_830_005))
     }
 
     @Test
     internal func aTokenNeverFallsBackToSystemTrust() {
-      #expect(throws: TimestampTokenVerifier.Failure.untrustedSigner) {
-        _ = try TimestampTokenVerifier.verify(
-          Self.token, trustedCertificates: []
-        )
-      }
+        #expect(throws: TimestampTokenVerifier.Failure.untrustedSigner) {
+            _ = try TimestampTokenVerifier.verify(
+                Self.token, trustedCertificates: []
+            )
+        }
     }
 
     @Test
     internal func aChangedCmsSignatureIsRejected() {
-      var changed = Self.token
-      if let last = changed.indices.last {
-        changed[last] ^= 1
-      }
-      #expect(throws: TimestampTokenVerifier.Failure.invalidSignature) {
-        _ = try TimestampTokenVerifier.verify(
-          changed, trustedCertificates: [Self.signer]
-        )
-      }
+        var changed = Self.token
+        if let last = changed.indices.last {
+            changed[last] ^= 1
+        }
+        #expect(throws: TimestampTokenVerifier.Failure.invalidSignature) {
+            _ = try TimestampTokenVerifier.verify(
+                changed, trustedCertificates: [Self.signer]
+            )
+        }
     }
 
     @Test
     internal func malformedCmsIsRejectedBeforeTrust() {
-      #expect(throws: TimestampTokenVerifier.Failure.malformed) {
-        _ = try TimestampTokenVerifier.verify(
-          Data("not cms".utf8), trustedCertificates: [Self.signer]
-        )
-      }
+        #expect(throws: TimestampTokenVerifier.Failure.malformed) {
+            _ = try TimestampTokenVerifier.verify(
+                Data("not cms".utf8), trustedCertificates: [Self.signer]
+            )
+        }
     }
 
     @Test
     internal func signerCertificateHasTheRequiredTimestampingEku() {
-      #expect(
-        CertificateFacts(der: Self.signer)?.hasTimestampingExtendedKeyUsage
-          == true
-      )
+        #expect(
+            CertificateFacts(der: Self.signer)?.hasTimestampingExtendedKeyUsage
+                == true
+        )
     }
 
     @Test
     internal func signerValidityUsesSignedGenerationTime() {
-      let generationTime = Date(timeIntervalSince1970: 1_785_830_005)
+        let generationTime = Date(timeIntervalSince1970: 1_785_830_005)
 
-      #expect(
-        TimestampTokenVerifier.signerCertificateIsValid(
-          Self.signer, at: generationTime
+        #expect(
+            TimestampTokenVerifier.signerCertificateIsValid(
+                Self.signer, at: generationTime
+            )
         )
-      )
-      #expect(
-        !TimestampTokenVerifier.signerCertificateIsValid(
-          Self.signer, at: generationTime.addingTimeInterval(-1)
+        #expect(
+            !TimestampTokenVerifier.signerCertificateIsValid(
+                Self.signer, at: generationTime.addingTimeInterval(-1)
+            )
         )
-      )
     }
 
     @Test
     internal func signerProfileRejectsCaAndIncompatibleKeyUsageBeforeTrust() {
-      let permitted = Self.timestampSignerCertificate(
-        basicConstraints: Self.endEntityBasicConstraints,
-        keyUsage: Self.signingKeyUsage
-      )
-      let certificateAuthority = Self.timestampSignerCertificate(
-        basicConstraints: Self.certificateAuthorityBasicConstraints,
-        keyUsage: Self.signingKeyUsage
-      )
-      let authorityKeyUsage = Self.timestampSignerCertificate(
-        basicConstraints: Self.endEntityBasicConstraints,
-        keyUsage: Self.certificateAuthorityKeyUsage
-      )
+        let permitted = Self.timestampSignerCertificate(
+            basicConstraints: Self.endEntityBasicConstraints,
+            keyUsage: Self.signingKeyUsage
+        )
+        let certificateAuthority = Self.timestampSignerCertificate(
+            basicConstraints: Self.certificateAuthorityBasicConstraints,
+            keyUsage: Self.signingKeyUsage
+        )
+        let authorityKeyUsage = Self.timestampSignerCertificate(
+            basicConstraints: Self.endEntityBasicConstraints,
+            keyUsage: Self.certificateAuthorityKeyUsage
+        )
 
-      #expect(
-        TimestampTokenVerifier.signerCertificateProfileIsValid(permitted)
-      )
-      #expect(
-        !TimestampTokenVerifier.signerCertificateProfileIsValid(
-          certificateAuthority
+        #expect(
+            TimestampTokenVerifier.signerCertificateProfileIsValid(permitted)
         )
-      )
-      #expect(
-        !TimestampTokenVerifier.signerCertificateProfileIsValid(
-          authorityKeyUsage
+        #expect(
+            !TimestampTokenVerifier.signerCertificateProfileIsValid(
+                certificateAuthority
+            )
         )
-      )
+        #expect(
+            !TimestampTokenVerifier.signerCertificateProfileIsValid(
+                authorityKeyUsage
+            )
+        )
     }
 
     /// Declared unused KeyUsage bits must be zero.
     @Test
     internal func signerProfileRejectsNonzeroUnusedKeyUsageBits() {
-      let malformed = Self.timestampSignerCertificate(
-        basicConstraints: Self.endEntityBasicConstraints,
-        keyUsage: Self.malformedUnusedKeyUsage
-      )
+        let malformed = Self.timestampSignerCertificate(
+            basicConstraints: Self.endEntityBasicConstraints,
+            keyUsage: Self.malformedUnusedKeyUsage
+        )
 
-      #expect(
-        !TimestampTokenVerifier.signerCertificateProfileIsValid(malformed)
-      )
+        #expect(
+            !TimestampTokenVerifier.signerCertificateProfileIsValid(malformed)
+        )
     }
-  }
+}
 
 #endif

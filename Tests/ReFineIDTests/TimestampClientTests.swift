@@ -2,18 +2,18 @@
 
 #if os(macOS)
 
-  import CardCore
-  import Foundation
-  import Testing
+import CardCore
+import Foundation
+import Testing
 
-  @testable import ReFineID
+@testable import ReFineID
 
-  /// Direct checks for the compact timestamp's verify-before-strip boundary.
-  @Suite
-  internal struct TimestampClientTests {
+/// Direct checks for the compact timestamp's verify-before-strip boundary.
+@Suite
+internal struct TimestampClientTests {
     /// A valid RFC 3161 token carrying its self-issued test signer.
     private static let token = Self.decode(
-      """
+        """
       MIIFmAYJKoZIhvcNAQcCoIIFiTCCBYUCAQMxDzANBglghkgBZQMEAgEFADCBsAYLKoZIhvcNAQkQ
       AQSggaAEgZ0wgZoCAQEGAyoDBDBBMA0GCWCGSAFlAwQCAgUABDA4sGCnUayWOEzZMn6xseNqIf23
       ERS+B0NMDMe/Y/bh2idO3r/nb2X71RrS8UiYuVsCAQEYDzIwMjYwODA0MDc1MzI1WjAKAgEBgAIB
@@ -45,7 +45,7 @@
 
     /// The token's exact signer, as embedded in the token itself.
     private static let signer = Self.decode(
-      """
+        """
       MIIBszCCAVigAwIBAgIUMHfE/GmdSvG3+CQRxHSnFzfP2IwwCgYIKoZIzj0EAwIwHDEaMBgGA1UE
       AwwRUmVGaW5lSUQgVGVzdCBUU0EwHhcNMjYwODA0MDc1MzI1WhcNMzYwODAxMDc1MzI1WjAcMRow
       GAYDVQQDDBFSZUZpbmVJRCBUZXN0IFRTQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABEma/2Y8
@@ -59,89 +59,89 @@
 
     /// Base64 fixture text with line breaks ignored.
     private static func decode(_ encoded: String) -> Data {
-      Data(base64Encoded: encoded, options: .ignoreUnknownCharacters) ?? Data()
+        Data(base64Encoded: encoded, options: .ignoreUnknownCharacters) ?? Data()
     }
 
     /// Compactness never changes the RFC 3161 request's certReq = TRUE.
     @Test
     internal func compactRequestAsksForTheSignerCertificate() {
-      let request = TimestampClient.compactRequest(
-        digest: Data(repeating: 0xA5, count: 48),
-        nonceBytes: Data(repeating: 0x5A, count: 32)
-      )
-      let certificateRequest = DerEncoder.booleanTrue()
+        let request = TimestampClient.compactRequest(
+            digest: Data(repeating: 0xA5, count: 48),
+            nonceBytes: Data(repeating: 0x5A, count: 32)
+        )
+        let certificateRequest = DerEncoder.booleanTrue()
 
-      #expect(request.suffix(certificateRequest.count) == certificateRequest)
+        #expect(request.suffix(certificateRequest.count) == certificateRequest)
     }
 
     /// A full token is authenticated before only its certificates are removed.
     @Test
     internal func verifiedTokenBecomesCertificateFree() throws {
-      let compact = try TimestampClient.verifiedCompactEncoding(Self.token)
+        let compact = try TimestampClient.verifiedCompactEncoding(Self.token)
 
-      #expect(CmsCertificates.inside(Self.token).contains(Self.signer))
-      #expect(CmsCertificates.inside(compact).isEmpty)
-      #expect(compact.count < Self.token.count)
-      #expect(
-        try RfcTimestamp.generationTime(in: compact)
-          == RfcTimestamp.generationTime(in: Self.token)
-      )
+        #expect(CmsCertificates.inside(Self.token).contains(Self.signer))
+        #expect(CmsCertificates.inside(compact).isEmpty)
+        #expect(compact.count < Self.token.count)
+        #expect(
+            try RfcTimestamp.generationTime(in: compact)
+                == RfcTimestamp.generationTime(in: Self.token)
+        )
     }
 
     /// A token with a changed CMS signature is rejected before compaction.
     @Test
     internal func tamperedTokenIsNeverCompacted() {
-      var changed = Self.token
-      if let last = changed.indices.last {
-        changed[last] ^= 1
-      }
+        var changed = Self.token
+        if let last = changed.indices.last {
+            changed[last] ^= 1
+        }
 
-      #expect(throws: TimestampTokenVerifier.Failure.invalidSignature) {
-        _ = try TimestampClient.verifiedCompactEncoding(changed)
-      }
+        #expect(throws: TimestampTokenVerifier.Failure.invalidSignature) {
+            _ = try TimestampClient.verifiedCompactEncoding(changed)
+        }
     }
 
     /// Temporary refusal backs off to one minute and keeps trying.
     @Test
     internal func transientFailureRetriesUntilSuccess() async throws {
-      var attempts = 0
-      var delays: [Duration] = []
+        var attempts = 0
+        var delays: [Duration] = []
 
-      let answer = try await TimestampClient.withTransientRetry {
-        attempts += 1
-        if attempts <= 8 {
-          throw SigningNetwork.Failure.httpStatus(429)
+        let answer = try await TimestampClient.withTransientRetry {
+            attempts += 1
+            if attempts <= 8 {
+                throw SigningNetwork.Failure.httpStatus(429)
+            }
+            return "timestamp"
+        } wait: { delay in
+            delays.append(delay)
         }
-        return "timestamp"
-      } wait: { delay in
-        delays.append(delay)
-      }
 
-      #expect(answer == "timestamp")
-      #expect(attempts == 9)
-      #expect(
-        delays == [1, 2, 4, 8, 16, 32, 60, 60].map { .seconds($0) }
-      )
+        #expect(answer == "timestamp")
+        #expect(attempts == 9)
+        #expect(
+            delays == [1, 2, 4, 8, 16, 32, 60, 60].map { .seconds($0) }
+        )
     }
 
     /// Authentication failure is returned without another attempt or wait.
     @Test
     internal func permanentFailureDoesNotRetry() async {
-      var attempts = 0
-      var waited = false
+        var attempts = 0
+        var waited = false
 
-      await #expect(throws: SigningNetwork.Failure.httpStatus(401)) {
-        _ = try await TimestampClient.withTransientRetry {
-          attempts += 1
-          throw SigningNetwork.Failure.httpStatus(401)
-        } wait: { _ in
-          waited = true
+        await #expect(throws: SigningNetwork.Failure.httpStatus(401)) {
+            _ = try await TimestampClient.withTransientRetry {
+                attempts += 1
+                throw SigningNetwork.Failure.httpStatus(401)
+            } wait: { _ in
+                waited = true
+            }
         }
-      }
 
-      #expect(attempts == 1)
-      #expect(!waited)
+        #expect(attempts == 1)
+        #expect(!waited)
     }
-  }
+}
 
 #endif

@@ -11,48 +11,48 @@ import Foundation
 /// Only the requester names the profiles it asks for, so the field's presence
 /// is itself a role claim.
 internal struct PairingHello: Equatable {
-  internal var parameters: NegotiatedParameters
+    internal var parameters: NegotiatedParameters
 
-  internal var displayName: String
+    internal var displayName: String
 
-  internal var platform: String
+    internal var platform: String
 
-  internal var requestedProfiles: [ProfileName]?
+    internal var requestedProfiles: [ProfileName]?
 
-  internal static func from(body: [String: WireValue]) throws -> Self {
-    var fields = body
-    let decodedParameters = try NegotiatedParameters.from(
-      map: takeMessageMap(&fields, "parameters"))
-    let decodedDisplayName = try takeMessageText(&fields, "display_name")
-    let decodedPlatform = try takeMessageText(&fields, "platform")
-    var requested: [ProfileName]?
-    if let value = fields.removeValue(forKey: "requested_profiles") {
-      guard case .array(let names) = value else {
-        throw MessageFieldError.invalidField("requested_profiles")
-      }
-      requested = try names.map(profileName)
+    internal static func from(body: [String: WireValue]) throws -> Self {
+        var fields = body
+        let decodedParameters = try NegotiatedParameters.from(
+            map: takeMessageMap(&fields, "parameters"))
+        let decodedDisplayName = try takeMessageText(&fields, "display_name")
+        let decodedPlatform = try takeMessageText(&fields, "platform")
+        var requested: [ProfileName]?
+        if let value = fields.removeValue(forKey: "requested_profiles") {
+            guard case .array(let names) = value else {
+                throw MessageFieldError.invalidField("requested_profiles")
+            }
+            requested = try names.map(profileName)
+        }
+        guard fields.isEmpty else { throw MessageFieldError.invalidField("body") }
+        try validateLabel(decodedDisplayName, "display_name")
+        try validateLabel(decodedPlatform, "platform")
+        return Self(
+            parameters: decodedParameters, displayName: decodedDisplayName,
+            platform: decodedPlatform,
+            requestedProfiles: requested)
     }
-    guard fields.isEmpty else { throw MessageFieldError.invalidField("body") }
-    try validateLabel(decodedDisplayName, "display_name")
-    try validateLabel(decodedPlatform, "platform")
-    return Self(
-      parameters: decodedParameters, displayName: decodedDisplayName,
-      platform: decodedPlatform,
-      requestedProfiles: requested)
-  }
 
-  internal func body() throws -> [String: WireValue] {
-    try validateLabel(displayName, "display_name")
-    try validateLabel(platform, "platform")
-    if let requestedProfiles { try validateProfileSet(requestedProfiles) }
-    var fields: [String: WireValue] = [
-      "parameters": .map(try parameters.asMap()),
-      "display_name": .text(displayName),
-      "platform": .text(platform),
-    ]
-    if let requestedProfiles {
-      fields["requested_profiles"] = .array(requestedProfiles.map { .text($0.rawValue) })
+    internal func body() throws -> [String: WireValue] {
+        try validateLabel(displayName, "display_name")
+        try validateLabel(platform, "platform")
+        if let requestedProfiles { try validateProfileSet(requestedProfiles) }
+        var fields: [String: WireValue] = [
+            "parameters": .map(try parameters.asMap()),
+            "display_name": .text(displayName),
+            "platform": .text(platform)
+        ]
+        if let requestedProfiles {
+            fields["requested_profiles"] = .array(requestedProfiles.map { .text($0.rawValue) })
+        }
+        return fields
     }
-    return fields
-  }
 }

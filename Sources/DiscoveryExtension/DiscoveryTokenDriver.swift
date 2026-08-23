@@ -30,69 +30,68 @@ import Foundation
 /// On macOS the extension still builds and installs; there is no NFC slot
 /// there, so it is simply never asked for anything.
 internal final class DiscoveryTokenDriver: TKSmartCardTokenDriver,
-  TKSmartCardTokenDriverDelegate
-{
-  /// The last line this process wrote, so a repeated poll cannot flood
-  /// the trace.
-  ///
-  /// `@unchecked Sendable` is sound because every access holds the lock;
-  /// `ctkd` may ask on more than one thread.
-  internal final class LastWritten: @unchecked Sendable {
-    /// Serialises the threads that reach the remembered line.
-    private let lock = NSLock()
+                                           TKSmartCardTokenDriverDelegate {
+    /// The last line this process wrote, so a repeated poll cannot flood
+    /// the trace.
+    ///
+    /// `@unchecked Sendable` is sound because every access holds the lock;
+    /// `ctkd` may ask on more than one thread.
+    internal final class LastWritten: @unchecked Sendable {
+        /// Serialises the threads that reach the remembered line.
+        private let lock = NSLock()
 
-    /// The line most recently written, or nil before the first.
-    private var line: String?
+        /// The line most recently written, or nil before the first.
+        private var line: String?
 
-    /// Records `candidate` and says whether it is new.
-    internal func admit(_ candidate: String) -> Bool {
-      lock.lock()
-      defer { lock.unlock() }
-      guard line != candidate else { return false }
-      line = candidate
-      return true
+        /// Records `candidate` and says whether it is new.
+        internal func admit(_ candidate: String) -> Bool {
+            lock.lock()
+            defer { lock.unlock() }
+            guard line != candidate else { return false }
+            line = candidate
+            return true
+        }
     }
-  }
 
-  /// What this process has already said.
-  ///
-  /// `ctkd` polls, and a poll that repeats every second would fill the
-  /// rolling buffer with this one line and evict the mint and signature
-  /// lines it exists to preserve. The first of each distinct line is
-  /// worth having; the hundredth is worth less than what it displaces.
-  private static let lastWritten = LastWritten()
+    /// What this process has already said.
+    ///
+    /// `ctkd` polls, and a poll that repeats every second would fill the
+    /// rolling buffer with this one line and evict the mint and signature
+    /// lines it exists to preserve. The first of each distinct line is
+    /// worth having; the hundredth is worth less than what it displaces.
+    private static let lastWritten = LastWritten()
 
-  /// Registers the driver as its own delegate, matching the shape
-  /// CryptoTokenKit expects of a `TKSmartCardTokenDriver` subclass.
-  override internal init() {
-    super.init()
-    delegate = self
-  }
+    /// Registers the driver as its own delegate, matching the shape
+    /// CryptoTokenKit expects of a `TKSmartCardTokenDriver` subclass.
+    override internal init() {
+        super.init()
+        delegate = self
+    }
 
-  /// Refuses politely: the real token comes from the minting extension.
-  ///
-  /// `tokenNotFound` tells CryptoTokenKit that this driver does not handle
-  /// the card, which is the safe refusal -- the system moves on and lets
-  /// `ReFineIDTokenExtension` mint for the slot the app registered.
-  ///
-  /// The refusal is traced, and that line matters more than it looks: it
-  /// is the proof that `ctkd` polled a card with the advertised AID at
-  /// all. A login that fails with no such line failed before discovery,
-  /// which is a different fault from a mint that refused -- and without
-  /// the trace the two are indistinguishable.
-  internal func tokenDriver(
-    _: TKSmartCardTokenDriver,
-    createTokenFor smartCard: TKSmartCard,
-    aid: Data?
-  ) throws -> TKSmartCardToken {
-    #if DEBUG
-      let line =
-        "discovery: asked for a token, aid=\(aid?.count ?? -1)B "
-        + "slot=\(smartCard.slot.name) -- refusing with tokenNotFound"
-      if Self.lastWritten.admit(line) {
-        ExtensionTrace.append(line)
-      }
-    #endif
-    throw TKError(.tokenNotFound)
-  }
+    /// Refuses politely: the real token comes from the minting extension.
+    ///
+    /// `tokenNotFound` tells CryptoTokenKit that this driver does not handle
+    /// the card, which is the safe refusal -- the system moves on and lets
+    /// `ReFineIDTokenExtension` mint for the slot the app registered.
+    ///
+    /// The refusal is traced, and that line matters more than it looks: it
+    /// is the proof that `ctkd` polled a card with the advertised AID at
+    /// all. A login that fails with no such line failed before discovery,
+    /// which is a different fault from a mint that refused -- and without
+    /// the trace the two are indistinguishable.
+    internal func tokenDriver(
+        _: TKSmartCardTokenDriver,
+        createTokenFor smartCard: TKSmartCard,
+        aid: Data?
+    ) throws -> TKSmartCardToken {
+        #if DEBUG
+        let line =
+            "discovery: asked for a token, aid=\(aid?.count ?? -1)B "
+            + "slot=\(smartCard.slot.name) -- refusing with tokenNotFound"
+        if Self.lastWritten.admit(line) {
+            ExtensionTrace.append(line)
+        }
+        #endif
+        throw TKError(.tokenNotFound)
+    }
 }

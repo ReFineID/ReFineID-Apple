@@ -6,6 +6,6 @@
 /// Conversion". Only the uncompressed form is used: the FINEID card and the
 /// PACE protocol exchange public points as `04 || X || Y`.
 internal enum Sec1Values {
-  /// The leading octet marking an uncompressed point, `04 || X || Y`.
-  internal static let uncompressedPointTag: UInt8 = 0x04
+    /// The leading octet marking an uncompressed point, `04 || X || Y`.
+    internal static let uncompressedPointTag: UInt8 = 0x04
 }

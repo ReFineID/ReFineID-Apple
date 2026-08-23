@@ -7,12 +7,12 @@ import Foundation
 /// Every case is attributable to the authenticated peer, so each one ends the
 /// pairing under the failure policy.
 internal enum EngineViolation: Equatable {
-  case activeOperationIdentifierReused
-  case illegalMessageForActiveOperation
-  case illegalOperationTransition
-  case invalidOperationMessage
-  case invalidOperationRequest
-  case profileNotGranted
-  case referenceMismatch
-  case unexpectedPreparedForSafeRead
+    case activeOperationIdentifierReused
+    case illegalMessageForActiveOperation
+    case illegalOperationTransition
+    case invalidOperationMessage
+    case invalidOperationRequest
+    case profileNotGranted
+    case referenceMismatch
+    case unexpectedPreparedForSafeRead
 }

@@ -20,52 +20,52 @@ import Foundation
 /// `PACE.randomScalar` of the ReFineID iOS browser donor
 /// `Sources/ReFineIDBrowserKit/Card/Pace.swift`.
 public struct PaceEphemeralScalarSource {
-  /// The shipping source: rejection sampling over the platform CSPRNG.
-  ///
-  /// Computed rather than stored because the type wraps a closure and is
-  /// therefore not `Sendable`; a fresh value costs nothing and keeps the
-  /// module free of shared mutable state.
-  public static var secureRandom: Self {
-    Self(producing: Self.randomScalar)
-  }
-
-  /// The underlying generator.
-  private let produce: () -> U384
-
-  /// Wraps a generator of scalars in `[1, n)`.
-  ///
-  /// The caller owns the guarantee that values are in range and
-  /// unpredictable; `secureRandom` is the only implementation that has it.
-  public init(producing: @escaping () -> U384) {
-    self.produce = producing
-  }
-
-  /// A uniform scalar in `[1, n)` from the platform CSPRNG.
-  ///
-  /// `SystemRandomNumberGenerator` is the platform cryptographic random
-  /// source on Apple platforms. Candidates at or above the group order, and
-  /// the zero candidate, are discarded rather than reduced, so the result
-  /// is uniform on the interval; the rejection probability is negligible
-  /// because the brainpoolP384r1 order is just below `2^384`.
-  private static func randomScalar() -> U384 {
-    var generator = SystemRandomNumberGenerator()
-    while true {
-      let candidate = U384(
-        limb0: generator.next(),
-        limb1: generator.next(),
-        limb2: generator.next(),
-        limb3: generator.next(),
-        limb4: generator.next(),
-        limb5: generator.next()
-      )
-      if !candidate.isZero, candidate < BrainpoolP384r1.order {
-        return candidate
-      }
+    /// The shipping source: rejection sampling over the platform CSPRNG.
+    ///
+    /// Computed rather than stored because the type wraps a closure and is
+    /// therefore not `Sendable`; a fresh value costs nothing and keeps the
+    /// module free of shared mutable state.
+    public static var secureRandom: Self {
+        Self(producing: Self.randomScalar)
     }
-  }
 
-  /// The next ephemeral scalar.
-  internal func nextScalar() -> U384 {
-    produce()
-  }
+    /// The underlying generator.
+    private let produce: () -> U384
+
+    /// Wraps a generator of scalars in `[1, n)`.
+    ///
+    /// The caller owns the guarantee that values are in range and
+    /// unpredictable; `secureRandom` is the only implementation that has it.
+    public init(producing: @escaping () -> U384) {
+        self.produce = producing
+    }
+
+    /// A uniform scalar in `[1, n)` from the platform CSPRNG.
+    ///
+    /// `SystemRandomNumberGenerator` is the platform cryptographic random
+    /// source on Apple platforms. Candidates at or above the group order, and
+    /// the zero candidate, are discarded rather than reduced, so the result
+    /// is uniform on the interval; the rejection probability is negligible
+    /// because the brainpoolP384r1 order is just below `2^384`.
+    private static func randomScalar() -> U384 {
+        var generator = SystemRandomNumberGenerator()
+        while true {
+            let candidate = U384(
+                limb0: generator.next(),
+                limb1: generator.next(),
+                limb2: generator.next(),
+                limb3: generator.next(),
+                limb4: generator.next(),
+                limb5: generator.next()
+            )
+            if !candidate.isZero, candidate < BrainpoolP384r1.order {
+                return candidate
+            }
+        }
+    }
+
+    /// The next ephemeral scalar.
+    internal func nextScalar() -> U384 {
+        produce()
+    }
 }

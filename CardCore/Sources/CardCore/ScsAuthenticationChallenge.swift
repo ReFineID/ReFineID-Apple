@@ -13,26 +13,26 @@ import Foundation
 /// obtain an authentication signature over bytes of its choosing and
 /// replay it elsewhere.
 public enum ScsAuthenticationChallenge {
-  /// Why `content` is not an acceptable challenge, or nil when it
-  /// is.
-  public static func refusal(content: Data, origin: String?) -> String? {
-    guard let origin else {
-      return "missing Origin header"
+    /// Why `content` is not an acceptable challenge, or nil when it
+    /// is.
+    public static func refusal(content: Data, origin: String?) -> String? {
+        guard let origin else {
+            return "missing Origin header"
+        }
+        guard let text = String(data: content, encoding: .utf8) else {
+            return "challenge must be UTF-8 (origin;nonce)"
+        }
+        guard let separator = text.firstIndex(of: ";") else {
+            return "challenge missing ; separator (expected origin;nonce)"
+        }
+        let challengeOrigin = String(text[text.startIndex..<separator])
+        let nonce = text[text.index(after: separator)...]
+        guard challengeOrigin == origin else {
+            return "challenge origin \(challengeOrigin) does not match request Origin \(origin)"
+        }
+        guard nonce.count >= ScsValues.nonceMinimumLength else {
+            return "challenge nonce too short (\(nonce.count) octets, 64 required)"
+        }
+        return nil
     }
-    guard let text = String(data: content, encoding: .utf8) else {
-      return "challenge must be UTF-8 (origin;nonce)"
-    }
-    guard let separator = text.firstIndex(of: ";") else {
-      return "challenge missing ; separator (expected origin;nonce)"
-    }
-    let challengeOrigin = String(text[text.startIndex..<separator])
-    let nonce = text[text.index(after: separator)...]
-    guard challengeOrigin == origin else {
-      return "challenge origin \(challengeOrigin) does not match request Origin \(origin)"
-    }
-    guard nonce.count >= ScsValues.nonceMinimumLength else {
-      return "challenge nonce too short (\(nonce.count) octets, 64 required)"
-    }
-    return nil
-  }
 }

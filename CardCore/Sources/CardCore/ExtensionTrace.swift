@@ -47,200 +47,200 @@ import Security
 /// record without writing, because the contactless field is too short to
 /// spend on a keychain round trip per APDU.
 public enum ExtensionTrace {
-  /// Lines recorded in memory but not yet written to the shared item.
-  ///
-  /// `@unchecked Sendable` is sound because every access holds the lock:
-  /// CryptoTokenKit calls a token on its own threads and a slot-state
-  /// observation fires on another, so two writers are the ordinary case
-  /// rather than an exotic one.
-  internal final class Pending: @unchecked Sendable {
-    /// Serialises the threads that reach the waiting lines.
-    private let lock = NSLock()
+    /// Lines recorded in memory but not yet written to the shared item.
+    ///
+    /// `@unchecked Sendable` is sound because every access holds the lock:
+    /// CryptoTokenKit calls a token on its own threads and a slot-state
+    /// observation fires on another, so two writers are the ordinary case
+    /// rather than an exotic one.
+    internal final class Pending: @unchecked Sendable {
+        /// Serialises the threads that reach the waiting lines.
+        private let lock = NSLock()
 
-    /// The lines waiting to be written, oldest first.
-    private var lines: [String] = []
+        /// The lines waiting to be written, oldest first.
+        private var lines: [String] = []
 
-    /// Adds one line to the waiting set.
-    internal func record(_ line: String) {
-      lock.lock()
-      defer { lock.unlock() }
-      lines.append(line)
+        /// Adds one line to the waiting set.
+        internal func record(_ line: String) {
+            lock.lock()
+            defer { lock.unlock() }
+            lines.append(line)
+        }
+
+        /// Removes and returns everything waiting.
+        internal func drain() -> [String] {
+            lock.lock()
+            defer { lock.unlock() }
+            let drained = lines
+            lines.removeAll()
+            return drained
+        }
     }
 
-    /// Removes and returns everything waiting.
-    internal func drain() -> [String] {
-      lock.lock()
-      defer { lock.unlock() }
-      let drained = lines
-      lines.removeAll()
-      return drained
+    /// How large the stored trace may grow, in bytes.
+    ///
+    /// Big enough to hold several whole login attempts end to end, small
+    /// enough that reading and rewriting it stays cheap.
+    public static let maximumBytes: Int = 20_000
+
+    /// How much of the buffer a trim keeps: the newer half.
+    public static let survivingFraction: Int = 2
+
+    /// Keychain service the trace lives under.
+    private static let service: String = "fi.refineid.trace"
+
+    /// Single well-known account: one trace per device.
+    private static let account: String = "latest"
+
+    /// Cap on one line, so a single runaway message cannot displace the
+    /// whole trace.
+    private static let maximumLineLength: Int = 512
+
+    /// Separates two lines in the stored blob.
+    private static let separator: Character = "\n"
+
+    /// What a line may not contain: the blob is line-delimited, so a line
+    /// carrying its own delimiter could forge trace entries.
+    private static let forbidden: CharacterSet = .newlines
+
+    /// The lines recorded in this process but not yet written out.
+    private static let pending = Pending()
+
+    /// Appends one line and writes the buffer out immediately.
+    ///
+    /// Never throws and never reports: a diagnostic that can fail a caller
+    /// is a diagnostic that gets removed from the path it was meant to
+    /// watch. Use this everywhere the cost of a keychain round trip does
+    /// not matter, which is everywhere outside a live contactless field.
+    public static func append(_ line: String) {
+        Self.pending.record(Self.stamped(line))
+        Self.flush()
     }
-  }
 
-  /// How large the stored trace may grow, in bytes.
-  ///
-  /// Big enough to hold several whole login attempts end to end, small
-  /// enough that reading and rewriting it stays cheap.
-  public static let maximumBytes: Int = 20_000
-
-  /// How much of the buffer a trim keeps: the newer half.
-  public static let survivingFraction: Int = 2
-
-  /// Keychain service the trace lives under.
-  private static let service: String = "fi.refineid.trace"
-
-  /// Single well-known account: one trace per device.
-  private static let account: String = "latest"
-
-  /// Cap on one line, so a single runaway message cannot displace the
-  /// whole trace.
-  private static let maximumLineLength: Int = 512
-
-  /// Separates two lines in the stored blob.
-  private static let separator: Character = "\n"
-
-  /// What a line may not contain: the blob is line-delimited, so a line
-  /// carrying its own delimiter could forge trace entries.
-  private static let forbidden: CharacterSet = .newlines
-
-  /// The lines recorded in this process but not yet written out.
-  private static let pending = Pending()
-
-  /// Appends one line and writes the buffer out immediately.
-  ///
-  /// Never throws and never reports: a diagnostic that can fail a caller
-  /// is a diagnostic that gets removed from the path it was meant to
-  /// watch. Use this everywhere the cost of a keychain round trip does
-  /// not matter, which is everywhere outside a live contactless field.
-  public static func append(_ line: String) {
-    Self.pending.record(Self.stamped(line))
-    Self.flush()
-  }
-
-  /// Empties the trace, in memory and on the device.
-  ///
-  /// Every measurement starts from a known zero, or an old line reads as
-  /// if the new run had made it.
-  /// Answers with the keychain's own status, so a clear that did not
-  /// clear says why instead of looking like a button that does nothing.
-  @discardableResult
-  public static func clear() -> OSStatus {
-    _ = Self.pending.drain()
-    return SecItemDelete(Self.query() as CFDictionary)
-  }
-
-  /// Writes everything recorded so far into the shared item.
-  public static func flush() {
-    let recorded = Self.pending.drain()
-    guard !recorded.isEmpty else { return }
-    var buffer = Self.storedText() ?? ""
-    for line in recorded {
-      buffer += line + String(Self.separator)
+    /// Empties the trace, in memory and on the device.
+    ///
+    /// Every measurement starts from a known zero, or an old line reads as
+    /// if the new run had made it.
+    /// Answers with the keychain's own status, so a clear that did not
+    /// clear says why instead of looking like a button that does nothing.
+    @discardableResult
+    public static func clear() -> OSStatus {
+        _ = Self.pending.drain()
+        return SecItemDelete(Self.query() as CFDictionary)
     }
-    Self.write(Self.trimmed(buffer))
-  }
 
-  /// Records one line without paying for a keychain write.
-  ///
-  /// The contactless path has about two seconds of field for a whole
-  /// signature, and a keychain round trip per APDU spends it on the wrong
-  /// thing. Lines recorded this way reach the item at the next
-  /// ``append(_:)``, ``flush()`` or ``read()`` -- all of which happen once
-  /// the operation that produced them has ended.
-  public static func record(_ line: String) {
-    Self.pending.record(Self.stamped(line))
-  }
-
-  /// Every line currently held, oldest first.
-  ///
-  /// Flushes before reading, so a caller inside the writing process is
-  /// never shown a trace that is missing what it just recorded.
-  public static func read() -> [String] {
-    Self.flush()
-    guard let text = Self.storedText(), !text.isEmpty else { return [] }
-    return
-      text
-      .split(separator: Self.separator)
-      .map(String.init)
-  }
-
-  /// The tail of `buffer` that fits the cap, cut on line boundaries.
-  ///
-  /// The rule, and not the keychain around it, is what can be wrong here,
-  /// so it is a pure function: a test exercises this directly, which it
-  /// could not do through storage that needs an entitlement.
-  public static func trimmed(_ buffer: String) -> String {
-    var text = buffer
-    while text.utf8.count > Self.maximumBytes {
-      let lines = text.split(separator: Self.separator, omittingEmptySubsequences: false)
-      guard lines.count > 1 else { break }
-      text =
-        lines
-        .suffix(max(1, lines.count / Self.survivingFraction))
-        .joined(separator: String(Self.separator))
+    /// Writes everything recorded so far into the shared item.
+    public static func flush() {
+        let recorded = Self.pending.drain()
+        guard !recorded.isEmpty else { return }
+        var buffer = Self.storedText() ?? ""
+        for line in recorded {
+            buffer += line + String(Self.separator)
+        }
+        Self.write(Self.trimmed(buffer))
     }
-    return text
-  }
 
-  /// Item coordinates shared by every operation.
-  ///
-  /// The accessibility attribute is deliberately absent here: it belongs
-  /// on the write, and a search that filtered on it would miss an item
-  /// written under any other policy instead of replacing it.
-  private static func query() -> [String: Any] {
-    [
-      kSecClass as String: kSecClassGenericPassword,
-      kSecAttrService as String: Self.service,
-      kSecAttrAccount as String: Self.account,
-      kSecUseDataProtectionKeychain as String: KeychainPlatform.usesDataProtection,
-      kSecAttrSynchronizable as String: false,
-    ]
-  }
-
-  /// When a line was written, to the millisecond.
-  ///
-  /// Millisecond precision is the point of the stamp: two signatures
-  /// inside the same second are the ordinary case on a TLS handshake, and
-  /// a trace that cannot tell them apart cannot say which one failed. A
-  /// fresh formatter per call -- `ISO8601DateFormatter` is not `Sendable`
-  /// and the line volume is far too low for the cost to register.
-  private static func stamp() -> String {
-    let formatter = ISO8601DateFormatter()
-    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-    return formatter.string(from: Date())
-  }
-
-  /// One line stamped, flattened onto a single line, and clamped.
-  private static func stamped(_ line: String) -> String {
-    let flattened = line.components(separatedBy: Self.forbidden).joined(separator: " ")
-    return Self.stamp() + " " + String(flattened.prefix(Self.maximumLineLength))
-  }
-
-  /// The stored blob, or nil when nothing has been traced yet.
-  private static func storedText() -> String? {
-    var search = Self.query()
-    search[kSecReturnData as String] = true
-    search[kSecMatchLimit as String] = kSecMatchLimitOne
-    var item: CFTypeRef?
-    guard SecItemCopyMatching(search as CFDictionary, &item) == errSecSuccess,
-      let data = item as? Data
-    else {
-      return nil
+    /// Records one line without paying for a keychain write.
+    ///
+    /// The contactless path has about two seconds of field for a whole
+    /// signature, and a keychain round trip per APDU spends it on the wrong
+    /// thing. Lines recorded this way reach the item at the next
+    /// ``append(_:)``, ``flush()`` or ``read()`` -- all of which happen once
+    /// the operation that produced them has ended.
+    public static func record(_ line: String) {
+        Self.pending.record(Self.stamped(line))
     }
-    return String(data: data, encoding: .utf8)
-  }
 
-  /// Replaces the stored blob, creating the item when there is none.
-  private static func write(_ text: String) {
-    let data = Data(text.utf8)
-    let updated = SecItemUpdate(
-      Self.query() as CFDictionary,
-      [kSecValueData as String: data] as CFDictionary
-    )
-    guard updated == errSecItemNotFound else { return }
-    var insert = Self.query()
-    insert[kSecValueData as String] = data
-    insert[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-    SecItemAdd(insert as CFDictionary, nil)
-  }
+    /// Every line currently held, oldest first.
+    ///
+    /// Flushes before reading, so a caller inside the writing process is
+    /// never shown a trace that is missing what it just recorded.
+    public static func read() -> [String] {
+        Self.flush()
+        guard let text = Self.storedText(), !text.isEmpty else { return [] }
+        return
+            text
+            .split(separator: Self.separator)
+            .map(String.init)
+    }
+
+    /// The tail of `buffer` that fits the cap, cut on line boundaries.
+    ///
+    /// The rule, and not the keychain around it, is what can be wrong here,
+    /// so it is a pure function: a test exercises this directly, which it
+    /// could not do through storage that needs an entitlement.
+    public static func trimmed(_ buffer: String) -> String {
+        var text = buffer
+        while text.utf8.count > Self.maximumBytes {
+            let lines = text.split(separator: Self.separator, omittingEmptySubsequences: false)
+            guard lines.count > 1 else { break }
+            text =
+                lines
+                .suffix(max(1, lines.count / Self.survivingFraction))
+                .joined(separator: String(Self.separator))
+        }
+        return text
+    }
+
+    /// Item coordinates shared by every operation.
+    ///
+    /// The accessibility attribute is deliberately absent here: it belongs
+    /// on the write, and a search that filtered on it would miss an item
+    /// written under any other policy instead of replacing it.
+    private static func query() -> [String: Any] {
+        [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: Self.service,
+            kSecAttrAccount as String: Self.account,
+            kSecUseDataProtectionKeychain as String: KeychainPlatform.usesDataProtection,
+            kSecAttrSynchronizable as String: false
+        ]
+    }
+
+    /// When a line was written, to the millisecond.
+    ///
+    /// Millisecond precision is the point of the stamp: two signatures
+    /// inside the same second are the ordinary case on a TLS handshake, and
+    /// a trace that cannot tell them apart cannot say which one failed. A
+    /// fresh formatter per call -- `ISO8601DateFormatter` is not `Sendable`
+    /// and the line volume is far too low for the cost to register.
+    private static func stamp() -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.string(from: Date())
+    }
+
+    /// One line stamped, flattened onto a single line, and clamped.
+    private static func stamped(_ line: String) -> String {
+        let flattened = line.components(separatedBy: Self.forbidden).joined(separator: " ")
+        return Self.stamp() + " " + String(flattened.prefix(Self.maximumLineLength))
+    }
+
+    /// The stored blob, or nil when nothing has been traced yet.
+    private static func storedText() -> String? {
+        var search = Self.query()
+        search[kSecReturnData as String] = true
+        search[kSecMatchLimit as String] = kSecMatchLimitOne
+        var item: CFTypeRef?
+        guard SecItemCopyMatching(search as CFDictionary, &item) == errSecSuccess,
+              let data = item as? Data
+        else {
+            return nil
+        }
+        return String(data: data, encoding: .utf8)
+    }
+
+    /// Replaces the stored blob, creating the item when there is none.
+    private static func write(_ text: String) {
+        let data = Data(text.utf8)
+        let updated = SecItemUpdate(
+            Self.query() as CFDictionary,
+            [kSecValueData as String: data] as CFDictionary
+        )
+        guard updated == errSecItemNotFound else { return }
+        var insert = Self.query()
+        insert[kSecValueData as String] = data
+        insert[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+        SecItemAdd(insert as CFDictionary, nil)
+    }
 }

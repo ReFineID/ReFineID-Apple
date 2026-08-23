@@ -8,15 +8,16 @@ import Foundation
 /// answers nothing. `busy` refuses a second concurrent operation without
 /// changing state, and `unknown_operation` answers a stale reference.
 internal enum ProtocolErrorMessage: Equatable {
-  case busy
-  case unknownOperation(operationIdentifier: Data?)
+    case busy
+    case unknownOperation(operationIdentifier: Data?)
 
-  internal var name: String {
-    switch self {
-    case .busy:
-      EngineErrorName.busy
-    case .unknownOperation:
-      EngineErrorName.unknownOperation
+    internal var name: String {
+        switch self {
+        case .busy:
+            EngineErrorName.busy
+
+        case .unknownOperation:
+            EngineErrorName.unknownOperation
+        }
     }
-  }
 }

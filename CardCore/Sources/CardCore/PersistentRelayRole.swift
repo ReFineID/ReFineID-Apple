@@ -3,12 +3,12 @@
 import Foundation
 
 #if canImport(MultipeerConnectivity)
-  @preconcurrency import MultipeerConnectivity
-  import os
+@preconcurrency import MultipeerConnectivity
+import os
 
-  /// Which side of the relay this process plays.
-  public enum PersistentRelayRole: Sendable {
+/// Which side of the relay this process plays.
+public enum PersistentRelayRole: Sendable {
     case cardHolder
     case host
-  }
+}
 #endif

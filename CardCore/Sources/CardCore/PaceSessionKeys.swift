@@ -22,49 +22,49 @@ import Foundation
 /// `Sources/ReFineIDBrowserKit/Card/Pace.swift`, whose fields were mutable
 /// `[UInt8]` with no length validation.
 public struct PaceSessionKeys: Equatable, Sendable {
-  /// The length in bytes of each derived key: an AES-256 key.
-  public static let keyLength: Int = PaceKeyDerivation.derivedKeyLength
+    /// The length in bytes of each derived key: an AES-256 key.
+    public static let keyLength: Int = PaceKeyDerivation.derivedKeyLength
 
-  /// The secure-messaging encryption key, Kenc.
-  internal let encryptionKey: Data
+    /// The secure-messaging encryption key, Kenc.
+    internal let encryptionKey: Data
 
-  /// The secure-messaging authentication key, Kmac.
-  internal let macKey: Data
+    /// The secure-messaging authentication key, Kmac.
+    internal let macKey: Data
 
-  /// The send-sequence counter the channel starts from: one AES block of
-  /// zeros, pre-incremented before the first command.
-  internal let initialSendSequenceCounter: Data
+    /// The send-sequence counter the channel starts from: one AES block of
+    /// zeros, pre-incremented before the first command.
+    internal let initialSendSequenceCounter: Data
 
-  /// Takes a pair of derived keys, refusing anything that is not an
-  /// AES-256 key length.
-  ///
-  /// The counter is not a parameter: it always starts at zero after a
-  /// successful PACE run, so making it settable would only make a
-  /// desynchronized channel representable.
-  public init?(encryptionKey: Data, macKey: Data) {
-    guard
-      encryptionKey.count == Self.keyLength,
-      macKey.count == Self.keyLength
-    else {
-      return nil
+    /// Takes a pair of derived keys, refusing anything that is not an
+    /// AES-256 key length.
+    ///
+    /// The counter is not a parameter: it always starts at zero after a
+    /// successful PACE run, so making it settable would only make a
+    /// desynchronized channel representable.
+    public init?(encryptionKey: Data, macKey: Data) {
+        guard
+            encryptionKey.count == Self.keyLength,
+            macKey.count == Self.keyLength
+        else {
+            return nil
+        }
+        self.encryptionKey = encryptionKey
+        self.macKey = macKey
+        self.initialSendSequenceCounter = Data(
+            repeating: 0,
+            count: PaceValues.sendSequenceCounterLength
+        )
     }
-    self.encryptionKey = encryptionKey
-    self.macKey = macKey
-    self.initialSendSequenceCounter = Data(
-      repeating: 0,
-      count: PaceValues.sendSequenceCounterLength
-    )
-  }
 
-  /// Constant-time equality over both keys.
-  ///
-  /// Written by hand rather than synthesized: `Data`'s own `==` returns as
-  /// soon as two bytes differ, and these operands are key material. Both
-  /// comparisons are made before they are combined, so the second is not
-  /// short-circuited away when the first already failed.
-  public static func == (lhs: Self, rhs: Self) -> Bool {
-    let encryptionMatches = ConstantTimeComparison.equal(lhs.encryptionKey, rhs.encryptionKey)
-    let macMatches = ConstantTimeComparison.equal(lhs.macKey, rhs.macKey)
-    return encryptionMatches && macMatches
-  }
+    /// Constant-time equality over both keys.
+    ///
+    /// Written by hand rather than synthesized: `Data`'s own `==` returns as
+    /// soon as two bytes differ, and these operands are key material. Both
+    /// comparisons are made before they are combined, so the second is not
+    /// short-circuited away when the first already failed.
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        let encryptionMatches = ConstantTimeComparison.equal(lhs.encryptionKey, rhs.encryptionKey)
+        let macMatches = ConstantTimeComparison.equal(lhs.macKey, rhs.macKey)
+        return encryptionMatches && macMatches
+    }
 }

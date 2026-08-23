@@ -13,46 +13,46 @@
 /// it - so callers hold the retry floor against the PUK's counter, not
 /// the target PIN's. No cache path exists.
 public struct Puk: ~Copyable {
-  /// Shortest PUK on the supported cards: seven-digit activation PUKs
-  /// exist in the field.
-  public static let minimumDigitCount: Int = 7
+    /// Shortest PUK on the supported cards: seven-digit activation PUKs
+    /// exist in the field.
+    public static let minimumDigitCount: Int = 7
 
-  /// Longest PUK on the supported cards.
-  public static let maximumDigitCount: Int = 8
+    /// Longest PUK on the supported cards.
+    public static let maximumDigitCount: Int = 8
 
-  private let store: ZeroizingDigitStore
+    private let store: ZeroizingDigitStore
 
-  /// Validates and takes ownership of the entered digits.
-  ///
-  /// Refuses any input that is not 7-8 ASCII digits; there is no other
-  /// way to construct a `Puk`.
-  public init?(digits: String) {
-    guard
-      let digitStore = CredentialDigits.validated(
-        digits,
-        minimumCount: Self.minimumDigitCount,
-        maximumCount: Self.maximumDigitCount
-      )
-    else {
-      return nil
+    /// Validates and takes ownership of the entered digits.
+    ///
+    /// Refuses any input that is not 7-8 ASCII digits; there is no other
+    /// way to construct a `Puk`.
+    public init?(digits: String) {
+        guard
+            let digitStore = CredentialDigits.validated(
+                digits,
+                minimumCount: Self.minimumDigitCount,
+                maximumCount: Self.maximumDigitCount
+            )
+        else {
+            return nil
+        }
+        self.store = digitStore
     }
-    self.store = digitStore
-  }
 
-  /// Non-reversible fingerprint of this PUK bound to one card and the
-  /// PUK role, for the rejected-PIN memory.
-  ///
-  /// Reading the fingerprint does not consume the value: it is not a
-  /// transmission.
-  public borrowing func fingerprint(boundTo serial: TokenSerial) -> PinFingerprint {
-    PinFingerprint.compute(digits: store, serial: serial, role: .puk)
-  }
+    /// Non-reversible fingerprint of this PUK bound to one card and the
+    /// PUK role, for the rejected-PIN memory.
+    ///
+    /// Reading the fingerprint does not consume the value: it is not a
+    /// transmission.
+    public borrowing func fingerprint(boundTo serial: TokenSerial) -> PinFingerprint {
+        PinFingerprint.compute(digits: store, serial: serial, role: .puk)
+    }
 
-  /// Consumes this PUK for exactly one card command.
-  ///
-  /// After this call the value no longer exists; a retry, replay, or
-  /// resend needs a fresh user entry by construction.
-  public consuming func consumeForSingleTransmission() -> PukTransmission {
-    PukTransmission(store: store)
-  }
+    /// Consumes this PUK for exactly one card command.
+    ///
+    /// After this call the value no longer exists; a retry, replay, or
+    /// resend needs a fresh user entry by construction.
+    public consuming func consumeForSingleTransmission() -> PukTransmission {
+        PukTransmission(store: store)
+    }
 }

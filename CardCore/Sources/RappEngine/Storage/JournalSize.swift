@@ -4,7 +4,7 @@ import Foundation
 
 /// Sizes the specification fixes for journalled identifiers.
 internal enum JournalSize {
-  internal static let sessionIdentifier = 16
-  internal static let operationIdentifier = 16
-  internal static let requestHash = 32
+    internal static let sessionIdentifier = 16
+    internal static let operationIdentifier = 16
+    internal static let requestHash = 32
 }

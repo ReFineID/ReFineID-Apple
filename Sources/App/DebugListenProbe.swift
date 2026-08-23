@@ -2,21 +2,20 @@
 
 #if DEBUG
 
-  import CardCore
-  import Foundation
+import CardCore
+import Foundation
 
-  /// Answers whether this device can be dialled at all.
-  ///
-  /// The requester's half of the relay is a listener, and a listener that
-  /// reports itself ready while its port refuses connections is
-  /// indistinguishable, from the other device, from a peer that is not
-  /// there. This opens one, dials it from this same device, and says what
-  /// happened -- so a refusal on the network can be told apart from a
-  /// listener that never really opened.
-  ///
-  /// DEBUG only.
-  internal enum DebugListenProbe {
-
+/// Answers whether this device can be dialled at all.
+///
+/// The requester's half of the relay is a listener, and a listener that
+/// reports itself ready while its port refuses connections is
+/// indistinguishable, from the other device, from a peer that is not
+/// there. This opens one, dials it from this same device, and says what
+/// happened -- so a refusal on the network can be told apart from a
+/// listener that never really opened.
+///
+/// DEBUG only.
+internal enum DebugListenProbe {
     // MARK: Static Properties
 
     private static let bindAttempts = 50
@@ -31,55 +30,55 @@
 
     /// Opens a listener, dials it, and reports what each side saw.
     internal static func run() async -> DebugModeReport {
-      let arrivals = DebugProbeTrail()
-      let listener = StreamRelayListener { event in
-        Task { await arrivals.record(String(describing: event)) }
-      }
-      listener.start(displayName: "ReFineID listen probe")
-      defer { listener.cancel() }
-
-      var bound: UInt16?
-      for _ in 0..<bindAttempts where bound == nil {
-        if let port = listener.port, port != 0 {
-          bound = port
-        } else {
-          try? await Task.sleep(for: bindPause)
+        let arrivals = DebugProbeTrail()
+        let listener = StreamRelayListener { event in
+            Task { await arrivals.record(String(describing: event)) }
         }
-      }
-      guard let port = bound else {
-        return DebugModeReport(
-          lines: ["listen-probe: never bound a port", "listen-probe: " + listener.state],
-          succeeded: false)
-      }
+        listener.start(displayName: "ReFineID listen probe")
+        defer { listener.cancel() }
 
-      var lines = ["listen-probe: bound port " + String(port)]
-      lines.append("listen-probe: endpoints " + endpointSummary(port: port))
+        var bound: UInt16?
+        for _ in 0..<bindAttempts where bound == nil {
+            if let port = listener.port, port != 0 {
+                bound = port
+            } else {
+                try? await Task.sleep(for: bindPause)
+            }
+        }
+        guard let port = bound else {
+            return DebugModeReport(
+                lines: ["listen-probe: never bound a port", "listen-probe: " + listener.state],
+                succeeded: false)
+        }
 
-      let dialer = StreamRelaySession(
-        endpointLiterals: ["127.0.0.1:" + String(port)],
-        preamble: greeting
-      ) { event in
-        Task { await arrivals.record("dialer " + String(describing: event)) }
-      }
-      dialer.start()
-      defer { dialer.cancel() }
+        var lines = ["listen-probe: bound port " + String(port)]
+        lines.append("listen-probe: endpoints " + endpointSummary(port: port))
 
-      for _ in 0..<dialAttempts {
-        if await arrivals.contains("frame") { break }
-        try? await Task.sleep(for: dialPause)
-      }
+        let dialer = StreamRelaySession(
+            endpointLiterals: ["127.0.0.1:" + String(port)],
+            preamble: greeting
+        ) { event in
+            Task { await arrivals.record("dialer " + String(describing: event)) }
+        }
+        dialer.start()
+        defer { dialer.cancel() }
 
-      let seen = await arrivals.summary
-      lines.append("listen-probe: listener " + listener.state)
-      lines.append("listen-probe: saw " + seen)
-      return DebugModeReport(lines: lines, succeeded: await arrivals.contains("frame"))
+        for _ in 0..<dialAttempts {
+            if await arrivals.contains("frame") { break }
+            try? await Task.sleep(for: dialPause)
+        }
+
+        let seen = await arrivals.summary
+        lines.append("listen-probe: listener " + listener.state)
+        lines.append("listen-probe: saw " + seen)
+        return DebugModeReport(lines: lines, succeeded: await arrivals.contains("frame"))
     }
 
     /// The addresses this device would advertise for `port`.
     private static func endpointSummary(port: UInt16) -> String {
-      let endpoints = StreamRelayLocalEndpoints.endpoints(port: port)
-      return endpoints.isEmpty ? "none" : endpoints.joined(separator: " ")
+        let endpoints = StreamRelayLocalEndpoints.endpoints(port: port)
+        return endpoints.isEmpty ? "none" : endpoints.joined(separator: " ")
     }
-  }
+}
 
 #endif

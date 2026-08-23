@@ -8,9 +8,9 @@ import Foundation
 /// frame that fails to decrypt cannot be attributed to the paired peer, while
 /// one that decrypts and then breaks the protocol can.
 internal enum RappOpenFailure: Error, Equatable {
-  /// Decrypted, then nonconforming. The pairing ends.
-  case authenticatedProtocolViolation
+    /// Decrypted, then nonconforming. The pairing ends.
+    case authenticatedProtocolViolation
 
-  /// Not attributable to the peer. Close this session and nothing more.
-  case sessionIntegrityFailure
+    /// Not attributable to the peer. Close this session and nothing more.
+    case sessionIntegrityFailure
 }

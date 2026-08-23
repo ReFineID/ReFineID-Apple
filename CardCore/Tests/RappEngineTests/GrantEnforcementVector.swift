@@ -4,15 +4,15 @@ import Foundation
 
 /// One profile checked against a grant set.
 internal struct GrantEnforcementVector: Decodable {
-  private enum CodingKeys: String, CodingKey {
-    case expected
-    case grantedProfiles = "granted_profiles"
-    case name
-    case requestedProfile = "requested_profile"
-  }
+    private enum CodingKeys: String, CodingKey {
+        case expected = "expected"
+        case grantedProfiles = "granted_profiles"
+        case name = "name"
+        case requestedProfile = "requested_profile"
+    }
 
-  internal let name: String
-  internal let grantedProfiles: [String]
-  internal let requestedProfile: String
-  internal let expected: String
+    internal let name: String
+    internal let grantedProfiles: [String]
+    internal let requestedProfile: String
+    internal let expected: String
 }

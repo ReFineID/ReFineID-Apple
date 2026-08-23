@@ -9,17 +9,17 @@ import Foundation
 /// diagnostics report can be checked against the plastic without translating
 /// an ATR hash or certificate fingerprint.
 public struct CardInstanceIdentifier: Equatable, Hashable, Sendable {
-  /// Namespace owned by the ReFineID token driver.
-  private static let prefix = "refineid-card-"
+    /// Namespace owned by the ReFineID token driver.
+    private static let prefix = "refineid-card-"
 
-  /// The public CTK instance identifier.
-  public let value: String
+    /// The public CTK instance identifier.
+    public let value: String
 
-  /// Builds the public identifier from a supported FINEID token serial.
-  public init?(tokenSerial: TokenSerial) {
-    guard let printed = PrintedCardSerial(tokenSerial: tokenSerial) else {
-      return nil
+    /// Builds the public identifier from a supported FINEID token serial.
+    public init?(tokenSerial: TokenSerial) {
+        guard let printed = PrintedCardSerial(tokenSerial: tokenSerial) else {
+            return nil
+        }
+        self.value = Self.prefix + printed.value.lowercased()
     }
-    self.value = Self.prefix + printed.value.lowercased()
-  }
 }

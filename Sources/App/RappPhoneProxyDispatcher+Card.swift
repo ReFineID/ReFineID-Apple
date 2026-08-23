@@ -1,89 +1,90 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
 #if REFINEID_LOCAL_CARD && os(iOS) && REFINEID_REMOTE_CARD
-  import CardCore
-  import Foundation
+import CardCore
+import Foundation
 
-  /// What the dispatcher asks of the card, and what it answers without one.
-  extension RappPhoneProxyDispatcher {
-
+/// What the dispatcher asks of the card, and what it answers without one.
+extension RappPhoneProxyDispatcher {
     internal func executeSafeRead(
-      operationID: Data,
-      operation: RappOperationDriver.Operation,
-      coordinator: RappConnectionCoordinator
+        operationID: Data,
+        operation: RappOperationDriver.Operation,
+        coordinator: RappConnectionCoordinator
     ) async {
-      switch operation.kind {
-      case .inspectCard:
-        await inspect(operationID: operationID, coordinator: coordinator)
-      case .readIdentity:
-        await readIdentity(operationID: operationID, coordinator: coordinator)
-      case .readAuthenticationCertificate, .readSignatureCertificate:
-        // The authentication certificate is public and this device read it
-        // once already, while setting its own identity up. A peer asking
-        // for it is asking for something held here, so the card stays in
-        // the holder's pocket.
-        if operation.kind == .readAuthenticationCertificate,
-          let primed = PrimeStore.primedAuthenticationCertificates().first
-        {
-          await finishRead(
-            .result(primed),
-            operationID: operationID,
-            coordinator: coordinator)
-          return
+        switch operation.kind {
+        case .inspectCard:
+            await inspect(operationID: operationID, coordinator: coordinator)
+
+        case .readIdentity:
+            await readIdentity(operationID: operationID, coordinator: coordinator)
+
+        case .readAuthenticationCertificate, .readSignatureCertificate:
+            // The authentication certificate is public and this device read it
+            // once already, while setting its own identity up. A peer asking
+            // for it is asking for something held here, so the card stays in
+            // the holder's pocket.
+            if operation.kind == .readAuthenticationCertificate,
+               let primed = PrimeStore.primedAuthenticationCertificates().first {
+                await finishRead(
+                    .result(primed),
+                    operationID: operationID,
+                    coordinator: coordinator)
+                return
+            }
+            let accessNumber = CardCredentialStore.displayedCardAccessNumber()
+            let outcome = await RappCardExecutor.readCertificate(
+                cardAccessNumber: accessNumber,
+                signatureCertificate: operation.kind == .readSignatureCertificate
+            )
+            await finishRead(outcome, operationID: operationID, coordinator: coordinator)
+
+        case .browserAuthenticate, .signDocument:
+            await invalid(operationID, coordinator: coordinator)
         }
-        let accessNumber = CardCredentialStore.displayedCardAccessNumber()
-        let outcome = await RappCardExecutor.readCertificate(
-          cardAccessNumber: accessNumber,
-          signatureCertificate: operation.kind == .readSignatureCertificate
-        )
-        await finishRead(outcome, operationID: operationID, coordinator: coordinator)
-      case .browserAuthenticate, .signDocument:
-        await invalid(operationID, coordinator: coordinator)
-      }
     }
 
     internal func executeCardCommand(
-      operationID: Data,
-      operation: RappOperationDriver.Operation,
-      coordinator: RappConnectionCoordinator
+        operationID: Data,
+        operation: RappOperationDriver.Operation,
+        coordinator: RappConnectionCoordinator
     ) async {
-      guard
-        let keyProfile = operation.keyProfile,
-        let algorithm = operation.algorithm
-      else {
+        guard
+            let keyProfile = operation.keyProfile,
+            let algorithm = operation.algorithm
+        else {
+            #if DEBUG
+            print(
+                "[stream-holder] card command refused: profile \(operation.keyProfile != nil), "
+                    + "algorithm \(operation.algorithm != nil)")
+            fflush(stdout)
+            #endif
+            await invalid(operationID, coordinator: coordinator)
+            return
+        }
+        let accessNumber = CardCredentialStore.displayedCardAccessNumber()
         #if DEBUG
-          print(
-            "[stream-holder] card command refused: profile \(operation.keyProfile != nil), "
-              + "algorithm \(operation.algorithm != nil)")
-          fflush(stdout)
-        #endif
-        await invalid(operationID, coordinator: coordinator)
-        return
-      }
-      let accessNumber = CardCredentialStore.displayedCardAccessNumber()
-      #if DEBUG
         HolderTrace.say("card read starting: \(operation.kind)")
-      #endif
-      guard
-        let outcome = await signingOutcome(
-          operationID: operationID,
-          operation: operation,
-          accessNumber: accessNumber,
-          keyProfile: keyProfile,
-          algorithm: algorithm
-        )
-      else {
-        await invalid(operationID, coordinator: coordinator)
-        return
-      }
-      #if DEBUG
+        #endif
+        guard
+            let outcome = await signingOutcome(
+                operationID: operationID,
+                operation: operation,
+                accessNumber: accessNumber,
+                keyProfile: keyProfile,
+                algorithm: algorithm
+            )
+        else {
+            await invalid(operationID, coordinator: coordinator)
+            return
+        }
+        #if DEBUG
         HolderTrace.say("card read outcome: \(String(describing: outcome))")
-      #endif
-      await finishSignature(
-        outcome,
-        operationID: operationID,
-        coordinator: coordinator
-      )
+        #endif
+        await finishSignature(
+            outcome,
+            operationID: operationID,
+            coordinator: coordinator
+        )
     }
 
     /// What the card answered, or nothing when this operation is not one the
@@ -93,98 +94,102 @@
     /// is taken here and not before: an operation that never reaches the card
     /// leaves the PIN2 where it was.
     private func signingOutcome(
-      operationID: Data,
-      operation: RappOperationDriver.Operation,
-      accessNumber: String?,
-      keyProfile: RappOperationDriver.KeyProfile,
-      algorithm: RappOperationDriver.SignatureAlgorithm
+        operationID: Data,
+        operation: RappOperationDriver.Operation,
+        accessNumber: String?,
+        keyProfile: RappOperationDriver.KeyProfile,
+        algorithm: RappOperationDriver.SignatureAlgorithm
     ) async -> RappCardExecutor.Outcome? {
-      switch operation.kind {
-      case .browserAuthenticate:
-        return await RappCardExecutor.browserAuthentication(
-          cardAccessNumber: accessNumber,
-          pin1: nil,
-          keyProfile: keyProfile,
-          algorithm: algorithm,
-          digest: operation.digest
-        )
-      case .signDocument:
-        guard let pin2 = pin2ByOperation.removeValue(forKey: operationID) else {
-          return nil
+        switch operation.kind {
+        case .browserAuthenticate:
+            return await RappCardExecutor.browserAuthentication(
+                cardAccessNumber: accessNumber,
+                pin1: nil,
+                keyProfile: keyProfile,
+                algorithm: algorithm,
+                digest: operation.digest
+            )
+
+        case .signDocument:
+            guard let pin2 = pin2ByOperation.removeValue(forKey: operationID) else {
+                return nil
+            }
+            return await RappCardExecutor.signDocument(
+                cardAccessNumber: accessNumber,
+                pin2: pin2,
+                keyProfile: keyProfile,
+                algorithm: algorithm,
+                digest: operation.digest
+            )
+
+        case .inspectCard, .readIdentity, .readAuthenticationCertificate,
+             .readSignatureCertificate:
+            return nil
         }
-        return await RappCardExecutor.signDocument(
-          cardAccessNumber: accessNumber,
-          pin2: pin2,
-          keyProfile: keyProfile,
-          algorithm: algorithm,
-          digest: operation.digest
-        )
-      case .inspectCard, .readIdentity, .readAuthenticationCertificate,
-        .readSignatureCertificate:
-        return nil
-      }
     }
 
     private func inspect(
-      operationID: Data,
-      coordinator: RappConnectionCoordinator
+        operationID: Data,
+        coordinator: RappConnectionCoordinator
     ) async {
-      let accessNumber = CardCredentialStore.displayedCardAccessNumber()
-      switch await CardMaintenance.connectionSnapshot(
-        cardAccessNumber: accessNumber
-      ) {
-      case .connected(let snapshot):
-        guard let activation = snapshot.activationNeeds else {
-          await invalid(operationID, coordinator: coordinator)
-          return
+        let accessNumber = CardCredentialStore.displayedCardAccessNumber()
+        switch await CardMaintenance.connectionSnapshot(
+            cardAccessNumber: accessNumber
+        ) {
+        case .connected(let snapshot):
+            guard let activation = snapshot.activationNeeds else {
+                await invalid(operationID, coordinator: coordinator)
+                return
+            }
+            do {
+                try await coordinator.completeInspection(
+                    operationID: operationID,
+                    pin1Factory: activation.pin1,
+                    pin2Factory: activation.pin2,
+                    pin1Attempts: attempts(snapshot.report?.pin1),
+                    pin2Attempts: attempts(snapshot.report?.pin2),
+                    pukAttempts: attempts(snapshot.report?.puk)
+                )
+            } catch {
+                await coordinator.close()
+            }
+
+        case .wrongCardAccessNumber:
+            CardCredentialStore.forgetAll()
+            await requireExplicitReconnect()
+            try? await coordinator.credentialRejected(operationID: operationID)
+
+        case .failed:
+            try? await coordinator.cardRemovedBeforeTransmit(operationID: operationID)
         }
-        do {
-          try await coordinator.completeInspection(
-            operationID: operationID,
-            pin1Factory: activation.pin1,
-            pin2Factory: activation.pin2,
-            pin1Attempts: attempts(snapshot.report?.pin1),
-            pin2Attempts: attempts(snapshot.report?.pin2),
-            pukAttempts: attempts(snapshot.report?.puk)
-          )
-        } catch {
-          await coordinator.close()
-        }
-      case .wrongCardAccessNumber:
-        CardCredentialStore.forgetAll()
-        await requireExplicitReconnect()
-        try? await coordinator.credentialRejected(operationID: operationID)
-      case .failed:
-        try? await coordinator.cardRemovedBeforeTransmit(operationID: operationID)
-      }
     }
 
     private func readIdentity(
-      operationID: Data,
-      coordinator: RappConnectionCoordinator
+        operationID: Data,
+        coordinator: RappConnectionCoordinator
     ) async {
-      let accessNumber = CardCredentialStore.displayedCardAccessNumber()
-      let outcome = await RappCardExecutor.readCertificate(
-        cardAccessNumber: accessNumber,
-        signatureCertificate: false
-      )
-      guard case .result(let der) = outcome,
-        let facts = CertificateFacts(der: der),
-        let name = DistinguishedName.personalName(inName: facts.subjectName)
-          ?? DistinguishedName.commonName(inName: facts.subjectName)
-      else {
-        await finishRead(outcome, operationID: operationID, coordinator: coordinator)
-        return
-      }
-      do {
-        try await coordinator.completeIdentity(
-          operationID: operationID,
-          displayName: name,
-          personID: DistinguishedName.identifier(inName: facts.subjectName) ?? ""
+        let accessNumber = CardCredentialStore.displayedCardAccessNumber()
+        let outcome = await RappCardExecutor.readCertificate(
+            cardAccessNumber: accessNumber,
+            signatureCertificate: false
         )
-      } catch {
-        await coordinator.close()
-      }
+        guard case .result(let der) = outcome,
+              let facts = CertificateFacts(der: der),
+              let name = DistinguishedName.personalName(inName: facts.subjectName)
+                ?? DistinguishedName.commonName(inName: facts.subjectName)
+        else {
+            await finishRead(outcome, operationID: operationID, coordinator: coordinator)
+            return
+        }
+        do {
+            try await coordinator.completeIdentity(
+                operationID: operationID,
+                displayName: name,
+                personID: DistinguishedName.identifier(inName: facts.subjectName) ?? ""
+            )
+        } catch {
+            await coordinator.close()
+        }
     }
-  }
+}
 #endif

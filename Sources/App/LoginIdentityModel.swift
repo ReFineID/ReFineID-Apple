@@ -2,48 +2,48 @@
 
 #if os(macOS)
 
-  import CardCore
-  import CryptoTokenKit
-  import os.log
-  import SwiftUI
+import CardCore
+import CryptoTokenKit
+import os.log
+import SwiftUI
 
-  /// Whether the system has a ReFineID login identity to offer right now.
-  ///
-  /// Identity availability comes exclusively from token events; this model
-  /// never polls the card. The earlier failure mode was an event-engine bug
-  /// that repeatedly rebuilt watchers and queried state, continuously
-  /// contending with `ctkd` until Safari authentication stalled. A separate
-  /// health model may perform one bounded retry-counter probe after a ready
-  /// event, but neither model loops while waiting for a card.
-  ///
-  /// `TKTokenWatcher` reports what `ctkd` has already published, so the
-  /// availability answer stays live: a card arriving or leaving moves it
-  /// without polling or anyone pressing refresh.
-  @MainActor
-  @Observable
-  internal final class LoginIdentityModel {
+/// Whether the system has a ReFineID login identity to offer right now.
+///
+/// Identity availability comes exclusively from token events; this model
+/// never polls the card. The earlier failure mode was an event-engine bug
+/// that repeatedly rebuilt watchers and queried state, continuously
+/// contending with `ctkd` until Safari authentication stalled. A separate
+/// health model may perform one bounded retry-counter probe after a ready
+/// event, but neither model loops while waiting for a card.
+///
+/// `TKTokenWatcher` reports what `ctkd` has already published, so the
+/// availability answer stays live: a card arriving or leaving moves it
+/// without polling or anyone pressing refresh.
+@MainActor
+@Observable
+internal final class LoginIdentityModel {
     /// What the login row can truthfully say.
     internal enum Availability: Equatable {
-      /// A card is in the reader but no identity is offered from it
-      /// - the state after a driver update, until the card is seen
-      /// again.
-      case cardWithoutIdentity
+        /// A card is in the reader but no identity is offered from it
+        /// - the state after a driver update, until the card is seen
+        /// again.
+        case cardWithoutIdentity
 
-      /// No card in any reader.
-      case noCard
+        /// No card in any reader.
+        case noCard
 
-      /// An identity is published and Safari can be offered it.
-      case ready
+        /// An identity is published and Safari can be offered it.
+        case ready
     }
 
     #if DEBUG
-      /// Watcher outcomes, in development builds only.
-      ///
-      /// Counts and booleans, never an identifier. A production
-      /// build writes no diagnostics.
-      private static let log = Logger(
+    /// Watcher outcomes, in development builds only.
+    ///
+    /// Counts and booleans, never an identifier. A production
+    /// build writes no diagnostics.
+    private static let log = Logger(
         subsystem: "fi.refineid.ReFineID", category: "login-identity"
-      )
+    )
     #endif
 
     /// The one instance, built once for the process.
@@ -64,8 +64,8 @@
     /// The credential entry the app itself publishes, which the
     /// system lists as a token without it ever being a card.
     private static let credentialEntryPrefix =
-      CardTokenNamespace.tokenPrefix
-      + DriverConfiguredCredentials.configurationInstanceID
+        CardTokenNamespace.tokenPrefix
+        + DriverConfiguredCredentials.configurationInstanceID
 
     /// Watches publication and removal.
     ///
@@ -91,8 +91,8 @@
     internal private(set) var generation = 0
 
     internal init() {
-      watcher.setInsertionHandler(Self.insertionHandler(for: self))
-      refresh()
+        watcher.setInsertionHandler(Self.insertionHandler(for: self))
+        refresh()
     }
 
     /// Builds a `ctkd` callback with no inherited main-actor isolation.
@@ -101,59 +101,59 @@
     /// the block inside this main-actor type makes Swift trap before the
     /// body can hop to the intended actor.
     nonisolated private static func insertionHandler(
-      for model: LoginIdentityModel
+        for model: LoginIdentityModel
     ) -> @Sendable (String) -> Void {
-      { [weak model] _ in
-        Task { @MainActor [weak model] in
-          model?.refresh()
+        { [weak model] _ in
+            Task { @MainActor [weak model] in
+                model?.refresh()
+            }
         }
-      }
     }
 
     /// The same, for a token going away.
     nonisolated private static func removalHandler(
-      for model: LoginIdentityModel
+        for model: LoginIdentityModel
     ) -> @Sendable (String) -> Void {
-      { [weak model] removed in
-        Task { @MainActor [weak model] in
-          model?.observed.remove(removed)
-          model?.refresh()
+        { [weak model] removed in
+            Task { @MainActor [weak model] in
+                model?.observed.remove(removed)
+                model?.refresh()
+            }
         }
-      }
     }
 
     /// The software shape of pulling the card: begin one session on
     /// each present card and end it at once.
     nonisolated private static func touchPresentCard() async {
-      guard let manager = TKSmartCardSlotManager.default else { return }
-      for name in manager.slotNames {
-        guard
-          let slot = manager.slotNamed(name),
-          slot.state == .validCard,
-          let card = slot.makeSmartCard()
-        else { continue }
-        // Ending a session that never began trips an assertion inside
-        // TKSmartCard, which raises an exception nothing catches and
-        // takes the process with it. The card can leave between the
-        // state read above and this call, so the session is ended only
-        // when the card says it opened one.
-        let offers = SmartCardProtocolNegotiation.offers(
-          answerToReset: slot.atr?.bytes)
-        for (offset, protocols) in offers.enumerated() {
-          card.allowedProtocols = protocols
-          do {
-            guard try await card.beginSession() else { break }
-            card.endSession()
-            break
-          } catch {
-            let hasNarrowerOffer = offset + 1 < offers.count
+        guard let manager = TKSmartCardSlotManager.default else { return }
+        for name in manager.slotNames {
             guard
-              hasNarrowerOffer,
-              SmartCardProtocolNegotiation.retries(after: error)
-            else { break }
-          }
+                let slot = manager.slotNamed(name),
+                slot.state == .validCard,
+                let card = slot.makeSmartCard()
+            else { continue }
+            // Ending a session that never began trips an assertion inside
+            // TKSmartCard, which raises an exception nothing catches and
+            // takes the process with it. The card can leave between the
+            // state read above and this call, so the session is ended only
+            // when the card says it opened one.
+            let offers = SmartCardProtocolNegotiation.offers(
+                answerToReset: slot.atr?.bytes)
+            for (offset, protocols) in offers.enumerated() {
+                card.allowedProtocols = protocols
+                do {
+                    guard try await card.beginSession() else { break }
+                    card.endSession()
+                    break
+                } catch {
+                    let hasNarrowerOffer = offset + 1 < offers.count
+                    guard
+                        hasNarrowerOffer,
+                        SmartCardProtocolNegotiation.retries(after: error)
+                    else { break }
+                }
+            }
         }
-      }
     }
 
     /// Re-reads what is published and keeps watching what is there.
@@ -164,26 +164,26 @@
     /// comes up - which at launch, with the card already in the
     /// reader, is exactly when the question is asked.
     internal func refresh() {
-      generation += 1
-      let listed = watcher.tokenIDs
-      // The credential entry and a displaced remote-card registration
-      // are both listed without a card being present, so neither may
-      // answer for one.
-      isReady = listed.contains { identifier in
-        CardTokenNamespace.owns(tokenIdentifier: identifier)
-          && !identifier.hasPrefix(Self.credentialEntryPrefix)
-          && !CardTokenNamespace.isDisplacedRemoteCardToken(tokenIdentifier: identifier)
-      }
-      #if DEBUG
+        generation += 1
+        let listed = watcher.tokenIDs
+        // The credential entry and a displaced remote-card registration
+        // are both listed without a card being present, so neither may
+        // answer for one.
+        isReady = listed.contains { identifier in
+            CardTokenNamespace.owns(tokenIdentifier: identifier)
+                && !identifier.hasPrefix(Self.credentialEntryPrefix)
+                && !CardTokenNamespace.isDisplacedRemoteCardToken(tokenIdentifier: identifier)
+        }
+        #if DEBUG
         Self.log.info(
-          "refresh: \(listed.count) listed, ready \(self.isReady)"
+            "refresh: \(listed.count) listed, ready \(self.isReady)"
         )
-      #endif
-      for identifier in watcher.tokenIDs
-      where CardTokenNamespace.owns(tokenIdentifier: identifier) {
-        guard observed.insert(identifier).inserted else { continue }
-        watcher.addRemovalHandler(Self.removalHandler(for: self), forTokenID: identifier)
-      }
+        #endif
+        for identifier in watcher.tokenIDs
+        where CardTokenNamespace.owns(tokenIdentifier: identifier) {
+            guard observed.insert(identifier).inserted else { continue }
+            watcher.addRemovalHandler(Self.removalHandler(for: self), forTokenID: identifier)
+        }
     }
 
     /// Performs one software "reinsertion" for this card appearance.
@@ -199,25 +199,25 @@
     /// appearance, so a card the driver genuinely cannot serve is
     /// not prodded forever.
     internal func attemptRecovery() async {
-      guard !attempted, recovery == nil, !isReady else { return }
-      attempted = true
-      let task = Task { await Self.touchPresentCard() }
-      recovery = task
-      await task.value
-      guard !task.isCancelled, !Task.isCancelled else { return }
-      recovery = nil
-      refresh()
+        guard !attempted, recovery == nil, !isReady else { return }
+        attempted = true
+        let task = Task { await Self.touchPresentCard() }
+        recovery = task
+        await task.value
+        guard !task.isCancelled, !Task.isCancelled else { return }
+        recovery = nil
+        refresh()
     }
 
     /// Stops any scheduled recovery; a card that left resets the
     /// once-per-appearance budget.
     internal func cancelRecovery(cardLeft: Bool) {
-      recovery?.cancel()
-      recovery = nil
-      if cardLeft {
-        attempted = false
-      }
+        recovery?.cancel()
+        recovery = nil
+        if cardLeft {
+            attempted = false
+        }
     }
-  }
+}
 
 #endif

@@ -2,5 +2,5 @@
 
 /// Why a stream loopback did not complete.
 internal enum StreamRelayTestFailure: Error {
-  case noFrame
+    case noFrame
 }

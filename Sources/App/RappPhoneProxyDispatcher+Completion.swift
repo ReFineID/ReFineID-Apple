@@ -1,117 +1,125 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
 #if REFINEID_LOCAL_CARD && os(iOS) && REFINEID_REMOTE_CARD
-  import CardCore
-  import Foundation
+import CardCore
+import Foundation
 
-  /// Completion, failure, and cancellation handling for one authenticated
-  /// phone-side RAPP connection.
-  extension RappPhoneProxyDispatcher {
-
+/// Completion, failure, and cancellation handling for one authenticated
+/// phone-side RAPP connection.
+extension RappPhoneProxyDispatcher {
     internal func finishRead(
-      _ outcome: RappNfcCardExecutor.Outcome,
-      operationID: Data,
-      coordinator: RappConnectionCoordinator
+        _ outcome: RappNfcCardExecutor.Outcome,
+        operationID: Data,
+        coordinator: RappConnectionCoordinator
     ) async {
-      if case .result(let bytes) = outcome {
-        try? await coordinator.completeCertificate(
-          operationID: operationID,
-          der: bytes
-        )
-      } else {
-        await finishFailure(outcome, operationID: operationID, coordinator: coordinator)
-      }
+        if case .result(let bytes) = outcome {
+            try? await coordinator.completeCertificate(
+                operationID: operationID,
+                der: bytes
+            )
+        } else {
+            await finishFailure(outcome, operationID: operationID, coordinator: coordinator)
+        }
     }
 
     internal func finishSignature(
-      _ outcome: RappNfcCardExecutor.Outcome,
-      operationID: Data,
-      coordinator: RappConnectionCoordinator
+        _ outcome: RappNfcCardExecutor.Outcome,
+        operationID: Data,
+        coordinator: RappConnectionCoordinator
     ) async {
-      if case .result(let signature) = outcome {
-        do {
-          #if DEBUG
-            HolderTrace.say("answering with \(signature.count) bytes")
-          #endif
-          try await coordinator.completeSignature(
-            operationID: operationID,
-            signature: signature
-          )
-          #if DEBUG
-            HolderTrace.say("answer accepted")
-          #endif
-        } catch {
-          #if DEBUG
-            HolderTrace.say("answer refused: \(String(describing: error))")
-          #endif
+        if case .result(let signature) = outcome {
+            do {
+                #if DEBUG
+                HolderTrace.say("answering with \(signature.count) bytes")
+                #endif
+                try await coordinator.completeSignature(
+                    operationID: operationID,
+                    signature: signature
+                )
+                #if DEBUG
+                HolderTrace.say("answer accepted")
+                #endif
+            } catch {
+                #if DEBUG
+                HolderTrace.say("answer refused: \(String(describing: error))")
+                #endif
+            }
+        } else {
+            await finishFailure(outcome, operationID: operationID, coordinator: coordinator)
         }
-      } else {
-        await finishFailure(outcome, operationID: operationID, coordinator: coordinator)
-      }
     }
 
     internal func finishFailure(
-      _ outcome: RappNfcCardExecutor.Outcome,
-      operationID: Data,
-      coordinator: RappConnectionCoordinator
+        _ outcome: RappNfcCardExecutor.Outcome,
+        operationID: Data,
+        coordinator: RappConnectionCoordinator
     ) async {
-      switch outcome {
-      case .result:
-        await coordinator.close()
-      case .rejected(let rejection):
-        switch rejection {
-        case .cardAccessNumber:
-          CardCredentialStore.forgetAll()
-        case .credential(.pin1, _):
-          CardCredentialStore.forgetPin1()
-        case .credential(.pin2, _), .credential(.puk, _):
-          break
+        switch outcome {
+        case .result:
+            await coordinator.close()
+
+        case .rejected(let rejection):
+            switch rejection {
+            case .cardAccessNumber:
+                CardCredentialStore.forgetAll()
+
+            case .credential(.pin1, _):
+                CardCredentialStore.forgetPin1()
+
+            case .credential(.pin2, _), .credential(.puk, _):
+                break
+            }
+            await requireExplicitReconnect()
+            try? await coordinator.credentialRejected(operationID: operationID)
+
+        case .refusedBeforeCredentialTransmit(let refusal):
+            switch refusal {
+            case .cardUnavailable:
+                try? await coordinator.cardRemovedBeforeTransmit(operationID: operationID)
+
+            case .credentialBlocked, .credentialInvalidated, .retryFloor:
+                try? await coordinator.retryRefused(operationID: operationID)
+
+            case .certificateUnavailable, .invalidCredential,
+                 .keyOrAlgorithmMismatch:
+                try? await coordinator.requestInvalidOrUnsupported(
+                    operationID: operationID)
+            }
+
+        case .completionAmbiguous:
+            await requireExplicitReconnect()
+            try? await coordinator.cardCompletionAmbiguous(operationID: operationID)
         }
-        await requireExplicitReconnect()
-        try? await coordinator.credentialRejected(operationID: operationID)
-      case .refusedBeforeCredentialTransmit(let refusal):
-        switch refusal {
-        case .cardUnavailable:
-          try? await coordinator.cardRemovedBeforeTransmit(operationID: operationID)
-        case .credentialBlocked, .credentialInvalidated, .retryFloor:
-          try? await coordinator.retryRefused(operationID: operationID)
-        case .certificateUnavailable, .invalidCredential,
-          .keyOrAlgorithmMismatch:
-          try? await coordinator.requestInvalidOrUnsupported(
-            operationID: operationID)
-        }
-      case .completionAmbiguous:
-        await requireExplicitReconnect()
-        try? await coordinator.cardCompletionAmbiguous(operationID: operationID)
-      }
     }
 
     internal func invalid(
-      _ operationID: Data,
-      coordinator: RappConnectionCoordinator
+        _ operationID: Data,
+        coordinator: RappConnectionCoordinator
     ) async {
-      try? await coordinator.requestInvalidOrUnsupported(operationID: operationID)
+        try? await coordinator.requestInvalidOrUnsupported(operationID: operationID)
     }
 
     internal func cancel(_ operationID: Data?) async {
-      guard let operationID else {
-        pin2ByOperation.removeAll(keepingCapacity: false)
-        await inbox.cancelAll()
-        return
-      }
-      pin2ByOperation.removeValue(forKey: operationID)
-      await inbox.cancel(operationID.base64EncodedString())
+        guard let operationID else {
+            pin2ByOperation.removeAll(keepingCapacity: false)
+            await inbox.cancelAll()
+            return
+        }
+        pin2ByOperation.removeValue(forKey: operationID)
+        await inbox.cancel(operationID.base64EncodedString())
     }
 
     internal func attempts(_ outcome: RetryProbeOutcome?) -> UInt8? {
-      switch outcome {
-      case .remaining(let count):
-        count.attemptsRemaining
-      case .locked:
-        0
-      case .invalidated, .noInformation, .other, .verified, nil:
-        nil
-      }
+        switch outcome {
+        case .remaining(let count):
+            count.attemptsRemaining
+
+        case .locked:
+            0
+
+        case .invalidated, .noInformation, .other, .verified, nil:
+            nil
+        }
     }
-  }
+}
 #endif

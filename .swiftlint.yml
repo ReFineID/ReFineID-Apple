@@ -54,6 +54,11 @@
 #   Mutually exclusive with a kept rule:
 #     explicit_type_interface  directly contradicts redundant_type_annotation;
 #                          we keep the idiomatic rule (let inference work)
+#     redundant_string_enum_value  directly contradicts explicit_enum_raw_value
+#                          (and raw_value_for_camel_cased_codable_enum): a
+#                          String case whose raw value equals its name is
+#                          what those rules require. We keep the explicit
+#                          form so protocol wire values stay visible.
 #
 #   Counterproductive:
 #     required_deinit      a leak-debugging rule; forcing an empty deinit on
@@ -145,6 +150,7 @@ disabled_rules:
   - opening_brace
   - closure_parameter_position
   - trailing_comma
+  - redundant_string_enum_value
 
 opt_in_rules:
   - accessibility_label_for_image

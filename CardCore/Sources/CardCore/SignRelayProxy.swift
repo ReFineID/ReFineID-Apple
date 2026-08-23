@@ -12,54 +12,54 @@ import Foundation
 /// This works on payloads rather than frames: the session owns the cipher,
 /// and a second owner of it is a second place for the two to disagree.
 public actor SignRelayProxy {
-  /// Performs one request against the card.
-  public typealias Perform = @Sendable (PersistentRelayMessage) async -> PersistentRelayMessage
+    /// Performs one request against the card.
+    public typealias Perform = @Sendable (PersistentRelayMessage) async -> PersistentRelayMessage
 
-  private let perform: Perform
-  private let journal: (any SignRelayJournal)?
-  private var answered: [UUID: PersistentRelayMessage] = [:]
-  private var running: Set<UUID> = []
+    private let perform: Perform
+    private let journal: (any SignRelayJournal)?
+    private var answered: [UUID: PersistentRelayMessage] = [:]
+    private var running: Set<UUID> = []
 
-  /// Serves requests, performing each with `perform`.
-  ///
-  /// - Parameters:
-  ///   - journal: where answers outlive the process; without one they last
-  ///     only as long as this proxy does.
-  ///   - perform: reaches the card.
-  public init(journal: (any SignRelayJournal)? = nil, perform: @escaping Perform) {
-    self.journal = journal
-    self.perform = perform
-  }
-
-  /// Answers one request payload.
-  ///
-  /// A request already in flight is answered with nil rather than started a
-  /// second time.
-  ///
-  /// - Parameter payload: the peer's opened request.
-  /// - Returns: the answer's payload, or nil when the request is already
-  ///   being performed.
-  /// - Throws: when the payload is not a request this relay carries.
-  public func answer(to payload: Data) async throws -> Data? {
-    let request = try PersistentRelayMessage.decoded(payload)
-    let id = request.requestID
-    if let answer = try alreadyAnswered(id) {
-      return try answer.encoded()
+    /// Serves requests, performing each with `perform`.
+    ///
+    /// - Parameters:
+    ///   - journal: where answers outlive the process; without one they last
+    ///     only as long as this proxy does.
+    ///   - perform: reaches the card.
+    public init(journal: (any SignRelayJournal)? = nil, perform: @escaping Perform) {
+        self.journal = journal
+        self.perform = perform
     }
-    guard !running.contains(id) else { return nil }
-    running.insert(id)
-    let answer = await perform(request)
-    running.remove(id)
-    answered[id] = answer
-    try? journal?.record(answer, for: id)
-    return try answer.encoded()
-  }
 
-  /// What was already answered for this request, here or in the journal.
-  private func alreadyAnswered(_ id: UUID) throws -> PersistentRelayMessage? {
-    if let answer = answered[id] { return answer }
-    guard let journalled = try journal?.answer(for: id) else { return nil }
-    answered[id] = journalled
-    return journalled
-  }
+    /// Answers one request payload.
+    ///
+    /// A request already in flight is answered with nil rather than started a
+    /// second time.
+    ///
+    /// - Parameter payload: the peer's opened request.
+    /// - Returns: the answer's payload, or nil when the request is already
+    ///   being performed.
+    /// - Throws: when the payload is not a request this relay carries.
+    public func answer(to payload: Data) async throws -> Data? {
+        let request = try PersistentRelayMessage.decoded(payload)
+        let id = request.requestID
+        if let answer = try alreadyAnswered(id) {
+            return try answer.encoded()
+        }
+        guard !running.contains(id) else { return nil }
+        running.insert(id)
+        let answer = await perform(request)
+        running.remove(id)
+        answered[id] = answer
+        try? journal?.record(answer, for: id)
+        return try answer.encoded()
+    }
+
+    /// What was already answered for this request, here or in the journal.
+    private func alreadyAnswered(_ id: UUID) throws -> PersistentRelayMessage? {
+        if let answer = answered[id] { return answer }
+        guard let journalled = try journal?.answer(for: id) else { return nil }
+        answered[id] = journalled
+        return journalled
+    }
 }

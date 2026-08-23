@@ -4,13 +4,13 @@ import Foundation
 
 /// One encoding the decoder must refuse.
 internal struct RejectedCBORVector: Decodable {
-  private enum CodingKeys: String, CodingKey {
-    case encodedHex = "encoded_hex"
-    case error
-    case name
-  }
+    private enum CodingKeys: String, CodingKey {
+        case encodedHex = "encoded_hex"
+        case error = "error"
+        case name = "name"
+    }
 
-  internal let name: String
-  internal let encodedHex: String
-  internal let error: String
+    internal let name: String
+    internal let encodedHex: String
+    internal let error: String
 }

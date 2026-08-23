@@ -4,5 +4,5 @@ import Foundation
 
 /// Rejection of a field that failed its registered validation.
 internal enum MessageFieldError: Error, Equatable {
-  case invalidField(String)
+    case invalidField(String)
 }

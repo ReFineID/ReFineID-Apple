@@ -11,33 +11,33 @@ import Testing
 /// the expected physical transmit sequence, so these tests double as
 /// transmit-count checks.
 internal final class ScriptedChannel: CardChannel {
-  internal struct UnexpectedRequest: Error {}
+    internal struct UnexpectedRequest: Error {}
 
-  private var script: [(request: Data, response: Data)]
+    private var script: [(request: Data, response: Data)]
 
-  /// A scripted transport stands in for a reader: plain responses, plain
-  /// chunk.
-  internal var readChunkLength: ReadChunkLength {
-    .plain
-  }
-
-  /// True when every scripted exchange was consumed.
-  internal var isExhausted: Bool {
-    script.isEmpty
-  }
-
-  internal init(_ script: [(String, String)]) {
-    self.script = script.map { entry in
-      (request: WireHex.data(entry.0), response: WireHex.data(entry.1))
+    /// A scripted transport stands in for a reader: plain responses, plain
+    /// chunk.
+    internal var readChunkLength: ReadChunkLength {
+        .plain
     }
-  }
 
-  internal func transmit(_ payload: Data) throws -> Data {
-    guard let next = script.first, next.request == payload else {
-      Issue.record("unexpected transmit: \(payload.count) bytes")
-      throw UnexpectedRequest()
+    /// True when every scripted exchange was consumed.
+    internal var isExhausted: Bool {
+        script.isEmpty
     }
-    script.removeFirst()
-    return next.response
-  }
+
+    internal init(_ script: [(String, String)]) {
+        self.script = script.map { entry in
+            (request: WireHex.data(entry.0), response: WireHex.data(entry.1))
+        }
+    }
+
+    internal func transmit(_ payload: Data) throws -> Data {
+        guard let next = script.first, next.request == payload else {
+            Issue.record("unexpected transmit: \(payload.count) bytes")
+            throw UnexpectedRequest()
+        }
+        script.removeFirst()
+        return next.response
+    }
 }

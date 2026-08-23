@@ -10,20 +10,20 @@
 import PackageDescription
 
 private let package = Package(
-  name: "PKCS11Bridge",
-  platforms: [
-    .macOS("26.0")
-  ],
-  products: [
-    .library(name: "PKCS11Bridge", type: .dynamic, targets: ["PKCS11Bridge"])
-  ],
-  targets: [
-    // The PKCS#11 C ABI: type/constant subset, all 68 entry-point
-    // prototypes, the exported function list, and stubs for the
-    // entry points the bridge does not implement.
-    .target(name: "CCryptoki"),
-    // The implemented entry points, exported with C names via @_cdecl.
-    .target(name: "PKCS11Bridge", dependencies: ["CCryptoki"]),
-    .testTarget(name: "PKCS11BridgeTests", dependencies: ["PKCS11Bridge", "CCryptoki"]),
-  ]
+    name: "PKCS11Bridge",
+    platforms: [
+        .macOS("26.0")
+    ],
+    products: [
+        .library(name: "PKCS11Bridge", type: .dynamic, targets: ["PKCS11Bridge"])
+    ],
+    targets: [
+        // The PKCS#11 C ABI: type/constant subset, all 68 entry-point
+        // prototypes, the exported function list, and stubs for the
+        // entry points the bridge does not implement.
+        .target(name: "CCryptoki"),
+        // The implemented entry points, exported with C names via @_cdecl.
+        .target(name: "PKCS11Bridge", dependencies: ["CCryptoki"]),
+        .testTarget(name: "PKCS11BridgeTests", dependencies: ["PKCS11Bridge", "CCryptoki"])
+    ]
 )

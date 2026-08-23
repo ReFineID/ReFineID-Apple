@@ -8,31 +8,31 @@ import Foundation
 /// protocol lets a peer say why in its own words, and a closed enumeration
 /// here could neither send nor accept what a conforming peer writes.
 internal struct CancelMessage: Equatable {
-  internal let reference: OperationReference
+    internal let reference: OperationReference
 
-  internal let reason: String?
+    internal let reason: String?
 
-  internal static func from(wireBody: [String: WireValue]) throws -> Self {
-    var body = wireBody
-    var decodedReason: String?
-    if let value = body.removeValue(forKey: "reason") {
-      guard case .text(let text) = value, EngineLabel.isValid(text) else {
-        throw CardOperationError.invalidField(field: "reason")
-      }
-      decodedReason = text
+    internal static func from(wireBody: [String: WireValue]) throws -> Self {
+        var body = wireBody
+        var decodedReason: String?
+        if let value = body.removeValue(forKey: "reason") {
+            guard case .text(let text) = value, EngineLabel.isValid(text) else {
+                throw CardOperationError.invalidField(field: "reason")
+            }
+            decodedReason = text
+        }
+        return Self(
+            reference: try OperationReference.from(wireBody: body), reason: decodedReason)
     }
-    return Self(
-      reference: try OperationReference.from(wireBody: body), reason: decodedReason)
-  }
 
-  /// The exact `operation.cancel` body, omitting an absent reason.
-  internal func wireBody() throws -> [String: WireValue] {
-    var body = reference.wireBody
-    guard let reason else { return body }
-    guard EngineLabel.isValid(reason) else {
-      throw CardOperationError.invalidField(field: "reason")
+    /// The exact `operation.cancel` body, omitting an absent reason.
+    internal func wireBody() throws -> [String: WireValue] {
+        var body = reference.wireBody
+        guard let reason else { return body }
+        guard EngineLabel.isValid(reason) else {
+            throw CardOperationError.invalidField(field: "reason")
+        }
+        body["reason"] = .text(reason)
+        return body
     }
-    body["reason"] = .text(reason)
-    return body
-  }
 }

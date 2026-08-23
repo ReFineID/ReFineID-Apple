@@ -4,8 +4,8 @@ import Foundation
 
 /// Sizes the specification fixes for operation identifiers.
 internal enum OperationSize {
-  internal static let operationIdentifier = 16
-  internal static let requestHash = 32
-  internal static let pairIdentifier = 16
-  internal static let sessionIdentifier = 16
+    internal static let operationIdentifier = 16
+    internal static let requestHash = 32
+    internal static let pairIdentifier = 16
+    internal static let sessionIdentifier = 16
 }

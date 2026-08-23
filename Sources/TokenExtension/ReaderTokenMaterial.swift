@@ -5,31 +5,31 @@ import Security
 
 /// Validated material needed to mint one reader-backed token.
 internal struct ReaderTokenMaterial {
-  /// Certificates and complete card serial read in one card session.
-  internal let identity: PublishedIdentity
+    /// Certificates and complete card serial read in one card session.
+    internal let identity: PublishedIdentity
 
-  /// CAN used when the reader reached the card over contactless.
-  internal let accessNumber: CardAccessNumber?
+    /// CAN used when the reader reached the card over contactless.
+    internal let accessNumber: CardAccessNumber?
 
-  /// Parsed authentication certificate.
-  internal let leaf: SecCertificate
+    /// Parsed authentication certificate.
+    internal let leaf: SecCertificate
 
-  /// Authentication key profile derived from the certificate.
-  internal let profile: CardKeyProfile
+    /// Authentication key profile derived from the certificate.
+    internal let profile: CardKeyProfile
 
-  /// Public authentication key used to verify every card signature.
-  internal let publicKey: SecKey
+    /// Public authentication key used to verify every card signature.
+    internal let publicKey: SecKey
 
-  /// Parsed qualified-signature certificate, when the card has one.
-  internal let signLeaf: SecCertificate?
+    /// Parsed qualified-signature certificate, when the card has one.
+    internal let signLeaf: SecCertificate?
 
-  /// Qualified key profile, when the sign leaf resolved to a
-  /// supported one.
-  internal let signProfile: CardKeyProfile?
+    /// Qualified key profile, when the sign leaf resolved to a
+    /// supported one.
+    internal let signProfile: CardKeyProfile?
 
-  /// Public qualified key used to verify every qualified signature.
-  internal let signPublicKey: SecKey?
+    /// Public qualified key used to verify every qualified signature.
+    internal let signPublicKey: SecKey?
 
-  /// Stable token identity derived from the printed card serial.
-  internal let instanceID: CardInstanceIdentifier
+    /// Stable token identity derived from the printed card serial.
+    internal let instanceID: CardInstanceIdentifier
 }

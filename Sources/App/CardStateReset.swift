@@ -14,119 +14,119 @@ private let millisecondsPerSecond: TimeInterval = 1_000
 /// for a stale CryptoTokenKit registration, not a request to erase card
 /// setup and force secret re-entry.
 internal enum CardStateReset {
-  /// One completed reset, including enough detail for diagnostics.
-  internal struct Outcome {
-    internal let lines: [String]
-    internal let succeeded: Bool
+    /// One completed reset, including enough detail for diagnostics.
+    internal struct Outcome {
+        internal let lines: [String]
+        internal let succeeded: Bool
 
-    internal var summary: String {
-      succeeded
-        ? String(localized: "ReFineID's Safari card identities were reset.")
-        : String(localized: "Some ReFineID Safari identity state could not be removed.")
-    }
-  }
-
-  /// Whether this device has any card or identity state to forget.
-  ///
-  /// Every lookup is passive. In particular, this does not enumerate
-  /// token keychain items or wake the built-in NFC slot merely to decide
-  /// whether a destructive button should be visible.
-  internal static func hasForgettableState() -> Bool {
-    let credentials = CardCredentialStore.contents()
-    return credentials.hasCardAccessNumber
-      || credentials.hasPin1
-      || PrimeStore.storedCount() > 0
-      || DriverConfiguredCredentials.identityTokenConfigurationCount() > 0
-      || !Self.registeredOurTokenIDs().isEmpty
-  }
-
-  /// Clears registrations, identity configurations, primes, and trace.
-  internal static func perform() -> Outcome {
-    var lines = ["=== reset ReFineID Safari identities ==="]
-    let registration = Self.unregisterOurTokens()
-    lines += registration.lines
-
-    let dropped = DriverConfiguredCredentials.dropIdentityTokenConfigurations()
-    lines.append("ReFineID identity configurations removed: \(dropped)")
-
-    PrimeStore.forgetAll()
-    lines.append("ReFineID prime store: cleared")
-
-    let revoked = Self.revokeEveryPairing()
-    lines.append("ReFineID pairings revoked: \(revoked)")
-
-    let traceStatus = ExtensionTrace.clear()
-    let traceCleared = traceStatus == errSecSuccess || traceStatus == errSecItemNotFound
-    lines.append(
-      traceCleared
-        ? "ReFineID extension trace: cleared"
-        : "ReFineID extension trace: clear failed (\(traceStatus))")
-    lines.append("Stored CAN and PIN 1: preserved")
-    lines.append("=== end ===")
-    return Outcome(
-      lines: lines,
-      succeeded: registration.succeeded && traceCleared)
-  }
-
-  /// Revokes every pairing this device holds, and returns how many.
-  ///
-  /// A pairing is state this device keeps about another, so a reset that
-  /// claims a known zero has to take them too. Leaving them behind was how
-  /// a device came to hold nine records for one peer, of which one answered.
-  private static func revokeEveryPairing() -> Int {
-    let vault = RappDeviceVault()
-    let pairIDs = (try? vault.activePairIDs()) ?? []
-    let now = UInt64(Date().timeIntervalSince1970 * millisecondsPerSecond)
-    var revoked = 0
-    for pairID in pairIDs {
-      guard (try? vault.revokePair(pairID: pairID, revokedAtMilliseconds: now)) != nil
-      else { continue }
-      RappPairNames.forget(pairID: pairID)
-      revoked += 1
-    }
-    try? vault.clearSelectedPair()
-    return revoked
-  }
-
-  /// Unregisters only token IDs issued by this app's CTK class.
-  private static func unregisterOurTokens() -> (
-    lines: [String],
-    succeeded: Bool
-  ) {
-    #if os(iOS)
-      guard #available(iOS 26.0, *) else {
-        return (["ReFineID Safari registrations: none"], true)
-      }
-      let manager = TKSmartCardTokenRegistrationManager.default
-      let ours = Self.registeredOurTokenIDs()
-      guard !ours.isEmpty else {
-        return (["ReFineID Safari registrations: none"], true)
-      }
-      var succeeded = true
-      let lines = ours.map { tokenID in
-        do {
-          try manager.unregisterSmartCard(tokenID: tokenID)
-          return "Unregistered \(tokenID)"
-        } catch {
-          succeeded = false
-          return "Could not unregister \(tokenID): \(error)"
+        internal var summary: String {
+            succeeded
+                ? String(localized: "ReFineID's Safari card identities were reset.")
+                : String(localized: "Some ReFineID Safari identity state could not be removed.")
         }
-      }
-      return (lines, succeeded)
-    #else
-      return (["ReFineID Safari registrations: not used on this platform"], true)
-    #endif
-  }
+    }
 
-  /// ReFineID registrations already known to CryptoTokenKit.
-  private static func registeredOurTokenIDs() -> [String] {
-    #if os(iOS)
-      guard #available(iOS 26.0, *) else { return [] }
-      return TKSmartCardTokenRegistrationManager.default.registeredSmartCardTokens
-        .filter(CardTokenNamespace.owns(tokenIdentifier:))
-        .sorted()
-    #else
-      return []
-    #endif
-  }
+    /// Whether this device has any card or identity state to forget.
+    ///
+    /// Every lookup is passive. In particular, this does not enumerate
+    /// token keychain items or wake the built-in NFC slot merely to decide
+    /// whether a destructive button should be visible.
+    internal static func hasForgettableState() -> Bool {
+        let credentials = CardCredentialStore.contents()
+        return credentials.hasCardAccessNumber
+            || credentials.hasPin1
+            || PrimeStore.storedCount() > 0
+            || DriverConfiguredCredentials.identityTokenConfigurationCount() > 0
+            || !Self.registeredOurTokenIDs().isEmpty
+    }
+
+    /// Clears registrations, identity configurations, primes, and trace.
+    internal static func perform() -> Outcome {
+        var lines = ["=== reset ReFineID Safari identities ==="]
+        let registration = Self.unregisterOurTokens()
+        lines += registration.lines
+
+        let dropped = DriverConfiguredCredentials.dropIdentityTokenConfigurations()
+        lines.append("ReFineID identity configurations removed: \(dropped)")
+
+        PrimeStore.forgetAll()
+        lines.append("ReFineID prime store: cleared")
+
+        let revoked = Self.revokeEveryPairing()
+        lines.append("ReFineID pairings revoked: \(revoked)")
+
+        let traceStatus = ExtensionTrace.clear()
+        let traceCleared = traceStatus == errSecSuccess || traceStatus == errSecItemNotFound
+        lines.append(
+            traceCleared
+                ? "ReFineID extension trace: cleared"
+                : "ReFineID extension trace: clear failed (\(traceStatus))")
+        lines.append("Stored CAN and PIN 1: preserved")
+        lines.append("=== end ===")
+        return Outcome(
+            lines: lines,
+            succeeded: registration.succeeded && traceCleared)
+    }
+
+    /// Revokes every pairing this device holds, and returns how many.
+    ///
+    /// A pairing is state this device keeps about another, so a reset that
+    /// claims a known zero has to take them too. Leaving them behind was how
+    /// a device came to hold nine records for one peer, of which one answered.
+    private static func revokeEveryPairing() -> Int {
+        let vault = RappDeviceVault()
+        let pairIDs = (try? vault.activePairIDs()) ?? []
+        let now = UInt64(Date().timeIntervalSince1970 * millisecondsPerSecond)
+        var revoked = 0
+        for pairID in pairIDs {
+            guard (try? vault.revokePair(pairID: pairID, revokedAtMilliseconds: now)) != nil
+            else { continue }
+            RappPairNames.forget(pairID: pairID)
+            revoked += 1
+        }
+        try? vault.clearSelectedPair()
+        return revoked
+    }
+
+    /// Unregisters only token IDs issued by this app's CTK class.
+    private static func unregisterOurTokens() -> (
+        lines: [String],
+        succeeded: Bool
+    ) {
+        #if os(iOS)
+        guard #available(iOS 26.0, *) else {
+            return (["ReFineID Safari registrations: none"], true)
+        }
+        let manager = TKSmartCardTokenRegistrationManager.default
+        let ours = Self.registeredOurTokenIDs()
+        guard !ours.isEmpty else {
+            return (["ReFineID Safari registrations: none"], true)
+        }
+        var succeeded = true
+        let lines = ours.map { tokenID in
+            do {
+                try manager.unregisterSmartCard(tokenID: tokenID)
+                return "Unregistered \(tokenID)"
+            } catch {
+                succeeded = false
+                return "Could not unregister \(tokenID): \(error)"
+            }
+        }
+        return (lines, succeeded)
+        #else
+        return (["ReFineID Safari registrations: not used on this platform"], true)
+        #endif
+    }
+
+    /// ReFineID registrations already known to CryptoTokenKit.
+    private static func registeredOurTokenIDs() -> [String] {
+        #if os(iOS)
+        guard #available(iOS 26.0, *) else { return [] }
+        return TKSmartCardTokenRegistrationManager.default.registeredSmartCardTokens
+            .filter(CardTokenNamespace.owns(tokenIdentifier:))
+            .sorted()
+        #else
+        return []
+        #endif
+    }
 }

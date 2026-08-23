@@ -7,7 +7,7 @@ import Foundation
 /// What one completed exchange left behind: both engines and the store, so a
 /// caller can inspect the durable trail the operation produced.
 internal struct HappyPath {
-  internal var proxy: ProxyOperationEngine
-  internal var requester: RequesterOperationEngine
-  internal var store: MemoryJournalStore
+    internal var proxy: ProxyOperationEngine
+    internal var requester: RequesterOperationEngine
+    internal var store: MemoryJournalStore
 }

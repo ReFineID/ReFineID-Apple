@@ -27,55 +27,55 @@ import Testing
 /// answer a suspected wrong password by getting slower.
 @Suite
 internal struct PaceAuthenticationTokenTests {
-  /// Tag bytes of the public-key data object, `7F49`.
-  private static let dataObjectTag: [UInt8] = [0x7F, 0x49]
+    /// Tag bytes of the public-key data object, `7F49`.
+    private static let dataObjectTag: [UInt8] = [0x7F, 0x49]
 
-  /// Inner length the reference asserts: 111 bytes, short form.
-  private static let innerLength: UInt8 = 0x6F
+    /// Inner length the reference asserts: 111 bytes, short form.
+    private static let innerLength: UInt8 = 0x6F
 
-  /// DER tag for an object identifier.
-  private static let oidTag: UInt8 = 0x06
+    /// DER tag for an object identifier.
+    private static let oidTag: UInt8 = 0x06
 
-  /// Length of the PACE mechanism OID body.
-  private static let oidLength: UInt8 = 0x0A
+    /// Length of the PACE mechanism OID body.
+    private static let oidLength: UInt8 = 0x0A
 
-  /// Context tag carrying the elliptic-curve point.
-  private static let pointTag: UInt8 = 0x86
+    /// Context tag carrying the elliptic-curve point.
+    private static let pointTag: UInt8 = 0x86
 
-  /// Length of an uncompressed P-384 point: 97 bytes.
-  private static let pointLength: UInt8 = 0x61
+    /// Length of an uncompressed P-384 point: 97 bytes.
+    private static let pointLength: UInt8 = 0x61
 
-  /// SEC1 marker for an uncompressed point.
-  private static let uncompressedMarker: UInt8 = 0x04
+    /// SEC1 marker for an uncompressed point.
+    private static let uncompressedMarker: UInt8 = 0x04
 
-  /// Total encoded length: two tag bytes, one length byte, 111 inner.
-  private static let totalLength: Int = 3 + 111
+    /// Total encoded length: two tag bytes, one length byte, 111 inner.
+    private static let totalLength: Int = 3 + 111
 
-  @Test
-  internal func tokenMatchesTheReferenceEncoding() throws {
-    let token = try PaceDataObject.authenticationTokenInput(
-      for: BrainpoolP384r1.generator
-    )
-    let bytes = Array(token)
+    @Test
+    internal func tokenMatchesTheReferenceEncoding() throws {
+        let token = try PaceDataObject.authenticationTokenInput(
+            for: BrainpoolP384r1.generator
+        )
+        let bytes = Array(token)
 
-    #expect(bytes.count == Self.totalLength)
-    #expect(Array(bytes[0..<2]) == Self.dataObjectTag)
-    // Short form, not long form: 111 fits in one byte, and a card that
-    // was handed 81 6F would MAC something else entirely.
-    #expect(bytes[2] == Self.innerLength)
-    #expect(bytes[3] == Self.oidTag)
-    #expect(bytes[4] == Self.oidLength)
-    #expect(bytes[15] == Self.pointTag)
-    #expect(bytes[16] == Self.pointLength)
-    #expect(bytes[17] == Self.uncompressedMarker)
-  }
+        #expect(bytes.count == Self.totalLength)
+        #expect(Array(bytes[0..<2]) == Self.dataObjectTag)
+        // Short form, not long form: 111 fits in one byte, and a card that
+        // was handed 81 6F would MAC something else entirely.
+        #expect(bytes[2] == Self.innerLength)
+        #expect(bytes[3] == Self.oidTag)
+        #expect(bytes[4] == Self.oidLength)
+        #expect(bytes[15] == Self.pointTag)
+        #expect(bytes[16] == Self.pointLength)
+        #expect(bytes[17] == Self.uncompressedMarker)
+    }
 
-  @Test
-  internal func theOidBodySitsWhereTheCardExpectsIt() throws {
-    let token = try PaceDataObject.authenticationTokenInput(
-      for: BrainpoolP384r1.generator
-    )
-    let bytes = Array(token)
-    #expect(Array(bytes[5..<15]) == PaceValues.protocolOidBody)
-  }
+    @Test
+    internal func theOidBodySitsWhereTheCardExpectsIt() throws {
+        let token = try PaceDataObject.authenticationTokenInput(
+            for: BrainpoolP384r1.generator
+        )
+        let bytes = Array(token)
+        #expect(Array(bytes[5..<15]) == PaceValues.protocolOidBody)
+    }
 }

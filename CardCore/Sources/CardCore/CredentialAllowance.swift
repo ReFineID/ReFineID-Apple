@@ -10,20 +10,20 @@
 /// which is what makes the difference between a card whose PUK works
 /// once and one whose PUK keeps working.
 public enum CredentialAllowance: Equatable, Sendable {
-  /// This many uses remain.
-  case remaining(UInt8)
+    /// This many uses remain.
+    case remaining(UInt8)
 
-  /// The card puts no limit on this count.
-  case unlimited
+    /// The card puts no limit on this count.
+    case unlimited
 
-  /// Reads a usage-allowance byte.
-  internal static func usage(byte: UInt8) -> Self {
-    byte == FineidValues.usageUnlimited ? .unlimited : .remaining(byte)
-  }
+    /// Reads a usage-allowance byte.
+    internal static func usage(byte: UInt8) -> Self {
+        byte == FineidValues.usageUnlimited ? .unlimited : .remaining(byte)
+    }
 
-  /// Reads an unblocking-allowance byte, whose no-limit marker differs
-  /// from the usage one.
-  internal static func unblocking(byte: UInt8) -> Self {
-    byte == FineidValues.unblockingUnlimited ? .unlimited : .remaining(byte)
-  }
+    /// Reads an unblocking-allowance byte, whose no-limit marker differs
+    /// from the usage one.
+    internal static func unblocking(byte: UInt8) -> Self {
+        byte == FineidValues.unblockingUnlimited ? .unlimited : .remaining(byte)
+    }
 }

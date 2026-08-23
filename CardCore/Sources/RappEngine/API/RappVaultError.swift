@@ -12,17 +12,17 @@ import Foundation
 /// Deliberately free of backend strings and secrets: the engine never
 /// inspects storage itself, so these are the only ways a vault may refuse.
 public enum RappVaultError: Error, Equatable, Hashable, LocalizedError, Sendable {
-  /// Storage was unavailable or rejected the atomic operation.
-  case Unavailable
-  /// The identifier already names a stored record.
-  case IdentifierAlreadyUsed
-  /// No stored record carries the identifier.
-  case PairNotFound
+    /// Storage was unavailable or rejected the atomic operation.
+    case Unavailable
+    /// The identifier already names a stored record.
+    case IdentifierAlreadyUsed
+    /// No stored record carries the identifier.
+    case PairNotFound
 
-  /// The case name, for a caller that logs or displays the failure.
-  public var errorDescription: String? {
-    String(reflecting: self)
-  }
+    /// The case name, for a caller that logs or displays the failure.
+    public var errorDescription: String? {
+        String(reflecting: self)
+    }
 }
 
 // swiftlint:enable identifier_name sorted_enum_cases

@@ -14,23 +14,23 @@ import Foundation
 /// They are deliberately coarse: protocol internals and secrets never become
 /// interface strings.
 public enum RappBindingError: Error, Equatable, Hashable, LocalizedError, Sendable {
-  /// Caller-provided bytes or registry values were invalid.
-  case InvalidInput
-  /// The call was not legal in the current protocol phase.
-  case WrongPhase
-  /// The one-use pairing offer reached its monotonic deadline.
-  case OfferExpired
-  /// Authenticated protocol or cryptographic processing failed.
-  case ProtocolFailure
-  /// Local state could not be read or written.
-  case LocalStateFailure
-  /// No stored pairing carries the identifier.
-  case PairNotFound
+    /// Caller-provided bytes or registry values were invalid.
+    case InvalidInput
+    /// The call was not legal in the current protocol phase.
+    case WrongPhase
+    /// The one-use pairing offer reached its monotonic deadline.
+    case OfferExpired
+    /// Authenticated protocol or cryptographic processing failed.
+    case ProtocolFailure
+    /// Local state could not be read or written.
+    case LocalStateFailure
+    /// No stored pairing carries the identifier.
+    case PairNotFound
 
-  /// The case name, for a caller that logs or displays the failure.
-  public var errorDescription: String? {
-    String(reflecting: self)
-  }
+    /// The case name, for a caller that logs or displays the failure.
+    public var errorDescription: String? {
+        String(reflecting: self)
+    }
 }
 
 // swiftlint:enable sorted_enum_cases identifier_name

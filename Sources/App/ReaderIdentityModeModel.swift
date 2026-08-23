@@ -2,17 +2,16 @@
 
 #if os(iOS)
 
-  import CardCore
-  import CryptoTokenKit
-  import SwiftUI
+import CardCore
+import CryptoTokenKit
+import SwiftUI
 
-  /// Observes reader identities from the selected physical or virtual backend.
-  ///
-  /// A newly appearing activated reader card starts one bounded retry-counter
-  /// probe for the shared health key. There is no card-presence polling.
-  @MainActor
-  internal final class ReaderIdentityModeModel: ObservableObject {
-
+/// Observes reader identities from the selected physical or virtual backend.
+///
+/// A newly appearing activated reader card starts one bounded retry-counter
+/// probe for the shared health key. There is no card-presence polling.
+@MainActor
+internal final class ReaderIdentityModeModel: ObservableObject {
     // MARK: Static Computed Properties
 
     /// Whether the platform is presenting a contact reader slot at all.
@@ -29,10 +28,10 @@
     /// The built-in NFC slot exists only while a session is open and
     /// carries "NFC" in its name; a reader slot carries the reader's.
     private static var hasReaderSlot: Bool {
-      guard let manager = TKSmartCardSlotManager.default else { return false }
-      return manager.slotNames.contains { name in
-        CardTransport.transport(forSlotNamed: name) == .reader
-      }
+        guard let manager = TKSmartCardSlotManager.default else { return false }
+        return manager.slotNames.contains { name in
+            CardTransport.transport(forSlotNamed: name) == .reader
+        }
     }
 
     // MARK: Properties
@@ -65,46 +64,46 @@
 
     /// Number of live reader tokens.
     internal var liveReaderTokenCount: Int {
-      if DemoMode.shared.isActive {
-        return DemoMode.shared.isReaderCardPresent ? 1 : 0
-      }
-      return liveReaderTokenIdentifiers.count
+        if DemoMode.shared.isActive {
+            return DemoMode.shared.isReaderCardPresent ? 1 : 0
+        }
+        return liveReaderTokenIdentifiers.count
     }
 
     /// Whether an inserted reader card published the authoritative empty
     /// token that means its factory credentials still require activation.
     internal var hasActivationRequiredCard: Bool {
-      if DemoMode.shared.isActive {
-        return DemoMode.shared.isReaderCardPresent
-          && DemoMode.shared.activationNeeds.any
-      }
-      return liveReaderTokenIdentifiers.contains(
-        where: ActivationTokenIdentity.recognizes(tokenID:)
-      )
+        if DemoMode.shared.isActive {
+            return DemoMode.shared.isReaderCardPresent
+                && DemoMode.shared.activationNeeds.any
+        }
+        return liveReaderTokenIdentifiers.contains(
+            where: ActivationTokenIdentity.recognizes(tokenID:)
+        )
     }
 
     /// Whether the setup form must be replaced by reader identity controls.
     internal var isActive: Bool {
-      if DemoMode.shared.isActive {
-        return DemoMode.shared.isReaderCardPresent
-      }
-      return !liveReaderTokenIdentifiers.isEmpty
+        if DemoMode.shared.isActive {
+            return DemoMode.shared.isReaderCardPresent
+        }
+        return !liveReaderTokenIdentifiers.isEmpty
     }
 
     /// Changes whenever the identities rendered by the shared reader view change.
     internal var holderReadKey: [String] {
-      if DemoMode.shared.isActive {
-        return isActive ? [DemoMode.shared.holderName] : []
-      }
-      return liveReaderTokenIdentifiers.map { "\($0):\(generation)" }
+        if DemoMode.shared.isActive {
+            return isActive ? [DemoMode.shared.holderName] : []
+        }
+        return liveReaderTokenIdentifiers.map { "\($0):\(generation)" }
     }
 
     // MARK: Lifecycle
 
     internal init() {
-      if !DemoMode.shared.isActive {
-        watcher.setInsertionHandler(Self.insertionHandler(for: self))
-      }
+        if !DemoMode.shared.isActive {
+            watcher.setInsertionHandler(Self.insertionHandler(for: self))
+        }
     }
 
     // MARK: Static Functions
@@ -115,113 +114,113 @@
     /// block directly inside this main-actor type makes Swift trap before its
     /// body can enqueue the intended actor hop.
     nonisolated private static func insertionHandler(
-      for model: ReaderIdentityModeModel
+        for model: ReaderIdentityModeModel
     ) -> @Sendable (String) -> Void {
-      { [weak model] tokenIdentifier in
-        guard CardTokenNamespace.owns(tokenIdentifier: tokenIdentifier) else {
-          return
+        { [weak model] tokenIdentifier in
+            guard CardTokenNamespace.owns(tokenIdentifier: tokenIdentifier) else {
+                return
+            }
+            Task { @MainActor [weak model] in
+                model?.refresh()
+            }
         }
-        Task { @MainActor [weak model] in
-          model?.refresh()
-        }
-      }
     }
 
     /// Builds a ctkd removal callback without main-actor isolation.
     nonisolated private static func removalHandler(
-      for model: ReaderIdentityModeModel
+        for model: ReaderIdentityModeModel
     ) -> @Sendable (String) -> Void {
-      { [weak model] removedTokenIdentifier in
-        Task { @MainActor [weak model] in
-          model?.tokenWasRemoved(removedTokenIdentifier)
+        { [weak model] removedTokenIdentifier in
+            Task { @MainActor [weak model] in
+                model?.tokenWasRemoved(removedTokenIdentifier)
+            }
         }
-      }
     }
 
     // MARK: Functions
 
     /// Returns holder names without exposing the backend to the view.
     internal func holderNames() async -> [String] {
-      if DemoMode.shared.isActive {
-        return isActive ? [DemoMode.shared.holderName] : []
-      }
-      let identifiers = liveReaderTokenIdentifiers
-      return await Task.detached(priority: .utility) {
-        identifiers.compactMap { identifier in
-          PublishedIdentityName.name(ofTokenIdentifier: identifier)
+        if DemoMode.shared.isActive {
+            return isActive ? [DemoMode.shared.holderName] : []
         }
-      }.value
+        let identifiers = liveReaderTokenIdentifiers
+        return await Task.detached(priority: .utility) {
+            identifiers.compactMap { identifier in
+                PublishedIdentityName.name(ofTokenIdentifier: identifier)
+            }
+        }.value
     }
 
     /// Lists live reader tokens while excluding persistent NFC registrations.
     internal func refresh() {
-      generation &+= 1
-      if DemoMode.shared.isActive {
-        liveReaderTokenIdentifiers = []
-        return
-      }
-      guard Self.hasReaderSlot else {
-        if !liveReaderTokenIdentifiers.isEmpty {
-          retryHealth.clear()
+        generation &+= 1
+        if DemoMode.shared.isActive {
+            liveReaderTokenIdentifiers = []
+            return
         }
-        liveReaderTokenIdentifiers = []
-        return
-      }
-      let refineIDTokenIdentifiers = Set(
-        watcher.tokenIDs.filter(CardTokenNamespace.owns(tokenIdentifier:))
-      )
-      let registeredTokenIdentifiers: Set<String>
-      if #available(iOS 26.0, *) {
-        registeredTokenIdentifiers = Set(
-          TKSmartCardTokenRegistrationManager.default.registeredSmartCardTokens
-            .filter(CardTokenNamespace.owns(tokenIdentifier:))
+        guard Self.hasReaderSlot else {
+            if !liveReaderTokenIdentifiers.isEmpty {
+                retryHealth.clear()
+            }
+            liveReaderTokenIdentifiers = []
+            return
+        }
+        let refineIDTokenIdentifiers = Set(
+            watcher.tokenIDs.filter(CardTokenNamespace.owns(tokenIdentifier:))
         )
-      } else {
-        // No antenna, so nothing was ever registered for the system to
-        // summon: every live token is backed by a connected reader.
-        registeredTokenIdentifiers = []
-      }
-      // Persistent registrations are ReFineID's NFC identities. A token that
-      // is live in the watcher but absent from that list is backed by a
-      // connected reader. This remains true across an app upgrade even when
-      // ctkd keeps the old extension instance and token objects alive.
-      //
-      // Sorted, so the rows a holder reads keep one order across a
-      // refresh that changed nothing.
-      let nextReaderTokenIdentifiers =
-        refineIDTokenIdentifiers.subtracting(registeredTokenIdentifiers).sorted()
-
-      let cardAppearanceChanged =
-        nextReaderTokenIdentifiers != liveReaderTokenIdentifiers
-      liveReaderTokenIdentifiers = nextReaderTokenIdentifiers
-
-      if cardAppearanceChanged {
-        if liveReaderTokenIdentifiers.isEmpty || hasActivationRequiredCard {
-          retryHealth.clear()
+        let registeredTokenIdentifiers: Set<String>
+        if #available(iOS 26.0, *) {
+            registeredTokenIdentifiers = Set(
+                TKSmartCardTokenRegistrationManager.default.registeredSmartCardTokens
+                    .filter(CardTokenNamespace.owns(tokenIdentifier:))
+            )
         } else {
-          retryHealth.refreshFromReader()
+            // No antenna, so nothing was ever registered for the system to
+            // summon: every live token is backed by a connected reader.
+            registeredTokenIdentifiers = []
         }
-      }
+        // Persistent registrations are ReFineID's NFC identities. A token that
+        // is live in the watcher but absent from that list is backed by a
+        // connected reader. This remains true across an app upgrade even when
+        // ctkd keeps the old extension instance and token objects alive.
+        //
+        // Sorted, so the rows a holder reads keep one order across a
+        // refresh that changed nothing.
+        let nextReaderTokenIdentifiers =
+            refineIDTokenIdentifiers.subtracting(registeredTokenIdentifiers).sorted()
 
-      for tokenIdentifier in liveReaderTokenIdentifiers {
-        observeRemoval(of: tokenIdentifier)
-      }
+        let cardAppearanceChanged =
+            nextReaderTokenIdentifiers != liveReaderTokenIdentifiers
+        liveReaderTokenIdentifiers = nextReaderTokenIdentifiers
+
+        if cardAppearanceChanged {
+            if liveReaderTokenIdentifiers.isEmpty || hasActivationRequiredCard {
+                retryHealth.clear()
+            } else {
+                retryHealth.refreshFromReader()
+            }
+        }
+
+        for tokenIdentifier in liveReaderTokenIdentifiers {
+            observeRemoval(of: tokenIdentifier)
+        }
     }
 
     /// Refreshes the UI when one physical token leaves.
     private func observeRemoval(of tokenIdentifier: String) {
-      guard removalHandlers.insert(tokenIdentifier).inserted else { return }
-      watcher.addRemovalHandler(
-        Self.removalHandler(for: self),
-        forTokenID: tokenIdentifier
-      )
+        guard removalHandlers.insert(tokenIdentifier).inserted else { return }
+        watcher.addRemovalHandler(
+            Self.removalHandler(for: self),
+            forTokenID: tokenIdentifier
+        )
     }
 
     /// Applies one removal only after the callback has reached the main actor.
     private func tokenWasRemoved(_ tokenIdentifier: String) {
-      removalHandlers.remove(tokenIdentifier)
-      refresh()
+        removalHandlers.remove(tokenIdentifier)
+        refresh()
     }
-  }
+}
 
 #endif

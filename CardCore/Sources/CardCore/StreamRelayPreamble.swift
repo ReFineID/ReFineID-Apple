@@ -10,12 +10,12 @@ import Foundation
 /// and never hands it upward, so the first frame the session sees is still
 /// the one the requester sent.
 public enum StreamRelayPreamble {
-  /// The single byte a dialer announces itself with.
-  ///
-  /// Its value carries no meaning: the transport needs one byte and the
-  /// protocol above needs it not to be a message.
-  private static let helloByte: UInt8 = 1
+    /// The single byte a dialer announces itself with.
+    ///
+    /// Its value carries no meaning: the transport needs one byte and the
+    /// protocol above needs it not to be a message.
+    private static let helloByte: UInt8 = 1
 
-  /// What a dialer sends to announce itself.
-  public static let hello = Data([helloByte])
+    /// What a dialer sends to announce itself.
+    public static let hello = Data([helloByte])
 }

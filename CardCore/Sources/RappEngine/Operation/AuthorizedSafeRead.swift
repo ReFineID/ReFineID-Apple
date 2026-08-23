@@ -4,5 +4,5 @@ import Foundation
 
 /// A registered read that touches no credential retry budget.
 internal struct AuthorizedSafeRead: Equatable {
-  internal let operation: CardOperation
+    internal let operation: CardOperation
 }

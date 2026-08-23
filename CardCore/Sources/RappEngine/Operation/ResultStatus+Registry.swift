@@ -3,24 +3,29 @@
 import Foundation
 
 extension ResultStatus {
-  /// The terminal journal state a non-successful status records.
-  ///
-  /// A completed status has no failure state; it becomes terminal only once
-  /// the requester acknowledges the retained result.
-  internal var failureState: OperationState? {
-    switch self {
-    case .completed:
-      nil
-    case .denied:
-      .denied
-    case .cancelled:
-      .cancelled
-    case .rejected:
-      .rejected
-    case .credentialRejected:
-      .credentialRejected
-    case .ambiguous:
-      .ambiguous
+    /// The terminal journal state a non-successful status records.
+    ///
+    /// A completed status has no failure state; it becomes terminal only once
+    /// the requester acknowledges the retained result.
+    internal var failureState: OperationState? {
+        switch self {
+        case .completed:
+            nil
+
+        case .denied:
+            .denied
+
+        case .cancelled:
+            .cancelled
+
+        case .rejected:
+            .rejected
+
+        case .credentialRejected:
+            .credentialRejected
+
+        case .ambiguous:
+            .ambiguous
+        }
     }
-  }
 }

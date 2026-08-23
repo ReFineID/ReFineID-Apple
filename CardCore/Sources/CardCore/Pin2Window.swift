@@ -19,49 +19,49 @@ import Foundation
 /// that holds it, or satisfy anything but a qualified signature. PIN1
 /// has its own path and the two are never interchangeable.
 public struct Pin2Window {
-  /// How long an entry stays usable.
-  ///
-  /// Long enough for a batch of documents, short enough that a card
-  /// left in a reader is not a signing service for the rest of the
-  /// afternoon.
-  public static let lifetime: TimeInterval = 60
+    /// How long an entry stays usable.
+    ///
+    /// Long enough for a batch of documents, short enough that a card
+    /// left in a reader is not a signing service for the rest of the
+    /// afternoon.
+    public static let lifetime: TimeInterval = 60
 
-  private var value: String?
-  private var enteredAt: Date?
+    private var value: String?
+    private var enteredAt: Date?
 
-  /// A window with nothing in it.
-  public init() {
-    // Both fields start empty; nothing is held until an entry is made.
-  }
-
-  /// Records an entry, starting the window.
-  public mutating func hold(_ pin: String) {
-    guard !pin.isEmpty else {
-      forget()
-      return
+    /// A window with nothing in it.
+    public init() {
+        // Both fields start empty; nothing is held until an entry is made.
     }
-    value = pin
-    enteredAt = Date()
-  }
 
-  /// The entry, if one was made and the window has not closed.
-  ///
-  /// Reading does not extend it: the window belongs to the entry.
-  public mutating func current(now: Date = Date()) -> String? {
-    guard let value, let enteredAt else { return nil }
-    guard now.timeIntervalSince(enteredAt) < Self.lifetime else {
-      forget()
-      return nil
+    /// Records an entry, starting the window.
+    public mutating func hold(_ pin: String) {
+        guard !pin.isEmpty else {
+            forget()
+            return
+        }
+        value = pin
+        enteredAt = Date()
     }
-    return value
-  }
 
-  /// Drops the entry.
-  ///
-  /// On a refusal, on a card leaving, on anything unexpected. Cheap to
-  /// call, and the safe thing to do when in doubt.
-  public mutating func forget() {
-    value = nil
-    enteredAt = nil
-  }
+    /// The entry, if one was made and the window has not closed.
+    ///
+    /// Reading does not extend it: the window belongs to the entry.
+    public mutating func current(now: Date = Date()) -> String? {
+        guard let value, let enteredAt else { return nil }
+        guard now.timeIntervalSince(enteredAt) < Self.lifetime else {
+            forget()
+            return nil
+        }
+        return value
+    }
+
+    /// Drops the entry.
+    ///
+    /// On a refusal, on a card leaving, on anything unexpected. Cheap to
+    /// call, and the safe thing to do when in doubt.
+    public mutating func forget() {
+        value = nil
+        enteredAt = nil
+    }
 }

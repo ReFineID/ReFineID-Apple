@@ -10,12 +10,12 @@ import Foundation
 
 /// One rule as written in the formal model.
 internal struct ParsedRule {
-  internal var from: [String] = []
-  internal var event = ""
-  internal var role = ""
-  internal var condition: String?
-  internal var to = ""
-  internal var actions: [String] = []
+    internal var from: [String] = []
+    internal var event = ""
+    internal var role = ""
+    internal var condition: String?
+    internal var to = ""
+    internal var actions: [String] = []
 }
 
 // swiftlint:enable identifier_name

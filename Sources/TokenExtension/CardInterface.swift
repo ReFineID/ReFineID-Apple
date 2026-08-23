@@ -17,12 +17,12 @@
 /// antenna. This is recorded at the mint instead, by the code that
 /// already knows which of the two ways it made the token.
 internal enum CardInterface: Sendable {
-  /// In a contact slot, speaking in the clear.
-  case contact
+    /// In a contact slot, speaking in the clear.
+    case contact
 
-  /// Held against the phone's own antenna, on the system's clock.
-  case fieldWithDeadline
+    /// Held against the phone's own antenna, on the system's clock.
+    case fieldWithDeadline
 
-  /// On a reader's antenna, in a field that is not going anywhere.
-  case steadyField
+    /// On a reader's antenna, in a field that is not going anywhere.
+    case steadyField
 }

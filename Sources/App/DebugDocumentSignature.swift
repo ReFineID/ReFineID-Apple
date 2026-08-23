@@ -2,66 +2,66 @@
 
 #if DEBUG && os(macOS)
 
-  import CardCore
-  import Foundation
+import CardCore
+import Foundation
 
-  /// Drives one archival signature from the command line, so the whole
-  /// path can be exercised against a real card and real authorities
-  /// without a hand on the window.
-  ///
-  /// PIN2 comes from the environment rather than the command line: an
-  /// argument is visible in `ps` to every process on the machine, and
-  /// this mode exists precisely to be run while other things are
-  /// watching. It is never stored and never echoed - only its length,
-  /// which is what catches a shell that ate a leading zero.
-  ///
-  /// DEBUG ONLY, like every mode beside it.
-  internal enum DebugDocumentSignature {
+/// Drives one archival signature from the command line, so the whole
+/// path can be exercised against a real card and real authorities
+/// without a hand on the window.
+///
+/// PIN2 comes from the environment rather than the command line: an
+/// argument is visible in `ps` to every process on the machine, and
+/// this mode exists precisely to be run while other things are
+/// watching. It is never stored and never echoed - only its length,
+/// which is what catches a shell that ate a leading zero.
+///
+/// DEBUG ONLY, like every mode beside it.
+internal enum DebugDocumentSignature {
     /// Carries one outcome out of the task that produced it.
     private final class OutcomeBox: @unchecked Sendable {
-      /// What happened, once the task has recorded it.
-      private(set) var report = DebugModeReport(lines: [], succeeded: false)
+        /// What happened, once the task has recorded it.
+        private(set) var report = DebugModeReport(lines: [], succeeded: false)
 
-      /// Records the outcome; called once, before the semaphore is
-      /// signalled, so the read that follows sees it.
-      func record(line: String, succeeded: Bool) {
-        report = DebugModeReport(lines: [line], succeeded: succeeded)
-      }
+        /// Records the outcome; called once, before the semaphore is
+        /// signalled, so the read that follows sees it.
+        func record(line: String, succeeded: Bool) {
+            report = DebugModeReport(lines: [line], succeeded: succeeded)
+        }
     }
     /// The environment variable carrying PIN2 for this run.
     private static let pinVariable = "REFINEID_PIN2"
 
     /// Signs the PDF at `path` and reports each step.
     internal static func report(path: String?) -> DebugModeReport {
-      guard let path else {
-        return DebugModeReport(
-          lines: ["--sign-document: expected a PDF path after the flag"],
-          succeeded: false
-        )
-      }
-      guard
-        let pin2 = ProcessInfo.processInfo.environment[Self.pinVariable],
-        !pin2.isEmpty
-      else {
-        return DebugModeReport(
-          lines: ["--sign-document: set \(Self.pinVariable) to the card's PIN2"],
-          succeeded: false
-        )
-      }
-      let source = URL(fileURLWithPath: path)
-      guard let document = try? Data(contentsOf: source) else {
-        return DebugModeReport(
-          lines: ["--sign-document: cannot read \(source.lastPathComponent)"],
-          succeeded: false
-        )
-      }
-      var lines = [
-        "--sign-document: \(source.lastPathComponent), \(document.count) bytes",
-        "--sign-document: PIN2 \(pin2.count) digits from \(Self.pinVariable)",
-      ]
-      let outcome = Self.signed(document, pin2: pin2, source: source)
-      lines.append(contentsOf: outcome.lines)
-      return DebugModeReport(lines: lines, succeeded: outcome.succeeded)
+        guard let path else {
+            return DebugModeReport(
+                lines: ["--sign-document: expected a PDF path after the flag"],
+                succeeded: false
+            )
+        }
+        guard
+            let pin2 = ProcessInfo.processInfo.environment[Self.pinVariable],
+            !pin2.isEmpty
+        else {
+            return DebugModeReport(
+                lines: ["--sign-document: set \(Self.pinVariable) to the card's PIN2"],
+                succeeded: false
+            )
+        }
+        let source = URL(fileURLWithPath: path)
+        guard let document = try? Data(contentsOf: source) else {
+            return DebugModeReport(
+                lines: ["--sign-document: cannot read \(source.lastPathComponent)"],
+                succeeded: false
+            )
+        }
+        var lines = [
+            "--sign-document: \(source.lastPathComponent), \(document.count) bytes",
+            "--sign-document: PIN2 \(pin2.count) digits from \(Self.pinVariable)"
+        ]
+        let outcome = Self.signed(document, pin2: pin2, source: source)
+        lines.append(contentsOf: outcome.lines)
+        return DebugModeReport(lines: lines, succeeded: outcome.succeeded)
     }
 
     /// Runs the signature synchronously and names what happened.
@@ -70,38 +70,38 @@
     /// started and waited for on a semaphore - the same shape the other
     /// card-driving modes use.
     private static func signed(
-      _ document: Data,
-      pin2: String,
-      source: URL
+        _ document: Data,
+        pin2: String,
+        source: URL
     ) -> DebugModeReport {
-      let box = OutcomeBox()
-      let semaphore = DispatchSemaphore(value: 0)
-      Task {
-        let started = ContinuousClock.now
-        do {
-          let product = try await DocumentSigner.sign(
-            document, pin2: pin2, reason: nil, location: nil
-          )
-          let destination = SignDocumentModel.destination(
-            for: source, at: Date(), format: .pades
-          )
-          try product.bytes.write(to: destination, options: .atomic)
-          box.record(
-            line: "--sign-document: wrote \(destination.lastPathComponent), "
-              + "\(product.bytes.count) bytes in "
-              + TraceTiming.milliseconds(started.duration(to: .now)) + " ms",
-            succeeded: true
-          )
-        } catch {
-          box.record(
-            line: "--sign-document: failed: \(error)", succeeded: false
-          )
+        let box = OutcomeBox()
+        let semaphore = DispatchSemaphore(value: 0)
+        Task {
+            let started = ContinuousClock.now
+            do {
+                let product = try await DocumentSigner.sign(
+                    document, pin2: pin2, reason: nil, location: nil
+                )
+                let destination = SignDocumentModel.destination(
+                    for: source, at: Date(), format: .pades
+                )
+                try product.bytes.write(to: destination, options: .atomic)
+                box.record(
+                    line: "--sign-document: wrote \(destination.lastPathComponent), "
+                        + "\(product.bytes.count) bytes in "
+                        + TraceTiming.milliseconds(started.duration(to: .now)) + " ms",
+                    succeeded: true
+                )
+            } catch {
+                box.record(
+                    line: "--sign-document: failed: \(error)", succeeded: false
+                )
+            }
+            semaphore.signal()
         }
-        semaphore.signal()
-      }
-      semaphore.wait()
-      return box.report
+        semaphore.wait()
+        return box.report
     }
-  }
+}
 
 #endif

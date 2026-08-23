@@ -4,17 +4,17 @@ import Foundation
 
 /// One suite's frames and the handshake they follow.
 internal struct TransportSuite: Decodable {
-  private enum CodingKeys: String, CodingKey {
-    case frames
-    case handshakeHashHex = "handshake_hash_hex"
-    case name
-    case prologueHex = "prologue_hex"
-    case suite
-  }
+    private enum CodingKeys: String, CodingKey {
+        case frames = "frames"
+        case handshakeHashHex = "handshake_hash_hex"
+        case name = "name"
+        case prologueHex = "prologue_hex"
+        case suite = "suite"
+    }
 
-  internal let name: String
-  internal let suite: String
-  internal let prologueHex: String
-  internal let handshakeHashHex: String
-  internal let frames: [TransportFrame]
+    internal let name: String
+    internal let suite: String
+    internal let prologueHex: String
+    internal let handshakeHashHex: String
+    internal let frames: [TransportFrame]
 }

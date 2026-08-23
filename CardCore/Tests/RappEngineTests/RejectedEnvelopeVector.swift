@@ -4,15 +4,15 @@ import Foundation
 
 /// One envelope the schema must refuse.
 internal struct RejectedEnvelopeVector: Decodable {
-  private enum CodingKeys: String, CodingKey {
-    case canonicalCBORHex = "canonical_cbor_hex"
-    case error
-    case name
-    case supportedCritical = "supported_critical"
-  }
+    private enum CodingKeys: String, CodingKey {
+        case canonicalCBORHex = "canonical_cbor_hex"
+        case error = "error"
+        case name = "name"
+        case supportedCritical = "supported_critical"
+    }
 
-  internal let name: String
-  internal let canonicalCBORHex: String
-  internal let error: String
-  internal let supportedCritical: [String]
+    internal let name: String
+    internal let canonicalCBORHex: String
+    internal let error: String
+    internal let supportedCritical: [String]
 }

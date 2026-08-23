@@ -2,5 +2,5 @@
 
 /// The ordered effects a security event produces across component machines.
 internal struct RappSecurityOutcome: Sendable, Equatable {
-  internal let actions: [RappAction]
+    internal let actions: [RappAction]
 }

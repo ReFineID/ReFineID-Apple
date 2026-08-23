@@ -12,103 +12,103 @@ import SwiftUI
 /// applies its exact bounds. Validation is the final result at the end
 /// of the row.
 internal struct CredentialSecretField<Field: View, Validation: View>: View {
-  private let lineLimit = 1
-  private let buttonSize = 44.0
-  private let negativePadding = -10.0
-  private let indicatorSize = 24.0
+    private let lineLimit = 1
+    private let buttonSize = 44.0
+    private let negativePadding = -10.0
+    private let indicatorSize = 24.0
 
-  // MARK: SwiftUI Properties
+    // MARK: SwiftUI Properties
 
-  @Binding private var text: String
-  @State private var revealsValue = false
+    @Binding private var text: String
+    @State private var revealsValue = false
 
-  // MARK: Properties
+    // MARK: Properties
 
-  private let name: String
-  private let revealIdentifier: String
-  private let field: () -> Field
-  private let validation: () -> Validation
+    private let name: String
+    private let revealIdentifier: String
+    private let field: () -> Field
+    private let validation: () -> Validation
 
-  // MARK: Computed Properties
+    // MARK: Computed Properties
 
-  private var revealAccessibilityLabel: String {
-    let format =
-      revealsValue
-      ? String(localized: "Hide %@")
-      : String(localized: "Show %@")
-    return String.localizedStringWithFormat(format, name)
-  }
+    private var revealAccessibilityLabel: String {
+        let format =
+            revealsValue
+            ? String(localized: "Hide %@")
+            : String(localized: "Show %@")
+        return String.localizedStringWithFormat(format, name)
+    }
 
-  // MARK: Lifecycle
+    // MARK: Lifecycle
 
-  // MARK: Content Properties
+    // MARK: Content Properties
 
-  internal var body: some View {
-    HStack {
-      Group {
-        if revealsValue {
-          TextField(name, text: $text)
-            .textContentType(.oneTimeCode)
-            #if os(iOS)
-              .keyboardType(.numberPad)
-            #endif
-            .autocorrectionDisabled()
-            .lineLimit(lineLimit)
-            .onValueChange(of: text) { value in
-              text = LimitedDigits.puk(value)
+    internal var body: some View {
+        HStack {
+            Group {
+                if revealsValue {
+                    TextField(name, text: $text)
+                        .textContentType(.oneTimeCode)
+                        #if os(iOS)
+                        .keyboardType(.numberPad)
+                        #endif
+                        .autocorrectionDisabled()
+                        .lineLimit(lineLimit)
+                        .onValueChange(of: text) { value in
+                            text = LimitedDigits.puk(value)
+                        }
+                } else {
+                    field()
+                }
             }
-        } else {
-          field()
+            // A Form on macOS turns the field's title into a leading label
+            // and shrinks the editable area to a small trailing box. The
+            // plain, label-free field spans the whole line instead, with
+            // the name shown inside it the way iOS shows it.
+            #if os(macOS)
+            .textFieldStyle(.plain)
+            .labelsHidden()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(alignment: .leading) {
+                if text.isEmpty {
+                    Text(name)
+                        .foregroundStyle(.secondary)
+                        .allowsHitTesting(false)
+                }
+            }
+            #endif
+            Button {
+                revealsValue.toggle()
+            } label: {
+                Image(systemName: revealsValue ? "eye" : "eye.slash")
+            }
+            .buttonStyle(.plain)
+            .frame(width: buttonSize, height: buttonSize)
+            .contentShape(Rectangle())
+            .padding(negativePadding)
+            .accessibilityLabel(Text(verbatim: revealAccessibilityLabel))
+            .accessibilityIdentifier(revealIdentifier)
+            validation()
+                .frame(width: indicatorSize, height: indicatorSize)
         }
-      }
-      // A Form on macOS turns the field's title into a leading label
-      // and shrinks the editable area to a small trailing box. The
-      // plain, label-free field spans the whole line instead, with
-      // the name shown inside it the way iOS shows it.
-      #if os(macOS)
-        .textFieldStyle(.plain)
-        .labelsHidden()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .overlay(alignment: .leading) {
-          if text.isEmpty {
-            Text(name)
-            .foregroundStyle(.secondary)
-            .allowsHitTesting(false)
-          }
+        .onValueChange(of: text) { value in
+            if value.isEmpty {
+                revealsValue = false
+            }
         }
-      #endif
-      Button {
-        revealsValue.toggle()
-      } label: {
-        Image(systemName: revealsValue ? "eye" : "eye.slash")
-      }
-      .buttonStyle(.plain)
-      .frame(width: buttonSize, height: buttonSize)
-      .contentShape(Rectangle())
-      .padding(negativePadding)
-      .accessibilityLabel(Text(verbatim: revealAccessibilityLabel))
-      .accessibilityIdentifier(revealIdentifier)
-      validation()
-        .frame(width: indicatorSize, height: indicatorSize)
     }
-    .onValueChange(of: text) { value in
-      if value.isEmpty {
-        revealsValue = false
-      }
-    }
-  }
 
-  internal init(
-    name: String,
-    text: Binding<String>,
-    revealIdentifier: String,
-    @ViewBuilder field: @escaping () -> Field,
-    @ViewBuilder validation: @escaping () -> Validation
-  ) {
-    self.name = name
-    self._text = text
-    self.revealIdentifier = revealIdentifier
-    self.field = field
-    self.validation = validation
-  }
+    internal init(
+        name: String,
+        text: Binding<String>,
+        revealIdentifier: String,
+        @ViewBuilder field: @escaping () -> Field,
+        @ViewBuilder validation: @escaping () -> Validation
+    ) {
+        self.name = name
+        self._text = text
+        self.revealIdentifier = revealIdentifier
+        self.field = field
+        self.validation = validation
+    }
 }

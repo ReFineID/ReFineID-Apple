@@ -2,35 +2,35 @@
 
 #if os(macOS)
 
-  import os.log
-  import SwiftUI
+import os.log
+import SwiftUI
 
-  /// Who the card says they are, what to do about it, or the settling
-  /// state between.
-  ///
-  /// A card mints in well under a second, and for that moment it is
-  /// present without an identity yet published. That is not a fault and
-  /// must not be shouted as one: the row shows a calm line while it
-  /// settles and only warns once the state has lasted long enough to
-  /// mean something.
-  internal struct IdentityStateView: View {
+/// Who the card says they are, what to do about it, or the settling
+/// state between.
+///
+/// A card mints in well under a second, and for that moment it is
+/// present without an identity yet published. That is not a fault and
+/// must not be shouted as one: the row shows a calm line while it
+/// settles and only warns once the state has lasted long enough to
+/// mean something.
+internal struct IdentityStateView: View {
     /// One tracked event.
     ///
     /// Token-list movement matters only while an identity is published,
     /// because only then is there a holder name to re-read.
     private enum TrackKey: Equatable {
-      case availability(LoginIdentityModel.Availability)
-      case ready(generation: Int)
+        case availability(LoginIdentityModel.Availability)
+        case ready(generation: Int)
     }
 
     #if DEBUG
-      /// Row outcomes, in development builds only.
-      ///
-      /// States, never a name. A production build writes no
-      /// diagnostics.
-      private static let log = Logger(
+    /// Row outcomes, in development builds only.
+    ///
+    /// States, never a name. A production build writes no
+    /// diagnostics.
+    private static let log = Logger(
         subsystem: "fi.refineid.ReFineID", category: "identity-row"
-      )
+    )
     #endif
 
     /// What the login row keys on.
@@ -56,69 +56,74 @@
 
     /// The event which can change the row's asynchronous contents.
     private var trackKey: TrackKey {
-      switch availability {
-      case .ready:
-        .ready(generation: model.generation)
-      case .cardWithoutIdentity, .noCard:
-        .availability(availability)
-      }
+        switch availability {
+        case .ready:
+            .ready(generation: model.generation)
+
+        case .cardWithoutIdentity, .noCard:
+            .availability(availability)
+        }
     }
 
     internal var body: some View {
-      content
-        .task(id: trackKey) {
-          await track()
-        }
+        content
+            .task(id: trackKey) {
+                await track()
+            }
     }
 
     @ViewBuilder private var content: some View {
-      switch availability {
-      case .ready:
-        // Who is about to sign: someone with two cards can see which
-        // one is in the reader before spending a PIN on it. Until the
-        // name is read the row shows nothing - a claim without the
-        // name behind it is not worth showing. The empty text is
-        // still a rendered view: a structurally absent one would
-        // never run the task that reads the name.
-        Text(holder ?? "")
-          .textSelection(.enabled)
-      case .cardWithoutIdentity:
-        if warnsUnavailableCard {
-          Text("Card detected, not ready - if this lasts, re-insert it")
-            .foregroundStyle(.orange)
-        } else {
-          Text("Reading the card…")
-            .foregroundStyle(.secondary)
+        switch availability {
+        case .ready:
+            // Who is about to sign: someone with two cards can see which
+            // one is in the reader before spending a PIN on it. Until the
+            // name is read the row shows nothing - a claim without the
+            // name behind it is not worth showing. The empty text is
+            // still a rendered view: a structurally absent one would
+            // never run the task that reads the name.
+            Text(holder ?? "")
+                .textSelection(.enabled)
+
+        case .cardWithoutIdentity:
+            if warnsUnavailableCard {
+                Text("Card detected, not ready - if this lasts, re-insert it")
+                    .foregroundStyle(.orange)
+            } else {
+                Text("Reading the card…")
+                    .foregroundStyle(.secondary)
+            }
+
+        case .noCard:
+            Text("Insert your card")
+                .foregroundStyle(.secondary)
         }
-      case .noCard:
-        Text("Insert your card")
-          .foregroundStyle(.secondary)
-      }
     }
 
     /// Follows one availability and reads the name when ready.
     ///
     /// The name is read off the main actor and never blocks the row.
     private func track() async {
-      #if DEBUG
+        #if DEBUG
         Self.log.info("track: \(String(describing: self.availability))")
-      #endif
-      switch availability {
-      case .ready:
-        // A read that answers nothing while the token is listed is
-        // left alone: this process's view of the token items has been
-        // observed answering empty against an identity Safari was
-        // using at that same moment, so an empty answer proves
-        // nothing and must never cost a registration anything.
-        holder = await Task.detached(priority: .utility) {
-          PublishedIdentityName.current()
-        }.value
-      case .cardWithoutIdentity:
-        holder = nil
-      case .noCard:
-        holder = nil
-      }
+        #endif
+        switch availability {
+        case .ready:
+            // A read that answers nothing while the token is listed is
+            // left alone: this process's view of the token items has been
+            // observed answering empty against an identity Safari was
+            // using at that same moment, so an empty answer proves
+            // nothing and must never cost a registration anything.
+            holder = await Task.detached(priority: .utility) {
+                PublishedIdentityName.current()
+            }.value
+
+        case .cardWithoutIdentity:
+            holder = nil
+
+        case .noCard:
+            holder = nil
+        }
     }
-  }
+}
 
 #endif

@@ -2,10 +2,10 @@
 
 #if REFINEID_LOCAL_CARD && os(iOS)
 
-  import SwiftUI
+import SwiftUI
 
-  /// The camera, framed so it can be dismissed, with its light control.
-  internal struct ScannerSheet: View {
+/// The camera, framed so it can be dismissed, with its light control.
+internal struct ScannerSheet: View {
     @Binding internal var torchEnabled: Bool
     @Binding internal var isScanning: Bool
 
@@ -13,46 +13,46 @@
     internal let complete: (String) -> Void
 
     internal var body: some View {
-      NavigationStack {
-        CardAccessNumberScanner(
-          torchEnabled: $torchEnabled
-        ) { digits in
-          torchEnabled = false
-          complete(digits)
-          isScanning = false
+        NavigationStack {
+            CardAccessNumberScanner(
+                torchEnabled: $torchEnabled
+            ) { digits in
+                torchEnabled = false
+                complete(digits)
+                isScanning = false
+            }
+            .ignoresSafeArea()
+            .navigationTitle("Scan card QR code")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { toolbar }
         }
-        .ignoresSafeArea()
-        .navigationTitle("Scan card QR code")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar { toolbar }
-      }
-      .onDisappear {
-        torchEnabled = false
-      }
+        .onDisappear {
+            torchEnabled = false
+        }
     }
 
     /// Dismissal and light controls kept above the live preview.
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {
-      ToolbarItem(placement: .cancellationAction) {
-        Button("Cancel") {
-          torchEnabled = false
-          isScanning = false
+        ToolbarItem(placement: .cancellationAction) {
+            Button("Cancel") {
+                torchEnabled = false
+                isScanning = false
+            }
         }
-      }
-      if CardAccessNumberScanner.hasTorch {
-        ToolbarItem(placement: .primaryAction) {
-          Button {
-            torchEnabled.toggle()
-          } label: {
-            Label(
-              torchEnabled ? "Turn light off" : "Turn light on",
-              systemImage: torchEnabled
-                ? "flashlight.on.fill" : "flashlight.off.fill")
-          }
-          .accessibilityIdentifier("cardAccessNumberScannerTorch")
+        if CardAccessNumberScanner.hasTorch {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    torchEnabled.toggle()
+                } label: {
+                    Label(
+                        torchEnabled ? "Turn light off" : "Turn light on",
+                        systemImage: torchEnabled
+                            ? "flashlight.on.fill" : "flashlight.off.fill")
+                }
+                .accessibilityIdentifier("cardAccessNumberScannerTorch")
+            }
         }
-      }
     }
-  }
+}
 
 #endif

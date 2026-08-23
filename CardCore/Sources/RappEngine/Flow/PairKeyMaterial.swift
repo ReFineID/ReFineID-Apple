@@ -5,19 +5,19 @@ import Foundation
 
 /// One endpoint's long-lived pairing key pair.
 internal struct PairKeyMaterial {
-  internal let privateKey: Data
-  internal let publicKey: Data
+    internal let privateKey: Data
+    internal let publicKey: Data
 
-  /// A fresh pair key, generated for one pairing attempt.
-  internal init() {
-    let key = Curve25519.KeyAgreement.PrivateKey()
-    privateKey = key.rawRepresentation
-    publicKey = key.publicKey.rawRepresentation
-  }
+    /// A fresh pair key, generated for one pairing attempt.
+    internal init() {
+        let key = Curve25519.KeyAgreement.PrivateKey()
+        privateKey = key.rawRepresentation
+        publicKey = key.publicKey.rawRepresentation
+    }
 
-  /// The stored key of an existing pairing.
-  internal init(privateKey: Data, publicKey: Data) {
-    self.privateKey = privateKey
-    self.publicKey = publicKey
-  }
+    /// The stored key of an existing pairing.
+    internal init(privateKey: Data, publicKey: Data) {
+        self.privateKey = privateKey
+        self.publicKey = publicKey
+    }
 }

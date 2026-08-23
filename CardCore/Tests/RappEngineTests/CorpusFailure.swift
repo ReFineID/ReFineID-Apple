@@ -6,16 +6,16 @@ import Foundation
 
 /// Names a thrown failure the way the conformance corpus names it.
 internal enum CorpusFailure {
-  internal static func name(_ body: () throws -> Void) -> String? {
-    do {
-      try body()
-      return nil
-    } catch let error as WireError {
-      return error.description
-    } catch let error as StreamRendezvous.Failure {
-      return error.description
-    } catch {
-      return "\(error)"
+    internal static func name(_ body: () throws -> Void) -> String? {
+        do {
+            try body()
+            return nil
+        } catch let error as WireError {
+            return error.description
+        } catch let error as StreamRendezvous.Failure {
+            return error.description
+        } catch {
+            return "\(error)"
+        }
     }
-  }
 }

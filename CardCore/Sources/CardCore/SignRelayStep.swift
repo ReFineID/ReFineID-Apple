@@ -5,15 +5,15 @@ import Foundation
 /// What one frame asks of the caller: frames to send, and a payload if the
 /// frame carried one.
 public struct SignRelayStep: Sendable, Equatable {
-  /// Frames to hand the transport, in order.
-  public let send: [Data]
+    /// Frames to hand the transport, in order.
+    public let send: [Data]
 
-  /// The peer's payload, once the session carries them.
-  public let payload: Data?
+    /// The peer's payload, once the session carries them.
+    public let payload: Data?
 
-  /// Names one step.
-  public init(send: [Data] = [], payload: Data? = nil) {
-    self.send = send
-    self.payload = payload
-  }
+    /// Names one step.
+    public init(send: [Data] = [], payload: Data? = nil) {
+        self.send = send
+        self.payload = payload
+    }
 }

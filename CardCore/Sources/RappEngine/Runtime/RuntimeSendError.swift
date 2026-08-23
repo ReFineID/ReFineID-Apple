@@ -4,6 +4,6 @@ import Foundation
 
 /// A local fault that prevented a frame from being produced.
 internal enum RuntimeSendError: Error, Equatable {
-  case encoding(WireError)
-  case sessionClosed
+    case encoding(WireError)
+    case sessionClosed
 }

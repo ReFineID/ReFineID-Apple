@@ -1,7 +1,7 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
 #if DEBUG
-  import CardCore
+import CardCore
 #endif
 
 /// The app's half of the shared extension trace.
@@ -24,10 +24,10 @@
 /// and a shipped build must still be able to delete a buffer some
 /// earlier development build left on the device.
 internal enum AppTrace {
-  /// Appends one complete Debug trace line to the shared trace.
-  internal static func append(_ line: @autoclosure () -> String) {
-    #if DEBUG
-      ExtensionTrace.append(line())
-    #endif
-  }
+    /// Appends one complete Debug trace line to the shared trace.
+    internal static func append(_ line: @autoclosure () -> String) {
+        #if DEBUG
+        ExtensionTrace.append(line())
+        #endif
+    }
 }

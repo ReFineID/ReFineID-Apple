@@ -7,17 +7,17 @@ import Foundation
 /// The bound is checked on construction, so a frame that exists is a frame
 /// the protocol admits and no later stage repeats the test.
 internal struct BinaryFrame: Equatable {
-  private let payload: Data
+    private let payload: Data
 
-  internal var bytes: Data { payload }
+    internal var bytes: Data { payload }
 
-  internal var count: Int { payload.count }
+    internal var count: Int { payload.count }
 
-  /// Takes ownership of frame bytes after checking the wire limit.
-  internal init(reconstructing bytes: Data) throws {
-    guard bytes.count <= RappFrameLimits.maximumFrame else {
-      throw RappFrameError.oversized(got: bytes.count, maximum: RappFrameLimits.maximumFrame)
+    /// Takes ownership of frame bytes after checking the wire limit.
+    internal init(reconstructing bytes: Data) throws {
+        guard bytes.count <= RappFrameLimits.maximumFrame else {
+            throw RappFrameError.oversized(got: bytes.count, maximum: RappFrameLimits.maximumFrame)
+        }
+        payload = bytes
     }
-    payload = bytes
-  }
 }

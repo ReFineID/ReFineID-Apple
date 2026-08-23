@@ -3,16 +3,16 @@
 import Foundation
 
 #if canImport(MultipeerConnectivity)
-  @preconcurrency import MultipeerConnectivity
-  import os
+@preconcurrency import MultipeerConnectivity
+import os
 
-  /// Why the channel ended without an answer.
-  public enum PersistentRelayTransportError: Error, Sendable {
+/// Why the channel ended without an answer.
+public enum PersistentRelayTransportError: Error, Sendable {
     case cancelled
     case codec(String)
     case disconnected
     case send(String)
     case startup(String)
     case timedOut
-  }
+}
 #endif

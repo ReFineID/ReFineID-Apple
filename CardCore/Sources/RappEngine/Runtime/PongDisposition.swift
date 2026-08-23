@@ -4,9 +4,9 @@ import Foundation
 
 /// What receiving a pong proved.
 internal enum PongDisposition: Equatable {
-  /// The exact outstanding challenge came back; liveness is proven.
-  case accepted
-  /// Nothing outstanding matched. A stale-reference race, discarded, and not
-  /// liveness proof.
-  case ignoredUnmatched
+    /// The exact outstanding challenge came back; liveness is proven.
+    case accepted
+    /// Nothing outstanding matched. A stale-reference race, discarded, and not
+    /// liveness proof.
+    case ignoredUnmatched
 }

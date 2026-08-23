@@ -8,12 +8,12 @@ import Foundation
 
 /// Stable result state of an operation.
 internal enum ResultStatus: String, Equatable {
-  case completed
-  case denied
-  case cancelled
-  case rejected
-  case credentialRejected = "credential_rejected"
-  case ambiguous
+    case completed = "completed"
+    case denied = "denied"
+    case cancelled = "cancelled"
+    case rejected = "rejected"
+    case credentialRejected = "credential_rejected"
+    case ambiguous = "ambiguous"
 }
 
 // swiftlint:enable sorted_enum_cases

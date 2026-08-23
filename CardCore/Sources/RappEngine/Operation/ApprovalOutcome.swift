@@ -5,6 +5,6 @@ import Foundation
 /// What approving a request leads to, decided by whether the action is
 /// consequential.
 internal enum ApprovalOutcome: Equatable {
-  case executeSafeRead(AuthorizedSafeRead)
-  case prepared(OperationReference)
+    case executeSafeRead(AuthorizedSafeRead)
+    case prepared(OperationReference)
 }

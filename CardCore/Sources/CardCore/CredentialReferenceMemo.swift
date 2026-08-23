@@ -11,6 +11,6 @@
 /// which must pick the organization form without adding a probe of its
 /// own.
 internal final class CredentialReferenceMemo {
-  /// The numbering the card confirmed, or nil before the first probe.
-  internal var resolved: CredentialReferenceSet?
+    /// The numbering the card confirmed, or nil before the first probe.
+    internal var resolved: CredentialReferenceSet?
 }

@@ -3,19 +3,19 @@
 import Foundation
 
 #if canImport(Network)
-  import Network
+import Network
 
-  /// A single TCP dialer for the `fi.refineid.stream.v1` transport profile.
-  ///
-  /// The proxy dials the requester's listener endpoints in order and, on the
-  /// first ready connection, releases the caller-provided plaintext preamble
-  /// frame before anything else. The transport carries opaque RAPP frames and
-  /// never decodes protocol or card-operation data; peer authentication
-  /// belongs to RAPP rather than the underlay.
-  ///
-  /// All state is confined to one serial queue. Each dial attempt carries a
-  /// generation, and callbacks from superseded attempts are dropped.
-  public final class StreamRelaySession: @unchecked Sendable {
+/// A single TCP dialer for the `fi.refineid.stream.v1` transport profile.
+///
+/// The proxy dials the requester's listener endpoints in order and, on the
+/// first ready connection, releases the caller-provided plaintext preamble
+/// frame before anything else. The transport carries opaque RAPP frames and
+/// never decodes protocol or card-operation data; peer authentication
+/// belongs to RAPP rather than the underlay.
+///
+/// All state is confined to one serial queue. Each dial attempt carries a
+/// generation, and callbacks from superseded attempts are dropped.
+public final class StreamRelaySession: @unchecked Sendable {
     /// How long one endpoint is given before the next is tried.
     private static let attemptSeconds = 3.0
 
@@ -46,13 +46,13 @@ import Foundation
     /// ready.
     @preconcurrency
     public init(
-      endpointLiterals: [String],
-      preamble: Data,
-      onEvent: @escaping @Sendable (StreamRelayEvent) -> Void
+        endpointLiterals: [String],
+        preamble: Data,
+        onEvent: @escaping @Sendable (StreamRelayEvent) -> Void
     ) {
-      self.endpoints = endpointLiterals.compactMap(StreamRelayEndpoint.init)
-      self.preamble = preamble
-      self.onEvent = onEvent
+        self.endpoints = endpointLiterals.compactMap(StreamRelayEndpoint.init)
+        self.preamble = preamble
+        self.onEvent = onEvent
     }
 
     /// Builds a dialer for one already-found service endpoint.
@@ -61,92 +61,92 @@ import Foundation
     /// found one has no address literal to pass and needs none.
     @preconcurrency
     public convenience init(
-      service: NWEndpoint,
-      preamble: Data,
-      onEvent: @escaping @Sendable (StreamRelayEvent) -> Void
+        service: NWEndpoint,
+        preamble: Data,
+        onEvent: @escaping @Sendable (StreamRelayEvent) -> Void
     ) {
-      self.init(endpointLiterals: [], preamble: preamble, onEvent: onEvent)
-      self.service = service
+        self.init(endpointLiterals: [], preamble: preamble, onEvent: onEvent)
+        self.service = service
     }
 
     /// Dials the first endpoint; later endpoints are tried in order until
     /// one connects.
     public func start() {
-      queue.async { self.dialNext() }
+        queue.async { self.dialNext() }
     }
 
     /// Sends one opaque frame to the connected listener, returning after the
     /// frame was released to the transport.
     public func send(_ frame: Data) async throws {
-      guard let framed = StreamRelayFraming.encode(frame) else {
-        throw StreamRelayTransportError.invalidFrameLength
-      }
-      try await withCheckedThrowingContinuation {
-        (continuation: CheckedContinuation<Void, any Error>) in
-        queue.async {
-          guard !self.isFinished, self.isReady, let connection = self.connection
-          else {
-            continuation.resume(
-              throwing: StreamRelayTransportError.notConnected
-            )
-            return
-          }
-          connection.send(
-            content: framed,
-            completion: .contentProcessed { error in
-              if let error {
-                continuation.resume(
-                  throwing: StreamRelayTransportError.send(
-                    String(describing: error)
-                  )
-                )
-              } else {
-                continuation.resume()
-              }
-            }
-          )
+        guard let framed = StreamRelayFraming.encode(frame) else {
+            throw StreamRelayTransportError.invalidFrameLength
         }
-      }
+        try await withCheckedThrowingContinuation {
+            (continuation: CheckedContinuation<Void, any Error>) in
+            queue.async {
+                guard !self.isFinished, self.isReady, let connection = self.connection
+                else {
+                    continuation.resume(
+                        throwing: StreamRelayTransportError.notConnected
+                    )
+                    return
+                }
+                connection.send(
+                    content: framed,
+                    completion: .contentProcessed { error in
+                        if let error {
+                            continuation.resume(
+                                throwing: StreamRelayTransportError.send(
+                                    String(describing: error)
+                                )
+                            )
+                        } else {
+                            continuation.resume()
+                        }
+                    }
+                )
+            }
+        }
     }
 
     /// Disconnects and reports the channel closed.
     public func cancel() {
-      queue.async { self.finish(.cancelled) }
+        queue.async { self.finish(.cancelled) }
     }
 
     private func dialNext() {
-      guard !isFinished else { return }
-      let dialed: NWConnection
-      if let service {
-        guard nextEndpointIndex < Self.serviceAttempts else {
-          finish(.unreachable)
-          return
+        guard !isFinished else { return }
+        let dialed: NWConnection
+        if let service {
+            guard nextEndpointIndex < Self.serviceAttempts else {
+                finish(.unreachable)
+                return
+            }
+            nextEndpointIndex += 1
+            dialed = NWConnection(to: service, using: .tcp)
+        } else {
+            guard nextEndpointIndex < endpoints.count else {
+                finish(.unreachable)
+                return
+            }
+            let endpoint = endpoints[nextEndpointIndex]
+            nextEndpointIndex += 1
+            dialed = NWConnection(
+                host: NWEndpoint.Host(endpoint.host),
+                port: NWEndpoint.Port(rawValue: endpoint.port) ?? .any,
+                using: .tcp
+            )
         }
-        nextEndpointIndex += 1
-        dialed = NWConnection(to: service, using: .tcp)
-      } else {
-        guard nextEndpointIndex < endpoints.count else {
-          finish(.unreachable)
-          return
-        }
-        let endpoint = endpoints[nextEndpointIndex]
-        nextEndpointIndex += 1
-        dialed = NWConnection(
-          host: NWEndpoint.Host(endpoint.host),
-          port: NWEndpoint.Port(rawValue: endpoint.port) ?? .any,
-          using: .tcp
-        )
-      }
-      generation += 1
-      let attempt = generation
-      isReady = false
+        generation += 1
+        let attempt = generation
+        isReady = false
 
-      connection = dialed
-      dialed.stateUpdateHandler = { [weak self] state in
-        self?.handleState(state, attempt: attempt, connection: dialed)
-      }
-      dialed.start(queue: queue)
-      waitOut(attempt: attempt, connection: dialed)
+        connection = dialed
+        dialed.stateUpdateHandler = { [weak self] state in
+            self?.handleState(state, attempt: attempt, connection: dialed)
+        }
+        dialed.start(queue: queue)
+        waitOut(attempt: attempt, connection: dialed)
     }
 
     /// Gives one dial its time before the next is tried.
@@ -156,113 +156,113 @@ import Foundation
     /// preparing dial that is never given up on is a peer that never
     /// arrives.
     private func waitOut(attempt: Int, connection: NWConnection) {
-      queue.asyncAfter(deadline: .now() + Self.attemptSeconds) { [weak self] in
-        guard let self, attempt == generation, !isFinished, !isReady else { return }
-        connection.cancel()
-        dialNext()
-      }
+        queue.asyncAfter(deadline: .now() + Self.attemptSeconds) { [weak self] in
+            guard let self, attempt == generation, !isFinished, !isReady else { return }
+            connection.cancel()
+            dialNext()
+        }
     }
 
     private func handleState(
-      _ state: NWConnection.State,
-      attempt: Int,
-      connection: NWConnection
+        _ state: NWConnection.State,
+        attempt: Int,
+        connection: NWConnection
     ) {
-      guard attempt == generation, !isFinished else { return }
-      switch state {
-      case .ready:
-        guard let framedPreamble = StreamRelayFraming.encode(preamble) else {
-          finish(.malformedFrame)
-          return
+        guard attempt == generation, !isFinished else { return }
+        switch state {
+        case .ready:
+            guard let framedPreamble = StreamRelayFraming.encode(preamble) else {
+                finish(.malformedFrame)
+                return
+            }
+            isReady = true
+            connection.send(
+                content: framedPreamble,
+                completion: .contentProcessed { [weak self] error in
+                    guard let self, error != nil else { return }
+                    queue.async { self.finish(.disconnected) }
+                }
+            )
+            onEvent(.connected)
+            receiveLengthPrefix(attempt: attempt, connection: connection)
+
+        case .waiting:
+            // The dial's own deadline decides when to move on.
+            break
+
+        case .failed:
+            if isReady {
+                finish(.disconnected)
+            } else {
+                connection.cancel()
+                dialNext()
+            }
+
+        case .cancelled:
+            finish(.cancelled)
+
+        case .setup, .preparing:
+            break
+
+        @unknown default:
+            break
         }
-        isReady = true
-        connection.send(
-          content: framedPreamble,
-          completion: .contentProcessed { [weak self] error in
-            guard let self, error != nil else { return }
-            queue.async { self.finish(.disconnected) }
-          }
-        )
-        onEvent(.connected)
-        receiveLengthPrefix(attempt: attempt, connection: connection)
-
-      case .waiting:
-        // The dial's own deadline decides when to move on.
-        break
-
-      case .failed:
-        if isReady {
-          finish(.disconnected)
-        } else {
-          connection.cancel()
-          dialNext()
-        }
-
-      case .cancelled:
-        finish(.cancelled)
-
-      case .setup, .preparing:
-        break
-
-      @unknown default:
-        break
-      }
     }
 
     private func receiveLengthPrefix(attempt: Int, connection: NWConnection) {
-      connection.receive(
-        minimumIncompleteLength: StreamRelayFraming.lengthPrefixByteCount,
-        maximumLength: StreamRelayFraming.lengthPrefixByteCount
-      ) { [weak self] data, _, _, error in
-        guard let self, attempt == generation, !isFinished else { return }
-        guard error == nil,
-          let data, data.count == StreamRelayFraming.lengthPrefixByteCount
-        else {
-          finish(.disconnected)
-          return
+        connection.receive(
+            minimumIncompleteLength: StreamRelayFraming.lengthPrefixByteCount,
+            maximumLength: StreamRelayFraming.lengthPrefixByteCount
+        ) { [weak self] data, _, _, error in
+            guard let self, attempt == generation, !isFinished else { return }
+            guard error == nil,
+                  let data, data.count == StreamRelayFraming.lengthPrefixByteCount
+            else {
+                finish(.disconnected)
+                return
+            }
+            guard
+                let payloadByteCount = StreamRelayFraming.payloadByteCount(
+                    lengthPrefix: data
+                )
+            else {
+                finish(.malformedFrame)
+                return
+            }
+            receivePayload(
+                byteCount: payloadByteCount,
+                attempt: attempt,
+                connection: connection
+            )
         }
-        guard
-          let payloadByteCount = StreamRelayFraming.payloadByteCount(
-            lengthPrefix: data
-          )
-        else {
-          finish(.malformedFrame)
-          return
-        }
-        receivePayload(
-          byteCount: payloadByteCount,
-          attempt: attempt,
-          connection: connection
-        )
-      }
     }
 
     private func receivePayload(
-      byteCount: Int,
-      attempt: Int,
-      connection: NWConnection
+        byteCount: Int,
+        attempt: Int,
+        connection: NWConnection
     ) {
-      connection.receive(
-        minimumIncompleteLength: byteCount,
-        maximumLength: byteCount
-      ) { [weak self] data, _, _, error in
-        guard let self, attempt == generation, !isFinished else { return }
-        guard error == nil, let data, data.count == byteCount else {
-          finish(.disconnected)
-          return
+        connection.receive(
+            minimumIncompleteLength: byteCount,
+            maximumLength: byteCount
+        ) { [weak self] data, _, _, error in
+            guard let self, attempt == generation, !isFinished else { return }
+            guard error == nil, let data, data.count == byteCount else {
+                finish(.disconnected)
+                return
+            }
+            onEvent(.frame(data))
+            receiveLengthPrefix(attempt: attempt, connection: connection)
         }
-        onEvent(.frame(data))
-        receiveLengthPrefix(attempt: attempt, connection: connection)
-      }
     }
 
     private func finish(_ error: StreamRelayTransportError) {
-      guard !isFinished else { return }
-      isFinished = true
-      generation += 1
-      connection?.cancel()
-      connection = nil
-      onEvent(.closed(error))
+        guard !isFinished else { return }
+        isFinished = true
+        generation += 1
+        connection?.cancel()
+        connection = nil
+        onEvent(.closed(error))
     }
-  }
+}
 #endif

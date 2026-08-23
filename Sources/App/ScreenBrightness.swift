@@ -2,16 +2,16 @@
 
 #if os(iOS) && REFINEID_REMOTE_CARD
 
-  import UIKit
+import UIKit
 
-  /// Lifts the screen while a code is being scanned, and puts it back.
-  ///
-  /// A camera reads dark modules against a light field, and a dimmed screen
-  /// narrows that difference until the code stops resolving. The screen is
-  /// the light source here, so it is turned up for as long as the code is
-  /// shown and returned to whatever the holder had afterwards.
-  @MainActor
-  internal enum ScreenBrightness {
+/// Lifts the screen while a code is being scanned, and puts it back.
+///
+/// A camera reads dark modules against a light field, and a dimmed screen
+/// narrows that difference until the code stops resolving. The screen is
+/// the light source here, so it is turned up for as long as the code is
+/// shown and returned to whatever the holder had afterwards.
+@MainActor
+internal enum ScreenBrightness {
     /// What the holder had before the code took the screen.
     private static var previous: CGFloat?
 
@@ -20,17 +20,17 @@
 
     /// Raises the screen and remembers what to put back.
     internal static func raiseForScanning() {
-      guard previous == nil else { return }
-      previous = UIScreen.main.brightness
-      UIScreen.main.brightness = scanningLevel
+        guard previous == nil else { return }
+        previous = UIScreen.main.brightness
+        UIScreen.main.brightness = scanningLevel
     }
 
     /// Returns the screen to the level the holder chose.
     internal static func restore() {
-      guard let previous else { return }
-      UIScreen.main.brightness = previous
-      Self.previous = nil
+        guard let previous else { return }
+        UIScreen.main.brightness = previous
+        Self.previous = nil
     }
-  }
+}
 
 #endif

@@ -9,21 +9,21 @@ import Foundation
 /// offer without producing a pair record: no failure here ever stores a
 /// pairing.
 internal enum PairingError: Error, Equatable {
-  case candidateNotUnique
-  case confirmationIncomplete
-  case duplicateMessage
-  case grantMismatch
-  case helloIncomplete
-  case invalidGrantSet
-  case message(MessageFieldError)
-  case missingPairIdentifier
-  case noise
-  case offer(PairingOfferError)
-  case offerExpired
-  case open(RappOpenFailure)
-  case pairRecord(PairRecordError)
-  case parameterMismatch
-  case roleViolation
-  case unexpectedMessage
-  case unsupportedProfile
+    case candidateNotUnique
+    case confirmationIncomplete
+    case duplicateMessage
+    case grantMismatch
+    case helloIncomplete
+    case invalidGrantSet
+    case message(MessageFieldError)
+    case missingPairIdentifier
+    case noise
+    case offer(PairingOfferError)
+    case offerExpired
+    case open(RappOpenFailure)
+    case pairRecord(PairRecordError)
+    case parameterMismatch
+    case roleViolation
+    case unexpectedMessage
+    case unsupportedProfile
 }

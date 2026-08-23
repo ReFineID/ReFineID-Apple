@@ -8,24 +8,24 @@ import Testing
 /// Direct ESS signing-certificate attribute checks.
 @Suite
 internal struct CmsSigningCertificateTests {
-  /// Tags used only to assemble synthetic CMS messages.
-  private enum Tag {
-    static let context0: UInt8 = 0xA0
-  }
+    /// Tags used only to assemble synthetic CMS messages.
+    private enum Tag {
+        static let context0: UInt8 = 0xA0
+    }
 
-  private static let contentType = "1.2.840.113549.1.9.3"
-  private static let data = "1.2.840.113549.1.7.1"
-  private static let sha1 = "1.3.14.3.2.26"
-  private static let sha256 = "2.16.840.1.101.3.4.2.1"
-  private static let sha384 = "2.16.840.1.101.3.4.2.2"
-  private static let sha512 = "2.16.840.1.101.3.4.2.3"
-  private static let signedData = "1.2.840.113549.1.7.2"
-  private static let signingCertificate = "1.2.840.113549.1.9.16.2.12"
-  private static let signingCertificateV2 = "1.2.840.113549.1.9.16.2.47"
+    private static let contentType = "1.2.840.113549.1.9.3"
+    private static let data = "1.2.840.113549.1.7.1"
+    private static let sha1 = "1.3.14.3.2.26"
+    private static let sha256 = "2.16.840.1.101.3.4.2.1"
+    private static let sha384 = "2.16.840.1.101.3.4.2.2"
+    private static let sha512 = "2.16.840.1.101.3.4.2.3"
+    private static let signedData = "1.2.840.113549.1.7.2"
+    private static let signingCertificate = "1.2.840.113549.1.9.16.2.12"
+    private static let signingCertificateV2 = "1.2.840.113549.1.9.16.2.47"
 
-  /// A locally generated ECDSA RFC 3161 token with ESSCertIDv2.
-  private static let token = Self.decode(
-    """
+    /// A locally generated ECDSA RFC 3161 token with ESSCertIDv2.
+    private static let token = Self.decode(
+        """
     MIIFmAYJKoZIhvcNAQcCoIIFiTCCBYUCAQMxDzANBglghkgBZQMEAgEFADCBsAYLKoZIhvcNAQkQ
     AQSggaAEgZ0wgZoCAQEGAyoDBDBBMA0GCWCGSAFlAwQCAgUABDA4sGCnUayWOEzZMn6xseNqIf23
     ERS+B0NMDMe/Y/bh2idO3r/nb2X71RrS8UiYuVsCAQEYDzIwMjYwODA0MDc1MzI1WjAKAgEBgAIB
@@ -53,11 +53,11 @@ internal struct CmsSigningCertificateTests {
     IQDWzN45mx3WGpbVSaR9nQEf6tawLGpihdRS7fD62Zl5JAIgbsY8V7ySr1DZzoDocw6XYMzyVSQu
     1qOUqQgGIjMZvFY=
     """
-  )
+    )
 
-  /// The exact signer certificate referenced by the fixture's ESS hash.
-  private static let signer = Self.decode(
-    """
+    /// The exact signer certificate referenced by the fixture's ESS hash.
+    private static let signer = Self.decode(
+        """
     MIIBszCCAVigAwIBAgIUMHfE/GmdSvG3+CQRxHSnFzfP2IwwCgYIKoZIzj0EAwIwHDEaMBgGA1UE
     AwwRUmVGaW5lSUQgVGVzdCBUU0EwHhcNMjYwODA0MDc1MzI1WhcNMzYwODAxMDc1MzI1WjAcMRow
     GAYDVQQDDBFSZUZpbmVJRCBUZXN0IFRTQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABEma/2Y8
@@ -67,178 +67,181 @@ internal struct CmsSigningCertificateTests {
     BggrBgEFBQcDCDAKBggqhkjOPQQDAgNJADBGAiEAwvyfmlibx6Pf8KmrY7VfgYwxbr56A80RBza/
     J4cPYlECIQCYsi5iogIH1DrFGEDBDrUrjaanfMOXp8GithjIM97ohg==
     """
-  )
-
-  /// A hash AlgorithmIdentifier with absent parameters.
-  private static func algorithm(_ oid: String) -> Data {
-    DerEncoder.sequence([DerEncoder.objectIdentifier(oid)])
-  }
-
-  /// One CMS Attribute.
-  private static func attribute(oid: String, value: Data) -> Data {
-    DerEncoder.sequence([
-      DerEncoder.objectIdentifier(oid),
-      DerEncoder.setOf([value]),
-    ])
-  }
-
-  /// Base64 fixture text with its line breaks ignored.
-  private static func decode(_ encoded: String) -> Data {
-    Data(base64Encoded: encoded, options: .ignoreUnknownCharacters) ?? Data()
-  }
-
-  /// A display name for an internal digest-algorithm value.
-  private static func name(
-    of algorithm: CmsSigningCertificate.DigestAlgorithm
-  ) -> String {
-    switch algorithm {
-    case .sha1:
-      return "sha1"
-    case .sha256:
-      return "sha256"
-    case .sha384:
-      return "sha384"
-    case .sha512:
-      return "sha512"
-    }
-  }
-
-  /// A synthetic CMS token carrying exactly the supplied signed attributes.
-  private static func token(attributes: [Data]) -> Data {
-    let signedAttributes = DerEncoder.tlv(
-      Tag.context0, Data(attributes.joined())
     )
-    let signerInfo = DerEncoder.sequence([
-      DerEncoder.integer(1),
-      DerEncoder.sequence([]),
-      DerEncoder.sequence([]),
-      signedAttributes,
-    ])
-    let body = DerEncoder.sequence([
-      DerEncoder.integer(1),
-      DerEncoder.setOf([]),
-      DerEncoder.sequence([]),
-      DerEncoder.setOf([signerInfo]),
-    ])
-    return DerEncoder.sequence([
-      DerEncoder.objectIdentifier(Self.signedData),
-      DerEncoder.tlv(Tag.context0, body),
-    ])
-  }
 
-  /// A v1 or v2 signing-certificate attribute with one certificate ID.
-  private static func signingAttribute(
-    oid: String,
-    digest: Data,
-    algorithm: String? = nil
-  ) -> Data {
-    var fields: [Data] = []
-    if let algorithm {
-      fields.append(Self.algorithm(algorithm))
+    /// A hash AlgorithmIdentifier with absent parameters.
+    private static func algorithm(_ oid: String) -> Data {
+        DerEncoder.sequence([DerEncoder.objectIdentifier(oid)])
     }
-    fields.append(DerEncoder.octetString(digest))
-    let identifier = DerEncoder.sequence(fields)
-    let value = DerEncoder.sequence([
-      DerEncoder.sequence([identifier])
-    ])
-    return Self.attribute(oid: oid, value: value)
-  }
 
-  @Test
-  internal func fixtureEssReferenceIdentifiesItsSigner() throws {
-    try CmsSigningCertificate.verify(
-      token: Self.token, certificate: Self.signer
-    )
-    let reference = try CmsSigningCertificate.reference(in: Self.token)
-    #expect(Self.name(of: reference.algorithm) == "sha256")
-  }
-
-  @Test
-  internal func aDifferentCertificateDoesNotMatchTheSignedHash() {
-    var different = Self.signer
-    different[different.startIndex] ^= 1
-    #expect(throws: CmsSigningCertificate.Failure.mismatch) {
-      try CmsSigningCertificate.verify(
-        token: Self.token, certificate: different
-      )
+    /// One CMS Attribute.
+    private static func attribute(oid: String, value: Data) -> Data {
+        DerEncoder.sequence([
+            DerEncoder.objectIdentifier(oid),
+            DerEncoder.setOf([value])
+        ])
     }
-  }
 
-  @Test
-  internal func malformedCmsIsRejected() {
-    #expect(throws: CmsSigningCertificate.Failure.malformed) {
-      _ = try CmsSigningCertificate.reference(in: Data("not cms".utf8))
+    /// Base64 fixture text with its line breaks ignored.
+    private static func decode(_ encoded: String) -> Data {
+        Data(base64Encoded: encoded, options: .ignoreUnknownCharacters) ?? Data()
     }
-  }
 
-  @Test
-  internal func signingCertificateAttributeIsRequired() {
-    let unrelated = Self.attribute(
-      oid: Self.contentType,
-      value: DerEncoder.objectIdentifier(Self.data)
-    )
-    #expect(throws: CmsSigningCertificate.Failure.malformed) {
-      _ = try CmsSigningCertificate.reference(
-        in: Self.token(attributes: [unrelated])
-      )
+    /// A display name for an internal digest-algorithm value.
+    private static func name(
+        of algorithm: CmsSigningCertificate.DigestAlgorithm
+    ) -> String {
+        switch algorithm {
+        case .sha1:
+            return "sha1"
+
+        case .sha256:
+            return "sha256"
+
+        case .sha384:
+            return "sha384"
+
+        case .sha512:
+            return "sha512"
+        }
     }
-  }
 
-  @Test
-  internal func duplicateSigningCertificateAttributesAreRejected() {
-    let attribute = Self.signingAttribute(
-      oid: Self.signingCertificateV2,
-      digest: Data(repeating: 1, count: 32)
-    )
-    #expect(throws: CmsSigningCertificate.Failure.malformed) {
-      _ = try CmsSigningCertificate.reference(
-        in: Self.token(attributes: [attribute, attribute])
-      )
+    /// A synthetic CMS token carrying exactly the supplied signed attributes.
+    private static func token(attributes: [Data]) -> Data {
+        let signedAttributes = DerEncoder.tlv(
+            Tag.context0, Data(attributes.joined())
+        )
+        let signerInfo = DerEncoder.sequence([
+            DerEncoder.integer(1),
+            DerEncoder.sequence([]),
+            DerEncoder.sequence([]),
+            signedAttributes
+        ])
+        let body = DerEncoder.sequence([
+            DerEncoder.integer(1),
+            DerEncoder.setOf([]),
+            DerEncoder.sequence([]),
+            DerEncoder.setOf([signerInfo])
+        ])
+        return DerEncoder.sequence([
+            DerEncoder.objectIdentifier(Self.signedData),
+            DerEncoder.tlv(Tag.context0, body)
+        ])
     }
-  }
 
-  @Test
-  internal func omittedDigestAlgorithmsUseTheirSpecifiedDefaults() throws {
-    let versionOne = Self.signingAttribute(
-      oid: Self.signingCertificate,
-      digest: Data(repeating: 1, count: 20)
-    )
-    let versionTwo = Self.signingAttribute(
-      oid: Self.signingCertificateV2,
-      digest: Data(repeating: 2, count: 32)
-    )
-    let first = try CmsSigningCertificate.reference(
-      in: Self.token(attributes: [versionOne])
-    )
-    let second = try CmsSigningCertificate.reference(
-      in: Self.token(attributes: [versionTwo])
-    )
-    #expect(Self.name(of: first.algorithm) == "sha1")
-    #expect(Self.name(of: second.algorithm) == "sha256")
-  }
-
-  @Test
-  internal func supportedExplicitDigestAlgorithmsAreParsed() throws {
-    let algorithms = [
-      (Self.sha1, "sha1"),
-      (Self.sha256, "sha256"),
-      (Self.sha384, "sha384"),
-      (Self.sha512, "sha512"),
-    ]
-    for (oid, expected) in algorithms {
-      let parsed = try CmsSigningCertificate.digestAlgorithm(
-        Self.algorithm(oid)
-      )
-      #expect(Self.name(of: parsed) == expected)
+    /// A v1 or v2 signing-certificate attribute with one certificate ID.
+    private static func signingAttribute(
+        oid: String,
+        digest: Data,
+        algorithm: String? = nil
+    ) -> Data {
+        var fields: [Data] = []
+        if let algorithm {
+            fields.append(Self.algorithm(algorithm))
+        }
+        fields.append(DerEncoder.octetString(digest))
+        let identifier = DerEncoder.sequence(fields)
+        let value = DerEncoder.sequence([
+            DerEncoder.sequence([identifier])
+        ])
+        return Self.attribute(oid: oid, value: value)
     }
-  }
 
-  @Test
-  internal func unsupportedDigestAlgorithmIsRejected() {
-    #expect(throws: CmsSigningCertificate.Failure.unsupportedHash) {
-      _ = try CmsSigningCertificate.digestAlgorithm(
-        Self.algorithm("1.2.3.4")
-      )
+    @Test
+    internal func fixtureEssReferenceIdentifiesItsSigner() throws {
+        try CmsSigningCertificate.verify(
+            token: Self.token, certificate: Self.signer
+        )
+        let reference = try CmsSigningCertificate.reference(in: Self.token)
+        #expect(Self.name(of: reference.algorithm) == "sha256")
     }
-  }
+
+    @Test
+    internal func aDifferentCertificateDoesNotMatchTheSignedHash() {
+        var different = Self.signer
+        different[different.startIndex] ^= 1
+        #expect(throws: CmsSigningCertificate.Failure.mismatch) {
+            try CmsSigningCertificate.verify(
+                token: Self.token, certificate: different
+            )
+        }
+    }
+
+    @Test
+    internal func malformedCmsIsRejected() {
+        #expect(throws: CmsSigningCertificate.Failure.malformed) {
+            _ = try CmsSigningCertificate.reference(in: Data("not cms".utf8))
+        }
+    }
+
+    @Test
+    internal func signingCertificateAttributeIsRequired() {
+        let unrelated = Self.attribute(
+            oid: Self.contentType,
+            value: DerEncoder.objectIdentifier(Self.data)
+        )
+        #expect(throws: CmsSigningCertificate.Failure.malformed) {
+            _ = try CmsSigningCertificate.reference(
+                in: Self.token(attributes: [unrelated])
+            )
+        }
+    }
+
+    @Test
+    internal func duplicateSigningCertificateAttributesAreRejected() {
+        let attribute = Self.signingAttribute(
+            oid: Self.signingCertificateV2,
+            digest: Data(repeating: 1, count: 32)
+        )
+        #expect(throws: CmsSigningCertificate.Failure.malformed) {
+            _ = try CmsSigningCertificate.reference(
+                in: Self.token(attributes: [attribute, attribute])
+            )
+        }
+    }
+
+    @Test
+    internal func omittedDigestAlgorithmsUseTheirSpecifiedDefaults() throws {
+        let versionOne = Self.signingAttribute(
+            oid: Self.signingCertificate,
+            digest: Data(repeating: 1, count: 20)
+        )
+        let versionTwo = Self.signingAttribute(
+            oid: Self.signingCertificateV2,
+            digest: Data(repeating: 2, count: 32)
+        )
+        let first = try CmsSigningCertificate.reference(
+            in: Self.token(attributes: [versionOne])
+        )
+        let second = try CmsSigningCertificate.reference(
+            in: Self.token(attributes: [versionTwo])
+        )
+        #expect(Self.name(of: first.algorithm) == "sha1")
+        #expect(Self.name(of: second.algorithm) == "sha256")
+    }
+
+    @Test
+    internal func supportedExplicitDigestAlgorithmsAreParsed() throws {
+        let algorithms = [
+            (Self.sha1, "sha1"),
+            (Self.sha256, "sha256"),
+            (Self.sha384, "sha384"),
+            (Self.sha512, "sha512")
+        ]
+        for (oid, expected) in algorithms {
+            let parsed = try CmsSigningCertificate.digestAlgorithm(
+                Self.algorithm(oid)
+            )
+            #expect(Self.name(of: parsed) == expected)
+        }
+    }
+
+    @Test
+    internal func unsupportedDigestAlgorithmIsRejected() {
+        #expect(throws: CmsSigningCertificate.Failure.unsupportedHash) {
+            _ = try CmsSigningCertificate.digestAlgorithm(
+                Self.algorithm("1.2.3.4")
+            )
+        }
+    }
 }
