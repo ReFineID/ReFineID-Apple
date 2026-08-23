@@ -167,6 +167,10 @@ import Foundation
     private func finish(_ error: StreamRelayTransportError) {
       guard !isFinished else { return }
       isFinished = true
+      connection?.cancel()
+      connection = nil
+      listener?.cancel()
+      listener = nil
       onEvent(.closed(error))
     }
   }

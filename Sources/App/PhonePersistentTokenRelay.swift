@@ -33,8 +33,9 @@
     internal static let shared = PhonePersistentTokenRelay()
 
     internal static let maximumPreCoordinatorFrames = 4
-    /// Pause between stream dial attempts while redialing is automatic.
-    internal static let streamRedialDelayMilliseconds = 2_000
+    /// How long the stream transport pauses before re-listening after a
+    /// connection closes.
+    internal static let streamRedialDelayMilliseconds = 100
 
     // MARK: Properties
 
