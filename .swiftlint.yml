@@ -1,74 +1,105 @@
-# SwiftLint -- the defect/quality lint layer for every Swift source in this
-# repository. The gate is `swiftlint lint` with `strict: true` below: every
-# finding is an error. Findings present when the gate was raised are
-# recorded in .swiftlint-baseline.json; the gate refuses new ones and the
-# baseline shrinks as the recorded debt is paid down.
+# SwiftLint owns defects. Gate: `swiftlint lint` with strict: true.
+# Baseline: .swiftlint-baseline.json. New findings fail.
 #
-# Ported from the reference implementation's proven configuration. Why not
-# `--enable-all-rules`? It ignores `disabled_rules` and config, so it cannot
-# honour the carve register below. Instead every opt-in rule is enumerated;
-# combined with the default rule set this is "all rules on, minus what is
-# truly impossible".
+# Not `--enable-all-rules`: it ignores disabled_rules and this carve
+# register. Opt-in rules are enumerated instead.
 #
-# Carve register -- opt-in rules deliberately OMITTED, each justified:
+# Carve register -- opt-in rules omitted:
 #
-#   Owned by swift-format (formatting is swift-format's job; a file cannot
-#   satisfy both):
-#     contrasted_opening_brace       swift-format emits K&R same-line braces
-#     vertical_whitespace_between_cases  swift-format owns vertical whitespace
-#     conditional_returns_on_newline swift-format keeps `guard ... else
-#                          { return }`, the official early-exit idiom
-#     multiline_arguments_brackets   swift-format owns multiline call bracket
-#                          placement (close paren trails the last argument)
-#     multiline_arguments            swift-format owns how call arguments
-#     multiline_call_arguments       pack and wrap across lines
-#     indentation_width    swift-format owns indentation, including the
-#                          continuation-line depths this rule miscounts
-#     vertical_whitespace_opening_braces   swift-format owns vertical
-#     vertical_whitespace_closing_braces   whitespace inside braces
-#     let_var_whitespace   swift-format owns blank-line placement around
-#                          declarations
-#     pattern_matching_keywords      swift-format's UseLetInEveryBoundCase-
-#                          Variable emits `case .a(let x)`, which this rule
-#                          rewrites back to `case let .a(x)`
-#     strict_fileprivate   swift-format's NoAccessLevelOnExtensionDeclaration
-#                          moves extension ACLs onto members as `fileprivate`
-#     extension_access_modifier      same rewrite, opposite direction: the
-#                          kept no_extension_access_modifier enforces the
-#                          swift-format shape
-#     trailing_closure     swift-format's OnlyOneTrailingClosureArgument
-#                          labels every closure in a multi-closure call;
-#                          this rule's fixer strips the label back off
-#   (trailing_comma is a DEFAULT rule with the same conflict -- the two
-#   tools disagree on which literals count as single-line -- and so lives
-#   in `disabled_rules` below.)
-#   (Two more swift-format-owned layout rules are DEFAULT rules and so live
-#   in `disabled_rules` below: opening_brace, closure_parameter_position.)
+# Owned by swift-format:
 #
-#   Framework / idiom mismatch:
-#     prefer_nimble        tests use Swift Testing, not Nimble
-#     nimble_operator      Nimble-only operator rule
-#     prefixed_toplevel_constant   the k-prefix Apple abandoned in Swift 3;
-#                          contradicts AlwaysUseLowerCamelCase
+# contrasted_opening_brace
 #
-#   Mutually exclusive with a kept rule:
-#     explicit_type_interface  directly contradicts redundant_type_annotation;
-#                          we keep the idiomatic rule (let inference work)
-#     redundant_string_enum_value  directly contradicts explicit_enum_raw_value
-#                          (and raw_value_for_camel_cased_codable_enum): a
-#                          String case whose raw value equals its name is
-#                          what those rules require. We keep the explicit
-#                          form so protocol wire values stay visible.
+# swift-format emits K&R same-line braces.
 #
-#   Counterproductive:
-#     required_deinit      a leak-debugging rule; forcing an empty deinit on
-#                          every class conflicts with no_empty_block and adds
-#                          no safety. Off by necessity, not preference.
+# vertical_whitespace_between_cases
+#
+# swift-format owns case spacing.
+#
+# conditional_returns_on_newline
+#
+# swift-format keeps `guard ... else { return }`.
+#
+# multiline_arguments_brackets
+#
+# swift-format owns call-bracket placement.
+#
+# multiline_arguments
+#
+# swift-format owns how call arguments wrap.
+#
+# multiline_call_arguments
+#
+# swift-format owns how call arguments pack across lines.
+#
+# indentation_width
+#
+# swift-format owns indentation, including continuation depth.
+#
+# vertical_whitespace_opening_braces
+#
+# swift-format owns whitespace after `{`.
+#
+# vertical_whitespace_closing_braces
+#
+# swift-format owns whitespace before `}`.
+#
+# let_var_whitespace
+#
+# swift-format owns blank lines around declarations.
+#
+# pattern_matching_keywords
+#
+# swift-format emits `case .a(let x)`; this rule rewrites `case let .a(x)`.
+#
+# strict_fileprivate
+#
+# swift-format moves extension ACLs onto members as `fileprivate`.
+#
+# extension_access_modifier
+#
+# opposite rewrite; kept no_extension_access_modifier.
+#
+# trailing_closure
+#
+# swift-format labels every closure; this rule's fixer strips the label.
+#
+# Default rules with the same fight live in disabled_rules:
+# opening_brace, closure_parameter_position, trailing_comma.
+#
+# Framework / idiom mismatch:
+#
+# prefer_nimble
+#
+# tests use Swift Testing, not Nimble.
+#
+# nimble_operator
+#
+# Nimble-only operator rule.
+#
+# prefixed_toplevel_constant
+#
+# k-prefix Apple abandoned in Swift 3; contradicts AlwaysUseLowerCamelCase.
+#
+# Mutually exclusive with a kept rule:
+#
+# explicit_type_interface
+#
+# contradicts redundant_type_annotation.
+#
+# redundant_string_enum_value
+#
+# contradicts explicit_enum_raw_value. Keep explicit wire values.
+#
+# Counterproductive:
+#
+# required_deinit
+#
+# empty deinit on every class conflicts with no_empty_block.
 #
 # Analyzer rules (capture_variable, explicit_self, typesafe_array_init,
-# unused_declaration, unused_import) need `swiftlint analyze` with a compile
-# database, not `lint`; they are tracked as future gate work, not enabled
-# here.
+# unused_declaration, unused_import) need `swiftlint analyze` with a
+# compile database. Future gate work, not enabled here.
 
 strict: true
 
@@ -79,35 +110,21 @@ identifier_name:
     - y
     - z
 
-# Every source file opens with the copyright and licence header. The
-# rule forbids "Copyright" by default (to strip Xcode's auto-header),
-# so it is pointed at the header that is wanted instead.
+# Default file_header forbids "Copyright" (Xcode auto-headers). Point it
+# at the header this tree uses.
 file_header:
   required_pattern: '// Copyright \d{4} Petri Koistinen'
 
-# Typing discipline (Documentation/typing-discipline.md), mechanically enforced:
+# Typing discipline (Documentation/typing-discipline.md).
 custom_rules:
-  # A domain value must not be smuggled across an API boundary as a raw byte
-  # bag. `Data` / `String` are too broadly legitimate (wire I/O, text, URLs)
-  # to ban; only the raw [UInt8] byte bag is. The ONE sanctioned raw boundary
-  # is a domain type's own validating initializer / byte accessor; those
-  # files form the exception register below (kept minimal, justified,
-  # reviewed).
   raw_byte_array_in_api:
     name: "Raw [UInt8] across an API boundary"
     regex: '(?:func|init)\b[^{}\n]*\[UInt8\]'
     excluded:
-      # ZeroizingDigitStore is the module's sanctioned bytes<->credential
-      # boundary: its validating initializer is where entered digits become
-      # owned, zeroized storage.
+      # Sanctioned bytes<->domain boundaries; tests.
       - ".*/ZeroizingDigitStore\\.swift"
-      # ApplicationIdentifier owns its bytes<->AID boundary: the validating
-      # hex parser and the private validated-bytes initializer.
       - ".*/ApplicationIdentifier\\.swift"
-      # EcdsaSignature owns the raw-r||s <-> X9.62-DER boundary: it
-      # re-encodes card signature bytes and does no cryptography.
       - ".*/EcdsaSignature\\.swift"
-      # Test fixtures build raw bytes; the boundary rule is about shipped API.
       - ".*/Tests/.*"
     message: >
       A function takes or returns a raw [UInt8] across an API boundary.
@@ -116,26 +133,14 @@ custom_rules:
       validating initializer. See Documentation/typing-discipline.md.
     severity: error
 
-  # Release plan section 4.4: every protocol value has a meaningful named
-  # definition. No unexplained hex literal in production source, test
-  # source, or documentation examples. Wire fixtures belong in dedicated,
-  # provenance-marked test-vector files, which are the only sanctioned home
-  # for hex and are added to the exception register when they exist.
   unexplained_hex:
     name: "Unexplained hex literal"
     regex: '\b0x[0-9A-Fa-f_]+\b'
     excluded:
-      # The dedicated named-protocol-value home: every hex literal there
-      # is a named, documented constant (release plan section 4.4).
+      # Named protocol values; DER tags; tests; fixtures.
       - ".*/CardCore/Sources/CardCore/Values/.*"
-      # EcdsaSignature's DER tags/masks are named, documented constants
-      # at the card-signature-format boundary.
       - ".*/EcdsaSignature\\.swift"
-      # Test sources use hex literals for wire vectors and expected
-      # status words; the rule is about shipped protocol source.
       - ".*/Tests/.*"
-      # Provenance-marked wire fixtures (none yet). Example:
-      # - ".*/TestVectors/.*"
       - ".*/TestVectors/.*"
     message: >
       Hex literals are allowed only inside named protocol-value definitions
@@ -143,10 +148,6 @@ custom_rules:
       value a named, documented home. See Documentation/release-plan.md section 4.4.
     severity: error
 
-  # A whole-file or whole-next-line "disable all" is how a finding is
-  # hidden instead of fixed. Named suppressions are locked in
-  # Scripts/lint-suppression-register.json; this rule refuses the
-  # nuclear form that would bypass that register.
   no_nuclear_lint_suppression:
     name: "Nuclear lint suppression"
     regex: 'swiftlint:disable(?::(?:next|this|previous))?\s+all\b'
@@ -155,7 +156,6 @@ custom_rules:
       named suppression to Scripts/lint-suppression-register.json.
     severity: error
 
-  # File-level layout ignore would take a source out of swift-format.
   no_format_ignore_file:
     name: "File-level swift-format ignore"
     regex: 'swift-format-ignore-file'
@@ -163,9 +163,8 @@ custom_rules:
       Do not ignore swift-format for a whole file. Fix the layout.
     severity: error
 
-# Default rules carved because swift-format owns the layout they police:
-# swift-format puts the opening brace on its own line when a signature
-# wraps, and it wraps a long closure signature onto the line after `{`.
+# Default layout rules that fight swift-format, plus the enum-raw-value
+# pair kept as explicit_enum_raw_value.
 disabled_rules:
   - opening_brace
   - closure_parameter_position
@@ -304,10 +303,7 @@ opt_in_rules:
   - xct_specific_matcher
   - yoda_condition
 
-# Build artefacts and authoring-time generator scripts are excluded;
-# everything that ships is in scope. Scripts/ holds tooling that runs on
-# the developer machine only (icon generation, gates) and is reviewed as
-# tooling, not as product code.
+# Build artefacts and generator scripts. Worktrees duplicate the tree.
 excluded:
   - "**/.build"
   - "**/.swiftpm"
@@ -315,7 +311,4 @@ excluded:
   - "derivedData"
   - "Scripts"
   - "build"
-  # A checkout placed inside the repository carries its own copy of every
-  # source here, so linting it reports each finding twice and gates this
-  # commit on the contents of another one.
   - "Worktrees"
