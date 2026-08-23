@@ -7,10 +7,9 @@
 
   /// PIN 1 accepted for a card in a connected reader.
   ///
-  /// Held only while that reader still has a card. The box on the identity
-  /// screen is the optional pre-entry; the first live request also stores
-  /// the PIN and the box goes away. Disconnecting the reader or the card
-  /// forgets it. NFC Enable still writes the durable store; this does not.
+  /// Held only while that reader still has a card. The first live request
+  /// stores the PIN. Disconnecting the reader or the card forgets it.
+  /// NFC Enable still writes the durable store; this does not.
   @MainActor
   @Observable
   internal final class ReaderPin1Cache {

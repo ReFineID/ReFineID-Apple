@@ -1,44 +1,26 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
 #if REFINEID_LOCAL_CARD && os(iOS)
-  import CardCore
   import SwiftUI
 
   /// The identity area for cards in an attached reader.
+  ///
+  /// The same Person row NFC uses once an identity exists. A reader
+  /// already named the holder, so CAN and PIN 1 do not appear here.
   internal struct CardReaderIdentitySection: View {
+    /// The minimum comfortable tap target.
+    private static let tapTargetSide: CGFloat = 44
+
+    /// Pulls the tap target's slack back out of the row's layout.
+    private static let tapTargetOverflow: CGFloat = -10
+
+    /// Minimum gap between the holder name and the forget control.
+    private static let forgetButtonGap: CGFloat = 4
+
     internal let holders: [String]
-    internal let storedPin1: Bool
-    internal let pin1Cache: ReaderPin1Cache
     internal let onForgetPin1: () -> Void
-    internal let onSavePin1: (String) async -> String?
-
-    private var hasPin1: Bool { pin1Cache.isCached || storedPin1 }
-
-    @State private var pin1Entry = ""
-    @State private var isVerifying = false
-    @State private var failureMessage: String?
-    @FocusState private var isPin1Focused: Bool
-
-    private var isPin1EntryComplete: Bool {
-      pin1Entry.count >= Pin1.minimumDigitCount
-        && pin1Entry.count <= Pin1.maximumDigitCount
-    }
 
     internal var body: some View {
-      Group {
-        if !hasPin1 {
-          authSection
-          if let failureMessage {
-            Section {
-              CredentialOutcomeText(message: failureMessage, tone: .failure)
-            }
-          }
-        }
-        identitySection
-      }
-    }
-
-    private var identitySection: some View {
       Section {
         if holders.isEmpty {
           ProgressView()
@@ -53,17 +35,18 @@
               } label: {
                 PersonRowLabel(configured: true)
               }
-              if hasPin1 {
-                Spacer(minLength: 0)
-                Button(role: .destructive, action: onForgetPin1) {
-                  Image(systemName: "minus.circle")
-                    .font(.title3)
-                    .foregroundStyle(.red)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text("Forget PIN 1"))
-                .accessibilityIdentifier("forgetReaderPin1")
+              Spacer(minLength: Self.forgetButtonGap)
+              Button(role: .destructive, action: onForgetPin1) {
+                Image(systemName: "minus.circle")
+                  .font(.title3)
+                  .foregroundStyle(.red)
               }
+              .buttonStyle(.plain)
+              .frame(width: Self.tapTargetSide, height: Self.tapTargetSide)
+              .contentShape(Rectangle())
+              .padding(Self.tapTargetOverflow)
+              .accessibilityLabel(Text("Forget PIN 1"))
+              .accessibilityIdentifier("forgetReaderPin1")
             }
           }
         }
@@ -71,59 +54,6 @@
         Text("Identity")
           .frame(maxWidth: .infinity, alignment: .leading)
           .listRowInsets(EdgeInsets())
-      }
-    }
-
-    private var authSection: some View {
-      Section {
-        CredentialSecretField(
-          name: String(localized: "Basic Code (PIN 1)"),
-          text: $pin1Entry,
-          revealIdentifier: "readerPin1Reveal"
-        ) {
-          SecureField("Basic Code (PIN 1)", text: $pin1Entry)
-            .font(.body)
-            .keyboardType(.numberPad)
-            .textInputAutocapitalization(.never)
-            .autocorrectionDisabled()
-            .focused($isPin1Focused)
-            .accessibilityIdentifier("readerPin1Field")
-            .onValueChange(of: pin1Entry) { typed in
-              pin1Entry = LimitedDigits.pin1(typed)
-            }
-        }
-
-        Button {
-          savePin1()
-        } label: {
-          BrowserAuthenticationEnableLabel()
-        }
-        .buttonStyle(.borderedProminent)
-        .disabled(!isPin1EntryComplete || isVerifying)
-        .accessibilityIdentifier("saveReaderPin1")
-      } header: {
-        Text("Cache")
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .listRowInsets(EdgeInsets())
-      }
-    }
-
-    private func savePin1() {
-      guard isPin1EntryComplete, !isVerifying else { return }
-      let entered = pin1Entry
-      isVerifying = true
-      failureMessage = nil
-      Task {
-        let failure = await onSavePin1(entered)
-        await MainActor.run {
-          isVerifying = false
-          if let failure {
-            failureMessage = failure
-          } else {
-            pin1Entry = ""
-            isPin1Focused = false
-          }
-        }
       }
     }
   }

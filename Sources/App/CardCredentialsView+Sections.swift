@@ -87,7 +87,7 @@ extension CardCredentialsView {
           pin1Row
         }
         #if REFINEID_REMOTE_CARD
-          if offersNearField {
+          if offersNearField || hasReaderIdentity {
             remoteRouteRow
           }
         #endif
@@ -118,15 +118,10 @@ extension CardCredentialsView {
     internal var readerIdentitySection: some View {
       CardReaderIdentitySection(
         holders: readerHolders,
-        storedPin1: model.contents.hasPin1,
-        pin1Cache: ReaderPin1Cache.shared,
         onForgetPin1: {
           ReaderPin1Cache.shared.clear()
           CardCredentialStore.forgetPin1()
           model.refresh()
-        },
-        onSavePin1: { pin1 in
-          await CardReaderPinStore.verifyAndSave(pin1, model: model)
         }
       )
     }

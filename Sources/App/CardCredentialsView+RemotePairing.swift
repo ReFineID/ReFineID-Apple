@@ -100,8 +100,7 @@ import SwiftUI
         inlinePairingControls
       } else if pairingModel.hasActivePairs {
         HStack(spacing: RemotePairingLayout.forgetButtonGap) {
-          Text(String(localized: "Connected"))
-            .foregroundStyle(.green)
+          connectedStatusChip
           Button(role: .destructive) {
             withAnimation {
               pairingModel.revokeAll()
@@ -129,6 +128,17 @@ import SwiftUI
         .controlSize(.small)
         .accessibilityIdentifier("remoteConnectButton")
       }
+    }
+
+    private var connectedStatusChip: some View {
+      Button(String(localized: "Connected")) {
+        // Status only; the minus control drops the pairing.
+      }
+      .buttonStyle(.bordered)
+      .tint(.green)
+      .controlSize(.small)
+      .allowsHitTesting(false)
+      .accessibilityRemoveTraits(.isButton)
     }
 
     @ViewBuilder private var inlinePairingControls: some View {
