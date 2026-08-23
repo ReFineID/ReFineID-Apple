@@ -11,7 +11,6 @@ import SwiftUI
     private enum RemotePairingLayout {
       static let inputSpacing: CGFloat = 8
       static let inlineSpacing: CGFloat = 6
-      static let promptSpacing: CGFloat = 4
       static let inlineInputWidth: CGFloat = 90
       static let tapTargetSide: CGFloat = 44
       static let tapTargetOverflow: CGFloat = -10
@@ -78,34 +77,28 @@ import SwiftUI
         if case .connecting = pairingModel.phase {
           ProgressView()
             .controlSize(.small)
-        } else {
-          Button {
-            withAnimation {
-              isPairingInputActive = false
-              pairingModel.cancel()
-              pairingCodeDigits = ""
-            }
-          } label: {
-            Image(systemName: "xmark.circle.fill")
-              .foregroundStyle(.secondary)
-          }
-          .buttonStyle(.borderless)
-          .accessibilityLabel(String(localized: "Cancel"))
         }
       }
     }
 
     @ViewBuilder private var remoteActionContent: some View {
       if case .offer(let code) = pairingModel.phase {
-        remoteOfferContent(code)
+        Text(RappPairingCode.formatted(code))
+          .font(.system(.body, design: .monospaced, weight: .semibold))
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .accessibilityIdentifier("pairingCode")
       } else if case .connecting = pairingModel.phase {
-        remoteConnectingContent
+        ProgressView()
+          .controlSize(.small)
+          .frame(maxWidth: .infinity, alignment: .leading)
       } else {
-        Button(String(localized: "Connect Remote Reader")) {
+        Button(String(localized: "Connect")) {
           withAnimation {
             pairingModel.createOffer()
           }
         }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
         .accessibilityIdentifier("connectRemoteReader")
       }
     }
@@ -150,24 +143,6 @@ import SwiftUI
       }
     }
 
-    private var remoteConnectingContent: some View {
-      HStack {
-        ProgressView()
-          .controlSize(.small)
-        Text(String(localized: "Connecting..."))
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
-        Spacer()
-        Button {
-          pairingModel.cancel()
-        } label: {
-          Image(systemName: "xmark.circle.fill")
-            .foregroundStyle(.secondary)
-        }
-        .buttonStyle(.borderless)
-      }
-    }
-
     internal var remoteReaderSection: some View {
       Section {
         remoteIdentityRow
@@ -205,29 +180,6 @@ import SwiftUI
           pairingCodeDigits = ""
           isPairingCodeFocused = true
         }
-      }
-    }
-
-    private func remoteOfferContent(_ code: String) -> some View {
-      HStack {
-        VStack(alignment: .leading, spacing: RemotePairingLayout.promptSpacing) {
-          Text(RappPairingCode.formatted(code))
-            .font(.system(.title3, design: .monospaced, weight: .bold))
-            .accessibilityIdentifier("pairingCode")
-            .accessibilityLabel(RappPairingCode.formatted(code))
-          Text(String(localized: "Enter this code on your iPhone"))
-            .font(.caption)
-            .foregroundStyle(.secondary)
-        }
-        Spacer()
-        Button {
-          pairingModel.cancel()
-        } label: {
-          Image(systemName: "xmark.circle.fill")
-            .foregroundStyle(.secondary)
-        }
-        .buttonStyle(.borderless)
-        .accessibilityLabel(String(localized: "Cancel"))
       }
     }
   }
