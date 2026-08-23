@@ -127,7 +127,8 @@ import SwiftUI
     @ViewBuilder private var remoteActionContent: some View {
       if case .offer(let code) = pairingModel.phase {
         Text(RappPairingCode.formatted(code))
-          .font(.system(.body, design: .monospaced, weight: .semibold))
+          .font(.system(.body, design: .monospaced, weight: .bold))
+          .foregroundStyle(.primary)
           .multilineTextAlignment(.trailing)
           .accessibilityIdentifier("pairingCode")
       } else if case .connecting = pairingModel.phase {
