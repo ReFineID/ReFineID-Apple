@@ -57,6 +57,9 @@
           resumeRegularRelay()
           #if os(macOS)
             PersistentTokenRegistry.shared.startAfterPairing()
+            // After the completed ceremony has released its coordinator,
+            // mint the next code this Settings pane exists to show.
+            createOffer()
           #endif
         } catch {
           fail(String(localized: "The paired device could not be selected"))

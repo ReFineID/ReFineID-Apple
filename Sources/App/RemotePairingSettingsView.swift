@@ -39,11 +39,6 @@
       .onDisappear {
         model.cancel()
       }
-      .onReceive(model.$phase) { phase in
-        if case .paired = phase {
-          model.createOffer()
-        }
-      }
     }
   }
 
