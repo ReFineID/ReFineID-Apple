@@ -318,6 +318,7 @@ excluded:
   - "**/.build"
   - "**/.swiftpm"
   - "DerivedData"
+  - "derivedData"
   - "Scripts"
   - "build"
   # A checkout placed inside the repository carries its own copy of every

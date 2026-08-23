@@ -22,11 +22,21 @@
 # - .swiftlint-baseline.json must match BaselineSha256 below; a rewritten
 #   baseline is a gate change, not a silent swallow
 #
-# Both tools must be silent for the gate to pass. Run from anywhere;
-# operates on the repository.
+# A clean run prints nothing. Findings go to stderr.
+# Run from anywhere; operates on the repository.
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
+
+fail() {
+  local name=$1
+  local log=$2
+  printf 'lint FAIL: %s\n' "${name}" >&2
+  if [[ -n ${log} ]]; then
+    printf '%s\n' "${log}" >&2
+  fi
+  exit 1
+}
 
 # SHA-256 of .swiftlint-baseline.json. Paying debt down rewrites the
 # baseline and this digest in the same commit.
@@ -40,18 +50,20 @@ format_paths=(
   Scripts/BrainpoolBenchmark.swift
 )
 
-echo "swift format lint..."
-swift format lint --strict --recursive "${format_paths[@]}"
+format_log=$(
+  swift format lint --strict --recursive "${format_paths[@]}" 2>&1
+) || fail "swift-format" "${format_log}"
 
-echo "swiftlint..."
 # The baseline records the structural debt (type ordering, file splits,
 # magic numbers) present when the gate was raised. New findings fail;
 # paying debt down rewrites the baseline and BaselineSha256 together.
-swiftlint lint --quiet --baseline .swiftlint-baseline.json
+swiftlint_log=$(
+  swiftlint lint --quiet --baseline .swiftlint-baseline.json 2>&1
+) || fail "swiftlint" "${swiftlint_log}"
 
-echo "lint locks..."
 export REFINEID_BASELINE_SHA="${BaselineSha256}"
-python3 - "${format_paths[@]}" << 'PY'
+lock_log=$(
+  python3 - "${format_paths[@]}" 2>&1 << 'PY'
 import hashlib, json, os, re, sys
 from collections import Counter
 from pathlib import Path
@@ -135,5 +147,4 @@ if failed:
     )
     sys.exit(1)
 PY
-
-echo "lint gate PASS"
+) || fail "lint locks" "${lock_log}"

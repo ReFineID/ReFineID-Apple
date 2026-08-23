@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-# Refuses any commit while the lint gate fails. The gate is Scripts/lint.sh,
-# not a freehand swiftlint one-liner. pre-push runs the same script.
+# Refuses any commit while the lint gate fails. Clean tree: no output.
+# Findings print to stderr. The gate is Scripts/lint.sh.
 #
 # Activate once per clone:
 #   git config core.hooksPath Scripts/githooks
