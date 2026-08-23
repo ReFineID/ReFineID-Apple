@@ -105,9 +105,10 @@ Credential values get the strictest treatment the language allows:
   at-most-once handoff to the card command.
 - No PIN, PUK, serial, certificate, or APDU payload reaches a formatting
   or logging API. Data is classified before it reaches one.
-- PIN1 enters reusable process memory only after the card accepts it. That
-  memory is bound to the complete card serial, zeroizing, and cleared on
-  the first confirmed rejection. PIN2 and PUK never enter it.
+- PIN1 enters reusable token memory only after the card accepts it. That
+  memory is bound to the complete card serial, zeroizing, cleared on the
+  first confirmed rejection, and gone when the token is. PIN2 and PUK
+  never enter it.
 
 ## Unknown data stays unknown
 

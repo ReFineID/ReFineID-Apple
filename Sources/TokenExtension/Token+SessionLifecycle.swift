@@ -42,18 +42,20 @@ extension Token {
     }
   }
 
-  /// Releases the held session when the card is genuinely gone.
+  /// Releases the held session and the cached PIN1 when the card is gone.
   ///
   /// Only `.missing` counts. Releasing on any other non-valid state was
   /// measured tearing a signature down part way through a read: a card
   /// momentarily out of the field is still the same card, and the slot
-  /// says so a moment later.
+  /// says so a moment later. PIN1 is this token's: the card leaving is
+  /// what forgets it.
   internal func observeSlotState(of smartCard: TKSmartCard) {
     slotStateObservation = smartCard.slot.observe(\.state, options: [.new]) {
-      [held = heldSession] observed, change in
+      [held = heldSession, pin1 = acceptedPin1] observed, change in
       let state = change.newValue ?? observed.state
       guard state == .missing else { return }
       held.release()
+      pin1.clearAll()
     }
   }
 }

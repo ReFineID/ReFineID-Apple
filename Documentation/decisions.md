@@ -5,6 +5,14 @@ controls iPhone scope. `Documentation/release-plan.md` controls
 macOS scope and shared security behavior. This file records the concrete
 values chosen under them.
 
+## 2026-08-23 PIN1 lives on the token, not on a timer
+
+A reader PIN1 the card has accepted is cached on that live CryptoTokenKit
+token. There is no 15-minute window and no other timeout. Pulling the
+card or unplugging the reader ends the token, and the PIN goes with it.
+The token extension process may stay up; the cache must not. NFC still
+uses the durable store the holder wrote at Enable.
+
 ## 2026-08-23 Product owns RAPP; the card leaving ends the pairing
 
 This repository is the change controller for the Remote Authorization
@@ -650,9 +658,10 @@ stored; a confirmed rejection removes the automatic identity before it can be
 offered again.
 
 Once a card accepts a freshly entered PIN1, the token extension may retain a
-zeroizing copy for that complete card serial until the extension process exits.
-This avoids repeated entry while retaining a fresh retry-floor probe and actual
-VERIFY for every reader signature. There is no timer and no 5/5/5 prerequisite.
+zeroizing copy for that complete card serial on the live token. This avoids
+repeated entry while retaining a fresh retry-floor probe and actual VERIFY
+for every reader signature. There is no timer and no 5/5/5 prerequisite. The
+copy ends when the card or reader leaves.
 
 The first confirmed PIN1 rejection clears that process memory. When the token is
 an automatically configured iOS identity, it also deletes stored PIN1, every

@@ -2,20 +2,19 @@
 
 import os
 
-/// Process-lifetime memory of PIN1 values the named card has accepted.
+/// PIN1 the named card has accepted, held by one live token.
 ///
-/// Remembers the *PIN entry*, never a successful VERIFY result: every
-/// signature still sends VERIFY PIN1 to the card. The memory only spares
-/// the holder from retyping an accepted PIN while this extension process
-/// remains alive.
+/// Remembers the PIN entry, never a successful VERIFY result: every
+/// signature still sends VERIFY PIN1 to the card. The memory only
+/// spares the holder from retyping while this token remains. The token
+/// dies when the card or reader leaves, and the PIN dies with it.
 ///
 /// Cannot lock a card because it only ever holds a PIN the card just
 /// accepted, every reuse is bound to the full card serial, and the caller
 /// obtains fresh PIN1 retry state before checkout. A value is removed on
 /// the first confirmed card rejection.
 ///
-/// Values live only in zeroizing memory. They are never persisted here and
-/// naturally disappear when the process exits.
+/// Values live only in zeroizing memory. They are never persisted here.
 public final class AcceptedPin1Memory: Sendable {
   /// One accepted PIN per physical card.
   private let entries = OSAllocatedUnfairLock<[TokenSerial: ZeroizingDigitStore]>(

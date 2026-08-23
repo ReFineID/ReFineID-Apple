@@ -330,8 +330,8 @@ internal final class TokenSession: TKSmartCardTokenSession, TKTokenSessionDelega
     let authorizedPinPresent = authorized != nil
     TokenLog.trace("sign: pin1 source=\(pinSource) authorized=\(authorizedPinPresent)")
     // Ask for the PIN BEFORE touching the card. A contactless token uses
-    // its explicitly stored credential rather than process accepted-PIN
-    // memory, so a signature with no PIN can
+    // its explicitly stored credential rather than the live token's
+    // accepted-PIN memory, so a signature with no PIN can
     // only end in this throw - and reaching it after PACE leaves the card
     // mid-secure-channel, where the next PACE attempt dies on SELECT with
     // SW 6999.

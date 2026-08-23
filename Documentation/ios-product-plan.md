@@ -43,9 +43,9 @@ The Rust core remains the reference oracle.
 - Calendar versioning `YY.M.D` with ten-minute-bucket build numbers;
   tagged releases.
 - Safety invariants: the PIN1 retry floor (proceed only at three or more
-  attempts), process-lifetime card-bound memory only for a PIN1 the card
-  accepted, at-most-once credential transport, and wrong-PIN rejection
-  memory. Normal minting and authentication never probe PIN2 or PUK. The
+  attempts), token-bound memory only for a PIN1 the card accepted, at-most-once
+  credential transport, and wrong-PIN rejection memory. Normal minting and
+  authentication never probe PIN2 or PUK. The
   system-driven NFC field also omits the PIN1 preflight because its measured
   deadline cannot carry that extra APDU; it uses the explicitly stored PIN1
   and revokes the identity on a confirmed rejection.

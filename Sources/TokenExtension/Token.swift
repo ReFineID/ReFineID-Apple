@@ -90,6 +90,9 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
   /// Empty on the contact path, which opens a session per operation.
   internal let heldSession = HeldCardSession()
 
+  /// PIN1 this card accepted, kept only while this token is live.
+  internal let acceptedPin1 = AcceptedPin1Memory()
+
   /// Releases the held session when the card leaves the slot.
   internal var slotStateObservation: NSKeyValueObservation?
 
@@ -132,6 +135,7 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
       tokenDriver: tokenDriver
     )
     delegate = self
+    observeSlotState(of: smartCard)
     TokenLog.info("Token.init: super.init done, profile=\(String(describing: material.profile))")
     try publish(
       material.identity,
@@ -209,6 +213,7 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
     revocationLock.lock()
     revoked = true
     revocationLock.unlock()
+    acceptedPin1.clearAll()
     heldSession.release()
   }
 
@@ -220,6 +225,7 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
   /// the busy answer ``NearFieldCardSession`` has to retry through -
   /// about 2.5 seconds of the holder's time for nothing.
   deinit {
+    acceptedPin1.clearAll()
     heldSession.release()
     // Last chance to get the trace out of a process ctkd is dropping: a
     // token going away is often the only sign of what ended a login, and

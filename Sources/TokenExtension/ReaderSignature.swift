@@ -13,8 +13,8 @@ import Security
 /// its field for as long as the work takes, so a signature here reads the
 /// serial and PIN1 retry counter before it does anything irreversible.
 /// PIN2 and PUK are unrelated to authentication and stay off this path.
-/// A PIN the card accepts can then be reused for the rest of the extension
-/// process instead of asked for once per signature.
+/// A PIN the card accepts is kept on this token and reused until the
+/// card or reader leaves.
 ///
 /// A card held against a phone gets none of that: the system ends the
 /// slot about two seconds after the mint, so ``FieldSignature`` asks for
@@ -72,10 +72,11 @@ internal enum ReaderSignature {
   /// cache, or none -- in which case the system is asked to prompt.
   ///
   /// Accepted-PIN memory is bound to the full card serial and lives only
-  /// for this extension process; a miss asks the holder again.
+  /// on this token; a miss asks the holder again.
   private static func pin(
     entered: String?,
-    serial: TokenSerial
+    serial: TokenSerial,
+    token: Token
   ) throws -> Pin1 {
     if let entered {
       guard let built = Pin1(digits: entered) else {
@@ -84,7 +85,7 @@ internal enum ReaderSignature {
       return built
     }
     guard
-      let cached = CredentialMemory.acceptedPin1.checkout(serial: serial)
+      let cached = token.acceptedPin1.checkout(serial: serial)
     else {
       throw TokenError.authenticationRequired
     }
@@ -109,7 +110,7 @@ internal enum ReaderSignature {
 
     // Where the PIN came from is not a second answer to be returned:
     // reaching this line without one entered means the cache supplied it.
-    let pin1 = try Self.pin(entered: enteredPin, serial: serial)
+    let pin1 = try Self.pin(entered: enteredPin, serial: serial, token: token)
 
     let fingerprint = pin1.fingerprint(boundTo: serial)
     guard !CredentialMemory.rejectedPins.isKnownRejected(fingerprint) else {
@@ -147,7 +148,7 @@ internal enum ReaderSignature {
       throw TokenError.signatureMalformed
     }
     TokenLog.info("sign: local verify OK, \(signature.count) wire bytes")
-    Self.rememberOnSuccess(enteredPin: enteredPin, serial: serial)
+    Self.rememberOnSuccess(enteredPin: enteredPin, serial: serial, token: token)
     return signature
   }
 
@@ -174,10 +175,11 @@ internal enum ReaderSignature {
   /// Remembers a freshly entered PIN only after the card accepted it.
   private static func rememberOnSuccess(
     enteredPin: String?,
-    serial: TokenSerial
+    serial: TokenSerial,
+    token: Token
   ) {
     if let entered = enteredPin, let accepted = Pin1(digits: entered) {
-      CredentialMemory.acceptedPin1.store(accepted, serial: serial)
+      token.acceptedPin1.store(accepted, serial: serial)
     }
   }
 }

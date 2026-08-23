@@ -10,18 +10,19 @@ extension Token {
   /// Transport loss, PACE failure, malformed signatures, and TLS errors do
   /// not touch stored state. Only the card's VERIFY response reaches here.
   ///
-  /// The rejected fingerprint and accepted-PIN memory are process state.
-  /// The stored PIN and prime are persistent authority, so they are removed
-  /// before the failure returns. Registration removal is queued off the CTK
-  /// callback thread to avoid asking ctkd to unregister a token while ctkd is
-  /// still executing that token's sign callback.
+  /// The rejected fingerprint is process state. Accepted PIN1 is this
+  /// token's and leaves with it. The stored PIN and prime are persistent
+  /// authority, so they are removed before the failure returns.
+  /// Registration removal is queued off the CTK callback thread to avoid
+  /// asking ctkd to unregister a token while ctkd is still executing that
+  /// token's sign callback.
   internal func revokeAutomaticIdentityAfterPin1Rejection(
     serial: TokenSerial,
     fingerprint: PinFingerprint
   ) {
     revokeCurrentInstance()
     CredentialMemory.rejectedPins.recordRejection(fingerprint)
-    CredentialMemory.acceptedPin1.clear(serial: serial)
+    acceptedPin1.clear(serial: serial)
 
     guard CardInstanceIdentifier(tokenSerial: serial) == cardInstanceID else {
       TokenLog.error("PIN1 rejection serial did not match token instance")
@@ -40,7 +41,7 @@ extension Token {
   internal func revokeAutomaticIdentityAfterCanRejection() {
     revokeCurrentInstance()
     if let serial = primedSerial {
-      CredentialMemory.acceptedPin1.clear(serial: serial)
+      acceptedPin1.clear(serial: serial)
     }
     revokeStoredAutomaticIdentity(
       reason: .canRejection,
@@ -59,7 +60,7 @@ extension Token {
   ) {
     revokeCurrentInstance()
     CredentialMemory.rejectedPins.recordRejection(fingerprint)
-    CredentialMemory.acceptedPin1.clear(serial: serial)
+    acceptedPin1.clear(serial: serial)
 
     guard CardInstanceIdentifier(tokenSerial: serial) == cardInstanceID else {
       TokenLog.error("PIN2 rejection serial did not match token instance")

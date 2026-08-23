@@ -125,11 +125,12 @@ Read-only status and certificate inspection remain available when safe.
 
 ### Accepted PIN1 memory
 
-A PIN1 may enter process memory only after the card has accepted it. The value is
-bound to the complete card serial, stored in zeroizing memory, and may live for
-the token-extension process lifetime. Every reader signature still obtains
-fresh PIN1 retry state and sends VERIFY PIN1; the memory removes repeated user
-entry, not card verification. PIN2 and PUK never enter this memory.
+A PIN1 may enter memory only after the card has accepted it. The value is
+bound to the complete card serial, stored in zeroizing memory on the live
+token, and dies when that token dies: card removal or reader
+disconnection. There is no timer. Every reader signature still obtains
+fresh PIN1 retry state and sends VERIFY PIN1; the memory removes repeated
+user entry, not card verification. PIN2 and PUK never enter this memory.
 
 The first confirmed PIN1 rejection clears that card's accepted PIN memory. For
 an automatically configured iOS identity it also removes stored PIN1, that
