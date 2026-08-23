@@ -12,7 +12,9 @@
     internal let request: RappAuthorizationRequest
     internal let inbox: RappAuthorizationInbox
 
+    @State private var pin1 = ""
     @State private var pin2 = ""
+    @FocusState private var pin1Focused: Bool
     @FocusState private var pin2Focused: Bool
 
     private var title: LocalizedStringKey {
@@ -29,68 +31,105 @@
     internal var body: some View {
       NavigationStack {
         Form {
-          Section {
-            LabeledContent("Requester") {
-              Text(request.requester)
-                .multilineTextAlignment(.trailing)
-            }
+          requesterSection
+          if request.action == .browserAuthentication, request.needsPin1 {
+            authPin1Section
           }
-
           if request.action == .documentSignature {
-            Section("Signature authorization") {
-              CredentialSecretField(
-                name: String(localized: "Signature (PIN 2)"),
-                text: $pin2,
-                revealIdentifier: "rappPin2Reveal"
-              ) {
-                SecureField("Signature (PIN 2)", text: $pin2)
-                  .keyboardType(.numberPad)
-                  .textContentType(.none)
-                  .onValueChange(of: pin2) { typed in
-                    pin2 = LimitedDigits.pin(typed)
-                  }
-                  .focused($pin2Focused)
-                  .accessibilityIdentifier("rappPin2")
-              }
-            }
+            signPin2Section
           }
-
-          Section {
-            Button {
-              approve()
-            } label: {
-              Text("Approve")
-                .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(!canApprove)
-            .accessibilityIdentifier("rappApprove")
-
-            Button(role: .destructive) {
-              deny()
-            } label: {
-              Text("Deny")
-                .frame(maxWidth: .infinity)
-            }
-            .accessibilityIdentifier("rappDeny")
-          }
+          actionsSection
         }
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .interactiveDismissDisabled()
         .onAppear {
-          pin2Focused = request.action == .documentSignature
+          if request.action == .browserAuthentication, request.needsPin1 {
+            pin1Focused = true
+          } else if request.action == .documentSignature {
+            pin2Focused = true
+          }
         }
         .onDisappear {
+          pin1 = ""
           pin2 = ""
         }
+      }
+    }
+
+    private var requesterSection: some View {
+      Section {
+        LabeledContent("Requester") {
+          Text(request.requester)
+            .multilineTextAlignment(.trailing)
+        }
+      }
+    }
+
+    private var authPin1Section: some View {
+      Section("Authentication") {
+        CredentialSecretField(
+          name: String(localized: "Authentication (PIN 1)"),
+          text: $pin1,
+          revealIdentifier: "rappPin1Reveal"
+        ) {
+          SecureField("Authentication (PIN 1)", text: $pin1)
+            .keyboardType(.numberPad)
+            .textContentType(.none)
+            .onValueChange(of: pin1) { typed in
+              pin1 = LimitedDigits.pin(typed)
+            }
+            .focused($pin1Focused)
+            .accessibilityIdentifier("rappPin1")
+        }
+      }
+    }
+
+    private var signPin2Section: some View {
+      Section("Signature authorization") {
+        CredentialSecretField(
+          name: String(localized: "Signature (PIN 2)"),
+          text: $pin2,
+          revealIdentifier: "rappPin2Reveal"
+        ) {
+          SecureField("Signature (PIN 2)", text: $pin2)
+            .keyboardType(.numberPad)
+            .textContentType(.none)
+            .onValueChange(of: pin2) { typed in
+              pin2 = LimitedDigits.pin(typed)
+            }
+            .focused($pin2Focused)
+            .accessibilityIdentifier("rappPin2")
+        }
+      }
+    }
+
+    private var actionsSection: some View {
+      Section {
+        Button {
+          approve()
+        } label: {
+          Text("Approve")
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+        .disabled(!canApprove)
+        .accessibilityIdentifier("rappApprove")
+
+        Button(role: .destructive) {
+          deny()
+        } label: {
+          Text("Deny")
+            .frame(maxWidth: .infinity)
+        }
+        .accessibilityIdentifier("rappDeny")
       }
     }
 
     private var canApprove: Bool {
       switch request.action {
       case .browserAuthentication:
-        true
+        !request.needsPin1 || Pin1(digits: pin1) != nil
       case .documentSignature:
         Pin2(digits: pin2) != nil
       case .shareCardInformation:
@@ -101,7 +140,12 @@
     private func approve() {
       switch request.action {
       case .browserAuthentication:
-        inbox.approve(request.id)
+        if request.needsPin1 {
+          inbox.approveBrowserAuthentication(request.id, pin1: pin1)
+          pin1 = ""
+        } else {
+          inbox.approve(request.id)
+        }
       case .documentSignature:
         inbox.approveDocumentSignature(request.id, pin2: pin2)
         pin2 = ""
@@ -111,6 +155,7 @@
     }
 
     private func deny() {
+      pin1 = ""
       pin2 = ""
       inbox.deny(request.id)
     }

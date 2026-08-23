@@ -10,8 +10,9 @@
 
     // MARK: Properties
 
-    private let inbox: RappAuthorizationInbox
+    internal let inbox: RappAuthorizationInbox
     internal let requireExplicitReconnect: @MainActor @Sendable () -> Void
+    internal var pin1ByOperation: [Data: String] = [:]
     internal var pin2ByOperation: [Data: String] = [:]
 
     // MARK: Lifecycle
@@ -41,110 +42,119 @@
       _ event: RappConnectionCoordinator.Event,
       from coordinator: RappConnectionCoordinator
     ) async {
-      do {
-        switch event {
-        case .established:
-          return
-
-        case .inspectPrerequisites(let operationID, let operation):
-          guard prerequisitesExist(for: operation) else {
-            try await coordinator.requestInvalidOrUnsupported(
-              operationID: operationID)
-            return
-          }
-          try await coordinator.prerequisitesComplete(operationID: operationID)
-
-        case .awaitUserApproval(let operationID, let operation):
-          guard let action = action(for: operation.kind) else {
-            try await coordinator.requestInvalidOrUnsupported(
-              operationID: operationID)
-            return
-          }
-          // The QR scan that paired this device, carrying the offer's 256-bit
-          // bearer secret, is the human consent that authorizes this session.
-          // Safe reads and browser authentication proceed without another
-          // prompt: browser authentication signs with the already-stored PIN1
-          // (its prerequisite check confirmed it), so nothing more is asked.
-          // Only qualified document signing, which needs PIN2 entered per
-          // signature, still prompts.
-          if operation.kind.isSafeRead || operation.kind == .browserAuthenticate {
-            try await coordinator.approve(operationID: operationID)
-            return
-          }
-          let request = RappAuthorizationRequest(
-            id: operationID.base64EncodedString(),
-            requester: await Self.requesterName()
-              ?? operation.displayContext
-              ?? String(localized: "Paired device"),
-            action: action
-          )
-          switch await inbox.ask(request) {
-          case .approved:
-            try await coordinator.approve(operationID: operationID)
-          case .approvedDocumentSignature(let pin2):
-            guard operation.kind == .signDocument else {
-              try await coordinator.requestInvalidOrUnsupported(
-                operationID: operationID)
-              return
-            }
-            pin2ByOperation[operationID] = pin2
-            try await coordinator.approve(operationID: operationID)
-          case .denied:
-            try await coordinator.deny(operationID: operationID)
-          }
-
-        case .executeSafeRead(let operationID, let operation):
-          await executeSafeRead(
-            operationID: operationID,
-            operation: operation,
-            coordinator: coordinator
-          )
-
-        case .executeCardCommand(let operationID, let operation):
-          await executeCardCommand(
-            operationID: operationID,
-            operation: operation,
-            coordinator: coordinator
-          )
-
-        case .advisoryCancellation(let operationID),
-          .operationFinished(let operationID),
-          .peerUnknownOperation(let operationID):
-          await cancel(operationID)
-
-        case .terminal(let operationID, _, _):
-          await cancel(operationID)
-
-        case .peerBusy:
-          return
-
-        case .completed:
-          await coordinator.close()
-
-        case .closed:
-          pin2ByOperation.removeAll(keepingCapacity: false)
-          await inbox.cancelAll()
-        }
-      } catch {
-        pin2ByOperation.removeAll(keepingCapacity: false)
-        await inbox.cancelAll()
+      switch event {
+      case .established, .peerBusy:
+        return
+      case .inspectPrerequisites(let operationID, let operation):
+        await inspectPrerequisites(
+          operationID: operationID, operation: operation, coordinator: coordinator)
+      case .awaitUserApproval(let operationID, let operation):
+        await handleApproval(
+          operationID: operationID, operation: operation, coordinator: coordinator)
+      case .executeSafeRead(let operationID, let operation):
+        await executeSafeRead(
+          operationID: operationID, operation: operation, coordinator: coordinator)
+      case .executeCardCommand(let operationID, let operation):
+        await executeCardCommand(
+          operationID: operationID, operation: operation, coordinator: coordinator)
+      case .advisoryCancellation(let operationID),
+        .operationFinished(let operationID),
+        .peerUnknownOperation(let operationID),
+        .terminal(let operationID, _, _):
+        await cancel(operationID)
+      case .completed:
         await coordinator.close()
+      case .closed:
+        await cleanup()
+      }
+    }
+
+    private func cleanup() async {
+      pin1ByOperation.removeAll(keepingCapacity: false)
+      pin2ByOperation.removeAll(keepingCapacity: false)
+      await inbox.cancelAll()
+    }
+
+    private func inspectPrerequisites(
+      operationID: Data,
+      operation: RappOperationDriver.Operation,
+      coordinator: RappConnectionCoordinator
+    ) async {
+      guard prerequisitesExist(for: operation) else {
+        try? await coordinator.requestInvalidOrUnsupported(operationID: operationID)
+        return
+      }
+      try? await coordinator.prerequisitesComplete(operationID: operationID)
+    }
+
+    private func handleApproval(
+      operationID: Data,
+      operation: RappOperationDriver.Operation,
+      coordinator: RappConnectionCoordinator
+    ) async {
+      guard let action = action(for: operation.kind) else {
+        try? await coordinator.requestInvalidOrUnsupported(operationID: operationID)
+        return
+      }
+      if operation.kind.isSafeRead {
+        try? await coordinator.approve(operationID: operationID)
+        return
+      }
+      let hasStoredPin1 = CardCredentialStore.contents().hasPin1
+      if operation.kind == .browserAuthenticate, hasStoredPin1 {
+        try? await coordinator.approve(operationID: operationID)
+        return
+      }
+      let request = RappAuthorizationRequest(
+        id: operationID.base64EncodedString(),
+        requester: await Self.requesterName()
+          ?? operation.displayContext
+          ?? String(localized: "Paired device"),
+        action: action,
+        needsPin1: operation.kind == .browserAuthenticate && !hasStoredPin1
+      )
+      await resolveApprovalDecision(
+        await inbox.ask(request),
+        operationID: operationID,
+        operation: operation,
+        coordinator: coordinator
+      )
+    }
+
+    private func resolveApprovalDecision(
+      _ decision: RappAuthorizationDecision,
+      operationID: Data,
+      operation: RappOperationDriver.Operation,
+      coordinator: RappConnectionCoordinator
+    ) async {
+      switch decision {
+      case .approved:
+        try? await coordinator.approve(operationID: operationID)
+      case .approvedBrowserAuthentication(let pin1):
+        pin1ByOperation[operationID] = pin1
+        try? await coordinator.approve(operationID: operationID)
+      case .approvedDocumentSignature(let pin2):
+        guard operation.kind == .signDocument else {
+          try? await coordinator.requestInvalidOrUnsupported(operationID: operationID)
+          return
+        }
+        pin2ByOperation[operationID] = pin2
+        try? await coordinator.approve(operationID: operationID)
+      case .denied:
+        try? await coordinator.deny(operationID: operationID)
       }
     }
 
     private func prerequisitesExist(
       for operation: RappOperationDriver.Operation
     ) -> Bool {
-      let stored = CardCredentialStore.contents()
       switch operation.kind {
       case .inspectCard, .readIdentity, .readAuthenticationCertificate,
         .readSignatureCertificate:
         return operation.keyProfile == nil
           && operation.algorithm == nil
           && operation.digest.isEmpty
-      case .browserAuthenticate:
-        return stored.hasPin1 && hasSigningDescriptor(operation)
-      case .signDocument:
+      case .browserAuthenticate, .signDocument:
         return hasSigningDescriptor(operation)
       }
     }
@@ -168,112 +178,6 @@
       case .inspectCard, .readIdentity, .readAuthenticationCertificate,
         .readSignatureCertificate:
         .shareCardInformation
-      }
-    }
-
-    internal func finishRead(
-      _ outcome: RappNfcCardExecutor.Outcome,
-      operationID: Data,
-      coordinator: RappConnectionCoordinator
-    ) async {
-      if case .result(let bytes) = outcome {
-        try? await coordinator.completeCertificate(
-          operationID: operationID,
-          der: bytes
-        )
-      } else {
-        await finishFailure(outcome, operationID: operationID, coordinator: coordinator)
-      }
-    }
-
-    internal func finishSignature(
-      _ outcome: RappNfcCardExecutor.Outcome,
-      operationID: Data,
-      coordinator: RappConnectionCoordinator
-    ) async {
-      if case .result(let signature) = outcome {
-        do {
-          #if DEBUG
-            HolderTrace.say("answering with \(signature.count) bytes")
-          #endif
-          try await coordinator.completeSignature(
-            operationID: operationID,
-            signature: signature
-          )
-          #if DEBUG
-            HolderTrace.say("answer accepted")
-          #endif
-        } catch {
-          #if DEBUG
-            HolderTrace.say("answer refused: \(String(describing: error))")
-          #endif
-        }
-      } else {
-        await finishFailure(outcome, operationID: operationID, coordinator: coordinator)
-      }
-    }
-
-    internal func finishFailure(
-      _ outcome: RappNfcCardExecutor.Outcome,
-      operationID: Data,
-      coordinator: RappConnectionCoordinator
-    ) async {
-      switch outcome {
-      case .result:
-        await coordinator.close()
-      case .rejected(let rejection):
-        switch rejection {
-        case .cardAccessNumber:
-          CardCredentialStore.forgetAll()
-        case .credential(.pin1, _):
-          CardCredentialStore.forgetPin1()
-        case .credential(.pin2, _), .credential(.puk, _):
-          break
-        }
-        await requireExplicitReconnect()
-        try? await coordinator.credentialRejected(operationID: operationID)
-      case .refusedBeforeCredentialTransmit(let refusal):
-        switch refusal {
-        case .cardUnavailable:
-          try? await coordinator.cardRemovedBeforeTransmit(operationID: operationID)
-        case .credentialBlocked, .credentialInvalidated, .retryFloor:
-          try? await coordinator.retryRefused(operationID: operationID)
-        case .certificateUnavailable, .invalidCredential,
-          .keyOrAlgorithmMismatch:
-          try? await coordinator.requestInvalidOrUnsupported(
-            operationID: operationID)
-        }
-      case .completionAmbiguous:
-        await requireExplicitReconnect()
-        try? await coordinator.cardCompletionAmbiguous(operationID: operationID)
-      }
-    }
-
-    internal func invalid(
-      _ operationID: Data,
-      coordinator: RappConnectionCoordinator
-    ) async {
-      try? await coordinator.requestInvalidOrUnsupported(operationID: operationID)
-    }
-
-    private func cancel(_ operationID: Data?) async {
-      guard let operationID else {
-        pin2ByOperation.removeAll(keepingCapacity: false)
-        await inbox.cancelAll()
-        return
-      }
-      pin2ByOperation.removeValue(forKey: operationID)
-      await inbox.cancel(operationID.base64EncodedString())
-    }
-
-    internal func attempts(_ outcome: RetryProbeOutcome?) -> UInt8? {
-      switch outcome {
-      case .remaining(let count):
-        count.attemptsRemaining
-      case .locked:
-        0
-      case .invalidated, .noInformation, .other, .verified, nil:
-        nil
       }
     }
   }

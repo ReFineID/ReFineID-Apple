@@ -17,5 +17,6 @@
     internal let id: String
     internal let requester: String
     internal let action: Action
+    internal let needsPin1: Bool
   }
 #endif

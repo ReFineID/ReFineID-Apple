@@ -35,6 +35,14 @@
       complete(requestID, with: .approved)
     }
 
+    internal func approveBrowserAuthentication(
+      _ requestID: String,
+      pin1: String
+    ) {
+      guard Pin1(digits: pin1) != nil else { return }
+      complete(requestID, with: .approvedBrowserAuthentication(pin1: pin1))
+    }
+
     internal func approveDocumentSignature(
       _ requestID: String,
       pin2: String

@@ -101,27 +101,28 @@
     ) async -> RappCardExecutor.Outcome? {
       switch operation.kind {
       case .browserAuthenticate:
-        await RappCardExecutor.browserAuthentication(
+        let pin1 = pin1ByOperation.removeValue(forKey: operationID)
+        return await RappCardExecutor.browserAuthentication(
           cardAccessNumber: accessNumber,
+          pin1: pin1,
           keyProfile: keyProfile,
           algorithm: algorithm,
           digest: operation.digest
         )
       case .signDocument:
-        if let pin2 = pin2ByOperation.removeValue(forKey: operationID) {
-          await RappCardExecutor.signDocument(
-            cardAccessNumber: accessNumber,
-            pin2: pin2,
-            keyProfile: keyProfile,
-            algorithm: algorithm,
-            digest: operation.digest
-          )
-        } else {
-          nil
+        guard let pin2 = pin2ByOperation.removeValue(forKey: operationID) else {
+          return nil
         }
+        return await RappCardExecutor.signDocument(
+          cardAccessNumber: accessNumber,
+          pin2: pin2,
+          keyProfile: keyProfile,
+          algorithm: algorithm,
+          digest: operation.digest
+        )
       case .inspectCard, .readIdentity, .readAuthenticationCertificate,
         .readSignatureCertificate:
-        nil
+        return nil
       }
     }
 

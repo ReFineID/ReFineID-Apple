@@ -47,19 +47,6 @@
     /// Publishes an already-fetched certificate as the persistent
     /// identity.
     internal static func publish(certificateDER: Data) {
-      #if DEBUG
-        print(
-          "[PersistentTokenRegistry] publish: certificateDER=\(certificateDER.count)B isRunning=\(shared.isRunning)"
-        )
-        fflush(stdout)
-      #endif
-      guard shared.isRunning == false else {
-        #if DEBUG
-          print("[PersistentTokenRegistry] publish: skipping, isRunning=true")
-          fflush(stdout)
-        #endif
-        return
-      }
       Self.publish(certificateDER)
     }
 

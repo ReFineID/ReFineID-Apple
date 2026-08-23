@@ -8,6 +8,7 @@
   extension RappCardExecutor {
     private struct SignParameters {
       let cardAccessNumber: String?
+      let documentPin1: String?
       let documentPin2: String?
       let role: CredentialRole
       let slot: CertificateSlot
@@ -23,9 +24,26 @@
       algorithm: RappOperationDriver.SignatureAlgorithm,
       digest: Data
     ) async -> Outcome {
+      await browserAuthentication(
+        cardAccessNumber: cardAccessNumber,
+        pin1: nil,
+        keyProfile: keyProfile,
+        algorithm: algorithm,
+        digest: digest
+      )
+    }
+
+    internal static func browserAuthentication(
+      cardAccessNumber: String?,
+      pin1: String?,
+      keyProfile: RappOperationDriver.KeyProfile,
+      algorithm: RappOperationDriver.SignatureAlgorithm,
+      digest: Data
+    ) async -> Outcome {
       await sign(
         SignParameters(
           cardAccessNumber: cardAccessNumber,
+          documentPin1: pin1,
           documentPin2: nil,
           role: .pin1,
           slot: .authentication,
@@ -47,6 +65,7 @@
       await sign(
         SignParameters(
           cardAccessNumber: cardAccessNumber,
+          documentPin1: nil,
           documentPin2: pin2,
           role: .pin2,
           slot: .qualifiedSignature,
@@ -88,6 +107,7 @@
 
       if let verificationOutcome = verifyCredential(
         role: params.role,
+        documentPin1: params.documentPin1,
         documentPin2: params.documentPin2,
         operations: operations
       ) {
@@ -126,12 +146,19 @@
 
     private static func verifyCredential(
       role: CredentialRole,
+      documentPin1: String?,
       documentPin2: String?,
       operations: CardOperations
     ) -> Outcome? {
       switch role {
       case .pin1:
-        guard let pin = CardCredentialStore.pin1() else {
+        let pin: Pin1?
+        if let documentPin1 {
+          pin = Pin1(digits: documentPin1)
+        } else {
+          pin = CardCredentialStore.pin1()
+        }
+        guard let pin else {
           return .refusedBeforeCredentialTransmit(.invalidCredential(role))
         }
         return verifyPin1(pin, with: operations)
