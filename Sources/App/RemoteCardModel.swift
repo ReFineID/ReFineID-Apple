@@ -38,7 +38,7 @@
       return nil
     }
 
-    /// Re-reads the selected pairing and drops state without one.
+    /// Re-reads the selected pairing and establishes a live connection.
     internal func refresh() {
       #if DEBUG
         // A stored pairing is what makes this device believe it can just
@@ -57,48 +57,15 @@
         if !hasPair {
           PersistentTokenRegistry.withdraw()
           phase = .idle
-        } else if let der = PersistentTokenRegistry.publishedCertificateDER(),
-          let name = remoteHolderName(inCertificate: der)
-        {
-          phase = .identity(name)
         } else {
           connect()
         }
       }
     }
 
-    /// Shows the identity this device is already offering a browser.
-    ///
-    /// The certificate stays published between launches, so asking the
-    /// phone again to learn what is already known is a card read for
-    /// nothing and, until it answers, a screen that says this device has
-    /// no identity when it has one.
-    private func restorePublishedIdentity() {
-      guard case .idle = phase,
-        let der = PersistentTokenRegistry.publishedCertificateDER(),
-        let name = remoteHolderName(inCertificate: der)
-      else {
-        return
-      }
-      phase = .identity(name)
-    }
-
     /// Re-reads the selected pairing and, when one is there, uses it.
-    ///
-    /// A pairing that has just been made is one the holder made in order to
-    /// see an identity, so reading it is the next step rather than a second
-    /// request.
     internal func refreshThenConnect() {
-      Task {
-        let catalog = RappPairCatalog(vault: RappDeviceVault())
-        let selected = try? await catalog.selectedPair()
-        hasPair = selected?.role == .requester
-        guard hasPair else {
-          phase = .idle
-          return
-        }
-        connect()
-      }
+      refresh()
     }
 
     /// Reads the holder from the remote card's authentication
@@ -121,12 +88,11 @@
       } catch let error as RappRequesterClientError {
         response = nil
         failure = remoteFailureText(for: error)
-        if error.leavesPairingUnusable {
-          await discardUnusablePairing()
-        }
+        await discardUnusablePairing()
       } catch {
         response = nil
         failure = String(localized: "The remote card could not be read.")
+        await discardUnusablePairing()
       }
       await MainActor.run { setFailureText(failure) }
       let holder: String?
@@ -141,6 +107,7 @@
         await MainActor.run { PersistentTokenRegistry.publish(certificateDER: der) }
       } else {
         holder = nil
+        await discardUnusablePairing()
         #if DEBUG
           print("[RemoteCardModel] publish: no authentication certificate response or name")
           fflush(stdout)
