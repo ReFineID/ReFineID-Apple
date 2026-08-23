@@ -69,7 +69,7 @@ refined type validates in its initializer or it does not exist.
 
 ## Swift rules, mechanically enforced
 
-Enforcement is `Scripts/lint.sh` (also the pre-commit hook). Run that
+Enforcement is `Scripts/lint.sh` (pre-commit and pre-push). Run that
 script. `swiftlint lint --enable-all-rules` and SwiftLint `--format` are
 not the gate: the first ignores the carve register, the second fights
 swift-format. swift-format owns layout, SwiftLint (strict, all rules
@@ -85,6 +85,13 @@ and two custom rules encode this document:
   definition (release plan section 4.4). No unexplained hex literal in
   production or test source. Wire fixtures live in dedicated,
   provenance-marked test-vector files.
+
+Suppression comments (`swiftlint:disable`, `swift-format-ignore`) are
+locked to `Scripts/lint-suppression-register.json`. Adding or removing
+one without editing that register fails the gate. The baseline file is
+locked to a digest in `Scripts/lint.sh`; rewriting it without updating
+the digest fails the gate. `swiftlint:disable all` and
+`swift-format-ignore-file` are errors.
 
 Compiler settings are part of the same gate: Swift 6 strict concurrency,
 warnings as errors, and the static analyzer are on in every configuration.

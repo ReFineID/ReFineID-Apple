@@ -3,8 +3,8 @@
 #
 # Usage: Scripts/lint.sh
 #
-# The lint gate, and the only SwiftLint invocation the pre-commit hook
-# runs. Run this script. Do not run:
+# The lint gate, and the only SwiftLint invocation the pre-commit and
+# pre-push hooks run. Run this script. Do not run:
 #
 #   swiftlint lint --autocorrect --format --progress --check-for-updates --enable-all-rules
 #
@@ -17,12 +17,20 @@
 # - swift-format owns layout
 # - SwiftLint owns defects (strict, carve register, baseline)
 # - typing-discipline custom rules live in .swiftlint.yml
+# - suppression comments must match Scripts/lint-suppression-register.json
+#   exactly (add or drop one only by editing that register)
+# - .swiftlint-baseline.json must match BaselineSha256 below; a rewritten
+#   baseline is a gate change, not a silent swallow
 #
 # Both tools must be silent for the gate to pass. Run from anywhere;
 # operates on the repository.
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
+
+# SHA-256 of .swiftlint-baseline.json. Paying debt down rewrites the
+# baseline and this digest in the same commit.
+BaselineSha256=991e8dbe68dc60b606e6167868493209d170cf2a8bfd70bf906d9938bc595143
 
 format_paths=(
   Sources Tests
@@ -38,7 +46,95 @@ swift format lint --strict --recursive "${format_paths[@]}"
 echo "swiftlint..."
 # The baseline records the structural debt (type ordering, file splits,
 # magic numbers) present when the gate was raised. New findings fail;
-# paying debt down shrinks the baseline via --write-baseline.
+# paying debt down rewrites the baseline and BaselineSha256 together.
 swiftlint lint --quiet --baseline .swiftlint-baseline.json
+
+echo "lint locks..."
+export REFINEID_BASELINE_SHA="${BaselineSha256}"
+python3 - "${format_paths[@]}" << 'PY'
+import hashlib, json, os, re, sys
+from collections import Counter
+from pathlib import Path
+
+expected_sha = os.environ["REFINEID_BASELINE_SHA"]
+baseline_path = Path(".swiftlint-baseline.json")
+actual_sha = hashlib.sha256(baseline_path.read_bytes()).hexdigest()
+if actual_sha != expected_sha:
+    sys.stderr.write(
+        "lint lock FAIL: .swiftlint-baseline.json digest is "
+        f"{actual_sha}, Scripts/lint.sh BaselineSha256 is {expected_sha}.\n"
+        "Rewrite both in one commit when paying debt down; "
+        "do not grow the baseline.\n"
+    )
+    sys.exit(1)
+
+register = json.loads(
+    Path("Scripts/lint-suppression-register.json").read_text(encoding="utf-8")
+)
+
+files = []
+for raw in sys.argv[1:]:
+    path = Path(raw)
+    if path.is_file():
+        files.append(path)
+    else:
+        files.extend(path.rglob("*.swift"))
+files = sorted(set(files))
+
+disable_re = re.compile(
+    r"^[ \t]*//[ \t]*swiftlint:(disable(?::(next|this|previous))?|enable)"
+    r"\s+([^\n]+?)\s*$",
+    re.M,
+)
+fmt_re = re.compile(
+    r"^[ \t]*//[ \t]*swift-format-ignore(?:-file)?(?::\s*([^\n]+))?\s*$",
+    re.M,
+)
+
+actual_lint = Counter()
+actual_fmt = Counter()
+for path in files:
+    rel = path.as_posix()
+    text = path.read_text(encoding="utf-8")
+    for match in disable_re.finditer(text):
+        command = match.group(1)
+        rules = tuple(sorted(match.group(3).split()))
+        actual_lint[(rel, command, rules)] += 1
+    for match in fmt_re.finditer(text):
+        rule = (match.group(1) or "").strip()
+        actual_fmt[(rel, rule)] += 1
+
+expected_lint = Counter()
+for entry in register["swiftlint"]:
+    key = (entry["file"], entry["command"], tuple(entry["rules"]))
+    expected_lint[key] += entry["count"]
+
+expected_fmt = Counter()
+for entry in register["swift_format_ignore"]:
+    expected_fmt[(entry["file"], entry["rule"])] += entry["count"]
+
+failed = False
+for label, actual, expected in (
+    ("swiftlint suppression", actual_lint, expected_lint),
+    ("swift-format-ignore", actual_fmt, expected_fmt),
+):
+    extra = actual - expected
+    missing = expected - actual
+    if extra or missing:
+        failed = True
+        sys.stderr.write(f"lint lock FAIL: {label} does not match "
+                         "Scripts/lint-suppression-register.json\n")
+        for key, count in sorted(extra.items()):
+            sys.stderr.write(f"  extra x{count}: {key}\n")
+        for key, count in sorted(missing.items()):
+            sys.stderr.write(f"  missing x{count}: {key}\n")
+
+if failed:
+    sys.stderr.write(
+        "Fix the finding, or change the register in the same commit. "
+        "Do not add a suppression without removing one from the register.\n"
+    )
+    sys.exit(1)
+PY
 
 echo "lint gate PASS"

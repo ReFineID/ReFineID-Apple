@@ -143,6 +143,26 @@ custom_rules:
       value a named, documented home. See Documentation/release-plan.md section 4.4.
     severity: error
 
+  # A whole-file or whole-next-line "disable all" is how a finding is
+  # hidden instead of fixed. Named suppressions are locked in
+  # Scripts/lint-suppression-register.json; this rule refuses the
+  # nuclear form that would bypass that register.
+  no_nuclear_lint_suppression:
+    name: "Nuclear lint suppression"
+    regex: 'swiftlint:disable(?::(?:next|this|previous))?\s+all\b'
+    message: >
+      Do not disable all SwiftLint rules. Fix the finding, or add a
+      named suppression to Scripts/lint-suppression-register.json.
+    severity: error
+
+  # File-level layout ignore would take a source out of swift-format.
+  no_format_ignore_file:
+    name: "File-level swift-format ignore"
+    regex: 'swift-format-ignore-file'
+    message: >
+      Do not ignore swift-format for a whole file. Fix the layout.
+    severity: error
+
 # Default rules carved because swift-format owns the layout they police:
 # swift-format puts the opening brace on its own line when a signature
 # wraps, and it wraps a long closure signature onto the line after `{`.

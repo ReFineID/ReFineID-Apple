@@ -1,0 +1,890 @@
+{
+  "description": "Exact suppression comments permitted in gated Swift sources. Edit this file in the same commit as the matching source change.",
+  "swiftlint": [
+    {
+      "file": "CardCore/Sources/CardCore/PdfDocumentIndex.swift",
+      "command": "disable:next",
+      "rules": [
+        "pattern_matching_keywords"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/CardCore/Values/AnswerToResetValues.swift",
+      "command": "disable:next",
+      "rules": [
+        "no_magic_numbers"
+      ],
+      "count": 3
+    },
+    {
+      "file": "CardCore/Sources/CardCore/Values/CardAccessValues.swift",
+      "command": "disable",
+      "rules": [
+        "no_magic_numbers",
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/CardCore/Values/CardAccessValues.swift",
+      "command": "disable:next",
+      "rules": [
+        "blanket_disable_command"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/CardCore/Values/FineidCardTypeValues.swift",
+      "command": "disable",
+      "rules": [
+        "no_magic_numbers"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/CardCore/Values/FineidCardTypeValues.swift",
+      "command": "enable",
+      "rules": [
+        "no_magic_numbers"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/CardCore/Values/RsaPkcs1Sha256EncodedMessage.swift",
+      "command": "disable",
+      "rules": [
+        "no_magic_numbers"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/CardCore/Values/RsaPkcs1Sha256EncodedMessage.swift",
+      "command": "enable",
+      "rules": [
+        "no_magic_numbers"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappBindingError.swift",
+      "command": "disable",
+      "rules": [
+        "identifier_name",
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappBindingError.swift",
+      "command": "enable",
+      "rules": [
+        "identifier_name",
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappBridgeActionKind.swift",
+      "command": "disable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappBridgeActionKind.swift",
+      "command": "enable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappOfferCandidate.swift",
+      "command": "disable",
+      "rules": [
+        "discouraged_optional_collection"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappOfferCandidate.swift",
+      "command": "enable",
+      "rules": [
+        "discouraged_optional_collection"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappOperationBridge+Authorization.swift",
+      "command": "disable",
+      "rules": [
+        "function_parameter_count"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappOperationBridge+Authorization.swift",
+      "command": "enable",
+      "rules": [
+        "function_parameter_count"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappOperationBridge+Dispatch.swift",
+      "command": "disable",
+      "rules": [
+        "cyclomatic_complexity"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappOperationBridge+Dispatch.swift",
+      "command": "enable",
+      "rules": [
+        "cyclomatic_complexity"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappOperationBridge.swift",
+      "command": "disable",
+      "rules": [
+        "function_parameter_count",
+        "type_body_length"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappOperationBridge.swift",
+      "command": "enable",
+      "rules": [
+        "function_parameter_count",
+        "type_body_length"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappOperationKind.swift",
+      "command": "disable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappOperationKind.swift",
+      "command": "enable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappOperationResult.swift",
+      "command": "disable",
+      "rules": [
+        "discouraged_optional_boolean"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappOperationResult.swift",
+      "command": "enable",
+      "rules": [
+        "discouraged_optional_boolean"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappPairMetadata.swift",
+      "command": "disable",
+      "rules": [
+        "discouraged_optional_collection"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappPairMetadata.swift",
+      "command": "enable",
+      "rules": [
+        "discouraged_optional_collection"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappPairRecord.swift",
+      "command": "disable",
+      "rules": [
+        "unneeded_throws_rethrows"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappPairRecord.swift",
+      "command": "enable",
+      "rules": [
+        "unneeded_throws_rethrows"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappPairingBridge.swift",
+      "command": "disable",
+      "rules": [
+        "function_parameter_count",
+        "unneeded_throws_rethrows"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappPairingBridge.swift",
+      "command": "disable",
+      "rules": [
+        "type_body_length"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappPairingBridge.swift",
+      "command": "enable",
+      "rules": [
+        "function_parameter_count",
+        "unneeded_throws_rethrows"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappPairingBridge.swift",
+      "command": "enable",
+      "rules": [
+        "type_body_length"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappPeerHello.swift",
+      "command": "disable",
+      "rules": [
+        "discouraged_optional_collection"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappPeerHello.swift",
+      "command": "enable",
+      "rules": [
+        "discouraged_optional_collection"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappSessionBridge.swift",
+      "command": "disable",
+      "rules": [
+        "unneeded_throws_rethrows"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappSessionBridge.swift",
+      "command": "enable",
+      "rules": [
+        "unneeded_throws_rethrows"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappTerminalReason.swift",
+      "command": "disable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappTerminalReason.swift",
+      "command": "enable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappVaultError.swift",
+      "command": "disable",
+      "rules": [
+        "identifier_name",
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappVaultError.swift",
+      "command": "enable",
+      "rules": [
+        "identifier_name",
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/StreamProfile.swift",
+      "command": "disable",
+      "rules": [
+        "discouraged_optional_collection"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/StreamProfile.swift",
+      "command": "enable",
+      "rules": [
+        "discouraged_optional_collection"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/Engine/ProxyOperationEngine.swift",
+      "command": "disable",
+      "rules": [
+        "type_body_length"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/Engine/ProxyOperationEngine.swift",
+      "command": "enable",
+      "rules": [
+        "type_body_length"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/Operation/AuthorizationStage.swift",
+      "command": "disable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/Operation/AuthorizationStage.swift",
+      "command": "enable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/Operation/CardOperation.swift",
+      "command": "disable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/Operation/CardOperation.swift",
+      "command": "enable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/Runtime/LivenessDecision.swift",
+      "command": "disable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/Runtime/LivenessDecision.swift",
+      "command": "enable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/Runtime/UnexpectedInputClass.swift",
+      "command": "disable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/Runtime/UnexpectedInputClass.swift",
+      "command": "enable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/Runtime/UnexpectedInputHandling.swift",
+      "command": "disable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/Runtime/UnexpectedInputHandling.swift",
+      "command": "enable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/State/EndpointRole.swift",
+      "command": "disable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/State/EndpointRole.swift",
+      "command": "enable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/State/OperationEvent.swift",
+      "command": "disable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/State/OperationEvent.swift",
+      "command": "enable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/State/OperationState.swift",
+      "command": "disable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/State/OperationState.swift",
+      "command": "enable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/State/PairingEvent.swift",
+      "command": "disable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/State/PairingEvent.swift",
+      "command": "enable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/State/PairingState.swift",
+      "command": "disable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/State/PairingState.swift",
+      "command": "enable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/State/RappAction.swift",
+      "command": "disable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/State/RappAction.swift",
+      "command": "enable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/State/RappGuard.swift",
+      "command": "disable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/State/RappGuard.swift",
+      "command": "enable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/State/RappRule.swift",
+      "command": "disable",
+      "rules": [
+        "identifier_name"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/State/RappRule.swift",
+      "command": "enable",
+      "rules": [
+        "identifier_name"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/State/RuleRole.swift",
+      "command": "disable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/State/RuleRole.swift",
+      "command": "enable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/State/SessionEvent.swift",
+      "command": "disable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/State/SessionEvent.swift",
+      "command": "enable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/State/SessionState.swift",
+      "command": "disable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/State/SessionState.swift",
+      "command": "enable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/Storage/CardOperationResult.swift",
+      "command": "disable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/Storage/CardOperationResult.swift",
+      "command": "enable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/Storage/PairingOfferError.swift",
+      "command": "disable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/Storage/PairingOfferError.swift",
+      "command": "enable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/Storage/ProfileName.swift",
+      "command": "disable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/Storage/ProfileName.swift",
+      "command": "enable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/Storage/ResultError.swift",
+      "command": "disable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/Storage/ResultError.swift",
+      "command": "enable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/Storage/ResultStatus.swift",
+      "command": "disable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/Storage/ResultStatus.swift",
+      "command": "enable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Tests/RappEngineTests/ModelEntry.swift",
+      "command": "disable",
+      "rules": [
+        "identifier_name"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Tests/RappEngineTests/ModelEntry.swift",
+      "command": "enable",
+      "rules": [
+        "identifier_name"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Tests/RappEngineTests/ParsedRule.swift",
+      "command": "disable",
+      "rules": [
+        "identifier_name"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Tests/RappEngineTests/ParsedRule.swift",
+      "command": "enable",
+      "rules": [
+        "identifier_name"
+      ],
+      "count": 1
+    },
+    {
+      "file": "Sources/App/CardAccessNumberCapturePipeline.swift",
+      "command": "disable",
+      "rules": [
+        "no_magic_numbers"
+      ],
+      "count": 1
+    },
+    {
+      "file": "Sources/App/CardAccessNumberCapturePipeline.swift",
+      "command": "enable",
+      "rules": [
+        "no_magic_numbers"
+      ],
+      "count": 1
+    },
+    {
+      "file": "Sources/App/CardCredentialsView+Form.swift",
+      "command": "disable:next",
+      "rules": [
+        "redundant_discardable_let"
+      ],
+      "count": 2
+    },
+    {
+      "file": "Sources/App/CardCredentialsView.swift",
+      "command": "disable",
+      "rules": [
+        "private_swiftui_state"
+      ],
+      "count": 1
+    },
+    {
+      "file": "Sources/App/CardCredentialsView.swift",
+      "command": "enable",
+      "rules": [
+        "private_swiftui_state"
+      ],
+      "count": 1
+    },
+    {
+      "file": "Sources/App/CardMaintenance+Snapshot.swift",
+      "command": "disable",
+      "rules": [
+        "async_without_await"
+      ],
+      "count": 1
+    },
+    {
+      "file": "Sources/App/CardMaintenance+Snapshot.swift",
+      "command": "enable",
+      "rules": [
+        "async_without_await"
+      ],
+      "count": 1
+    },
+    {
+      "file": "Sources/App/CardMaintenance+Transport.swift",
+      "command": "disable",
+      "rules": [
+        "explicit_enum_raw_value"
+      ],
+      "count": 1
+    },
+    {
+      "file": "Sources/App/CardMaintenance+Transport.swift",
+      "command": "enable",
+      "rules": [
+        "explicit_enum_raw_value"
+      ],
+      "count": 1
+    },
+    {
+      "file": "Sources/App/CardPrimingStep.swift",
+      "command": "disable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "Sources/App/CardPrimingStep.swift",
+      "command": "enable",
+      "rules": [
+        "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "Sources/App/DebugDiagnosticsReport.swift",
+      "command": "disable:next",
+      "rules": [
+        "pattern_matching_keywords"
+      ],
+      "count": 1
+    },
+    {
+      "file": "Sources/App/DemoModeSceneDelegate.swift",
+      "command": "disable:next",
+      "rules": [
+        "unneeded_escaping"
+      ],
+      "count": 1
+    },
+    {
+      "file": "Sources/App/DiagnosticsView.swift",
+      "command": "disable:next",
+      "rules": [
+        "no_magic_numbers"
+      ],
+      "count": 1
+    },
+    {
+      "file": "Sources/App/PersistentTokenRegistry.swift",
+      "command": "disable:next",
+      "rules": [
+        "legacy_objc_type"
+      ],
+      "count": 1
+    },
+    {
+      "file": "Sources/TokenExtension/Token+IdentityPublication.swift",
+      "command": "disable:next",
+      "rules": [
+        "legacy_objc_type"
+      ],
+      "count": 2
+    },
+    {
+      "file": "Sources/TokenExtension/Token+SessionLifecycle.swift",
+      "command": "disable:next",
+      "rules": [
+        "unneeded_throws_rethrows"
+      ],
+      "count": 1
+    },
+    {
+      "file": "Tests/CardCoreTests/CardSignRequestResolverTests.swift",
+      "command": "disable:next",
+      "rules": [
+        "attributes"
+      ],
+      "count": 1
+    }
+  ],
+  "swift_format_ignore": [
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappBindingError.swift",
+      "rule": "AlwaysUseLowerCamelCase",
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappVaultError.swift",
+      "rule": "AlwaysUseLowerCamelCase",
+      "count": 1
+    }
+  ]
+}

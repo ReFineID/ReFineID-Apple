@@ -74,5 +74,6 @@ Config/LocalFeatures.xcconfig
 
 ## SwiftLint report dumps
 lint*.json
+!Scripts/lint-suppression-register.json
 targeted.json
 persistent_only.json
