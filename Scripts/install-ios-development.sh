@@ -2,7 +2,7 @@
 # Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 # 
 
-# Build, sign, install, and launch an optimized diagnostic build on one iPhone.
+# Build, sign, install, and launch an optimized diagnostic build on one iPhone or iPad.
 #
 # The calendar version and ten-minute build number are command-line Xcode
 # overrides. The project file is never edited, so repeated device builds do
@@ -10,19 +10,30 @@
 #
 # Usage:
 #
-#   Scripts/install-ios-development.sh <device name or identifier>
+#   Scripts/install-ios-development.sh [<device name or identifier>]
+#
+# If no device argument is provided, the first connected physical device is
+# detected automatically via devicectl.
 #
 # Example:
 #
 #   Scripts/install-ios-development.sh My-iPhone
+#   Scripts/install-ios-development.sh
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 device="${1:-}"
 if [[ -z "$device" ]]; then
-  echo "usage: $0 <device name or identifier>" >&2
-  exit 2
+  device=$(xcrun devicectl list devices 2>/dev/null | grep -E "iPhone|iPad" | grep -v "Simulator" | awk '{print $3}' | head -n 1 || true)
+  if [[ -z "$device" ]]; then
+    device=$(xcrun devicectl list devices 2>/dev/null | grep -E "[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}" | awk '{print $3}' | head -n 1 || true)
+  fi
+  if [[ -z "$device" ]]; then
+    echo "install-ios-development: no physical iOS device found; specify device name or identifier as argument" >&2
+    exit 2
+  fi
+  echo "install-ios-development: auto-detected device ${device}"
 fi
 
 read -r yy mm dd hh mn <<<"$(date -u '+%y %m %d %H %M')"
