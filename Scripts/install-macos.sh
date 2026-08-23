@@ -242,12 +242,6 @@ unsigned_hash() {
   rm -f "$scratch"
 }
 
-# Asks the app to quit the way a person would, and waits for it.
-#
-# A signal is not how a Mac application is closed: it gets no chance to
-# finish what it holds. The app is asked, given a moment, and only then
-# insisted upon -- and an install should not be the reason someone's
-# unsaved work disappears.
 # The iOS Simulator process is also named ReFineID. Only the macOS
 # bundle layout has Contents/MacOS, so a name match would terminate
 # a simulator install this script does not own.
@@ -255,15 +249,19 @@ macos_app_is_running() {
   pgrep -f "/ReFineID.app/Contents/MacOS/ReFineID" >/dev/null 2>&1
 }
 
-quit_app() {
+# Ends every macOS ReFineID process so the bundle can be replaced.
+kill_macos_app() {
+  local pid
   macos_app_is_running || return 0
-  osascript -e 'tell application id "fi.refineid.ReFineID" to quit' >/dev/null 2>&1 || true
+  note "killing the running macOS app"
+  while IFS= read -r pid; do
+    [[ -z "$pid" ]] && continue
+    kill -KILL "$pid" 2>/dev/null || true
+  done < <(pgrep -f "/ReFineID.app/Contents/MacOS/ReFineID" || true)
   for _ in 1 2 3 4 5 6 7 8 9 10; do
     macos_app_is_running || return 0
-    sleep 0.5
+    sleep 0.1
   done
-  note "the app did not quit when asked; ending it"
-  pkill -f "/ReFineID.app/Contents/MacOS/ReFineID" 2>/dev/null || true
 }
 
 # Withdraws every CryptoTokenKit plugin the bundle registered, so a
@@ -367,7 +365,7 @@ built="${derived_data}/Build/Products/${configuration}/${app_name}"
 # working copy in place rather than a broken one.
 verify_signature "$built"
 
-quit_app
+kill_macos_app
 # The card boundary belongs to the token extension, not to the window.
 # Replacing a live extension leaves ctkd holding the old executable, so
 # that replacement waits for the card to leave; a build whose extension
@@ -402,7 +400,7 @@ if ! register_token_plugins "$installed"; then
   note "pluginkit refused; launching the app once so the system sees it"
   open -g -a "$installed"
   sleep 3
-  quit_app
+  kill_macos_app
 fi
 
 report_registrations
