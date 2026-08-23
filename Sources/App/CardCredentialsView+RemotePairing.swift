@@ -48,6 +48,7 @@ import SwiftUI
           remoteRouteTrailingControls
         }
       }
+      .foregroundStyle(remoteCardAvailable ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
       .buttonStyle(.borderless)
       .disabled(!remoteCardAvailable)
       .accessibilityIdentifier("remoteCard")
