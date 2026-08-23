@@ -96,71 +96,41 @@
       return nil
     }
 
-    private static func publish(_ certificateDER: Data) {
-      #if DEBUG
-        print("[PersistentTokenRegistry] publish: starting")
-        fflush(stdout)
-      #endif
-
-      guard let driver = driverConfiguration else {
-        #if DEBUG
-          print("[PersistentTokenRegistry] publish: no driver configuration")
-          fflush(stdout)
-        #endif
-        return
-      }
-
-      guard let certificate = SecCertificateCreateWithData(nil, certificateDER as CFData) else {
-        #if DEBUG
-          print("[PersistentTokenRegistry] publish: failed to create certificate from DER")
-          fflush(stdout)
-        #endif
-        return
-      }
-
-      guard let profile = CardKeyProfile.resolve(fromCertificate: certificate) else {
-        #if DEBUG
-          print("[PersistentTokenRegistry] publish: failed to resolve profile from certificate")
-          fflush(stdout)
-        #endif
-        return
-      }
-
+    private static func makeKeychainItems(
+      for certificate: SecCertificate
+    ) -> (TKTokenKeychainCertificate, TKTokenKeychainKey)? {
       guard
         let certificateItem = TKTokenKeychainCertificate(
           certificate: certificate,
           objectID: PersistentTokenIdentity.certificateObjectID
-        )
-      else {
-        #if DEBUG
-          print("[PersistentTokenRegistry] publish: failed to create certificate item")
-          fflush(stdout)
-        #endif
-        return
-      }
-
-      guard
+        ),
         let keyItem = TKTokenKeychainKey(
           certificate: certificate,
           objectID: PersistentTokenIdentity.keyObjectID
         )
       else {
-        #if DEBUG
-          print("[PersistentTokenRegistry] publish: failed to create key item")
-          fflush(stdout)
-        #endif
+        return nil
+      }
+      certificateItem.label = "ReFineID authentication certificate"
+      keyItem.label = "ReFineID authentication key"
+      keyItem.canSign = true
+      // swiftlint:disable:next legacy_objc_type
+      let signOperationKey = NSNumber(value: TKTokenOperation.signData.rawValue)
+      keyItem.constraints = [
+        signOperationKey: true
+      ]
+      return (certificateItem, keyItem)
+    }
+
+    private static func publish(_ certificateDER: Data) {
+      guard
+        let driver = driverConfiguration,
+        let certificate = SecCertificateCreateWithData(nil, certificateDER as CFData),
+        CardKeyProfile.resolve(fromCertificate: certificate) != nil,
+        let (certificateItem, keyItem) = makeKeychainItems(for: certificate)
+      else {
         return
       }
-
-      #if DEBUG
-        print(
-          """
-          [PersistentTokenRegistry] publish: driver=\(driver), profile=\(profile), \
-          certItem=\(certificateItem), keyItem=\(keyItem)
-          """
-        )
-        fflush(stdout)
-      #endif
 
       let instanceID =
         PersistentTokenIdentity.instancePrefix
@@ -168,12 +138,6 @@
         .map { String(format: "%02x", $0) }
         .joined()
       let configuration = driver.addTokenConfiguration(for: instanceID)
-      certificateItem.label = "ReFineID authentication certificate"
-      keyItem.label = "ReFineID authentication key"
-      keyItem.canSign = true
-      keyItem.constraints = [
-        TKTokenOperation.signData.rawValue: true
-      ]
       // The leaf and its key, and nothing else. Publishing the issuer
       // beside them stopped the browser forming an identity at all:
       // measured on the requester, a configuration of three items was

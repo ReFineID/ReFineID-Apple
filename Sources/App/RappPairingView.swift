@@ -203,9 +203,6 @@
 
     @ViewBuilder private var borrowedCodeBody: some View {
       if case .offer(let code) = model.phase {
-        #if DEBUG
-          _ = print("[pairing view] displaying code: \(code)")
-        #endif
         VStack(spacing: Layout.codeSpacing) {
           codeCard(code)
           copyCodeButton(code)

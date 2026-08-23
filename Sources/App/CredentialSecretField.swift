@@ -12,12 +12,10 @@ import SwiftUI
 /// applies its exact bounds. Validation is the final result at the end
 /// of the row.
 internal struct CredentialSecretField<Field: View, Validation: View>: View {
-  private enum Geometry {
-    static let lineLimit = 1
-    static let buttonSize = 44.0
-    static let negativePadding = -10.0
-    static let indicatorSize = 24.0
-  }
+  private let lineLimit = 1
+  private let buttonSize = 44.0
+  private let negativePadding = -10.0
+  private let indicatorSize = 24.0
 
   // MARK: SwiftUI Properties
 
@@ -55,7 +53,7 @@ internal struct CredentialSecretField<Field: View, Validation: View>: View {
               .keyboardType(.numberPad)
             #endif
             .autocorrectionDisabled()
-            .lineLimit(Geometry.lineLimit)
+            .lineLimit(lineLimit)
             .onValueChange(of: text) { value in
               text = LimitedDigits.puk(value)
             }
@@ -85,13 +83,13 @@ internal struct CredentialSecretField<Field: View, Validation: View>: View {
         Image(systemName: revealsValue ? "eye" : "eye.slash")
       }
       .buttonStyle(.plain)
-      .frame(width: Geometry.buttonSize, height: Geometry.buttonSize)
+      .frame(width: buttonSize, height: buttonSize)
       .contentShape(Rectangle())
-      .padding(Geometry.negativePadding)
+      .padding(negativePadding)
       .accessibilityLabel(Text(verbatim: revealAccessibilityLabel))
       .accessibilityIdentifier(revealIdentifier)
       validation()
-        .frame(width: Geometry.indicatorSize, height: Geometry.indicatorSize)
+        .frame(width: indicatorSize, height: indicatorSize)
     }
     .onValueChange(of: text) { value in
       if value.isEmpty {
