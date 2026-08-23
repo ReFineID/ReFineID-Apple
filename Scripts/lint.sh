@@ -30,7 +30,7 @@ cd "$(dirname "$0")/.."
 
 # SHA-256 of .swiftlint-baseline.json. Paying debt down rewrites the
 # baseline and this digest in the same commit.
-BaselineSha256=991e8dbe68dc60b606e6167868493209d170cf2a8bfd70bf906d9938bc595143
+BaselineSha256=93fb8207054c38bb6cd6344d847ca0f9a990667fa32cdab525e1090f601b2f57
 
 format_paths=(
   Sources Tests
@@ -82,8 +82,7 @@ for raw in sys.argv[1:]:
 files = sorted(set(files))
 
 disable_re = re.compile(
-    r"^[ \t]*//[ \t]*swiftlint:(disable(?::(next|this|previous))?|enable)"
-    r"\s+([^\n]+?)\s*$",
+    r"swiftlint:(disable(?::(?:next|this|previous))?|enable)\s+([^\n]+?)\s*$",
     re.M,
 )
 fmt_re = re.compile(
@@ -98,7 +97,7 @@ for path in files:
     text = path.read_text(encoding="utf-8")
     for match in disable_re.finditer(text):
         command = match.group(1)
-        rules = tuple(sorted(match.group(3).split()))
+        rules = tuple(sorted(match.group(2).split()))
         actual_lint[(rel, command, rules)] += 1
     for match in fmt_re.finditer(text):
         rule = (match.group(1) or "").strip()

@@ -19,7 +19,6 @@
   /// DEBUG only, and deliberately not on the login path: reading
   /// EF.CardAccess costs a SELECT and a READ BINARY that a login has no
   /// use for.
-  @available(iOS 26.0, *)
   internal enum CardCapabilityProbe {
     /// The suite `PaceCommand.securityEnvironment()` fixes, named the
     /// way EF.CardAccess names it, so the report can say whether the

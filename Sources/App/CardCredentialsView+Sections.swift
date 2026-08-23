@@ -141,30 +141,28 @@ extension CardCredentialsView {
     }
     if hasConfiguredCard {
       #if REFINEID_LOCAL_CARD && os(iOS)
-        if #available(iOS 26.0, *) {
-          Section {
-            CardRegistrationSections(
-              canPrepareCredentials: canPrepareIdentity,
-              isDemonstration: isDemonstration,
-              enteredPin1: enteredPin1,
-              cardAccessNumber: registrationCardAccessNumber,
-              storeCardAccessNumber: storeProvenCardAccessNumber,
-              storeVerifiedPin1: storeVerifiedPin1,
-              clearPin1Entry: clearPin1Entry,
-              onRegistrationStarted: {
-                transition(.startConfiguredBrowserRegistration)
-              },
-              onRegistrationFinished: { succeeded in
-                finishBrowserRegistration(succeeded: succeeded)
-              },
-              isRegistered: $isRegistered,
-              model: primingModel
-            )
-            .id(registrationReset)
-          }
-          .listRowBackground(Color.clear)
-          .listRowInsets(EdgeInsets())
+        Section {
+          CardRegistrationSections(
+            canPrepareCredentials: canPrepareIdentity,
+            isDemonstration: isDemonstration,
+            enteredPin1: enteredPin1,
+            cardAccessNumber: registrationCardAccessNumber,
+            storeCardAccessNumber: storeProvenCardAccessNumber,
+            storeVerifiedPin1: storeVerifiedPin1,
+            clearPin1Entry: clearPin1Entry,
+            onRegistrationStarted: {
+              transition(.startConfiguredBrowserRegistration)
+            },
+            onRegistrationFinished: { succeeded in
+              finishBrowserRegistration(succeeded: succeeded)
+            },
+            isRegistered: $isRegistered,
+            model: primingModel
+          )
+          .id(registrationReset)
         }
+        .listRowBackground(Color.clear)
+        .listRowInsets(EdgeInsets())
         if let failure = primingModel.failure {
           Section {
             CredentialOutcomeText(message: failure, tone: .failure)

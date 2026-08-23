@@ -92,12 +92,8 @@ internal struct ReFineIDApp: App {
     // Writing Tools is the feature being refused, and it does not exist
     // before iOS 18, so an older system needs nothing disabling.
     Group {
-      if #available(iOS 18.0, macOS 15.0, *) {
-        contentForLaunchMode
-          .writingToolsBehavior(.disabled)
-      } else {
-        contentForLaunchMode
-      }
+      contentForLaunchMode
+        .writingToolsBehavior(.disabled)
     }
     // Off the launch path for the reason in the initializer below:
     // withdrawing reads the driver configuration, a synchronous call

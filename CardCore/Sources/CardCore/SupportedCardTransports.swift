@@ -23,7 +23,7 @@ public enum SupportedCardTransports {
   /// The transports this device can offer.
   public static var current: CardTransportSelection {
     #if canImport(CoreNFC)
-      if #available(iOS 26.0, *), Self.deviceHasNearFieldSlot {
+      if Self.deviceHasNearFieldSlot {
         return .all
       }
       return .readerOnly
@@ -34,7 +34,6 @@ public enum SupportedCardTransports {
 
   #if canImport(CoreNFC)
     /// Whether this particular device has a contactless slot to open.
-    @available(iOS 26.0, *)
     private static var deviceHasNearFieldSlot: Bool {
       TKSmartCardSlotManager.default?.isNFCSupported() ?? false
     }

@@ -5,6 +5,12 @@ controls iPhone scope. `Documentation/release-plan.md` controls
 macOS scope and shared security behavior. This file records the concrete
 values chosen under them.
 
+## 2026-08-23 Floor is iOS 26.6 and macOS 26.6
+
+Debug, Profile, TestFlight, and Release share one floor. The iOS 16
+Debug path is gone. An iPad without an antenna can still be a requester
+on iPadOS 26.6 with `REFINEID_LOCAL_CARD` off.
+
 ## 2026-08-23 6-character pairing code and persistent Diffie-Hellman reconnection
 
 The pairing ceremony and connection lifecycle between borrowing devices
@@ -82,12 +88,9 @@ dead end. PIN management stays: it operates on an activated card, and
 a wrong entry there spends a retry the holder chose to risk, which is
 inherent to cards rather than to this app.
 
-The iOS 16 floor stays in the tree for now. Only the shipping
-configurations demand iOS 26; Debug and Profile keep building at 16 so
-the iPad-requester experiment stays cheap to resume when the remote
-card returns. The floor is a shipping-configuration setting, not a
-code revert, and the revert decision belongs to the day the iPad
-requester's hardware floor is chosen.
+The floor is iOS 26.6 and macOS 26.6 in every configuration. The
+iPad-requester path still exists as a Debug/Profile family, but it
+runs on iPadOS 26.6, not iOS 16.
 
 ## 2026-08-13 A demonstration mode ships on iPhone, for one launch only
 

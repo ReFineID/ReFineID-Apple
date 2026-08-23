@@ -14,7 +14,6 @@
   /// and Safari state belongs in Diagnostics, not below this button. The
   /// parent owns ``isRegistered``: a stored identity replaces this whole
   /// setup section, not just this button.
-  @available(iOS 26.0, *)
   internal struct CardRegistrationSections: View {
     // MARK: Static Properties
 

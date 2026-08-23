@@ -14,7 +14,6 @@
   /// `@unchecked Sendable` is the audit: the dictionary is touched only
   /// under the lock, and the session it draws into is itself safe to
   /// update from any thread.
-  @available(iOS 26.0, *)
   internal final class PrimingSheetReporter: @unchecked Sendable {
     /// The hold this meter is drawn on, so a caller needing the card
     /// does not have to be handed the session separately.

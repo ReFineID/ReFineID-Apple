@@ -17,7 +17,7 @@ protocol milestone.
   activation (`FEATURE_CARD_ACTIVATION`; unactivated cards see a localized
   refusal). Shipping configs: floor 26, iPhone-only, `nfc` required
   capability, `Config/ReFineID-iOS-Store-Info.plist` (no Bonjour or
-  local-network keys). Debug/Profile: floor 16, both families, gates on.
+  local-network keys). Debug/Profile: floor 26.6, both families, gates on.
   Enforced by the archive inspector and `RappShippingConfigurationTests`.
 
 ## Release blockers

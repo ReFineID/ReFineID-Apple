@@ -43,7 +43,6 @@
   /// init and never reassigned, and the one place two threads could touch
   /// the slot at the same time -- the arrival watch -- keeps it behind a
   /// lock.
-  @available(iOS 26.0, *)
   internal final class NearFieldCardSession: @unchecked Sendable {
     /// Why a hold never reached a live card.
     internal enum Failure: Error, Equatable {

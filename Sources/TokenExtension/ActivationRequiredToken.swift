@@ -32,7 +32,9 @@ internal final class ActivationRequiredToken: TKSmartCardToken, TKTokenDelegate 
   /// A benign empty session answers that query without pretending the
   /// card vanished. The @objc delegate requirement fixes the throwing
   /// signature even though this implementation cannot fail.
-  internal func createSession(_: TKToken) -> TKTokenSession {
+  internal func createSession(
+    _: TKToken
+  ) throws -> TKTokenSession {  // swiftlint:disable:this unneeded_throws_rethrows
     TKSmartCardTokenSession(token: self)
   }
 }

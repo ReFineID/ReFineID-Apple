@@ -44,7 +44,6 @@ internal enum TokenRegistrationRevoker {
     reason: Reason
   ) {
     #if os(iOS)
-      guard #available(iOS 26.0, *) else { return }
       let tokenID = CardTokenNamespace.tokenIdentifier(for: instanceID)
       DispatchQueue.global(qos: .utility).async {
         let manager = TKSmartCardTokenRegistrationManager.default
@@ -80,7 +79,6 @@ internal enum TokenRegistrationRevoker {
   internal static func revokeAll(reason: Reason) -> Int {
     #if os(iOS)
       // Without an antenna nothing was registered for the system to summon.
-      guard #available(iOS 26.0, *) else { return 0 }
       let manager = TKSmartCardTokenRegistrationManager.default
       let tokenIDs = manager.registeredSmartCardTokens
         .filter(CardTokenNamespace.owns(tokenIdentifier:))

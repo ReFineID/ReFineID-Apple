@@ -67,13 +67,6 @@
         #endif
         return .failed
       }
-      guard #available(iOS 26.0, *) else {
-        #if DEBUG
-          print("[near-field] refused: system predates the card slot")
-          fflush(stdout)
-        #endif
-        return .failed
-      }
       let held: NearFieldCardSession
       do {
         held = try await NearFieldCardSession.open(message: message)
@@ -109,7 +102,6 @@
       }
     }
 
-    @available(iOS 26.0, *)
     private static func cardSessionAnswer<Payload: Sendable>(
       _ held: NearFieldCardSession,
       _ body: (SmartCardChannel) throws -> CardSessionResult<Payload>
@@ -141,7 +133,6 @@
       }
       guard let cardAccessNumber else { return .failed }
       guard SupportedCardTransports.offersNearField else { return .failed }
-      guard #available(iOS 26.0, *) else { return .failed }
       let held: NearFieldCardSession
       do {
         held = try await NearFieldCardSession.open(
@@ -239,11 +230,6 @@
         guard SupportedCardTransports.offersNearField else {
           return DebugModeReport(
             lines: ["activation-probe: near-field transport unavailable"],
-            succeeded: false)
-        }
-        guard #available(iOS 26.0, *) else {
-          return DebugModeReport(
-            lines: ["activation-probe: iOS 26 near-field slot unavailable"],
             succeeded: false)
         }
         let held: NearFieldCardSession

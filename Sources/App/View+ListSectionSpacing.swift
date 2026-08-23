@@ -10,11 +10,7 @@ extension View {
   @ViewBuilder
   internal func listSections(spacing: CGFloat) -> some View {
     #if os(iOS)
-      if #available(iOS 17.0, *) {
-        listSectionSpacing(spacing)
-      } else {
-        self
-      }
+      listSectionSpacing(spacing)
     #else
       self
     #endif

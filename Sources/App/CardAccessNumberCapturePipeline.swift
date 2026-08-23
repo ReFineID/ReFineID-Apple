@@ -63,15 +63,9 @@
     /// The rotation angle replaced the orientation enumeration in iOS 17,
     /// and 90 degrees is the angle that enumeration called portrait.
     internal static func orientPortrait(_ connection: AVCaptureConnection) {
-      if #available(iOS 17.0, *) {
-        guard
-          connection.isVideoRotationAngleSupported(portraitRotationAngle)
-        else { return }
-        connection.videoRotationAngle = portraitRotationAngle
-      } else {
-        guard connection.isVideoOrientationSupported else { return }
-        connection.videoOrientation = .portrait
-      }
+      guard connection.isVideoRotationAngleSupported(portraitRotationAngle)
+      else { return }
+      connection.videoRotationAngle = portraitRotationAngle
     }
 
     /// Configures the one capture session used by preview, QR, and torch.
@@ -132,7 +126,7 @@
         }
         camera.videoZoomFactor = wideAngleZoomFactor(for: camera)
 
-        if #available(iOS 26.0, *), camera.isFocusRectOfInterestSupported {
+        if camera.isFocusRectOfInterestSupported {
           camera.focusRectOfInterest = Self.scanFocusRect
         } else if camera.isFocusPointOfInterestSupported {
           camera.focusPointOfInterest = Self.scanCenter

@@ -130,7 +130,6 @@
 
     /// The audit arrived after the oldest system this app runs on, so
     /// this check is offered only where it exists.
-    @available(iOS 17.0, macOS 14.0, *)
     internal func testVirtualCardEditorPassesAccessibilityAudit() throws {
       let app = UITestApp.launchVirtualCard()
       let overlay = app.buttons[UITestIdentifiers.virtualCardOverlay]

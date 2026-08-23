@@ -71,10 +71,6 @@ internal enum CardMaintenance {
     case .nearField:
       #if REFINEID_LOCAL_CARD && os(iOS)
         guard SupportedCardTransports.offersNearField else { return nil }
-        // The system's card slot over the antenna arrived in iOS 26. An
-        // older system has no way to hold a card, which is the same
-        // answer as a device without an antenna.
-        guard #available(iOS 26.0, *) else { return nil }
         let held: NearFieldCardSession
         do {
           held = try await NearFieldCardSession.open(message: message)

@@ -24,7 +24,6 @@ extension CardCredentialsView {
   /// Reads the persistent registration state, on the platform that has it.
   internal func refreshRegistration() {
     #if REFINEID_LOCAL_CARD && os(iOS)
-      guard #available(iOS 26.0, *) else { return }
       isRegistered = CardRegistrationSections.hasRegisteredIdentity
     #endif
   }
@@ -222,19 +221,17 @@ extension CardCredentialsView {
     model.invalidateCardStatus()
     Task { @MainActor in
       #if REFINEID_LOCAL_CARD && os(iOS)
-        if #available(iOS 26.0, *) {
-          let succeeded = await CardRegistrationSections.registerIdentity(
-            cardAccessNumber: entered,
-            pin1: pin1,
-            model: primingModel,
-            commit: IdentityCommitments(
-              storeCardAccessNumber: storeProvenCardAccessNumber,
-              storeVerifiedPin1: storeVerifiedPin1,
-              clearPin1Entry: clearPin1Entry
-            ) { isRegistered = true })
-          finishIdentitySetup(succeeded: succeeded)
-          return
-        }
+        let succeeded = await CardRegistrationSections.registerIdentity(
+          cardAccessNumber: entered,
+          pin1: pin1,
+          model: primingModel,
+          commit: IdentityCommitments(
+            storeCardAccessNumber: storeProvenCardAccessNumber,
+            storeVerifiedPin1: storeVerifiedPin1,
+            clearPin1Entry: clearPin1Entry
+          ) { isRegistered = true })
+        finishIdentitySetup(succeeded: succeeded)
+        return
       #endif
       transition(.classificationFailed)
     }
@@ -244,7 +241,6 @@ extension CardCredentialsView {
   @MainActor
   internal func finishIdentitySetup(succeeded: Bool) {
     #if REFINEID_LOCAL_CARD && os(iOS)
-      guard #available(iOS 26.0, *) else { return }
       retryHealth.update(primingModel.credentialReport)
       guard !succeeded else {
         if retryHealth.recovery != nil {

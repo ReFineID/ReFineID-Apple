@@ -169,17 +169,10 @@
       let refineIDTokenIdentifiers = Set(
         watcher.tokenIDs.filter(CardTokenNamespace.owns(tokenIdentifier:))
       )
-      let registeredTokenIdentifiers: Set<String>
-      if #available(iOS 26.0, *) {
-        registeredTokenIdentifiers = Set(
-          TKSmartCardTokenRegistrationManager.default.registeredSmartCardTokens
-            .filter(CardTokenNamespace.owns(tokenIdentifier:))
-        )
-      } else {
-        // No antenna, so nothing was ever registered for the system to
-        // summon: every live token is backed by a connected reader.
-        registeredTokenIdentifiers = []
-      }
+      let registeredTokenIdentifiers = Set(
+        TKSmartCardTokenRegistrationManager.default.registeredSmartCardTokens
+          .filter(CardTokenNamespace.owns(tokenIdentifier:))
+      )
       // Persistent registrations are ReFineID's NFC identities. A token that
       // is live in the watcher but absent from that list is backed by a
       // connected reader. This remains true across an app upgrade even when

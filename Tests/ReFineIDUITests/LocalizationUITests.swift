@@ -23,7 +23,6 @@ internal final class LocalizationUITests: XCTestCase {
   /// The audit arrived after the oldest system this app runs on, so the
   /// check that uses it is offered only where it exists. The two
   /// translation checks below need no audit and run everywhere.
-  @available(iOS 17.0, macOS 14.0, *)
   private static var clipping: XCUIAccessibilityAuditType {
     XCUIAccessibilityAuditType(rawValue: 1 << 17)
   }
@@ -44,7 +43,6 @@ internal final class LocalizationUITests: XCTestCase {
   /// it was written from, and a control sized around the English one
   /// then clips it. This is the audit's own check for that, run in the
   /// language most likely to trip it.
-  @available(iOS 17.0, macOS 14.0, *)
   internal func testFinnishDoesNotClipTheWindow() throws {
     let app = UITestApp.launch(language: "fi")
     var clipped: [String] = []

@@ -228,11 +228,6 @@
           DebugConsole.emit("prime: REFINEID_DEBUG_PIN1 is required")
           return false
         }
-        guard #available(iOS 26.0, *) else {
-          DebugConsole.emit("prime: the system card slot needs iOS 26")
-          DebugConsole.emit("=== end ===")
-          return false
-        }
         guard let storedAccessNumber = CardCredentialStore.displayedCardAccessNumber() else {
           DebugConsole.emit("prime: a stored card access number is required")
           DebugConsole.emit("=== end ===")

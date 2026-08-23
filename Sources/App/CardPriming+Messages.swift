@@ -6,7 +6,6 @@
   import Foundation
 
   /// How a failed hold is explained, on the sheet and afterwards.
-  @available(iOS 26.0, *)
   extension CardPriming {
     /// What the NFC sheet says when a hold fails.
     ///

@@ -29,38 +29,25 @@
 // public identifier - it is stamped into every signed binary - so it
 // belongs here where a fork changes it once.
 // The oldest systems the app runs on, in one place rather than repeated
-// in every target. iOS 16 is what an iPad 5th generation reaches, and that
-// iPad is a useful requester: it has no antenna and never reads a card
-// itself, but it pairs with a phone that does and serves the browser the
-// certificate that phone answers for. Nothing newer is required for that
-// path -- CryptoTokenKit has published identities since iOS 14 and the RAPP
-// engine needs only CryptoKit, from iOS 13.
-//
-// Anything newer the app uses is either behind an availability check or
-// behind REFINEID_LOCAL_CARD in Config/Features.xcconfig.
-IPHONEOS_DEPLOYMENT_TARGET = 16.0
+// in every target. The floor is iOS 26.6 and macOS 26.6: the NFC
+// smart-card slot, CryptoTokenKit's 26 APIs, and the shipping product
+// all live there. Debug, Profile, TestFlight, and Release share it.
+IPHONEOS_DEPLOYMENT_TARGET = 26.6
+MACOSX_DEPLOYMENT_TARGET = 26.6
 
-// What the store artifact demands is a different question from what the
-// tree can build. The shipping configurations require iOS 26, and iPhone
-// alone: every feature the first release carries needs the NFC smart-card
-// slot, which arrived in iOS 26 and exists on no iPad, and no iPadOS 26
-// device is available to qualify the requester path an iPad would run.
-// Debug and Profile keep the wider floor and both families, so the
-// iPad-requester experiment stays cheap to resume when the remote card
-// returns. The archive inspector holds a candidate to these numbers, so
-// a wrongly cut artifact fails before it is uploaded.
-IPHONEOS_DEPLOYMENT_TARGET[config=TestFlight] = 26.0
-IPHONEOS_DEPLOYMENT_TARGET[config=Release] = 26.0
+// What the store artifact demands matches the tree. The shipping
+// configurations are iPhone alone: every feature the first release
+// carries needs the NFC smart-card slot, which exists on no iPad.
+// Debug and Profile keep both families so an iPad on 26.6 can still
+// be a requester. The archive inspector holds a candidate to these
+// numbers, so a wrongly cut artifact fails before it is uploaded.
+IPHONEOS_DEPLOYMENT_TARGET[config=TestFlight] = 26.6
+IPHONEOS_DEPLOYMENT_TARGET[config=Release] = 26.6
 
-// The same fact as a compilation condition, for the handful of app and
-// extension sources that must compile at both floors: a check like
-// `#available(iOS 17, *)` is required at floor 16 and refused as an
-// unnecessary check at floor 26, so those sites branch on this instead.
-// Defined beside the floor so the two can never disagree. The CardCore
-// package builds at its own manifest floor and never needs it.
-REFINEID_IOS_FLOOR_FEATURE =
-REFINEID_IOS_FLOOR_FEATURE[config=TestFlight] = REFINEID_IOS_FLOOR_26
-REFINEID_IOS_FLOOR_FEATURE[config=Release] = REFINEID_IOS_FLOOR_26
+// The same fact as a compilation condition. Every configuration is
+// floor 26.6, so the 26 spelling is always on. Defined beside the
+// floor so the two can never disagree.
+REFINEID_IOS_FLOOR_FEATURE = REFINEID_IOS_FLOOR_26
 
 TARGETED_DEVICE_FAMILY = 1,2
 TARGETED_DEVICE_FAMILY[config=TestFlight] = 1

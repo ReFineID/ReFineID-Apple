@@ -254,6 +254,6 @@ internal struct RappShippingConfigurationTests {
     #expect(source.components(separatedBy: "hasRapp: false").count - 1 == 2)
     #expect(source.contains("NSBonjourServices present without the remote card"))
     #expect(source.contains("network.server entitlement present without the remote card"))
-    #expect(source.contains("iPhone-only artifact requiring iOS 26.0 and an NFC antenna"))
+    #expect(source.contains("iPhone-only artifact requiring iOS 26.6 and an NFC antenna"))
   }
 }

@@ -11,7 +11,6 @@
   /// Kept with the card in the slot: `registerSmartCard` accepts only a
   /// token created for a live slot, so a registration attempted after
   /// the hold ends finds nothing to register.
-  @available(iOS 26.0, *)
   extension CardPriming {
     /// Registers the live card so the system can ask for it later.
     internal static func register(

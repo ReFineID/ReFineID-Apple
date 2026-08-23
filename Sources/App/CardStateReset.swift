@@ -94,9 +94,6 @@ internal enum CardStateReset {
     succeeded: Bool
   ) {
     #if os(iOS)
-      guard #available(iOS 26.0, *) else {
-        return (["ReFineID Safari registrations: none"], true)
-      }
       let manager = TKSmartCardTokenRegistrationManager.default
       let ours = Self.registeredOurTokenIDs()
       guard !ours.isEmpty else {
@@ -121,7 +118,6 @@ internal enum CardStateReset {
   /// ReFineID registrations already known to CryptoTokenKit.
   private static func registeredOurTokenIDs() -> [String] {
     #if os(iOS)
-      guard #available(iOS 26.0, *) else { return [] }
       return TKSmartCardTokenRegistrationManager.default.registeredSmartCardTokens
         .filter(CardTokenNamespace.owns(tokenIdentifier:))
         .sorted()

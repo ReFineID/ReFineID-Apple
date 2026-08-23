@@ -8,7 +8,6 @@
 
   /// The card I/O of a first prime: PACE and the reads, inside the one
   /// field's exclusive card session.
-  @available(iOS 26.0, *)
   extension CardPriming {
     /// What the one field reads off a card this device has never primed.
     internal struct Payload: Sendable {

@@ -45,7 +45,6 @@
   /// and `registerVisibleTokens` in the donor
   /// `platform/apple/RefineID/Local/SafariIdentityPrime+OneSystemNFC.swift`
   /// and `SafariIdentityPrime+LiveRegistration.swift`.
-  @available(iOS 26.0, *)
   internal enum CardPriming {
     /// Where a running prime reports what it is doing.
     ///

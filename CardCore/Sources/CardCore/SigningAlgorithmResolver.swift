@@ -8,33 +8,27 @@ import Security
 @_spi(TokenExtension)
 public enum SigningAlgorithmResolver {
   /// Known candidates used only to make the live CTK request legible.
-  private static let knownAlgorithms: [(String, SecKeyAlgorithm)] = {
-    var algorithms: [(String, SecKeyAlgorithm)] = [
-      ("ecdsaDigestSHA224", .ecdsaSignatureDigestX962SHA224),
-      ("ecdsaDigestSHA256", .ecdsaSignatureDigestX962SHA256),
-      ("ecdsaMessageSHA256", .ecdsaSignatureMessageX962SHA256),
-      ("ecdsaDigestSHA384", .ecdsaSignatureDigestX962SHA384),
-      ("ecdsaMessageSHA384", .ecdsaSignatureMessageX962SHA384),
-      ("ecdsaDigestSHA512", .ecdsaSignatureDigestX962SHA512),
-      ("ecdsaMessageSHA512", .ecdsaSignatureMessageX962SHA512),
-      ("rsaRaw", .rsaSignatureRaw),
-      ("rsaDigPKCS1SHA1", .rsaSignatureDigestPKCS1v15SHA1),
-      ("rsaMsgPKCS1SHA1", .rsaSignatureMessagePKCS1v15SHA1),
-      ("rsaDigestPSSSHA256", .rsaSignatureDigestPSSSHA256),
-      ("rsaMessagePSSSHA256", .rsaSignatureMessagePSSSHA256),
-      ("rsaDigestPKCS1SHA256", .rsaSignatureDigestPKCS1v15SHA256),
-      ("rsaMessagePKCS1SHA256", .rsaSignatureMessagePKCS1v15SHA256),
-      ("rsaDigestPKCS1SHA384", .rsaSignatureDigestPKCS1v15SHA384),
-      ("rsaMessagePKCS1SHA384", .rsaSignatureMessagePKCS1v15SHA384),
-      ("rsaDigestPKCS1SHA512", .rsaSignatureDigestPKCS1v15SHA512),
-      ("rsaMessagePKCS1SHA512", .rsaSignatureMessagePKCS1v15SHA512),
-    ]
-    if #available(iOS 17.0, macOS 14.0, *) {
-      algorithms.append(
-        ("ecdsaDigestRFC4754SHA384", .ecdsaSignatureDigestRFC4754SHA384))
-    }
-    return algorithms
-  }()
+  private static let knownAlgorithms: [(String, SecKeyAlgorithm)] = [
+    ("ecdsaDigestSHA224", .ecdsaSignatureDigestX962SHA224),
+    ("ecdsaDigestSHA256", .ecdsaSignatureDigestX962SHA256),
+    ("ecdsaMessageSHA256", .ecdsaSignatureMessageX962SHA256),
+    ("ecdsaDigestSHA384", .ecdsaSignatureDigestX962SHA384),
+    ("ecdsaMessageSHA384", .ecdsaSignatureMessageX962SHA384),
+    ("ecdsaDigestSHA512", .ecdsaSignatureDigestX962SHA512),
+    ("ecdsaMessageSHA512", .ecdsaSignatureMessageX962SHA512),
+    ("rsaRaw", .rsaSignatureRaw),
+    ("rsaDigPKCS1SHA1", .rsaSignatureDigestPKCS1v15SHA1),
+    ("rsaMsgPKCS1SHA1", .rsaSignatureMessagePKCS1v15SHA1),
+    ("rsaDigestPSSSHA256", .rsaSignatureDigestPSSSHA256),
+    ("rsaMessagePSSSHA256", .rsaSignatureMessagePSSSHA256),
+    ("rsaDigestPKCS1SHA256", .rsaSignatureDigestPKCS1v15SHA256),
+    ("rsaMessagePKCS1SHA256", .rsaSignatureMessagePKCS1v15SHA256),
+    ("rsaDigestPKCS1SHA384", .rsaSignatureDigestPKCS1v15SHA384),
+    ("rsaMessagePKCS1SHA384", .rsaSignatureMessagePKCS1v15SHA384),
+    ("rsaDigestPKCS1SHA512", .rsaSignatureDigestPKCS1v15SHA512),
+    ("rsaMessagePKCS1SHA512", .rsaSignatureMessagePKCS1v15SHA512),
+    ("ecdsaDigestRFC4754SHA384", .ecdsaSignatureDigestRFC4754SHA384),
+  ]
 
   /// Whether the token should advertise this live CTK algorithm.
   public static func advertises(

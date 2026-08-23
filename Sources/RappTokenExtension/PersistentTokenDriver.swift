@@ -40,7 +40,9 @@ internal final class PersistentTokenDriver: TKTokenDriver,
 
     /// The @objc delegate requirement fixes the throwing signature even
     /// though this implementation cannot fail.
-    fileprivate func createSession(_: TKToken) -> TKTokenSession {
+    fileprivate func createSession(
+      _: TKToken
+    ) throws -> TKTokenSession {  // swiftlint:disable:this unneeded_throws_rethrows
       PersistentTokenSession(token: self)
     }
   }

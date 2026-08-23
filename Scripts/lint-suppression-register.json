@@ -851,6 +851,22 @@
       "count": 1
     },
     {
+      "file": "Sources/RappTokenExtension/PersistentTokenDriver.swift",
+      "command": "disable:this",
+      "rules": [
+        "unneeded_throws_rethrows"
+      ],
+      "count": 1
+    },
+    {
+      "file": "Sources/TokenExtension/ActivationRequiredToken.swift",
+      "command": "disable:this",
+      "rules": [
+        "unneeded_throws_rethrows"
+      ],
+      "count": 1
+    },
+    {
       "file": "Sources/TokenExtension/Token+IdentityPublication.swift",
       "command": "disable:next",
       "rules": [

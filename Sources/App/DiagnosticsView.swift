@@ -234,11 +234,7 @@ internal struct DiagnosticsView: View {
       isProbingCapabilities = true
       capabilityLines = []
       Task {
-        if #available(iOS 26.0, *) {
-          capabilityLines = await CardCapabilityProbe.run()
-        } else {
-          capabilityLines = ["needs iOS 26"]
-        }
+        capabilityLines = await CardCapabilityProbe.run()
         isProbingCapabilities = false
         refresh()
       }

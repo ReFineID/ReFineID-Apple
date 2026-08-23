@@ -69,10 +69,6 @@
       }
       refresh()
       guard allowsNearField else { return }
-      // `allowsNearField` is already false below iOS 26, because the
-      // system's card slot arrived there; this states the same fact in
-      // the form the compiler reads.
-      guard #available(iOS 26.0, *) else { return }
       isRunning = true
       lastRunResult = .notRun
       failure = nil
