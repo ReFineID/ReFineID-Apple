@@ -75,15 +75,28 @@ import SwiftUI
       if isPairingInputActive {
         inlinePairingControls
       } else if pairingModel.hasActivePairs {
-        Button(String(localized: "Disconnect")) {
-          withAnimation {
-            pairingModel.revokeAll()
+        HStack(spacing: RemotePairingLayout.forgetButtonGap) {
+          Text(String(localized: "Connected"))
+            .foregroundStyle(.green)
+          Button(role: .destructive) {
+            withAnimation {
+              pairingModel.revokeAll()
+            }
+          } label: {
+            Image(systemName: "minus.circle")
+              .font(.title3)
+              .foregroundStyle(.red)
           }
+          .buttonStyle(.plain)
+          .frame(
+            width: RemotePairingLayout.tapTargetSide,
+            height: RemotePairingLayout.tapTargetSide
+          )
+          .contentShape(Rectangle())
+          .padding(RemotePairingLayout.tapTargetOverflow)
+          .accessibilityLabel(Text("Disconnect"))
+          .accessibilityIdentifier("remoteDisconnectButton")
         }
-        .buttonStyle(.bordered)
-        .tint(.red)
-        .controlSize(.small)
-        .accessibilityIdentifier("remoteDisconnectButton")
       } else {
         Button(String(localized: "Connect")) {
           togglePairingInput()

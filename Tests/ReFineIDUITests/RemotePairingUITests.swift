@@ -6,8 +6,8 @@
 
   /// The remote pairing disconnect flow.
   ///
-  /// After the holder taps Disconnect the phone must reset its own UI
-  /// to the Connect state and notify the remote side so its UI follows.
+  /// After the holder removes the pairing the phone must reset its own
+  /// UI to the Connect state and notify the remote side so its UI follows.
   @MainActor
   internal final class RemotePairingUITests: XCTestCase {
     /// Long enough for a first launch on the oldest supported hardware.
@@ -32,13 +32,13 @@
         "the remote card row did not appear")
     }
 
-    /// Tapping Disconnect resets the row to its initial state.
+    /// Removing the pairing resets the row to its initial state.
     internal func testDisconnectResetsRowToConnectState() {
       let app = UITestApp.launch(arguments: ["--pretend-paired"])
       let disconnect = app.descendants(matching: .any)["remoteDisconnectButton"]
         .firstMatch
       guard disconnect.waitForExistence(timeout: Self.appearTimeout) else {
-        XCTFail("Disconnect button did not appear for a pretend-paired launch")
+        XCTFail("Remove-pairing control did not appear for a pretend-paired launch")
         return
       }
       disconnect.tap()
