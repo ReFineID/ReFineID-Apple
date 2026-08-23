@@ -31,6 +31,9 @@
     private static let attempts = 180
     private static let pause = Duration.seconds(1)
 
+    /// The maximum length of a user-entered pairing code before it is treated as a full URI.
+    private static let maxPairingCodeLength = 10
+
     /// What a script looks for on the line carrying the offer.
     internal static let offerPrefix = "offer-remote-reader: offer "
 
@@ -43,11 +46,12 @@
       // A length, never the offer: it answers whether the whole of it
       // survived the cable, which is the one thing a caller cannot see.
       DebugConsole.emit("pair-with-offer: offer characters: " + String(offerURI.count))
-      let normalizedCode = RappPairingCode.normalize(offerURI)
-      if RappPairingCode.isValid(normalizedCode) {
+      let trimmed = offerURI.trimmingCharacters(in: .whitespacesAndNewlines)
+      let normalizedCode = RappPairingCode.normalize(trimmed)
+      if trimmed.count <= maxPairingCodeLength, RappPairingCode.isValid(normalizedCode) {
         model.acceptPairingCode(normalizedCode)
       } else {
-        model.acceptOfferWithoutScanning(offerURI)
+        model.acceptOfferWithoutScanning(trimmed)
       }
 
       for _ in 0..<attempts {
