@@ -70,10 +70,11 @@
             // identity, so a pairing that now exists is read straight away
             // rather than waiting behind the same button a second time.
             remoteModel.refreshThenConnect()
+          },
+          content: {
+            RappPairingView()
           }
-        ) {
-          RappPairingView()
-        }
+        )
         .sheet(
           item: Binding(
             get: { authorizationInbox.request },
