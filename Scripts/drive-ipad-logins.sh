@@ -66,6 +66,9 @@ if [[ -z "$IPAD_UDID" ]]; then
 fi
 
 echo "==> Using iPad simulator: $IPAD_UDID"
+for booted_non_ipad in $(xcrun simctl list devices booted 2>/dev/null | grep -v "iPad" | grep -oE "[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}" || true); do
+  xcrun simctl shutdown "$booted_non_ipad" 2>/dev/null || true
+done
 xcrun simctl boot "$IPAD_UDID" 2>/dev/null || true
 
 run_direct_login() {
@@ -90,7 +93,7 @@ run_uitest_login() {
   xcodebuild test \
     -project "$REPO_ROOT/ReFineID.xcodeproj" \
     -scheme "ReFineID" \
-    -destination "id=$IPAD_UDID" \
+    -destination "platform=iOS Simulator,id=$IPAD_UDID" \
     -only-testing:"ReFineIDUITests/SafariCardLoginUITests/$test_method" \
     CODE_SIGNING_ALLOWED=NO \
     CODE_SIGN_IDENTITY=""

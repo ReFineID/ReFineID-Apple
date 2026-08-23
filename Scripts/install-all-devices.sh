@@ -53,6 +53,10 @@ fi
 
 if [[ -n "$sim_id" ]]; then
   echo "Installing on iPad simulator ${sim_id}..."
+  # Ensure only the iPad simulator is running
+  for booted_non_ipad in $(xcrun simctl list devices booted 2>/dev/null | grep -v "iPad" | grep -oE "[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}" || true); do
+    xcrun simctl shutdown "$booted_non_ipad" 2>/dev/null || true
+  done
   xcrun simctl boot "$sim_id" 2>/dev/null || true
   sim_derived_data="/tmp/refineid-ipad-sim"
   xcodebuild \
