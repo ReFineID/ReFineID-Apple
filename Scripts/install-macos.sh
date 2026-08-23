@@ -22,7 +22,7 @@
 #
 # Usage:
 #
-#   Scripts/install-macos.sh                 build, verify, install
+#   Scripts/install-macos.sh                 build, verify, install, launch
 #   Scripts/install-macos.sh --check         verify what is installed
 #   Scripts/install-macos.sh --configuration Release
 #
@@ -127,7 +127,9 @@ remove_stray_copies() {
       # The build/ directory in this checkout holds the archives a
       # release is cut from, which mdfind stops reporting once the tree
       # is hidden from the index.
-      for root in /tmp /private/tmp "$HOME/Library/Developer/Xcode/DerivedData" build; do
+      for root in /tmp /private/tmp "$HOME/Library/Developer/Xcode/DerivedData" \
+        build derivedData; do
+        [[ -d "$root" ]] || continue
         find "$root" -maxdepth 12 -name "$app_name" -type d 2>/dev/null || true
       done
     } | sort -u
@@ -136,6 +138,7 @@ remove_stray_copies() {
     [[ -z "$stray" ]] && continue
     [[ "$stray" == "$installed" ]] && continue
     unregister_copy "$stray"
+    unregister_token_plugins "$stray"
     if ! is_macos_bundle "$stray"; then
       note "unregistered non-macOS copy: $stray"
       continue
@@ -210,16 +213,18 @@ report_registrations() {
 # leaves the executable a loader stub, so the stub matches across any
 # code change and answered "unchanged" for builds that were not.
 extension_is_unchanged() {
-  local name="ReFineIDTokenExtension"
-  local built_dir="${built}/Contents/PlugIns/${name}.appex/Contents/MacOS"
-  local live_dir="${installed}/Contents/PlugIns/${name}.appex/Contents/MacOS"
-  [[ -d "$built_dir" && -d "$live_dir" ]] || return 1
-  local binary
-  for binary in "$built_dir"/*; do
-    [[ -f "$binary" ]] || continue
-    local live_binary="${live_dir}/$(basename "$binary")"
-    [[ -f "$live_binary" ]] || return 1
-    [[ "$(unsigned_hash "$binary")" == "$(unsigned_hash "$live_binary")" ]] || return 1
+  local name built_dir live_dir binary live_binary
+  for name in ReFineIDTokenExtension ReFineIDRappTokenExtension; do
+    built_dir="${built}/Contents/PlugIns/${name}.appex/Contents/MacOS"
+    live_dir="${installed}/Contents/PlugIns/${name}.appex/Contents/MacOS"
+    [[ -d "$built_dir" ]] || continue
+    [[ -d "$live_dir" ]] || return 1
+    for binary in "$built_dir"/*; do
+      [[ -f "$binary" ]] || continue
+      live_binary="${live_dir}/$(basename "$binary")"
+      [[ -f "$live_binary" ]] || return 1
+      [[ "$(unsigned_hash "$binary")" == "$(unsigned_hash "$live_binary")" ]] || return 1
+    done
   done
 }
 
@@ -243,15 +248,52 @@ unsigned_hash() {
 # finish what it holds. The app is asked, given a moment, and only then
 # insisted upon -- and an install should not be the reason someone's
 # unsaved work disappears.
+# The iOS Simulator process is also named ReFineID. Only the macOS
+# bundle layout has Contents/MacOS, so a name match would terminate
+# a simulator install this script does not own.
+macos_app_is_running() {
+  pgrep -f "/ReFineID.app/Contents/MacOS/ReFineID" >/dev/null 2>&1
+}
+
 quit_app() {
-  pgrep -x "ReFineID" >/dev/null 2>&1 || return 0
+  macos_app_is_running || return 0
   osascript -e 'tell application id "fi.refineid.ReFineID" to quit' >/dev/null 2>&1 || true
   for _ in 1 2 3 4 5 6 7 8 9 10; do
-    pgrep -x "ReFineID" >/dev/null 2>&1 || return 0
+    macos_app_is_running || return 0
     sleep 0.5
   done
   note "the app did not quit when asked; ending it"
-  pkill -x ReFineID 2>/dev/null || true
+  pkill -f "/ReFineID.app/Contents/MacOS/ReFineID" 2>/dev/null || true
+}
+
+# Withdraws every CryptoTokenKit plugin the bundle registered, so a
+# deleted copy cannot keep answering as the live driver.
+unregister_token_plugins() {
+  local bundle="$1"
+  local plugin
+  [[ -d "$bundle/Contents/PlugIns" ]] || return 0
+  for plugin in "$bundle/Contents/PlugIns/"*.appex; do
+    [[ -d "$plugin" ]] || continue
+    pluginkit -r "$plugin" 2>/dev/null || true
+  done
+}
+
+# Registers every CryptoTokenKit plugin in the installed bundle. The
+# remote-card driver is a second appex beside the local-card one, and
+# registering only the first leaves pairing answering from a stray.
+register_token_plugins() {
+  local bundle="$1"
+  local plugin
+  local registered=0
+  [[ -d "$bundle/Contents/PlugIns" ]] || return 1
+  for plugin in "$bundle/Contents/PlugIns/"*.appex; do
+    [[ -d "$plugin" ]] || continue
+    if pluginkit -a "$plugin" 2>/dev/null; then
+      note "extension registered: $(basename "$plugin")"
+      registered=1
+    fi
+  done
+  [[ "$registered" -ne 0 ]]
 }
 
 # A card insertion is CryptoTokenKit's supported discovery boundary.
@@ -291,6 +333,8 @@ stop_refineid_extensions() {
     2>/dev/null || true
   pkill -f "/ReFineIDDiscoveryExtension.appex/Contents/MacOS/ReFineIDDiscoveryExtension" \
     2>/dev/null || true
+  pkill -f "/ReFineIDRappTokenExtension.appex/Contents/MacOS/ReFineIDRappTokenExtension" \
+    2>/dev/null || true
 }
 
 if [[ "$check_only" == "yes" ]]; then
@@ -303,6 +347,7 @@ fi
 hide_from_spotlight "$derived_data"
 hide_from_spotlight "$HOME/Library/Developer/Xcode/DerivedData"
 hide_from_spotlight build
+hide_from_spotlight derivedData
 
 note "building ${configuration} for macOS"
 xcodebuild \
@@ -340,6 +385,7 @@ fi
 stop_refineid_extensions
 
 note "installing to ${installed}"
+unregister_token_plugins "$installed"
 rm -rf "$installed"
 cp -R "$built" "$installed"
 verify_signature "$installed"
@@ -348,14 +394,11 @@ remove_stray_copies
 remove_stale_build_trees
 rm -rf "$derived_data"
 
-# The extension is registered directly. Launching the app to make the
-# system notice it, then quitting it again, put a window on screen and
-# took it away on every install, which is the installer helping itself
-# to someone's screen.
-note "registering the extension"
-if pluginkit -a "${installed}/Contents/PlugIns/ReFineIDTokenExtension.appex" 2>/dev/null; then
-  note "extension registered"
-else
+# The extensions are registered directly. Launching the app only to make
+# the system notice them, then quitting it again, put a window on screen
+# and took it away on every install.
+note "registering the extensions"
+if ! register_token_plugins "$installed"; then
   note "pluginkit refused; launching the app once so the system sees it"
   open -g -a "$installed"
   sleep 3
@@ -363,4 +406,6 @@ else
 fi
 
 report_registrations
+note "launching ${installed}"
+open "$installed"
 note "done. Insert the card; CryptoTokenKit will mint it with the new driver."

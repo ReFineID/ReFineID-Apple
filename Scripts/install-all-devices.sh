@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-# Stamps the version and installs the latest synchronized build on the
-# connected physical iOS device, the iPad simulator, or both automatically.
+# Stamps the version and installs the latest synchronized build on this
+# Mac (/Applications), the connected physical iOS device, the iPad
+# simulator, or a subset of those.
 #
 # Usage:
-#   Scripts/install-all-devices.sh [--device-only | --simulator-only] [--prime-mock-card]
+#   Scripts/install-all-devices.sh [--device-only | --simulator-only | --macos-only] [--prime-mock-card]
 #
 
 set -euo pipefail
@@ -14,6 +15,7 @@ cd "$(dirname "$0")/.."
 prime_mock_card=false
 target_device=true
 target_simulator=true
+target_macos=true
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -23,14 +25,21 @@ while [[ $# -gt 0 ]]; do
       ;;
     --device-only)
       target_simulator=false
+      target_macos=false
       shift
       ;;
     --simulator-only)
       target_device=false
+      target_macos=false
+      shift
+      ;;
+    --macos-only)
+      target_device=false
+      target_simulator=false
       shift
       ;;
     -h|--help)
-      echo "Usage: $0 [--device-only | --simulator-only] [--prime-mock-card]"
+      echo "Usage: $0 [--device-only | --simulator-only | --macos-only] [--prime-mock-card]"
       exit 0
       ;;
     *)
@@ -49,7 +58,13 @@ build=$((10#$hh * 10 + 10#$mn / 10))
 
 echo "Version stamped: ${version} (${build})"
 
-# 1. Physical Device
+# 1. This Mac
+if [ "$target_macos" = true ]; then
+  echo "Installing on this Mac at /Applications..."
+  ./Scripts/install-macos.sh
+fi
+
+# 2. Physical Device
 if [ "$target_device" = true ]; then
   device_id=$(xcrun devicectl list devices 2>/dev/null | grep -E "iPhone|iPad" | grep -v "Simulator" | awk '{print $3}' | head -n 1 || true)
   if [[ -z "$device_id" ]]; then
@@ -71,7 +86,7 @@ if [ "$target_device" = true ]; then
   fi
 fi
 
-# 2. iPad Simulator
+# 3. iPad Simulator
 if [ "$target_simulator" = true ]; then
   sim_id=$(xcrun simctl list devices available 2>/dev/null | grep -E "iPad Pro 13-inch" | grep -oE "[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}" | head -n 1 || true)
   if [[ -z "$sim_id" ]]; then
