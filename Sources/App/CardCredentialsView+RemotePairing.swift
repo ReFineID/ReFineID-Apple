@@ -10,7 +10,6 @@ import SwiftUI
     private enum RemotePairingLayout {
       static let inputSpacing: CGFloat = 8
       static let tapTargetSide: CGFloat = 44
-      static let tapTargetOverflow: CGFloat = -10
       static let forgetButtonGap: CGFloat = 4
       static let caretWidth: CGFloat = 2
       static let caretVerticalInset: CGFloat = 2
@@ -77,13 +76,12 @@ import SwiftUI
               .font(.title3)
               .foregroundStyle(.red)
           }
-          .buttonStyle(.plain)
+          .buttonStyle(.borderless)
           .frame(
             width: RemotePairingLayout.tapTargetSide,
             height: RemotePairingLayout.tapTargetSide
           )
           .contentShape(Rectangle())
-          .padding(RemotePairingLayout.tapTargetOverflow)
           .accessibilityLabel(Text("Disconnect"))
           .accessibilityIdentifier("remoteDisconnectButton")
         }
@@ -203,13 +201,12 @@ import SwiftUI
               .font(.title3)
               .foregroundStyle(.red)
           }
-          .buttonStyle(.plain)
+          .buttonStyle(.borderless)
           .frame(
             width: RemotePairingLayout.tapTargetSide,
             height: RemotePairingLayout.tapTargetSide
           )
           .contentShape(Rectangle())
-          .padding(RemotePairingLayout.tapTargetOverflow)
           .accessibilityLabel(Text("Forget identity"))
           .accessibilityIdentifier("forgetRemoteIdentity")
         }

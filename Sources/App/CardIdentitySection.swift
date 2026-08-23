@@ -13,9 +13,6 @@ internal struct CardIdentitySection: View {
   /// The minimum comfortable tap target.
   private static let tapTargetSide: CGFloat = 44
 
-  /// Pulls the tap target's slack back out of the row's layout.
-  private static let tapTargetOverflow: CGFloat = -10
-
   /// Minimum gap between the holder name and the forget control.
   private static let forgetButtonGap: CGFloat = 4
 
@@ -44,10 +41,9 @@ internal struct CardIdentitySection: View {
             .font(.title3)
             .foregroundStyle(.red)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.borderless)
         .frame(width: Self.tapTargetSide, height: Self.tapTargetSide)
         .contentShape(Rectangle())
-        .padding(Self.tapTargetOverflow)
         .accessibilityLabel(Text("Forget identity"))
         .accessibilityIdentifier("forgetCardIdentityButton")
       }
