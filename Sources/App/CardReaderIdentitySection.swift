@@ -8,6 +8,9 @@
   /// The same Person row NFC uses once an identity exists. A reader
   /// already named the holder, so CAN and PIN 1 do not appear here.
   internal struct CardReaderIdentitySection: View {
+    /// Spacing between the person label and the holder name.
+    private static let identityDetailsSpacing: CGFloat = 4
+
     internal let holders: [String]
 
     internal var body: some View {
@@ -17,12 +20,13 @@
             .frame(maxWidth: .infinity, alignment: .center)
         } else {
           ForEach(holders, id: \.self) { holder in
-            LabeledContent {
+            VStack(alignment: .leading, spacing: Self.identityDetailsSpacing) {
+              PersonRowLabel(configured: true)
               Text(holder)
+                .font(.body)
+                .foregroundStyle(.secondary)
                 .textSelection(.enabled)
                 .accessibilityIdentifier("readerCardHolder")
-            } label: {
-              PersonRowLabel(configured: true)
             }
           }
         }

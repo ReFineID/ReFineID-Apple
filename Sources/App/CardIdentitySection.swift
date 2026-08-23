@@ -16,6 +16,9 @@ internal struct CardIdentitySection: View {
   /// Minimum gap between the holder name and the forget control.
   private static let forgetButtonGap: CGFloat = 4
 
+  /// Spacing between the person label and the holder name.
+  private static let identityDetailsSpacing: CGFloat = 4
+
   /// The complete holder name read from the primed identity certificate.
   internal let holder: String
 
@@ -25,11 +28,12 @@ internal struct CardIdentitySection: View {
   internal var body: some View {
     Section {
       HStack {
-        LabeledContent {
-          Text(holder)
-            .textSelection(.enabled)
-        } label: {
+        VStack(alignment: .leading, spacing: Self.identityDetailsSpacing) {
           PersonRowLabel(configured: true)
+          Text(holder)
+            .font(.body)
+            .foregroundStyle(.secondary)
+            .textSelection(.enabled)
         }
         .accessibilityIdentifier("identityStatus")
         Spacer(minLength: Self.forgetButtonGap)

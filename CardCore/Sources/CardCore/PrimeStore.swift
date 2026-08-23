@@ -300,6 +300,9 @@ public enum PrimeStore {
   /// reported as an empty name, exactly as an undecodable record is.
   public static func primedHolderNames() -> [String] {
     presenceOrderedItems().compactMap { item in
+      if let formatted = DistinguishedName.holderLine(fromCertificate: item.identity.certDER) {
+        return formatted
+      }
       guard
         let certificate = SecCertificateCreateWithData(
           nil, item.identity.certDER as CFData),

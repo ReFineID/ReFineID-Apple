@@ -152,7 +152,7 @@
       }.value
     }
 
-    /// Lists live reader tokens while excluding persistent NFC registrations.
+    /// Lists live reader tokens when a reader slot is present.
     internal func refresh() {
       generation &+= 1
       if DemoMode.shared.isActive {
@@ -170,26 +170,12 @@
         liveReaderTokenIdentifiers = []
         return
       }
-      let refineIDTokenIdentifiers = Set(
-        watcher.tokenIDs.filter(CardTokenNamespace.owns(tokenIdentifier:))
-      )
-      let registeredTokenIdentifiers = Set(
-        TKSmartCardTokenRegistrationManager.default.registeredSmartCardTokens
-          .filter(CardTokenNamespace.owns(tokenIdentifier:))
-      )
-      // Persistent registrations are ReFineID's NFC identities. A token that
-      // is live in the watcher but absent from that list is backed by a
-      // connected reader. This remains true across an app upgrade even when
-      // ctkd keeps the old extension instance and token objects alive.
-      //
-      // Sorted, so the rows a holder reads keep one order across a
-      // refresh that changed nothing.
-      let nextReaderTokenIdentifiers =
-        refineIDTokenIdentifiers.subtracting(registeredTokenIdentifiers).sorted()
+      let refineIDTokenIdentifiers =
+        watcher.tokenIDs.filter(CardTokenNamespace.owns(tokenIdentifier:)).sorted()
 
       let cardAppearanceChanged =
-        nextReaderTokenIdentifiers != liveReaderTokenIdentifiers
-      liveReaderTokenIdentifiers = nextReaderTokenIdentifiers
+        refineIDTokenIdentifiers != liveReaderTokenIdentifiers
+      liveReaderTokenIdentifiers = refineIDTokenIdentifiers
 
       if cardAppearanceChanged {
         if liveReaderTokenIdentifiers.isEmpty {

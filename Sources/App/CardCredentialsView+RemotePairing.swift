@@ -11,6 +11,7 @@ import SwiftUI
       static let inputSpacing: CGFloat = 8
       static let tapTargetSide: CGFloat = 44
       static let forgetButtonGap: CGFloat = 4
+      static let identityDetailsSpacing: CGFloat = 4
       static let caretWidth: CGFloat = 2
       static let caretVerticalInset: CGFloat = 2
     }
@@ -183,12 +184,13 @@ import SwiftUI
         PersistentTokenRegistry.shared.holderLine != nil
       {
         HStack {
-          LabeledContent {
+          VStack(alignment: .leading, spacing: RemotePairingLayout.identityDetailsSpacing) {
+            PersonRowLabel(configured: true)
             Text(holder)
+              .font(.body)
+              .foregroundStyle(.secondary)
               .textSelection(.enabled)
               .accessibilityIdentifier("remoteCardHolder")
-          } label: {
-            PersonRowLabel(configured: true)
           }
           Spacer(minLength: RemotePairingLayout.forgetButtonGap)
           Button(role: .destructive) {
