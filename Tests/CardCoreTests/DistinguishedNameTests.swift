@@ -149,6 +149,27 @@ internal struct DistinguishedNameTests {
   }
 
   @Test
+  internal func theHolderLineJoinsTheRecasedNameAndTheIdentifier() {
+    let givenOid: [UInt8] = [0x06, 0x03, 0x55, 0x04, 0x2A]
+    let serialOid: [UInt8] = [0x06, 0x03, 0x55, 0x04, 0x05]
+    let body =
+      Self.attribute(
+        oid: givenOid, value: Self.element(0x0C, Array("MARIA-ELISABETH".utf8))
+      )
+      + Self.attribute(
+        oid: Self.surnameOid, value: Self.element(0x0C, Array("SÄÄTILÄ".utf8))
+      )
+      + Self.attribute(
+        oid: serialOid, value: Self.element(0x13, Array("000000A".utf8))
+      )
+    let name = Data(Self.element(0x30, body))
+
+    #expect(
+      DistinguishedName.holderLine(inName: name) == "Maria-Elisabeth Säätilä 000000A"
+    )
+  }
+
+  @Test
   internal func somethingThatIsNotANameAnswersNothing() {
     #expect(DistinguishedName.commonName(inName: Data()) == nil)
     #expect(DistinguishedName.commonName(inName: Data([0x02, 0x01, 0x05])) == nil)

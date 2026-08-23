@@ -21,8 +21,7 @@
       Button {
         isPresented = true
       } label: {
-        Image(systemName: hasSelectedPair ? "link" : "link.badge.plus")
-          .replacingSymbolPlainly()
+        RemotePairingGlyph(isConnected: hasSelectedPair)
       }
       .accessibilityLabel(String(localized: "Remote"))
       .accessibilityValue(

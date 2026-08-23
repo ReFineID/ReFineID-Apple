@@ -170,9 +170,10 @@
       // are both listed without a card being present, so neither may
       // answer for one.
       isReady = listed.contains { identifier in
-        CardTokenNamespace.owns(tokenIdentifier: identifier)
-          && !identifier.hasPrefix(Self.credentialEntryPrefix)
-          && !CardTokenNamespace.isDisplacedRemoteCardToken(tokenIdentifier: identifier)
+        PersistentTokenIdentity.owns(tokenIdentifier: identifier)
+          || (CardTokenNamespace.owns(tokenIdentifier: identifier)
+            && !identifier.hasPrefix(Self.credentialEntryPrefix)
+            && !CardTokenNamespace.isDisplacedRemoteCardToken(tokenIdentifier: identifier))
       }
       #if DEBUG
         Self.log.info(

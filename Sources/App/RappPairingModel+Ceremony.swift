@@ -56,7 +56,7 @@
           finishAttempt()
           resumeRegularRelay()
           #if os(macOS)
-            PersistentTokenRegistry.shared.start()
+            PersistentTokenRegistry.shared.startAfterPairing()
           #endif
         } catch {
           fail(String(localized: "The paired device could not be selected"))

@@ -21,11 +21,22 @@
     internal var availability: LoginIdentityModel.Availability {
       if LoginIdentityModel.shared.isReady {
         .ready
+      } else if hasBorrowedIdentity {
+        .ready
       } else if CardPresence.shared.isCardPresent {
         .cardWithoutIdentity
       } else {
         .noCard
       }
+    }
+
+    /// Whether a paired phone has already answered with a certificate.
+    private var hasBorrowedIdentity: Bool {
+      #if REFINEID_REMOTE_CARD
+        PersistentTokenRegistry.shared.holderLine != nil
+      #else
+        false
+      #endif
     }
 
     /// The signature style every dropped document can take.

@@ -106,18 +106,24 @@
       for match in matches {
         guard
           let matchedTokenIdentifier = match[kSecAttrTokenID] as? String,
-          CardTokenNamespace.owns(tokenIdentifier: matchedTokenIdentifier),
+          Self.owns(tokenIdentifier: matchedTokenIdentifier),
           let der = match[kSecValueData] as? Data,
           let facts = CertificateFacts(der: der),
           !facts.isCertificateAuthority,
-          let certificate = SecCertificateCreateWithData(nil, der as CFData),
-          let name = SecCertificateCopySubjectSummary(certificate) as String?
+          let name = DistinguishedName.holderLine(inName: facts.subjectName)
         else {
           continue
         }
         return name
       }
       return nil
+    }
+
+    /// Whether the item belongs to a ReFineID driver, local card or
+    /// remote card.
+    private static func owns(tokenIdentifier: String) -> Bool {
+      CardTokenNamespace.owns(tokenIdentifier: tokenIdentifier)
+        || PersistentTokenIdentity.owns(tokenIdentifier: tokenIdentifier)
     }
   }
 

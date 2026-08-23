@@ -196,12 +196,7 @@
   /// The cardholder line an answered certificate yields, or nil when the
   /// subject carries no name this app can show.
   private func remoteHolderName(inCertificate der: Data) -> String? {
-    guard let facts = CertificateFacts(der: der),
-      let name = DistinguishedName.personalName(inName: facts.subjectName)
-        ?? DistinguishedName.commonName(inName: facts.subjectName)
-    else { return nil }
-    let identifier = DistinguishedName.identifier(inName: facts.subjectName)
-    return identifier.map { "\(name) \($0)" } ?? name
+    DistinguishedName.holderLine(fromCertificate: der)
   }
 
   /// Names the failure so the holder knows which device to attend to.

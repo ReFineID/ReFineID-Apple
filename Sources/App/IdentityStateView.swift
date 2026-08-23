@@ -20,7 +20,7 @@
     /// because only then is there a holder name to re-read.
     private enum TrackKey: Equatable {
       case availability(LoginIdentityModel.Availability)
-      case ready(generation: Int)
+      case ready(generation: Int, borrowed: String?)
     }
 
     #if DEBUG
@@ -54,11 +54,23 @@
     /// it.
     @State private var holder: String?
 
+    /// The person line the remote-card registry already holds.
+    ///
+    /// Used when the keychain has not yet listed the borrowed token
+    /// the registry just published.
+    private var borrowedHolderLine: String? {
+      #if REFINEID_REMOTE_CARD
+        PersistentTokenRegistry.shared.holderLine
+      #else
+        nil
+      #endif
+    }
+
     /// The event which can change the row's asynchronous contents.
     private var trackKey: TrackKey {
       switch availability {
       case .ready:
-        .ready(generation: model.generation)
+        .ready(generation: model.generation, borrowed: borrowedHolderLine)
 
       case .cardWithoutIdentity, .noCard:
         .availability(availability)
@@ -81,7 +93,7 @@
         // name behind it is not worth showing. The empty text is
         // still a rendered view: a structurally absent one would
         // never run the task that reads the name.
-        Text(holder ?? "")
+        Text(holder ?? borrowedHolderLine ?? "")
           .textSelection(.enabled)
 
       case .cardWithoutIdentity:
@@ -116,6 +128,9 @@
         holder = await Task.detached(priority: .utility) {
           PublishedIdentityName.current()
         }.value
+        if holder == nil {
+          holder = borrowedHolderLine
+        }
 
       case .cardWithoutIdentity:
         holder = nil

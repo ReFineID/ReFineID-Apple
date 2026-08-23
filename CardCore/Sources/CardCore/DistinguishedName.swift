@@ -93,6 +93,25 @@ public enum DistinguishedName {
     Self.attribute(SignOids.serialNumber, inName: name)
   }
 
+  /// The person line a window shows: given and family name, then the
+  /// identifier the certificate states.
+  public static func holderLine(inName name: Data) -> String? {
+    guard
+      let person = Self.personalName(inName: name) ?? Self.commonName(inName: name)
+    else { return nil }
+    if let identifier = Self.identifier(inName: name) {
+      return person + " " + identifier
+    }
+    return person
+  }
+
+  /// The person line from a certificate's subject, or nil when it
+  /// carries no name this app can show.
+  public static func holderLine(fromCertificate der: Data) -> String? {
+    guard let facts = CertificateFacts(der: der) else { return nil }
+    return Self.holderLine(inName: facts.subjectName)
+  }
+
   /// The common name in a DER-encoded Name, or nil when it carries
   /// none this can read.
   ///

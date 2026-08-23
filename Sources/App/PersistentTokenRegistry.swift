@@ -5,6 +5,7 @@
   import CryptoKit
   import CryptoTokenKit
   import Foundation
+  import Observation
   import Security
 
   /// Fetches the public authentication certificate once and publishes it as a
@@ -14,6 +15,7 @@
   /// fetches at launch; iOS publishes the certificate the explicit
   /// remote connect already read, so the holder is asked exactly once.
   @MainActor
+  @Observable
   internal final class PersistentTokenRegistry {
     // MARK: Static Properties
 
@@ -32,6 +34,9 @@
     }
 
     // MARK: Properties
+
+    /// Who the borrowed certificate names, for the identity row.
+    internal private(set) var holderLine: String?
 
     private var isRunning = false
 
@@ -59,6 +64,7 @@
       for instanceID in driver.tokenConfigurations.keys {
         driver.removeTokenConfiguration(for: instanceID)
       }
+      shared.holderLine = nil
     }
 
     /// The certificate this driver is currently offering, if any.
@@ -138,6 +144,10 @@
       // measured on the requester, a configuration of three items was
       // never offered, and the same two were offered at once.
       configuration.keychainItems = [certificateItem, keyItem]
+      shared.holderLine = DistinguishedName.holderLine(fromCertificate: certificateDER)
+      #if os(macOS)
+        LoginIdentityModel.shared.refresh()
+      #endif
       #if DEBUG
         print("[persistent-token] published \(instanceID)")
         fflush(stdout)
@@ -149,11 +159,24 @@
     /// Fetches and publishes once at launch on the requesting device when
     /// an identity is needed.
     internal func start() {
-      startFetch()
+      seedHolderLine()
+      startFetch(replacing: false)
     }
 
-    private func startFetch() {
-      guard !isRunning, Self.needsIdentity else { return }
+    /// Fetches the borrowed certificate after a pairing, replacing any
+    /// identity a previous pair left behind.
+    internal func startAfterPairing() {
+      startFetch(replacing: true)
+    }
+
+    private func seedHolderLine() {
+      guard holderLine == nil, let der = Self.publishedCertificateDER() else { return }
+      holderLine = DistinguishedName.holderLine(fromCertificate: der)
+    }
+
+    private func startFetch(replacing: Bool) {
+      guard !isRunning else { return }
+      guard replacing || Self.needsIdentity else { return }
       isRunning = true
       Task.detached(priority: .userInitiated) {
         let certificateDER: Data?
