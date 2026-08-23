@@ -13,6 +13,8 @@ import SwiftUI
       static let inlineSpacing: CGFloat = 6
       static let promptSpacing: CGFloat = 4
       static let inlineInputWidth: CGFloat = 90
+      static let tapTargetSide: CGFloat = 44
+      static let tapTargetOverflow: CGFloat = -10
     }
 
     // MARK: Computed Properties
@@ -108,14 +110,43 @@ import SwiftUI
       }
     }
 
-    @ViewBuilder internal var remoteIdentityContent: some View {
-      switch remoteModel.phase {
-      case .connecting:
-        ProgressView()
-      case .identity(let holder):
-        remoteHolderContent(holder)
-      case .idle, .failed:
-        remoteActionContent
+    @ViewBuilder private var remoteIdentityRow: some View {
+      if case .identity(let holder) = remoteModel.phase {
+        HStack {
+          LabeledContent {
+            Text(holder)
+              .textSelection(.enabled)
+              .accessibilityIdentifier("remoteCardHolder")
+          } label: {
+            PersonRowLabel(configured: true)
+          }
+          Spacer(minLength: 0)
+          Button(role: .destructive) {
+            withAnimation {
+              pairingModel.cancel()
+              remoteModel.forget()
+            }
+          } label: {
+            Image(systemName: "minus.circle")
+              .font(.title3)
+              .foregroundStyle(.red)
+          }
+          .buttonStyle(.plain)
+          .frame(
+            width: RemotePairingLayout.tapTargetSide,
+            height: RemotePairingLayout.tapTargetSide
+          )
+          .contentShape(Rectangle())
+          .padding(RemotePairingLayout.tapTargetOverflow)
+          .accessibilityLabel(Text("Forget identity"))
+          .accessibilityIdentifier("forgetRemoteIdentity")
+        }
+      } else {
+        LabeledContent {
+          remoteActionContent
+        } label: {
+          PersonRowLabel(configured: false)
+        }
       }
     }
 
@@ -139,11 +170,7 @@ import SwiftUI
 
     internal var remoteReaderSection: some View {
       Section {
-        LabeledContent {
-          remoteIdentityContent
-        } label: {
-          PersonRowLabel(configured: remoteModel.holder != nil)
-        }
+        remoteIdentityRow
         if remoteModel.phase == .failed {
           Text(remoteModel.failureText ?? String(localized: "The remote card could not be read."))
             .foregroundStyle(.secondary)
@@ -178,23 +205,6 @@ import SwiftUI
           pairingCodeDigits = ""
           isPairingCodeFocused = true
         }
-      }
-    }
-
-    private func remoteHolderContent(_ holder: String) -> some View {
-      HStack(spacing: Self.holderActionSpacing) {
-        Text(holder)
-          .textSelection(.enabled)
-          .accessibilityIdentifier("remoteCardHolder")
-        Button {
-          remoteModel.forget()
-        } label: {
-          Image(systemName: "minus.circle.fill")
-            .foregroundStyle(.red)
-        }
-        .buttonStyle(.borderless)
-        .accessibilityIdentifier("forgetRemoteIdentity")
-        .accessibilityLabel(String(localized: "Forget identity"))
       }
     }
 

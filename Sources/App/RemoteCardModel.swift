@@ -188,9 +188,12 @@
       PersistentTokenRegistry.withdraw()
       Task {
         let catalog = RappPairCatalog(vault: RappDeviceVault())
-        if let selected = try? await catalog.selectedPair() {
-          try? await catalog.revoke(pairID: selected.pairID)
+        if let pairs = try? await catalog.activePairs() {
+          for pair in pairs {
+            try? await catalog.revoke(pairID: pair.pairID)
+          }
         }
+        try? await catalog.clearSelection()
       }
     }
   }
