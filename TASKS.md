@@ -22,10 +22,7 @@ protocol milestone.
 
 ## Release blockers
 
-- [ ] Green the non-UI suite:
-  `RappIntegrationTests/credentialRejectionRevokesBothPeersWithoutAnotherExecution`
-  fails on main (also at `2cd5248`, pre-gating). The pipeline runs the suite
-  in Debug, where RAPP is on.
+None. The non-UI suite (CardCoreTests and ReFineIDTests, 597 tests across 107 suites) is fully green on main.
 
 The RAPP physical qualification matrix is not a blocker here; it gates
 re-enabling `REFINEID_REMOTE_CARD` and the macOS release (Phase E below).
