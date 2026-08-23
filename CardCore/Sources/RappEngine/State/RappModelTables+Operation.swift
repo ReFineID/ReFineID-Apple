@@ -11,7 +11,7 @@ extension RappModelTables {
       event: .requestSent,
       role: .requester,
       condition: .admissionPermitted,
-      to: .requested,
+      destination: .requested,
       actions: [.computeRequestHash, .journalRequest, .startExpiryClock]
     ),
     RappRule(
@@ -19,49 +19,49 @@ extension RappModelTables {
       event: .requestReceived,
       role: .proxy,
       condition: .admissionPermitted,
-      to: .requested,
+      destination: .requested,
       actions: [.validateSchemaHashExpiryAndContext, .startExpiryClock]
     ),
     RappRule(
       from: .requested,
       event: .requestValid,
       role: .proxy,
-      to: .awaitingConsent,
+      destination: .awaitingConsent,
       actions: [.beginSafePrerequisiteReads, .presentConsentPerProfile]
     ),
     RappRule(
       from: .requested,
       event: .requestInvalidOrUnsupported,
       role: .proxy,
-      to: .rejected,
+      destination: .rejected,
       actions: [.sendResultRejected]
     ),
     RappRule(
       from: [.requested, .awaitingConsent],
       event: .cancelReceived,
       role: .proxy,
-      to: .cancelled,
+      destination: .cancelled,
       actions: [.clearOperationCredentials, .dismissConsent, .sendResultCancelled]
     ),
     RappRule(
       from: [.requested, .awaitingConsent],
       event: .requestExpired,
       role: .proxy,
-      to: .cancelled,
+      destination: .cancelled,
       actions: [.clearOperationCredentials, .dismissConsent, .sendResultCancelled]
     ),
     RappRule(
       from: .awaitingConsent,
       event: .userDenied,
       role: .proxy,
-      to: .denied,
+      destination: .denied,
       actions: [.clearOperationCredentials, .sendResultDenied]
     ),
     RappRule(
       from: .awaitingConsent,
       event: .retryPolicyRefused,
       role: .proxy,
-      to: .rejected,
+      destination: .rejected,
       actions: [
         .clearOperationCredentials, .sendResultRetryPolicyRefused, .requestSessionClose,
       ]
@@ -70,7 +70,7 @@ extension RappModelTables {
       from: .awaitingConsent,
       event: .invalidCanOrPin1OrPin2,
       role: .proxy,
-      to: .credentialRejected,
+      destination: .credentialRejected,
       actions: [
         .clearAllActiveCredentials, .removeRejectedCredentialAndDerivedState,
         .sendResultCredentialRejectedBestEffort, .revokePairAfterCredentialRejection,
@@ -82,7 +82,7 @@ extension RappModelTables {
       event: .safeReadsComplete,
       role: .proxy,
       condition: .profileHasNoConsequentialCommand,
-      to: .resultPending,
+      destination: .resultPending,
       actions: [.persistResult, .sendResultCompleted]
     ),
     RappRule(
@@ -90,21 +90,21 @@ extension RappModelTables {
       event: .userApprovedAndProxyReady,
       role: .proxy,
       condition: .zeroTransmissions,
-      to: .prepared,
+      destination: .prepared,
       actions: [.sendPrepared]
     ),
     RappRule(
       from: .prepared,
       event: .cancelReceived,
       role: .proxy,
-      to: .cancelled,
+      destination: .cancelled,
       actions: [.clearOperationCredentials, .sendResultCancelled]
     ),
     RappRule(
       from: .prepared,
       event: .requestExpired,
       role: .proxy,
-      to: .cancelled,
+      destination: .cancelled,
       actions: [.clearOperationCredentials, .sendResultCancelled]
     ),
     RappRule(
@@ -112,7 +112,7 @@ extension RappModelTables {
       event: .validCommit,
       role: .proxy,
       condition: .hashMatches,
-      to: .committed,
+      destination: .committed,
       actions: [.durablyWriteCommitBeforeTransmission]
     ),
     RappRule(
@@ -120,7 +120,7 @@ extension RappModelTables {
       event: .beginCardCommand,
       role: .proxy,
       condition: .zeroTransmissions,
-      to: .executing,
+      destination: .executing,
       actions: [.consumeNonClonableCommand, .incrementTransmissionCountOnce]
     ),
     RappRule(
@@ -128,28 +128,28 @@ extension RappModelTables {
       event: .cancelReceived,
       role: .proxy,
       condition: .provenNoTransmission,
-      to: .cancelled,
+      destination: .cancelled,
       actions: [.persistCancelled, .clearOperationCredentials, .sendResultCancelled]
     ),
     RappRule(
       from: [.committed, .executing],
       event: .crashRecoveredWithoutTerminalResult,
       role: .both,
-      to: .ambiguous,
+      destination: .ambiguous,
       actions: [.persistAmbiguous, .prohibitRetry]
     ),
     RappRule(
       from: .executing,
       event: .cardSuccess,
       role: .proxy,
-      to: .resultPending,
+      destination: .resultPending,
       actions: [.persistResult, .clearOperationCredentials, .sendResultCompleted]
     ),
     RappRule(
       from: .executing,
       event: .invalidCanOrPin1OrPin2,
       role: .proxy,
-      to: .credentialRejected,
+      destination: .credentialRejected,
       actions: [
         .clearAllActiveCredentials, .removeRejectedCredentialAndDerivedState,
         .sendResultCredentialRejectedBestEffort, .revokePairAfterCredentialRejection,
@@ -160,7 +160,7 @@ extension RappModelTables {
       from: .executing,
       event: .cardPolicyRejection,
       role: .proxy,
-      to: .rejected,
+      destination: .rejected,
       actions: [.clearOperationCredentials, .persistRejection, .sendResultRejected]
     ),
     RappRule(
@@ -168,14 +168,14 @@ extension RappModelTables {
       event: .cardRemovedBeforeTransmit,
       role: .proxy,
       condition: .provenNoTransmission,
-      to: .cancelled,
+      destination: .cancelled,
       actions: [.persistCancelled, .clearOperationCredentials, .sendResultCancelled]
     ),
     RappRule(
       from: .executing,
       event: .cardRemovedOrTransportUncertain,
       role: .proxy,
-      to: .ambiguous,
+      destination: .ambiguous,
       actions: [
         .clearOperationCredentials, .persistAmbiguous, .prohibitRetry,
         .sendResultAmbiguousBestEffort, .requestSessionCloseAmbiguous,
@@ -185,35 +185,35 @@ extension RappModelTables {
       from: .executing,
       event: .cancelReceived,
       role: .proxy,
-      to: .executing,
+      destination: .executing,
       actions: [.recordAdvisoryCancel]
     ),
     RappRule(
       from: .executing,
       event: .sessionClosedPostCommit,
       role: .proxy,
-      to: .executing,
+      destination: .executing,
       actions: [.continueCardExchangeLocally, .noteResultDeliveryImpossible]
     ),
     RappRule(
       from: .resultPending,
       event: .validResultAck,
       role: .proxy,
-      to: .completed,
+      destination: .completed,
       actions: [.persistCompleted, .releaseResult]
     ),
     RappRule(
       from: .resultPending,
       event: .sessionClosedBeforeAck,
       role: .proxy,
-      to: .deliveryUncertain,
+      destination: .deliveryUncertain,
       actions: [.persistDeliveryUncertain, .prohibitCardRetry, .retainResultUnderLocalStorage]
     ),
     RappRule(
       from: .committed,
       event: .sessionClosedPostCommit,
       role: .proxy,
-      to: .cancelled,
+      destination: .cancelled,
       actions: [.persistCancelled, .clearOperationCredentials]
     ),
     RappRule(
@@ -221,21 +221,21 @@ extension RappModelTables {
       event: .preparedReceived,
       role: .requester,
       condition: .hashEchoMatches,
-      to: .prepared,
+      destination: .prepared,
       actions: [.journalPrepared]
     ),
     RappRule(
       from: [.requested, .prepared],
       event: .cancelSentOrRequestExpired,
       role: .requester,
-      to: .cancelled,
+      destination: .cancelled,
       actions: [.sendOperationCancel, .journalCancelled]
     ),
     RappRule(
       from: .prepared,
       event: .commitSent,
       role: .requester,
-      to: .committed,
+      destination: .committed,
       actions: [.journalCommitIntentDurably]
     ),
     RappRule(
@@ -243,63 +243,63 @@ extension RappModelTables {
       event: .resultCompletedReceived,
       role: .requester,
       condition: .profileHasNoConsequentialCommand,
-      to: .completed,
+      destination: .completed,
       actions: [.sendResultAck, .journalCompleted]
     ),
     RappRule(
       from: [.requested, .prepared],
       event: .resultDeniedReceived,
       role: .requester,
-      to: .denied,
+      destination: .denied,
       actions: [.journalDenied]
     ),
     RappRule(
       from: [.requested, .prepared, .committed],
       event: .resultCancelledReceived,
       role: .requester,
-      to: .cancelled,
+      destination: .cancelled,
       actions: [.journalCancelled]
     ),
     RappRule(
       from: [.requested, .prepared, .committed],
       event: .resultRejectedReceived,
       role: .requester,
-      to: .rejected,
+      destination: .rejected,
       actions: [.journalRejected]
     ),
     RappRule(
       from: [.requested, .prepared, .committed],
       event: .resultCredentialRejectedReceived,
       role: .requester,
-      to: .credentialRejected,
+      destination: .credentialRejected,
       actions: [.journalCredentialRejected, .revokePairAfterCredentialRejection]
     ),
     RappRule(
       from: .committed,
       event: .resultCompletedReceived,
       role: .requester,
-      to: .completed,
+      destination: .completed,
       actions: [.sendResultAck, .journalCompleted]
     ),
     RappRule(
       from: .committed,
       event: .resultAmbiguousReceived,
       role: .requester,
-      to: .ambiguous,
+      destination: .ambiguous,
       actions: [.journalAmbiguous, .prohibitRetry]
     ),
     RappRule(
       from: .committed,
       event: .sessionClosedPostCommit,
       role: .requester,
-      to: .ambiguous,
+      destination: .ambiguous,
       actions: [.journalAmbiguous, .prohibitRetry]
     ),
     RappRule(
       from: [.requested, .awaitingConsent, .prepared],
       event: .sessionClosedPreCommit,
       role: .both,
-      to: .cancelled,
+      destination: .cancelled,
       actions: [.clearOperationCredentials, .persistCancelled]
     ),
   ]

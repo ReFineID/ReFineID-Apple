@@ -1,20 +1,17 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-// The model names this field `to`, and the tables below are read line for
-// line against the document, so the field keeps the document's name rather
-// than a longer synonym.
-
 /// One rule of the formal model.
 ///
 /// A rule listing several `from` states is shorthand for one rule per listed
 /// state, so the array is kept rather than expanded and every check reads it
-/// the same way the model does.
+/// the same way the model does. The document names the destination field
+/// `to`; the Swift property is `destination`.
 internal struct RappRule<State: Equatable & Sendable, Event: Equatable & Sendable>: Sendable {
   internal let from: [State]
   internal let event: Event
   internal let role: RuleRole
   internal let condition: RappGuard?
-  internal let to: State
+  internal let destination: State
   internal let actions: [RappAction]
 
   internal init(
@@ -22,14 +19,14 @@ internal struct RappRule<State: Equatable & Sendable, Event: Equatable & Sendabl
     event: Event,
     role: RuleRole,
     condition: RappGuard?,
-    to: State,
+    destination: State,
     actions: [RappAction]
   ) {
     self.from = from
     self.event = event
     self.role = role
     self.condition = condition
-    self.to = to
+    self.destination = destination
     self.actions = actions
   }
 
@@ -38,11 +35,12 @@ internal struct RappRule<State: Equatable & Sendable, Event: Equatable & Sendabl
     from: [State],
     event: Event,
     role: RuleRole,
-    to: State,
+    destination: State,
     actions: [RappAction]
   ) {
     self.init(
-      from: from, event: event, role: role, condition: nil, to: to, actions: actions)
+      from: from, event: event, role: role, condition: nil, destination: destination,
+      actions: actions)
   }
 
   internal init(
@@ -50,11 +48,11 @@ internal struct RappRule<State: Equatable & Sendable, Event: Equatable & Sendabl
     event: Event,
     role: RuleRole,
     condition: RappGuard?,
-    to: State,
+    destination: State,
     actions: [RappAction]
   ) {
     self.init(
-      from: [from], event: event, role: role, condition: condition, to: to,
+      from: [from], event: event, role: role, condition: condition, destination: destination,
       actions: actions)
   }
 
@@ -63,11 +61,12 @@ internal struct RappRule<State: Equatable & Sendable, Event: Equatable & Sendabl
     from: State,
     event: Event,
     role: RuleRole,
-    to: State,
+    destination: State,
     actions: [RappAction]
   ) {
     self.init(
-      from: [from], event: event, role: role, condition: nil, to: to, actions: actions)
+      from: [from], event: event, role: role, condition: nil, destination: destination,
+      actions: actions)
   }
 
   /// Whether this rule governs the given state, event, and endpoint.
@@ -94,5 +93,5 @@ internal func rappResolve<State, Event>(
   if let condition = rule.condition, !guards.isSatisfied(condition) {
     return .guardFailed(condition)
   }
-  return .fire(RappTransition(state: rule.to, actions: rule.actions))
+  return .fire(RappTransition(state: rule.destination, actions: rule.actions))
 }

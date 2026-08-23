@@ -27,7 +27,7 @@ internal struct StateConformanceTests {
             entries.insert(
               ModelEntry(
                 machine: machine, from: from, event: rule.event, role: role.rawValue,
-                to: rule.to, actions: rule.actions.joined(separator: ",")))
+                destination: rule.destination, actions: rule.actions.joined(separator: ",")))
           }
         }
       }
@@ -47,7 +47,7 @@ internal struct StateConformanceTests {
           entries.insert(
             ModelEntry(
               machine: "pairing", from: from.rawValue, event: rule.event.rawValue,
-              role: role.rawValue, to: fired.state.rawValue,
+              role: role.rawValue, destination: fired.state.rawValue,
               actions: fired.actions.map(\.rawValue).joined(separator: ",")))
         }
       }
@@ -60,7 +60,7 @@ internal struct StateConformanceTests {
           entries.insert(
             ModelEntry(
               machine: "session", from: from.rawValue, event: rule.event.rawValue,
-              role: role.rawValue, to: fired.state.rawValue,
+              role: role.rawValue, destination: fired.state.rawValue,
               actions: fired.actions.map(\.rawValue).joined(separator: ",")))
         }
       }
@@ -73,7 +73,7 @@ internal struct StateConformanceTests {
           entries.insert(
             ModelEntry(
               machine: "operation", from: from.rawValue, event: rule.event.rawValue,
-              role: role.rawValue, to: fired.state.rawValue,
+              role: role.rawValue, destination: fired.state.rawValue,
               actions: fired.actions.map(\.rawValue).joined(separator: ",")))
         }
       }
@@ -149,7 +149,7 @@ internal struct StateConformanceTests {
     perturbed.insert(
       ModelEntry(
         machine: victim.machine, from: victim.from, event: victim.event, role: victim.role,
-        to: victim.to, actions: victim.actions + "," + Self.perturbingAction))
+        destination: victim.destination, actions: victim.actions + "," + Self.perturbingAction))
     #expect(!perturbed.subtracting(swiftEntries()).isEmpty)
   }
 }

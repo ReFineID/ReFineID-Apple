@@ -125,7 +125,7 @@ internal struct ModelReader {
       rule.condition = raw
 
     case "to":
-      rule.to = raw
+      rule.destination = raw
 
     case "actions":
       rule.actions = scalarOrList(raw)

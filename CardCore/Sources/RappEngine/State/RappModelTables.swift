@@ -10,7 +10,7 @@ internal enum RappModelTables {
       event: .createOffer,
       role: .requester,
       condition: .userInitiated,
-      to: .offerActive,
+      destination: .offerActive,
       actions: [.generateOfferId, .generatePairingSecret, .startOfferExpiry, .displayQr]
     ),
     RappRule(
@@ -18,7 +18,7 @@ internal enum RappModelTables {
       event: .offerScanned,
       role: .proxy,
       condition: .offerValidAndSupported,
-      to: .handshaking,
+      destination: .handshaking,
       actions: [.selectOneCandidate, .connectCandidate, .preparePairingResponder]
     ),
     RappRule(
@@ -26,14 +26,14 @@ internal enum RappModelTables {
       event: .candidateConnected,
       role: .requester,
       condition: .offerLive,
-      to: .handshaking,
+      destination: .handshaking,
       actions: [.beginPairingHandshakeInitiator]
     ),
     RappRule(
       from: .offerActive,
       event: .offerExpiredOrCancelled,
       role: .requester,
-      to: .unpaired,
+      destination: .unpaired,
       actions: [.destroyPairingSecret, .invalidateOffer, .hideQr]
     ),
     RappRule(
@@ -41,7 +41,7 @@ internal enum RappModelTables {
       event: .handshakeAuthenticated,
       role: .both,
       condition: .transcriptMatches,
-      to: .confirming,
+      destination: .confirming,
       actions: [
         .deriveChannelIdentifiers, .destroyPairingSecret, .stopAcceptingCandidates, .hideQr,
         .sendPairingHello, .showPeerAndRequestedGrants,
@@ -51,21 +51,21 @@ internal enum RappModelTables {
       from: .handshaking,
       event: .handshakeFailed,
       role: .requester,
-      to: .offerActive,
+      destination: .offerActive,
       actions: [.discardCandidate, .retainOffer]
     ),
     RappRule(
       from: .handshaking,
       event: .handshakeFailed,
       role: .proxy,
-      to: .unpaired,
+      destination: .unpaired,
       actions: [.discardCandidate]
     ),
     RappRule(
       from: .handshaking,
       event: .offerExpiredOrCancelled,
       role: .requester,
-      to: .unpaired,
+      destination: .unpaired,
       actions: [.destroyPairingSecret, .invalidateOffer, .closeCandidate]
     ),
     RappRule(
@@ -73,14 +73,14 @@ internal enum RappModelTables {
       event: .bothUsersConfirmed,
       role: .both,
       condition: .grantedSetsEqual,
-      to: .pairedDisconnected,
+      destination: .pairedDisconnected,
       actions: [.storePairRecordAtomically, .invalidateOffer, .closePairingChannel]
     ),
     RappRule(
       from: .confirming,
       event: .deniedAbortedOrTimedOut,
       role: .both,
-      to: .unpaired,
+      destination: .unpaired,
       actions: [
         .sendPairingAbortBestEffort, .destroyCandidateKeys, .invalidateOffer, .closeCandidate,
       ]
@@ -89,14 +89,14 @@ internal enum RappModelTables {
       from: .pairedDisconnected,
       event: .sessionHealthy,
       role: .both,
-      to: .pairedConnected,
+      destination: .pairedConnected,
       actions: [.showConnected]
     ),
     RappRule(
       from: .pairedConnected,
       event: .sessionClosed,
       role: .both,
-      to: .pairedDisconnected,
+      destination: .pairedDisconnected,
       actions: [.showPairedDisconnected]
     ),
     RappRule(
@@ -104,7 +104,7 @@ internal enum RappModelTables {
       event: .forgetPairing,
       role: .both,
       condition: .localUserAction,
-      to: .unpaired,
+      destination: .unpaired,
       actions: [.destroyPairKeys, .destroyRelayTokens, .clearPairMetadata]
     ),
     RappRule(
@@ -112,14 +112,14 @@ internal enum RappModelTables {
       event: .forgetPairing,
       role: .both,
       condition: .localUserAction,
-      to: .unpaired,
+      destination: .unpaired,
       actions: [.closeSession, .destroyPairKeys, .destroyRelayTokens, .clearPairMetadata]
     ),
     RappRule(
       from: .pairedConnected,
       event: .authenticatedProtocolViolation,
       role: .both,
-      to: .revoked,
+      destination: .revoked,
       actions: [.sendCloseBestEffort, .closeSession, .destroyPairKeys, .showRevoked]
     ),
     RappRule(
@@ -127,7 +127,7 @@ internal enum RappModelTables {
       event: .localRevoke,
       role: .both,
       condition: .localUserAction,
-      to: .revoked,
+      destination: .revoked,
       actions: [.sendCloseBestEffort, .closeSession, .destroyPairKeys, .showRevoked]
     ),
     RappRule(
@@ -135,14 +135,14 @@ internal enum RappModelTables {
       event: .localRevoke,
       role: .both,
       condition: .localUserAction,
-      to: .revoked,
+      destination: .revoked,
       actions: [.destroyPairKeys, .showRevoked]
     ),
     RappRule(
       from: .pairedConnected,
       event: .peerRevocationNotice,
       role: .both,
-      to: .revoked,
+      destination: .revoked,
       actions: [.recordPeerInitiated, .closeSession, .destroyPairKeys, .showRevoked]
     ),
     RappRule(
@@ -150,7 +150,7 @@ internal enum RappModelTables {
       event: .forgetPairing,
       role: .both,
       condition: .localUserAction,
-      to: .unpaired,
+      destination: .unpaired,
       actions: [.clearResidualPairRecord]
     ),
   ]
