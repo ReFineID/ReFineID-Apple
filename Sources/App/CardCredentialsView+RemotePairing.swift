@@ -85,12 +85,11 @@ import SwiftUI
       if case .offer(let code) = pairingModel.phase {
         Text(RappPairingCode.formatted(code))
           .font(.system(.body, design: .monospaced, weight: .semibold))
-          .frame(maxWidth: .infinity, alignment: .leading)
+          .multilineTextAlignment(.trailing)
           .accessibilityIdentifier("pairingCode")
       } else if case .connecting = pairingModel.phase {
         ProgressView()
           .controlSize(.small)
-          .frame(maxWidth: .infinity, alignment: .leading)
       } else {
         Button(String(localized: "Connect")) {
           withAnimation {
