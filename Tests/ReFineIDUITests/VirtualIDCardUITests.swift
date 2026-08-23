@@ -226,7 +226,7 @@
       XCTAssertTrue(enable.waitForExistence(timeout: Self.appearTimeout))
       XCTAssertEqual(enable.label, "Enable")
       let connectHeader = app.staticTexts["Connect"]
-      let browserHeader = app.staticTexts["PIN 1 Cache"]
+      let browserHeader = app.staticTexts["Cache"]
       let documentHeader = app.staticTexts["Document"]
       XCTAssertTrue(connectHeader.exists)
       XCTAssertTrue(browserHeader.exists)

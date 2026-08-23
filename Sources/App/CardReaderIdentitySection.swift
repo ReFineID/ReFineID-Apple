@@ -102,7 +102,7 @@
         .disabled(!isPin1EntryComplete || isVerifying)
         .accessibilityIdentifier("saveReaderPin1")
       } header: {
-        Text("PIN 1 Cache")
+        Text("Cache")
           .frame(maxWidth: .infinity, alignment: .leading)
           .listRowInsets(EdgeInsets())
       }

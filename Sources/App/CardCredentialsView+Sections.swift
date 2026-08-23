@@ -137,7 +137,7 @@ extension CardCredentialsView {
     Section {
       pin1Row
     } header: {
-      compactSectionHeader("PIN 1 Cache")
+      compactSectionHeader("Cache")
     }
     if hasConfiguredCard {
       #if REFINEID_LOCAL_CARD && os(iOS)
