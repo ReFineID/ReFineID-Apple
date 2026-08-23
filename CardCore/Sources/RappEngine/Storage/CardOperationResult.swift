@@ -10,7 +10,7 @@ import Foundation
 internal enum CardOperationResult: Equatable {
   case inspection(CardInspection)
   case identity(displayName: String, personIdentifier: String)
-  case certificate(Data)
+  case certificate(Data, cardSerial: String? = nil)
   case signature(Data)
 }
 

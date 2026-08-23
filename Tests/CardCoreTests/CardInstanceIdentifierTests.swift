@@ -68,17 +68,17 @@ internal struct CardInstanceIdentifierTests {
   internal func displacedRemoteCardTokensAreRecognizedUnderEveryCardClass() {
     #expect(
       CardTokenNamespace.isDisplacedRemoteCardToken(
-        tokenIdentifier: "fi.refineid.ReFineID.token:iphone-nfc-0011aabb"))
+        tokenIdentifier: "fi.refineid.ReFineID.token:refineid-rapp-card-0011aabb"))
     #expect(
       CardTokenNamespace.isDisplacedRemoteCardToken(
-        tokenIdentifier: "fi.refineid.ReFineID.ctk:iphone-nfc-0011aabb"))
+        tokenIdentifier: "fi.refineid.ReFineID.ctk:refineid-rapp-card-0011aabb"))
     #expect(
       !CardTokenNamespace.isDisplacedRemoteCardToken(
         tokenIdentifier: "fi.refineid.ReFineID.token:refineid-card-test00001"))
     // Under its own driver class the remote card is where it belongs.
     #expect(
       !CardTokenNamespace.isDisplacedRemoteCardToken(
-        tokenIdentifier: "fi.refineid.ReFineID.rapp-token:iphone-nfc-0011aabb"))
+        tokenIdentifier: "fi.refineid.ReFineID.rapp-token:refineid-rapp-card-0011aabb"))
   }
 
   @Test
@@ -87,10 +87,10 @@ internal struct CardInstanceIdentifierTests {
       among: [
         "card-access-number",
         "refineid-card-test00001",
-        "iphone-nfc-0011aabb",
-        "iphone-nfc-ccddeeff",
+        "refineid-rapp-card-0011aabb",
+        "refineid-rapp-card-ccddeeff",
       ])
-    #expect(displaced == ["iphone-nfc-0011aabb", "iphone-nfc-ccddeeff"])
+    #expect(displaced == ["refineid-rapp-card-0011aabb", "refineid-rapp-card-ccddeeff"])
   }
 
   @Test

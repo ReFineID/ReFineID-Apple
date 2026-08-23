@@ -44,6 +44,8 @@ internal struct CardSignRequestResolverTests {
   internal func rsa2048ExactAlgorithmsAreComplete() {
     #expect(
       CardSignRequestResolver.exactAlgorithms(for: .rsa2048) == [
+        .rsaSignatureDigestPKCS1v15SHA1,
+        .rsaSignatureMessagePKCS1v15SHA1,
         .rsaSignatureDigestPSSSHA256,
         .rsaSignatureMessagePSSSHA256,
         .rsaSignatureDigestPKCS1v15SHA256,

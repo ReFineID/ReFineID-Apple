@@ -16,8 +16,8 @@ extension RappOperationResult {
     case .identity(let displayName, let personIdentifier):
       self.init(kind: .identity, displayName: displayName, personId: personIdentifier)
 
-    case .certificate(let der):
-      self.init(kind: .certificate, bytes: der)
+    case .certificate(let der, let cardSerial):
+      self.init(kind: .certificate, personId: cardSerial, bytes: der)
 
     case .signature(let signature):
       self.init(kind: .signature, bytes: signature)

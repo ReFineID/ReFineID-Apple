@@ -78,7 +78,12 @@
     /// Publishes an already-fetched certificate as the persistent
     /// identity.
     internal static func publish(certificateDER: Data) {
-      Self.publish(certificateDER)
+      Self.publish(certificateDER, cardSerial: nil)
+    }
+
+    /// Publishes an already-fetched certificate with its card serial.
+    internal static func publish(certificateDER: Data, cardSerial: String?) {
+      Self.publish(certificateDER, cardSerial: cardSerial)
     }
 
     /// Withdraws every identity this driver has published.
@@ -158,7 +163,7 @@
       return (certificateItem, keyItem)
     }
 
-    private static func publish(_ certificateDER: Data) {
+    private static func publish(_ certificateDER: Data, cardSerial: String? = nil) {
       guard
         let driver = driverConfiguration,
         let certificate = SecCertificateCreateWithData(nil, certificateDER as CFData),
@@ -172,11 +177,8 @@
       }
 
       let serialPart: String
-      if let facts = CertificateFacts(der: certificateDER),
-        let identifier = DistinguishedName.identifier(inName: facts.subjectName)?.lowercased(),
-        !identifier.isEmpty
-      {
-        serialPart = identifier
+      if let cardSerial, !cardSerial.isEmpty {
+        serialPart = cardSerial.lowercased()
       } else {
         serialPart =
           SHA256.hash(data: certificateDER)
@@ -263,6 +265,7 @@
       isRunning = true
       Task.detached(priority: .userInitiated) {
         let fetched: Data?
+        let fetchedSerial: String?
         #if os(macOS)
           let displayName = String(localized: "ReFineID Mac")
         #else
@@ -272,23 +275,25 @@
           let response = try RappPersistentRequesterClient(
             displayName: displayName
           ).perform(.readAuthenticationCertificate)
-          guard case .authenticationCertificate(let certificate) = response else {
-            await Self.shared.finish(nil)
+          guard case .authenticationCertificate(let certificate, let cardSerial) = response else {
+            await Self.shared.finish(nil, cardSerial: nil)
             return
           }
           fetched = certificate
+          fetchedSerial = cardSerial
         } catch {
           fetched = nil
+          fetchedSerial = nil
         }
-        await Self.shared.finish(fetched)
+        await Self.shared.finish(fetched, cardSerial: fetchedSerial)
       }
     }
 
-    fileprivate func finish(_ certificateDER: Data?) {
+    fileprivate func finish(_ certificateDER: Data?, cardSerial: String? = nil) {
       defer { isRunning = false }
       guard !hasSeenHolderAdvertisement || holderIsAdvertising else { return }
       guard let certificateDER else { return }
-      Self.publish(certificateDER)
+      Self.publish(certificateDER, cardSerial: cardSerial)
     }
   }
 #endif

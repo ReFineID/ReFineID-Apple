@@ -33,8 +33,12 @@ internal func journalResultValue(_ result: CardOperationResult) -> WireValue {
       "person_id": .text(personIdentifier),
     ])
 
-  case .certificate(let bytes):
-    return .map(["kind": .text("certificate"), "bytes": .bytes(bytes)])
+  case .certificate(let bytes, let cardSerial):
+    var map: [String: WireValue] = ["kind": .text("certificate"), "bytes": .bytes(bytes)]
+    if let cardSerial {
+      map["card_serial"] = .text(cardSerial)
+    }
+    return .map(map)
 
   case .signature(let bytes):
     return .map(["kind": .text("signature"), "bytes": .bytes(bytes)])
@@ -54,7 +58,15 @@ internal func journalResultFrom(_ value: WireValue) throws -> CardOperationResul
       personIdentifier: try takeText(&map, "person_id"))
 
   case "certificate":
-    result = .certificate(try takeBytes(&map, "bytes"))
+    let bytes = try takeBytes(&map, "bytes")
+    let cardSerial: String?
+    if let val = map.removeValue(forKey: "card_serial") {
+      guard case .text(let str) = val else { throw PairRecordError.invalidInput }
+      cardSerial = str
+    } else {
+      cardSerial = nil
+    }
+    result = .certificate(bytes, cardSerial: cardSerial)
 
   case "signature":
     result = .signature(try takeBytes(&map, "bytes"))
@@ -85,8 +97,12 @@ internal func wireResultBody(_ result: CardOperationResult) -> [String: WireValu
       "person_id": .text(personIdentifier),
     ]
 
-  case .certificate(let bytes):
-    return ["type": .text("certificate"), "der": .bytes(bytes)]
+  case .certificate(let bytes, let cardSerial):
+    var map: [String: WireValue] = ["type": .text("certificate"), "der": .bytes(bytes)]
+    if let cardSerial {
+      map["card_serial"] = .text(cardSerial)
+    }
+    return map
 
   case .signature(let bytes):
     return ["type": .text("signature"), "bytes": .bytes(bytes)]
@@ -108,7 +124,15 @@ internal func wireResultFrom(
       personIdentifier: try takeText(&map, "person_id"))
 
   case "certificate":
-    result = .certificate(try takeBytes(&map, "der"))
+    let der = try takeBytes(&map, "der")
+    let cardSerial: String?
+    if let val = map.removeValue(forKey: "card_serial") {
+      guard case .text(let str) = val else { throw PairRecordError.invalidInput }
+      cardSerial = str
+    } else {
+      cardSerial = nil
+    }
+    result = .certificate(der, cardSerial: cardSerial)
 
   case "signature":
     result = .signature(try takeBytes(&map, "bytes"))

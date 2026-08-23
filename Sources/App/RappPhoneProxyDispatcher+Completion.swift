@@ -15,7 +15,8 @@
       if case .result(let bytes) = outcome {
         try? await coordinator.completeCertificate(
           operationID: operationID,
-          der: bytes
+          der: bytes,
+          cardSerial: Self.storedTokenSerial()
         )
       } else {
         await finishFailure(outcome, operationID: operationID, coordinator: coordinator)

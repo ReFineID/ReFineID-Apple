@@ -199,20 +199,16 @@
     /// Completes an inspection with factory state and remaining attempt counts.
     public func completeInspection(
       operationID: Data,
-      pin1Factory: Bool,
-      pin2Factory: Bool,
-      pin1Attempts: UInt8?,
-      pin2Attempts: UInt8?,
-      pukAttempts: UInt8?
+      inspection: Inspection
     ) throws -> [Command] {
       try commands(
         bridge.completeInspection(
           operationId: operationID,
-          pin1Factory: pin1Factory,
-          pin2Factory: pin2Factory,
-          pin1Attempts: pin1Attempts,
-          pin2Attempts: pin2Attempts,
-          pukAttempts: pukAttempts
+          pin1Factory: inspection.pin1Factory,
+          pin2Factory: inspection.pin2Factory,
+          pin1Attempts: inspection.pin1Attempts,
+          pin2Attempts: inspection.pin2Attempts,
+          pukAttempts: inspection.pukAttempts
         ))
     }
 
@@ -230,9 +226,18 @@
         ))
     }
 
-    /// Completes a certificate read with DER bytes read from the card.
-    public func completeCertificate(operationID: Data, der: Data) throws -> [Command] {
-      try commands(bridge.completeCertificate(operationId: operationID, der: der))
+    /// Completes a certificate read with DER bytes read from the card and optional card serial.
+    public func completeCertificate(
+      operationID: Data,
+      der: Data,
+      cardSerial: String? = nil
+    ) throws -> [Command] {
+      try commands(
+        bridge.completeCertificate(
+          operationId: operationID,
+          der: der,
+          cardSerial: cardSerial
+        ))
     }
 
     /// Completes a signing operation with the card-produced signature.

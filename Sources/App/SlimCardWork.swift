@@ -18,10 +18,14 @@
     ) async -> PersistentRelayMessage {
       switch request {
       case .identityRequest(let requestID):
-        guard let primed = PrimeStore.primedAuthenticationCertificates().first else {
+        guard let primed = PrimeStore.storedIdentities().first else {
           return .failure(requestID: requestID, reason: .cardUnavailable)
         }
-        return .identityResponse(requestID: requestID, certificateDER: primed)
+        return .identityResponse(
+          requestID: requestID,
+          certificateDER: primed.certDER,
+          cardSerial: RappPhoneProxyDispatcher.storedTokenSerial()
+        )
 
       case .signatureRequest(let requestID, let profile, let algorithm, let digest):
         return await sign(

@@ -24,12 +24,17 @@
         // for it is asking for something held here, so the card stays in
         // the holder's pocket.
         if operation.kind == .readAuthenticationCertificate,
-          let primed = PrimeStore.primedAuthenticationCertificates().first
+          let primed = PrimeStore.storedIdentities().first
         {
-          await finishRead(
-            .result(primed),
-            operationID: operationID,
-            coordinator: coordinator)
+          do {
+            try await coordinator.completeCertificate(
+              operationID: operationID,
+              der: primed.certDER,
+              cardSerial: Self.storedTokenSerial()
+            )
+          } catch {
+            await coordinator.close()
+          }
           return
         }
         let accessNumber = CardCredentialStore.displayedCardAccessNumber()
@@ -146,11 +151,13 @@
         do {
           try await coordinator.completeInspection(
             operationID: operationID,
-            pin1Factory: activation.pin1,
-            pin2Factory: activation.pin2,
-            pin1Attempts: attempts(snapshot.report?.pin1),
-            pin2Attempts: attempts(snapshot.report?.pin2),
-            pukAttempts: attempts(snapshot.report?.puk)
+            inspection: RappOperationDriver.Inspection(
+              pin1Factory: activation.pin1,
+              pin2Factory: activation.pin2,
+              pin1Attempts: attempts(snapshot.report?.pin1),
+              pin2Attempts: attempts(snapshot.report?.pin2),
+              pukAttempts: attempts(snapshot.report?.puk)
+            )
           )
         } catch {
           await coordinator.close()

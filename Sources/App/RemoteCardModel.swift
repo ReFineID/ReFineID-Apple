@@ -96,7 +96,7 @@
       }
       await MainActor.run { setFailureText(failure) }
       let holder: String?
-      if case .authenticationCertificate(let der) = response,
+      if case .authenticationCertificate(let der, let cardSerial) = response,
         let name = remoteHolderName(inCertificate: der)
       {
         holder = name
@@ -104,7 +104,9 @@
           print("[RemoteCardModel] publish: publishing certificate for holder=\(name)")
           fflush(stdout)
         #endif
-        await MainActor.run { PersistentTokenRegistry.publish(certificateDER: der) }
+        await MainActor.run {
+          PersistentTokenRegistry.publish(certificateDER: der, cardSerial: cardSerial)
+        }
       } else {
         holder = nil
         await discardUnusablePairing()

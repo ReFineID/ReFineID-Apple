@@ -28,7 +28,7 @@ internal struct ScsDetachedCmsTests {
     let outcome = ScsDetachedCms.prepare(
       digest: Data(repeating: 0x11, count: 20),
       certificates: [ScsTestCertificate.make().der],
-      hashName: "SHA1"
+      hashName: "UNKNOWN_HASH"
     )
     guard case .failure(let error) = outcome else {
       Issue.record("expected a refusal")
