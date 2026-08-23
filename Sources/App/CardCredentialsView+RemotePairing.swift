@@ -43,12 +43,14 @@ import SwiftUI
         }
         .frame(width: PersonRowLabel.iconWidth)
         Text(String(localized: "Remote"))
+          .foregroundStyle(
+            remoteCardAvailable ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary)
+          )
         Spacer()
         if remoteCardAvailable {
           remoteRouteTrailingControls
         }
       }
-      .foregroundStyle(remoteCardAvailable ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
       .buttonStyle(.borderless)
       .disabled(!remoteCardAvailable)
       .accessibilityIdentifier("remoteCard")
