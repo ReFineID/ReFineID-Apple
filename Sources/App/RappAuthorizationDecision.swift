@@ -3,7 +3,6 @@
 #if os(iOS) && REFINEID_REMOTE_CARD
   internal enum RappAuthorizationDecision: Sendable, Equatable {
     case approved
-    case approvedBrowserAuthentication(pin1: String)
     case approvedDocumentSignature(pin2: String)
     case denied
   }

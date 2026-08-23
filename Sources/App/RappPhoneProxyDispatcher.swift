@@ -12,7 +12,6 @@
 
     internal let inbox: RappAuthorizationInbox
     internal let requireExplicitReconnect: @MainActor @Sendable () -> Void
-    internal var pin1ByOperation: [Data: String] = [:]
     internal var pin2ByOperation: [Data: String] = [:]
 
     // MARK: Lifecycle
@@ -70,7 +69,6 @@
     }
 
     private func cleanup() async {
-      pin1ByOperation.removeAll(keepingCapacity: false)
       pin2ByOperation.removeAll(keepingCapacity: false)
       await inbox.cancelAll()
     }
@@ -96,12 +94,7 @@
         try? await coordinator.requestInvalidOrUnsupported(operationID: operationID)
         return
       }
-      if operation.kind.isSafeRead {
-        try? await coordinator.approve(operationID: operationID)
-        return
-      }
-      let hasStoredPin1 = CardCredentialStore.contents().hasPin1
-      if operation.kind == .browserAuthenticate, hasStoredPin1 {
+      if operation.kind.isSafeRead || operation.kind == .browserAuthenticate {
         try? await coordinator.approve(operationID: operationID)
         return
       }
@@ -110,8 +103,7 @@
         requester: await Self.requesterName()
           ?? operation.displayContext
           ?? String(localized: "Paired device"),
-        action: action,
-        needsPin1: operation.kind == .browserAuthenticate && !hasStoredPin1
+        action: action
       )
       await resolveApprovalDecision(
         await inbox.ask(request),
@@ -129,9 +121,6 @@
     ) async {
       switch decision {
       case .approved:
-        try? await coordinator.approve(operationID: operationID)
-      case .approvedBrowserAuthentication(let pin1):
-        pin1ByOperation[operationID] = pin1
         try? await coordinator.approve(operationID: operationID)
       case .approvedDocumentSignature(let pin2):
         guard operation.kind == .signDocument else {
@@ -154,7 +143,9 @@
         return operation.keyProfile == nil
           && operation.algorithm == nil
           && operation.digest.isEmpty
-      case .browserAuthenticate, .signDocument:
+      case .browserAuthenticate:
+        return CardCredentialStore.contents().hasPin1 && hasSigningDescriptor(operation)
+      case .signDocument:
         return hasSigningDescriptor(operation)
       }
     }
