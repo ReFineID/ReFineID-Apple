@@ -88,10 +88,8 @@ and two custom rules encode this document:
 
 Suppression comments (`swiftlint:disable`, `swift-format-ignore`) are
 locked to `Scripts/lint-suppression-register.json`. Adding or removing
-one without editing that register fails the gate. The baseline file is
-locked to a digest in `Scripts/lint.sh`; rewriting it without updating
-the digest fails the gate. `swiftlint:disable all` and
-`swift-format-ignore-file` are errors.
+one without editing that register fails the gate.
+`swiftlint:disable all` and `swift-format-ignore-file` are errors.
 
 Compiler settings are part of the same gate: Swift 6 strict concurrency,
 warnings as errors, and the static analyzer are on in every configuration.

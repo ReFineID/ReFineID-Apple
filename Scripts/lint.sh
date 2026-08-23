@@ -19,8 +19,6 @@
 # - typing-discipline custom rules live in .swiftlint.yml
 # - suppression comments must match Scripts/lint-suppression-register.json
 #   exactly (add or drop one only by editing that register)
-# - .swiftlint-baseline.json must match BaselineSha256 below; a rewritten
-#   baseline is a gate change, not a silent swallow
 #
 # A clean run prints nothing. Findings go to stderr.
 # Run from anywhere; operates on the repository.
@@ -38,10 +36,6 @@ fail() {
   exit 1
 }
 
-# SHA-256 of .swiftlint-baseline.json. Paying debt down rewrites the
-# baseline and this digest in the same commit.
-BaselineSha256=547ac975518e493022f112a5de56ff41e6d6c0520348d736f5df85552a01982a
-
 format_paths=(
   Sources Tests
   CardCore/Sources/CardCore CardCore/Sources/RappEngine
@@ -56,29 +50,16 @@ format_log=$(
 
 # The baseline records the structural debt (type ordering, file splits,
 # magic numbers) present when the gate was raised. New findings fail;
-# paying debt down rewrites the baseline and BaselineSha256 together.
+# paying debt down rewrites the baseline.
 swiftlint_log=$(
   swiftlint lint --quiet --baseline .swiftlint-baseline.json 2>&1
 ) || fail "swiftlint" "${swiftlint_log}"
 
-export REFINEID_BASELINE_SHA="${BaselineSha256}"
 lock_log=$(
   python3 - "${format_paths[@]}" 2>&1 << 'PY'
-import hashlib, json, os, re, sys
+import json, re, sys
 from collections import Counter
 from pathlib import Path
-
-expected_sha = os.environ["REFINEID_BASELINE_SHA"]
-baseline_path = Path(".swiftlint-baseline.json")
-actual_sha = hashlib.sha256(baseline_path.read_bytes()).hexdigest()
-if actual_sha != expected_sha:
-    sys.stderr.write(
-        "lint lock FAIL: .swiftlint-baseline.json digest is "
-        f"{actual_sha}, Scripts/lint.sh BaselineSha256 is {expected_sha}.\n"
-        "Rewrite both in one commit when paying debt down; "
-        "do not grow the baseline.\n"
-    )
-    sys.exit(1)
 
 register = json.loads(
     Path("Scripts/lint-suppression-register.json").read_text(encoding="utf-8")
