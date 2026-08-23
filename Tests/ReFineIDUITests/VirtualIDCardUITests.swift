@@ -331,7 +331,7 @@
     internal func testChangePIN1RunsThroughGUI() {
       assertCredentialJourney(
         CredentialJourney(
-          task: "Change Basic PIN 1",
+          task: "Change PIN 1",
           fields: [
             ("managementChangePIN1Current", "1234"),
             ("managementChangePIN1New", "9876"),
@@ -344,7 +344,7 @@
     internal func testChangePIN2RunsThroughGUI() {
       assertCredentialJourney(
         CredentialJourney(
-          task: "Change Signature PIN 2",
+          task: "Change PIN 2",
           fields: [
             ("managementChangePIN2Current", "123456"),
             ("managementChangePIN2New", "987654"),
@@ -357,7 +357,7 @@
     internal func testResetPIN1RunsThroughGUI() {
       assertCredentialJourney(
         CredentialJourney(
-          task: "Reset Basic PIN 1",
+          task: "Reset PIN 1",
           fields: [
             ("managementResetPIN1Puk", "12345678"),
             ("managementResetPIN1New", "9876"),
@@ -370,7 +370,7 @@
     internal func testResetPIN2RunsThroughGUI() {
       assertCredentialJourney(
         CredentialJourney(
-          task: "Reset Signature PIN 2",
+          task: "Reset PIN 2",
           fields: [
             ("managementResetPIN2Puk", "12345678"),
             ("managementResetPIN2New", "987654"),
@@ -401,7 +401,7 @@
       openManagement(in: app)
 
       XCTAssertTrue(
-        app.buttons["Reset Basic PIN 1"].firstMatch
+        app.buttons["Reset PIN 1"].firstMatch
           .waitForExistence(timeout: Self.appearTimeout),
         "a PIN 1 retry floor did not select PIN 1 recovery")
     }

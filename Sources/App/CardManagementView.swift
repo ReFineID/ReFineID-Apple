@@ -39,16 +39,16 @@ internal struct CardManagementView: View {
     internal var name: String {
       switch self {
       case .changePin1:
-        String(localized: "Change Basic PIN 1")
+        String(localized: "Change PIN 1")
 
       case .changePin2:
-        String(localized: "Change Signature PIN 2")
+        String(localized: "Change PIN 2")
 
       case .resetPin1:
-        String(localized: "Reset Basic PIN 1")
+        String(localized: "Reset PIN 1")
 
       case .resetPin2:
-        String(localized: "Reset Signature PIN 2")
+        String(localized: "Reset PIN 2")
       }
     }
   }
@@ -238,15 +238,11 @@ internal struct CardManagementView: View {
     }
   #endif
 
-  /// One segment per task, and only the chosen one on screen.
+  /// One tab per task, and only the chosen one on screen.
   ///
-  /// A segmented control rather than tabs: this view is a pane of
-  /// the settings window, whose tab bar is the window's own - a
-  /// nested TabView's items are hoisted up beside the panes, four
-  /// tasks impersonating four settings panes. The segments keep
-  /// what the tabs gave: every task the card allows named in full
-  /// and visible at once, so the credential is chosen with the
-  /// action in a single act.
+  /// Nested TabView items are hoisted into the Settings window's own
+  /// tab bar, so the four tasks stay a segmented control inside this
+  /// pane. The labels are short: the action and the PIN, once.
   @ViewBuilder private var taskSection: some View {
     if awaitsActivation {
       #if FEATURE_CARD_ACTIVATION
@@ -280,13 +276,10 @@ internal struct CardManagementView: View {
               Text(candidate.name).tag(candidate)
             }
           }
-          // Every task name gets a full-width line of its own: the
-          // floating menu and the segmented bar both truncated the
-          // longer localizations.
           #if os(iOS)
             .pickerStyle(.inline)
           #else
-            .pickerStyle(.radioGroup)
+            .pickerStyle(.segmented)
           #endif
           .labelsHidden()
           .accessibilityIdentifier("managementTask")

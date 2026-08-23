@@ -32,6 +32,12 @@
           .tabItem {
             Label("PIN", systemImage: "key")
           }
+        #if REFINEID_REMOTE_CARD
+          RemotePairingSettingsView()
+            .tabItem {
+              Label("Remote", systemImage: "key.radiowaves.forward")
+            }
+        #endif
         TimestampAuthoritiesSettingsView()
           .tabItem {
             Label("Time Stamp", systemImage: "clock.badge.checkmark")

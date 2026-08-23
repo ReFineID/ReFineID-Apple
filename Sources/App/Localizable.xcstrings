@@ -1069,6 +1069,50 @@
         }
       }
     },
+    "Change PIN 1": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change PIN 1"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vaihda PIN 1"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Byt PIN 1"
+          }
+        }
+      }
+    },
+    "Change PIN 2": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change PIN 2"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vaihda PIN 2"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Byt PIN 2"
+          }
+        }
+      }
+    },
     "Change Signature PIN 2": {
       "localizations": {
         "fi": {
@@ -3269,6 +3313,50 @@
         }
       }
     },
+    "Phone connected": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phone connected"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puhelin yhdistetty"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefon ansluten"
+          }
+        }
+      }
+    },
+    "Phone not connected": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phone not connected"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puhelin ei yhdistetty"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefonen är inte ansluten"
+          }
+        }
+      }
+    },
     "Person": {
       "localizations": {
         "fi": {
@@ -3917,6 +4005,28 @@
         }
       }
     },
+    "Reset PIN 1": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset PIN 1"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Palauta PIN 1"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återställ PIN 1"
+          }
+        }
+      }
+    },
     "Reset PIN 1 with your PUK.": {
       "extractionState": "manual",
       "localizations": {
@@ -3930,6 +4040,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Återställ PIN 1 med din PUK-kod."
+          }
+        }
+      }
+    },
+    "Reset PIN 2": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset PIN 2"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Palauta PIN 2"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återställ PIN 2"
           }
         }
       }
