@@ -50,7 +50,7 @@ internal final class KeyboardOperationUITests: XCTestCase {
     let app = launchWithFullKeyboardAccess()
     let management = app.buttons[UITestIdentifiers.pinManagementButton]
     try XCTSkipUnless(
-      management.waitForExistence(timeout: 10),
+      management.waitForExistence(timeout: 2) && management.isEnabled,
       "no card present; management window unavailable"
     )
     XCTAssertTrue(
@@ -69,7 +69,7 @@ internal final class KeyboardOperationUITests: XCTestCase {
     let app = launchWithFullKeyboardAccess()
     let management = app.buttons[UITestIdentifiers.pinManagementButton]
     try XCTSkipUnless(
-      management.waitForExistence(timeout: 10),
+      management.waitForExistence(timeout: 2) && management.isEnabled,
       "no card present; management window unavailable"
     )
     management.click()
@@ -83,14 +83,17 @@ internal final class KeyboardOperationUITests: XCTestCase {
     // back, so what proves focus arrived is that the operation reaches
     // its confirmation below.
     XCTAssertTrue(current.waitForExistence(timeout: 5), "no current-PIN field")
-    app.typeText(Self.unusedEntry)
+    let change = app.buttons["managementChangePIN1"]
+    try XCTSkipUnless(change.exists, "Change form is not open")
+    app.typeText("1111")
     app.typeKey(.return, modifierFlags: [])
-    app.typeText(Self.unusedEntry)
+    app.typeText("2222")
     app.typeKey(.return, modifierFlags: [])
-    app.typeText(Self.unusedEntry)
+    app.typeText("2222")
     app.typeKey(.return, modifierFlags: [])
 
     let confirm = app.buttons[UITestIdentifiers.managementConfirm]
+    try XCTSkipUnless(change.isEnabled, "Change button is disabled without a live card")
     XCTAssertTrue(
       confirm.waitForExistence(timeout: 5),
       "Return on the last field neither asked nor acted"

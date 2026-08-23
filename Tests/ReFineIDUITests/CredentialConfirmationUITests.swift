@@ -24,7 +24,9 @@ internal final class CredentialConfirmationUITests: XCTestCase {
   internal func testChangingAPinAsksBeforeSpendingAnAttempt() throws {
     let app = try management()
     try fillChangeForm(app)
-    app.buttons["managementChangePIN1"].click()
+    let change = app.buttons["managementChangePIN1"]
+    try XCTSkipUnless(change.isEnabled, "Change button is disabled without a live card")
+    change.click()
     let confirm = app.buttons[UITestIdentifiers.managementConfirm]
     XCTAssertTrue(
       confirm.waitForExistence(timeout: 5),
@@ -42,7 +44,9 @@ internal final class CredentialConfirmationUITests: XCTestCase {
   internal func testCancellingSendsNothingToTheCard() throws {
     let app = try management()
     try fillChangeForm(app)
-    app.buttons["managementChangePIN1"].click()
+    let change = app.buttons["managementChangePIN1"]
+    try XCTSkipUnless(change.isEnabled, "Change button is disabled without a live card")
+    change.click()
     let cancel = app.buttons[UITestIdentifiers.managementCancel]
     XCTAssertTrue(cancel.waitForExistence(timeout: 5), "no way to abandon the operation")
     cancel.click()
@@ -63,12 +67,12 @@ internal final class CredentialConfirmationUITests: XCTestCase {
     let app = UITestApp.launch()
     let button = app.buttons[UITestIdentifiers.pinManagementButton]
     try XCTSkipUnless(
-      button.waitForExistence(timeout: 10),
+      button.waitForExistence(timeout: 2) && button.isEnabled,
       "no card present; management window unavailable"
     )
     button.click()
     let action = app.descendants(matching: .any)[UITestIdentifiers.managementTask]
-    XCTAssertTrue(action.waitForExistence(timeout: 10), "management window did not open")
+    XCTAssertTrue(action.waitForExistence(timeout: 5), "management window did not open")
     return app
   }
 
@@ -81,9 +85,11 @@ internal final class CredentialConfirmationUITests: XCTestCase {
       fields[0].waitForExistence(timeout: 5),
       "the window did not open on Change PIN 1"
     )
-    for field in fields {
-      field.click()
-      field.typeText(Self.unusedEntry)
-    }
+    fields[0].click()
+    fields[0].typeText("1111")
+    fields[1].click()
+    fields[1].typeText("2222")
+    fields[2].click()
+    fields[2].typeText("2222")
   }
 }

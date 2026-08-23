@@ -14,6 +14,18 @@ import SwiftUI
   /// zero is blue, because blocked is not a warning but an instruction
   /// - the PUK undoes it.
   extension CardManagementView {
+    // MARK: Nested Types
+
+    private enum AttemptsLayout {
+      static let rowSymbolSpacing: CGFloat = 4
+      static let attemptsSpacing: CGFloat = 14
+      static let barHorizontalPadding: CGFloat = 16
+      static let barVerticalPadding: CGFloat = 6
+      static let barLineSpacing: CGFloat = 4
+    }
+
+    // MARK: Static Functions
+
     /// The marker beside each count, so the band is never carried by
     /// colour alone.
     private static func attemptsSymbol(_ outcome: RetryProbeOutcome?) -> String {
@@ -125,6 +137,28 @@ import SwiftUI
       }
     }
 
+    // MARK: Functions
+
+    /// The counters, pinned along the foot of the window.
+    @ViewBuilder
+    internal func attemptsBar(model: CardManagementModel) -> some View {
+      VStack(alignment: .leading, spacing: AttemptsLayout.barLineSpacing) {
+        HStack(spacing: AttemptsLayout.attemptsSpacing) {
+          Text("Attempts left:")
+            .foregroundStyle(.secondary)
+          attemptsEntry("PIN 1", model.report?.pin1)
+          attemptsEntry("PIN 2", model.report?.pin2)
+          attemptsEntry("PUK", model.report?.puk)
+          Spacer()
+        }
+      }
+      .font(.footnote)
+      .padding(.horizontal, AttemptsLayout.barHorizontalPadding)
+      .padding(.vertical, AttemptsLayout.barVerticalPadding)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .background(.bar)
+    }
+
     /// One credential's reading.
     ///
     /// A symbol appears only when the count is not healthy, so the
@@ -135,7 +169,7 @@ import SwiftUI
       _ name: String,
       _ outcome: RetryProbeOutcome?
     ) -> some View {
-      HStack(spacing: Self.rowSymbolSpacing) {
+      HStack(spacing: AttemptsLayout.rowSymbolSpacing) {
         Text("\(name) \(Self.attemptsText(outcome))")
           .monospacedDigit()
         Image(systemName: Self.attemptsSymbol(outcome))

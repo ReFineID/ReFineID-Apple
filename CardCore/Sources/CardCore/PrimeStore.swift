@@ -31,9 +31,9 @@ import Security
 /// `platform/apple/RefineID/Local/SafariIdentityPrime+PrimeStore.swift`.
 public enum PrimeStore {
   /// One decoded keychain record, still named only inside this store.
-  private struct StoredItem {
-    let account: String
-    let identity: PrimedIdentity
+  internal struct StoredItem {
+    internal let account: String
+    internal let identity: PrimedIdentity
   }
 
   /// The dated marker naming the app's own registration field.
@@ -42,7 +42,7 @@ public enum PrimeStore {
   }
 
   /// Keychain service the primed identities live under.
-  private static let service: String = "fi.refineid.prime"
+  internal static let service: String = "fi.refineid.prime"
 
   /// Short-lived bridge record earlier builds staged between two fields.
   ///
@@ -70,6 +70,10 @@ public enum PrimeStore {
     forLookup lookupID: PrimeLookupIdentifier
   ) -> Bool {
     guard let payload = try? JSONEncoder().encode(identity) else { return false }
+    if TestCredentialEnvironment.isTestMode {
+      TestCredentialEnvironment.storePrime(payload, account: lookupID.value)
+      return true
+    }
     let coordinates = query(account: lookupID.value)
     let replacement = [kSecValueData as String: payload]
     let updated = SecItemUpdate(coordinates as CFDictionary, replacement as CFDictionary)
@@ -164,7 +168,22 @@ public enum PrimeStore {
   }
 
   /// Decodes and validates one record by keychain account.
-  private static func read(account: String) -> PrimedIdentity? {
+  internal static func read(account: String) -> PrimedIdentity? {
+    if TestCredentialEnvironment.isTestMode {
+      guard let data = TestCredentialEnvironment.readPrime(account: account),
+        let stored = try? JSONDecoder().decode(PrimedIdentity.self, from: data)
+      else {
+        return nil
+      }
+      return PrimedIdentity(
+        can: stored.can,
+        certificate: stored.certDER,
+        issuer: stored.issuerDER,
+        tokenSerial: stored.tokenSerial,
+        activationCheck: stored.activationCheck,
+        contactlessIdentification: stored.contactlessIdentification,
+        stagedAt: stored.stagedAt)
+    }
     var query = self.query(account: account)
     query[kSecReturnData as String] = true
     query[kSecMatchLimit as String] = kSecMatchLimitOne
@@ -241,6 +260,10 @@ public enum PrimeStore {
   /// must be able to revoke it for all their cards at once, without
   /// having to present each card again to name it.
   public static func forgetAll() {
+    if TestCredentialEnvironment.isTestMode {
+      TestCredentialEnvironment.forgetAllPrimes()
+      return
+    }
     var query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
@@ -328,69 +351,27 @@ public enum PrimeStore {
     presenceOrderedItems().map(\.identity)
   }
 
-  /// The stored primes ``presence()`` reports, in the order it reports
-  /// them: the staged record is not one of them.
+  /// The authentication certificates this device has already primed.
+  ///
+  /// Read from the stored prime records rather than asking the keychain
+  /// for certificates: the tokens for registered cards are not minted
+  /// while the card is away, so the keychain holds no identity items
+  /// for them, and minting them over near field opens a scan sheet.
+  ///
+  /// The issuer certificate travels with each prime because the extension
+  /// has no network access to resolve `caIssuers` at runtime, so it must
+  /// be available locally for certificate path validation.
+  public static func primedCertificates() -> [(certificate: Data, issuer: Data?)] {
+    presenceOrderedItems().map { (certificate: $0.identity.certDER, issuer: $0.identity.issuerDER) }
+  }
+
+  /// Every primed card in the order ``presence()`` reports it.
+  ///
+  /// The short-lived staged record is left out: it is an in-flight
+  /// hold, not a card this device keeps.
   private static func presenceOrderedItems() -> [StoredItem] {
     storedItems()
       .filter { $0.account != Self.stagedAccount }
       .sorted { $0.account < $1.account }
-  }
-
-  /// Every decodable prime, including the short-lived staged record.
-  private static func storedItems() -> [StoredItem] {
-    var search: [String: Any] = [
-      kSecClass as String: kSecClassGenericPassword,
-      kSecAttrService as String: service,
-    ]
-    if KeychainPlatform.usesDataProtection {
-      search[kSecUseDataProtectionKeychain as String] = true
-      search[kSecAttrSynchronizable as String] = false
-      search[kSecReturnData as String] = true
-    }
-    search[kSecMatchLimit as String] = kSecMatchLimitAll
-    search[kSecReturnAttributes as String] = true
-    var items: CFTypeRef?
-    guard SecItemCopyMatching(search as CFDictionary, &items) == errSecSuccess,
-      let found = items as? [[String: Any]]
-    else {
-      return []
-    }
-    return found.compactMap { attributes in
-      guard let account = attributes[kSecAttrAccount as String] as? String else {
-        return nil
-      }
-      if let data = attributes[kSecValueData as String] as? Data,
-        let identity = try? JSONDecoder().decode(PrimedIdentity.self, from: data)
-      {
-        return StoredItem(account: account, identity: identity)
-      }
-      if let identity = read(account: account) {
-        return StoredItem(account: account, identity: identity)
-      }
-      return nil
-    }
-  }
-
-  /// Item coordinates shared by every operation on one card's prime.
-  ///
-  /// The accessibility attribute is deliberately absent here: it belongs
-  /// on the write, and a search that filters on it would miss items
-  /// written under any other policy instead of replacing them.
-  private static func query(account: String) -> [String: Any] {
-    var query: [String: Any] = [
-      kSecClass as String: kSecClassGenericPassword,
-      kSecAttrService as String: service,
-      kSecAttrAccount as String: account,
-    ]
-    if KeychainPlatform.usesDataProtection {
-      query[kSecUseDataProtectionKeychain as String] = true
-      query[kSecAttrSynchronizable as String] = false
-    }
-    return query
-  }
-
-  /// Removes one account without exposing its coordinates to callers.
-  private static func delete(account: String) {
-    SecItemDelete(query(account: account) as CFDictionary)
   }
 }
