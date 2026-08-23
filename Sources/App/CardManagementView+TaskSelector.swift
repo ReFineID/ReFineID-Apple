@@ -53,6 +53,7 @@ extension CardManagementView {
   }
 
   #if os(iOS)
+    @ViewBuilder
     private func taskButton(
       for candidate: ManagementTask,
       in available: [ManagementTask],
@@ -60,7 +61,7 @@ extension CardManagementView {
     ) -> some View {
       let isSelected = selection.wrappedValue == candidate
       let isAvailable = available.contains(candidate)
-      return Button {
+      let button = Button {
         withAnimation {
           selection.wrappedValue = candidate
         }
@@ -72,10 +73,18 @@ extension CardManagementView {
           .frame(maxWidth: .infinity)
           .padding(.vertical, TaskSelectorLayout.buttonVerticalPadding)
       }
-      .buttonStyle(isSelected ? .borderedProminent : .bordered)
-      .tint(isSelected ? Color.accentColor : Color.secondary)
       .disabled(!isAvailable)
       .accessibilityIdentifier(candidate.accessibilityIdentifier)
+
+      if isSelected {
+        button
+          .buttonStyle(.borderedProminent)
+          .tint(Color.accentColor)
+      } else {
+        button
+          .buttonStyle(.bordered)
+          .tint(Color.secondary)
+      }
     }
   #endif
 }

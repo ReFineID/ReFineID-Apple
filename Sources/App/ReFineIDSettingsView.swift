@@ -23,11 +23,18 @@
     private static let paneWidth: CGFloat = 680
     private static let paneHeight: CGFloat = 300
 
+    @ObservedObject private var cardPresence = CardPresence.shared
+
     #if REFINEID_REMOTE_CARD
       @State private var pane = Pane.remote
     #else
       @State private var pane = Pane.pin
     #endif
+
+    /// Whether a reader card is present and the PIN pane should be shown.
+    private var readerCardIsPresent: Bool {
+      cardPresence.isReaderCardPresent
+    }
 
     internal var body: some View {
       TabView(selection: $pane) {
@@ -35,6 +42,15 @@
         mainSettingsTabs
       }
       .frame(minWidth: Self.paneWidth, minHeight: Self.paneHeight)
+      .onChange(of: readerCardIsPresent) { _, present in
+        if !present, pane == .pin {
+          #if REFINEID_REMOTE_CARD
+            pane = .remote
+          #else
+            pane = .timeStamp
+          #endif
+        }
+      }
     }
 
     @ViewBuilder private var featureSettingsTabs: some View {
@@ -55,11 +71,13 @@
     }
 
     @ViewBuilder private var mainSettingsTabs: some View {
-      CardManagementView()
-        .tabItem {
-          Label(String(localized: "PIN"), systemImage: "key")
-        }
-        .tag(Pane.pin)
+      if readerCardIsPresent {
+        CardManagementView()
+          .tabItem {
+            Label(String(localized: "PIN"), systemImage: "key")
+          }
+          .tag(Pane.pin)
+      }
       #if REFINEID_REMOTE_CARD
         RemotePairingSettingsView()
           .tabItem {
