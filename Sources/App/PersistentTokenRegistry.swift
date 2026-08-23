@@ -119,11 +119,20 @@
         return
       }
 
-      let instanceID =
-        PersistentTokenIdentity.instancePrefix
-        + SHA256.hash(data: certificateDER)
-        .map { String(format: "%02x", $0) }
-        .joined()
+      let serialPart: String
+      if let facts = CertificateFacts(der: certificateDER),
+        let identifier = DistinguishedName.identifier(inName: facts.subjectName)?.lowercased(),
+        !identifier.isEmpty
+      {
+        serialPart = identifier
+      } else {
+        serialPart =
+          SHA256.hash(data: certificateDER)
+          .map { String(format: "%02x", $0) }
+          .joined()
+      }
+
+      let instanceID = PersistentTokenIdentity.instancePrefix + serialPart
       let configuration = driver.addTokenConfiguration(for: instanceID)
       // The leaf and its key, and nothing else. Publishing the issuer
       // beside them stopped the browser forming an identity at all:
