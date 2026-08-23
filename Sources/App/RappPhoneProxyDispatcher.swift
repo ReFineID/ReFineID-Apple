@@ -113,6 +113,17 @@
         try? await coordinator.approve(operationID: operationID)
         return
       }
+      if operation.kind == .browserAuthenticate {
+        if let pin1 = await cachedReaderPin1() {
+          pin1ByOperation[operationID] = pin1
+          try? await coordinator.approve(operationID: operationID)
+          return
+        }
+        if CardCredentialStore.contents().hasPin1 {
+          try? await coordinator.approve(operationID: operationID)
+          return
+        }
+      }
       let request = RappAuthorizationRequest(
         requestID: operationID.base64EncodedString(),
         requester: await Self.requesterName()
@@ -144,6 +155,7 @@
           return
         }
         pin1ByOperation[operationID] = pin1
+        await rememberReaderPin1(pin1)
         try? await coordinator.approve(operationID: operationID)
 
       case .approvedDocumentSignature(let pin2):
@@ -200,6 +212,14 @@
         .readSignatureCertificate:
         .shareCardInformation
       }
+    }
+
+    private func cachedReaderPin1() async -> String? {
+      await MainActor.run { ReaderPin1Cache.shared.current() }
+    }
+
+    private func rememberReaderPin1(_ pin1: String) async {
+      await MainActor.run { ReaderPin1Cache.shared.remember(pin1) }
     }
   }
 #endif

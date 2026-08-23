@@ -188,6 +188,11 @@
       liveReaderTokenIdentifiers = nextReaderTokenIdentifiers
 
       if cardAppearanceChanged {
+        if liveReaderTokenIdentifiers.isEmpty {
+          #if REFINEID_LOCAL_CARD
+            ReaderPin1Cache.shared.clear()
+          #endif
+        }
         if liveReaderTokenIdentifiers.isEmpty || hasActivationRequiredCard {
           retryHealth.clear()
         } else {

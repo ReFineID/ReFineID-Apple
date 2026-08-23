@@ -34,7 +34,7 @@
         if let failure {
           return failure
         }
-        _ = model.savePin1(pin1)
+        ReaderPin1Cache.shared.remember(pin1)
         model.refresh()
         return nil
 

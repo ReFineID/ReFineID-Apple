@@ -108,8 +108,10 @@ extension CardCredentialsView {
     internal var readerIdentitySection: some View {
       CardReaderIdentitySection(
         holders: readerHolders,
-        hasPin1: model.contents.hasPin1,
+        storedPin1: model.contents.hasPin1,
+        pin1Cache: ReaderPin1Cache.shared,
         onForgetPin1: {
+          ReaderPin1Cache.shared.clear()
           CardCredentialStore.forgetPin1()
           model.refresh()
         },

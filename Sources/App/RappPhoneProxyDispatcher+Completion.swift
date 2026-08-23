@@ -90,6 +90,7 @@
 
       case .credential(.pin1, _):
         CardCredentialStore.forgetPin1()
+        await MainActor.run { ReaderPin1Cache.shared.clear() }
 
       case .credential(.pin2, _):
         pin2Window.forget()

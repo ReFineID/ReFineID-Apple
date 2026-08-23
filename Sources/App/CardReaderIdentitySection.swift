@@ -7,9 +7,12 @@
   /// The identity area for cards in an attached reader.
   internal struct CardReaderIdentitySection: View {
     internal let holders: [String]
-    internal let hasPin1: Bool
+    internal let storedPin1: Bool
+    internal let pin1Cache: ReaderPin1Cache
     internal let onForgetPin1: () -> Void
     internal let onSavePin1: (String) async -> String?
+
+    private var hasPin1: Bool { pin1Cache.isCached || storedPin1 }
 
     @State private var pin1Entry = ""
     @State private var isVerifying = false
