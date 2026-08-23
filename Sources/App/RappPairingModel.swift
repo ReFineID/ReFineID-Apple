@@ -3,14 +3,12 @@
 #if REFINEID_REMOTE_CARD
 
   import CardCore
-  import CoreImage
   import Foundation
   import RappEngine
   import SwiftUI
 
   #if os(iOS)
     import UIKit
-    import VisionKit
   #elseif os(macOS)
     import AppKit
   #endif
@@ -20,7 +18,7 @@
     internal enum Phase: Equatable {
       case idle
       case offer(String)
-      case scanning
+      case codeEntry
       case connecting
       case paired(RappPairingCoordinator.PairSummary)
       case failed(String)
@@ -57,7 +55,7 @@
     /// The stream candidate names no endpoints: the holder publishes a
     /// listener under a name derived from this offer, and the requester
     /// finds it there.
-    private static var offeredCandidate: RappPairingCoordinator.TransportCandidate {
+    internal static var offeredCandidate: RappPairingCoordinator.TransportCandidate {
       #if REFINEID_STREAM_TRANSPORT
         .init(
           profile: rappStreamProfileName(),
@@ -76,6 +74,7 @@
     @Published internal var phase = Phase.idle
     @Published internal private(set) var pairs: [RappPairingCoordinator.PairSummary] = []
     @Published internal var selectedPairID: Data?
+    @Published internal var pairingCode: String?
 
     internal let vault: RappDeviceVault
     internal let catalog: RappPairCatalog
@@ -94,7 +93,7 @@
       switch phase {
       case .paired, .failed:
         true
-      case .idle, .offer, .scanning, .connecting:
+      case .idle, .offer, .codeEntry, .connecting:
         false
       }
     }
@@ -117,13 +116,20 @@
     }
 
     internal func createOffer() {
+      createOffer(customCode: nil)
+    }
+
+    internal func createOffer(customCode: String?) {
       resetAttempt()
       #if REFINEID_LOCAL_CARD && os(iOS)
         PhonePersistentTokenRelay.shared.suspendForPairing()
       #endif
+      let code = customCode.map(RappPairingCode.normalize) ?? RappPairingCode.generate()
+      pairingCode = code
       let relay = makeRelay(role: .host)
       let transport = makeTransport(relay: relay)
       publish(
+        code: code,
         candidates: [Self.offeredCandidate],
         selectedCandidateID: Self.offeredCandidate.candidateID,
         relay: relay,
@@ -131,8 +137,9 @@
       )
     }
 
-    /// Makes the offer these candidates describe and shows its code.
+    /// Makes the offer the 8-character code and candidates describe and shows its code.
     internal func publish(
+      code: String,
       candidates: [RappPairingCoordinator.TransportCandidate],
       selectedCandidateID: String,
       relay: PairingRelay,
@@ -147,7 +154,8 @@
           displayName: Self.requesterDisplayName,
           platform: Self.requesterPlatform,
           vault: vault,
-          transport: transport
+          transport: transport,
+          code: code
         )
         install(coordinator: coordinator, relay: relay)
         Task { [weak self] in
@@ -155,6 +163,7 @@
           guard let self, self.coordinator === coordinator, !isFinished,
             let uri = coordinator.offerURI
           else { return }
+          phase = .offer(RappPairingCode.format(code))
           relay.start(sharingOfferURI: uri)
         }
       } catch {

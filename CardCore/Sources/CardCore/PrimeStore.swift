@@ -82,11 +82,24 @@ public enum PrimeStore {
     forLookup lookupID: PrimeLookupIdentifier
   ) -> Bool {
     guard let payload = try? JSONEncoder().encode(identity) else { return false }
-    var attributes = query(account: lookupID.value)
-    attributes[kSecValueData as String] = payload
-    attributes[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-    forget(lookupID: lookupID)
-    return SecItemAdd(attributes as CFDictionary, nil) == errSecSuccess
+    let coordinates = query(account: lookupID.value)
+    let replacement = [kSecValueData as String: payload]
+    let updated = SecItemUpdate(coordinates as CFDictionary, replacement as CFDictionary)
+    if updated == errSecSuccess { return true }
+    guard updated == errSecItemNotFound else { return false }
+
+    var insertion = coordinates
+    insertion[kSecValueData as String] = payload
+    if KeychainPlatform.usesDataProtection {
+      insertion[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+    }
+    let addStatus = SecItemAdd(insertion as CFDictionary, nil)
+    if addStatus == errSecSuccess { return true }
+    if addStatus == errSecDuplicateItem {
+      return SecItemUpdate(coordinates as CFDictionary, replacement as CFDictionary)
+        == errSecSuccess
+    }
+    return false
   }
 
   /// Marks the next NFC field as the app's own registration hold.
@@ -105,7 +118,9 @@ public enum PrimeStore {
     }
     var attributes = query(account: Self.registrationMarkAccount)
     attributes[kSecValueData as String] = payload
-    attributes[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+    if KeychainPlatform.usesDataProtection {
+      attributes[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+    }
     delete(account: Self.registrationMarkAccount)
     return SecItemAdd(attributes as CFDictionary, nil) == errSecSuccess
   }
@@ -238,12 +253,14 @@ public enum PrimeStore {
   /// must be able to revoke it for all their cards at once, without
   /// having to present each card again to name it.
   public static func forgetAll() {
-    let query: [String: Any] = [
+    var query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
-      kSecUseDataProtectionKeychain as String: KeychainPlatform.usesDataProtection,
-      kSecAttrSynchronizable as String: false,
     ]
+    if KeychainPlatform.usesDataProtection {
+      query[kSecUseDataProtectionKeychain as String] = true
+      query[kSecAttrSynchronizable as String] = false
+    }
     SecItemDelete(query as CFDictionary)
   }
 
@@ -328,12 +345,14 @@ public enum PrimeStore {
     var search: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
-      kSecUseDataProtectionKeychain as String: KeychainPlatform.usesDataProtection,
-      kSecAttrSynchronizable as String: false,
     ]
+    if KeychainPlatform.usesDataProtection {
+      search[kSecUseDataProtectionKeychain as String] = true
+      search[kSecAttrSynchronizable as String] = false
+      search[kSecReturnData as String] = true
+    }
     search[kSecMatchLimit as String] = kSecMatchLimitAll
     search[kSecReturnAttributes as String] = true
-    search[kSecReturnData as String] = true
     var items: CFTypeRef?
     guard SecItemCopyMatching(search as CFDictionary, &items) == errSecSuccess,
       let found = items as? [[String: Any]]
@@ -341,14 +360,18 @@ public enum PrimeStore {
       return []
     }
     return found.compactMap { attributes in
-      guard
-        let account = attributes[kSecAttrAccount as String] as? String,
-        let data = attributes[kSecValueData as String] as? Data,
-        let identity = try? JSONDecoder().decode(PrimedIdentity.self, from: data)
-      else {
+      guard let account = attributes[kSecAttrAccount as String] as? String else {
         return nil
       }
-      return StoredItem(account: account, identity: identity)
+      if let data = attributes[kSecValueData as String] as? Data,
+        let identity = try? JSONDecoder().decode(PrimedIdentity.self, from: data)
+      {
+        return StoredItem(account: account, identity: identity)
+      }
+      if let identity = read(account: account) {
+        return StoredItem(account: account, identity: identity)
+      }
+      return nil
     }
   }
 
@@ -358,13 +381,16 @@ public enum PrimeStore {
   /// on the write, and a search that filters on it would miss items
   /// written under any other policy instead of replacing them.
   private static func query(account: String) -> [String: Any] {
-    [
+    var query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
       kSecAttrAccount as String: account,
-      kSecUseDataProtectionKeychain as String: KeychainPlatform.usesDataProtection,
-      kSecAttrSynchronizable as String: false,
     ]
+    if KeychainPlatform.usesDataProtection {
+      query[kSecUseDataProtectionKeychain as String] = true
+      query[kSecAttrSynchronizable as String] = false
+    }
+    return query
   }
 
   /// Removes one account without exposing its coordinates to callers.

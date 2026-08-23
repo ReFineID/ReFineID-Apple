@@ -231,6 +231,8 @@ Scripts/apple-app-store-connect-release-manager.swift ensure-version macos "$VER
 Scripts/apple-app-store-connect-release-manager.swift metadata macos "$VERSION"
 Scripts/apple-app-store-connect-release-manager.swift app-info
 Scripts/apple-app-store-connect-release-manager.swift review-contact macos "$VERSION"
+# Generate/refresh screenshots if needed:
+# Scripts/apple-app-store-connect-release-manager.swift capture-screenshots --all
 Scripts/apple-app-store-connect-release-manager.swift screenshots macos "$VERSION"
 Scripts/apple-app-store-connect-release-manager.swift age-rating
 Scripts/apple-app-store-connect-release-manager.swift export-compliance macos

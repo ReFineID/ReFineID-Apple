@@ -48,6 +48,7 @@ internal struct DiagnosticsView: View {
         }
       }
       clearLogsSection
+      testCredentialsSection
     }
     // The list is the window's whole content and takes keyboard focus
     // on open, so without a name of its own VoiceOver announces the
@@ -164,6 +165,30 @@ internal struct DiagnosticsView: View {
       }
     } footer: {
       Text("Clears only ReFineID's diagnostic trace.")
+    }
+  }
+
+  private var testCredentialsSection: some View {
+    Section {
+      Button("Prime Mock Test Card (DOE JANE)") {
+        MockCardCertificate.primeSyntheticIdentity()
+        clearMessage = "Primed mock test certificate (DOE JANE 12345678N)."
+        clearSucceeded = true
+        refresh()
+      }
+      Button("Forget All Primed Cards", role: .destructive) {
+        _ = CardStateReset.perform()
+        CardCredentialStore.forgetAll()
+        clearMessage = "Cleared all primed card credentials."
+        clearSucceeded = true
+        refresh()
+      }
+    } header: {
+      Text("Test Credentials")
+    } footer: {
+      Text(
+        "Primes a synthetic test identity for remote card pairing and testing without a physical card."
+      )
     }
   }
 

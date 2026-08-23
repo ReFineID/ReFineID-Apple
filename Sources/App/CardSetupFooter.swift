@@ -74,15 +74,17 @@ internal struct CardSetupFooter: View {
   /// with the exact build it belongs to.
   @ViewBuilder private var development: some View {
     #if DEBUG
-      NavigationLink {
-        DiagnosticsView()
-      } label: {
-        Label(Self.diagnosticsTitle, systemImage: "stethoscope")
+      if !ProcessInfo.processInfo.arguments.contains("--hide-diagnostics") {
+        NavigationLink {
+          DiagnosticsView()
+        } label: {
+          Label(Self.diagnosticsTitle, systemImage: "stethoscope")
+        }
+        .accessibilityIdentifier("diagnosticsButton")
+        .padding(.vertical, Self.padding)
+        .frame(maxWidth: .infinity)
+        .background(.bar)
       }
-      .accessibilityIdentifier("diagnosticsButton")
-      .padding(.vertical, Self.padding)
-      .frame(maxWidth: .infinity)
-      .background(.bar)
     #endif
   }
 }

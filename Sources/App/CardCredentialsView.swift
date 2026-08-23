@@ -333,7 +333,7 @@ internal struct CardCredentialsView: View {
             Button {
               openRemoteReader()
             } label: {
-              navigationRow(String(localized: "Remote Card")) {
+              navigationRow(String(localized: "Remote")) {
                 Image(
                   systemName: remoteCardAvailable
                     ? "key.radiowaves.forward"

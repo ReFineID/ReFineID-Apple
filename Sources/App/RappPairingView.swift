@@ -3,52 +3,44 @@
 #if REFINEID_REMOTE_CARD
 
   import CardCore
-  import CoreImage
   import Foundation
   import RappEngine
   import SwiftUI
 
   #if os(iOS)
     import UIKit
-    import VisionKit
   #elseif os(macOS)
     import AppKit
   #endif
 
   internal struct RappPairingView: View {
-    /// Sizes chosen so a pairing code stays readable to the other device's
-    /// camera and the sheet never collapses below its own content.
     private enum Layout {
-      /// How much of the shorter screen edge the code fills.
-      ///
-      /// A code that reaches the edges forces the camera back far enough to
-      /// lose the modules, so it stops short of the screen.
-      static let codeScreenFraction: CGFloat = 0.62
-
-      /// The light border around the code, as a fraction of its side.
-      static let codeQuietFraction: CGFloat = 0.08
-
-      /// Smallest window that still shows the pair list without scrolling.
       static let sheetMinimumWidth: CGFloat = 440
-      /// Smallest window height that keeps the code and its caption together.
-      static let sheetMinimumHeight: CGFloat = 520
-      /// Displayed edge of the pairing code, large enough to scan across a desk.
-      static let pairingCodeEdge: CGFloat = 280
-      /// Viewfinder height that leaves the code in frame at arm's length.
-      static let scannerMinimumHeight: CGFloat = 320
-      /// Corner rounding that matches the surrounding form rows.
-      static let scannerCornerRadius: CGFloat = 16
+      static let sheetMinimumHeight: CGFloat = 380
+      static let codeCornerRadius: CGFloat = 12
+      static let codeSpacing: CGFloat = 16
+      static let maxContentWidth: CGFloat = 400
+      static let containerSpacing: CGFloat = 24
+      static let headerSpacing: CGFloat = 8
+      static let topPadding: CGFloat = 32
+      static let inputFontSize: CGFloat = 28
+      static let displayFontSize: CGFloat = 38
+      static let trackingSpacing: CGFloat = 3
+      static let codeHorizontalPadding: CGFloat = 24
+      static let codeVerticalPadding: CGFloat = 18
+      static let strokeOpacity: Double = 0.3
+      static let strokeLineWidth: CGFloat = 1.5
+      static let connectingSpacing: CGFloat = 12
+      static let resetDelaySeconds: UInt64 = 2_000_000_000
     }
 
     @Environment(\.dismiss)
     private var dismiss
     @StateObject private var model = RappPairingModel()
+    @State private var enteredCode = ""
+    @State private var copied = false
 
     /// Whether this device can only borrow a card, never serve one.
-    ///
-    /// Such a device opens this screen for exactly one reason, so the code
-    /// is what it shows: a list to choose from and a button to start would
-    /// be two steps in front of the only step there is.
     private var borrowsOnly: Bool {
       #if os(iOS)
         return !SupportedCardTransports.offersNearField
@@ -58,110 +50,237 @@
     }
 
     internal var body: some View {
-      Group {
-        if borrowsOnly {
-          borrowedCardCode
-        } else {
-          servingCardScanner
+      NavigationStack {
+        ZStack {
+          codeBackground.ignoresSafeArea()
+          if borrowsOnly {
+            borrowedCardCode
+          } else {
+            servingCardCodeEntry
+          }
+        }
+        .navigationTitle(String(localized: "Remote"))
+        #if os(iOS)
+          .navigationBarTitleDisplayMode(.inline)
+        #endif
+        .toolbar {
+          ToolbarItem(placement: .cancellationAction) {
+            Button(String(localized: "Cancel")) {
+              dismiss()
+            }
+          }
         }
       }
       .onAppear {
         model.refresh()
         if borrowsOnly {
           model.createOffer()
-          #if os(iOS)
-            ScreenBrightness.raiseForScanning()
-          #endif
         } else {
           #if os(iOS)
-            model.scanOffer()
+            model.startCodeEntry()
           #endif
         }
       }
-      // The code is on screen to be scanned, so a scan that lands is the end
-      // of this screen: it leaves, and what it produced is read behind it.
-      .onValueChange(of: model.phase) { phase in
-        switch phase {
-        case .paired, .failed:
+      .onReceive(model.$phase) { phase in
+        if case .paired = phase {
           dismiss()
-        case .idle, .offer, .scanning, .connecting:
-          break
         }
       }
       .onDisappear {
         model.cancel()
-        #if os(iOS)
-          ScreenBrightness.restore()
-        #endif
       }
       #if os(macOS)
         .frame(minWidth: Layout.sheetMinimumWidth, minHeight: Layout.sheetMinimumHeight)
       #endif
     }
 
-    /// The camera, which is the whole of what a card holder does here.
-    ///
-    /// A device that serves a card opens this screen to read one code. A
-    /// list of pairings and a button to begin would be two steps in front of
-    /// the only step there is, and the pairing it makes is shown on the
-    /// screen this came from.
-    @ViewBuilder private var servingCardScanner: some View {
-      #if os(iOS)
-        ZStack {
-          Color.black.ignoresSafeArea()
-          RappOfferScanner { model.acceptScannedOffer($0) }
-            .ignoresSafeArea()
-            .accessibilityIdentifier("pairingScanner")
-          if case .connecting = model.phase {
-            ProgressView()
-              .controlSize(.large)
-              .tint(.white)
-          }
-        }
-      #else
-        EmptyView()
-      #endif
-    }
-
-    /// The surface the code is drawn on, in each platform's own paper.
+    /// The surface the view is drawn on.
     private var codeBackground: Color {
       #if os(iOS)
-        Color(uiColor: .systemBackground)
+        Color(uiColor: .systemGroupedBackground)
       #else
         Color(nsColor: .windowBackgroundColor)
       #endif
     }
 
-    /// The whole screen a borrowing device shows: the code, centred, as
-    /// large as the screen allows.
-    ///
-    /// There is one thing to do here and one thing to look at, so there is
-    /// nothing else on it. A sheet is dismissed by dragging it down.
-    @ViewBuilder private var borrowedCardCode: some View {
-      GeometryReader { proxy in
-        let side = min(proxy.size.width, proxy.size.height) * Layout.codeScreenFraction
-        ZStack {
-          codeBackground.ignoresSafeArea()
-          if case .offer(let uri) = model.phase, let image = RappPairingCode.image(uri) {
-            image
-              .interpolation(.none)
-              .resizable()
-              .scaledToFit()
-              .frame(width: side, height: side)
-              // The generated code is dark modules on nothing, so it needs a
-              // light field behind it and a quiet border around it: a camera
-              // finds neither in a dark screen that reaches the edge.
-              .padding(side * Layout.codeQuietFraction)
-              .background(Color.white)
-              .accessibilityIdentifier("pairingCode")
-              .accessibilityLabel("Pairing code")
-          } else {
-            ProgressView()
+    /// The code entry UI for the card holder.
+    @ViewBuilder private var servingCardCodeEntry: some View {
+      VStack(spacing: Layout.containerSpacing) {
+        codeEntryHeader
+        codeEntryForm
+        Spacer()
+      }
+      .padding(.top, Layout.topPadding)
+    }
+
+    private var codeEntryHeader: some View {
+      VStack(spacing: Layout.headerSpacing) {
+        Text(String(localized: "Enter Pairing Code"))
+          .font(.title2.bold())
+        Text(
+          String(localized: "Enter the 8-character code shown on your other device to connect.")
+        )
+        .font(.subheadline)
+        .foregroundStyle(.secondary)
+        .multilineTextAlignment(.center)
+      }
+      .padding(.horizontal)
+    }
+
+    private var codeEntryForm: some View {
+      VStack(spacing: Layout.codeSpacing) {
+        codeTextField
+        actionOrProgress
+        if case .failed(let error) = model.phase {
+          Text(error)
+            .font(.footnote)
+            .foregroundStyle(.red)
+            .multilineTextAlignment(.center)
+        }
+      }
+      .frame(maxWidth: Layout.maxContentWidth)
+      .padding(.horizontal)
+    }
+
+    private var codeTextField: some View {
+      TextField("ABCD-1234", text: $enteredCode)
+        .font(.system(size: Layout.inputFontSize, weight: .semibold, design: .monospaced))
+        .multilineTextAlignment(.center)
+        .textCase(.uppercase)
+        .autocorrectionDisabled(true)
+        #if os(iOS)
+          .textInputAutocapitalization(.characters)
+          .keyboardType(.asciiCapable)
+        #endif
+        .padding()
+        .background(
+          RoundedRectangle(cornerRadius: Layout.codeCornerRadius)
+            #if os(iOS)
+              .fill(Color(uiColor: .secondarySystemGroupedBackground))
+            #else
+              .fill(Color(nsColor: .controlBackgroundColor))
+            #endif
+        )
+        .accessibilityIdentifier("pairingCodeEntry")
+        .onValueChange(of: enteredCode) { newValue in
+          let normalized = RappPairingCode.normalize(newValue)
+          let formatted = RappPairingCode.format(normalized)
+          if enteredCode != formatted {
+            enteredCode = formatted
+          }
+          if RappPairingCode.isValid(normalized) {
+            model.acceptPairingCode(normalized)
           }
         }
-        .frame(width: proxy.size.width, height: proxy.size.height)
+    }
+
+    @ViewBuilder private var actionOrProgress: some View {
+      if case .connecting = model.phase {
+        ProgressView()
+          .controlSize(.regular)
+      } else {
+        Button(String(localized: "Pair")) {
+          model.acceptPairingCode(enteredCode)
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.large)
+        .disabled(!RappPairingCode.isValid(enteredCode))
+        .accessibilityIdentifier("pairButton")
       }
     }
 
+    /// The whole screen a borrowing device shows: the code, centred, as
+    /// large and clear as possible.
+    @ViewBuilder private var borrowedCardCode: some View {
+      VStack(spacing: Layout.containerSpacing) {
+        borrowedCodeHeader
+        borrowedCodeBody
+        Spacer()
+      }
+      .padding(.top, Layout.topPadding)
+    }
+
+    private var borrowedCodeHeader: some View {
+      VStack(spacing: Layout.headerSpacing) {
+        Text(String(localized: "Pairing Code"))
+          .font(.title2.bold())
+        Text(String(localized: "Enter this code in ReFineID on your iPhone to pair."))
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
+          .multilineTextAlignment(.center)
+      }
+      .padding(.horizontal)
+    }
+
+    @ViewBuilder private var borrowedCodeBody: some View {
+      if case .offer(let code) = model.phase {
+        VStack(spacing: Layout.codeSpacing) {
+          codeCard(code)
+          copyCodeButton(code)
+        }
+      } else if case .connecting = model.phase {
+        VStack(spacing: Layout.connectingSpacing) {
+          ProgressView()
+            .controlSize(.large)
+          Text(String(localized: "Connecting..."))
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+        }
+      } else {
+        ProgressView()
+      }
+    }
+
+    private func codeCard(_ code: String) -> some View {
+      Text(code)
+        .font(.system(size: Layout.displayFontSize, weight: .bold, design: .monospaced))
+        .tracking(Layout.trackingSpacing)
+        .padding(.horizontal, Layout.codeHorizontalPadding)
+        .padding(.vertical, Layout.codeVerticalPadding)
+        .background(
+          RoundedRectangle(cornerRadius: Layout.codeCornerRadius)
+            #if os(iOS)
+              .fill(Color(uiColor: .secondarySystemGroupedBackground))
+            #else
+              .fill(Color(nsColor: .controlBackgroundColor))
+            #endif
+            .overlay(
+              RoundedRectangle(cornerRadius: Layout.codeCornerRadius)
+                .stroke(
+                  Color.accentColor.opacity(Layout.strokeOpacity),
+                  lineWidth: Layout.strokeLineWidth
+                )
+            )
+        )
+        .accessibilityIdentifier("pairingCode")
+        .accessibilityLabel(code)
+    }
+
+    private func copyCodeButton(_ code: String) -> some View {
+      Button {
+        copyToClipboard(RappPairingCode.normalize(code))
+      } label: {
+        Label(
+          copied ? String(localized: "Code copied") : String(localized: "Copy Code"),
+          systemImage: copied ? "checkmark" : "doc.on.doc"
+        )
+      }
+      .buttonStyle(.bordered)
+      .controlSize(.regular)
+    }
+
+    private func copyToClipboard(_ text: String) {
+      #if os(iOS)
+        UIPasteboard.general.string = text
+      #elseif os(macOS)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+      #endif
+      copied = true
+      Task {
+        try? await Task.sleep(nanoseconds: Layout.resetDelaySeconds)
+        copied = false
+      }
+    }
   }
 #endif

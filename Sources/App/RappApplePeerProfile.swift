@@ -3,14 +3,12 @@
 #if REFINEID_REMOTE_CARD
 
   import CardCore
-  import CoreImage
   import Foundation
   import RappEngine
   import SwiftUI
 
   #if os(iOS)
     import UIKit
-    import VisionKit
   #elseif os(macOS)
     import AppKit
   #endif

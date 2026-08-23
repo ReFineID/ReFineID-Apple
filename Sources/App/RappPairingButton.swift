@@ -3,14 +3,12 @@
 #if REFINEID_REMOTE_CARD
 
   import CardCore
-  import CoreImage
   import Foundation
   import RappEngine
   import SwiftUI
 
   #if os(iOS)
     import UIKit
-    import VisionKit
   #elseif os(macOS)
     import AppKit
   #endif
@@ -26,7 +24,7 @@
         Image(systemName: hasSelectedPair ? "link" : "link.badge.plus")
           .replacingSymbolPlainly()
       }
-      .accessibilityLabel("Remote Card")
+      .accessibilityLabel(String(localized: "Remote"))
       .accessibilityValue(
         hasSelectedPair ? "Paired device selected" : "No paired device selected"
       )

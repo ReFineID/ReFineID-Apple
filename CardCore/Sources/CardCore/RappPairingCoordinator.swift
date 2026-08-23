@@ -22,7 +22,8 @@
 
       // MARK: Computed Properties
 
-      fileprivate var binding: RappTransportCandidate {
+      /// Underlying transport candidate bridge representation.
+      public var binding: RappTransportCandidate {
         RappTransportCandidate(
           profile: profile,
           candidateId: candidateID,
@@ -212,21 +213,31 @@
       vault: RappDeviceVault,
       transport: any RappFrameTransport,
       entropy: RappPlatformEntropy = RappPlatformEntropy(),
-      clock: RappPlatformClock = RappPlatformClock()
+      clock: RappPlatformClock = RappPlatformClock(),
+      code: String? = nil
     ) throws -> RappPairingCoordinator {
       let startedAtMonotonicMilliseconds = clock.monotonicMilliseconds()
+      let offerId: Data
+      let pairingSecret: Data
+      if let code, RappPairingCode.isValid(code) {
+        offerId = RappPairingCode.offerIdentifier(for: code)
+        pairingSecret = RappPairingCode.pairingSecret(for: code)
+      } else {
+        offerId = try entropy.offerID()
+        pairingSecret = try entropy.pairingSecret()
+      }
       let bridge = try RappPairingBridge.createRequesterOffer(
-        offerId: entropy.offerID(),
-        pairingSecret: entropy.pairingSecret(),
+        offerId: offerId,
+        pairingSecret: pairingSecret,
         profiles: profiles,
         transports: candidates.map(\.binding),
         offerTtlMs: offerLifetimeMilliseconds,
         startedAtMonotonicMs: startedAtMonotonicMilliseconds
       )
-      return try RappPairingCoordinator(
+      return RappPairingCoordinator(
         role: .requester,
         bridge: bridge,
-        offerURI: bridge.offerUri(nowMonotonicMs: startedAtMonotonicMilliseconds),
+        offerURI: try bridge.offerUri(nowMonotonicMs: startedAtMonotonicMilliseconds),
         selectedCandidateID: selectedCandidateID,
         displayName: displayName,
         platform: platform,

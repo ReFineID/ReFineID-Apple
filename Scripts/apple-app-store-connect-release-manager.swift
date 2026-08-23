@@ -1319,6 +1319,15 @@ private func releaseCandidate(_ arguments: [String]) {
     print("Candidate complete: \(marketingVersion) (\(buildNumber)), commit \(commit)")
 }
 
+private func releaseCaptureScreenshots(_ arguments: [String]) {
+    let script = releaseRepositoryRoot.appendingPathComponent("Scripts/store-screenshot-ios.sh")
+    guard releaseFileManager.fileExists(atPath: script.path) else {
+        releaseFail("screenshot script not found at \(script.path)")
+    }
+    print("Capturing iOS store screenshots...")
+    releaseRun("/bin/bash", [script.path] + arguments, currentDirectory: releaseRepositoryRoot)
+}
+
 private func printReleaseManagerUsage() {
     print(
         """
@@ -1329,6 +1338,8 @@ private func printReleaseManagerUsage() {
               Archive, inspect, and export a clean-tree candidate. Upload is opt-in.
           inspect-archive <path-to-xcarchive>
               Apply every reviewed archive gate without uploading or changing App Store state.
+          capture-screenshots [options]
+              Capture localized App Store screenshots on simulator (e.g. --all, --locale fi).
 
         App Store Connect commands:
           get, api, app-id, state, builds, distribute, add-tester, invite
@@ -1353,6 +1364,9 @@ case "inspect-archive":
         releaseFail("usage: inspect-archive <path-to-xcarchive>")
     }
     inspectReleaseArchive(URL(fileURLWithPath: releaseManagerArguments[1]))
+    exit(0)
+case "capture-screenshots":
+    releaseCaptureScreenshots(Array(releaseManagerArguments.dropFirst()))
     exit(0)
 default:
     break

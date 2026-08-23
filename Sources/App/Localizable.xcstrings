@@ -2925,6 +2925,22 @@
         }
       }
     },
+    "Pair": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yhdistä"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parkoppla"
+          }
+        }
+      }
+    },
     "Pair a phone": {
       "localizations": {
         "fi": {
@@ -2991,6 +3007,102 @@
           "stringUnit": {
             "state": "translated",
             "value": "Parkopplade enheter"
+          }
+        }
+      }
+    },
+    "Pairing Code": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pariliitoskoodi"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parkopplingskod"
+          }
+        }
+      }
+    },
+    "Enter Pairing Code": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Syötä pariliitoskoodi"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ange parkopplingskod"
+          }
+        }
+      }
+    },
+    "Enter the 8-character code shown on your other device to connect.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Syötä toisessa laitteessa näkyvä 8-merkkinen koodi yhdistääksesi."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ange den 8 tecken långa koden som visas på din andra enhet för att ansluta."
+          }
+        }
+      }
+    },
+    "Enter this code in ReFineID on your iPhone to pair.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Syötä tämä koodi ReFineID-sovellukseen iPhonessa muodostaaksesi laiteparin."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ange denna kod i ReFineID på din iPhone för att parkoppla."
+          }
+        }
+      }
+    },
+    "Copy Code": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopioi koodi"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopiera kod"
+          }
+        }
+      }
+    },
+    "Code copied": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koodi kopioitu"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koden kopierades"
           }
         }
       }
@@ -3483,6 +3595,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Uppdatera rapporten"
+          }
+        }
+      }
+    },
+    "Remote": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Etä"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fjärr"
           }
         }
       }

@@ -32,8 +32,44 @@ iPad want the sizes above (landscape captures use the transposed size).
 PNGs — copy the folders, or leave them out and the store shows the
 primary locale's screenshots.
 
-## Capturing
+## Standards
 
-Run the app on the real device or simulator with a card present, take
-the shots, and drop them in the matching folder. Nothing here is
-generated: the store shows exactly these files.
+- **Pristine Status Bar**: Time must be `9:41`, battery state `100% charged`, with full Wi-Fi and cellular signal bars.
+- **Production Appearance**: No debug diagnostics UI or development footer buttons (launch with `--hide-diagnostics`).
+- **Privacy and Data Integrity**: Screenshots carry synthetic or redacted data only; never capture real citizen identities or personal credentials.
+- **Correct Aspect and Resolutions**: Match App Store specifications exactly (e.g. `1290×2796` for `APP_IPHONE_67`, `2880×1800` for `APP_DESKTOP`).
+
+## Capturing and Tooling
+
+### iOS (Automated via Simulator)
+
+Automate capture using either the release manager Swift tool or the underlying script:
+
+```sh
+# Via the release manager:
+Scripts/apple-app-store-connect-release-manager.swift capture-screenshots --all
+
+# Or directly via the iOS capture script:
+Scripts/store-screenshot-ios.sh --all
+```
+
+Options:
+- `--all`: Captures and updates screenshots for all supported locales (`en-US`, `fi`, `sv`).
+- `--locale <loc>`: Captures for a specific locale (`en-US`, `fi`, or `sv`).
+- `--scenario <name>`: Drives a specific Virtual ID Card scenario (e.g., `registered-nfc`, `factory-fresh-nfc`).
+- `--output-dir <path>`: Directs outputs to a custom directory instead of `Metadata/screenshots/`.
+
+### macOS (Window Capture)
+
+```sh
+Scripts/store-screenshot.sh NAME
+```
+
+Captures the frontmost ReFineID window onto a 2880×1800 App Store canvas.
+
+## Uploading to App Store Connect
+
+```sh
+Scripts/apple-app-store-connect-release-manager.swift screenshots <ios|macos> <version>
+```
+

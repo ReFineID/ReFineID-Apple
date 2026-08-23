@@ -58,7 +58,7 @@
           return DebugModeReport(
             lines: ["pair-with-offer: " + message],
             succeeded: false)
-        case .connecting, .idle, .offer, .scanning:
+        case .connecting, .idle, .offer, .codeEntry:
           try? await Task.sleep(for: pause)
         }
       }
@@ -99,7 +99,7 @@
           return DebugModeReport(
             lines: ["offer-remote-reader: " + message],
             succeeded: false)
-        case .connecting, .idle, .scanning:
+        case .connecting, .idle, .codeEntry:
           try? await Task.sleep(for: pause)
         }
       }

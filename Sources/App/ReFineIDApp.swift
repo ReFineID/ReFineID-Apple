@@ -253,6 +253,10 @@ internal struct ReFineIDApp: App {
     #endif
 
     #if os(iOS) && DEBUG
+      let args = ProcessInfo.processInfo.arguments
+      if args.contains("--prime-mock-card") || args.contains("--prime-fake-card") {
+        MockCardCertificate.primeSyntheticIdentity()
+      }
       DemoMode.shared.activateFromLaunchArguments()
     #endif
   }
