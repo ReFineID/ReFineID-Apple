@@ -21,6 +21,10 @@
     }
 
     internal func acceptPairingCode(_ rawCode: String) {
+      resetAttempt()
+      #if REFINEID_LOCAL_CARD && os(iOS)
+        PhonePersistentTokenRelay.shared.suspendForPairing()
+      #endif
       let code = RappPairingCode.normalize(rawCode)
       guard RappPairingCode.isValid(code) else {
         fail(String(localized: "The pairing code is invalid or expired"))
