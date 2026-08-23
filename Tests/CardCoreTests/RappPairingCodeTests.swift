@@ -28,7 +28,7 @@ import Testing
       #expect(normalized == "123456")
       #expect(RappPairingCode.isValid(normalized))
       #expect(RappPairingCode.formatted("123456") == "123 456")
-      #expect(RappPairingCode.formatted("123") == "123")
+      #expect(RappPairingCode.formatted("123") == "123 ")
       #expect(RappPairingCode.formatted("1234") == "123 4")
 
       #expect(!RappPairingCode.isValid("123"))

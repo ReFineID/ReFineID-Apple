@@ -49,19 +49,36 @@ import SwiftUI
         )
         Spacer()
         if remoteCardAvailable {
-          if isPairingInputActive {
-            inlinePairingControls
-          } else {
-            Button(String(localized: "Connect")) {
-              togglePairingInput()
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-            .accessibilityIdentifier("remoteConnectButton")
-          }
+          remoteRouteTrailingControls
         }
       }
       .accessibilityIdentifier("remoteCard")
+      .onAppear {
+        pairingModel.refresh()
+      }
+    }
+
+    @ViewBuilder private var remoteRouteTrailingControls: some View {
+      if isPairingInputActive {
+        inlinePairingControls
+      } else if pairingModel.hasActivePairs {
+        Button(String(localized: "Disconnect")) {
+          withAnimation {
+            pairingModel.revokeAll()
+          }
+        }
+        .buttonStyle(.bordered)
+        .tint(.red)
+        .controlSize(.small)
+        .accessibilityIdentifier("remoteDisconnectButton")
+      } else {
+        Button(String(localized: "Connect")) {
+          togglePairingInput()
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .accessibilityIdentifier("remoteConnectButton")
+      }
     }
 
     @ViewBuilder private var inlinePairingControls: some View {

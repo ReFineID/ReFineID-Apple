@@ -1720,6 +1720,28 @@
         }
       }
     },
+    "Disconnect": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disconnect"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Katkaise"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koppla från"
+          }
+        }
+      }
+    },
     "Done": {
       "extractionState": "manual",
       "localizations": {

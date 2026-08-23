@@ -72,7 +72,7 @@
     }
 
     @Published internal var phase = Phase.idle
-    @Published internal private(set) var pairs: [RappPairingCoordinator.PairSummary] = []
+    @Published internal var pairs: [RappPairingCoordinator.PairSummary] = []
     @Published internal var selectedPairID: Data?
     @Published internal var pairingCode: String?
 
@@ -99,21 +99,13 @@
       }
     }
 
+    internal var hasActivePairs: Bool {
+      !pairs.isEmpty
+    }
+
     internal init(vault: RappDeviceVault = RappDeviceVault()) {
       self.vault = vault
       self.catalog = RappPairCatalog(vault: vault)
-    }
-
-    internal func refresh() {
-      Task {
-        do {
-          pairs = try await catalog.activePairs()
-          selectedPairID = try await catalog.selectedPair()?.pairID
-        } catch {
-          pairs = []
-          selectedPairID = nil
-        }
-      }
     }
 
     internal func createOffer() {

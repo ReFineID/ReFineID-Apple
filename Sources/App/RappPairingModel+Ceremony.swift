@@ -35,8 +35,11 @@
         // The scan of the offer QR, carrying its 256-bit bearer secret, is the
         // human consent that authorizes this pairing and its public reads. Only
         // a device that saw the code can reach this point, on either side, so
-        // both confirm without asking again.
-        confirmPeer(peer)
+        Task { [weak coordinator] in
+          await coordinator?.approve(
+            grantedProfiles: RappApplePeerProfile.supportedCredentialProfiles
+          )
+        }
       case .paired(let pair):
         do {
           try vault.selectPair(pairID: pair.pairID)

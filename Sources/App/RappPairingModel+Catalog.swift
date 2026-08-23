@@ -4,81 +4,42 @@
 
   import CardCore
   import Foundation
+  import RappEngine
+  import SwiftUI
 
-  /// The pairing model's catalog and naming surface: what a settings screen
-  /// reads and the row actions it offers, apart from the ceremony itself.
   extension RappPairingModel {
-    /// Grants exactly the requested, supported profiles and proceeds to store
-    /// the pairing.
-    internal func confirmPeer(_ peer: RappPairingCoordinator.Peer) {
-      guard let coordinator else { return }
-      let grantSet = requestedProfiles(for: peer).filter(
-        RappApplePeerProfile.isSupported)
-      guard !grantSet.isEmpty else {
-        denyPeer()
-        return
-      }
-      phase = .connecting
-      Task { await coordinator.approve(grantedProfiles: grantSet) }
-    }
-
-    internal func denyPeer() {
-      guard let coordinator else {
-        cancel()
-        return
-      }
-      phase = .failed(String(localized: "Pairing was denied"))
-      Task { [weak self] in
-        await coordinator.deny()
-        self?.finishAttempt()
-        self?.resumeRegularRelay()
-      }
-    }
-
-    internal func requestedProfiles(
-      for peer: RappPairingCoordinator.Peer
-    ) -> [String] {
-      peer.requestedProfiles ?? RappApplePeerProfile.supportedCredentialProfiles
-    }
-
-    internal func profileLabel(_ profile: String) -> String {
-      RappApplePeerProfile.label(for: profile)
-    }
-
-    internal func profileIsSupported(_ profile: String) -> Bool {
-      RappApplePeerProfile.isSupported(profile)
-    }
-
-    internal func select(_ pair: RappPairingCoordinator.PairSummary) {
+    internal func refresh() {
       Task {
         do {
-          try await catalog.select(pairID: pair.pairID)
-          selectedPairID = pair.pairID
-          resumeRegularRelay()
+          pairs = try await catalog.activePairs()
+          selectedPairID = try await catalog.selectedPair()?.pairID
         } catch {
-          fail(String(localized: "The paired device is no longer available"))
+          pairs = []
+          selectedPairID = nil
         }
       }
     }
 
-    internal func revoke(_ pair: RappPairingCoordinator.PairSummary) {
+    internal func revokeAll() {
       Task {
         do {
-          try await catalog.revoke(pairID: pair.pairID)
-          RappPairNames.forget(pairID: pair.pairID)
-          refresh()
+          let active = try await catalog.activePairs()
+          for pair in active {
+            try await catalog.revoke(pairID: pair.pairID)
+          }
+          try await catalog.clearSelection()
+          await MainActor.run {
+            self.pairs = []
+            self.selectedPairID = nil
+            self.phase = .idle
+          }
         } catch {
-          fail(String(localized: "The paired device could not be removed"))
+          await MainActor.run {
+            self.refresh()
+          }
         }
       }
-    }
-
-    /// The paired device's reviewed name, or its role when the pair
-    /// predates remembered names.
-    internal func displayName(
-      for pair: RappPairingCoordinator.PairSummary
-    ) -> String {
-      RappPairNames.name(forPairID: pair.pairID) ?? pair.remotePlatformLabel
     }
   }
+
 #endif

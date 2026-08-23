@@ -47,10 +47,10 @@
     /// Formats a numeric pairing code with a space after 3 digits (e.g., "123 456").
     public static func formatted(_ input: String) -> String {
       let digits = normalize(input)
-      if digits.count > groupSize {
+      if digits.count >= groupSize {
         let firstPart = digits.prefix(groupSize)
         let secondPart = digits.dropFirst(groupSize)
-        return "\(firstPart) \(secondPart)"
+        return secondPart.isEmpty ? "\(firstPart) " : "\(firstPart) \(secondPart)"
       }
       return digits
     }
