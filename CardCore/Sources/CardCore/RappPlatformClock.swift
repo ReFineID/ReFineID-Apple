@@ -10,7 +10,9 @@
     private static let secondsPerMillisecond = 1_000.0
 
     /// Creates a system-backed clock.
-    public init() {}
+    public init() {
+      // platform default
+    }
 
     /// Milliseconds since the Unix epoch; moves with wall-clock changes.
     public func wallMilliseconds() -> UInt64 {
