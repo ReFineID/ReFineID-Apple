@@ -81,6 +81,10 @@
     /// Token ids already given a removal handler, so each is asked once.
     private var observed: Set<String> = []
 
+    /// Owned identities last reported, so a listing that did not move
+    /// does not rebuild the login row.
+    private var ownedTokenIDs: Set<String> = []
+
     /// Whether Safari can be offered an identity from this card.
     internal private(set) var isReady = false
 
@@ -186,34 +190,32 @@
     /// comes up - which at launch, with the card already in the
     /// reader, is exactly when the question is asked.
     internal func refresh() {
-      generation += 1
       let listed = watcher.tokenIDs
       // The credential entry and a displaced remote-card registration
       // are both listed without a card being present, so neither may
       // answer for one.
-      isReady = listed.contains { identifier in
+      let owned = listed.filter { identifier in
         PersistentTokenIdentity.owns(tokenIdentifier: identifier)
           || (CardTokenNamespace.owns(tokenIdentifier: identifier)
             && !identifier.hasPrefix(Self.credentialEntryPrefix)
             && !CardTokenNamespace.isDisplacedRemoteCardToken(tokenIdentifier: identifier))
       }
+      let ready = !owned.isEmpty
+      let nextOwned = Set(owned)
+      if ready != isReady || nextOwned != ownedTokenIDs {
+        generation += 1
+      }
+      isReady = ready
+      ownedTokenIDs = nextOwned
       #if DEBUG
         Self.log.info(
           "refresh: \(listed.count) listed, ready \(self.isReady)"
         )
       #endif
-      for identifier in watcher.tokenIDs
-      where CardTokenNamespace.owns(tokenIdentifier: identifier) {
+      for identifier in owned {
         guard observed.insert(identifier).inserted else { continue }
         watcher.addRemovalHandler(Self.removalHandler(for: self), forTokenID: identifier)
       }
-      #if REFINEID_REMOTE_CARD && REFINEID_STREAM_TRANSPORT
-        if PersistentTokenRegistry.shared.holderIsAdvertising {
-          PersistentTokenRegistry.shared.ensurePublished()
-        }
-      #elseif REFINEID_REMOTE_CARD
-        PersistentTokenRegistry.shared.ensurePublished()
-      #endif
     }
 
     /// Performs one software "reinsertion" for this card appearance.

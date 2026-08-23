@@ -6,6 +6,17 @@
   import RappEngine
 
   extension PersistentTokenRegistry {
+    /// Seconds a vanished advertisement may stay missing before the
+    /// borrowed identity is withdrawn.
+    ///
+    /// Bonjour browse results drop a live name for a moment without
+    /// the holder having left.
+    private static let advertisementLossHoldSeconds = 2
+
+    private static var advertisementLossHold: Duration {
+      Duration.seconds(advertisementLossHoldSeconds)
+    }
+
     /// The published name both sides derive from the selected pairing.
     private static func holderServiceName() -> String? {
       let vault = RappDeviceVault()
@@ -24,6 +35,8 @@
     internal func startWatchingPresence() {
       presence?.cancel()
       presence = nil
+      advertisementLossTask?.cancel()
+      advertisementLossTask = nil
       hasSeenHolderAdvertisement = false
       holderIsAdvertising = false
       guard let name = Self.holderServiceName() else { return }
@@ -38,6 +51,8 @@
 
     internal func holderPresenceChanged(_ present: Bool) {
       if present {
+        advertisementLossTask?.cancel()
+        advertisementLossTask = nil
         hasSeenHolderAdvertisement = true
         holderIsAdvertising = true
         if Self.needsIdentity {
@@ -48,12 +63,17 @@
         return
       }
       guard hasSeenHolderAdvertisement, holderIsAdvertising else { return }
-      holderIsAdvertising = false
-      Self.withdrawPublishedIdentity()
-      #if DEBUG
-        print("[persistent-token] holder left, withdrew identity")
-        fflush(stdout)
-      #endif
+      advertisementLossTask?.cancel()
+      advertisementLossTask = Task { @MainActor in
+        try? await Task.sleep(for: Self.advertisementLossHold)
+        guard !Task.isCancelled else { return }
+        holderIsAdvertising = false
+        Self.withdrawPublishedIdentity()
+        #if DEBUG
+          print("[persistent-token] holder left, withdrew identity")
+          fflush(stdout)
+        #endif
+      }
     }
   }
 #endif

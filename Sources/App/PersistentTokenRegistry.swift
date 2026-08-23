@@ -33,6 +33,14 @@
       driverConfiguration?.tokenConfigurations.isEmpty ?? true
     }
 
+    /// Safari's chooser title, matching the local reader token.
+    ///
+    /// Both certificates on a card share one subject, so the label is the
+    /// only field that names the PIN 1 identity in DVV's wording.
+    private static var authenticationLabel: String {
+      String(localized: "Basic (PIN 1)")
+    }
+
     // MARK: Properties
 
     /// Who the borrowed certificate names, for the identity row.
@@ -53,6 +61,10 @@
 
     #if REFINEID_STREAM_TRANSPORT
       internal var presence: StreamRelayPresence?
+
+      /// Withdraws the identity after Bonjour has omitted the holder
+      /// for ``advertisementLossHold``.
+      internal var advertisementLossTask: Task<Void, Never>?
     #endif
 
     // MARK: Lifecycle
@@ -114,7 +126,8 @@
     }
 
     private static func makeKeychainItems(
-      for certificate: SecCertificate
+      for certificate: SecCertificate,
+      profile: CardKeyProfile
     ) -> (TKTokenKeychainCertificate, TKTokenKeychainKey)? {
       guard
         let certificateItem = TKTokenKeychainCertificate(
@@ -128,11 +141,21 @@
       else {
         return nil
       }
-      certificateItem.label = "ReFineID authentication certificate"
-      keyItem.label = "ReFineID authentication key"
+      certificateItem.label = authenticationLabel
+      keyItem.label = authenticationLabel
+      keyItem.keyType = profile.keyType
+      keyItem.keySizeInBits = profile.keySizeInBits
       keyItem.canSign = true
+      keyItem.canDecrypt = false
+      keyItem.canPerformKeyExchange = false
+      #if os(macOS)
+        keyItem.isSuitableForLogin = true
+      #else
+        keyItem.isSuitableForLogin = false
+      #endif
       // swiftlint:disable:next legacy_objc_type
       let signOperationKey = NSNumber(value: TKTokenOperation.signData.rawValue)
+      // PIN 1 is entered on the holder, not on this Mac.
       keyItem.constraints = [
         signOperationKey: true
       ]
@@ -143,8 +166,11 @@
       guard
         let driver = driverConfiguration,
         let certificate = SecCertificateCreateWithData(nil, certificateDER as CFData),
-        CardKeyProfile.resolve(fromCertificate: certificate) != nil,
-        let (certificateItem, keyItem) = makeKeychainItems(for: certificate)
+        let profile = CardKeyProfile.resolve(fromCertificate: certificate),
+        let (certificateItem, keyItem) = makeKeychainItems(
+          for: certificate,
+          profile: profile
+        )
       else {
         return
       }

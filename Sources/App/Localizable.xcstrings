@@ -594,13 +594,13 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Perustunnusluku (PIN 1)"
+            "value": "Perus (PIN 1)"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Baskod (PIN 1)"
+            "value": "Bas (PIN 1)"
           }
         }
       }
