@@ -36,7 +36,7 @@ import SwiftUI
             RemotePairingGlyph(isConnected: pairingModel.hasActivePairs)
           } else {
             PersonRowLabel.cardIcon(
-              systemName: "key.radiowaves.forward",
+              systemName: "key.radiowaves.forward.slash",
               lit: false
             )
           }
