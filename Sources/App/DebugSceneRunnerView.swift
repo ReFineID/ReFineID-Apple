@@ -102,10 +102,17 @@
       private static func openRequestedPage() async {
         let arguments = ProcessInfo.processInfo.arguments
         guard let index = arguments.firstIndex(of: DebugLaunchMode.openSafari.rawValue),
-          arguments.index(after: index) < arguments.endIndex,
-          let url = URL(string: "https://" + arguments[arguments.index(after: index)])
+          arguments.index(after: index) < arguments.endIndex
         else {
           DebugConsole.emit("open-safari: expected an address after the flag")
+          DebugConsole.finish(succeeded: false)
+        }
+        let raw = arguments[arguments.index(after: index)]
+        let urlString =
+          (raw.hasPrefix("https://") || raw.hasPrefix("http://"))
+          ? raw : "https://" + raw
+        guard let url = URL(string: urlString) else {
+          DebugConsole.emit("open-safari: invalid url: " + raw)
           DebugConsole.finish(succeeded: false)
         }
         let opened = await UIApplication.shared.open(url)

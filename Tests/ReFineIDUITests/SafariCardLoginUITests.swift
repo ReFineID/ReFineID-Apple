@@ -91,20 +91,38 @@
 
     /// The affirmative action a holder would take on a system prompt.
     ///
-    /// English only, and knowingly so: these are the system's own strings
-    /// and there is no identifier to query them by. A device in another
-    /// language still records the whole run in the screenshots and the
-    /// recording, which is what the tap here exists to make watchable.
-    private static let affirmativeActions = ["Allow", "Continue", "OK", "Select", "Use"]
+    /// Includes localized strings so tests pass regardless of device language.
+    private static let affirmativeActions = [
+      "Allow", "Continue", "OK", "Select", "Use",
+      "Salli", "Jatka", "Valitse", "Kayta",
+      "Tillat", "Fortsatt", "Valj", "Anvand",
+    ]
+
+    /// Common interactive buttons on Finnish public and postal auth portals.
+    private static let webInteractiveActions = [
+      "Hyvaksy kaikki", "Hyvaksy", "Accept all", "Accept",
+      "Tunnistaudu", "Kirjaudu", "Log in", "Sign in",
+      "Kansalaisvarmenne", "Varmennekortti", "HST-kortti",
+      "Citizen certificate", "Sertifikatkort", "Henkilokortti",
+    ]
 
     // MARK: Static Functions
 
-    /// Whether the signed-in page is on screen.
-    private static func signedIn(_ safari: XCUIApplication) -> Bool {
-      safari.webViews.firstMatch.staticTexts
-        .containing(NSPredicate(format: "label CONTAINS[c] %@", UITestEnvironment.successMarker))
+    /// Whether the signed-in page is on screen matching any given marker.
+    private static func signedIn(
+      _ safari: XCUIApplication,
+      matching markers: [String]
+    ) -> Bool {
+      let webView = safari.webViews.firstMatch
+      for marker in markers
+      where webView.staticTexts
+        .containing(NSPredicate(format: "label CONTAINS[c] %@", marker))
         .firstMatch
         .exists
+      {
+        return true
+      }
+      return false
     }
 
     /// Whether the system is asking for the card.
@@ -121,8 +139,14 @@
     }
 
     /// Whether a system sheet or alert is up.
-    private static func systemPromptVisible(_ springboard: XCUIApplication) -> Bool {
-      springboard.sheets.firstMatch.exists || springboard.alerts.firstMatch.exists
+    private static func systemPromptVisible(
+      _ springboard: XCUIApplication,
+      _ safari: XCUIApplication
+    ) -> Bool {
+      springboard.sheets.firstMatch.exists
+        || springboard.alerts.firstMatch.exists
+        || safari.sheets.firstMatch.exists
+        || safari.alerts.firstMatch.exists
     }
 
     /// The labels the system is showing, so a run records what it met.
@@ -138,10 +162,45 @@
     }
 
     /// Presses the button a holder would press on a system prompt.
-    private static func takeAffirmativeAction(in springboard: XCUIApplication) {
-      for name in Self.affirmativeActions where springboard.buttons[name].exists {
-        springboard.buttons[name].tap()
-        return
+    private static func takeAffirmativeAction(
+      in springboard: XCUIApplication,
+      safari: XCUIApplication
+    ) {
+      for name in Self.affirmativeActions {
+        if springboard.buttons[name].exists {
+          springboard.buttons[name].tap()
+          return
+        }
+        if safari.buttons[name].exists {
+          safari.buttons[name].tap()
+          return
+        }
+        if springboard.sheets.buttons[name].exists {
+          springboard.sheets.buttons[name].tap()
+          return
+        }
+        if safari.sheets.buttons[name].exists {
+          safari.sheets.buttons[name].tap()
+          return
+        }
+      }
+    }
+
+    /// Taps recognized web action buttons if present on the page.
+    private static func interactWithWebElements(in safari: XCUIApplication) {
+      let webView = safari.webViews.firstMatch
+      guard webView.exists else { return }
+      for action in Self.webInteractiveActions {
+        let button = webView.buttons[action]
+        if button.exists, button.isHittable {
+          button.tap()
+          return
+        }
+        let link = webView.links[action]
+        if link.exists, link.isHittable {
+          link.tap()
+          return
+        }
       }
     }
 
@@ -159,6 +218,50 @@
     /// Opens the card-authenticated site in Safari and reports what
     /// happened.
     internal func testSignsInWithTheCard() {
+      driveLogin(
+        targetSite: UITestEnvironment.targetSite,
+        successMarkers: [UITestEnvironment.successMarker]
+      )
+    }
+
+    /// Drives authentication on ReFineID card verification service.
+    internal func testLoginCardRefineID() {
+      driveLogin(
+        targetSite: "https://card.refineid.fi",
+        successMarkers: [
+          "ReFineID", "Varmenne", "Certificate", "Card",
+          "Client Certificate", "Autentikoitu", "Authenticated",
+        ]
+      )
+    }
+
+    /// Drives authentication on Suomi.fi identification portal.
+    internal func testLoginSuomiFi() {
+      driveLogin(
+        targetSite: "https://www.suomi.fi",
+        successMarkers: [
+          "Tunnistautunut", "Kirjaudu ulos", "Omat tiedot", "Log out",
+          "Mina meddelanden", "Omat viestit",
+        ]
+      )
+    }
+
+    /// Drives authentication on OmaPosti postal portal.
+    internal func testLoginOmaPosti() {
+      driveLogin(
+        targetSite: "https://www.posti.fi/omaposti",
+        successMarkers: [
+          "OmaPosti", "Kirjaudu ulos", "Saapuneet", "Lahetykset",
+          "Log out", "Omat lahetykset",
+        ]
+      )
+    }
+
+    /// Unified login driver across target sites.
+    private func driveLogin(
+      targetSite: String,
+      successMarkers: [String]
+    ) {
       let safari = XCUIApplication(bundleIdentifier: Self.safariBundleIdentifier)
       safari.launch()
       XCTAssertTrue(
@@ -178,30 +281,26 @@
         // keyboard focus to a synthesized tap, so the app opens the page
         // and Safari comes forward already loading it.
         let app = XCUIApplication()
-        app.launchArguments = ["--open-safari", UITestEnvironment.targetSite]
+        app.launchArguments = ["--open-safari", targetSite]
         app.launch()
         _ = safari.wait(for: .runningForeground, timeout: Self.launchTimeout)
       } else {
         // Safari's address field takes a tap to focus and does not report
         // that focus synchronously, so typing straight after the tap fails
         // with "neither element nor any descendant has keyboard focus".
-        // Tapping and then waiting for the keyboard is what makes this
-        // reliable; without the wait it passes or fails on machine speed.
         address.tap()
         if !safari.keyboards.element.waitForExistence(timeout: Self.fieldTimeout) {
-          // Some layouts need a second tap: the first dismisses whatever
-          // had focus, the second lands on the field.
           address.tap()
           _ = safari.keyboards.element.waitForExistence(timeout: Self.fieldTimeout)
         }
-        address.typeText(UITestEnvironment.targetSite + "\n")
+        address.typeText(targetSite + "\n")
       }
       attachScreenshot(safari.screenshot(), named: "02-site-requested")
 
-      let observation = watch(safari)
+      let observation = watch(safari, matching: successMarkers)
       attachScreenshot(safari.screenshot(), named: "05-final")
       let summary = """
-        site: \(UITestEnvironment.targetSite)
+        site: \(targetSite)
         certificate prompt seen: \(observation.sawCertificatePrompt)
         system NFC sheet seen: \(observation.sawScanSheet)
         success marker found: \(observation.signedIn)
@@ -210,22 +309,23 @@
       attachText(summary, named: "06-summary")
       attachText(AppDiagnostics.text(from: UITestApp.launch()), named: "07-diagnostics")
 
-      // The signed-in page is the only success criterion. A failure here is
-      // a real result, not a flake: it means Safari never completed a card
-      // signature.
       XCTAssertTrue(
-        observation.signedIn, "Safari did not reach the card-authenticated page.\n" + summary)
+        observation.signedIn,
+        "Safari did not reach the card-authenticated page.\n" + summary)
     }
 
     /// Watches Safari and SpringBoard until the login lands or time runs
     /// out, answering the prompts a holder would answer.
-    private func watch(_ safari: XCUIApplication) -> Observation {
+    private func watch(
+      _ safari: XCUIApplication,
+      matching markers: [String]
+    ) -> Observation {
       let springboard = XCUIApplication(bundleIdentifier: Self.springboardBundleIdentifier)
       var sawCertificatePrompt = false
       var sawScanSheet = false
       var labels: [String] = []
       let deadline = Date().addingTimeInterval(Self.signTimeout)
-      while Date() < deadline, !Self.signedIn(safari) {
+      while Date() < deadline, !Self.signedIn(safari, matching: markers) {
         for label in Self.systemLabels(of: springboard) where !labels.contains(label) {
           labels.append(label)
           attachScreenshot(springboard.screenshot(), named: "sb-\(labels.count)-\(label)")
@@ -234,19 +334,20 @@
           sawScanSheet = true
           attachScreenshot(springboard.screenshot(), named: "03-nfc-sheet")
         }
-        if Self.systemPromptVisible(springboard) {
+        if Self.systemPromptVisible(springboard, safari) {
           if !sawCertificatePrompt {
             sawCertificatePrompt = true
             attachScreenshot(springboard.screenshot(), named: "04-certificate-prompt")
           }
-          Self.takeAffirmativeAction(in: springboard)
+          Self.takeAffirmativeAction(in: springboard, safari: safari)
         }
+        Self.interactWithWebElements(in: safari)
         Thread.sleep(forTimeInterval: Self.pollInterval)
       }
       return Observation(
         sawCertificatePrompt: sawCertificatePrompt,
         sawScanSheet: sawScanSheet,
-        signedIn: Self.signedIn(safari),
+        signedIn: Self.signedIn(safari, matching: markers),
         systemLabels: labels)
     }
   }
