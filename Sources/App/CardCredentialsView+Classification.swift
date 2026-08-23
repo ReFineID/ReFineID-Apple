@@ -230,7 +230,7 @@ extension CardCredentialsView {
                     commit: IdentityCommitments(
                         storeCardAccessNumber: storeProvenCardAccessNumber,
                         storeVerifiedPin1: storeVerifiedPin1,
-                        clearPin1Entry: clearPin1Entry)                        { isRegistered = true })
+                        clearPin1Entry: clearPin1Entry) { isRegistered = true })
                 finishIdentitySetup(succeeded: succeeded)
                 return
             }

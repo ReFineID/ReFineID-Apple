@@ -124,7 +124,7 @@ internal struct CardRegistrationSections: View {
                     commit: IdentityCommitments(
                         storeCardAccessNumber: storeCardAccessNumber,
                         storeVerifiedPin1: storeVerifiedPin1,
-                        clearPin1Entry: clearPin1Entry)                        { isRegistered = true })
+                        clearPin1Entry: clearPin1Entry) { isRegistered = true })
                 onRegistrationFinished(succeeded)
             }
         } label: {

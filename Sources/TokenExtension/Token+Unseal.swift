@@ -203,10 +203,10 @@ extension Token {
             let reference = entry.key?.keyReference
             TokenLog.info(
                 "readIdentity: inventory entry file=\(entry.certificate.file) "
-                    + "id=\(entry.certificate.identifier.map { String(format: "%02X", $0) }.joined()) "
-                    + "key=\(entry.key != nil) "
-                    + "keyReference=\(reference.map
-                    { String(format: "%02X", $0) } ?? "none")"
+                + "id=\(entry.certificate.identifier.map { String(format: "%02X", $0) }.joined()) "
+                + "key=\(entry.key != nil) "
+                + "keyReference=\(reference.map
+                { String(format: "%02X", $0) } ?? "none")"
             )
         }
     }
