@@ -75,6 +75,9 @@ internal final class CardPresence: ObservableObject {
     recount()
     if !hasCompletedInitialScan {
       hasCompletedInitialScan = true
+      #if os(iOS) && REFINEID_LOCAL_CARD
+        HolderCardServing.availabilityChanged()
+      #endif
     }
   }
 

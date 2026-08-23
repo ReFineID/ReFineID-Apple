@@ -23,13 +23,6 @@
       start()
     }
 
-    /// Stops advertising without asking the holder to reconnect by hand.
-    ///
-    /// The pairing remains. A card that comes back listens again.
-    internal func stopServing() {
-      tearDownTransport()
-    }
-
     internal func stopListening() {
       relistenPolicy = .explicitUserActionRequired
       tearDownTransport()

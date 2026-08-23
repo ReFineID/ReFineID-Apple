@@ -18,8 +18,8 @@
     /// Browses for the selected pair's holder advertisement.
     ///
     /// The holder publishes only while it can serve a card. Losing that
-    /// service withdraws the borrowed CryptoTokenKit identity; the pairing
-    /// stays, and a later advertisement fetches the certificate again.
+    /// service means the reader card is gone: the borrowed identity and
+    /// the pairing both leave. An NFC prime keeps the holder advertising.
     internal func startWatchingPresence() {
       presence?.cancel()
       presence = nil
@@ -47,8 +47,11 @@
       guard hasSeenHolderAdvertisement, holderIsAdvertising else { return }
       holderIsAdvertising = false
       Self.withdrawPublishedIdentity()
+      RappPairingModel.revokeEveryStoredPair()
+      presence?.cancel()
+      presence = nil
       #if DEBUG
-        print("[persistent-token] holder left, withdrew")
+        print("[persistent-token] holder left, withdrew pairing")
         fflush(stdout)
       #endif
     }

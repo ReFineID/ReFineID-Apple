@@ -32,9 +32,20 @@
         isConnected ? "Paired device selected" : "No paired device selected"
       )
       .task(id: isPresented) {
-        let catalog = RappPairCatalog(vault: RappDeviceVault())
-        hasSelectedPair = (try? await catalog.selectedPair()) != nil
+        await refreshSelection()
       }
+      .onReceive(
+        NotificationCenter.default.publisher(
+          for: RappPairingModel.pairingsDidChangeNotification)
+      ) { _ in
+        Task { await refreshSelection() }
+      }
+    }
+
+    /// Re-reads whether a requester pairing is still selected.
+    private func refreshSelection() async {
+      let catalog = RappPairCatalog(vault: RappDeviceVault())
+      hasSelectedPair = (try? await catalog.selectedPair()) != nil
     }
   }
 #endif

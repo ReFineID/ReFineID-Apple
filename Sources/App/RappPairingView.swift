@@ -84,6 +84,12 @@
           #endif
         }
       }
+      .onReceive(
+        NotificationCenter.default.publisher(
+          for: RappPairingModel.pairingsDidChangeNotification)
+      ) { _ in
+        model.refresh()
+      }
       .onReceive(model.$phase) { phase in
         if case .paired = phase {
           dismiss()

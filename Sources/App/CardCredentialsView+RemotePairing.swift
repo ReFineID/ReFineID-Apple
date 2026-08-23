@@ -63,6 +63,12 @@ import SwiftUI
       .onAppear {
         pairingModel.refresh()
       }
+      .onReceive(
+        NotificationCenter.default.publisher(
+          for: RappPairingModel.pairingsDidChangeNotification)
+      ) { _ in
+        pairingModel.refresh()
+      }
     }
 
     @ViewBuilder private var remoteRouteTrailingControls: some View {

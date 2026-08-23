@@ -8,13 +8,13 @@
 
   /// Whether this phone can still serve a card, and what leaves with it.
   ///
-  /// A connected reader or a stored NFC prime is a card this device can
-  /// answer for. Losing both wipes the CryptoTokenKit identities that
-  /// were offering that card, and stops the holder advertisement so a
-  /// paired requester withdraws its copy. Pairing itself stays.
+  /// A connected reader is a card this device can answer for. Losing it
+  /// wipes the CryptoTokenKit identities that were offering that card,
+  /// revokes every pairing, and stops the holder advertisement so a
+  /// paired requester withdraws its copy and pairing too.
   ///
-  /// An NFC field ending is not this event: the prime remains, and so
-  /// does the advertisement.
+  /// A stored NFC prime is different: the field has no lasting connected
+  /// state, so the prime, the advertisement, and the pairing stay.
   @MainActor
   internal enum HolderCardServing {
     /// Whether a serving state has been measured this run.
@@ -29,12 +29,19 @@
       guard !DemoMode.shared.isActive else { return }
       let canServe =
         PrimeStore.storedCount() > 0 || CardPresence.shared.isReaderCardPresent
-      if !didMeasure, !canServe {
+      if !didMeasure {
+        guard CardPresence.shared.hasCompletedInitialScan else { return }
         didMeasure = true
-        wasAbleToServe = false
+        wasAbleToServe = canServe
+        if canServe {
+          #if REFINEID_REMOTE_CARD
+            PhonePersistentTokenRelay.shared.resumeServing()
+          #endif
+        } else {
+          dropCardAndPairing()
+        }
         return
       }
-      didMeasure = true
       guard wasAbleToServe != canServe else { return }
       wasAbleToServe = canServe
       if canServe {
@@ -43,10 +50,16 @@
         #endif
         return
       }
+      dropCardAndPairing()
+    }
+
+    /// Clears identities and pairings that belonged to a reader card.
+    private static func dropCardAndPairing() {
       ReaderPin1Cache.shared.clear()
       wipeLocalTokens()
       #if REFINEID_REMOTE_CARD
-        PhonePersistentTokenRelay.shared.stopServing()
+        RappPairingModel.revokeEveryStoredPair()
+        PhonePersistentTokenRelay.shared.stopListening()
       #endif
     }
 

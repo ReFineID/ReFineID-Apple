@@ -48,6 +48,12 @@
           model.refresh()
           remoteModel.refresh()
         }
+        .onReceive(
+          NotificationCenter.default.publisher(
+            for: RappPairingModel.pairingsDidChangeNotification)
+        ) { _ in
+          remoteModel.refresh()
+        }
         .onValueChange(of: scenePhase) { _ in
           if scenePhase == .active {
             model.refresh()

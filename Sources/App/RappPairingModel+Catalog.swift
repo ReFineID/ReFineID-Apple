@@ -7,7 +7,32 @@
   import RappEngine
   import SwiftUI
 
+  /// Milliseconds in one second, for the stamp a revocation carries.
+  private let millisecondsPerSecond: TimeInterval = 1_000
+
   extension RappPairingModel {
+    /// Posted after every stored pairing on this device has been revoked.
+    internal static let pairingsDidChangeNotification = Notification.Name(
+      "fi.refineid.pairingsDidChange"
+    )
+
+    /// Revokes every stored pairing and forgets their display names.
+    ///
+    /// The pairing is gone here even if a peer never receives a close
+    /// frame: the vault is the record this device honours.
+    internal static func revokeEveryStoredPair() {
+      let vault = RappDeviceVault()
+      let pairIDs = (try? vault.activePairIDs()) ?? []
+      let now = UInt64(Date().timeIntervalSince1970 * millisecondsPerSecond)
+      for pairID in pairIDs {
+        guard (try? vault.revokePair(pairID: pairID, revokedAtMilliseconds: now)) != nil
+        else { continue }
+        RappPairNames.forget(pairID: pairID)
+      }
+      try? vault.clearSelectedPair()
+      NotificationCenter.default.post(name: pairingsDidChangeNotification, object: nil)
+    }
+
     internal func refresh() {
       Task {
         do {
@@ -24,24 +49,10 @@
       #if REFINEID_LOCAL_CARD && os(iOS)
         PhonePersistentTokenRelay.shared.stopListening()
       #endif
-      Task {
-        do {
-          let active = try await catalog.activePairs()
-          for pair in active {
-            try await catalog.revoke(pairID: pair.pairID)
-          }
-          try await catalog.clearSelection()
-          await MainActor.run {
-            self.pairs = []
-            self.selectedPairID = nil
-            self.phase = .idle
-          }
-        } catch {
-          await MainActor.run {
-            self.refresh()
-          }
-        }
-      }
+      Self.revokeEveryStoredPair()
+      pairs = []
+      selectedPairID = nil
+      phase = .idle
     }
   }
 

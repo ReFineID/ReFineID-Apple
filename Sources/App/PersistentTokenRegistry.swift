@@ -78,10 +78,10 @@
       withdrawPublishedIdentity()
     }
 
-    /// Removes the published identity without stopping the presence watch.
+    /// Removes the published identity.
     ///
-    /// A card that left is not a pairing that ended: the watch stays so
-    /// a later advertisement can publish again.
+    /// Pairing revocation is separate: a presence loss revokes the pair
+    /// after this returns, and a pairing the holder dropped does too.
     internal static func withdrawPublishedIdentity() {
       guard let driver = driverConfiguration else { return }
       for instanceID in driver.tokenConfigurations.keys {
