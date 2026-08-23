@@ -127,6 +127,7 @@
       #endif
       let code = customCode.map(RappPairingCode.normalize) ?? RappPairingCode.generate()
       pairingCode = code
+      phase = .offer(code)
       #if DEBUG
         print("[pairing] generated code: \(code)")
       #endif

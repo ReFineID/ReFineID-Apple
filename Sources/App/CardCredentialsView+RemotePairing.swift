@@ -10,8 +10,9 @@ import SwiftUI
 
     private enum RemotePairingLayout {
       static let inputSpacing: CGFloat = 8
+      static let inlineSpacing: CGFloat = 6
       static let promptSpacing: CGFloat = 4
-      static let verticalPadding: CGFloat = 4
+      static let inlineInputWidth: CGFloat = 90
     }
 
     // MARK: Computed Properties
@@ -33,7 +34,7 @@ import SwiftUI
     }
 
     @ViewBuilder internal var remoteRouteRow: some View {
-      HStack {
+      HStack(spacing: RemotePairingLayout.inputSpacing) {
         Label(
           String(localized: "Remote"),
           systemImage: remoteCardAvailable
@@ -47,47 +48,49 @@ import SwiftUI
         )
         Spacer()
         if remoteCardAvailable {
-          Button(
-            isPairingInputActive
-              ? String(localized: "Cancel")
-              : String(localized: "Connect")
-          ) {
-            togglePairingInput()
+          if isPairingInputActive {
+            inlinePairingControls
+          } else {
+            Button(String(localized: "Connect")) {
+              togglePairingInput()
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .accessibilityIdentifier("remoteConnectButton")
           }
-          .buttonStyle(.bordered)
-          .controlSize(.small)
-          .accessibilityIdentifier("remoteConnectButton")
         }
       }
       .accessibilityIdentifier("remoteCard")
     }
 
-    @ViewBuilder internal var remotePairingInputRow: some View {
-      VStack(alignment: .leading, spacing: RemotePairingLayout.inputSpacing) {
-        HStack {
-          TextField("123 456", text: pairingCodeBinding)
-            .font(.system(.body, design: .monospaced, weight: .semibold))
-            .keyboardType(.numberPad)
-            .focused($isPairingCodeFocused)
-            .accessibilityIdentifier("pairingCodeEntry")
+    @ViewBuilder private var inlinePairingControls: some View {
+      HStack(spacing: RemotePairingLayout.inlineSpacing) {
+        TextField("123 456", text: pairingCodeBinding)
+          .font(.system(.body, design: .monospaced, weight: .semibold))
+          .keyboardType(.numberPad)
+          .multilineTextAlignment(.trailing)
+          .focused($isPairingCodeFocused)
+          .frame(width: RemotePairingLayout.inlineInputWidth)
+          .accessibilityIdentifier("pairingCodeEntry")
 
-          if case .connecting = pairingModel.phase {
-            ProgressView()
-              .controlSize(.small)
+        if case .connecting = pairingModel.phase {
+          ProgressView()
+            .controlSize(.small)
+        } else {
+          Button {
+            withAnimation {
+              isPairingInputActive = false
+              pairingModel.cancel()
+              pairingCodeDigits = ""
+            }
+          } label: {
+            Image(systemName: "xmark.circle.fill")
+              .foregroundStyle(.secondary)
           }
-        }
-
-        if case .failed(let error) = pairingModel.phase {
-          Text(error)
-            .font(.caption)
-            .foregroundStyle(.red)
-        } else if case .connecting = pairingModel.phase {
-          Text(String(localized: "Connecting to remote reader..."))
-            .font(.caption)
-            .foregroundStyle(.secondary)
+          .buttonStyle(.borderless)
+          .accessibilityLabel(String(localized: "Cancel"))
         }
       }
-      .padding(.vertical, RemotePairingLayout.verticalPadding)
     }
 
     @ViewBuilder private var remoteActionContent: some View {
@@ -97,9 +100,7 @@ import SwiftUI
         remoteConnectingContent
       } else {
         Button(String(localized: "Connect Remote Reader")) {
-          if remoteModel.hasPair {
-            remoteModel.connect()
-          } else {
+          withAnimation {
             pairingModel.createOffer()
           }
         }

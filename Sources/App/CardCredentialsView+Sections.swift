@@ -87,9 +87,6 @@ extension CardCredentialsView {
         #if REFINEID_REMOTE_CARD
           if offersNearField {
             remoteRouteRow
-            if isPairingInputActive {
-              remotePairingInputRow
-            }
           }
         #endif
         if offersNearField || hasReaderIdentity {
