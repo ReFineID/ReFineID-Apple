@@ -126,7 +126,6 @@
       let issuer =
         BundledIssuerCertificate.der(matching: certificate)
         ?? (try? operations.readCertificate(.issuing))
-      let signatureCertificate = try? operations.readCertificate(.qualifiedSignature)
       return Payload(
         instance: instance,
         certificate: certificate,
@@ -134,7 +133,7 @@
         tokenSerial: serial.value,
         activationCheck: activationCheck,
         credentialReport: credentialReport,
-        signatureCertificate: signatureCertificate)
+        signatureCertificate: nil)
     }
 
     /// Accepts only a card with no known factory activation state.

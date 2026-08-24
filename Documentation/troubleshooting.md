@@ -157,8 +157,19 @@ no signature ever requested. Safari sent no certificate, and the server
 answered its no-certificate page (here HTTP 403). TLS 1.3 makes the
 state stickier than TLS 1.2: a resumed session ticket skips the
 certificate request entirely, so reloading the page cannot recover.
-Quitting Safari and retrying - a private window works too - recovered
-the site with no card, token, or ReFineID state changed.
+## Unsolicited "Ready to Scan" (`Valmis etsimään`) NFC prompts on iOS
+
+**Symptom.** On iOS, the system presents the "Ready to Scan / Present your identity card" NFC modal sheet unexpectedly—even when sitting on a blank Private Browsing tab, when opening Apple Mail, or with zero websites open.
+
+**Cause.** `TKSmartCardTokenRegistrationManager.registerSmartCard` registers the smartcard token globally with iOS `ctkd`. On iOS, `ctkd` treats *any* passive Keychain identity evaluation (`SecItemCopyMatching` for `kSecClassIdentity`) as an active request requiring a hardware smartcard scan:
+- **Safari / WebKit:** Opening a new tab or switching to Private Browsing initializes `WKWebsiteDataStore`, which queries the Keychain for available client identities.
+- **Apple Mail & S/MIME:** Apple Mail regularly scans for email signing identities (`emailProtection` EKU, which Finnish citizen certificates carry).
+- **System Services:** Background daemons (`securityd`, `trustd`, `authkitd`) query Keychain identities on network changes and device unlock.
+
+**What to do.**
+1. In Safari, close inactive mTLS tabs when finished and turn off **"Preload Top Hit"** in iOS Settings > Safari.
+2. In Mail, ensure S/MIME Signing is turned off unless actively needed.
+3. If you only use ReFineID for Mac pairing (RAPP) or in-app signing, tap **Reset / Unregister Safari Identities** in the app to remove the global `ctkd` hook without deleting your stored card data (`PrimeStore`).
 
 ## Uninstalling, and what a trashed app leaves behind
 

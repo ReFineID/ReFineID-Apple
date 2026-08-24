@@ -54,15 +54,19 @@ extension CardOperations {
     }
     switch response.statusWord {
     case .success:
+      referenceMemo.probedRetryCounters[.pin1] = .verified
       return
 
     case .pinIncorrect(let remaining):
+      referenceMemo.probedRetryCounters[.pin1] = .remaining(remaining)
       throw CardOperationError.pinRejected(remaining: remaining)
 
     case .authenticationBlocked:
+      referenceMemo.probedRetryCounters[.pin1] = .locked
       throw CardOperationError.pinBlocked
 
     default:
+      referenceMemo.probedRetryCounters[.pin1] = nil
       throw CardOperationError.pinVerifyFailed(response.statusWord)
     }
   }
@@ -88,18 +92,23 @@ extension CardOperations {
     }
     switch response.statusWord {
     case .success:
+      referenceMemo.probedRetryCounters[.pin2] = .verified
       return
 
     case .pinIncorrect(let remaining):
+      referenceMemo.probedRetryCounters[.pin2] = .remaining(remaining)
       throw CardOperationError.pinRejected(remaining: remaining)
 
     case .authenticationBlocked:
+      referenceMemo.probedRetryCounters[.pin2] = .locked
       throw CardOperationError.pinBlocked
 
     case .referenceDataInvalidated:
+      referenceMemo.probedRetryCounters[.pin2] = .invalidated
       throw CardOperationError.credentialInvalidated
 
     default:
+      referenceMemo.probedRetryCounters[.pin2] = nil
       throw CardOperationError.pinVerifyFailed(response.statusWord)
     }
   }
@@ -250,6 +259,7 @@ extension CardOperations {
   private func performCredentialUpdate(
     _ command: consuming CredentialBearingCommand
   ) throws {
+    referenceMemo.probedRetryCounters.removeAll()
     let raw = try channel.transmit(command.intoTransportPayload())
     guard let response = ResponseApdu(raw: raw) else {
       throw CardOperationError.malformedResponse

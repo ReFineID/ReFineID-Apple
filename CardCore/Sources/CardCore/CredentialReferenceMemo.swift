@@ -13,4 +13,7 @@
 internal final class CredentialReferenceMemo {
   /// The numbering the card confirmed, or nil before the first probe.
   internal var resolved: CredentialReferenceSet?
+
+  /// Probed retry counter outcomes per role, cached for the lifetime of this session.
+  internal var probedRetryCounters: [CredentialRole: RetryProbeOutcome] = [:]
 }

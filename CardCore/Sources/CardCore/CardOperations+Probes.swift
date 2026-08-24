@@ -64,13 +64,19 @@ extension CardOperations {
   /// resolution `resolveCredentialReferences()` performs, so the
   /// outcome is remembered for every later command.
   public func probeRetryCounter(role: CredentialRole) throws -> RetryProbeOutcome {
+    if let cached = referenceMemo.probedRetryCounters[role] {
+      return cached
+    }
+    let outcome: RetryProbeOutcome
     switch role {
     case .pin1, .pin2:
-      return try probePinRetryCounter(role: role)
+      outcome = try probePinRetryCounter(role: role)
 
     case .puk:
-      return try probePukRetryCounter()
+      outcome = try probePukRetryCounter()
     }
+    referenceMemo.probedRetryCounters[role] = outcome
+    return outcome
   }
 
   /// Probes all three credentials for the explicit status display.
@@ -149,12 +155,16 @@ extension CardOperations {
   private func probeReferenceNumbering() throws -> CredentialReferenceSet {
     let citizen = try transmit(.readRetryCounter(role: .pin1, references: .citizen))
     guard citizen.statusWord == .referenceDataNotFound else {
+      let outcome = Self.classify(citizen.statusWord)
+      referenceMemo.probedRetryCounters[.pin1] = outcome
       return .citizen
     }
     let organization = try transmit(
       .readRetryCounter(role: .pin1, references: .organization)
     )
-    switch Self.classify(organization.statusWord) {
+    let outcome = Self.classify(organization.statusWord)
+    referenceMemo.probedRetryCounters[.pin1] = outcome
+    switch outcome {
     case .invalidated, .locked, .noInformation, .remaining, .verified:
       return .organization
 

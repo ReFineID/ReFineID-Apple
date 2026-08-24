@@ -9,5 +9,9 @@
 	<true/>
 	<key>com.apple.security.smartcard</key>
 	<true/>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.fi.refineid.ReFineID</string>
+	</array>
 </dict>
 </plist>

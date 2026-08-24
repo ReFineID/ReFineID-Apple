@@ -980,3 +980,29 @@ upload.
 
 The reviewed-source point stands: the answer stays in the bundle, and
 the release manager's `inspect-archive` command still refuses `true` without a code.
+
+## 2026-08-25 Why registered contactless smartcards cause unsolicited NFC prompts on iOS
+
+`TKSmartCardTokenRegistrationManager.registerSmartCard` registers an NFC
+token into the global iOS Keychain. On iOS, `ctkd` assumes that any query
+for `SecIdentity` (`SecItemCopyMatching([kSecClass: kSecClassIdentity])`)
+is an active hardware operation requiring an NFC slot scan.
+
+Measurements and industry review (Yubico PIV, German AusweisApp2, and Estonian
+eID) prove that unsolicited "Ready to Scan" (`Valmis etsimään`) sheets occur
+without user navigation because:
+
+1. **WebKit session initialization:** Opening a new tab or switching to
+   Private Browsing creates a `WKWebsiteDataStore` instance, which scans
+   Keychain identities during startup.
+2. **Apple Mail S/MIME evaluation:** Mail scans for identities matching the
+   `emailProtection` EKU (which the Finnish authentication certificate carries).
+3. **Absence of domain-scoped registration:** On macOS, `SecIdentitySetPreferred`
+   scopes identities to specific URLs. Apple marked this API unavailable on iOS,
+   and `registerSmartCard` provides no `allowedDomains` or `bundleIDs` filter.
+
+The architectural solution across European eID ecosystems on iOS is
+**App-Initiated Authentication** (In-App Web View, Universal Links / custom
+schemes, and the Remote Authentication & Proxy Protocol / RAPP) so that NFC
+hardware sessions are opened solely during explicit user-initiated actions.
+
