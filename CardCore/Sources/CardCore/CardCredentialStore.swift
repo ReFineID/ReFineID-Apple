@@ -243,6 +243,11 @@ public enum CardCredentialStore {
     read(account: pin1Account).flatMap(Pin1.init(digits:))
   }
 
+  /// The stored PIN1 digits, or nil when the holder never entered one.
+  public static func pin1Digits() -> String? {
+    read(account: pin1Account)
+  }
+
   /// Removes the duplicate PIN item written by builds with a timed
   /// signing window.
   ///

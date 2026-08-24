@@ -80,14 +80,15 @@
     private static func sign(
       _ params: SignParameters
     ) async -> Outcome {
-      await withCard(cardAccessNumber: params.cardAccessNumber) { operations in
-        executeSign(params, with: operations)
+      await withCard(cardAccessNumber: params.cardAccessNumber) { operations, context in
+        executeSign(params, with: operations, context: context)
       }
     }
 
     private static func executeSign(
       _ params: SignParameters,
-      with operations: CardOperations
+      with operations: CardOperations,
+      context: RappNearFieldSessionHolder.Context?
     ) -> Outcome {
       guard
         let identity = identity(
@@ -101,15 +102,23 @@
         return .refusedBeforeCredentialTransmit(.keyOrAlgorithmMismatch)
       }
 
-      if let floorRefusal = evaluateRetryFloor(operations: operations, role: params.role) {
-        return .refusedBeforeCredentialTransmit(floorRefusal)
+      if let context, !context.isRoleProbed(params.role) {
+        if let floorRefusal = evaluateRetryFloor(operations: operations, role: params.role) {
+          return .refusedBeforeCredentialTransmit(floorRefusal)
+        }
+        context.markRoleProbed(params.role)
+      } else if context == nil {
+        if let floorRefusal = evaluateRetryFloor(operations: operations, role: params.role) {
+          return .refusedBeforeCredentialTransmit(floorRefusal)
+        }
       }
 
       if let verificationOutcome = verifyCredential(
         role: params.role,
         documentPin1: params.documentPin1,
         documentPin2: params.documentPin2,
-        operations: operations
+        operations: operations,
+        context: context
       ) {
         return verificationOutcome
       }
@@ -151,33 +160,72 @@
       role: CredentialRole,
       documentPin1: String?,
       documentPin2: String?,
-      operations: CardOperations
+      operations: CardOperations,
+      context: RappNearFieldSessionHolder.Context?
     ) -> Outcome? {
       switch role {
       case .pin1:
-        let pin: Pin1?
-        if let documentPin1 {
-          pin = Pin1(digits: documentPin1)
-        } else {
-          pin = CardCredentialStore.pin1()
-        }
-        guard let pin else {
-          return .refusedBeforeCredentialTransmit(.invalidCredential(role))
-        }
-        return verifyPin1(pin, with: operations)
+        verifyRolePin1(documentPin1: documentPin1, operations: operations, context: context)
 
       case .pin2:
-        guard
-          let documentPin2,
-          let pin = Pin2(digits: documentPin2)
-        else {
-          return .refusedBeforeCredentialTransmit(.invalidCredential(role))
-        }
-        return verifyPin2(pin, with: operations)
+        verifyRolePin2(documentPin2: documentPin2, operations: operations, context: context)
 
       case .puk:
-        return .refusedBeforeCredentialTransmit(.invalidCredential(role))
+        .refusedBeforeCredentialTransmit(.invalidCredential(role))
       }
+    }
+
+    private static func verifyRolePin1(
+      documentPin1: String?,
+      operations: CardOperations,
+      context: RappNearFieldSessionHolder.Context?
+    ) -> Outcome? {
+      if let context, context.isPin1Authenticated {
+        return nil
+      }
+      let pin: Pin1?
+      let rawDigits: String?
+      if let documentPin1 {
+        pin = Pin1(digits: documentPin1)
+        rawDigits = documentPin1
+      } else {
+        pin = CardCredentialStore.pin1()
+        rawDigits = CardCredentialStore.pin1Digits()
+      }
+      guard let pin, let rawDigits else {
+        return .refusedBeforeCredentialTransmit(.invalidCredential(.pin1))
+      }
+      if let context, context.isNegativePin(rawDigits) {
+        return .refusedBeforeCredentialTransmit(.invalidCredential(.pin1))
+      }
+      let outcome = verifyPin1(pin, with: operations)
+      if outcome == nil {
+        context?.markPin1Authenticated()
+      } else if case .rejected = outcome {
+        context?.recordNegativePin(rawDigits)
+      }
+      return outcome
+    }
+
+    private static func verifyRolePin2(
+      documentPin2: String?,
+      operations: CardOperations,
+      context: RappNearFieldSessionHolder.Context?
+    ) -> Outcome? {
+      guard
+        let documentPin2,
+        let pin = Pin2(digits: documentPin2)
+      else {
+        return .refusedBeforeCredentialTransmit(.invalidCredential(.pin2))
+      }
+      if let context, context.isNegativePin(documentPin2) {
+        return .refusedBeforeCredentialTransmit(.invalidCredential(.pin2))
+      }
+      let outcome = verifyPin2(pin, with: operations)
+      if case .rejected = outcome {
+        context?.recordNegativePin(documentPin2)
+      }
+      return outcome
     }
 
     private static func computeAndVerifySignature(
@@ -259,8 +307,19 @@
       algorithm: RappOperationDriver.SignatureAlgorithm,
       digest: Data
     ) -> Identity? {
+      let cachedCertData: Data? = {
+        let stored = PrimeStore.storedIdentities().first
+        switch slot {
+        case .authentication:
+          return stored?.certDER
+        case .qualifiedSignature:
+          return stored?.signatureCertDER
+        case .issuing:
+          return nil
+        }
+      }()
       guard
-        let certificateData = try? operations.readCertificate(slot),
+        let certificateData = cachedCertData ?? (try? operations.readCertificate(slot)),
         let certificate = SecCertificateCreateWithData(
           nil, certificateData as CFData
         ),

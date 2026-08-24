@@ -65,9 +65,22 @@
       cardAccessNumber: String?,
       _ operation: @escaping @Sendable (CardOperations) -> Outcome
     ) async -> Outcome {
+      await withCard(cardAccessNumber: cardAccessNumber) { operations, _ in
+        operation(operations)
+      }
+    }
+
+    internal static func withCard(
+      cardAccessNumber: String?,
+      _ operation:
+        @escaping @Sendable (
+          CardOperations,
+          RappNearFieldSessionHolder.Context?
+        ) -> Outcome
+    ) async -> Outcome {
       if let readerResult = await CardMaintenance.onReaderCard(
         cardAccessNumber: cardAccessNumber,
-        operation
+        { operations in operation(operations, nil) }
       ) {
         switch readerResult {
         case .connected(let outcome):
