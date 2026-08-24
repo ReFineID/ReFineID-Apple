@@ -314,7 +314,7 @@
           return stored?.certDER
         case .qualifiedSignature:
           return stored?.signatureCertDER
-        case .issuing:
+        default:
           return nil
         }
       }()
