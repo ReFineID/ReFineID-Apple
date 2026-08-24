@@ -1,5 +1,4 @@
-#!/usr/bin/env swift  // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.  //  // Drive the complete Apple release lifecycle in the language this project  // is written in and with no shell release entry points.  //
-// Local commands archive, inspect, export, and optionally upload a candidate.
+#!/usr/bin/env swift  // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.  //  // Drive the complete Apple release lifecycle in the language this project  // is written in and with no shell release entry points.  //  // Local commands archive, inspect, export, and optionally upload a candidate.
 // The remaining web-UI steps are JSON-over-HTTP calls, and doing them by hand
 // leaves no record of what was done. This composes all of them into named
 // commands. CryptoKit signs the ES256 token from the
@@ -1001,21 +1000,13 @@ private func releaseAPI(
 
 /// The app's and every embedded extension's bundle identifier.
 private func releaseBundleIdentifiers(inArchive archive: URL) -> [String] {
-  let applications = archive.appendingPathComponent("Products/Applications")
-  guard
-    let entries = try? releaseFileManager.contentsOfDirectory(
-      at: applications, includingPropertiesForKeys: nil),
-    let app = entries.first(where: { $0.pathExtension == "app" })
-  else {
-    releaseFail("no application inside \(applications.path)")
+  let layout = releaseArchiveLayout(at: archive)
+  var plists = [layout.appPlist, layout.tokenPlist]
+  if layout.hasRapp {
+    plists.append(layout.rappPlist)
   }
-  var plists = [app.appendingPathComponent("Info.plist")]
-  let plugins = app.appendingPathComponent("PlugIns")
-  let extensions =
-    (try? releaseFileManager.contentsOfDirectory(
-      at: plugins, includingPropertiesForKeys: nil)) ?? []
-  for appex in extensions where appex.pathExtension == "appex" {
-    plists.append(appex.appendingPathComponent("Info.plist"))
+  if layout.hasDiscovery {
+    plists.append(layout.discoveryPlist)
   }
   return plists.compactMap {
     NSDictionary(contentsOf: $0)?["CFBundleIdentifier"] as? String
@@ -1037,6 +1028,9 @@ private func releaseInstallProfile(content: String, uuid: String) {
       at: directory, withIntermediateDirectories: true)
     try? blob.write(
       to: directory.appendingPathComponent("\(uuid).mobileprovision"),
+      options: .atomic)
+    try? blob.write(
+      to: directory.appendingPathComponent("\(uuid).provisionprofile"),
       options: .atomic)
   }
 }
