@@ -106,7 +106,6 @@
       operations: CardOperations
     ) throws -> Payload {
       let certificate = try operations.readCertificate(.authentication)
-      let signatureCertificate = try? operations.readCertificate(.qualifiedSignature)
       let activationCheck = try Self.activationCheck(
         certificate: certificate,
         operations: operations
@@ -134,7 +133,7 @@
         tokenSerial: serial.value,
         activationCheck: activationCheck,
         credentialReport: credentialReport,
-        signatureCertificate: signatureCertificate)
+        signatureCertificate: nil)
     }
 
     /// Accepts only a card with no known factory activation state.

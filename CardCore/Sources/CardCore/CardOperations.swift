@@ -303,6 +303,7 @@ public struct CardOperations {
   /// The serial is what a cached PIN is bound to, so it is read fresh in
   /// the same session that will spend the PIN.
   public func readTokenSerial() throws -> TokenSerial {
+    try? selectFineidApplication()
     let selected = try transmit(.selectElementaryFile(.tokenInfo))
     guard selected.statusWord == .success else {
       throw CardOperationError.selectRejected(selected.statusWord)
