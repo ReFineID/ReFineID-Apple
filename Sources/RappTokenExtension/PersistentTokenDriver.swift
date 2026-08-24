@@ -175,6 +175,11 @@ internal final class PersistentTokenDriver: TKTokenDriver,
         return receivedSignature
       } catch {
         #if DEBUG
+          NSLog(
+            "[PersistentTokenDriver] rapp sign failed after %d ms: %@",
+            Self.millisecondsSince(started),
+            String(describing: error)
+          )
           ExtensionTrace.record(
             "rapp sign failed after \(Self.millisecondsSince(started)) ms: \(error)")
           ExtensionTrace.flush()

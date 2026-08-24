@@ -31,7 +31,10 @@
     }
 
     internal static var needsIdentity: Bool {
-      driverConfiguration?.tokenConfigurations.isEmpty ?? true
+      guard let driver = driverConfiguration, !driver.tokenConfigurations.isEmpty else {
+        return true
+      }
+      return driver.tokenConfigurations.values.contains { $0.configurationData == nil }
     }
 
     /// Safari's chooser title, matching the local reader token.
@@ -195,8 +198,9 @@
       }
       let configuration = driver.addTokenConfiguration(for: instanceID)
       let vault = RappDeviceVault()
-      if let activePairID = try? vault.activePairIDs().first,
-        let pair = try? RappPairRecord.loadFromVault(pairId: activePairID, vault: vault),
+      let pairID = (try? vault.selectedPairID()) ?? (try? vault.activePairIDs().first)
+      if let pairID,
+        let pair = try? RappPairRecord.loadFromVault(pairId: pairID, vault: vault),
         let pairBytes = try? pair.encodedBytes()
       {
         configuration.configurationData = pairBytes

@@ -20,7 +20,8 @@
     /// The published name both sides derive from the selected pairing.
     private static func holderServiceName() -> String? {
       let vault = RappDeviceVault()
-      guard let pairID = try? vault.selectedPairID(),
+      let pairID = (try? vault.selectedPairID()) ?? (try? vault.activePairIDs().first)
+      guard let pairID,
         let pair = try? RappPairRecord.loadFromVault(pairId: pairID, vault: vault)
       else { return nil }
       return StreamRendezvousName.name(sharing: pair.metadata().rendezvousToken)
