@@ -20,7 +20,7 @@ public enum PersistentTokenIdentity {
   public static let certificateObjectID = "authentication-certificate"
 
   /// Keychain object ID of the published authentication key.
-  public static let keyObjectID = "authentication-key"
+  public static let keyObjectID = "authentication-certificate"
 
   /// Whether a full token identifier belongs to the remote-card driver.
   public static func owns(tokenIdentifier: String) -> Bool {
