@@ -14,6 +14,7 @@ import SwiftUI
       static let identityDetailsSpacing: CGFloat = 4
       static let caretWidth: CGFloat = 2
       static let caretVerticalInset: CGFloat = 2
+      static let spinnerSlotSide: CGFloat = 20
     }
 
     // MARK: Computed Properties
@@ -124,10 +125,16 @@ import SwiftUI
               .tint(.clear)
               .accessibilityIdentifier("pairingCodeEntry")
           }
-        if case .connecting = pairingModel.phase {
-          ProgressView()
-            .controlSize(.small)
+        ZStack {
+          if case .connecting = pairingModel.phase {
+            ProgressView()
+              .controlSize(.small)
+          }
         }
+        .frame(
+          width: RemotePairingLayout.spinnerSlotSide,
+          height: RemotePairingLayout.spinnerSlotSide
+        )
       }
     }
 
