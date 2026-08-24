@@ -34,7 +34,9 @@ import SwiftUI
       HStack(spacing: RemotePairingLayout.inputSpacing) {
         Group {
           if remoteCardAvailable {
-            RemotePairingGlyph(isConnected: pairingModel.hasActivePairs)
+            RemotePairingGlyph(
+              isConnected: pairingModel.hasActivePairs && !isPairingInputActive
+            )
           } else {
             PersonRowLabel.cardIcon(
               systemName: "key.radiowaves.forward.slash",

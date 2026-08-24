@@ -93,12 +93,13 @@ public enum DistinguishedName {
     Self.attribute(SignOids.serialNumber, inName: name)
   }
 
-  /// The person line a window shows: given and family name, then the
-  /// identifier the certificate states.
+  /// The person line a window shows: the certificate's exact common name,
+  /// or when none is present, the stated personal names and identifier.
   public static func holderLine(inName name: Data) -> String? {
-    guard
-      let person = Self.personalName(inName: name) ?? Self.commonName(inName: name)
-    else { return nil }
+    if let common = Self.commonName(inName: name) {
+      return common
+    }
+    guard let person = Self.personalName(inName: name) else { return nil }
     if let identifier = Self.identifier(inName: name) {
       return person + " " + identifier
     }

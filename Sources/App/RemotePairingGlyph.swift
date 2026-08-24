@@ -19,7 +19,7 @@
           .font(.system(size: PersonRowLabel.iconPointSize))
           .symbolRenderingMode(.monochrome)
           .replacingSymbolPlainly()
-          .foregroundStyle(isConnected ? Color.green : Color.accentColor)
+          .foregroundStyle(isConnected ? Color.green : Color.secondary)
           .accessibilityHidden(true)
         if isConnected {
           Image(systemName: "checkmark.circle.fill")
