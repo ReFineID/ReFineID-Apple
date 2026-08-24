@@ -1,5 +1,4 @@
-#!/usr/bin/env swift  // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.  //  // Drive the complete Apple release lifecycle in the language this project
-// is written in and with no shell release entry points.
+#!/usr/bin/env swift  // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.  //  // Drive the complete Apple release lifecycle in the language this project  // is written in and with no shell release entry points.
 //
 // Local commands archive, inspect, export, and optionally upload a candidate.
 // The remaining web-UI steps are JSON-over-HTTP calls, and doing them by hand
@@ -529,6 +528,7 @@ private func inspectReleaseArchive(_ archive: URL) {
     // extension does.
     let appEntitlements: Set<String> = Set([
       "com.apple.security.app-sandbox",
+      "com.apple.security.application-groups",
       "com.apple.security.files.user-selected.read-write",
       "com.apple.security.network.client",
       "com.apple.security.smartcard",
@@ -543,10 +543,12 @@ private func inspectReleaseArchive(_ archive: URL) {
         layout.tokenBundle,
         signingEntitlements.union([
           "com.apple.security.app-sandbox",
+          "com.apple.security.application-groups",
           "com.apple.security.smartcard",
         ]),
         [
           "com.apple.security.app-sandbox",
+          "com.apple.security.application-groups",
           "com.apple.security.smartcard",
         ]
       ),
@@ -557,11 +559,13 @@ private func inspectReleaseArchive(_ archive: URL) {
           layout.rappBundle,
           signingEntitlements.union([
             "com.apple.security.app-sandbox",
+            "com.apple.security.application-groups",
             "com.apple.security.network.client",
             "com.apple.security.network.server",
           ]),
           [
             "com.apple.security.app-sandbox",
+            "com.apple.security.application-groups",
             "com.apple.security.network.client",
             "com.apple.security.network.server",
           ]
