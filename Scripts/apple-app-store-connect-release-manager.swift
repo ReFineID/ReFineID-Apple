@@ -1,5 +1,4 @@
-#!/usr/bin/env swift  // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.  //  // Drive the complete Apple release lifecycle in the language this project  // is written in and with no shell release entry points.
-//
+#!/usr/bin/env swift  // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.  //  // Drive the complete Apple release lifecycle in the language this project  // is written in and with no shell release entry points.  //
 // Local commands archive, inspect, export, and optionally upload a candidate.
 // The remaining web-UI steps are JSON-over-HTTP calls, and doing them by hand
 // leaves no record of what was done. This composes all of them into named
@@ -1042,20 +1041,22 @@ private func releaseInstallProfile(content: String, uuid: String) {
   }
 }
 
-/// Ensures every bundle in the iOS archive has an ACTIVE App Store
+/// Ensures every bundle in the archive has an ACTIVE App Store
 /// profile - registering App IDs and minting profiles for first-time
 /// targets - installs them, and returns the export signing map.
 ///
 /// This exists because cloud signing refuses to create a profile for
 /// this API key, while the very same key may create one by name.
-private func releaseEnsureIOSProfiles(
+private func releaseEnsureProfiles(
   archive: URL,
+  platform: ReleaseCandidatePlatform,
   credentials: ReleaseUploadCredentials
 ) -> [String: String] {
   let identifiers = releaseBundleIdentifiers(inArchive: archive)
+  let profileType = platform == .ios ? "IOS_APP_STORE" : "MAC_APP_STORE"
   let listing = releaseAPI(
     "GET",
-    "/v1/profiles?filter[profileType]=IOS_APP_STORE&include=bundleId"
+    "/v1/profiles?filter[profileType]=\(profileType)&include=bundleId"
       + "&fields[bundleIds]=identifier"
       // bundleId must be listed as a field: naming any fields
       // strips every relationship that is not named with them.
@@ -1150,14 +1151,15 @@ private func releaseEnsureIOSProfiles(
       continue
     }
     let record = ensureBundleRecord(identifier)
+    let profileName = "ReFineID \(platform == .ios ? "iOS" : "Mac") App Store \(identifier)"
     let created = releaseAPI(
       "POST", "/v1/profiles",
       body: [
         "data": [
           "type": "profiles",
           "attributes": [
-            "name": "ReFineID App Store \(identifier)",
-            "profileType": "IOS_APP_STORE",
+            "name": profileName,
+            "profileType": profileType,
           ],
           "relationships": [
             "bundleId": ["data": ["type": "bundleIds", "id": record]],
@@ -1339,9 +1341,9 @@ private func releaseCandidate(_ arguments: [String]) {
 
     inspectReleaseArchive(archive)
     var provisioningProfiles: [String: String]?
-    if platform == .ios, let credentials {
-      provisioningProfiles = releaseEnsureIOSProfiles(
-        archive: archive, credentials: credentials)
+    if let credentials {
+      provisioningProfiles = releaseEnsureProfiles(
+        archive: archive, platform: platform, credentials: credentials)
     }
     releaseWriteExportOptions(
       to: exportOptions,
