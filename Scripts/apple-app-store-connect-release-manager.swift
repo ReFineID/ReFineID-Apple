@@ -1,5 +1,4 @@
-#!/usr/bin/env swift  // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.  //  // Drive the complete Apple release lifecycle in the language this project  // is written in and with no shell release entry points.  //  // Local commands archive, inspect, export, and optionally upload a candidate.
-// The remaining web-UI steps are JSON-over-HTTP calls, and doing them by hand
+#!/usr/bin/env swift  // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.  //  // Drive the complete Apple release lifecycle in the language this project  // is written in and with no shell release entry points.  //  // Local commands archive, inspect, export, and optionally upload a candidate.  // The remaining web-UI steps are JSON-over-HTTP calls, and doing them by hand
 // leaves no record of what was done. This composes all of them into named
 // commands. CryptoKit signs the ES256 token from the
 // .p8 (which is a P-256 key), URLSession makes the calls, and
@@ -1184,6 +1183,7 @@ private func releaseEnsureProfiles(
 
 private func releaseWriteExportOptions(
   to destination: URL,
+  platform: ReleaseCandidatePlatform,
   upload: Bool,
   provisioningProfiles: [String: String]? = nil
 ) {
@@ -1199,6 +1199,9 @@ private func releaseWriteExportOptions(
   if let provisioningProfiles {
     options["signingStyle"] = "manual"
     options["signingCertificate"] = "Apple Distribution"
+    if platform == .macos {
+      options["installerSigningCertificate"] = "3rd Party Mac Developer Installer"
+    }
     options["provisioningProfiles"] = provisioningProfiles
   }
   do {
@@ -1341,6 +1344,7 @@ private func releaseCandidate(_ arguments: [String]) {
     }
     releaseWriteExportOptions(
       to: exportOptions,
+      platform: platform,
       upload: upload,
       provisioningProfiles: provisioningProfiles)
 
