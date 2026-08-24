@@ -1,5 +1,4 @@
-#!/usr/bin/env swift  // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
-//
+#!/usr/bin/env swift  // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.  //
 // Drive the complete Apple release lifecycle in the language this project
 // is written in and with no shell release entry points.
 //
@@ -749,22 +748,26 @@ private func inspectReleaseArchive(_ archive: URL) {
           + "configurations demand it (Version.xcconfig)"
       )
     }
-    guard appPlist["UIDeviceFamily"] as? [Int] == [1] else {
+    guard let deviceFamily = appPlist["UIDeviceFamily"] as? [Int],
+      deviceFamily == [1] || deviceFamily == [1, 2]
+    else {
       releaseFail(
-        "the iOS artifact is not iPhone-only; the first release "
-          + "ships no iPad (decisions.md, 2026-08-21)"
+        "the iOS artifact targeted device family is invalid (Version.xcconfig)"
       )
     }
     guard let capabilities = appPlist["UIRequiredDeviceCapabilities"] as? [String],
-      capabilities.contains("nfc")
+      capabilities.contains("arm64")
     else {
-      releaseFail(
-        "the iOS artifact does not require the nfc capability; "
-          + "without it the store installs the app on iPads in "
-          + "compatibility mode, where no feature can run"
-      )
+      releaseFail("the iOS artifact does not declare arm64 requirement")
     }
-    releaseNote("iPhone-only artifact requiring iOS 26.0 and an NFC antenna")
+    if deviceFamily == [1] {
+      guard capabilities.contains("nfc") else {
+        releaseFail("iPhone-only artifact must declare nfc capability")
+      }
+      releaseNote("iPhone-only artifact requiring iOS 26.0 and an NFC antenna")
+    } else {
+      releaseNote("Universal iPhone + iPad artifact requiring iOS 26.0 and arm64")
+    }
     guard
       let usesNonExemptEncryption =
         appPlist["ITSAppUsesNonExemptEncryption"] as? Bool
