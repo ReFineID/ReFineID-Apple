@@ -39,7 +39,7 @@ import SwiftUI
             )
           } else {
             PersonRowLabel.cardIcon(
-              systemName: "key.radiowaves.forward.slash",
+              systemName: "key.radiowaves.forward",
               lit: false
             )
           }
