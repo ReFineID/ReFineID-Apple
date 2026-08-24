@@ -355,6 +355,8 @@ xcodebuild \
   -destination 'platform=macOS,arch=arm64' \
   -derivedDataPath "$derived_data" \
   -allowProvisioningUpdates \
+  CLANG_COVERAGE_MAPPING=NO \
+  ENABLE_CODE_COVERAGE=NO \
   -quiet \
   build
 
@@ -388,10 +390,6 @@ rm -rf "$installed"
 cp -R "$built" "$installed"
 verify_signature "$installed"
 
-remove_stray_copies
-remove_stale_build_trees
-rm -rf "$derived_data"
-
 # The extensions are registered directly. Launching the app only to make
 # the system notice them, then quitting it again, put a window on screen
 # and took it away on every install.
@@ -403,7 +401,6 @@ if ! register_token_plugins "$installed"; then
   kill_macos_app
 fi
 
-report_registrations
 note "launching ${installed}"
 open "$installed"
 note "done. Insert the card; CryptoTokenKit will mint it with the new driver."

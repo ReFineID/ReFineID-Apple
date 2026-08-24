@@ -41,6 +41,14 @@ internal final class PersistentTokenDriver: TKTokenDriver,
       } else {
         self.pairRecord = nil
       }
+      #if DEBUG
+        NSLog(
+          "[PersistentToken] init instanceID=%{public}@ hasConfigData=%{public}s hasPairRecord=%{public}s",
+          configuration.instanceID,
+          configuration.configurationData != nil ? "true" : "false",
+          self.pairRecord != nil ? "true" : "false"
+        )
+      #endif
       super.init(tokenDriver: tokenDriver, instanceID: configuration.instanceID)
       delegate = self
     }

@@ -118,6 +118,9 @@
       _ event: RappConnectionCoordinator.Event,
       from coordinator: RappConnectionCoordinator
     ) async {
+      #if DEBUG
+        NSLog("[RappRequester] coordinator event: %{public}@", String(describing: event))
+      #endif
       switch event {
       case .established:
         await beginOperation(on: coordinator)
