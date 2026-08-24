@@ -67,6 +67,8 @@ internal final class PersistentTokenDriver: TKTokenDriver,
   private final class PersistentTokenSession: TKTokenSession,
     TKTokenSessionDelegate
   {
+    private static let logger = Logger(subsystem: "fi.refineid.ReFineID", category: "rapp-token")
+
     /// The requesting surface named on the authorizer's approval sheet.
     private static var displayContext: String {
       #if os(macOS)

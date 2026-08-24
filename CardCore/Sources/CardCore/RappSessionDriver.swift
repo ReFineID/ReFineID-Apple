@@ -2,6 +2,7 @@
 
 #if canImport(RappEngine)
   import Foundation
+  import OSLog
   import RappEngine
   /// Transport-independent coordinator for the authenticated RAPP session setup.
   ///
@@ -43,6 +44,8 @@
       case operationsTransferred
       case closed
     }
+
+    private static let logger = Logger(subsystem: "fi.refineid.ReFineID", category: "rapp-session")
 
     private let role: Role
     private let pairID: Data
@@ -97,6 +100,10 @@
           return []
         }
       } catch {
+        #if DEBUG
+          let errDesc = String(describing: error)
+          Self.logger.notice("[RappSessionDriver] start failed: \(errDesc, privacy: .public)")
+        #endif
         return failClosed()
       }
     }
@@ -139,9 +146,19 @@
           return [.established]
 
         case .idle, .established, .operationsTransferred, .closed:
+          #if DEBUG
+            let stateDesc = String(describing: self.state)
+            Self.logger.notice(
+              "[RappSessionDriver] receive in invalid state: \(stateDesc, privacy: .public)"
+            )
+          #endif
           return failClosed()
         }
       } catch {
+        #if DEBUG
+          let errDesc = String(describing: error)
+          Self.logger.notice("[RappSessionDriver] receive failed: \(errDesc, privacy: .public)")
+        #endif
         return failClosed()
       }
     }

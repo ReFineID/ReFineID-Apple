@@ -2,11 +2,13 @@
 
 #if canImport(MultipeerConnectivity) && canImport(RappEngine)
   import Foundation
+  import OSLog
   import RappEngine
 
   /// The authenticated exchange the requester runs once its transport has
   /// reached the holder.
   extension RappPersistentRequesterClient {
+    private static let logger = Logger(subsystem: "fi.refineid.ReFineID", category: "rapp-client")
     internal func establish() async {
       do {
         guard let pair = try await resolvedPair() else {
@@ -119,7 +121,10 @@
       from coordinator: RappConnectionCoordinator
     ) async {
       #if DEBUG
-        os_log(.default, "[RappRequester] coordinator event: %{public}@", String(describing: event))
+        let eventDesc = String(describing: event)
+        Self.logger.notice(
+          "[RappRequester] coordinator event: \(eventDesc, privacy: .public)"
+        )
       #endif
       switch event {
       case .established:
