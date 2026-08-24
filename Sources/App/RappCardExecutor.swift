@@ -83,21 +83,16 @@
       guard let cardAccessNumber else {
         return .refusedBeforeCredentialTransmit(.cardUnavailable)
       }
-      let result = await CardMaintenance.onSecureNearFieldCard(
-        cardAccessNumber: cardAccessNumber,
-        message: holdMessage,
-        operation
-      )
-      switch result {
-      case .connected(let outcome):
-        return outcome
-
-      case .wrongCardAccessNumber:
-        return .rejected(.cardAccessNumber)
-
-      case .failed:
+      guard
+        let result = await RappNearFieldSessionHolder.shared.execute(
+          cardAccessNumber: cardAccessNumber,
+          message: holdMessage,
+          operation
+        )
+      else {
         return .refusedBeforeCredentialTransmit(.cardUnavailable)
       }
+      return result
     }
   }
 #endif

@@ -190,7 +190,7 @@ internal enum CardMaintenance {
     }
   }
 
-  private static func selectedOperations(
+  internal static func selectedOperations(
     over channel: SmartCardChannel,
     cardAccessNumber: String?
   ) -> CardOperations? {
