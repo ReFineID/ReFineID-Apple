@@ -73,4 +73,31 @@ extension PrimeStore {
     }
     SecItemDelete(query(account: account) as CFDictionary)
   }
+
+  /// Updates the cached signature certificate for the stored primed identity.
+  @discardableResult
+  public static func updateSignatureCertificate(_ der: Data) -> Bool {
+    guard let item = storedItems().first else { return false }
+    guard
+      let updated = PrimedIdentity(
+        can: item.identity.can,
+        certificate: item.identity.certDER,
+        issuer: item.identity.issuerDER,
+        tokenSerial: item.identity.tokenSerial,
+        activationCheck: item.identity.activationCheck,
+        contactlessIdentification: item.identity.contactlessIdentification,
+        stagedAt: item.identity.stagedAt,
+        signatureCertificate: der
+      )
+    else { return false }
+    guard let payload = try? JSONEncoder().encode(updated) else { return false }
+    if TestCredentialEnvironment.isTestMode {
+      TestCredentialEnvironment.storePrime(payload, account: item.account)
+      return true
+    }
+    let coordinates = query(account: item.account)
+    let replacement = [kSecValueData as String: payload]
+    return SecItemUpdate(coordinates as CFDictionary, replacement as CFDictionary)
+      == errSecSuccess
+  }
 }

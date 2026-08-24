@@ -54,22 +54,8 @@
         cardAccessNumber: accessNumber,
         signatureCertificate: isSignature
       )
-      if case .result(let der) = outcome,
-        isSignature,
-        let primed = PrimeStore.storedIdentities().first,
-        let lookup = PrimeStore.lookupIdentifiers().first,
-        let updated = PrimedIdentity(
-          can: primed.can,
-          certificate: primed.certDER,
-          issuer: primed.issuerDER,
-          tokenSerial: primed.tokenSerial,
-          activationCheck: primed.activationCheck,
-          contactlessIdentification: primed.contactlessIdentification,
-          stagedAt: primed.stagedAt,
-          signatureCertificate: der
-        )
-      {
-        PrimeStore.store(updated, forLookup: lookup)
+      if case .result(let der) = outcome, isSignature {
+        PrimeStore.updateSignatureCertificate(der)
       }
       await finishRead(outcome, operationID: operationID, coordinator: coordinator)
     }

@@ -154,7 +154,7 @@
     ///
     /// `SmartCardChannel` drives each APDU with a semaphore, so the wait
     /// must never land on the cooperative pool or the main thread.
-    private static let cardQueue = DispatchQueue(label: "fi.refineid.priming.card")
+    internal static let cardQueue = DispatchQueue(label: "fi.refineid.priming.card")
 
     /// What the system sheet says while the holder is finding the spot.
     ///

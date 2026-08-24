@@ -106,7 +106,7 @@
       operations: CardOperations
     ) throws -> Payload {
       let certificate = try operations.readCertificate(.authentication)
-      let signatureCertificate = try? operations.readCertificate(.signature)
+      let signatureCertificate = try? operations.readCertificate(.qualifiedSignature)
       let activationCheck = try Self.activationCheck(
         certificate: certificate,
         operations: operations
