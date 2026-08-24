@@ -27,7 +27,7 @@ import SwiftUI
     }
 
     private var pairingGroupFont: Font {
-      .system(.body, design: .monospaced, weight: .bold)
+      .body.monospacedDigit().weight(.semibold)
     }
 
     @ViewBuilder internal var remoteRouteRow: some View {
@@ -170,7 +170,7 @@ import SwiftUI
     @ViewBuilder private var remoteActionContent: some View {
       if case .offer(let code) = pairingModel.phase {
         Text(RappPairingCode.formatted(code))
-          .font(.system(.body, design: .monospaced, weight: .bold))
+          .font(.body.monospacedDigit().weight(.semibold))
           .foregroundStyle(.primary)
           .multilineTextAlignment(.trailing)
           .accessibilityIdentifier("pairingCode")
