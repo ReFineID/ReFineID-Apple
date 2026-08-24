@@ -75,9 +75,20 @@ sequenceDiagram
 
 ---
 
-## 4. Architecture & Data Structures
+## 4. Architecture, Device Priority & Multi-Device Topology
 
-### 4.1 iCloud Device Record (`RappCloudDeviceRecord`)
+### 4.1 Card Reader Priority & Seamless Fallback
+When an application or Safari requests smartcard services on a Mac or iPad, ReFineID applies a strict hardware-first arbitration order:
+1. **Priority 1 (Direct Physical Reader)**:
+   - If a physical smart card reader (USB-C, CCID, or built-in reader) is connected and contains a card, CryptoTokenKit and the app communicate directly with the local card.
+2. **Priority 2 (Automatic Fallback to Paired iPhone)**:
+   - If no physical card is detected locally, ReFineID transparently routes the request to the auto-paired iPhone holding the identity over RAPP.
+
+### 4.2 Multi-Device Topology (1:N Simultaneous Pairing)
+- **Standing Multi-Device Trust**: One card-holding iPhone can be simultaneously paired with multiple requesting devices (e.g. both a MacBook Pro and an iPad Pro).
+- **Session Multiplexing**: The iPhone's local listener (`NWListener`) accepts incoming connections from both devices, serializing any physical NFC/card transactions so each device has instantaneous access.
+
+### 4.3 iCloud Device Record (`RappCloudDeviceRecord`)
 ```swift
 public struct RappCloudDeviceRecord: Codable, Sendable, Identifiable {
   public let id: UUID                      // Device unique identifier
@@ -91,42 +102,57 @@ public struct RappCloudDeviceRecord: Codable, Sendable, Identifiable {
 }
 ```
 
-### 4.2 Synchronization Engine (`RappCloudSyncCoordinator`)
+### 4.4 Synchronization Engine (`RappCloudSyncCoordinator`)
 - Implemented in `CardCore/Sources/CardCore/RappCloudSyncCoordinator.swift`.
 - Subscribes to `NSUbiquitousKeyValueStore.didChangeExternallyNotification`.
 - Reads and publishes device registration payload under key `fi.refineid.rapp.devices`.
 - Automatically populates and updates `RappDeviceVault` on local storage.
 - Automatically initiates connection when an active card holder is detected on the same local network / WiFi.
 
-### 4.3 UI & User Controls
-- **Settings Screen**:
-  - Toggle: `Automatic iCloud Pairing` (Enabled by default).
-  - Status indicator: `iCloud Sync: Connected (X devices paired)`.
-  - Device list with same-AppleID badge ("My Devices").
-- **Manual Override & Revocation**:
-  - User can remove a device or disable auto-pairing at any time.
-  - Removing a device immediately rotates the rendezvous token and deletes the peer from the iCloud container.
+---
+
+## 5. Unrelated & Cross-OS Device Pairing (Android, Windows, Linux, Cross-Account)
+
+For devices that **do not share an Apple ID** (e.g. pairing an Android phone with a Mac/iPad, or sharing across different user accounts), zero-step iCloud distribution is unavailable. ReFineID provides two secure pairing mechanisms:
+
+### 5.1 Dynamic Optical QR Code Pairing (Primary Cross-OS Flow)
+1. **Offer Generation**:
+   - The card holder displays a dynamic QR code containing:
+     - Local network endpoint / mDNS service name.
+     - Ephemeral public key $e_{\text{Holder}}$.
+     - 256-bit rendezvous token.
+     - Short Authentication String (SAS) checksum.
+2. **Scan & Zero-Typing Handshake (Noise XK / Noise XX)**:
+   - The requesting device (Android, Mac, iPad) opens the camera scanner in ReFineID.
+   - Scanning the QR code transfers the cryptographic parameters out-of-band with optical line-of-sight authentication (immune to remote man-in-the-middle).
+   - Devices execute the Noise handshake over the local network and permanently vault the static keys in `RappDeviceVault`.
+   - **All subsequent reconnections occur silently without ever scanning the QR code again.**
+
+### 5.2 6-Character Passkey Code (Camera-Free Fallback)
+- For headless devices or setups where camera scanning is inconvenient:
+- 6-character alphanumeric code (`[0-9, A-Z]`, ~31 bits of entropy) with 180s TTL.
+- Noise XXpsk3 key exchange with SHA-256 transcript mixing.
 
 ---
 
-## 5. Phased Implementation Plan
+## 6. Phased Implementation Plan
 
 ### Phase 1: Storage & Cloud Synchronization Layer
 - [ ] Define `RappCloudDeviceRecord` and `RappCloudSyncCoordinator` using `NSUbiquitousKeyValueStore`.
 - [ ] Add iCloud entitlement (`com.apple.developer.ubiquity-kvstore-identifier`) to iOS and macOS targets.
 - [ ] Integrate `RappCloudSyncCoordinator` with `RappDeviceVault` to auto-import trusted same-account peers.
 
-### Phase 2: Noise IK Handshake Implementation
+### Phase 2: Reader Priority Arbitration & Noise IK Handshake
+- [ ] Implement reader arbitration logic in `CardCore`: Prefer local physical smart card if present; fallback to auto-paired RAPP iPhone if absent.
 - [ ] Implement `Noise_IK_25519_ChaChaPoly_SHA256` pattern in `CardCore` alongside existing `Noise_XXpsk3`.
-- [ ] Add handshake negotiation: when connecting to a peer known in `RappDeviceVault` with trust `.sameAccount`, execute Noise IK directly.
-- [ ] Add fallback to manual pairing (Noise XXpsk3 with 6-character code) for cross-account or non-iCloud setups (e.g. Android $\leftrightarrow$ Apple).
+- [ ] Auto-negotiate Noise IK for same-account peers.
 
 ### Phase 3: Automatic Background Discovery & Connection
 - [ ] Monitor network reachability and mDNS advertisements for same-account `rendezvousToken` hashes.
 - [ ] Auto-dial the card-holding iPhone when Mac or iPad app opens and requests smart card operations.
 - [ ] Reconnection & self-healing management when roaming across networks.
 
-### Phase 4: Verification, Security Audit & UI Testing
-- [ ] Unit tests for `RappCloudDeviceRecord` serialization, conflict resolution, and key management.
-- [ ] Integration tests for Noise IK handshake state machine, replay protection, and error handling.
-- [ ] End-to-end two-device test matrix across macOS, iPadOS, and iOS.
+### Phase 4: Cross-OS Dynamic QR Code Pairing & Verification
+- [ ] Implement QR Code generator/scanner with Noise XK handshake for cross-OS / Android pairing.
+- [ ] Unit & integration tests for multi-device topology (Mac + iPad simultaneously connected to 1 iPhone).
+- [ ] End-to-end qualification matrix.
