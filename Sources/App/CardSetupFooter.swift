@@ -52,19 +52,21 @@ internal struct CardSetupFooter: View {
   /// appearance without relying on colour as its only signal.
   @ViewBuilder private var demonstration: some View {
     #if os(iOS)
-      Text("DEMO MODE")
-        .font(.headline)
-        .foregroundStyle(.white)
-        .accessibilityIdentifier("demoModeNotice")
-        .padding(.vertical, Self.verticalPadding)
-        .frame(maxWidth: .infinity)
-        .background(
-          Color(
-            red: Self.demoBackgroundRedComponent,
-            green: Self.demoBackgroundGreenComponent,
-            blue: Self.demoBackgroundBlueComponent
-          ),
-          ignoresSafeAreaEdges: .bottom)
+      if !ProcessInfo.processInfo.arguments.contains("--hide-diagnostics") {
+        Text("DEMO MODE")
+          .font(.headline)
+          .foregroundStyle(.white)
+          .accessibilityIdentifier("demoModeNotice")
+          .padding(.vertical, Self.verticalPadding)
+          .frame(maxWidth: .infinity)
+          .background(
+            Color(
+              red: Self.demoBackgroundRedComponent,
+              green: Self.demoBackgroundGreenComponent,
+              blue: Self.demoBackgroundBlueComponent
+            ),
+            ignoresSafeAreaEdges: .bottom)
+      }
     #endif
   }
 

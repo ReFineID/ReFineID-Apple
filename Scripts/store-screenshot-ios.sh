@@ -137,16 +137,16 @@ for LOCALE in "${TARGET_LOCALES[@]}"; do
     LANG_CODE="en"
   fi
   
-  LAUNCH_ARGS=("-AppleLanguages" "($LANG_CODE)" "--hide-diagnostics")
-  if [[ -n "$SCENARIO" ]]; then
-    LAUNCH_ARGS+=("--virtual-card" "$SCENARIO")
-  fi
-  
+  SCENARIO_NAME="${SCENARIO:-registered-nfc}"
+  LAUNCH_ARGS=("-AppleLanguages" "($LANG_CODE)" "-AppleLocale" "$LOCALE" "--hide-diagnostics" "--mock-remote-connected" "--virtual-card" "$SCENARIO_NAME")
+
+  xcrun simctl ui "$DEVICE_UDID" appearance light
+
   xcrun simctl terminate "$DEVICE_UDID" fi.refineid.ReFineID 2>/dev/null || true
   xcrun simctl launch "$DEVICE_UDID" fi.refineid.ReFineID "${LAUNCH_ARGS[@]}"
-  
-  # Wait for UI to settle
-  sleep 2
+
+  # Wait for UI to settle (virtual card state needs extra time)
+  sleep 5
   
   if [[ -n "$CUSTOM_OUTPUT_DIR" ]]; then
     OUT_DIR="$CUSTOM_OUTPUT_DIR/$LOCALE/APP_IPHONE_67"

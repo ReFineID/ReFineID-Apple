@@ -128,7 +128,9 @@ internal struct ReFineIDApp: App {
     #else
       ZStack(alignment: .bottomTrailing) {
         ReaderIdentityRootView()
-        if DemoMode.shared.isActive {
+        if DemoMode.shared.isActive,
+          !ProcessInfo.processInfo.arguments.contains("--hide-diagnostics")
+        {
           VirtualIDCardOverlay {
             DemoMode.shared.setEditorPresented(true)
             showsVirtualCardEditor = true

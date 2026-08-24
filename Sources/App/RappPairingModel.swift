@@ -101,7 +101,12 @@
     }
 
     internal var hasActivePairs: Bool {
-      !pairs.isEmpty
+      #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--mock-remote-connected") {
+          return true
+        }
+      #endif
+      return !pairs.isEmpty
     }
 
     internal init(vault: RappDeviceVault = RappDeviceVault()) {
