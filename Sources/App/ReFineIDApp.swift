@@ -21,6 +21,18 @@ internal struct ReFineIDApp: App {
     }
   #endif
 
+  #if os(macOS)
+    /// Title drawn in the macOS main window title bar.
+    internal static var statusWindowTitle: String {
+      #if DEBUG
+        if let version = BundledVersions.read(from: .main).application {
+          return "ReFineID - \(version)"
+        }
+      #endif
+      return "ReFineID"
+    }
+  #endif
+
   #if os(iOS)
     /// Catches the Home Screen action that starts a demonstration.
     ///
@@ -34,7 +46,7 @@ internal struct ReFineIDApp: App {
 
   internal var body: some Scene {
     #if os(macOS)
-      Window("ReFineID", id: "status") {
+      Window(Self.statusWindowTitle, id: "status") {
         rootContent
           .windowFullScreenBehavior(.disabled)
       }
