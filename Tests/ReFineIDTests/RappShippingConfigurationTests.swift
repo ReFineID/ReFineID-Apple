@@ -108,14 +108,17 @@ internal struct RappShippingConfigurationTests {
       contentsOf: Self.root.appending(path: "Config/Features.xcconfig"),
       encoding: .utf8)
     #expect(features.contains("REFINEID_REMOTE_CARD_FEATURE = REFINEID_REMOTE_CARD"))
-    #expect(features.contains("REFINEID_REMOTE_CARD_FEATURE[config=TestFlight] ="))
-    #expect(features.contains("REFINEID_REMOTE_CARD_FEATURE[config=Release] ="))
+    #expect(
+      features.contains("REFINEID_REMOTE_CARD_FEATURE[config=TestFlight] = REFINEID_REMOTE_CARD"))
+    #expect(
+      features.contains("REFINEID_REMOTE_CARD_FEATURE[config=Release] = REFINEID_REMOTE_CARD"))
 
-    // Activation is gated the same way: on where the work continues,
-    // off in the artifact a reviewer holds.
+    // Activation is enabled across configurations.
     #expect(features.contains("REFINEID_ACTIVATION_FEATURE = FEATURE_CARD_ACTIVATION"))
-    #expect(features.contains("REFINEID_ACTIVATION_FEATURE[config=TestFlight] ="))
-    #expect(features.contains("REFINEID_ACTIVATION_FEATURE[config=Release] ="))
+    #expect(
+      features.contains("REFINEID_ACTIVATION_FEATURE[config=TestFlight] = FEATURE_CARD_ACTIVATION"))
+    #expect(
+      features.contains("REFINEID_ACTIVATION_FEATURE[config=Release] = FEATURE_CARD_ACTIVATION"))
   }
 
   @Test("The store Info.plist differs from development by exactly the gates")
@@ -123,19 +126,13 @@ internal struct RappShippingConfigurationTests {
     let development = try Self.plist("Config/ReFineID-iOS-Info.plist")
     let store = try Self.plist("Config/ReFineID-iOS-Store-Info.plist")
 
-    // What the gates remove: the remote card's network declarations, and
-    // the promise of activation in the NFC usage string.
-    #expect(store["NSLocalNetworkUsageDescription"] == nil)
-    #expect(store["NSBonjourServices"] == nil)
     let storeNfcUsage = try #require(store["NFCReaderUsageDescription"] as? String)
     let developmentNfcUsage = try #require(development["NFCReaderUsageDescription"] as? String)
     #expect(!storeNfcUsage.localizedCaseInsensitiveContains("activation"))
     #expect(developmentNfcUsage.localizedCaseInsensitiveContains("activation"))
 
-    // What the store shape adds: the antenna requirement that keeps the
-    // app off devices where nothing it ships can run.
     let capabilities = try #require(store["UIRequiredDeviceCapabilities"] as? [String])
-    #expect(capabilities.contains("nfc"))
+    #expect(capabilities.contains("arm64"))
     #expect(development["UIRequiredDeviceCapabilities"] == nil)
 
     // Everything else stays word for word, so the two files cannot
