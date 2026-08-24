@@ -2,6 +2,7 @@
 
 #if canImport(RappEngine)
   import Foundation
+  import OSLog
   import RappEngine
 
   /// Runs one authenticated connection from Noise setup through durable card
@@ -12,6 +13,10 @@
       case operating
       case closed
     }
+
+    private static let logger = Logger(
+      subsystem: "fi.refineid.ReFineID", category: "rapp-coordinator"
+    )
 
     // MARK: Properties
 
@@ -160,10 +165,22 @@
             )
             scheduleLiveness(at: overflow ? UInt64.max : deadline)
           } catch {
+            #if DEBUG
+              let errDesc = String(describing: error)
+              Self.logger.notice(
+                "[RappCoordinator] beginOperationDriver failed: \(errDesc, privacy: .public)"
+              )
+            #endif
             await finish(.handshake(.protocolFailure))
           }
 
         case .closed(let reason):
+          #if DEBUG
+            let reasonDesc = String(describing: reason)
+            Self.logger.notice(
+              "[RappCoordinator] handshake closed with reason: \(reasonDesc, privacy: .public)"
+            )
+          #endif
           await finish(.handshake(reason))
         }
       }
