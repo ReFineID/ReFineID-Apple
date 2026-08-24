@@ -3,6 +3,7 @@
 @_spi(TokenExtension) import CardCore
 import CryptoTokenKit
 import Foundation
+import OSLog
 import RappEngine
 import Security
 
@@ -14,6 +15,7 @@ internal final class PersistentTokenDriver: TKTokenDriver,
   TKTokenDriverDelegate
 {
   private final class PersistentToken: TKToken, TKTokenDelegate {
+    private static let logger = Logger(subsystem: "fi.refineid.ReFineID", category: "rapp-token")
     fileprivate let certificate: SecCertificate
     fileprivate let publicKey: SecKey
     fileprivate let profile: CardKeyProfile
@@ -183,10 +185,10 @@ internal final class PersistentTokenDriver: TKTokenDriver,
         return receivedSignature
       } catch {
         #if DEBUG
-          NSLog(
-            "[PersistentTokenDriver] rapp sign failed after %d ms: %{public}@",
-            Self.millisecondsSince(started),
-            String(describing: error)
+          let errDesc = String(describing: error)
+          let elapsed = Self.millisecondsSince(started)
+          Self.logger.notice(
+            "[PersistentTokenDriver] rapp sign failed after \(elapsed) ms: \(errDesc, privacy: .public)"
           )
           ExtensionTrace.record(
             "rapp sign failed after \(Self.millisecondsSince(started)) ms: \(error)")

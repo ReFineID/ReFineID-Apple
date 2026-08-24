@@ -119,7 +119,7 @@
       from coordinator: RappConnectionCoordinator
     ) async {
       #if DEBUG
-        NSLog("[RappRequester] coordinator event: %{public}@", String(describing: event))
+        os_log(.default, "[RappRequester] coordinator event: %{public}@", String(describing: event))
       #endif
       switch event {
       case .established:
