@@ -1,5 +1,4 @@
-#!/usr/bin/env swift  // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.  //
-// Drive the complete Apple release lifecycle in the language this project
+#!/usr/bin/env swift  // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.  //  // Drive the complete Apple release lifecycle in the language this project
 // is written in and with no shell release entry points.
 //
 // Local commands archive, inspect, export, and optionally upload a candidate.
@@ -1076,17 +1075,22 @@ private func releaseEnsureIOSProfiles(
   var existing: [String: StoredProfile] = [:]
   for entry in listing["data"] as? [[String: Any]] ?? [] {
     let attributes = entry["attributes"] as? [String: Any] ?? [:]
-    guard attributes["profileState"] as? String == "ACTIVE",
-      let name = attributes["name"] as? String,
-      let uuid = attributes["uuid"] as? String,
-      let content = attributes["profileContent"] as? String,
-      let relationship =
-        ((entry["relationships"] as? [String: Any])?["bundleId"]
-        as? [String: Any])?["data"] as? [String: Any],
-      let record = relationship["id"] as? String,
-      let identifier = identifierByRecord[record]
-    else { continue }
-    existing[identifier] = StoredProfile(name: name, uuid: uuid, content: content)
+    let profileID = entry["id"] as? String ?? ""
+    let state = attributes["profileState"] as? String ?? ""
+    let name = attributes["name"] as? String ?? ""
+    let uuid = attributes["uuid"] as? String ?? ""
+    let content = attributes["profileContent"] as? String ?? ""
+    let relationship =
+      ((entry["relationships"] as? [String: Any])?["bundleId"]
+      as? [String: Any])?["data"] as? [String: Any]
+    let record = relationship?["id"] as? String ?? ""
+    let identifier = identifierByRecord[record]
+    if state == "ACTIVE", let identifier, !uuid.isEmpty, !content.isEmpty {
+      existing[identifier] = StoredProfile(name: name, uuid: uuid, content: content)
+    } else if !profileID.isEmpty {
+      _ = releaseAPI("DELETE", "/v1/profiles/\(profileID)", credentials: credentials)
+      releaseNote("deleted stale/invalid profile \(name) (\(profileID))")
+    }
   }
 
   var certificateID: String?
