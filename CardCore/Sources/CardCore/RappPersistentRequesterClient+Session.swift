@@ -9,11 +9,10 @@
   extension RappPersistentRequesterClient {
     internal func establish() async {
       do {
-        guard let pairID = try await resolvedPairID() else {
+        guard let pair = try await resolvedPair() else {
           finish(error: .noSelectedPair)
           return
         }
-        let pair = try RappPairRecord.loadFromVault(pairId: pairID, vault: vault)
         #if REFINEID_SLIM_RELAY
           try await establishSlim(pair: pair)
           return

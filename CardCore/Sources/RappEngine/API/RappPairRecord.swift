@@ -35,6 +35,24 @@ public final class RappPairRecord: @unchecked Sendable {
     }
   }
 
+  /// Decodes a pair record from its raw serialized bytes.
+  public static func decode(from data: Data) throws -> RappPairRecord {
+    do {
+      return RappPairRecord(record: try PairRecord.decode(data))
+    } catch {
+      throw RappBindingError.InvalidInput
+    }
+  }
+
+  /// Returns the raw serialized bytes of this pair record.
+  public func encodedBytes() throws -> Data {
+    do {
+      return try record.encoded()
+    } catch {
+      throw RappBindingError.InvalidInput
+    }
+  }
+
   /// What the pairing says about itself, without its keys.
   public func metadata() -> RappPairMetadata {
     RappPairMetadata(

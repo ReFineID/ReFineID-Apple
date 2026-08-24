@@ -60,9 +60,7 @@
       /// The published name to browse for and the frame to open with,
       /// both derived from the pairing this request will run over.
       private func rendezvousFacts() async -> (name: String, preamble: Data)? {
-        guard let pairID = try? await resolvedPairID(),
-          let pair = try? RappPairRecord.loadFromVault(pairId: pairID, vault: vault)
-        else { return nil }
+        guard let pair = try? await resolvedPair() else { return nil }
         let metadata = pair.metadata()
         guard
           let preamble = try? rappStreamSessionPreamble(

@@ -6,6 +6,7 @@
   import CryptoTokenKit
   import Foundation
   import Observation
+  import RappEngine
   import Security
 
   /// Fetches the public authentication certificate once and publishes it as a
@@ -193,6 +194,13 @@
         driver.removeTokenConfiguration(for: existingID)
       }
       let configuration = driver.addTokenConfiguration(for: instanceID)
+      let vault = RappDeviceVault()
+      if let activePairID = try? vault.activePairIDs().first,
+        let pair = try? RappPairRecord.loadFromVault(pairId: activePairID, vault: vault),
+        let pairBytes = try? pair.encodedBytes()
+      {
+        configuration.configurationData = pairBytes
+      }
       // The leaf and its key, and nothing else. Publishing the issuer
       // beside them stopped the browser forming an identity at all:
       // measured on the requester, a configuration of three items was

@@ -3,6 +3,7 @@
 @_spi(TokenExtension) import CardCore
 import CryptoTokenKit
 import Foundation
+import RappEngine
 import Security
 
 /// Generic persistent-token principal selected by the extension plist.
@@ -16,6 +17,7 @@ internal final class PersistentTokenDriver: TKTokenDriver,
     fileprivate let certificate: SecCertificate
     fileprivate let publicKey: SecKey
     fileprivate let profile: CardKeyProfile
+    fileprivate let pairRecord: RappPairRecord?
 
     fileprivate init(
       tokenDriver: TKTokenDriver,
@@ -34,6 +36,11 @@ internal final class PersistentTokenDriver: TKTokenDriver,
       self.certificate = parsedCertificate
       self.publicKey = parsedPublicKey
       self.profile = resolvedProfile
+      if let configData = configuration.configurationData {
+        self.pairRecord = try? RappPairRecord.decode(from: configData)
+      } else {
+        self.pairRecord = nil
+      }
       super.init(tokenDriver: tokenDriver, instanceID: configuration.instanceID)
       delegate = self
     }
@@ -125,55 +132,55 @@ internal final class PersistentTokenDriver: TKTokenDriver,
           algorithm,
           input: dataToSign,
           profile: persistentToken.profile
-        )
-      else {
-        throw TKError(.notImplemented)
-      }
-
-      guard
-        let relayAlgorithm = RappOperationDriver.SignatureAlgorithm(
-          request.algorithm
-        )
+        ),
+        let relayAlgorithm = RappOperationDriver.SignatureAlgorithm(request.algorithm)
       else {
         throw TKError(.notImplemented)
       }
       let started = Date()
       Self.say("rapp sign asked")
-      let signature: Data
-      do {
-        let response = try RappPersistentRequesterClient(
-          displayName: "ReFineID Token"
-        ).perform(
-          .browserAuthentication(
-            displayContext: Self.displayContext,
-            keyProfile: RappOperationDriver.KeyProfile(persistentToken.profile),
-            algorithm: relayAlgorithm,
-            digest: request.digest
-          )
-        )
-        guard case .signature(let receivedSignature) = response else {
-          throw RappRequesterClientError.unexpectedResult
-        }
-        signature = receivedSignature
-      } catch {
-        // CryptoTokenKit carries one code back to the caller, so the reason
-        // the relay gave is lost at this boundary. It is the only account
-        // of why a browser was refused an identity, so it is recorded
-        // before the throw narrows it to a communication failure.
-        #if DEBUG
-          ExtensionTrace.record(
-            "rapp sign failed after \(Self.millisecondsSince(started)) ms:"
-              + " \(String(describing: error))")
-          ExtensionTrace.flush()
-        #endif
-        throw TKError(.communicationError)
-      }
+      let signature = try performRelaySign(
+        request: request,
+        algorithm: relayAlgorithm,
+        started: started
+      )
       guard request.isSatisfied(by: signature, from: persistentToken.publicKey) else {
         Self.say("rapp sign rejected after \(Self.millisecondsSince(started)) ms")
         throw TKError(.corruptedData)
       }
       Self.say("rapp sign served after \(Self.millisecondsSince(started)) ms")
       return signature
+    }
+
+    private func performRelaySign(
+      request: SignRequest,
+      algorithm: RappOperationDriver.SignatureAlgorithm,
+      started: Date
+    ) throws -> Data {
+      do {
+        let response = try RappPersistentRequesterClient(
+          displayName: "ReFineID Token",
+          pair: persistentToken.pairRecord
+        ).perform(
+          .browserAuthentication(
+            displayContext: Self.displayContext,
+            keyProfile: RappOperationDriver.KeyProfile(persistentToken.profile),
+            algorithm: algorithm,
+            digest: request.digest
+          )
+        )
+        guard case .signature(let receivedSignature) = response else {
+          throw RappRequesterClientError.unexpectedResult
+        }
+        return receivedSignature
+      } catch {
+        #if DEBUG
+          ExtensionTrace.record(
+            "rapp sign failed after \(Self.millisecondsSince(started)) ms: \(error)")
+          ExtensionTrace.flush()
+        #endif
+        throw TKError(.communicationError)
+      }
     }
   }
 
