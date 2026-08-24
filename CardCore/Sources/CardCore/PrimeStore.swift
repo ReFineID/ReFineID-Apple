@@ -182,7 +182,8 @@ public enum PrimeStore {
         tokenSerial: stored.tokenSerial,
         activationCheck: stored.activationCheck,
         contactlessIdentification: stored.contactlessIdentification,
-        stagedAt: stored.stagedAt)
+        stagedAt: stored.stagedAt,
+        signatureCertificate: stored.signatureCertDER)
     }
     var query = self.query(account: account)
     query[kSecReturnData as String] = true
@@ -201,7 +202,8 @@ public enum PrimeStore {
       tokenSerial: stored.tokenSerial,
       activationCheck: stored.activationCheck,
       contactlessIdentification: stored.contactlessIdentification,
-      stagedAt: stored.stagedAt)
+      stagedAt: stored.stagedAt,
+      signatureCertificate: stored.signatureCertDER)
   }
 
   /// Removes the primed identity for one card.

@@ -275,7 +275,8 @@ public enum CardCredentialStore {
     certificate: Data,
     issuer: Data?,
     tokenSerial: String?,
-    activationCheck: PrimedIdentity.ActivationCheck
+    activationCheck: PrimedIdentity.ActivationCheck,
+    signatureCertificate: Data? = nil
   ) -> PrimedIdentity? {
     guard let digits = read(account: cardAccessNumberAccount) else {
       return nil
@@ -285,7 +286,8 @@ public enum CardCredentialStore {
       certificate: certificate,
       issuer: issuer,
       tokenSerial: tokenSerial,
-      activationCheck: activationCheck)
+      activationCheck: activationCheck,
+      signatureCertificate: signatureCertificate)
   }
 
   /// Removes the card access number, from the driver's copy as well.

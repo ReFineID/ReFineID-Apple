@@ -46,134 +46,24 @@ internal enum DocumentSigner {
   }
 
   /// What one card session produced.
-  private struct CardMaterial {
+  internal struct CardMaterial {
     /// The prepared document and its reserved hole.
-    let placeholder: PdfSignaturePlaceholder
+    internal let placeholder: PdfSignaturePlaceholder
 
     /// The exact attribute bytes the card signed.
-    let signedAttributes: Data
+    internal let signedAttributes: Data
 
     /// The locally verified signature value over them.
-    let signature: Data
+    internal let signature: Data
 
     /// The qualified certificate, for the CMS and the chain walk.
-    let certificate: Data
+    internal let certificate: Data
 
     /// The certificate-bound card profile written to CMS.
-    let profile: CardKeyProfile
+    internal let profile: CardKeyProfile
   }
 
   // MARK: Static Computed Properties
-
-  #if REFINEID_REMOTE_CARD
-    /// A selected RAPP phone is the signing device only when no local reader
-    /// card is ready.
-    ///
-    /// The two paths never silently retry one another after an
-    /// authenticated or credential-bearing operation has begun.
-    @MainActor internal static var usesRappSigning: Bool {
-      !SupportedCardTransports.offersNearField
-        && !CardPresence.shared.isReaderCardReady
-        && (try? RappDeviceVault().selectedPairID()) != nil
-    }
-
-    /// Builds the same locally verified card material as the reader path while
-    /// delegating only the certificate read and PIN 2 card signature to the
-    /// explicitly paired phone.
-    private static func remoteCardMaterial(
-      prepared: PdfSignaturePlaceholder,
-      byteRangeDigest: Data,
-      expectedCertificate: Data?
-    ) async throws -> CardMaterial {
-      let product = try await Self.remoteQualifiedSignature(
-        documentName: String(
-          localized: "Document",
-          defaultValue: "Document",
-          table: "DocumentSigning"
-        ),
-        expectedCertificate: expectedCertificate
-      ) { certificate in
-        QualifiedDocumentCms.signedAttributes(
-          byteRangeDigest: byteRangeDigest,
-          signerCertificate: certificate
-        )
-      }
-      return CardMaterial(
-        placeholder: prepared,
-        signedAttributes: product.content,
-        signature: product.signature,
-        certificate: product.certificate,
-        profile: product.profile
-      )
-    }
-
-    /// Performs one remote qualified-signature operation.
-    ///
-    /// The requester sends only the digest and public algorithm metadata;
-    /// PIN 2 exists solely in the phone authorization UI and its NFC card
-    /// session.
-    internal static func remoteQualifiedSignature(
-      documentName: String,
-      expectedCertificate: Data?,
-      content: @escaping @Sendable (Data) -> Data
-    ) async throws -> CardMaintenance.QualifiedProduct {
-      try await Task.detached(priority: .userInitiated) {
-        let displayName = ProcessInfo.processInfo.hostName
-        let certificateClient = RappPersistentRequesterClient(displayName: displayName)
-        let certificateResponse = try certificateClient.perform(.readSignatureCertificate)
-        guard case .signatureCertificate(let certificate) = certificateResponse else {
-          throw Failure.card(.failed)
-        }
-        guard
-          CardMaintenance.qualifiedCertificate(
-            certificate, matches: expectedCertificate
-          )
-        else {
-          throw Failure.stampSignerChanged
-        }
-        guard
-          let securityCertificate = SecCertificateCreateWithData(
-            nil, certificate as CFData
-          ),
-          let publicKey = SecCertificateCopyKey(securityCertificate),
-          let profile = CardKeyProfile.resolve(fromPublicKey: publicKey)
-        else {
-          throw Failure.card(.failed)
-        }
-
-        let signedContent = content(certificate)
-        let digest = Data(SHA384.hash(data: signedContent))
-        guard
-          let request = profile.qualifiedDocumentRequest(digest: digest),
-          let remoteAlgorithm = RappOperationDriver.SignatureAlgorithm(request.algorithm)
-        else {
-          throw Failure.card(.failed)
-        }
-
-        let signingClient = RappPersistentRequesterClient(displayName: displayName)
-        let signatureResponse = try signingClient.perform(
-          .documentSigning(
-            documentName: documentName,
-            keyProfile: RappOperationDriver.KeyProfile(profile),
-            algorithm: remoteAlgorithm,
-            digest: digest
-          )
-        )
-        guard
-          case .signature(let signature) = signatureResponse,
-          request.isSatisfied(by: signature, from: publicKey)
-        else {
-          throw Failure.card(.failed)
-        }
-        return CardMaintenance.QualifiedProduct(
-          signature: signature,
-          content: signedContent,
-          certificate: certificate,
-          profile: profile
-        )
-      }.value
-    }
-  #endif
 
   // MARK: Static Functions
 

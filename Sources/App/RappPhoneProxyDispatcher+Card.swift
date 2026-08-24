@@ -19,17 +19,28 @@
         await readIdentity(operationID: operationID, coordinator: coordinator)
 
       case .readAuthenticationCertificate, .readSignatureCertificate:
-        // The authentication certificate is public and this device read it
-        // once already, while setting its own identity up. A peer asking
-        // for it is asking for something held here, so the card stays in
-        // the holder's pocket.
-        if operation.kind == .readAuthenticationCertificate,
-          let primed = PrimeStore.storedIdentities().first
-        {
+        await fulfillCertificateRead(
+          operationID: operationID,
+          isSignature: operation.kind == .readSignatureCertificate,
+          coordinator: coordinator)
+
+      case .browserAuthenticate, .signDocument:
+        await invalid(operationID, coordinator: coordinator)
+      }
+    }
+
+    private func fulfillCertificateRead(
+      operationID: Data,
+      isSignature: Bool,
+      coordinator: RappConnectionCoordinator
+    ) async {
+      if let primed = PrimeStore.storedIdentities().first {
+        let cachedDER = isSignature ? primed.signatureCertDER : primed.certDER
+        if let cachedDER {
           do {
             try await coordinator.completeCertificate(
               operationID: operationID,
-              der: primed.certDER,
+              der: cachedDER,
               cardSerial: Self.storedTokenSerial()
             )
           } catch {
@@ -37,16 +48,30 @@
           }
           return
         }
-        let accessNumber = CardCredentialStore.displayedCardAccessNumber()
-        let outcome = await RappCardExecutor.readCertificate(
-          cardAccessNumber: accessNumber,
-          signatureCertificate: operation.kind == .readSignatureCertificate
-        )
-        await finishRead(outcome, operationID: operationID, coordinator: coordinator)
-
-      case .browserAuthenticate, .signDocument:
-        await invalid(operationID, coordinator: coordinator)
       }
+      let accessNumber = CardCredentialStore.displayedCardAccessNumber()
+      let outcome = await RappCardExecutor.readCertificate(
+        cardAccessNumber: accessNumber,
+        signatureCertificate: isSignature
+      )
+      if case .result(let der) = outcome,
+        isSignature,
+        let primed = PrimeStore.storedIdentities().first,
+        let lookup = PrimeStore.lookupIdentifiers().first,
+        let updated = PrimedIdentity(
+          can: primed.can,
+          certificate: primed.certDER,
+          issuer: primed.issuerDER,
+          tokenSerial: primed.tokenSerial,
+          activationCheck: primed.activationCheck,
+          contactlessIdentification: primed.contactlessIdentification,
+          stagedAt: primed.stagedAt,
+          signatureCertificate: der
+        )
+      {
+        PrimeStore.store(updated, forLookup: lookup)
+      }
+      await finishRead(outcome, operationID: operationID, coordinator: coordinator)
     }
 
     internal func executeCardCommand(

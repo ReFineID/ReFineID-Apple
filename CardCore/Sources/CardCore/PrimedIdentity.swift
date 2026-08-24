@@ -66,6 +66,9 @@ public struct PrimedIdentity: Codable, Equatable, Sendable {
   /// Persistent ATR lookup records leave this nil.
   public let stagedAt: Date?
 
+  /// The DER signature certificate read from the card, when cached.
+  public let signatureCertDER: Data?
+
   /// Refuses anything that could not have come from a real prime.
   ///
   /// The card access number must be six digits, the certificate must
@@ -81,7 +84,8 @@ public struct PrimedIdentity: Codable, Equatable, Sendable {
     tokenSerial: String?,
     activationCheck: ActivationCheck,
     contactlessIdentification: Data? = nil,
-    stagedAt: Date? = nil
+    stagedAt: Date? = nil,
+    signatureCertificate: Data? = nil
   ) {
     guard CardAccessNumber(digits: can) != nil else { return nil }
     guard !certificate.isEmpty else { return nil }
@@ -94,5 +98,6 @@ public struct PrimedIdentity: Codable, Equatable, Sendable {
     self.activationCheck = activationCheck
     self.contactlessIdentification = contactlessIdentification
     self.stagedAt = stagedAt
+    self.signatureCertDER = signatureCertificate
   }
 }

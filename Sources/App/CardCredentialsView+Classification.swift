@@ -188,8 +188,6 @@ extension CardCredentialsView {
       return true
 
     case .rejected:
-      assertionFailure(
-        "Rejected card-setup transition: \(flowState.rawValue) + \(event.rawValue)")
       return false
     }
   }

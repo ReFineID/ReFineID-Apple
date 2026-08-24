@@ -119,5 +119,23 @@ internal struct PrimedIdentityTests {
     #expect(decoded.tokenSerial == nil)
     #expect(decoded.contactlessIdentification == nil)
     #expect(decoded.stagedAt == nil)
+    #expect(decoded.signatureCertDER == nil)
+  }
+
+  @Test
+  internal func codingRoundTripPreservesSignatureCertificate() throws {
+    let signatureCert = WireHex.data("308200010E0F1011")
+    let identity = try #require(
+      PrimedIdentity(
+        can: Self.sampleCan,
+        certificate: WireHex.data(Self.sampleCertificateHexDigits),
+        issuer: WireHex.data(Self.sampleIssuerHexDigits),
+        tokenSerial: Self.sampleSerial,
+        activationCheck: Self.activationCheck,
+        signatureCertificate: signatureCert))
+    let payload = try JSONEncoder().encode(identity)
+    let decoded = try JSONDecoder().decode(PrimedIdentity.self, from: payload)
+    #expect(decoded == identity)
+    #expect(decoded.signatureCertDER == signatureCert)
   }
 }

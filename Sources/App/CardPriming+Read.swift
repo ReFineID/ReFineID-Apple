@@ -32,6 +32,9 @@
       /// hold is what consumes them; nothing stores them as a lasting
       /// claim about the card.
       internal let credentialReport: CredentialProbeReport?
+
+      /// Signature certificate DER, when present on the card.
+      internal let signatureCertificate: Data?
     }
 
     /// Reads everything the later signature must not have to read.
@@ -103,6 +106,7 @@
       operations: CardOperations
     ) throws -> Payload {
       let certificate = try operations.readCertificate(.authentication)
+      let signatureCertificate = try? operations.readCertificate(.signature)
       let activationCheck = try Self.activationCheck(
         certificate: certificate,
         operations: operations
@@ -129,7 +133,8 @@
         issuer: issuer,
         tokenSerial: serial.value,
         activationCheck: activationCheck,
-        credentialReport: credentialReport)
+        credentialReport: credentialReport,
+        signatureCertificate: signatureCertificate)
     }
 
     /// Accepts only a card with no known factory activation state.
@@ -151,6 +156,17 @@
         throw Failure.activationRequired(scheme: scheme, needs: needs)
       }
       return .passed
+    }
+
+    /// Runs one blocking card exchange off the cooperative pool.
+    internal static func onCardQueue<Value: Sendable>(
+      _ body: @escaping @Sendable () throws -> Value
+    ) async throws -> Value {
+      try await withCheckedThrowingContinuation { continuation in
+        Self.cardQueue.async {
+          continuation.resume(with: Result { try body() })
+        }
+      }
     }
   }
 

@@ -342,7 +342,8 @@
           certificate: payload.certificate,
           issuer: payload.issuer,
           tokenSerial: payload.tokenSerial,
-          activationCheck: payload.activationCheck),
+          activationCheck: payload.activationCheck,
+          signatureCertificate: payload.signatureCertificate),
         PrimeStore.store(identity, forLookup: lookup)
       else {
         step(.stored, .failed)
@@ -390,17 +391,6 @@
               finish. Try priming the card again.
               """),
         credentialReport: credentialReport)
-    }
-
-    /// Runs one blocking card exchange off the cooperative pool.
-    private static func onCardQueue<Value: Sendable>(
-      _ body: @escaping @Sendable () throws -> Value
-    ) async throws -> Value {
-      try await withCheckedThrowingContinuation { continuation in
-        Self.cardQueue.async {
-          continuation.resume(with: Result { try body() })
-        }
-      }
     }
   }
 
