@@ -176,7 +176,7 @@ internal final class PersistentTokenDriver: TKTokenDriver,
       } catch {
         #if DEBUG
           NSLog(
-            "[PersistentTokenDriver] rapp sign failed after %d ms: %@",
+            "[PersistentTokenDriver] rapp sign failed after %d ms: %{public}@",
             Self.millisecondsSince(started),
             String(describing: error)
           )

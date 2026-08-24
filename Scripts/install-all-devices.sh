@@ -63,10 +63,15 @@ build=$((10#$hh * 10 + 10#$mn / 10))
 
 echo "Version stamped: ${version} (${build})"
 
+pids=()
+
 # 1. This Mac
 if [ "$target_macos" = true ]; then
-  echo "Installing on this Mac at /Applications..."
-  ./Scripts/install-macos.sh
+  (
+    echo "Installing on this Mac at /Applications..."
+    ./Scripts/install-macos.sh
+  ) &
+  pids+=($!)
 fi
 
 # 2. Physical Device
@@ -77,15 +82,18 @@ if [ "$target_device" = true ]; then
   fi
 
   if [[ -n "$device_id" ]]; then
-    echo "Installing on physical iOS device ${device_id}..."
-    ./Scripts/install-ios-development.sh "$device_id"
-    if [ "$prime_mock_card" = true ]; then
-      echo "Priming mock test card on device..."
-      xcrun devicectl device process launch \
-        --device "$device_id" \
-        --terminate-existing \
-        fi.refineid.ReFineID --prime-mock-card
-    fi
+    (
+      echo "Installing on physical iOS device ${device_id}..."
+      ./Scripts/install-ios-development.sh "$device_id"
+      if [ "$prime_mock_card" = true ]; then
+        echo "Priming mock test card on device..."
+        xcrun devicectl device process launch \
+          --device "$device_id" \
+          --terminate-existing \
+          fi.refineid.ReFineID --prime-mock-card
+      fi
+    ) &
+    pids+=($!)
   else
     echo "No physical iOS device detected via devicectl."
   fi
@@ -99,29 +107,36 @@ if [ "$target_simulator" = true ]; then
   fi
 
   if [[ -n "$sim_id" ]]; then
-    echo "Installing on iPad simulator ${sim_id}..."
-    # Ensure only the iPad simulator is running
-    for booted_non_ipad in $(xcrun simctl list devices booted 2>/dev/null | grep -v "iPad" | grep -oE "[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}" || true); do
-      xcrun simctl shutdown "$booted_non_ipad" 2>/dev/null || true
-    done
-    xcrun simctl boot "$sim_id" 2>/dev/null || true
-    sim_derived_data="/tmp/refineid-ipad-sim"
-    xcodebuild \
-      -project ReFineID.xcodeproj \
-      -scheme ReFineID \
-      -destination "platform=iOS Simulator,id=${sim_id}" \
-      -derivedDataPath "$sim_derived_data" \
-      -configuration Debug \
-      CLANG_COVERAGE_MAPPING=NO \
-      ENABLE_CODE_COVERAGE=NO \
-      -quiet \
-      build
-    xcrun simctl install "$sim_id" "${sim_derived_data}/Build/Products/Debug-iphonesimulator/ReFineID.app"
-    xcrun simctl launch --terminate-running-process "$sim_id" fi.refineid.ReFineID
-    open -a Simulator --args -CurrentDeviceUDID "$sim_id"
-    osascript -e 'tell application "Simulator" to activate' 2>/dev/null || true
-    echo "iPad simulator updated and running."
+    (
+      echo "Installing on iPad simulator ${sim_id}..."
+      # Ensure only the iPad simulator is running
+      for booted_non_ipad in $(xcrun simctl list devices booted 2>/dev/null | grep -v "iPad" | grep -oE "[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}" || true); do
+        xcrun simctl shutdown "$booted_non_ipad" 2>/dev/null || true
+      done
+      xcrun simctl boot "$sim_id" 2>/dev/null || true
+      sim_derived_data="/tmp/refineid-ipad-sim"
+      xcodebuild \
+        -project ReFineID.xcodeproj \
+        -scheme ReFineID \
+        -destination "platform=iOS Simulator,id=${sim_id}" \
+        -derivedDataPath "$sim_derived_data" \
+        -configuration Debug \
+        CLANG_COVERAGE_MAPPING=NO \
+        ENABLE_CODE_COVERAGE=NO \
+        -quiet \
+        build
+      xcrun simctl install "$sim_id" "${sim_derived_data}/Build/Products/Debug-iphonesimulator/ReFineID.app"
+      xcrun simctl launch --terminate-running-process "$sim_id" fi.refineid.ReFineID
+      open -a Simulator --args -CurrentDeviceUDID "$sim_id"
+      osascript -e 'tell application "Simulator" to activate' 2>/dev/null || true
+      echo "iPad simulator updated and running."
+    ) &
+    pids+=($!)
   fi
 fi
+
+for pid in "${pids[@]}"; do
+  wait "$pid"
+done
 
 echo "Selected targets synchronized on version ${version} (${build})."
