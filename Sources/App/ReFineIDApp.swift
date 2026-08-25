@@ -173,37 +173,8 @@ internal struct ReFineIDApp: App {
   }
 
   internal init() {
-    // Before anything else: this launch becomes the only running
-    // copy. Different bundle paths - /Applications beside a build
-    // from Xcode - are different apps to LaunchServices, so nothing
-    // else enforces it.
     #if os(macOS)
-      SingleInstance.enforce()
-
-      // Every text field here holds digits or a service address:
-      // the character palette composes prose and dictation sends what
-      // is spoken to a speech service, so neither belongs in the Edit
-      // menu here. AppKit honours these as user defaults - not as
-      // Info.plist keys - by leaving the items out.
-      UserDefaults.standard.set(
-        true, forKey: "NSDisabledCharacterPaletteMenuItem"
-      )
-      UserDefaults.standard.set(
-        true, forKey: "NSDisabledDictationMenuItem"
-      )
-
-      // AppKit inserts "Enter Full Screen" into a View menu on its
-      // own; windowFullScreenBehavior only stops the window itself.
-      // This default keeps the item - and with it the whole View
-      // menu - from being created for fixed-size windows.
-      UserDefaults.standard.set(
-        false, forKey: "NSFullScreenMenuItemEverywhere"
-      )
-
-      // What that leaves behind is an empty View menu shell, which
-      // SwiftUI offers no way to decline; it is pruned as AppKit
-      // rebuilds the menu.
-      MainMenuPruner.start()
+      Self.configurePlatformDefaults()
     #endif
 
     // Builds with the retired fifteen-minute policy wrote a second PIN1
@@ -221,8 +192,10 @@ internal struct ReFineIDApp: App {
       if !SupportedCardTransports.offersNearField {
         PersistentTokenRegistry.shared.start()
       }
+      RappAutoPairingService.shared.start()
     #elseif REFINEID_REMOTE_CARD
       PersistentTokenRegistry.shared.start()
+      RappAutoPairingService.shared.start()
     #endif
 
     // A hold marks the next NFC field as its own registration field, and
@@ -282,4 +255,20 @@ internal struct ReFineIDApp: App {
       DemoMode.shared.activateFromLaunchArguments()
     #endif
   }
+
+  #if os(macOS)
+    private static func configurePlatformDefaults() {
+      SingleInstance.enforce()
+      UserDefaults.standard.set(
+        true, forKey: "NSDisabledCharacterPaletteMenuItem"
+      )
+      UserDefaults.standard.set(
+        true, forKey: "NSDisabledDictationMenuItem"
+      )
+      UserDefaults.standard.set(
+        false, forKey: "NSFullScreenMenuItemEverywhere"
+      )
+      MainMenuPruner.start()
+    }
+  #endif
 }

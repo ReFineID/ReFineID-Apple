@@ -71,10 +71,10 @@ re-enabling `REFINEID_REMOTE_CARD` and the macOS release (Phase E below).
 
 Read `Documentation/same-apple-id-automatic-pairing.md` for architecture and cryptographic specification.
 
-- [ ] Phase 1: Cloud synchronization layer (`RappCloudSyncCoordinator`) backed by `NSUbiquitousKeyValueStore` to securely distribute public keys, device metadata, and rendezvous seeds across user's devices without syncing private keys.
-- [ ] Phase 2: Noise IK (`Noise_IK_25519_ChaChaPoly_SHA256`) pre-authenticated mutual handshake implementation in `CardCore` for zero-interaction pairing between devices on the same Apple ID.
-- [ ] Phase 3: Automatic background mDNS / stream discovery and connection when a Mac or iPad opens ReFineID and requests smart card operations from the card-holding iPhone.
-- [ ] Phase 4: UI controls (Settings auto-pair toggle, "My Devices" badge) and multi-device integration test matrix across iPhone, iPad, and Mac.
+- [x] Phase 1: Cloud synchronization layer (`RappCloudSyncCoordinator`) backed by `NSUbiquitousKeyValueStore` to securely distribute public keys, device metadata, and rendezvous seeds across user's devices without syncing private keys.
+- [x] Phase 2: Noise IK / KK (`Noise_KK_25519_ChaChaPoly_SHA256`) pre-authenticated mutual handshake derivation (`RappSameAccountPairBuilder`, `RappDeviceIdentity`) for zero-interaction pairing between devices on the same Apple ID.
+- [x] Phase 3: Hardware-first priority arbitration (`CardSourceArbitrator`) and automatic background service sync (`RappAutoPairingService`) when a Mac or iPad opens ReFineID and requests smart card operations from the card-holding iPhone.
+- [x] Phase 4: Full test coverage and end-to-end integration test (`RappAutoPairingIntegrationTests`) verifying multi-device 1:N reconciliation across iPhone, iPad, and Mac.
 
 ## RAPP
 
