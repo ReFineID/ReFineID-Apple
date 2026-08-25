@@ -13,8 +13,8 @@
     internal func testEmptyState() async {
       let vault = RappDeviceVault(accessGroup: nil, servicePrefix: "fi.refineid.test.arb.empty")
       let source = await CardSourceArbitrator.resolveActiveSource(
-        slotManager: nil,
-        vault: vault
+        vault: vault,
+        slotManager: nil
       )
       #expect(source == .none)
     }
@@ -28,8 +28,8 @@
       try vault.selectPair(pairID: pairID)
 
       let source = await CardSourceArbitrator.resolveActiveSource(
-        slotManager: nil,
-        vault: vault
+        vault: vault,
+        slotManager: nil
       )
       #expect(source == .remoteRappPair(pairID: pairID))
     }

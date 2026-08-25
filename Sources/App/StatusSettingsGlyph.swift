@@ -24,10 +24,21 @@
         .accessibilityValue(accessibilityValue)
     }
 
+    private var isRemoteHolderConnected: Bool {
+      #if REFINEID_REMOTE_CARD
+        if PersistentTokenRegistry.shared.holderIsAdvertising {
+          return true
+        }
+        return RappAutoPairingService.shared.remoteDevices.contains { $0.role == .holder }
+      #else
+        false
+      #endif
+    }
+
     private var accessibilityValue: String {
       #if REFINEID_REMOTE_CARD
         let link =
-          PersistentTokenRegistry.shared.holderIsAdvertising
+          isRemoteHolderConnected
           ? String(localized: "Phone connected")
           : String(localized: "Phone not connected")
         if let pins = pinLevel?.accessibilityValue {
@@ -45,10 +56,10 @@
       return pinLevel.color
     }
 
-    /// Green while the paired phone is advertising; grey when it is not.
+    /// Green while a paired phone holder is connected; grey when it is not.
     private var waveColor: Color {
       #if REFINEID_REMOTE_CARD
-        PersistentTokenRegistry.shared.holderIsAdvertising ? .green : .secondary
+        isRemoteHolderConnected ? .green : .secondary
       #else
         .secondary
       #endif

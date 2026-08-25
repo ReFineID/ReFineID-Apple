@@ -11,12 +11,33 @@
     /// The shared service instance.
     public static let shared = RappAutoPairingService()
 
+    /// Posted when same-account auto-pairing reconciles or active pairings change.
+    public static let pairingsDidChangeNotification = Notification.Name(
+      "fi.refineid.pairingsDidChange"
+    )
+
     // MARK: Properties
 
     private var coordinator: RappCloudSyncCoordinator?
     private var externalChangeObserver: (any NSObjectProtocol)?
+    #if canImport(Network)
+      private var localDiscovery: RappLocalDiscovery?
+    #endif
     private let lock = NSLock()
     private var isStarted = false
+    private var cachedRemoteDevices: [RappCloudDeviceRecord] = []
+
+    /// List of discovered remote devices from the same Apple Account.
+    public var remoteDevices: [RappCloudDeviceRecord] {
+      lock.lock()
+      defer { lock.unlock() }
+      return cachedRemoteDevices
+    }
+
+    /// The local device's operational role.
+    public var localRole: RappDeviceRole? {
+      coordinator?.localRole
+    }
 
     // MARK: Initialization
 
@@ -57,7 +78,23 @@
         self?.reconcile()
       }
 
-      // 2. Observe iCloud external changes
+      // 2. Start local network discovery (Bonjour / LAN)
+      #if canImport(Network)
+        let discovery = RappLocalDiscovery(
+          localIdentity: identity,
+          localRole: role
+        ) { [weak self] discovered in
+          guard let self, let coordinator else { return }
+          Task {
+            await coordinator.registerDiscoveredDevice(discovered)
+            self.reconcile()
+          }
+        }
+        discovery.start()
+        self.localDiscovery = discovery
+      #endif
+
+      // 3. Observe iCloud external changes
       externalChangeObserver = NotificationCenter.default.addObserver(
         forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
         object: NSUbiquitousKeyValueStore.default,
@@ -74,11 +111,28 @@
       guard let coordinator else { return }
       let vault = RappDeviceVault()
       Task {
-        try? await coordinator.reconcileVault(vault: vault)
+        _ = (try? await coordinator.reconcileVault(vault: vault)) ?? []
+        let remotes = await coordinator.remoteDevices()
+        self.updateCachedRemoteDevices(remotes)
+        await MainActor.run {
+          NotificationCenter.default.post(
+            name: Self.pairingsDidChangeNotification,
+            object: nil
+          )
+        }
       }
     }
 
+    private func updateCachedRemoteDevices(_ remotes: [RappCloudDeviceRecord]) {
+      lock.lock()
+      cachedRemoteDevices = remotes
+      lock.unlock()
+    }
+
     deinit {
+      #if canImport(Network)
+        localDiscovery?.cancel()
+      #endif
       if let observer = externalChangeObserver {
         NotificationCenter.default.removeObserver(observer)
       }

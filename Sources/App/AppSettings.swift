@@ -17,6 +17,12 @@
     /// on the antenna rather than inserted - and the holder who wants
     /// it turns it on in Settings; contact readers need no setting.
     internal static let contactlessEnabled = "contactlessEnabled"
+
+    /// Whether automatic same-account device pairing via iCloud is enabled.
+    ///
+    /// On by default. Devices sharing the same Apple Account securely
+    /// establish Noise sessions automatically without pairing codes.
+    internal static let autoPairingEnabled = "autoPairingEnabled"
   }
 
 #endif

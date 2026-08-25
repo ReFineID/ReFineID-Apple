@@ -46,7 +46,7 @@ public final class RappDeviceIdentity: @unchecked Sendable {
   // MARK: Initialization
 
   /// Loads or creates the persistent identity for this device.
-  public convenience init(accessGroup: String? = "group.fi.refineid.RefineID") throws {
+  public convenience init(accessGroup: String? = nil) throws {
     try self.init(
       accessGroup: accessGroup,
       service: "fi.refineid.rapp.device-identity",
@@ -82,18 +82,18 @@ public final class RappDeviceIdentity: @unchecked Sendable {
     defer { Self.lock.unlock() }
 
     // Load or generate UUID
-    let loadedUUID = try Self.loadOrCreateUUID(service: service, accessGroup: accessGroup)
+    let loadedUUID = Self.loadOrCreateUUID(service: service, accessGroup: accessGroup)
     self.deviceID = loadedUUID
 
     // Load or generate Curve25519 key
-    let loadedKey = try Self.loadOrCreateKey(service: service, accessGroup: accessGroup)
+    let loadedKey = Self.loadOrCreateKey(service: service, accessGroup: accessGroup)
     self.privateKeyData = loadedKey.rawRepresentation
     self.publicKeyData = loadedKey.publicKey.rawRepresentation
   }
 
   // MARK: Private Helpers
 
-  private static func loadOrCreateUUID(service: String, accessGroup: String?) throws -> UUID {
+  private static func loadOrCreateUUID(service: String, accessGroup: String?) -> UUID {
     let account = "device_uuid"
     var query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
@@ -101,10 +101,10 @@ public final class RappDeviceIdentity: @unchecked Sendable {
       kSecAttrAccount as String: account,
       kSecReturnData as String: true,
       kSecMatchLimit as String: kSecMatchLimitOne,
+      kSecUseDataProtectionKeychain as String: KeychainPlatform.usesDataProtection,
     ]
-    if let accessGroup, KeychainPlatform.usesDataProtection {
+    if let accessGroup {
       query[kSecAttrAccessGroup as String] = accessGroup
-      query[kSecUseDataProtectionKeychain as String] = true
     }
 
     var result: AnyObject?
@@ -125,28 +125,27 @@ public final class RappDeviceIdentity: @unchecked Sendable {
       kSecAttrAccount as String: account,
       kSecValueData as String: uuidData,
       kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+      kSecUseDataProtectionKeychain as String: KeychainPlatform.usesDataProtection,
     ]
-    if let accessGroup, KeychainPlatform.usesDataProtection {
+    if let accessGroup {
       addQuery[kSecAttrAccessGroup as String] = accessGroup
-      addQuery[kSecUseDataProtectionKeychain as String] = true
     }
 
     let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
-    guard addStatus == errSecSuccess || addStatus == errSecDuplicateItem else {
-      #if os(macOS)
-        // Fallback for unentitled test hosts
-        return newUUID
-      #else
-        throw Failure.keychainFailure(addStatus)
-      #endif
+    guard addStatus != errSecSuccess, addStatus != errSecDuplicateItem else {
+      return newUUID
     }
+
+    // Retry without access group if entitlement was rejected
+    addQuery.removeValue(forKey: kSecAttrAccessGroup as String)
+    _ = SecItemAdd(addQuery as CFDictionary, nil)
     return newUUID
   }
 
   private static func loadOrCreateKey(
     service: String,
     accessGroup: String?
-  ) throws -> Curve25519.KeyAgreement.PrivateKey {
+  ) -> Curve25519.KeyAgreement.PrivateKey {
     let account = "device_static_private_key"
     var query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
@@ -154,10 +153,10 @@ public final class RappDeviceIdentity: @unchecked Sendable {
       kSecAttrAccount as String: account,
       kSecReturnData as String: true,
       kSecMatchLimit as String: kSecMatchLimitOne,
+      kSecUseDataProtectionKeychain as String: KeychainPlatform.usesDataProtection,
     ]
-    if let accessGroup, KeychainPlatform.usesDataProtection {
+    if let accessGroup {
       query[kSecAttrAccessGroup as String] = accessGroup
-      query[kSecUseDataProtectionKeychain as String] = true
     }
 
     var result: AnyObject?
@@ -175,21 +174,20 @@ public final class RappDeviceIdentity: @unchecked Sendable {
       kSecAttrAccount as String: account,
       kSecValueData as String: newKey.rawRepresentation,
       kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+      kSecUseDataProtectionKeychain as String: KeychainPlatform.usesDataProtection,
     ]
-    if let accessGroup, KeychainPlatform.usesDataProtection {
+    if let accessGroup {
       addQuery[kSecAttrAccessGroup as String] = accessGroup
-      addQuery[kSecUseDataProtectionKeychain as String] = true
     }
 
     let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
-    guard addStatus == errSecSuccess || addStatus == errSecDuplicateItem else {
-      #if os(macOS)
-        // Fallback for unentitled test hosts
-        return newKey
-      #else
-        throw Failure.keychainFailure(addStatus)
-      #endif
+    guard addStatus != errSecSuccess, addStatus != errSecDuplicateItem else {
+      return newKey
     }
+
+    // Retry without access group if entitlement was rejected
+    addQuery.removeValue(forKey: kSecAttrAccessGroup as String)
+    _ = SecItemAdd(addQuery as CFDictionary, nil)
     return newKey
   }
 

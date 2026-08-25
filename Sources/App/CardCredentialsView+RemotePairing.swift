@@ -59,6 +59,7 @@ import SwiftUI
       .accessibilityIdentifier("remoteCard")
       .onAppear {
         pairingModel.refresh()
+        RappAutoPairingService.shared.reconcile()
       }
       .onReceive(
         NotificationCenter.default.publisher(

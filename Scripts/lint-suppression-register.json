@@ -2,6 +2,22 @@
   "description": "Exact suppression comments permitted in gated Swift sources. Only cases that cannot be expressed without breaking a protocol, an @objc witness, or a published name. Edit this file in the same commit as the matching source change.",
   "swiftlint": [
     {
+      "file": "CardCore/Sources/CardCore/MultipeerDiscoveryHelper.swift",
+      "command": "disable",
+      "rules": [
+        "discouraged_optional_collection"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/CardCore/MultipeerDiscoveryHelper.swift",
+      "command": "enable",
+      "rules": [
+        "discouraged_optional_collection"
+      ],
+      "count": 1
+    },
+    {
       "file": "CardCore/Sources/RappEngine/API/RappBindingError.swift",
       "command": "disable",
       "rules": [

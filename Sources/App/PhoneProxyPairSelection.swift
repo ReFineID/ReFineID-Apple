@@ -17,17 +17,11 @@
       let pairIDs = try vault.activePairIDs()
       guard !pairIDs.isEmpty else { return nil }
       let pairID: Data
-      if let selected = try vault.selectedPairID() {
-        guard pairIDs.contains(selected) else {
-          try vault.clearSelectedPair()
-          return nil
-        }
+      if let selected = try vault.selectedPairID(), pairIDs.contains(selected) {
         pairID = selected
-      } else if pairIDs.count == 1 {
-        pairID = pairIDs[0]
-        try vault.selectPair(pairID: pairID)
       } else {
-        return nil
+        pairID = pairIDs[0]
+        try? vault.selectPair(pairID: pairID)
       }
       return try RappPairRecord.loadFromVault(pairId: pairID, vault: vault)
     }

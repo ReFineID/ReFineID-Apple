@@ -33,6 +33,10 @@ internal struct ReFineIDApp: App {
     }
   #endif
 
+  #if REFINEID_REMOTE_CARD
+    private static var pairingsChangeObserver: (any NSObjectProtocol)?
+  #endif
+
   #if os(iOS)
     /// Catches the Home Screen action that starts a demonstration.
     ///
@@ -182,20 +186,8 @@ internal struct ReFineIDApp: App {
     // an upgrade rather than leave sensitive dead data in the keychain.
     CardCredentialStore.removeLegacySigningWindow()
 
-    // RAPP authenticates the selected peer above the opaque transport. There
-    // is deliberately no legacy protocol downgrade when RAPP is unavailable.
-    #if REFINEID_LOCAL_CARD && os(iOS)
-      HolderCardServing.availabilityChanged()
-    #endif
-    #if REFINEID_LOCAL_CARD && os(iOS) && REFINEID_REMOTE_CARD
-      PhonePersistentTokenRelay.shared.start()
-      if !SupportedCardTransports.offersNearField {
-        PersistentTokenRegistry.shared.start()
-      }
-      RappAutoPairingService.shared.start()
-    #elseif REFINEID_REMOTE_CARD
-      PersistentTokenRegistry.shared.start()
-      RappAutoPairingService.shared.start()
+    #if REFINEID_REMOTE_CARD
+      Self.startRemoteServices()
     #endif
 
     // A hold marks the next NFC field as its own registration field, and
@@ -269,6 +261,38 @@ internal struct ReFineIDApp: App {
         false, forKey: "NSFullScreenMenuItemEverywhere"
       )
       MainMenuPruner.start()
+    }
+  #endif
+
+  #if REFINEID_REMOTE_CARD
+    private static func startRemoteServices() {
+      #if REFINEID_LOCAL_CARD && os(iOS)
+        HolderCardServing.availabilityChanged()
+        PhonePersistentTokenRelay.shared.start()
+        if !SupportedCardTransports.offersNearField {
+          PersistentTokenRegistry.shared.start()
+        }
+      #else
+        PersistentTokenRegistry.shared.start()
+      #endif
+      RappAutoPairingService.shared.start()
+
+      pairingsChangeObserver = NotificationCenter.default.addObserver(
+        forName: Notification.Name("fi.refineid.pairingsDidChange"),
+        object: nil,
+        queue: .main
+      ) { _ in
+        MainActor.assumeIsolated {
+          #if os(macOS)
+            PersistentTokenRegistry.shared.startAfterPairing()
+          #elseif os(iOS) && REFINEID_LOCAL_CARD
+            PhonePersistentTokenRelay.shared.start()
+            if !SupportedCardTransports.offersNearField {
+              PersistentTokenRegistry.shared.startAfterPairing()
+            }
+          #endif
+        }
+      }
     }
   #endif
 }

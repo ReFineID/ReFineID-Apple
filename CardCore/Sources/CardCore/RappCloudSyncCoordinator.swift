@@ -23,6 +23,7 @@
     private let cloudStorage: any RappCloudStorage
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
+    private var inMemoryDirectory: [UUID: RappCloudDeviceRecord] = [:]
 
     // MARK: Initialization
 
@@ -68,6 +69,15 @@
     public func unpublishLocalDevice() {
       var directory = loadDirectory()
       directory.removeValue(forKey: localIdentity.deviceID)
+      saveDirectory(directory)
+    }
+
+    /// Registers a locally discovered or received remote device record.
+    public func registerDiscoveredDevice(_ record: RappCloudDeviceRecord) {
+      guard record.deviceID != localIdentity.deviceID else { return }
+      inMemoryDirectory[record.deviceID] = record
+      var directory = loadDirectory()
+      directory[record.deviceID] = record
       saveDirectory(directory)
     }
 
@@ -127,9 +137,10 @@
         }
 
         establishedPairs.append(pair)
+        RappPairNames.remember(remote.deviceName, pairID: pairID)
 
-        // If local is a requester and has no current selection, auto-select this holder
-        if localRole == .requester, try vault.selectedPairID() == nil {
+        // If no current selection exists, auto-select this newly established pair
+        if try vault.selectedPairID() == nil {
           try vault.selectPair(pairID: pairID)
         }
       }
@@ -140,14 +151,32 @@
     // MARK: Private Helpers
 
     private func loadDirectory() -> [UUID: RappCloudDeviceRecord] {
-      guard let data = cloudStorage.data(forKey: Self.cloudDevicesKey) else {
-        return [:]
+      var result = inMemoryDirectory
+      if let data = cloudStorage.data(forKey: Self.cloudDevicesKey) {
+        if let stringKeyed = try? decoder.decode([String: RappCloudDeviceRecord].self, from: data) {
+          for (key, record) in stringKeyed {
+            if let uuid = UUID(uuidString: key) {
+              result[uuid] = record
+            }
+          }
+        } else if let uuidKeyed = try? decoder.decode(
+          [UUID: RappCloudDeviceRecord].self, from: data)
+        {
+          for (key, record) in uuidKeyed {
+            result[key] = record
+          }
+        }
       }
-      return (try? decoder.decode([UUID: RappCloudDeviceRecord].self, from: data)) ?? [:]
+      return result
     }
 
     private func saveDirectory(_ directory: [UUID: RappCloudDeviceRecord]) {
-      guard let data = try? encoder.encode(directory) else { return }
+      inMemoryDirectory = directory
+      var stringKeyed: [String: RappCloudDeviceRecord] = [:]
+      for (key, record) in directory {
+        stringKeyed[key.uuidString] = record
+      }
+      guard let data = try? encoder.encode(stringKeyed) else { return }
       cloudStorage.set(data, forKey: Self.cloudDevicesKey)
       _ = cloudStorage.synchronize()
     }

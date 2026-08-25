@@ -24,7 +24,7 @@
         cloudStorage: storage
       )
 
-      let recordA = try await coordinatorA.publishLocalDevice()
+      let recordA = await coordinatorA.publishLocalDevice()
       #expect(recordA.deviceID == identityA.deviceID)
       #expect(recordA.role == .holder)
       #expect(await coordinatorA.remoteDevices().isEmpty)
@@ -41,7 +41,7 @@
         cloudStorage: storage
       )
 
-      try await coordinatorB.publishLocalDevice()
+      await coordinatorB.publishLocalDevice()
 
       let remotesForA = await coordinatorA.remoteDevices()
       #expect(remotesForA.count == 1)
@@ -64,7 +64,7 @@
         accessGroup: nil, servicePrefix: "fi.refineid.test.vault.phone")
       let phoneCoord = RappCloudSyncCoordinator(
         localIdentity: phoneID, localRole: .holder, cloudStorage: storage)
-      try await phoneCoord.publishLocalDevice()
+      await phoneCoord.publishLocalDevice()
 
       let macID = try makeIdentity(
         service: "fi.refineid.test.mac", name: "Mac", model: "Mac15,3", seed: 0x22)
@@ -100,7 +100,7 @@
         service: "fi.refineid.test.rev.phone", name: "iPhone", model: "iPhone", seed: 0x55)
       let phoneCoord = RappCloudSyncCoordinator(
         localIdentity: phoneID, localRole: .holder, cloudStorage: storage)
-      try await phoneCoord.publishLocalDevice()
+      await phoneCoord.publishLocalDevice()
 
       let macID = try makeIdentity(
         service: "fi.refineid.test.rev.mac", name: "Mac", model: "Mac", seed: 0x66)
