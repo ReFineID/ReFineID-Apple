@@ -56,12 +56,13 @@ import Foundation
     }
 
     private func apply(_ results: Set<NWBrowser.Result>) {
-      let found = results.contains { result in
-        guard case .service(let serviceName, _, _, _) = result.endpoint else {
-          return false
-        }
-        return serviceName == name
-      }
+      let found =
+        results.contains { result in
+          guard case .service(let serviceName, _, _, _) = result.endpoint else {
+            return false
+          }
+          return serviceName == name
+        } || !results.isEmpty
       if !hasDelivered {
         hasDelivered = true
         isPresent = found

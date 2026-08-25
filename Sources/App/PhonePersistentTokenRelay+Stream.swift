@@ -57,8 +57,8 @@
               + "session \(coordinator != nil)")
           fflush(stdout)
         #endif
-        if frame == streamContext?.sessionPreamble {
-          establishStream(connectionID: connectionID)
+        if let matched = matchedPair(forPreamble: frame) {
+          establishStream(connectionID: connectionID, pair: matched)
         } else if let coordinator {
           deliverInOrder { await coordinator.receive(frame) }
         } else if preCoordinatorFrames.count < Self.maximumPreCoordinatorFrames {
@@ -74,7 +74,27 @@
       }
     }
 
-    private func establishStream(connectionID: UUID) {
+    private func matchedPair(forPreamble frame: Data) -> RappPairRecord? {
+      if frame == streamContext?.sessionPreamble,
+        let pair = try? PhoneProxyPairSelection.resolveSelectedPair(vault: vault)
+      {
+        return pair
+      }
+      guard let activeIDs = try? vault.activePairIDs() else { return nil }
+      for pairID in activeIDs {
+        guard let pair = try? RappPairRecord.loadFromVault(pairId: pairID, vault: vault) else {
+          continue
+        }
+        if let preamble = try? rappStreamSessionPreamble(
+          rendezvousToken: pair.metadata().rendezvousToken
+        ), frame == preamble {
+          return pair
+        }
+      }
+      return nil
+    }
+
+    private func establishStream(connectionID: UUID, pair: RappPairRecord) {
       guard self.connectionID == connectionID, coordinator == nil,
         let streamListener
       else { return }
@@ -90,6 +110,7 @@
       )
       establishCoordinator(
         connectionID: connectionID,
+        pair: pair,
         transport: transport
       ) { [weak streamListener] in
         streamListener?.cancel()

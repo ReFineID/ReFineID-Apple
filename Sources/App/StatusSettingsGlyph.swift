@@ -2,6 +2,7 @@
 
 #if os(macOS)
 
+  import CardCore
   import SwiftUI
 
   /// The one status control: PIN health on the key, link state on the waves.

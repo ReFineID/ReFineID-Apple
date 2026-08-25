@@ -40,7 +40,7 @@
       advertisementLossTask = nil
       hasSeenHolderAdvertisement = false
       holderIsAdvertising = false
-      guard let name = Self.holderServiceName() else { return }
+      let name = Self.holderServiceName() ?? ""
       let watcher = StreamRelayPresence(matching: name) { present in
         Task { @MainActor in
           Self.shared.holderPresenceChanged(present)

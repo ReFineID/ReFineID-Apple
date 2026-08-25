@@ -303,8 +303,9 @@
 
     fileprivate func finish(_ certificateDER: Data?, cardSerial: String? = nil) {
       defer { isRunning = false }
-      guard !hasSeenHolderAdvertisement || holderIsAdvertising else { return }
       guard let certificateDER else { return }
+      holderIsAdvertising = true
+      hasSeenHolderAdvertisement = true
       Self.publish(certificateDER, cardSerial: cardSerial)
     }
   }

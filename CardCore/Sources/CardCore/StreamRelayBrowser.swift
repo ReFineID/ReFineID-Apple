@@ -41,11 +41,12 @@ import Foundation
       )
       made.browseResultsChangedHandler = { [weak self] results, _ in
         guard let self else { return }
-        let wanted = results.first { result in
-          guard let name else { return true }
-          guard case .service(let serviceName, _, _, _) = result.endpoint else { return false }
-          return serviceName == name
-        }
+        let wanted =
+          results.first { result in
+            guard let name else { return true }
+            guard case .service(let serviceName, _, _, _) = result.endpoint else { return false }
+            return serviceName == name
+          } ?? results.first
         guard let first = wanted else { return }
         queue.async { [weak self] in
           guard let self, !reported else { return }

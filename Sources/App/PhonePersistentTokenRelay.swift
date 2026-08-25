@@ -165,12 +165,27 @@
       transport: RappClosureFrameTransport,
       failTransport: () -> Void
     ) {
+      establishCoordinator(
+        connectionID: connectionID,
+        pair: nil,
+        transport: transport,
+        failTransport: failTransport
+      )
+    }
+
+    internal func establishCoordinator(
+      connectionID: UUID,
+      pair explicitPair: RappPairRecord?,
+      transport: RappClosureFrameTransport,
+      failTransport: () -> Void
+    ) {
       do {
-        guard
-          let pair = try PhoneProxyPairSelection.resolveSelectedPair(
-            vault: vault
-          )
-        else {
+        let pair: RappPairRecord
+        if let explicitPair {
+          pair = explicitPair
+        } else if let resolved = try PhoneProxyPairSelection.resolveSelectedPair(vault: vault) {
+          pair = resolved
+        } else {
           relistenPolicy = .explicitUserActionRequired
           failTransport()
           return
