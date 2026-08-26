@@ -235,7 +235,7 @@ extension_is_unchanged() {
 # to match is the code.
 unsigned_hash() {
   local scratch
-  scratch="$(mktemp -t refineid-appex)" || return 1
+  scratch="$(mktemp -t refineid-appex.XXXXXX)" || return 1
   cp "$1" "$scratch"
   codesign --remove-signature "$scratch" >/dev/null 2>&1 || true
   shasum -a 256 "$scratch" | cut -d' ' -f1
