@@ -160,9 +160,7 @@ public enum AsicContainer {
     out += #"  <manifest:file-entry manifest:full-path="/" "#
     out += #"manifest:media-type="\#(Self.mimeType)"/>"# + "\n"
     for object in objects {
-      let path = XadesSignature.escapeAttribute(
-        XadesSignature.percentEncodePath(object.name)
-      )
+      let path = XadesSignature.escapeAttribute(object.name)
       let media = XadesSignature.escapeAttribute(object.mimeType)
       out += #"  <manifest:file-entry manifest:full-path="\#(path)" "#
       out += #"manifest:media-type="\#(media)"/>"# + "\n"

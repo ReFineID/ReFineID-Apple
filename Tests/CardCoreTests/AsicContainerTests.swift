@@ -121,13 +121,9 @@ internal struct AsicContainerTests {
     #expect(manifest.contains(#"manifest:media-type="application/pdf""#))
   }
 
-  /// A name reaches the inventory as a URI, not as text.
-  ///
-  /// It is percent-encoded first (RFC 3986) and XML-escaped after.
-  /// The order matters - a raw `#` would truncate the reference to
-  /// everything before it.
+  /// A name reaches the inventory as a package path, XML-escaped and not percent-encoded.
   @Test
-  internal func namesArePercentEncodedBeforeXmlEscaping() throws {
+  internal func namesAreXmlEscapedInManifest() throws {
     let object = AsicContainer.DataObject(
       name: "a&b\"c#d e.pdf",
       mimeType: "application/pdf",
@@ -135,10 +131,9 @@ internal struct AsicContainerTests {
     )
     let manifest = try Self.text(AsicContainer.manifest([object]))
     #expect(
-      manifest.contains(#"manifest:full-path="a%26b%22c%23d%20e.pdf""#),
-      "name must be percent-encoded: \(manifest)"
+      manifest.contains(#"manifest:full-path="a&amp;b&quot;c#d e.pdf""#),
+      "name must be XML-escaped: \(manifest)"
     )
-    #expect(!manifest.contains("c#d"), "a bare # would truncate the URI")
   }
 
   /// A media type is not a URI: it is XML-escaped and not encoded.
