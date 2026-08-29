@@ -12,12 +12,24 @@ public struct RappOfferCandidate: Equatable, Sendable {
   public var candidateId: String
   /// Present only for the stream profile, whose parameters carry endpoints.
   public var streamEndpoints: [String]?
+  /// Present only for the BLE profile, carrying the Service UUID.
+  public var bleServiceUUID: String?
+  /// Present only for the BLE profile, carrying the optional L2CAP PSM.
+  public var blePsm: UInt16?
 
   /// Describes one advertised transport.
-  public init(profile: String, candidateId: String, streamEndpoints: [String]?) {
+  public init(
+    profile: String,
+    candidateId: String,
+    streamEndpoints: [String]? = nil,
+    bleServiceUUID: String? = nil,
+    blePsm: UInt16? = nil
+  ) {
     self.profile = profile
     self.candidateId = candidateId
     self.streamEndpoints = streamEndpoints
+    self.bleServiceUUID = bleServiceUUID
+    self.blePsm = blePsm
   }
 }
 

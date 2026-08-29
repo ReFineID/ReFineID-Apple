@@ -26,6 +26,8 @@
     private let lock = NSLock()
     private var isStarted = false
     private var cachedRemoteDevices: [RappCloudDeviceRecord] = []
+    private var liveOnlineDeviceIDs = Set<UUID>()
+    private var liveOnlineDeviceNames = Set<String>()
 
     /// List of discovered remote devices from the same Apple Account.
     public var remoteDevices: [RappCloudDeviceRecord] {
@@ -39,10 +41,50 @@
       coordinator?.localRole
     }
 
+    /// The persistent cryptographic identity of the local device.
+    public var localIdentity: RappDeviceIdentity? {
+      coordinator?.localIdentity
+    }
+
     // MARK: Initialization
 
     private init() {
       // Singleton instance initialization
+    }
+
+    // MARK: Public API
+
+    /// Checks whether a remote device is currently discovered and reachable on the local network.
+    public func isDeviceOnline(deviceID: UUID?, deviceName: String?) -> Bool {
+      lock.lock()
+      defer { lock.unlock() }
+      if let deviceID, liveOnlineDeviceIDs.contains(deviceID) {
+        return true
+      }
+      if let deviceName {
+        let lower = deviceName.lowercased()
+        if liveOnlineDeviceNames.contains(lower) {
+          return true
+        }
+        if liveOnlineDeviceNames.contains(where: { $0.contains(lower) || lower.contains($0) }) {
+          return true
+        }
+      }
+      return false
+    }
+
+    /// Updates the set of live online devices discovered over Bonjour.
+    public func updateOnlineDevices(ids: Set<UUID>, names: Set<String>) {
+      lock.lock()
+      liveOnlineDeviceIDs = ids
+      liveOnlineDeviceNames = names
+      lock.unlock()
+      Task { @MainActor in
+        NotificationCenter.default.post(
+          name: Self.pairingsDidChangeNotification,
+          object: nil
+        )
+      }
     }
 
     // MARK: Public API
@@ -82,14 +124,18 @@
       #if canImport(Network)
         let discovery = RappLocalDiscovery(
           localIdentity: identity,
-          localRole: role
-        ) { [weak self] discovered in
-          guard let self, let coordinator else { return }
-          Task {
-            await coordinator.registerDiscoveredDevice(discovered)
-            self.reconcile()
+          localRole: role,
+          onLiveDevicesChanged: { [weak self] ids, names in
+            self?.updateOnlineDevices(ids: ids, names: names)
+          },
+          onDiscovered: { [weak self] discovered in
+            guard let self, let coordinator else { return }
+            Task {
+              await coordinator.registerDiscoveredDevice(discovered)
+              self.reconcile()
+            }
           }
-        }
+        )
         discovery.start()
         self.localDiscovery = discovery
       #endif
@@ -120,6 +166,24 @@
             object: nil
           )
         }
+      }
+    }
+
+    /// Removes a specific remote device from cloud synchronization and reconciles.
+    public func removeRemoteDevice(deviceID: UUID) {
+      guard let coordinator else { return }
+      Task {
+        await coordinator.removeRemoteDevice(deviceID: deviceID)
+        reconcile()
+      }
+    }
+
+    /// Clears all remote devices from cloud synchronization and reconciles.
+    public func clearAllRemoteDevices() {
+      guard let coordinator else { return }
+      Task {
+        await coordinator.clearAllRemoteDevices()
+        reconcile()
       }
     }
 

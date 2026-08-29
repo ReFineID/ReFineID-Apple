@@ -4,6 +4,7 @@
   import CardCore
   import Foundation
   import SwiftUI
+  import UserNotifications
 
   /// Main-actor rendezvous between the authenticated proxy and SwiftUI.
   ///
@@ -18,13 +19,19 @@
     private var continuation: CheckedContinuation<RappAuthorizationDecision, Never>?
 
     private init() {
-      // singleton
+      // Request notification authorization on initial setup
+      UNUserNotificationCenter.current().requestAuthorization(
+        options: [.alert, .sound, .badge]
+      ) { _, _ in
+        // Notification authorization requested.
+      }
     }
 
     internal func ask(
       _ offered: RappAuthorizationRequest
     ) async -> RappAuthorizationDecision {
       guard request == nil, continuation == nil else { return .denied }
+      postNotification(for: offered)
       return await withCheckedContinuation { continuation in
         self.request = offered
         self.continuation = continuation
@@ -72,9 +79,45 @@
       with decision: RappAuthorizationDecision
     ) {
       guard request?.requestID == requestID, let continuation else { return }
+      removeNotification(for: requestID)
       self.request = nil
       self.continuation = nil
       continuation.resume(returning: decision)
+    }
+
+    private func postNotification(for request: RappAuthorizationRequest) {
+      let center = UNUserNotificationCenter.current()
+      let content = UNMutableNotificationContent()
+      content.title = "ReFineID"
+      switch request.action {
+      case .browserAuthentication:
+        content.body = String(
+          localized: "Sign-in requested by \(request.requester). Tap to approve & present card."
+        )
+      case .documentSignature:
+        content.body = String(
+          localized:
+            "Document signature requested by \(request.requester). Tap to approve & present card."
+        )
+      case .shareCardInformation:
+        content.body = String(
+          localized: "Card information requested by \(request.requester). Tap to approve."
+        )
+      }
+      content.sound = .default
+      let notificationRequest = UNNotificationRequest(
+        identifier: "rapp-auth-\(request.requestID)",
+        content: content,
+        trigger: nil
+      )
+      center.add(notificationRequest)
+    }
+
+    private func removeNotification(for requestID: String) {
+      let identifier = "rapp-auth-\(requestID)"
+      let center = UNUserNotificationCenter.current()
+      center.removePendingNotificationRequests(withIdentifiers: [identifier])
+      center.removeDeliveredNotifications(withIdentifiers: [identifier])
     }
   }
 #endif

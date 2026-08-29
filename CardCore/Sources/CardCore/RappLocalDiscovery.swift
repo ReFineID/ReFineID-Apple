@@ -16,11 +16,11 @@
   public final class RappLocalDiscovery: @unchecked Sendable {
     // MARK: Constants
 
-    private enum Constants {
-      static let shortIDPrefixLength = 8
-      static let publicKeyByteCount = 32
-      static let lengthHeaderByteCount = 4
-      static let maxPayloadByteCount = 65_536
+    internal enum Constants {
+      internal static let shortIDPrefixLength = 8
+      internal static let publicKeyByteCount = 32
+      internal static let lengthHeaderByteCount = 4
+      internal static let maxPayloadByteCount = 65_536
     }
 
     /// The Bonjour service type for local device auto-pairing discovery.
@@ -28,10 +28,11 @@
 
     // MARK: Properties
 
-    private let localIdentity: RappDeviceIdentity
-    private let localRole: RappDeviceRole
-    private let onDiscovered: @Sendable (RappCloudDeviceRecord) -> Void
-    private let queue = DispatchQueue(label: "fi.refineid.local-discovery")
+    internal let localIdentity: RappDeviceIdentity
+    internal let localRole: RappDeviceRole
+    internal let onDiscovered: @Sendable (RappCloudDeviceRecord) -> Void
+    internal let queue = DispatchQueue(label: "fi.refineid.local-discovery")
+    private let onLiveDevicesChanged: (@Sendable (Set<UUID>, Set<String>) -> Void)?
     private var listener: NWListener?
     private var browser: NWBrowser?
     #if canImport(MultipeerConnectivity)
@@ -47,10 +48,12 @@
     public init(
       localIdentity: RappDeviceIdentity,
       localRole: RappDeviceRole,
+      onLiveDevicesChanged: (@Sendable (Set<UUID>, Set<String>) -> Void)? = nil,
       onDiscovered: @escaping @Sendable (RappCloudDeviceRecord) -> Void
     ) {
       self.localIdentity = localIdentity
       self.localRole = localRole
+      self.onLiveDevicesChanged = onLiveDevicesChanged
       self.onDiscovered = onDiscovered
     }
 
@@ -82,6 +85,7 @@
         self.listener = nil
         self.browser?.cancel()
         self.browser = nil
+        self.onLiveDevicesChanged?([], [])
         #if canImport(MultipeerConnectivity)
           self.multipeerHelper?.cancel()
           self.multipeerHelper = nil
@@ -134,9 +138,23 @@
 
       madeBrowser.browseResultsChangedHandler = { [weak self] results, _ in
         guard let self else { return }
+        var liveIDs = Set<UUID>()
+        var liveNames = Set<String>()
         for result in results {
+          if case .bonjour(let txt) = result.metadata {
+            if let devIDString = txt["devid"], let devID = UUID(uuidString: devIDString) {
+              liveIDs.insert(devID)
+            }
+            if let name = txt["name"] {
+              liveNames.insert(name.lowercased())
+            }
+          }
+          if case .service(let serviceName, _, _, _) = result.endpoint {
+            liveNames.insert(serviceName.lowercased())
+          }
           handleBrowseResult(result)
         }
+        onLiveDevicesChanged?(liveIDs, liveNames)
       }
 
       madeBrowser.start(queue: queue)
@@ -183,116 +201,6 @@
       guard contactedEndpoints.insert(endpointKey).inserted else { return }
 
       connectAndExchange(endpoint: result.endpoint)
-    }
-
-    private func connectAndExchange(endpoint: NWEndpoint) {
-      let parameters = NWParameters.tcp
-      parameters.includePeerToPeer = true
-      let connection = NWConnection(to: endpoint, using: parameters)
-
-      connection.stateUpdateHandler = { [weak self] state in
-        guard let self else { return }
-        switch state {
-        case .ready:
-          let localRecord = makeLocalRecord()
-          sendRecord(localRecord, over: connection)
-          readRecord(from: connection) { [weak self] peerRecord in
-            connection.cancel()
-            guard let self, let peerRecord, peerRecord.deviceID != localIdentity.deviceID
-            else { return }
-            onDiscovered(peerRecord)
-          }
-        case .failed, .cancelled:
-          connection.cancel()
-        default:
-          break
-        }
-      }
-
-      connection.start(queue: queue)
-    }
-
-    private func handleIncomingDiscovery(_ connection: NWConnection) {
-      connection.stateUpdateHandler = { [weak self] state in
-        guard let self else { return }
-        switch state {
-        case .ready:
-          let localRecord = makeLocalRecord()
-          sendRecord(localRecord, over: connection)
-          readRecord(from: connection) { [weak self] peerRecord in
-            connection.cancel()
-            guard let self, let peerRecord, peerRecord.deviceID != localIdentity.deviceID
-            else { return }
-            onDiscovered(peerRecord)
-          }
-        case .failed, .cancelled:
-          connection.cancel()
-        default:
-          break
-        }
-      }
-
-      connection.start(queue: queue)
-    }
-
-    private func makeLocalRecord() -> RappCloudDeviceRecord {
-      RappCloudDeviceRecord(
-        deviceID: localIdentity.deviceID,
-        deviceName: localIdentity.deviceName,
-        modelName: localIdentity.modelName,
-        role: localRole,
-        staticPublicKey: localIdentity.publicKeyData,
-        rendezvousToken: RappSameAccountPairBuilder.deriveRendezvousToken(
-          publicKeyA: localIdentity.publicKeyData,
-          publicKeyB: localIdentity.publicKeyData
-        ),
-        updatedAt: Date()
-      )
-    }
-
-    private func sendRecord(_ record: RappCloudDeviceRecord, over connection: NWConnection) {
-      guard let json = try? JSONEncoder().encode(record) else { return }
-      var payload = Data()
-      var length = UInt32(json.count).bigEndian
-      payload.append(Data(bytes: &length, count: Constants.lengthHeaderByteCount))
-      payload.append(json)
-      connection.send(
-        content: payload,
-        completion: .contentProcessed { _ in
-          // Transmission processed
-        })
-    }
-
-    private func readRecord(
-      from connection: NWConnection,
-      completion: @escaping @Sendable (RappCloudDeviceRecord?) -> Void
-    ) {
-      connection.receive(
-        minimumIncompleteLength: Constants.lengthHeaderByteCount,
-        maximumLength: Constants.lengthHeaderByteCount
-      ) { headerData, _, _, error in
-        guard error == nil, let headerData, headerData.count == Constants.lengthHeaderByteCount
-        else {
-          completion(nil)
-          return
-        }
-        let length = headerData.withUnsafeBytes { $0.load(as: UInt32.self).bigEndian }
-        guard length > 0, length <= Constants.maxPayloadByteCount else {
-          completion(nil)
-          return
-        }
-        connection.receive(
-          minimumIncompleteLength: Int(length),
-          maximumLength: Int(length)
-        ) { bodyData, _, _, _ in
-          guard let bodyData, bodyData.count == Int(length) else {
-            completion(nil)
-            return
-          }
-          let record = try? JSONDecoder().decode(RappCloudDeviceRecord.self, from: bodyData)
-          completion(record)
-        }
-      }
     }
   }
 

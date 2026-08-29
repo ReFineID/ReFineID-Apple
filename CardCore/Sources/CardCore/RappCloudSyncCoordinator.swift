@@ -11,6 +11,11 @@
   public actor RappCloudSyncCoordinator {
     // MARK: Constants
 
+    private enum Constants {
+      /// Maximum record age (30 days in seconds).
+      static let maxRecordAgeSeconds: TimeInterval = 2_592_000
+    }
+
     /// The key in `NSUbiquitousKeyValueStore` holding all registered device records.
     public static let cloudDevicesKey = "fi.refineid.rapp.cloud_devices"
 
@@ -48,6 +53,11 @@
     @discardableResult
     public func publishLocalDevice() -> RappCloudDeviceRecord {
       var directory = loadDirectory()
+      // Purge any stale ghost records matching this device's name
+      directory = directory.filter { _, record in
+        !(record.deviceName.caseInsensitiveCompare(localIdentity.deviceName) == .orderedSame
+          && record.deviceID != localIdentity.deviceID)
+      }
       let record = RappCloudDeviceRecord(
         deviceID: localIdentity.deviceID,
         deviceName: localIdentity.deviceName,
@@ -72,9 +82,27 @@
       saveDirectory(directory)
     }
 
+    /// Removes a specific remote device from the iCloud directory.
+    public func removeRemoteDevice(deviceID: UUID) {
+      var directory = loadDirectory()
+      directory.removeValue(forKey: deviceID)
+      inMemoryDirectory.removeValue(forKey: deviceID)
+      saveDirectory(directory)
+    }
+
+    /// Clears all remote devices from the iCloud directory, keeping only the local device.
+    public func clearAllRemoteDevices() {
+      var directory = loadDirectory()
+      directory = directory.filter { $0.key == localIdentity.deviceID }
+      inMemoryDirectory = inMemoryDirectory.filter { $0.key == localIdentity.deviceID }
+      saveDirectory(directory)
+    }
+
     /// Registers a locally discovered or received remote device record.
     public func registerDiscoveredDevice(_ record: RappCloudDeviceRecord) {
-      guard record.deviceID != localIdentity.deviceID else { return }
+      guard record.deviceID != localIdentity.deviceID,
+        record.deviceName.caseInsensitiveCompare(localIdentity.deviceName) != .orderedSame
+      else { return }
       inMemoryDirectory[record.deviceID] = record
       var directory = loadDirectory()
       directory[record.deviceID] = record
@@ -84,9 +112,21 @@
     /// Fetches all remote devices currently registered in iCloud.
     public func remoteDevices() -> [RappCloudDeviceRecord] {
       let directory = loadDirectory()
-      return directory.values
-        .filter { $0.deviceID != localIdentity.deviceID }
-        .sorted { $0.updatedAt > $1.updatedAt }
+      let thirtyDaysAgo = Date().addingTimeInterval(-Constants.maxRecordAgeSeconds)
+
+      let validRecords = directory.values.filter { record in
+        record.deviceID != localIdentity.deviceID
+          && record.deviceName.caseInsensitiveCompare(localIdentity.deviceName) != .orderedSame
+          && record.updatedAt >= thirtyDaysAgo
+      }
+
+      // Deduplicate by lowercased device name, picking the most recently updated entry
+      var byName: [String: RappCloudDeviceRecord] = [:]
+      for record in validRecords.sorted(by: { $0.updatedAt < $1.updatedAt }) {
+        byName[record.deviceName.lowercased()] = record
+      }
+
+      return Array(byName.values).sorted { $0.updatedAt > $1.updatedAt }
     }
 
     /// Reconciles the cloud directory against the local device vault.

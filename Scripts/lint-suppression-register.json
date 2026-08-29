@@ -2,6 +2,22 @@
   "description": "Exact suppression comments permitted in gated Swift sources. Only cases that cannot be expressed without breaking a protocol, an @objc witness, or a published name. Edit this file in the same commit as the matching source change.",
   "swiftlint": [
     {
+      "file": "CardCore/Sources/CardCore/BleRelaySession+Delegate.swift",
+      "command": "disable",
+      "rules": [
+        "legacy_objc_type"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/CardCore/BleRelaySession+Delegate.swift",
+      "command": "enable",
+      "rules": [
+        "legacy_objc_type"
+      ],
+      "count": 1
+    },
+    {
       "file": "CardCore/Sources/CardCore/MultipeerDiscoveryHelper.swift",
       "command": "disable",
       "rules": [
@@ -570,14 +586,6 @@
       "command": "disable:next",
       "rules": [
         "unneeded_escaping"
-      ],
-      "count": 1
-    },
-    {
-      "file": "Sources/App/PersistentTokenRegistry.swift",
-      "command": "disable:next",
-      "rules": [
-        "legacy_objc_type"
       ],
       "count": 1
     },

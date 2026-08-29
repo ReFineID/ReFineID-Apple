@@ -34,8 +34,7 @@
     /// withdrawn. The pairing stays so the next card can use it. An NFC
     /// prime keeps the holder advertising.
     internal func startWatchingPresence() {
-      presence?.cancel()
-      presence = nil
+      guard presence == nil else { return }
       advertisementLossTask?.cancel()
       advertisementLossTask = nil
       hasSeenHolderAdvertisement = false
@@ -56,8 +55,8 @@
         advertisementLossTask = nil
         hasSeenHolderAdvertisement = true
         holderIsAdvertising = true
-        if Self.needsIdentity {
-          startFetch(replacing: false)
+        if Self.needsIdentity || certificateDER == nil {
+          startFetch(replacing: true)
         } else {
           seedHolderLine()
         }

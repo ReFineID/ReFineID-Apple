@@ -51,7 +51,7 @@
     internal private(set) var holderLine: String?
 
     /// The certificate last published, so a reader mint can restore it.
-    private var certificateDER: Data?
+    internal private(set) var certificateDER: Data?
 
     private var isRunning = false
 
@@ -158,12 +158,6 @@
       keyItem.canDecrypt = false
       keyItem.canPerformKeyExchange = false
       keyItem.isSuitableForLogin = true
-      // swiftlint:disable:next legacy_objc_type
-      let signOperationKey = NSNumber(value: TKTokenOperation.signData.rawValue)
-      // PIN 1 is entered on the holder, not on this Mac.
-      keyItem.constraints = [
-        signOperationKey: true
-      ]
       return (certificateItem, keyItem)
     }
 
@@ -273,7 +267,7 @@
 
     internal func startFetch(replacing: Bool) {
       guard !isRunning else { return }
-      guard replacing || Self.needsIdentity else { return }
+      guard replacing || Self.needsIdentity || certificateDER == nil else { return }
       isRunning = true
       Task.detached(priority: .userInitiated) {
         let fetched: Data?

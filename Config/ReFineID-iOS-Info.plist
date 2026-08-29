@@ -12,6 +12,11 @@
 	<false/>
 	<key>NFCReaderUsageDescription</key>
 	<string>ReFineID reads your identity card over NFC for authentication, document signing, activation, and PIN management.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>ReFineID uses Bluetooth to connect devices securely for remote identity card operations.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>ReFineID uses Bluetooth to connect devices securely for remote identity card operations.</string>
+
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>

@@ -45,6 +45,18 @@
       }
     }
 
+    internal func revoke(pairID: Data) {
+      let vault = RappDeviceVault()
+      let now = UInt64(Date().timeIntervalSince1970 * millisecondsPerSecond)
+      _ = try? vault.revokePair(pairID: pairID, revokedAtMilliseconds: now)
+      RappPairNames.forget(pairID: pairID)
+      if selectedPairID == pairID {
+        try? vault.clearSelectedPair()
+      }
+      refresh()
+      NotificationCenter.default.post(name: Self.pairingsDidChangeNotification, object: nil)
+    }
+
     internal func revokeAll() {
       #if REFINEID_LOCAL_CARD && os(iOS)
         PhonePersistentTokenRelay.shared.stopListening()

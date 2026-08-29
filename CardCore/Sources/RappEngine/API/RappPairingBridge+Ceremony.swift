@@ -104,10 +104,14 @@ extension RappPairingBridge {
   public func offerCandidates() -> [RappOfferCandidate] {
     locked {
       offer.transports.map { candidate in
-        RappOfferCandidate(
+        let bleParams = BleProfile.parameters(of: candidate)
+        return RappOfferCandidate(
           profile: candidate.profile,
           candidateId: candidate.candidateIdentifier,
-          streamEndpoints: StreamProfile.endpoints(of: candidate))
+          streamEndpoints: StreamProfile.endpoints(of: candidate),
+          bleServiceUUID: bleParams?.serviceUUID,
+          blePsm: bleParams?.psm
+        )
       }
     }
   }

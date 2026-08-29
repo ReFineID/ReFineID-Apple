@@ -13,12 +13,24 @@
       public let candidateID: String
       /// Decoded stream listener endpoints; empty on other profiles.
       public let streamEndpoints: [String]
+      /// Decoded BLE Service UUID; nil on other profiles.
+      public let bleServiceUUID: String?
+      /// Decoded BLE L2CAP PSM; nil when dynamically assigned or on other profiles.
+      public let blePsm: UInt16?
 
       /// Creates a candidate from already-decoded offer facts.
-      public init(profile: String, candidateID: String, streamEndpoints: [String]) {
+      public init(
+        profile: String,
+        candidateID: String,
+        streamEndpoints: [String] = [],
+        bleServiceUUID: String? = nil,
+        blePsm: UInt16? = nil
+      ) {
         self.profile = profile
         self.candidateID = candidateID
         self.streamEndpoints = streamEndpoints
+        self.bleServiceUUID = bleServiceUUID
+        self.blePsm = blePsm
       }
     }
 
@@ -39,7 +51,9 @@
         Candidate(
           profile: candidate.profile,
           candidateID: candidate.candidateId,
-          streamEndpoints: candidate.streamEndpoints ?? []
+          streamEndpoints: candidate.streamEndpoints ?? [],
+          bleServiceUUID: candidate.bleServiceUUID,
+          blePsm: candidate.blePsm
         )
       }
     }
