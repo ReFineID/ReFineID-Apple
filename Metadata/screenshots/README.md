@@ -65,7 +65,7 @@ Options:
 Scripts/store-screenshot.sh NAME
 ```
 
-Captures the frontmost ReFineID window onto a 2880×1800 App Store canvas.
+Captures the frontmost RefineID window onto a 2880×1800 App Store canvas.
 
 ## Uploading to App Store Connect
 

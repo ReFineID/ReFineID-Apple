@@ -27,7 +27,7 @@
       let started = Date()
       do {
         let response = try RappPersistentRequesterClient(
-          displayName: String(localized: "ReFineID iPad")
+          displayName: String(localized: "RefineID iPad")
         ).perform(.readAuthenticationCertificate)
         guard case .authenticationCertificate(let der, let cardSerial) = response else {
           lines.append("FAIL: answered something other than a certificate")

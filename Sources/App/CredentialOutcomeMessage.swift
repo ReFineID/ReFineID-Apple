@@ -23,7 +23,7 @@ internal enum CredentialOutcomeMessage {
     String(localized: "The operation was not sent.")
       + "\n"
       + String(
-        localized: "ReFineID does not use either of the last two attempts.")
+        localized: "RefineID does not use either of the last two attempts.")
   }
 
   /// A retry-floor refusal when the card supplied the exact counter.
@@ -89,7 +89,7 @@ internal enum CredentialOutcomeMessage {
     String(localized: "Use other software to recover the card")
       + "\n"
       + String(
-        localized: "ReFineID will not use either of the final two PUK attempts.")
+        localized: "RefineID will not use either of the final two PUK attempts.")
   }
 
   internal static func unrecoverableCard() -> String {

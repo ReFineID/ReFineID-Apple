@@ -10,7 +10,7 @@
 		<string>_refineid-stream._udp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>ReFineID connects to your paired card-holding device over the local network.</string>
+	<string>RefineID connects to your paired card-holding device over the local network.</string>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionAttributes</key>

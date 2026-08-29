@@ -83,7 +83,7 @@
       var failure: String?
       do {
         response = try RappPersistentRequesterClient(
-          displayName: String(localized: "ReFineID iPad")
+          displayName: String(localized: "RefineID iPad")
         ).perform(.readAuthenticationCertificate)
       } catch let error as RappRequesterClientError {
         response = nil
@@ -212,11 +212,11 @@
         localized:
           """
           No paired phone found. Check both devices share a Wi-Fi network, \
-          and that Local Network is allowed for ReFineID in Settings.
+          and that Local Network is allowed for RefineID in Settings.
           """)
 
     case .timedOut:
-      String(localized: "The phone did not answer. Open ReFineID on the phone and try again.")
+      String(localized: "The phone did not answer. Open RefineID on the phone and try again.")
 
     default:
       String(localized: "The remote card could not be read.")

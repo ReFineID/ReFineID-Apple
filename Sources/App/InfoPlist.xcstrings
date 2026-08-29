@@ -1,14 +1,50 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "CFBundleDisplayName" : {
+      "comment" : "Bundle display name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RefineID"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RefineID"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RefineID"
+          }
+        }
+      }
+    },
     "CFBundleName" : {
       "comment" : "Bundle name",
       "extractionState" : "extracted_with_value",
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "ReFineID"
+            "state" : "translated",
+            "value" : "RefineID"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RefineID"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RefineID"
           }
         }
       }
@@ -55,20 +91,20 @@
         }
       }
     },
-    "ReFineID uses the local network to connect your devices securely for identity-card operations." : {
+    "RefineID uses the local network to connect your devices securely for identity-card operations." : {
       "comment" : "Local-network privacy prompt for the encrypted RAPP connection between the card-holder device and the requesting device.",
       "extractionState" : "manual",
       "localizations" : {
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ReFineID käyttää lähiverkkoa laitteidesi turvalliseen yhdistämiseen henkilökorttitoimintoja varten."
+            "value" : "RefineID käyttää lähiverkkoa laitteidesi turvalliseen yhdistämiseen henkilökorttitoimintoja varten."
           }
         },
         "sv" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ReFineID använder det lokala nätverket för att ansluta dina enheter säkert för identitetskortsfunktioner."
+            "value" : "RefineID använder det lokala nätverket för att ansluta dina enheter säkert för identitetskortsfunktioner."
           }
         }
       }

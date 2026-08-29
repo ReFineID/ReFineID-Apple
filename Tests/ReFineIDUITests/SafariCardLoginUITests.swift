@@ -224,7 +224,7 @@
       driveLogin(
         targetSite: "https://card.refineid.fi",
         successMarkers: [
-          "ReFineID", "Varmenne", "Certificate", "Card",
+          "RefineID", "Varmenne", "Certificate", "Card",
           "Client Certificate", "Autentikoitu", "Authenticated",
         ]
       )
@@ -295,7 +295,7 @@
     ) {
       guard ensureCryptoTokenIdentityReady() else {
         XCTFail(
-          "ReFineID is not in connected state: no identity in CryptoTokenKit."
+          "RefineID is not in connected state: no identity in CryptoTokenKit."
             + " Connect/pair remote reader before running Safari login test."
         )
         return

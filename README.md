@@ -1,14 +1,14 @@
-# ReFineID for Apple platforms
+# RefineID for Apple platforms
 
-ReFineID makes Finnish identity cards usable through Apple platform security frameworks. 
+RefineID makes Finnish identity cards usable through Apple platform security frameworks. 
 
 ## Building
 
 Requires Xcode 26 on macOS 26. From a fresh clone, no other setup:
 
 ```sh
-xcodebuild -project ReFineID.xcodeproj -scheme ReFineID build
-xcodebuild -project ReFineID.xcodeproj -scheme ReFineID test
+xcodebuild -project ReFineID.xcodeproj -scheme RefineID build
+xcodebuild -project ReFineID.xcodeproj -scheme RefineID test
 ```
 
 For an iPhone timing build, use the optimized `Profile` configuration and
@@ -17,7 +17,7 @@ override Xcode's Swift-package coverage injection:
 ```sh
 xcodebuild build \
   -project ReFineID.xcodeproj \
-  -scheme ReFineID \
+  -scheme RefineID \
   -configuration Profile \
   -destination 'generic/platform=iOS' \
   CLANG_COVERAGE_MAPPING=NO \

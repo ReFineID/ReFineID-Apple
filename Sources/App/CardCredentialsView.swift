@@ -328,7 +328,7 @@ internal struct CardCredentialsView: View {
     #if os(iOS)
       if readerActivationRequired {
         CardManagementView(readerCardIsPresent: true, activationRequired: true)
-          .navigationTitle("ReFineID")
+          .navigationTitle("RefineID")
           .navigationBarTitleDisplayMode(.large)
       } else {
         credentialsForm

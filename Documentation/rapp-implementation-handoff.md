@@ -286,12 +286,12 @@ network permission, CryptoTokenKit, or Safari system-sheet behavior.
 1. Petri unlocks the cabled iPhone and clears an Enable UI Automation Touch ID
    dialog if macOS presents one.
 2. Build and install the committed Debug app on the cabled iPhone. Physical
-   iOS UI-test shards use the dedicated `ReFineID-iOS-UI` scheme so they do not
+   iOS UI-test shards use the dedicated `RefineID-iOS-UI` scheme so they do not
    build unrelated macOS unit-test products:
 
    ```sh
    xcodebuild test -project ReFineID.xcodeproj \
-     -scheme ReFineID-iOS-UI \
+     -scheme RefineID-iOS-UI \
      -destination 'platform=iOS,id=<device-identifier>' \
      -only-testing:ReFineIDUITests/<test-class>/<test-method>
    ```

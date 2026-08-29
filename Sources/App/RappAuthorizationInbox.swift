@@ -88,7 +88,7 @@
     private func postNotification(for request: RappAuthorizationRequest) {
       let center = UNUserNotificationCenter.current()
       let content = UNMutableNotificationContent()
-      content.title = "ReFineID"
+      content.title = "RefineID"
       switch request.action {
       case .browserAuthentication:
         content.body = String(

@@ -117,7 +117,7 @@ if [ "$target_simulator" = true ]; then
       sim_derived_data="/tmp/refineid-ipad-sim"
       xcodebuild \
         -project ReFineID.xcodeproj \
-        -scheme ReFineID \
+        -scheme RefineID \
         -destination "platform=iOS Simulator,id=${sim_id}" \
         -derivedDataPath "$sim_derived_data" \
         -configuration Debug \

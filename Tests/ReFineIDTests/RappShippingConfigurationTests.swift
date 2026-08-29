@@ -155,6 +155,8 @@ internal struct RappShippingConfigurationTests {
         "NSLocalNetworkUsageDescription",
         "NSBonjourServices",
         "UIRequiredDeviceCapabilities",
+        "NSBluetoothAlwaysUsageDescription",
+        "NSBluetoothPeripheralUsageDescription",
       ])
     #expect(unexplained.isEmpty, "unexplained keys: \(unexplained.sorted())")
   }
@@ -180,6 +182,7 @@ internal struct RappShippingConfigurationTests {
       .subtracting([
         "NSLocalNetworkUsageDescription",
         "NSBonjourServices",
+        "NSBluetoothAlwaysUsageDescription",
       ])
     #expect(unexplained.isEmpty, "unexplained keys: \(unexplained.sorted())")
 

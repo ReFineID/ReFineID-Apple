@@ -273,9 +273,9 @@
         let fetched: Data?
         let fetchedSerial: String?
         #if os(macOS)
-          let displayName = String(localized: "ReFineID Mac")
+          let displayName = String(localized: "RefineID Mac")
         #else
-          let displayName = String(localized: "ReFineID iPad")
+          let displayName = String(localized: "RefineID iPad")
         #endif
         do {
           let response = try RappPersistentRequesterClient(

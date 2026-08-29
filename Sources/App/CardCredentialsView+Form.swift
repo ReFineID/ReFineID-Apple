@@ -48,7 +48,7 @@ extension CardCredentialsView {
     }
     #if os(iOS)
       .listSections(spacing: Self.sectionSpacing)
-      .navigationTitle("ReFineID")
+      .navigationTitle("RefineID")
       .navigationBarTitleDisplayMode(.large)
       .navigationDestination(
         isPresented: Binding(

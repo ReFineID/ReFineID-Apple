@@ -121,7 +121,7 @@
       publicKey: SecKey,
       hash: SigningHash
     ) throws -> String {
-      let message = Data("ReFineID signing test".utf8)
+      let message = Data("RefineID signing test".utf8)
       let (digest, secKeyAlgorithm): (Data, SecKeyAlgorithm)
       switch hash {
       case .sha256:

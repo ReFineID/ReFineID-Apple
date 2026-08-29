@@ -1323,7 +1323,7 @@ private func releaseCandidate(_ arguments: [String]) {
       [
         "archive",
         "-project", "ReFineID.xcodeproj",
-        "-scheme", "ReFineID",
+        "-scheme", "RefineID",
         "-configuration", "TestFlight",
         "-destination", platform.destination,
         "-archivePath", archive.path,

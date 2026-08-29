@@ -194,13 +194,13 @@
       switch role {
       case .host:
         #if os(macOS)
-          displayName = String(localized: "ReFineID Mac")
+          displayName = String(localized: "RefineID Mac")
         #else
-          displayName = String(localized: "ReFineID iPad")
+          displayName = String(localized: "RefineID iPad")
         #endif
 
       case .cardHolder:
-        displayName = String(localized: "ReFineID iPhone")
+        displayName = String(localized: "RefineID iPhone")
       }
       return PairingRelay(
         role: role,

@@ -48,7 +48,7 @@
         } else {
           ProgressView()
         }
-        Text(verbatim: "ReFineID debug: " + mode.rawValue)
+        Text(verbatim: "RefineID debug: " + mode.rawValue)
       }
       .padding()
       .task(id: scenePhase) {

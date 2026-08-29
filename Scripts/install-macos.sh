@@ -350,7 +350,7 @@ hide_from_spotlight derivedData
 note "building ${configuration} for macOS"
 xcodebuild \
   -project ReFineID.xcodeproj \
-  -scheme ReFineID \
+  -scheme RefineID \
   -configuration "$configuration" \
   -destination 'platform=macOS,arch=arm64' \
   -derivedDataPath "$derived_data" \

@@ -26,10 +26,10 @@ internal struct ReFineIDApp: App {
     internal static var statusWindowTitle: String {
       #if DEBUG
         if let version = BundledVersions.read(from: .main).application {
-          return "ReFineID - \(version)"
+          return "RefineID - \(version)"
         }
       #endif
-      return "ReFineID"
+      return "RefineID"
     }
   #endif
 
@@ -61,7 +61,7 @@ internal struct ReFineIDApp: App {
       // kept and given the site under the version and copyright.
       .commands {
         CommandGroup(replacing: .appInfo) {
-          Button("About ReFineID") {
+          Button("About RefineID") {
             ProductSite.presentAboutPanel()
           }
         }

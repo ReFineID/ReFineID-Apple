@@ -77,7 +77,7 @@ internal struct DiagnosticsView: View {
     } message: {
       Text(
         """
-        This clears ReFineID's diagnostic trace. It does not remove your \
+        This clears RefineID's diagnostic trace. It does not remove your \
         card details or Safari identity.
         """)
     }
@@ -164,7 +164,7 @@ internal struct DiagnosticsView: View {
         showsClearConfirmation = true
       }
     } footer: {
-      Text("Clears only ReFineID's diagnostic trace.")
+      Text("Clears only RefineID's diagnostic trace.")
     }
   }
 

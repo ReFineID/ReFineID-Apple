@@ -17,7 +17,7 @@
   /// Keychain Access.
   internal enum ScsIdentityStore {
     /// The keychain label naming the identity's parts.
-    private static let label = "ReFineID SCS localhost"
+    private static let label = "RefineID SCS localhost"
 
     /// The server key's strength; the curve is P-256.
     private static let keySizeBits = 256

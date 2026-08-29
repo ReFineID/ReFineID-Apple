@@ -21,8 +21,8 @@ internal enum CardStateReset {
 
     internal var summary: String {
       succeeded
-        ? String(localized: "ReFineID's Safari card identities were reset.")
-        : String(localized: "Some ReFineID Safari identity state could not be removed.")
+        ? String(localized: "RefineID's Safari card identities were reset.")
+        : String(localized: "Some RefineID Safari identity state could not be removed.")
     }
   }
 
@@ -42,28 +42,28 @@ internal enum CardStateReset {
 
   /// Clears registrations, identity configurations, primes, and trace.
   internal static func perform() -> Outcome {
-    var lines = ["=== reset ReFineID Safari identities ==="]
+    var lines = ["=== reset RefineID Safari identities ==="]
     let registration = Self.unregisterOurTokens()
     lines += registration.lines
 
     let dropped = DriverConfiguredCredentials.dropIdentityTokenConfigurations()
-    lines.append("ReFineID identity configurations removed: \(dropped)")
+    lines.append("RefineID identity configurations removed: \(dropped)")
 
     PrimeStore.forgetAll()
-    lines.append("ReFineID prime store: cleared")
+    lines.append("RefineID prime store: cleared")
     #if os(iOS) && REFINEID_LOCAL_CARD
       Task { @MainActor in HolderCardServing.availabilityChanged() }
     #endif
 
     let revoked = Self.revokeEveryPairing()
-    lines.append("ReFineID pairings revoked: \(revoked)")
+    lines.append("RefineID pairings revoked: \(revoked)")
 
     let traceStatus = ExtensionTrace.clear()
     let traceCleared = traceStatus == errSecSuccess || traceStatus == errSecItemNotFound
     lines.append(
       traceCleared
-        ? "ReFineID extension trace: cleared"
-        : "ReFineID extension trace: clear failed (\(traceStatus))")
+        ? "RefineID extension trace: cleared"
+        : "RefineID extension trace: clear failed (\(traceStatus))")
     lines.append("Stored CAN and PIN 1: preserved")
     lines.append("=== end ===")
     return Outcome(
@@ -100,7 +100,7 @@ internal enum CardStateReset {
       let manager = TKSmartCardTokenRegistrationManager.default
       let ours = Self.registeredOurTokenIDs()
       guard !ours.isEmpty else {
-        return (["ReFineID Safari registrations: none"], true)
+        return (["RefineID Safari registrations: none"], true)
       }
       var succeeded = true
       let lines = ours.map { tokenID in
@@ -114,11 +114,11 @@ internal enum CardStateReset {
       }
       return (lines, succeeded)
     #else
-      return (["ReFineID Safari registrations: not used on this platform"], true)
+      return (["RefineID Safari registrations: not used on this platform"], true)
     #endif
   }
 
-  /// ReFineID registrations already known to CryptoTokenKit.
+  /// RefineID registrations already known to CryptoTokenKit.
   private static func registeredOurTokenIDs() -> [String] {
     #if os(iOS)
       return TKSmartCardTokenRegistrationManager.default.registeredSmartCardTokens

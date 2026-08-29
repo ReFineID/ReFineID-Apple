@@ -12,6 +12,8 @@
 
     @Test("Complete end-to-end zero-touch autopairing, Noise session handshake, and signing")
     internal func testAutoPairingAndEndToEndSessionCrossing() async throws {
+      RappPairNames.forgetAll()
+      defer { RappPairNames.forgetAll() }
       let storage = InMemoryCloudStorage()
 
       // 1. Initialize iPhone (Card Holder) & Mac (Requester)
@@ -67,6 +69,8 @@
 
     @Test("iPhone holder concurrently autopairs with both Mac and iPad requesters without PIN")
     internal func testMultiDeviceConcurrentAutoPairing() async throws {
+      RappPairNames.forgetAll()
+      defer { RappPairNames.forgetAll() }
       let storage = InMemoryCloudStorage()
 
       // 1. Initialize iPhone holder with primed identity

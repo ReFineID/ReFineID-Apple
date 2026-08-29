@@ -34,7 +34,7 @@
       let listener = StreamRelayListener { event in
         Task { await arrivals.record(String(describing: event)) }
       }
-      listener.start(displayName: "ReFineID listen probe")
+      listener.start(displayName: "RefineID listen probe")
       defer { listener.cancel() }
 
       var bound: UInt16?

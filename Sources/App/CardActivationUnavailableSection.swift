@@ -16,7 +16,7 @@
     internal var body: some View {
       Section {
         Text("This identity card has not been activated yet.")
-        Text("Activating a card is not part of this version of ReFineID.")
+        Text("Activating a card is not part of this version of RefineID.")
           .foregroundStyle(.secondary)
         Text("Activate the card first, then return here to take it into use.")
           .foregroundStyle(.secondary)

@@ -171,7 +171,7 @@ internal final class PersistentTokenDriver: TKTokenDriver,
     ) throws -> Data {
       do {
         let response = try RappPersistentRequesterClient(
-          displayName: "ReFineID Token",
+          displayName: "RefineID Token",
           pair: persistentToken.pairRecord
         ).perform(
           .browserAuthentication(

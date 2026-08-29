@@ -25,9 +25,9 @@
 		<string>_refineid-stream._udp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>ReFineID uses the local network to connect your devices securely for identity-card operations.</string>
+	<string>RefineID uses the local network to connect your devices securely for identity-card operations.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>ReFineID uses Bluetooth to connect your devices securely for identity-card operations.</string>
+	<string>RefineID uses Bluetooth to connect your devices securely for identity-card operations.</string>
 </dict>
 </plist>
 

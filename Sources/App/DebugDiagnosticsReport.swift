@@ -46,7 +46,7 @@
 
     /// The whole report, one line per fact.
     internal static func lines() -> [String] {
-      var report = ["=== ReFineID diagnostics ==="]
+      var report = ["=== RefineID diagnostics ==="]
       report += Self.versionLines()
       report += DiagnosticsSnapshot.collect().text.components(separatedBy: Self.newline)
       report += Self.cardLines(Self.capturedSnapshot())

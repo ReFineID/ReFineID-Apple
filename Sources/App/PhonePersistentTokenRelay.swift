@@ -91,7 +91,7 @@
         let nearbyConnectionID = UUID()
         let nearby = PersistentRelaySession(
           role: .cardHolder,
-          displayName: "ReFineID iPhone"
+          displayName: "RefineID iPhone"
         ) { [weak self] event in
           Task { @MainActor in
             self?.receive(event, connectionID: nearbyConnectionID)

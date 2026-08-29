@@ -25,14 +25,14 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NFCReaderUsageDescription</key>
-	<string>ReFineID reads your identity card over NFC for authentication, document signing, and PIN management.</string>
+	<string>RefineID reads your identity card over NFC for authentication, document signing, and PIN management.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>ReFineID reads the access number printed on your card so you do not have to type it.</string>
+	<string>RefineID reads the access number printed on your card so you do not have to type it.</string>
 	<key>UIApplicationShortcutItems</key>
 	<array>
 		<dict>

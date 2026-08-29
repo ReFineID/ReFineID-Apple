@@ -109,15 +109,15 @@ xcrun simctl status_bar "$DEVICE_UDID" override \
   --wifiBars 3 \
   --cellularBars 4
 
-echo "==> Building ReFineID for iOS Simulator..."
+echo "==> Building RefineID for iOS Simulator..."
 xcodebuild build \
   -project "$REPO_ROOT/ReFineID.xcodeproj" \
-  -scheme ReFineID \
+  -scheme RefineID \
   -destination "platform=iOS Simulator,id=$DEVICE_UDID" \
   -configuration Debug \
   -quiet
 
-DERIVED_DATA_DIR="$(xcodebuild -project "$REPO_ROOT/ReFineID.xcodeproj" -scheme ReFineID -showBuildSettings -configuration Debug -destination "platform=iOS Simulator,id=$DEVICE_UDID" | grep -m 1 "TARGET_BUILD_DIR =" | awk -F '= ' '{print $2}')"
+DERIVED_DATA_DIR="$(xcodebuild -project "$REPO_ROOT/ReFineID.xcodeproj" -scheme RefineID -showBuildSettings -configuration Debug -destination "platform=iOS Simulator,id=$DEVICE_UDID" | grep -m 1 "TARGET_BUILD_DIR =" | awk -F '= ' '{print $2}')"
 APP_BUNDLE="$DERIVED_DATA_DIR/ReFineID.app"
 
 if [[ ! -d "$APP_BUNDLE" ]]; then

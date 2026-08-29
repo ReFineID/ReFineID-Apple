@@ -645,7 +645,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/RappTokenExtension-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "ReFineID Token";
+				INFOPLIST_KEY_CFBundleDisplayName = "RefineID Token";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright 2026 Petri Koistinen";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -875,6 +875,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/ReFineID-iOS-Info.plist";
 				"INFOPLIST_FILE[sdk=macosx*]" = "Config/ReFineID-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = RefineID;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright 2026 Petri Koistinen";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -918,6 +919,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/ReFineID-iOS-Store-Info.plist";
 				"INFOPLIST_FILE[sdk=macosx*]" = "Config/ReFineID-Store-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = RefineID;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright 2026 Petri Koistinen";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -961,6 +963,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/ReFineID-iOS-Store-Info.plist";
 				"INFOPLIST_FILE[sdk=macosx*]" = "Config/ReFineID-Store-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = RefineID;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright 2026 Petri Koistinen";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -994,7 +997,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/TokenExtension-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "ReFineID Token";
+				INFOPLIST_KEY_CFBundleDisplayName = "RefineID Token";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright 2026 Petri Koistinen";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1025,7 +1028,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/TokenExtension-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "ReFineID Token";
+				INFOPLIST_KEY_CFBundleDisplayName = "RefineID Token";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright 2026 Petri Koistinen";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1056,7 +1059,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/TokenExtension-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "ReFineID Token";
+				INFOPLIST_KEY_CFBundleDisplayName = "RefineID Token";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright 2026 Petri Koistinen";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1120,7 +1123,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/DiscoveryExtension-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "ReFineID Card Discovery";
+				INFOPLIST_KEY_CFBundleDisplayName = "RefineID Card Discovery";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright 2026 Petri Koistinen";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1151,7 +1154,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/DiscoveryExtension-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "ReFineID Card Discovery";
+				INFOPLIST_KEY_CFBundleDisplayName = "RefineID Card Discovery";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright 2026 Petri Koistinen";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1182,7 +1185,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/DiscoveryExtension-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "ReFineID Card Discovery";
+				INFOPLIST_KEY_CFBundleDisplayName = "RefineID Card Discovery";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright 2026 Petri Koistinen";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1330,6 +1333,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/ReFineID-iOS-Info.plist";
 				"INFOPLIST_FILE[sdk=macosx*]" = "Config/ReFineID-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = RefineID;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright 2026 Petri Koistinen";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -1364,7 +1368,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/TokenExtension-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "ReFineID Token";
+				INFOPLIST_KEY_CFBundleDisplayName = "RefineID Token";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright 2026 Petri Koistinen";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1408,7 +1412,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/DiscoveryExtension-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "ReFineID Card Discovery";
+				INFOPLIST_KEY_CFBundleDisplayName = "RefineID Card Discovery";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright 2026 Petri Koistinen";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1455,7 +1459,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/RappTokenExtension-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "ReFineID Token";
+				INFOPLIST_KEY_CFBundleDisplayName = "RefineID Token";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright 2026 Petri Koistinen";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1488,7 +1492,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/RappTokenExtension-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "ReFineID Token";
+				INFOPLIST_KEY_CFBundleDisplayName = "RefineID Token";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright 2026 Petri Koistinen";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1572,7 +1576,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/RappTokenExtension-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "ReFineID Token";
+				INFOPLIST_KEY_CFBundleDisplayName = "RefineID Token";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright 2026 Petri Koistinen";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

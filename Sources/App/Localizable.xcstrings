@@ -247,24 +247,24 @@
         }
       }
     },
-    "About ReFineID": {
+    "About RefineID": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "About ReFineID"
+            "value": "About RefineID"
           }
         },
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tietoja: ReFineID"
+            "value": "Tietoja: RefineID"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Om ReFineID"
+            "value": "Om RefineID"
           }
         }
       }
@@ -355,18 +355,18 @@
         }
       }
     },
-    "Activating a card is not part of this version of ReFineID.": {
+    "Activating a card is not part of this version of RefineID.": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kortin aktivointi ei kuulu tähän ReFineID:n versioon."
+            "value": "Kortin aktivointi ei kuulu tähän RefineID:n versioon."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aktivering av kortet ingår inte i den här versionen av ReFineID."
+            "value": "Aktivering av kortet ingår inte i den här versionen av RefineID."
           }
         }
       }
@@ -1281,18 +1281,18 @@
         }
       }
     },
-    "Clears only ReFineID's diagnostic trace.": {
+    "Clears only RefineID's diagnostic trace.": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tyhjentää vain ReFineID:n diagnostiikkajäljen."
+            "value": "Tyhjentää vain RefineID:n diagnostiikkajäljen."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rensar endast ReFineID:s diagnostikspår."
+            "value": "Rensar endast RefineID:s diagnostikspår."
           }
         }
       }
@@ -3196,18 +3196,18 @@
         }
       }
     },
-    "Enter this code in ReFineID on your iPhone to pair.": {
+    "Enter this code in RefineID on your iPhone to pair.": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Syötä koodi ReFineID-sovellukseen iPhonessa."
+            "value": "Syötä koodi RefineID-sovellukseen iPhonessa."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ange koden i ReFineID på din iPhone."
+            "value": "Ange koden i RefineID på din iPhone."
           }
         }
       }
@@ -3508,138 +3508,138 @@
         }
       }
     },
-    "ReFineID": {
+    "RefineID": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "ReFineID"
+            "value": "RefineID"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "ReFineID"
+            "value": "RefineID"
           }
         }
       }
     },
-    "ReFineID Mac": {
+    "RefineID Mac": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "ReFineID Mac"
+            "value": "RefineID Mac"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "ReFineID Mac"
+            "value": "RefineID Mac"
           }
         }
       }
     },
-    "ReFineID does not use either of the last two attempts.": {
+    "RefineID does not use either of the last two attempts.": {
       "extractionState": "manual",
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "ReFineID ei käytä kumpaakaan kahdesta viimeisestä yrityksestä."
+            "value": "RefineID ei käytä kumpaakaan kahdesta viimeisestä yrityksestä."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "ReFineID använder inte något av de två sista försöken."
+            "value": "RefineID använder inte något av de två sista försöken."
           }
         }
       }
     },
-    "ReFineID iPad": {
+    "RefineID iPad": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "ReFineID iPad"
+            "value": "RefineID iPad"
           }
         },
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "ReFineID iPad"
+            "value": "RefineID iPad"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "ReFineID iPad"
+            "value": "RefineID iPad"
           }
         }
       }
     },
-    "ReFineID iPhone": {
+    "RefineID iPhone": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "ReFineID iPhone"
+            "value": "RefineID iPhone"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "ReFineID iPhone"
+            "value": "RefineID iPhone"
           }
         }
       }
     },
-    "ReFineID will not use a credential with one or two attempts left. Restore it with other software, or unblock it here once the card has blocked it.": {
+    "RefineID will not use a credential with one or two attempts left. Restore it with other software, or unblock it here once the card has blocked it.": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "ReFineID ei käytä tunnuslukua, jossa on yksi tai kaksi yritystä jäljellä. Palauta se toisella ohjelmistolla tai poista sulku täällä, kun kortti on lukinnut sen."
+            "value": "RefineID ei käytä tunnuslukua, jossa on yksi tai kaksi yritystä jäljellä. Palauta se toisella ohjelmistolla tai poista sulku täällä, kun kortti on lukinnut sen."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "ReFineID använder inte en kod med ett eller två försök kvar. Återställ den med annan programvara, eller lås upp den här när kortet har låst den."
+            "value": "RefineID använder inte en kod med ett eller två försök kvar. Återställ den med annan programvara, eller lås upp den här när kortet har låst den."
           }
         }
       }
     },
-    "ReFineID will not use either of the final two PUK attempts.": {
+    "RefineID will not use either of the final two PUK attempts.": {
       "extractionState": "manual",
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "ReFineID ei käytä kumpaakaan kahdesta viimeisestä PUK-yrityksestä."
+            "value": "RefineID ei käytä kumpaakaan kahdesta viimeisestä PUK-yrityksestä."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "ReFineID använder inte något av de två sista PUK-försöken."
+            "value": "RefineID använder inte något av de två sista PUK-försöken."
           }
         }
       }
     },
-    "ReFineID's Safari card identities were reset.": {
+    "RefineID's Safari card identities were reset.": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "ReFineID:n Safari-korttitunnisteet nollattiin."
+            "value": "RefineID:n Safari-korttitunnisteet nollattiin."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "ReFineID:s kortidentiteter för Safari återställdes."
+            "value": "RefineID:s kortidentiteter för Safari återställdes."
           }
         }
       }
@@ -4294,18 +4294,18 @@
         }
       }
     },
-    "Scan with ReFineID on the phone": {
+    "Scan with RefineID on the phone": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Skannaa puhelimen ReFineID-sovelluksella"
+            "value": "Skannaa puhelimen RefineID-sovelluksella"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Skanna med ReFineID på telefonen"
+            "value": "Skanna med RefineID på telefonen"
           }
         }
       }
@@ -4597,18 +4597,18 @@
         }
       }
     },
-    "Some ReFineID Safari identity state could not be removed.": {
+    "Some RefineID Safari identity state could not be removed.": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Osaa ReFineID:n Safari-identiteettitiedoista ei voitu poistaa."
+            "value": "Osaa RefineID:n Safari-identiteettitiedoista ei voitu poistaa."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "En del av ReFineID:s identitetsdata för Safari kunde inte tas bort."
+            "value": "En del av RefineID:s identitetsdata för Safari kunde inte tas bort."
           }
         }
       }
@@ -4744,18 +4744,18 @@
         }
       }
     },
-    "Test the ReFineID identity token": {
+    "Test the RefineID identity token": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Testaa ReFineID-identiteettitunnistetta"
+            "value": "Testaa RefineID-identiteettitunnistetta"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Testa ReFineID-identitetstoken"
+            "value": "Testa RefineID-identitetstoken"
           }
         }
       }
@@ -5295,18 +5295,18 @@
         }
       }
     },
-    "This clears ReFineID's diagnostic trace. It does not remove your card details or Safari identity.": {
+    "This clears RefineID's diagnostic trace. It does not remove your card details or Safari identity.": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tämä tyhjentää ReFineID:n diagnostiikkajäljen. Se ei poista korttitietojasi eikä Safari-identiteettiäsi."
+            "value": "Tämä tyhjentää RefineID:n diagnostiikkajäljen. Se ei poista korttitietojasi eikä Safari-identiteettiäsi."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Detta rensar ReFineID:s diagnostikspår. Det tar inte bort dina kortuppgifter eller din identitet för Safari."
+            "value": "Detta rensar RefineID:s diagnostikspår. Det tar inte bort dina kortuppgifter eller din identitet för Safari."
           }
         }
       }

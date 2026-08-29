@@ -130,7 +130,7 @@ internal struct CardManagementView: View {
         .frame(minWidth: windowWidth)
       #else
         .navigationTitle(
-          awaitsActivation ? "ReFineID" : "Personal Identification Numbers"
+          awaitsActivation ? "RefineID" : "Personal Identification Numbers"
         )
         .navigationBarTitleDisplayMode(awaitsActivation ? .large : .inline)
       #endif

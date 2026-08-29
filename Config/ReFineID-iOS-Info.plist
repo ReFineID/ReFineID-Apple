@@ -11,11 +11,11 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NFCReaderUsageDescription</key>
-	<string>ReFineID reads your identity card over NFC for authentication, document signing, activation, and PIN management.</string>
+	<string>RefineID reads your identity card over NFC for authentication, document signing, activation, and PIN management.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>ReFineID uses Bluetooth to connect devices securely for remote identity card operations.</string>
+	<string>RefineID uses Bluetooth to connect devices securely for remote identity card operations.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
-	<string>ReFineID uses Bluetooth to connect devices securely for remote identity card operations.</string>
+	<string>RefineID uses Bluetooth to connect devices securely for remote identity card operations.</string>
 
 	<key>NSAppTransportSecurity</key>
 	<dict>
@@ -32,9 +32,9 @@
 		<string>_refineid-stream._udp</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>ReFineID reads the access number printed on your card so you do not have to type it.</string>
+	<string>RefineID reads the access number printed on your card so you do not have to type it.</string>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>ReFineID uses the local network to connect your devices securely for identity-card operations.</string>
+	<string>RefineID uses the local network to connect your devices securely for identity-card operations.</string>
 	<key>UIApplicationShortcutItems</key>
 	<array>
 		<dict>

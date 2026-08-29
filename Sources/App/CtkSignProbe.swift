@@ -39,7 +39,7 @@
 
       lines.append(contentsOf: certificateReferenceReport())
       let context = LAContext()
-      context.localizedReason = String(localized: "Test the ReFineID identity token")
+      context.localizedReason = String(localized: "Test the RefineID identity token")
       guard let privateKey = copyTokenKey(tokenID: tokenID, context: context) else {
         return lines + dumpTokenKeychain() + ["FAIL: no refineid key in keychain"]
       }
@@ -50,7 +50,7 @@
     }
 
     private static func signThroughExtension(privateKey: SecKey, publicKey: SecKey) -> [String] {
-      let digest = Data(SHA384.hash(data: Data("ReFineID CTK path test".utf8)))
+      let digest = Data(SHA384.hash(data: Data("RefineID CTK path test".utf8)))
       let algorithm = SecKeyAlgorithm.ecdsaSignatureDigestX962SHA384
       guard SecKeyIsAlgorithmSupported(privateKey, .sign, algorithm) else {
         return ["FAIL: token key does not support the algorithm (supports said NO)"]

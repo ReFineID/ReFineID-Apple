@@ -43,10 +43,10 @@ derived_data="/tmp/refineid-apple-development"
 configuration="Profile"
 app_path="${derived_data}/Build/Products/${configuration}-iphoneos/ReFineID.app"
 
-echo "building ReFineID ${version} (${build}) (${configuration}, optimized) for ${device}"
+echo "building RefineID ${version} (${build}) (${configuration}, optimized) for ${device}"
 xcodebuild \
   -project ReFineID.xcodeproj \
-  -scheme ReFineID \
+  -scheme RefineID \
   -configuration "$configuration" \
   -destination "platform=iOS,id=${device}" \
   -derivedDataPath "$derived_data" \
