@@ -33,7 +33,7 @@ extension XadesSignature {
     // of the archive is named plainly here, even though this document
     // lives under `META-INF/`.
     for (index, object) in objects.enumerated() {
-      let uri = Self.escapeAttribute(Self.percentEncodePath(object.name))
+      let uri = Self.escapeAttribute(object.name)
       let digest = Data(SHA384.hash(data: object.content))
         .base64EncodedString()
       out += #"<ds:Reference Id="\#(Self.referenceId(index))" "#
