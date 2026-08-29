@@ -1513,13 +1513,13 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Säiliö"
+            "value": "Salkku"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Container"
+            "value": "Portfölj"
           }
         }
       }
@@ -5235,13 +5235,13 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Allekirjoitettu säiliö ei voi korvata alkuperäistä tiedostoa."
+            "value": "Allekirjoitettu salkku ei voi korvata alkuperäistä tiedostoa."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Den undertecknade containern kan inte ersätta en av originalfilerna."
+            "value": "Den signerade portföljen kan inte ersätta en av originalfilerna."
           }
         }
       }
@@ -5723,6 +5723,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Var de signerade dokumenten ska sparas."
+          }
+        }
+      }
+    },
+    "Where to keep the signed portfolio.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mihin allekirjoitettu salkku tallennetaan."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Var den signerade portföljen ska sparas."
           }
         }
       }

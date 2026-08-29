@@ -33,26 +33,32 @@
       let instant = Date()
       let panel = NSSavePanel()
       panel.allowedContentTypes = format.allowedContentTypes
+      let defaultStem = String(
+        localized: "output.multiple",
+        defaultValue: "portfolio",
+        table: "DocumentSigning"
+      )
       panel.nameFieldStringValue =
         together
-        ? SignDocumentModel.signedNameSuffix(at: instant)
+        ? SignedDocumentName.suggested(
+          sourceNames: documents.map(\.lastPathComponent),
+          format: format,
+          at: instant
+        )
         : SignDocumentModel.suggestedName(for: first, format: format)
       panel.directoryURL = first.deletingLastPathComponent()
       panel.message =
         together
-        ? String(localized: "Write a name in front of the signing time.")
+        ? String(localized: "Where to keep the signed portfolio.")
         : String(localized: "Where to keep the signed document.")
       panel.prompt = String(localized: "Sign")
       if together {
-        // The panel opens with the whole field selected, where the
-        // first keystroke would replace the proposed instant. The
-        // caret is moved to the front instead, so what is typed
-        // becomes the name's beginning. Scheduled onto the panel's
-        // own run loop, because the field editor does not exist
-        // until the panel is on screen.
+        // The default portfolio name (e.g. "salkku") is initially selected
+        // so typing immediately replaces it while preserving the signing
+        // instant suffix.
         DispatchQueue.main.async {
           (panel.firstResponder as? NSTextView)?
-            .setSelectedRange(NSRange(location: 0, length: 0))
+            .setSelectedRange(NSRange(location: 0, length: defaultStem.utf16.count))
         }
       }
       guard panel.runModal() == .OK, let chosen = panel.url else { return nil }

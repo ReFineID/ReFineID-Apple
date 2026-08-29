@@ -172,19 +172,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The signed container could not be written."
+            "value" : "The signed portfolio could not be written."
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Allekirjoitussäiliötä ei voitu kirjoittaa."
+            "value" : "Allekirjoitussalkkua ei voitu kirjoittaa."
           }
         },
         "sv" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Den signerade behållaren kunde inte skrivas."
+            "value" : "Den signerade portföljen kunde inte skrivas."
           }
         }
       }
@@ -677,19 +677,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "As a package (ASiC-E)"
+            "value" : "As a portfolio (ASiC-E)"
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pakettina (ASiC-E)"
+            "value" : "Salkkuna (ASiC-E)"
           }
         },
         "sv" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Som paket (ASiC-E)"
+            "value" : "Som portfölj (ASiC-E)"
           }
         }
       }
@@ -722,19 +722,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Signed documents"
+            "value" : "portfolio"
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Allekirjoitetut asiakirjat"
+            "value" : "salkku"
           }
         },
         "sv" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Signerade dokument"
+            "value" : "portfölj"
           }
         }
       }

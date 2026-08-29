@@ -15,7 +15,7 @@ internal enum SignedDocumentName {
     } else {
       stem = String(
         localized: "output.multiple",
-        defaultValue: "Signed documents",
+        defaultValue: "portfolio",
         table: "DocumentSigning")
     }
     let formatter = ISO8601DateFormatter()
