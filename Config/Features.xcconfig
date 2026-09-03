@@ -47,7 +47,7 @@
 // Flags are space-separated. To ship one again:
 //   REFINEID_FEATURES = FEATURE_PDF_STAMP FEATURE_CONTACTLESS FEATURE_SCS
 
-REFINEID_FEATURES = FEATURE_PDF_STAMP FEATURE_CONTACTLESS
+REFINEID_FEATURES = FEATURE_PDF_STAMP
 
 // The local card: this build talks to a card the device itself holds,
 // over its own antenna. On by default, because every shipping iPhone

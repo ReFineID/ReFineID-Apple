@@ -7,9 +7,6 @@
   /// The application settings, separated by the choice they affect.
   internal struct ReFineIDSettingsView: View {
     private enum Pane: Hashable {
-      #if FEATURE_CONTACTLESS
-        case cards
-      #endif
       #if FEATURE_PDF_STAMP
         case pdfStamp
       #endif
@@ -54,13 +51,6 @@
     }
 
     @ViewBuilder private var featureSettingsTabs: some View {
-      #if FEATURE_CONTACTLESS
-        CardReadingSettingsView()
-          .tabItem {
-            Label(String(localized: "Cards"), systemImage: "creditcard")
-          }
-          .tag(Pane.cards)
-      #endif
       #if FEATURE_PDF_STAMP
         DocumentStampSettingsView()
           .tabItem {
