@@ -14,6 +14,7 @@
       static let statusBadgeSpacing: CGFloat = 4
       static let statusIndicatorSize: CGFloat = 6
       static let badgeTrailingPadding: CGFloat = 4
+      static let refreshIntervalSeconds: TimeInterval = 3
     }
 
     @StateObject private var model = RappPairingModel()
@@ -40,6 +41,25 @@
       ) { _ in
         reload()
       }
+      .onReceive(
+        NotificationCenter.default.publisher(
+          for: RappPairingModel.pairingsDidChangeNotification
+        )
+      ) { _ in
+        reload()
+      }
+      .onReceive(
+        NotificationCenter.default.publisher(
+          for: NSApplication.didBecomeActiveNotification
+        )
+      ) { _ in
+        reload()
+      }
+      .onReceive(
+        Timer.publish(every: Layout.refreshIntervalSeconds, on: .main, in: .common).autoconnect()
+      ) { _ in
+        reload()
+      }
     }
 
     private var localDeviceSection: some View {
@@ -51,9 +71,9 @@
             .frame(width: Layout.deviceIconWidth)
             .accessibilityHidden(true)
           VStack(alignment: .leading, spacing: Layout.textVerticalSpacing) {
-            Text(localDeviceName)
+            Text(localDeviceTitle)
               .font(.body.weight(.medium))
-            Text(localDeviceSubtitle)
+            Text("Mac • \(localRoleDescription)")
               .font(.caption)
               .foregroundStyle(.secondary)
           }
@@ -73,20 +93,16 @@
       }
     }
 
-    private var localDeviceName: String {
-      RappAutoPairingService.shared.localIdentity?.deviceName
-        ?? Host.current().localizedName
-        ?? ProcessInfo.processInfo.hostName
+    private var localDeviceTitle: String {
+      Host.current().localizedName ?? String(localized: "Mac")
     }
 
-    private var localDeviceSubtitle: String {
-      let deviceModel = RappAutoPairingService.shared.localIdentity?.modelName ?? "Mac"
-      let isHolder = RappAutoPairingService.shared.localRole == .holder
-      let role = isHolder ? "NFC-kortinlukija" : "Etälukija"
-      if !deviceModel.isEmpty, deviceModel != "Mac", deviceModel != "Apple" {
-        return "\(deviceModel) • \(role)"
-      }
-      return role
+    private var localRoleDescription: String {
+      #if os(macOS)
+        "Etälukija"
+      #else
+        "NFC-kortinlukija"
+      #endif
     }
 
     private var remoteDevicesSection: some View {
@@ -110,7 +126,7 @@
             deviceRow(
               deviceID: nil,
               name: RappPairNames.name(forPairID: pair.pairID) ?? String(localized: "Device"),
-              isHolder: pair.role == .proxy,
+              isHolder: pair.role == .requester,
               modelName: nil,
               onDelete: {
                 model.revoke(pairID: pair.pairID)
@@ -160,10 +176,11 @@
       modelName: String?,
       onDelete: @escaping () -> Void
     ) -> some View {
-      let isOnline = RappAutoPairingService.shared.isDeviceOnline(
-        deviceID: deviceID,
-        deviceName: name
-      )
+      let isOnline =
+        RappAutoPairingService.shared.isDeviceOnline(
+          deviceID: deviceID,
+          deviceName: name
+        ) || (isHolder && PersistentTokenRegistry.shared.holderIsAdvertising)
       let cardIsReady =
         isHolder
         && (PersistentTokenRegistry.shared.holderIsAdvertising

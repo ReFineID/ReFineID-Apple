@@ -29,11 +29,11 @@
       var seen = Set<Data>()
       return try vault.activePairIDs()
         .sorted { $0.lexicographicallyPrecedes($1) }
-        .map { pairID in
-          guard seen.insert(pairID).inserted else {
-            throw CatalogError.duplicatePairIdentifier
+        .compactMap { pairID in
+          guard seen.insert(pairID).inserted else { return nil }
+          guard let pair = try? RappPairRecord.loadFromVault(pairId: pairID, vault: vault) else {
+            return nil
           }
-          let pair = try RappPairRecord.loadFromVault(pairId: pairID, vault: vault)
           return RappPairingCoordinator.PairSummary(pair.metadata())
         }
     }
@@ -46,7 +46,7 @@
     /// The summary of the selected pair, or nil when none is selected.
     public func selectedPair() throws -> RappPairingCoordinator.PairSummary? {
       guard let pairID = try vault.selectedPairID() else { return nil }
-      let pair = try load(pairID: pairID)
+      guard let pair = try? load(pairID: pairID) else { return nil }
       return RappPairingCoordinator.PairSummary(pair.metadata())
     }
 
