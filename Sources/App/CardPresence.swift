@@ -24,6 +24,9 @@ internal final class CardPresence: ObservableObject {
   /// iPhone's temporary NFC slot.
   @Published internal private(set) var isReaderCardPresent = false
 
+  /// Whether an external smart card reader hardware is connected.
+  @Published internal private(set) var isReaderConnected = false
+
   /// Whether an external-reader card has completed system probing and
   /// is ready for a session.
   ///
@@ -132,6 +135,12 @@ internal final class CardPresence: ObservableObject {
       #if os(iOS) && REFINEID_LOCAL_CARD
         HolderCardServing.availabilityChanged()
       #endif
+    }
+    let readerConnected = slots.contains { name, _ in
+      CardTransport.transport(forSlotNamed: name) == .reader
+    }
+    if readerConnected != isReaderConnected {
+      isReaderConnected = readerConnected
     }
     if readerReady != isReaderCardReady {
       isReaderCardReady = readerReady

@@ -151,9 +151,19 @@
           } else if availability == .noCard {
             // With no card there is exactly one thing to say, and a
             // labeled row saying it twice is not it.
-            Text("Insert your identity card into the reader")
-              .foregroundStyle(.secondary)
-              .accessibilityIdentifier("loginIdentityStatus")
+            #if REFINEID_REMOTE_CARD
+              if !cardPresence.isReaderConnected {
+                RemotePairingPromptView()
+              } else {
+                Text("Insert your identity card into the reader")
+                  .foregroundStyle(.secondary)
+                  .accessibilityIdentifier("loginIdentityStatus")
+              }
+            #else
+              Text("Insert your identity card into the reader")
+                .foregroundStyle(.secondary)
+                .accessibilityIdentifier("loginIdentityStatus")
+            #endif
           } else {
             // A card with no usable identity cannot sign. Keep the
             // failure local to the identity row instead of offering
