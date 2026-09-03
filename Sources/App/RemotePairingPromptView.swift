@@ -19,7 +19,7 @@
         }
         .onReceive(model.$phase) { phase in
           switch phase {
-          case .paired, .failed:
+          case .failed:
             Task { @MainActor in
               try? await Task.sleep(nanoseconds: Layout.retryDelayNanoseconds)
               ensureOffer()

@@ -111,6 +111,9 @@
       }
       shared.holderLine = nil
       shared.certificateDER = nil
+      #if os(macOS)
+        LoginIdentityModel.shared.refresh()
+      #endif
     }
 
     /// The certificate this driver is currently offering, if any.
@@ -206,6 +209,9 @@
       configuration.keychainItems = [certificateItem, keyItem]
       shared.certificateDER = certificateDER
       shared.holderLine = DistinguishedName.holderLine(fromCertificate: certificateDER)
+      #if os(macOS)
+        LoginIdentityModel.shared.refresh()
+      #endif
       #if DEBUG
         print("[persistent-token] published \(instanceID)")
         fflush(stdout)
