@@ -39,9 +39,17 @@ final class ClientCertificateDelegate: NSObject, URLSessionDelegate, URLSessionT
     if method == NSURLAuthenticationMethodClientCertificate {
       challengeReceived = true
       print("  [mTLS] Server '\(host):\(port)' requested client certificate")
+      var certs: [SecCertificate] = [certificate]
+      var trust: SecTrust?
+      let policy = SecPolicyCreateBasicX509()
+      if SecTrustCreateWithCertificates(certificate, policy, &trust) == errSecSuccess, let trust = trust {
+        if let chain = SecTrustCopyCertificateChain(trust) as? [SecCertificate] {
+          certs = chain
+        }
+      }
       let credential = URLCredential(
         identity: identity,
-        certificates: [certificate],
+        certificates: certs,
         persistence: .forSession
       )
       completionHandler(.useCredential, credential)

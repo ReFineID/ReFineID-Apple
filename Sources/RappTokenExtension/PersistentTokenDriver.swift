@@ -151,11 +151,15 @@ internal final class PersistentTokenDriver: TKTokenDriver,
       }
       let started = Date()
       Self.say("rapp sign asked")
-      let signature = try performRelaySign(
+      let raw = try performRelaySign(
         request: request,
         algorithm: relayAlgorithm,
         started: started
       )
+      guard let signature = request.wireSignature(from: raw) else {
+        Self.say("rapp sign malformed after \(Self.millisecondsSince(started)) ms")
+        throw TKError(.corruptedData)
+      }
       guard request.isSatisfied(by: signature, from: persistentToken.publicKey) else {
         Self.say("rapp sign rejected after \(Self.millisecondsSince(started)) ms")
         throw TKError(.corruptedData)
