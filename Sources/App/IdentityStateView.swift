@@ -125,8 +125,9 @@
         // observed answering empty against an identity Safari was
         // using at that same moment, so an empty answer proves
         // nothing and must never cost a registration anything.
+        let tokenIDs = Array(model.ownedTokenIDs)
         holder = await Task.detached(priority: .utility) {
-          PublishedIdentityName.current()
+          PublishedIdentityName.current(tokenIDs: tokenIDs)
         }.value
         if holder == nil {
           holder = borrowedHolderLine

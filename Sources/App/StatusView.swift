@@ -91,16 +91,18 @@
           Text(verbatim: "RefineID")
             .font(.largeTitle.bold())
           Spacer()
-          SettingsLink {
-            StatusSettingsGlyph(
-              pinLevel: retryHealth.level,
-              routeAvailable: availability == .ready
-            )
+          if !cardPresence.isReaderConnected {
+            SettingsLink {
+              StatusSettingsGlyph(
+                pinLevel: retryHealth.level,
+                routeAvailable: availability == .ready
+              )
+            }
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.circle)
+            .controlSize(.large)
+            .accessibilityIdentifier("manageCard")
           }
-          .buttonStyle(.bordered)
-          .buttonBorderShape(.circle)
-          .controlSize(.large)
-          .accessibilityIdentifier("manageCard")
         }
         Form {
           // While an entered number awaits the card's verdict, the

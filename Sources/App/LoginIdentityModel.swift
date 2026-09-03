@@ -83,7 +83,7 @@
 
     /// Owned identities last reported, so a listing that did not move
     /// does not rebuild the login row.
-    private var ownedTokenIDs: Set<String> = []
+    internal private(set) var ownedTokenIDs: Set<String> = []
 
     /// Whether Safari can be offered an identity from this card.
     internal private(set) var isReady = false
