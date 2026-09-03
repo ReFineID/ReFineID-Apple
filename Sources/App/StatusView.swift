@@ -91,18 +91,6 @@
           Text(verbatim: "RefineID")
             .font(.largeTitle.bold())
           Spacer()
-          if !cardPresence.isReaderConnected {
-            SettingsLink {
-              StatusSettingsGlyph(
-                pinLevel: retryHealth.level,
-                routeAvailable: availability == .ready
-              )
-            }
-            .buttonStyle(.bordered)
-            .buttonBorderShape(.circle)
-            .controlSize(.large)
-            .accessibilityIdentifier("manageCard")
-          }
         }
         Form {
           // While an entered number awaits the card's verdict, the
@@ -138,6 +126,14 @@
             documentSection
             signatureSection
             outcomeSection
+          } else if !cardPresence.isReaderConnected {
+            #if REFINEID_REMOTE_CARD
+              RemotePairingPromptView()
+            #else
+              Text("Insert your identity card into the reader")
+                .foregroundStyle(.secondary)
+                .accessibilityIdentifier("loginIdentityStatus")
+            #endif
           } else if activation.isReading {
             // Protocol negotiation may momentarily make the reader say
             // its slot is empty. The operation is still in progress,
@@ -153,19 +149,9 @@
           } else if availability == .noCard {
             // With no card there is exactly one thing to say, and a
             // labeled row saying it twice is not it.
-            #if REFINEID_REMOTE_CARD
-              if !cardPresence.isReaderConnected {
-                RemotePairingPromptView()
-              } else {
-                Text("Insert your identity card into the reader")
-                  .foregroundStyle(.secondary)
-                  .accessibilityIdentifier("loginIdentityStatus")
-              }
-            #else
-              Text("Insert your identity card into the reader")
-                .foregroundStyle(.secondary)
-                .accessibilityIdentifier("loginIdentityStatus")
-            #endif
+            Text("Insert your identity card into the reader")
+              .foregroundStyle(.secondary)
+              .accessibilityIdentifier("loginIdentityStatus")
           } else {
             // A card with no usable identity cannot sign. Keep the
             // failure local to the identity row instead of offering

@@ -2336,18 +2336,18 @@
         }
       }
     },
-    "Pair phone with code %@.": {
+    "Connect phone as reader with code: %@": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Liitä kännykkä koodilla %@."
+            "value": "Liitä kännykkä lukijaksi koodilla: %@"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Anslut telefonen med kod %@."
+            "value": "Anslut telefonen som läsare med kod: %@"
           }
         }
       }

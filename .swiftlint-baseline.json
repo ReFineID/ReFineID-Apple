@@ -2065,7 +2065,7 @@
         "file": "Sources/App/StatusView.swift",
         "line": 21
       },
-      "reason": "Struct body should span 250 lines or less excluding comments and whitespace: currently spans 319 lines"
+      "reason": "Struct body should span 250 lines or less excluding comments and whitespace: currently spans 305 lines"
     },
     "text": "  internal struct StatusView: View {"
   },
@@ -2080,7 +2080,7 @@
         "file": "Sources/App/StatusView.swift",
         "line": 89
       },
-      "reason": "Closure body should span 30 lines or less excluding comments and whitespace: currently spans 70 lines"
+      "reason": "Closure body should span 30 lines or less excluding comments and whitespace: currently spans 56 lines"
     },
     "text": "      VStack(alignment: .leading, spacing: Self.spacing) {"
   },
@@ -2093,9 +2093,9 @@
       "location": {
         "character": 14,
         "file": "Sources/App/StatusView.swift",
-        "line": 105
+        "line": 95
       },
-      "reason": "Closure body should span 30 lines or less excluding comments and whitespace: currently spans 49 lines"
+      "reason": "Closure body should span 30 lines or less excluding comments and whitespace: currently spans 47 lines"
     },
     "text": "        Form {"
   },
@@ -2108,9 +2108,9 @@
       "location": {
         "character": 1,
         "file": "Sources/App/StatusView.swift",
-        "line": 465
+        "line": 451
       },
-      "reason": "File should contain 400 lines or less: currently contains 465"
+      "reason": "File should contain 400 lines or less: currently contains 451"
     },
     "text": "#endif"
   },

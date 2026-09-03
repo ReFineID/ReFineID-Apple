@@ -33,7 +33,8 @@
 
     @ViewBuilder private var promptText: some View {
       if case .offer(let code) = model.phase {
-        Text(String(localized: "Pair phone with code \(code)."))
+        let formattedCode = RappPairingCode.formatted(code)
+        Text(String(localized: "Connect phone as reader with code: \(formattedCode)"))
           .textSelection(.enabled)
           .accessibilityIdentifier("pairingPrompt")
       } else if case .connecting = model.phase {
