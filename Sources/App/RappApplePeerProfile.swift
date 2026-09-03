@@ -26,9 +26,9 @@
 
     /// Only profiles implemented end to end by the current phone executor.
     internal static let supportedCredentialProfiles = [
-      "fi.eid.card-status.v1",
-      "fi.eid.authentication.v1",
-      "fi.eid.document-signing.v1",
+      "fi.refineid.card-status.v1",
+      "fi.refineid.authentication.v1",
+      "fi.refineid.document-signing.v1",
     ]
 
     internal static func isSupported(_ profile: String) -> Bool {

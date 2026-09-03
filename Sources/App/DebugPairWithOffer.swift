@@ -87,10 +87,19 @@
     @MainActor
     internal static func offer() async -> DebugModeReport {
       let model = RappPairingModel()
+      let initialCount = heldPairCount()
       model.createOffer()
 
       var announced = false
       for _ in 0..<attempts {
+        if heldPairCount() > initialCount {
+          return DebugModeReport(
+            lines: [
+              "offer-remote-reader: paired successfully",
+              "offer-remote-reader: pairings held: " + String(heldPairCount()),
+            ],
+            succeeded: true)
+        }
         switch model.phase {
         case .offer(let uri):
           if !announced {

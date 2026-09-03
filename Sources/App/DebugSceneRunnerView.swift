@@ -138,7 +138,7 @@
     /// A probe blocks on the relay and hops to the main queue to publish, so
     /// running it on the main thread deadlocks the hop.
     private static func runRelayProbe(_ mode: DebugLaunchMode) async {
-      #if os(iOS)
+      #if os(iOS) || os(macOS)
         let work: @Sendable () -> DebugModeReport =
           mode == .remoteIdentityProbe
           ? DebugRemoteIdentityProbe.report
@@ -147,7 +147,7 @@
         DebugConsole.emit(report.lines)
         DebugConsole.finish(succeeded: report.succeeded)
       #else
-        DebugConsole.emit([mode.rawValue + ": asks a paired phone, which only iOS does"])
+        DebugConsole.emit([mode.rawValue + ": asks a paired phone"])
         DebugConsole.finish(succeeded: false)
       #endif
     }
