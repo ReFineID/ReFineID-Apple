@@ -124,7 +124,7 @@
         Self.selectPairReport()
 
       case .remoteIdentityProbe:
-        #if os(iOS)
+        #if os(iOS) || os(macOS)
           DebugRemoteIdentityProbe.report()
         #else
           DebugModeReport(

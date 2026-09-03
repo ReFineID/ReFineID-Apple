@@ -1,6 +1,6 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if DEBUG && os(iOS) && REFINEID_REMOTE_CARD
+#if DEBUG && (os(iOS) || os(macOS)) && REFINEID_REMOTE_CARD
 
   import CardCore
   import CryptoKit
@@ -32,11 +32,18 @@
       var lines = ["remote-sign: asking the paired device"]
       let started = Date()
       do {
+        #if os(macOS)
+          let clientDisplayName = String(localized: "RefineID Mac")
+          let displayContext = "macOS CryptoTokenKit"
+        #else
+          let clientDisplayName = String(localized: "RefineID iPad")
+          let displayContext = "iOS CryptoTokenKit"
+        #endif
         let response = try RappPersistentRequesterClient(
-          displayName: String(localized: "RefineID iPad")
+          displayName: clientDisplayName
         ).perform(
           .browserAuthentication(
-            displayContext: "iOS CryptoTokenKit",
+            displayContext: displayContext,
             keyProfile: .ecdsaP384,
             algorithm: .ecdsaSHA384,
             digest: digest

@@ -125,15 +125,16 @@ import Foundation
 
     /// Handles lifecycle and I/O readiness events from the input and output streams.
     public func stream(_ aStream: Stream, handle eventCode: Stream.Event) {
-
+      let isInputStream = aStream === channel.inputStream
+      let isOutputStream = aStream === channel.outputStream
       queue.async { [weak self] in
         guard let self, !isClosed else { return }
 
         switch eventCode {
         case .openCompleted:
-          if aStream == channel.inputStream {
+          if isInputStream {
             isInputOpen = true
-          } else if aStream == channel.outputStream {
+          } else if isOutputStream {
             isOutputOpen = true
           }
           if isInputOpen, isOutputOpen {
@@ -141,7 +142,7 @@ import Foundation
           }
 
         case .hasBytesAvailable:
-          if aStream == channel.inputStream {
+          if isInputStream {
             readAvailableBytes()
           }
 

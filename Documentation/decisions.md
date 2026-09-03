@@ -1006,3 +1006,25 @@ The architectural solution across European eID ecosystems on iOS is
 schemes, and the Remote Authentication & Proxy Protocol / RAPP) so that NFC
 hardware sessions are opened solely during explicit user-initiated actions.
 
+## 2026-09-03 Cross-platform RAPP token stability and mDNS presence hold on macOS
+
+Live testing of RAPP browser authentication from macOS Safari to an Android
+phone acting as a contactless card reader revealed two timing interactions:
+
+1. **Presence Hold Threshold**: In `PersistentTokenRegistry+Presence`,
+   `advertisementLossHoldSeconds` was previously 2 seconds. Over 802.11 Wi-Fi,
+   periodic mDNS advertisement refreshes from mobile devices (Android and iOS
+   power-saving states) occasionally jitter past 2 seconds. When this occurred,
+   the Mac immediately tore down its CryptoTokenKit configuration and withdrew
+   the published identity in the middle of page navigation, causing Safari to
+   fail client certificate negotiation with HTTP 403. Extending the hold time
+   to 30 seconds absorbs normal beacon jitter while still promptly cleaning up
+   when the cardholder physically leaves.
+2. **Standard Namespace Unification**: All peer credential profile identifiers
+   have been standardized on `fi.refineid.*` (`fi.refineid.card-status.v1`,
+   `fi.refineid.authentication.v1`, `fi.refineid.document-signing.v1`).
+3. **Mac Probes for Remote Card**: Diagnostic probes (`--remote-identity-probe`,
+   `--remote-sign-probe`, and `--ctk-sign-probe`) are fully enabled on macOS,
+   exercising the exact relay and token extension path without requiring manual
+   scene setup.
+

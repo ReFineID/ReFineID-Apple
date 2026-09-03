@@ -11,7 +11,7 @@
     ///
     /// Bonjour browse results drop a live name for a moment without
     /// the holder having left.
-    private static let advertisementLossHoldSeconds = 2
+    private static let advertisementLossHoldSeconds = 30
 
     private static var advertisementLossHold: Duration {
       Duration.seconds(advertisementLossHoldSeconds)

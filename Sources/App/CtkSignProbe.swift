@@ -23,6 +23,9 @@
   /// that sheet, so ``DebugSceneRunnerView`` hosts it and takes the
   /// blocking signature off the main thread.
   internal enum CtkSignProbe {
+    private static let tokenDiscoveryRetryCount = 30
+    private static let tokenDiscoveryPollIntervalSeconds = 0.1
+
     /// What the extension did with a signature request.
     internal static func report() -> DebugModeReport {
       DebugModeReport(lines: Self.collect())
@@ -31,7 +34,12 @@
     private static func collect() -> [String] {
       var lines: [String] = []
       let watcher = TKTokenWatcher()
-      let tokens = watcher.tokenIDs.sorted().filter { $0.hasPrefix("fi.refineid.") }
+      var tokens: [String] = []
+      for _ in 0..<tokenDiscoveryRetryCount {
+        tokens = watcher.tokenIDs.sorted().filter { $0.hasPrefix("fi.refineid.") }
+        if !tokens.isEmpty { break }
+        Thread.sleep(forTimeInterval: tokenDiscoveryPollIntervalSeconds)
+      }
       lines.append("refineid tokens: \(tokens.count) - \(tokens.joined(separator: ", "))")
       guard let tokenID = tokens.first else {
         return lines + ["FAIL: no refineid token registered"]

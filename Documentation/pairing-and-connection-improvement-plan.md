@@ -69,6 +69,9 @@ devices (iPhone).
 
 - `Scripts/pair-devices.sh` automates the offer and acceptance ceremony between
   the iPad simulator and physical iPhone test harness.
+- `refineid-android/scripts/test-pairing-e2e.sh` automates the cross-platform
+  pairing test between macOS (`--offer-remote-reader`) and attached Android
+  hardware via ADB with zero manual interaction.
 - `SafariCardLoginUITests.swift` includes pre-flight validation
   (`ensureCryptoTokenIdentityReady`) to verify active CryptoTokenKit publishing
   prior to driving browser flows.

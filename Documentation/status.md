@@ -98,6 +98,15 @@ locally against the card's certificate. A Release extension logs
 nothing, so the direct probe and the `ctkd` connection log are the
 observation channels that remain.
 
+Re-proven on 2026-09-03 with remote contactless card over Android phone reader:
+macOS Safari client certificate authentication to `https://card.refineid.fi`
+over TLS 1.3 was completed end-to-end using an Android phone (Samsung Galaxy S22)
+acting as the contactless NFC reader. Safari presented the borrowed leaf
+certificate `Perus (PIN 1) (KOISTINEN PETRI 14037871J)`, requested ECDSA P-384
+signing through `ReFineIDRappTokenExtension`, which relayed the request over
+the encrypted Noise stream to the phone. The phone verified PIN 1 on the card
+via NFC and returned the 96-byte signature, completing login.
+
 ## Every card carries its own access number
 
 A contactless card is sealed until PACE, and PACE is keyed by the six

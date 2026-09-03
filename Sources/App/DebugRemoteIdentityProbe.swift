@@ -1,8 +1,9 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if DEBUG && os(iOS) && REFINEID_REMOTE_CARD
+#if DEBUG && (os(iOS) || os(macOS)) && REFINEID_REMOTE_CARD
 
   import CardCore
+  import CryptoTokenKit
   import Foundation
 
   /// Asks the paired device for its authentication certificate.
@@ -26,8 +27,13 @@
 
       let started = Date()
       do {
+        #if os(macOS)
+          let clientDisplayName = String(localized: "RefineID Mac")
+        #else
+          let clientDisplayName = String(localized: "RefineID iPad")
+        #endif
         let response = try RappPersistentRequesterClient(
-          displayName: String(localized: "RefineID iPad")
+          displayName: clientDisplayName
         ).perform(.readAuthenticationCertificate)
         guard case .authenticationCertificate(let der, let cardSerial) = response else {
           lines.append("FAIL: answered something other than a certificate")
@@ -54,8 +60,16 @@
     /// offered is one the holder cannot use, however well the relay worked.
     private static func publishLines(_ der: Data, cardSerial: String?) -> [String] {
       let before = publishedTokenCount()
-      DispatchQueue.main.sync {
-        PersistentTokenRegistry.publish(certificateDER: der, cardSerial: cardSerial)
+      if Thread.isMainThread {
+        MainActor.assumeIsolated {
+          PersistentTokenRegistry.publish(certificateDER: der, cardSerial: cardSerial)
+        }
+      } else {
+        DispatchQueue.main.sync {
+          MainActor.assumeIsolated {
+            PersistentTokenRegistry.publish(certificateDER: der, cardSerial: cardSerial)
+          }
+        }
       }
       let after = publishedTokenCount()
       return [
@@ -66,7 +80,9 @@
 
     /// How many identities this driver currently offers.
     private static func publishedTokenCount() -> Int {
-      DriverConfiguredCredentials.identityTokenConfigurationCount()
+      let configurations = TKTokenDriver.Configuration.driverConfigurations
+      return configurations[PersistentTokenIdentity.classID]?
+        .tokenConfigurations.count ?? 0
     }
 
     /// Whether the answer parses as a certificate, without naming anyone.

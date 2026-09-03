@@ -18,7 +18,7 @@ import Foundation
 /// Scripts/stamp-version.sh rewrites the string below and nothing else.
 internal enum ModuleVersion {
   /// The stamped project version: YY.M.D.BUCKET.
-  internal static let text = "26.9.3.130"
+  internal static let text = "26.9.3.144"
 
   /// Where each component of YY.M.D.BUCKET sits in the stamp.
   private static let yearIndex = 0
