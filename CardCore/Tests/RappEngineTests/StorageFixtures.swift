@@ -30,7 +30,7 @@ internal func makeOffer() throws -> PairingOffer {
     offerIdentifier: filler(fillerOfferIdentifier, OfferLimit.offerIdentifierSize),
     pairingSecret: filler(fillerPairingSecret, OfferLimit.pairingSecretSize),
     suites: [mandatoryPairingSuite],
-    profiles: ["fi.refineid.card-status.v1", "fi.refineid.authentication.v1"],
+    profiles: ["fi.eid.card-status.v1", "fi.eid.authentication.v1"],
     transports: [
       TransportCandidate(
         profile: "fi.refineid.stream.v1",

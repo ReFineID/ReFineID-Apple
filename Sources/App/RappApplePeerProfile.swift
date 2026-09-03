@@ -26,30 +26,37 @@
 
     /// Only profiles implemented end to end by the current phone executor.
     internal static let supportedCredentialProfiles = [
-      "fi.refineid.card-status.v1",
-      "fi.refineid.authentication.v1",
-      "fi.refineid.document-signing.v1",
+      "fi.eid.card-status.v1",
+      "fi.eid.authentication.v1",
+      "fi.eid.document-signing.v1",
     ]
 
     internal static func isSupported(_ profile: String) -> Bool {
-      supportedCredentialProfiles.contains(profile)
+      switch profile {
+      case "fi.eid.card-status.v1", "fi.refineid.card-status.v1",
+        "fi.eid.authentication.v1", "fi.refineid.authentication.v1",
+        "fi.eid.document-signing.v1", "fi.refineid.document-signing.v1":
+        true
+      default:
+        false
+      }
     }
 
     internal static func label(for profile: String) -> String {
       switch profile {
-      case "fi.refineid.card-status.v1":
+      case "fi.eid.card-status.v1", "fi.refineid.card-status.v1":
         String(localized: "Card status")
 
-      case "fi.refineid.authentication.v1":
+      case "fi.eid.authentication.v1", "fi.refineid.authentication.v1":
         String(localized: "Browser authentication")
 
-      case "fi.refineid.document-signing.v1":
+      case "fi.eid.document-signing.v1", "fi.refineid.document-signing.v1":
         String(localized: "Document signing")
 
-      case "fi.refineid.activation.v1":
+      case "fi.eid.activation.v1", "fi.refineid.activation.v1":
         String(localized: "Card activation")
 
-      case "fi.refineid.pin-management.v1":
+      case "fi.eid.pin-management.v1", "fi.refineid.pin-management.v1":
         String(localized: "PIN management")
 
       default:

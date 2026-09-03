@@ -100,12 +100,14 @@
         let platform = "iOS"
       #endif
       let coordinator = try RappPairingCoordinator.proxy(
-        scannedOfferURI: uri,
-        selectedCandidateID: candidateID,
-        displayName: displayName,
-        platform: platform,
-        vault: vault,
-        transport: transport
+        options: .init(
+          scannedOfferURI: uri,
+          selectedCandidateID: candidateID,
+          displayName: displayName,
+          platform: platform,
+          vault: vault,
+          transport: transport
+        )
       )
       install(coordinator: coordinator, relay: relay)
       relay.start(sharingOfferURI: uri)

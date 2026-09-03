@@ -20,7 +20,14 @@ internal func requireSuite(_ map: inout [String: WireValue], _ expected: String)
 }
 
 internal func profileName(_ value: WireValue) throws -> ProfileName {
-  guard case .text(let name) = value, let profile = ProfileName(rawValue: name) else {
+  guard case .text(let name) = value else {
+    print("[profileName] value is not .text: \(value)")
+    Darwin.fflush(stdout)
+    throw MessageFieldError.invalidField("profiles")
+  }
+  guard let profile = ProfileName(rawValue: name) else {
+    print("[profileName] unrecognized profile text: '\(name)'")
+    Darwin.fflush(stdout)
     throw MessageFieldError.invalidField("profiles")
   }
   return profile

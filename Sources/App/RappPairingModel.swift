@@ -150,15 +150,17 @@
     ) {
       do {
         let coordinator = try RappPairingCoordinator.requester(
-          profiles: RappApplePeerProfile.supportedCredentialProfiles,
-          candidates: candidates,
-          selectedCandidateID: selectedCandidateID,
-          offerLifetimeMilliseconds: Policy.offerLifetimeMilliseconds,
-          displayName: Self.requesterDisplayName,
-          platform: Self.requesterPlatform,
-          vault: vault,
-          transport: transport,
-          code: code
+          options: .init(
+            profiles: RappApplePeerProfile.supportedCredentialProfiles,
+            candidates: candidates,
+            selectedCandidateID: selectedCandidateID,
+            offerLifetimeMilliseconds: Policy.offerLifetimeMilliseconds,
+            displayName: Self.requesterDisplayName,
+            platform: Self.requesterPlatform,
+            vault: vault,
+            transport: transport,
+            code: code
+          )
         )
         install(coordinator: coordinator, relay: relay)
         Task { [weak self] in
