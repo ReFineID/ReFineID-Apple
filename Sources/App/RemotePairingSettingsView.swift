@@ -15,24 +15,45 @@
       static let statusIndicatorSize: CGFloat = 6
       static let badgeTrailingPadding: CGFloat = 4
       static let refreshIntervalSeconds: TimeInterval = 3
+      static let retryDelayNanoseconds: UInt64 = 1_000_000_000
     }
 
     @StateObject private var model = RappPairingModel()
     @State private var remoteDevices: [RappCloudDeviceRecord] = []
-    @State private var isShowingPairingSheet = false
 
     internal var body: some View {
       Form {
         localDeviceSection
+        RemotePairingCodeSection(model: model)
         remoteDevicesSection
-      }
-      .sheet(isPresented: $isShowingPairingSheet) {
-        RappPairingView()
       }
       .formStyle(.grouped)
       .onAppear {
         reload()
         RappAutoPairingService.shared.reconcile()
+        ensureOffer()
+      }
+      .onDisappear {
+        model.cancel()
+      }
+      .onReceive(model.$phase) { phase in
+        switch phase {
+        case .paired:
+          reload()
+          Task { @MainActor in
+            try? await Task.sleep(nanoseconds: Layout.retryDelayNanoseconds)
+            ensureOffer()
+          }
+
+        case .failed:
+          Task { @MainActor in
+            try? await Task.sleep(nanoseconds: Layout.retryDelayNanoseconds)
+            ensureOffer()
+          }
+
+        default:
+          break
+        }
       }
       .onReceive(
         NotificationCenter.default.publisher(
@@ -93,18 +114,6 @@
       }
     }
 
-    private var localDeviceTitle: String {
-      Host.current().localizedName ?? String(localized: "Mac")
-    }
-
-    private var localRoleDescription: String {
-      #if os(macOS)
-        "Etälukija"
-      #else
-        "NFC-kortinlukija"
-      #endif
-    }
-
     private var remoteDevicesSection: some View {
       Section {
         if remoteDevices.isEmpty, model.pairs.isEmpty {
@@ -112,7 +121,7 @@
             .foregroundStyle(.secondary)
         } else {
           ForEach(remoteDevices, id: \.deviceID) { device in
-            deviceRow(
+            RemoteDeviceRow(
               deviceID: device.deviceID,
               name: device.deviceName,
               isHolder: device.role == .holder,
@@ -123,7 +132,7 @@
             )
           }
           ForEach(extraModelPairs, id: \.pairID) { pair in
-            deviceRow(
+            RemoteDeviceRow(
               deviceID: nil,
               name: RappPairNames.name(forPairID: pair.pairID) ?? String(localized: "Device"),
               isHolder: pair.role == .requester,
@@ -135,15 +144,7 @@
           }
         }
       } header: {
-        HStack {
-          Text("Etälaitteet")
-          Spacer()
-          Button("Liitä laite…") {
-            isShowingPairingSheet = true
-          }
-          .buttonStyle(.borderless)
-          .font(.caption)
-        }
+        Text("Etälaitteet")
       } footer: {
         if !remoteDevices.isEmpty || !model.pairs.isEmpty {
           HStack {
@@ -169,98 +170,25 @@
       }
     }
 
-    private func deviceRow(
-      deviceID: UUID?,
-      name: String,
-      isHolder: Bool,
-      modelName: String?,
-      onDelete: @escaping () -> Void
-    ) -> some View {
-      let isOnline =
-        RappAutoPairingService.shared.isDeviceOnline(
-          deviceID: deviceID,
-          deviceName: name
-        ) || (isHolder && PersistentTokenRegistry.shared.holderIsAdvertising)
-      let cardIsReady =
-        isHolder
-        && (PersistentTokenRegistry.shared.holderIsAdvertising
-          || CardPresence.shared.isReaderCardPresent)
-
-      return HStack(spacing: Layout.rowSpacing) {
-        Image(systemName: isHolder ? "iphone" : "ipad")
-          .font(.title3)
-          .foregroundStyle(.tint)
-          .frame(width: Layout.deviceIconWidth)
-          .accessibilityHidden(true)
-        VStack(alignment: .leading, spacing: Layout.textVerticalSpacing) {
-          Text(name)
-            .font(.body.weight(.medium))
-          Text(subtitle(modelName: modelName, isHolder: isHolder, cardIsReady: cardIsReady))
-            .font(.caption)
-            .foregroundStyle(.secondary)
-        }
-        Spacer()
-        statusBadge(isOnline: isOnline, cardIsReady: cardIsReady)
-          .padding(.trailing, Layout.badgeTrailingPadding)
-        Button {
-          onDelete()
-        } label: {
-          Image(systemName: "trash")
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .accessibilityLabel(Text("Poista laite"))
-        }
-        .buttonStyle(.borderless)
-        .help("Poista laite")
-      }
-      .contextMenu {
-        Button("Poista laite", role: .destructive) {
-          onDelete()
-        }
-      }
+    private var localDeviceTitle: String {
+      Host.current().localizedName ?? String(localized: "Mac")
     }
 
-    private func subtitle(modelName: String?, isHolder: Bool, cardIsReady: Bool) -> String {
-      let roleDesc: String
-      if isHolder {
-        roleDesc = cardIsReady ? "NFC-kortinlukija (Kortti valmiina)" : "NFC-kortinlukija"
-      } else {
-        roleDesc = "Etälukija"
-      }
-
-      if let modelName, !modelName.isEmpty,
-        modelName != "Mac", modelName != "Apple",
-        modelName != roleDesc
-      {
-        return "\(modelName) • \(roleDesc)"
-      }
-      return roleDesc
+    private var localRoleDescription: String {
+      #if os(macOS)
+        "Etälukija"
+      #else
+        "NFC-kortinlukija"
+      #endif
     }
 
-    @ViewBuilder
-    private func statusBadge(isOnline: Bool, cardIsReady: Bool) -> some View {
-      if cardIsReady {
-        HStack(spacing: Layout.statusBadgeSpacing) {
-          Circle()
-            .fill(Color.green)
-            .frame(width: Layout.statusIndicatorSize, height: Layout.statusIndicatorSize)
-          Text("Kortti valmiina")
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(.green)
-        }
-      } else if isOnline {
-        HStack(spacing: Layout.statusBadgeSpacing) {
-          Circle()
-            .fill(Color.green)
-            .frame(width: Layout.statusIndicatorSize, height: Layout.statusIndicatorSize)
-          Text("Linjoilla")
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(.green)
-        }
-      } else {
-        Text("Ei linjoilla")
-          .font(.caption)
-          .foregroundStyle(.secondary)
+    private func ensureOffer() {
+      switch model.phase {
+      case .offer, .connecting:
+        break
+
+      default:
+        model.createOffer()
       }
     }
 
