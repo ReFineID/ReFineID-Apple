@@ -149,6 +149,10 @@ extension RappDeviceVault {
     query[kSecMatchLimit as String] = kSecMatchLimitAll
     var output: CFTypeRef?
     let status = SecItemCopyMatching(query as CFDictionary, &output)
+    #if DEBUG
+      print("[RappDeviceVault] loadAll(service: \(service)) status: \(status)")
+      fflush(stdout)
+    #endif
     switch status {
     case errSecSuccess:
       guard let attributes = output as? [[String: Any]] else { throw Failure.malformed }

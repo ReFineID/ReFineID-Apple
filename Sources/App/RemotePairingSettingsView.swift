@@ -18,11 +18,15 @@
 
     @StateObject private var model = RappPairingModel()
     @State private var remoteDevices: [RappCloudDeviceRecord] = []
+    @State private var isShowingPairingSheet = false
 
     internal var body: some View {
       Form {
         localDeviceSection
         remoteDevicesSection
+      }
+      .sheet(isPresented: $isShowingPairingSheet) {
+        RappPairingView()
       }
       .formStyle(.grouped)
       .onAppear {
@@ -115,7 +119,15 @@
           }
         }
       } header: {
-        Text("Etälaitteet")
+        HStack {
+          Text("Etälaitteet")
+          Spacer()
+          Button("Liitä laite…") {
+            isShowingPairingSheet = true
+          }
+          .buttonStyle(.borderless)
+          .font(.caption)
+        }
       } footer: {
         if !remoteDevices.isEmpty || !model.pairs.isEmpty {
           HStack {

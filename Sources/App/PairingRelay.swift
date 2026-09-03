@@ -64,7 +64,11 @@
         let name = StreamRendezvousName.name(sharingOfferURI: uri)
         switch role {
         case .host:
+          print("[pairing-relay] host browsing for name: \(name)")
+          Darwin.fflush(stdout)
           let found = StreamRelayBrowser(matching: name) { [weak self] endpoint in
+            print("[pairing-relay] browser found endpoint: \(endpoint)")
+            Darwin.fflush(stdout)
             self?.dial(endpoint)
           }
           browser = found
@@ -114,10 +118,14 @@
       /// Dials the holder once its published listener has been found.
       private func dial(_ endpoint: NWEndpoint) {
         guard dialer == nil else { return }
+        print("[pairing-relay] dialing: \(endpoint)")
+        Darwin.fflush(stdout)
         let made = StreamRelaySession(
           service: endpoint,
           preamble: rappStreamPairingPreamble()
         ) { [weak self] event in
+          print("[pairing-relay] session event: \(event)")
+          Darwin.fflush(stdout)
           self?.receiveStream(event)
         }
         dialer = made
@@ -130,6 +138,8 @@
       /// so it becomes the connection event rather than a frame. Arrival is
       /// reported once, whichever of the transport's signals lands first.
       private func receiveStream(_ event: StreamRelayEvent) {
+        print("[pairing-relay] receiveStream: \(event)")
+        Darwin.fflush(stdout)
         if case .frame(let payload) = event,
           payload == rappStreamPairingPreamble() || payload == StreamRelayPreamble.hello
         {
@@ -140,6 +150,8 @@
           reportArrival()
           return
         }
+        print("[pairing-relay] onEvent(\(PersistentRelayEvent(event)))")
+        Darwin.fflush(stdout)
         onEvent(PersistentRelayEvent(event))
       }
 

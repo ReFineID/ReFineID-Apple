@@ -187,13 +187,20 @@ internal struct DiagnosticsSnapshot: Sendable {
   /// devices and nothing about the person holding either.
   private static func pairings() -> Section {
     let vault = RappDeviceVault()
-    let active = (try? vault.activePairIDs()) ?? []
-    let selected = (try? vault.selectedPairID()).flatMap(\.self)
-    var lines = ["active: \(active.count)"]
-    if let selected {
-      lines.append("selected: " + Self.shortIdentifier(selected))
-    } else {
-      lines.append("selected: none")
+    var lines: [String] = []
+    do {
+      let active = try vault.activePairIDs()
+      lines.append("active: \(active.count)")
+      for pairID in active {
+        lines.append("id: " + pairID.map { String(format: "%02x", $0) }.joined())
+      }
+      if let selected = try vault.selectedPairID() {
+        lines.append("selected: " + Self.shortIdentifier(selected))
+      } else {
+        lines.append("selected: none")
+      }
+    } catch {
+      lines.append("vault error: \(error)")
     }
     return Section(title: "Pairings", lines: lines)
   }

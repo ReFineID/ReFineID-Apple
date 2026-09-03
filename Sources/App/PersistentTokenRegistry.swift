@@ -297,7 +297,19 @@
 
     fileprivate func finish(_ certificateDER: Data?, cardSerial: String? = nil) {
       defer { isRunning = false }
-      guard let certificateDER else { return }
+      guard let certificateDER else {
+        #if REFINEID_STREAM_TRANSPORT
+          let retryDelayNs: UInt64 = 2_000_000_000
+          Task { @MainActor in
+            try? await Task.sleep(nanoseconds: retryDelayNs)
+            guard self.holderIsAdvertising,
+              Self.needsIdentity || self.certificateDER == nil
+            else { return }
+            self.startFetch(replacing: true)
+          }
+        #endif
+        return
+      }
       holderIsAdvertising = true
       hasSeenHolderAdvertisement = true
       Self.publish(certificateDER, cardSerial: cardSerial)

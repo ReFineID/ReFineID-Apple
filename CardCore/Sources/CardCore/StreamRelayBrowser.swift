@@ -41,18 +41,28 @@ import Foundation
       )
       made.browseResultsChangedHandler = { [weak self] results, _ in
         guard let self else { return }
-        let wanted =
-          results.first { result in
-            guard let name else { return true }
+        let eps = results.map { "\($0.endpoint)" }
+        print("[browser] \(results.count) results matching:\(String(describing: name)) eps:\(eps)")
+        Darwin.fflush(stdout)
+        let wanted: NWBrowser.Result?
+        if let name {
+          wanted = results.first { result in
             guard case .service(let serviceName, _, _, _) = result.endpoint else { return false }
             return serviceName == name
-          } ?? results.first
+          }
+        } else {
+          wanted = results.first
+        }
         guard let first = wanted else { return }
         queue.async { [weak self] in
           guard let self, !reported else { return }
           reported = true
           onFound(first.endpoint)
         }
+      }
+      made.stateUpdateHandler = { state in
+        print("[browser] state: \(state)")
+        Darwin.fflush(stdout)
       }
       browser = made
       made.start(queue: queue)

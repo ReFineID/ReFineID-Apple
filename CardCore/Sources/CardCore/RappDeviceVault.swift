@@ -116,6 +116,10 @@ public final class RappDeviceVault: @unchecked Sendable {
       item[kSecValueData as String] = record
       inMemoryStore[namespace.pair, default: [:]][pairID.hexadecimal] = item
       let status = SecItemAdd(item as CFDictionary, nil)
+      #if DEBUG
+        print("[RappDeviceVault] insertPair status: \(status)")
+        fflush(stdout)
+      #endif
       switch status {
       case errSecSuccess:
         return

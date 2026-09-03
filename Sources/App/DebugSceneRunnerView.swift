@@ -167,22 +167,22 @@
         DebugConsole.finish(succeeded: report.succeeded)
 
       case .offerRemoteReader:
-        #if os(iOS)
+        #if REFINEID_REMOTE_CARD
           let report = await DebugPairWithOffer.offer()
           DebugConsole.emit(report.lines)
           DebugConsole.finish(succeeded: report.succeeded)
         #else
-          DebugConsole.emit([mode.rawValue + ": offers a reader, which only iOS does"])
+          DebugConsole.emit([mode.rawValue + ": remote card not enabled"])
           DebugConsole.finish(succeeded: false)
         #endif
 
       case .pairWithOffer:
-        #if os(iOS)
+        #if REFINEID_REMOTE_CARD
           let report = await DebugPairWithOffer.run(offerURI: DebugLaunchModes.offerURI())
           DebugConsole.emit(report.lines)
           DebugConsole.finish(succeeded: report.succeeded)
         #else
-          DebugConsole.emit([mode.rawValue + ": pairs by scanning, which only iOS does"])
+          DebugConsole.emit([mode.rawValue + ": remote card not enabled"])
           DebugConsole.finish(succeeded: false)
         #endif
 

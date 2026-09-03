@@ -11,6 +11,10 @@ import Foundation
 internal enum KeychainPlatform {
   /// Whether `kSecUseDataProtectionKeychain` may be requested.
   internal static var usesDataProtection: Bool {
-    true
+    #if os(iOS)
+      true
+    #else
+      false
+    #endif
   }
 }

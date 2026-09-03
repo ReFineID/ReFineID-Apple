@@ -17,6 +17,8 @@
       from coordinator: RappPairingCoordinator
     ) {
       guard self.coordinator === coordinator else { return }
+      print("[ceremony] event received: \(event)")
+      Darwin.fflush(stdout)
       switch event {
       case .offerReady(let uri):
         #if DEBUG
