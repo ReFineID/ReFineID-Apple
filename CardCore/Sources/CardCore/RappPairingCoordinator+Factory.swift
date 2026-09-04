@@ -168,6 +168,62 @@
       )
     }
 
+    // MARK: Convenience Overloads
+
+    /// Creates the requester side owning a fresh one-use offer with discrete parameters.
+    public static func requester(  // swiftlint:disable:this function_parameter_count
+      profiles: [String],
+      candidates: [TransportCandidate],
+      selectedCandidateID: String,
+      offerLifetimeMilliseconds: UInt64,
+      displayName: String,
+      platform: String,
+      vault: RappDeviceVault,
+      transport: any RappFrameTransport,
+      entropy: RappPlatformEntropy = RappPlatformEntropy(),
+      clock: RappPlatformClock = RappPlatformClock(),
+      code: String? = nil
+    ) throws -> RappPairingCoordinator {
+      try requester(
+        options: RequesterOptions(
+          profiles: profiles,
+          candidates: candidates,
+          selectedCandidateID: selectedCandidateID,
+          offerLifetimeMilliseconds: offerLifetimeMilliseconds,
+          displayName: displayName,
+          platform: platform,
+          vault: vault,
+          transport: transport,
+          entropy: entropy,
+          clock: clock,
+          code: code
+        )
+      )
+    }
+
+    /// Creates the proxy side from a scanned requester offer with discrete parameters.
+    public static func proxy(  // swiftlint:disable:this function_parameter_count
+      scannedOfferURI: String,
+      selectedCandidateID: String,
+      displayName: String,
+      platform: String,
+      vault: RappDeviceVault,
+      transport: any RappFrameTransport,
+      clock: RappPlatformClock = RappPlatformClock()
+    ) throws -> RappPairingCoordinator {
+      try proxy(
+        options: ProxyOptions(
+          scannedOfferURI: scannedOfferURI,
+          selectedCandidateID: selectedCandidateID,
+          displayName: displayName,
+          platform: platform,
+          vault: vault,
+          transport: transport,
+          clock: clock
+        )
+      )
+    }
+
     internal static func deadline(startedAt: UInt64, lifetime: UInt64) -> UInt64 {
       let (result, overflow) = startedAt.addingReportingOverflow(lifetime)
       return overflow ? UInt64.max : result

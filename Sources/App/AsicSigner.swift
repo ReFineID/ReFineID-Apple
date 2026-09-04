@@ -69,11 +69,9 @@ internal enum AsicSigner {
     guard !objects.isEmpty, AsicContainer.areNamesUsable(objects) else {
       throw Failure.unusableName
     }
-    #if REFINEID_REMOTE_CARD
-      if await MainActor.run(body: { DocumentSigner.usesRappSigning }) {
-        return try await Self.signRemotely(objects)
-      }
-    #endif
+    if await MainActor.run(body: { DocumentSigner.usesRappSigning }) {
+      return try await Self.signRemotely(objects)
+    }
     guard let pin2 else {
       throw DocumentSigner.Failure.card(.invalidEntry)
     }
@@ -102,28 +100,26 @@ internal enum AsicSigner {
     }
   }
 
-  #if REFINEID_REMOTE_CARD
-    /// Signs canonical XAdES bytes through the selected phone.
-    ///
-    /// PIN 2 is entered on the authorizer and never crosses the RAPP
-    /// boundary.
-    private static func signRemotely(
-      _ objects: [AsicContainer.DataObject]
-    ) async throws -> Data {
-      let signedAt = Date()
-      let product = try await DocumentSigner.remoteQualifiedSignature(
-        documentName: objects.count == 1 ? objects[0].name : "ASiC-E container",
-        expectedCertificate: nil
-      ) { certificate in
-        Self.plannedSignedInfo(
-          objects: objects, certificate: certificate, signedAt: signedAt
-        )
-      }
-      return try await Self.assembled(
-        from: product, objects: objects, signedAt: signedAt
+  /// Signs canonical XAdES bytes through the selected phone.
+  ///
+  /// PIN 2 is entered on the authorizer and never crosses the RAPP
+  /// boundary.
+  private static func signRemotely(
+    _ objects: [AsicContainer.DataObject]
+  ) async throws -> Data {
+    let signedAt = Date()
+    let product = try await DocumentSigner.remoteQualifiedSignature(
+      documentName: objects.count == 1 ? objects[0].name : "ASiC-E container",
+      expectedCertificate: nil
+    ) { certificate in
+      Self.plannedSignedInfo(
+        objects: objects, certificate: certificate, signedAt: signedAt
       )
     }
-  #endif
+    return try await Self.assembled(
+      from: product, objects: objects, signedAt: signedAt
+    )
+  }
 
   /// Timestamps the signature, collects the evidence, and writes the
   /// container.

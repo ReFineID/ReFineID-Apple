@@ -1,12 +1,40 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if os(iOS) && REFINEID_LOCAL_CARD && REFINEID_REMOTE_CARD
+#if os(iOS) && REFINEID_LOCAL_CARD
   import CardCore
   import Foundation
   import RappEngine
 
   @MainActor
   extension PhonePersistentTokenRelay {
+    // MARK: Computed Properties
+
+    /// Whether a paired requester is online, connected, or was recently in contact.
+    internal var isPeerConnectedOrOnline: Bool {
+      if isActivelyConnected { return true }
+      guard hasUsableSelectedPair() || ((try? vault.activePairIDs().isEmpty) == false) else {
+        return false
+      }
+      if hasRecentPeerContact { return true }
+      if isPeerOnline || RappAutoPairingService.shared.isAnyPairedPeerOnline { return true }
+      return false
+    }
+
+    internal var hasRecentPeerContact: Bool {
+      guard let lastContact = lastPeerContactDate else { return false }
+      return Date().timeIntervalSince(lastContact) < Self.recentContactWindowSeconds
+    }
+
+    internal var isServing: Bool {
+      #if REFINEID_STREAM_TRANSPORT
+        return streamListener != nil
+      #else
+        return relay != nil
+      #endif
+    }
+
+    // MARK: Functions
+
     /// Explicit UI action may call this after the user has corrected local
     /// credentials or deliberately chosen to reconnect.
     ///
@@ -55,6 +83,7 @@
       connectionID = nil
       preCoordinatorFrames.removeAll(keepingCapacity: false)
       frameDelivery.reset()
+      isActivelyConnected = false
     }
 
     internal func suspendForPairing() {
@@ -69,6 +98,7 @@
         streamContext = nil
       #endif
       connectionID = nil
+      isActivelyConnected = false
       Task { await closing?.close() }
     }
 
@@ -91,6 +121,7 @@
       #endif
       connectionID = nil
       preCoordinatorFrames.removeAll(keepingCapacity: false)
+      isActivelyConnected = false
       Task { await closingCoordinator?.transportClosed() }
       if !hasUsableSelectedPair() {
         relistenPolicy = .explicitUserActionRequired
@@ -103,6 +134,13 @@
           await Task.yield()
         }
         self.start()
+      }
+    }
+
+    internal func updatePeerOnlineState() {
+      let online = RappAutoPairingService.shared.isAnyPairedPeerOnline
+      if isPeerOnline != online {
+        isPeerOnline = online
       }
     }
   }

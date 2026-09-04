@@ -1,32 +1,38 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if os(macOS) && REFINEID_REMOTE_CARD
+#if os(macOS)
 
   import CardCore
+  import RappEngine
   import SwiftUI
 
   /// The Settings pane for managing paired devices and automatic connections.
   internal struct RemotePairingSettingsView: View {
     private enum Layout {
-      static let deviceIconWidth: CGFloat = 24
       static let rowSpacing: CGFloat = 6
-      static let textVerticalSpacing: CGFloat = 2
-      static let statusBadgeSpacing: CGFloat = 4
-      static let statusIndicatorSize: CGFloat = 6
-      static let badgeTrailingPadding: CGFloat = 4
+      static let refreshIntervalSeconds: TimeInterval = 3
     }
+
+    private struct DisplayedDevice {
+      let identifier: String
+      let name: String
+      let modelName: String?
+      let isPreferred: Bool
+      let isOnline: Bool
+      let isConnected: Bool
+      let onDelete: () -> Void
+      let onSetPreferred: () -> Void
+    }
+
+    @AppStorage("fi.refineid.preferredRemoteDeviceID")
+    private var preferredDeviceID: String = ""
 
     @StateObject private var model = RappPairingModel()
     @State private var remoteDevices: [RappCloudDeviceRecord] = []
-    @State private var isShowingPairingSheet = false
 
     internal var body: some View {
       Form {
-        localDeviceSection
         remoteDevicesSection
-      }
-      .sheet(isPresented: $isShowingPairingSheet) {
-        RappPairingView()
       }
       .formStyle(.grouped)
       .onAppear {
@@ -40,101 +46,227 @@
       ) { _ in
         reload()
       }
+      .onReceive(
+        NotificationCenter.default.publisher(
+          for: RappPairingModel.pairingsDidChangeNotification
+        )
+      ) { _ in
+        reload()
+      }
+      .onReceive(
+        NotificationCenter.default.publisher(
+          for: NSApplication.didBecomeActiveNotification
+        )
+      ) { _ in
+        reload()
+      }
+      .onReceive(
+        Timer.publish(every: Layout.refreshIntervalSeconds, on: .main, in: .common).autoconnect()
+      ) { _ in
+        reload()
+      }
     }
 
-    private var localDeviceSection: some View {
-      Section {
-        HStack(spacing: Layout.rowSpacing) {
-          Image(systemName: "laptopcomputer")
-            .font(.title3)
-            .foregroundStyle(.tint)
-            .frame(width: Layout.deviceIconWidth)
-            .accessibilityHidden(true)
-          VStack(alignment: .leading, spacing: Layout.textVerticalSpacing) {
-            Text(localDeviceName)
-              .font(.body.weight(.medium))
-            Text(localDeviceSubtitle)
-              .font(.caption)
-              .foregroundStyle(.secondary)
-          }
-          Spacer()
-          HStack(spacing: Layout.statusBadgeSpacing) {
-            Circle()
-              .fill(Color.green)
-              .frame(width: Layout.statusIndicatorSize, height: Layout.statusIndicatorSize)
-            Text("Tämä laite")
-              .font(.caption.weight(.semibold))
-              .foregroundStyle(.green)
-          }
-          .padding(.trailing, Layout.badgeTrailingPadding)
+    private var displayedDevices: [DisplayedDevice] {
+      let validRemoteDevices = remoteDevices.filter { device in
+        device.role == .holder && !device.modelName.lowercased().contains("mac")
+      }
+
+      let localPublicKey = RappAutoPairingService.shared.localIdentity?.publicKeyData
+
+      let derivedRemotePairIDs: Set<Data> = Set(
+        validRemoteDevices.compactMap { device in
+          guard let localPublicKey else { return nil }
+          return RappSameAccountPairBuilder.derivePairIdentifier(
+            publicKeyA: localPublicKey,
+            publicKeyB: device.staticPublicKey
+          )
         }
-      } header: {
-        Text("Tämä laite")
-      }
-    }
+      )
 
-    private var localDeviceName: String {
-      RappAutoPairingService.shared.localIdentity?.deviceName
-        ?? Host.current().localizedName
-        ?? ProcessInfo.processInfo.hostName
-    }
-
-    private var localDeviceSubtitle: String {
-      let deviceModel = RappAutoPairingService.shared.localIdentity?.modelName ?? "Mac"
-      let isHolder = RappAutoPairingService.shared.localRole == .holder
-      let role = isHolder ? "NFC-kortinlukija" : "Etälukija"
-      if !deviceModel.isEmpty, deviceModel != "Mac", deviceModel != "Apple" {
-        return "\(deviceModel) • \(role)"
+      let validExtraPairs = model.pairs.filter { pair in
+        guard pair.role == .requester else { return false }
+        guard !derivedRemotePairIDs.contains(pair.pairID) else { return false }
+        let pairName = RappPairNames.name(forPairID: pair.pairID) ?? ""
+        if pairName.lowercased().contains("mac") { return false }
+        return !validRemoteDevices.contains { remote in
+          remote.deviceName.caseInsensitiveCompare(pairName) == .orderedSame
+            || remote.modelName.caseInsensitiveCompare(pairName) == .orderedSame
+        }
       }
-      return role
+
+      var seenExtraNames = Set<String>()
+      let deduplicatedExtraPairs = validExtraPairs.filter { pair in
+        let name = (RappPairNames.name(forPairID: pair.pairID) ?? "")
+          .trimmingCharacters(in: .whitespacesAndNewlines)
+          .lowercased()
+        guard !name.isEmpty else { return false }
+        return seenExtraNames.insert(name).inserted
+      }
+
+      let totalCount = validRemoteDevices.count + deduplicatedExtraPairs.count
+      let effectivePreferredID =
+        preferredDeviceID.isEmpty && totalCount == 1
+        ? (validRemoteDevices.first?.deviceID.uuidString
+          ?? deduplicatedExtraPairs.first?.pairID.base64EncodedString() ?? "")
+        : preferredDeviceID
+
+      let activePairID = PersistentTokenRegistry.activePairID
+
+      var list: [DisplayedDevice] = []
+
+      for device in validRemoteDevices {
+        let idStr = device.deviceID.uuidString
+        let isPreferred = idStr == effectivePreferredID
+
+        let derivedPairID: Data?
+        if let localPublicKey {
+          derivedPairID = RappSameAccountPairBuilder.derivePairIdentifier(
+            publicKeyA: localPublicKey,
+            publicKeyB: device.staticPublicKey
+          )
+        } else {
+          derivedPairID = nil
+        }
+
+        let isCurrentPair: Bool
+        if let derivedPairID, let activePairID {
+          isCurrentPair = (derivedPairID == activePairID)
+        } else {
+          isCurrentPair = isPreferred
+        }
+
+        let isOnline =
+          RappAutoPairingService.shared.isDeviceOnline(
+            deviceID: device.deviceID,
+            deviceName: device.deviceName
+          ) || (isCurrentPair && PersistentTokenRegistry.shared.holderIsAdvertising)
+        let isConnected =
+          isCurrentPair
+          && isOnline
+          && PersistentTokenRegistry.shared.holderIsAdvertising
+          && PersistentTokenRegistry.shared.certificateDER != nil
+
+        list.append(
+          DisplayedDevice(
+            identifier: idStr,
+            name: device.deviceName,
+            modelName: device.modelName,
+            isPreferred: isPreferred,
+            isOnline: isOnline,
+            isConnected: isConnected,
+            onDelete: {
+              if isPreferred { preferredDeviceID = "" }
+              RappAutoPairingService.shared.removeRemoteDevice(deviceID: device.deviceID)
+              if let derivedPairID {
+                model.revoke(pairID: derivedPairID)
+              }
+              reload()
+            },
+            onSetPreferred: {
+              preferredDeviceID = idStr
+              if let derivedPairID {
+                model.select(pairID: derivedPairID)
+              }
+              PersistentTokenRegistry.shared.restartWatchingPresence()
+            }
+          )
+        )
+      }
+
+      for pair in deduplicatedExtraPairs {
+        let idStr = pair.pairID.base64EncodedString()
+        let pairName = RappPairNames.name(forPairID: pair.pairID) ?? String(localized: "Device")
+        let isPreferred =
+          idStr == effectivePreferredID
+          || (model.selectedPairID == pair.pairID)
+
+        let isCurrentPair: Bool
+        if let activePairID {
+          isCurrentPair = (pair.pairID == activePairID)
+        } else {
+          isCurrentPair = isPreferred
+        }
+
+        let isOnline =
+          RappAutoPairingService.shared.isDeviceOnline(
+            deviceID: nil,
+            deviceName: pairName
+          ) || (isCurrentPair && PersistentTokenRegistry.shared.holderIsAdvertising)
+        let isConnected =
+          isCurrentPair
+          && isOnline
+          && PersistentTokenRegistry.shared.holderIsAdvertising
+          && PersistentTokenRegistry.shared.certificateDER != nil
+
+        list.append(
+          DisplayedDevice(
+            identifier: idStr,
+            name: pairName,
+            modelName: nil,
+            isPreferred: isPreferred,
+            isOnline: isOnline,
+            isConnected: isConnected,
+            onDelete: {
+              if isPreferred { preferredDeviceID = "" }
+              model.revoke(pairID: pair.pairID)
+              for remote in validRemoteDevices
+              where remote.deviceName.caseInsensitiveCompare(pairName) == .orderedSame {
+                RappAutoPairingService.shared.removeRemoteDevice(deviceID: remote.deviceID)
+              }
+              reload()
+            },
+            onSetPreferred: {
+              preferredDeviceID = idStr
+              model.select(pairID: pair.pairID)
+              PersistentTokenRegistry.shared.restartWatchingPresence()
+            }
+          )
+        )
+      }
+
+      return list.sorted { lhs, rhs in
+        if lhs.isPreferred != rhs.isPreferred {
+          return lhs.isPreferred && !rhs.isPreferred
+        }
+        if lhs.isConnected != rhs.isConnected {
+          return lhs.isConnected && !rhs.isConnected
+        }
+        if lhs.isOnline != rhs.isOnline {
+          return lhs.isOnline && !rhs.isOnline
+        }
+        return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
+      }
     }
 
     private var remoteDevicesSection: some View {
-      Section {
-        if remoteDevices.isEmpty, model.pairs.isEmpty {
-          Text("Ei muita liitettyjä laitteita")
+      let devices = displayedDevices
+      return Section {
+        if devices.isEmpty {
+          Text("Ei liitettyjä laitteita")
             .foregroundStyle(.secondary)
         } else {
-          ForEach(remoteDevices, id: \.deviceID) { device in
-            deviceRow(
-              deviceID: device.deviceID,
-              name: device.deviceName,
-              isHolder: device.role == .holder,
+          ForEach(devices, id: \.identifier) { device in
+            RemoteDeviceRow(
+              name: device.name,
               modelName: device.modelName,
-              onDelete: {
-                RappAutoPairingService.shared.removeRemoteDevice(deviceID: device.deviceID)
-              }
-            )
-          }
-          ForEach(extraModelPairs, id: \.pairID) { pair in
-            deviceRow(
-              deviceID: nil,
-              name: RappPairNames.name(forPairID: pair.pairID) ?? String(localized: "Device"),
-              isHolder: pair.role == .proxy,
-              modelName: nil,
-              onDelete: {
-                model.revoke(pairID: pair.pairID)
-              }
+              isOnline: device.isOnline,
+              isConnected: device.isConnected,
+              onDelete: device.onDelete
             )
           }
         }
       } header: {
-        HStack {
-          Text("Etälaitteet")
-          Spacer()
-          Button("Liitä laite…") {
-            isShowingPairingSheet = true
-          }
-          .buttonStyle(.borderless)
-          .font(.caption)
-        }
+        Text("Etälaitteet")
       } footer: {
-        if !remoteDevices.isEmpty || !model.pairs.isEmpty {
+        if !devices.isEmpty {
           HStack {
             Spacer()
             Button("Poista kaikki etälaitteet", role: .destructive) {
+              preferredDeviceID = ""
               RappAutoPairingService.shared.clearAllRemoteDevices()
               model.revokeAll()
+              reload()
             }
             .buttonStyle(.borderless)
             .font(.caption)
@@ -142,108 +274,6 @@
           }
           .padding(.top, Layout.rowSpacing)
         }
-      }
-    }
-
-    private var extraModelPairs: [RappPairingCoordinator.PairSummary] {
-      model.pairs.filter { pair in
-        !remoteDevices.contains { remote in
-          RappPairNames.name(forPairID: pair.pairID) == remote.deviceName
-        }
-      }
-    }
-
-    private func deviceRow(
-      deviceID: UUID?,
-      name: String,
-      isHolder: Bool,
-      modelName: String?,
-      onDelete: @escaping () -> Void
-    ) -> some View {
-      let isOnline = RappAutoPairingService.shared.isDeviceOnline(
-        deviceID: deviceID,
-        deviceName: name
-      )
-      let cardIsReady =
-        isHolder
-        && (PersistentTokenRegistry.shared.holderIsAdvertising
-          || CardPresence.shared.isReaderCardPresent)
-
-      return HStack(spacing: Layout.rowSpacing) {
-        Image(systemName: isHolder ? "iphone" : "ipad")
-          .font(.title3)
-          .foregroundStyle(.tint)
-          .frame(width: Layout.deviceIconWidth)
-          .accessibilityHidden(true)
-        VStack(alignment: .leading, spacing: Layout.textVerticalSpacing) {
-          Text(name)
-            .font(.body.weight(.medium))
-          Text(subtitle(modelName: modelName, isHolder: isHolder, cardIsReady: cardIsReady))
-            .font(.caption)
-            .foregroundStyle(.secondary)
-        }
-        Spacer()
-        statusBadge(isOnline: isOnline, cardIsReady: cardIsReady)
-          .padding(.trailing, Layout.badgeTrailingPadding)
-        Button {
-          onDelete()
-        } label: {
-          Image(systemName: "trash")
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .accessibilityLabel(Text("Poista laite"))
-        }
-        .buttonStyle(.borderless)
-        .help("Poista laite")
-      }
-      .contextMenu {
-        Button("Poista laite", role: .destructive) {
-          onDelete()
-        }
-      }
-    }
-
-    private func subtitle(modelName: String?, isHolder: Bool, cardIsReady: Bool) -> String {
-      let roleDesc: String
-      if isHolder {
-        roleDesc = cardIsReady ? "NFC-kortinlukija (Kortti valmiina)" : "NFC-kortinlukija"
-      } else {
-        roleDesc = "Etälukija"
-      }
-
-      if let modelName, !modelName.isEmpty,
-        modelName != "Mac", modelName != "Apple",
-        modelName != roleDesc
-      {
-        return "\(modelName) • \(roleDesc)"
-      }
-      return roleDesc
-    }
-
-    @ViewBuilder
-    private func statusBadge(isOnline: Bool, cardIsReady: Bool) -> some View {
-      if cardIsReady {
-        HStack(spacing: Layout.statusBadgeSpacing) {
-          Circle()
-            .fill(Color.green)
-            .frame(width: Layout.statusIndicatorSize, height: Layout.statusIndicatorSize)
-          Text("Kortti valmiina")
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(.green)
-        }
-      } else if isOnline {
-        HStack(spacing: Layout.statusBadgeSpacing) {
-          Circle()
-            .fill(Color.green)
-            .frame(width: Layout.statusIndicatorSize, height: Layout.statusIndicatorSize)
-          Text("Linjoilla")
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(.green)
-        }
-      } else {
-        Text("Ei linjoilla")
-          .font(.caption)
-          .foregroundStyle(.secondary)
       }
     }
 

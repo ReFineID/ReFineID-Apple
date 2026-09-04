@@ -157,9 +157,12 @@ extension PdfIncrementalSigner {
     let box =
       "[\(Self.placed(-reach)) \(Self.placed(-reach))"
       + " \(Self.placed(reach)) \(Self.placed(reach))]"
+    let fontResources =
+      "<< /Font << /F1 << /Type /Font /Subtype /Type1 "
+      + "/BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >> >> >>"
     let header =
       "\(number) 0 obj\n<< /Type /XObject /Subtype /Form /BBox \(box)"
-      + " /Resources << >> /Length \(body.count) >>\nstream\n"
+      + " /Resources \(fontResources) /Length \(body.count) >>\nstream\n"
     var object = Data(header.utf8)
     object.append(body)
     object.append(Data("\nendstream\nendobj\n\n".utf8))
@@ -272,5 +275,26 @@ extension PdfIncrementalSigner {
       parts.minute ?? 0,
       parts.second ?? 0
     )
+  }
+
+  /// The stamp to show on this revision, omitted when a stamp is already present.
+  internal static func effectiveStamp(
+    _ stamp: StampMark?,
+    source: RevisionSource
+  ) -> StampMark? {
+    guard let stamp else { return nil }
+    guard
+      let catalog = source.index.body(of: source.rootNumber, in: source.document),
+      let pageNumber = try? Self.lastPage(
+        index: source.index, document: source.document, catalog: catalog
+      ),
+      let page = source.index.body(of: pageNumber, in: source.document)
+    else {
+      return stamp
+    }
+    let already = Self.stampsAlreadyOn(
+      page: page, index: source.index, document: source.document
+    )
+    return already == 0 ? stamp : nil
   }
 }

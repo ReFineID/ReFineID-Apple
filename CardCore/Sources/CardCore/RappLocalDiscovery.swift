@@ -30,6 +30,8 @@
 
     internal let localIdentity: RappDeviceIdentity
     internal let localRole: RappDeviceRole
+    /// The Bonjour service type used by this discovery instance.
+    public let serviceType: String
     internal let onDiscovered: @Sendable (RappCloudDeviceRecord) -> Void
     internal let queue = DispatchQueue(label: "fi.refineid.local-discovery")
     private let onLiveDevicesChanged: (@Sendable (Set<UUID>, Set<String>) -> Void)?
@@ -48,11 +50,13 @@
     public init(
       localIdentity: RappDeviceIdentity,
       localRole: RappDeviceRole,
+      serviceType: String = RappLocalDiscovery.serviceType,
       onLiveDevicesChanged: (@Sendable (Set<UUID>, Set<String>) -> Void)? = nil,
       onDiscovered: @escaping @Sendable (RappCloudDeviceRecord) -> Void
     ) {
       self.localIdentity = localIdentity
       self.localRole = localRole
+      self.serviceType = serviceType
       self.onLiveDevicesChanged = onLiveDevicesChanged
       self.onDiscovered = onDiscovered
     }
@@ -110,7 +114,7 @@
       let shortID = String(localIdentity.deviceID.uuidString.prefix(Constants.shortIDPrefixLength))
       madeListener.service = NWListener.Service(
         name: "ReFineID-\(shortID)",
-        type: Self.serviceType,
+        type: serviceType,
         domain: nil,
         txtRecord: txtRecord
       )
@@ -132,7 +136,7 @@
       parameters.includePeerToPeer = true
 
       let madeBrowser = NWBrowser(
-        for: .bonjourWithTXTRecord(type: Self.serviceType, domain: nil),
+        for: .bonjourWithTXTRecord(type: serviceType, domain: nil),
         using: parameters
       )
 

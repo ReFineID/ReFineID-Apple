@@ -29,31 +29,28 @@
 
     /// Whether the paired phone is on the network and serving a card.
     private var holderIsAdvertising: Bool {
-      #if REFINEID_REMOTE_CARD && REFINEID_STREAM_TRANSPORT
+      #if REFINEID_STREAM_TRANSPORT
         remoteRegistry.holderIsAdvertising
-      #elseif REFINEID_REMOTE_CARD
-        remoteRegistry.holderLine != nil
       #else
         false
       #endif
+    }
+
+    /// Whether to prompt the user to connect a remote card reader phone.
+    internal var shouldShowPairingPrompt: Bool {
+      !cardPresence.isReaderConnected
+        && !holderIsAdvertising
+        && !RappAutoPairingService.shared.hasKnownRemoteHolders
     }
 
     /// Whether a paired phone has already answered with a certificate.
     private var hasBorrowedIdentity: Bool {
-      #if REFINEID_REMOTE_CARD
-        remoteRegistry.holderLine != nil
-      #else
-        false
-      #endif
+      remoteRegistry.holderIsAdvertising && remoteRegistry.holderLine != nil
     }
 
     /// Whether this window collects PIN 2, or the paired phone does.
     internal var asksLocalPin2: Bool {
-      #if REFINEID_REMOTE_CARD
-        !DocumentSigner.usesRappSigning
-      #else
-        true
-      #endif
+      !DocumentSigner.usesRappSigning
     }
 
     /// The signature style every dropped document can take.

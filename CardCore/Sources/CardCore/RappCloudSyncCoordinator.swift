@@ -52,12 +52,7 @@
     /// Publishes this device's current public record into the iCloud directory.
     @discardableResult
     public func publishLocalDevice() -> RappCloudDeviceRecord {
-      var directory = loadDirectory()
-      // Purge any stale ghost records matching this device's name
-      directory = directory.filter { _, record in
-        !(record.deviceName.caseInsensitiveCompare(localIdentity.deviceName) == .orderedSame
-          && record.deviceID != localIdentity.deviceID)
-      }
+      let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
       let record = RappCloudDeviceRecord(
         deviceID: localIdentity.deviceID,
         deviceName: localIdentity.deviceName,
@@ -68,8 +63,22 @@
           publicKeyA: localIdentity.publicKeyData,
           publicKeyB: localIdentity.publicKeyData
         ),
-        updatedAt: Date()
+        updatedAt: Date(),
+        appBuildVersion: appVersion
       )
+
+      #if targetEnvironment(simulator)
+        if cloudStorage is UbiquitousKeyValueStoreCloudStorage {
+          return record
+        }
+      #endif
+
+      var directory = loadDirectory()
+      // Purge any stale ghost records matching this device's name
+      directory = directory.filter { _, existing in
+        !(existing.deviceName.caseInsensitiveCompare(localIdentity.deviceName) == .orderedSame
+          && existing.deviceID != localIdentity.deviceID)
+      }
       directory[localIdentity.deviceID] = record
       saveDirectory(directory)
       return record
@@ -85,8 +94,22 @@
     /// Removes a specific remote device from the iCloud directory.
     public func removeRemoteDevice(deviceID: UUID) {
       var directory = loadDirectory()
-      directory.removeValue(forKey: deviceID)
-      inMemoryDirectory.removeValue(forKey: deviceID)
+      let targetRecord = directory[deviceID] ?? inMemoryDirectory[deviceID]
+      let targetKey = targetRecord?.staticPublicKey
+      let targetName = targetRecord?.deviceName.lowercased()
+
+      directory = directory.filter { key, record in
+        if key == deviceID { return false }
+        if let targetKey, record.staticPublicKey == targetKey { return false }
+        if let targetName, record.deviceName.lowercased() == targetName { return false }
+        return true
+      }
+      inMemoryDirectory = inMemoryDirectory.filter { key, record in
+        if key == deviceID { return false }
+        if let targetKey, record.staticPublicKey == targetKey { return false }
+        if let targetName, record.deviceName.lowercased() == targetName { return false }
+        return true
+      }
       saveDirectory(directory)
     }
 
@@ -120,9 +143,15 @@
           && record.updatedAt >= thirtyDaysAgo
       }
 
+      // Deduplicate by static public key first, picking the most recently updated entry
+      var byKey: [Data: RappCloudDeviceRecord] = [:]
+      for record in validRecords.sorted(by: { $0.updatedAt < $1.updatedAt }) {
+        byKey[record.staticPublicKey] = record
+      }
+
       // Deduplicate by lowercased device name, picking the most recently updated entry
       var byName: [String: RappCloudDeviceRecord] = [:]
-      for record in validRecords.sorted(by: { $0.updatedAt < $1.updatedAt }) {
+      for record in byKey.values.sorted(by: { $0.updatedAt < $1.updatedAt }) {
         byName[record.deviceName.lowercased()] = record
       }
 
@@ -156,11 +185,6 @@
           publicKeyB: remote.staticPublicKey
         )
 
-        // If pair is revoked locally, do not resurrect it
-        if try vault.pairIsRevoked(pairID: pairID) {
-          continue
-        }
-
         let existingRecordData = try vault.loadPair(pairID: pairID)
         let pair: RappPairRecord
         if let existingRecordData {
@@ -179,10 +203,13 @@
         establishedPairs.append(pair)
         RappPairNames.remember(remote.deviceName, pairID: pairID)
 
-        // If no current selection exists, auto-select this newly established pair
-        if try vault.selectedPairID() == nil {
-          try vault.selectPair(pairID: pairID)
-        }
+      }
+
+      let currentSelected = try vault.selectedPairID()
+      let establishedIDs = Set(establishedPairs.map { $0.metadata().pairId })
+      let isStale = currentSelected.map { !establishedIDs.contains($0) } ?? true
+      if let first = establishedPairs.first, isStale || establishedPairs.count == 1 {
+        try vault.selectPair(pairID: first.metadata().pairId)
       }
 
       return establishedPairs

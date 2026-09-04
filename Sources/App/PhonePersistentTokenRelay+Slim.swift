@@ -1,6 +1,6 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if os(iOS) && REFINEID_LOCAL_CARD && REFINEID_REMOTE_CARD && REFINEID_SLIM_RELAY
+#if os(iOS) && REFINEID_LOCAL_CARD && REFINEID_SLIM_RELAY
   import CardCore
   import Foundation
   import RappEngine
@@ -15,6 +15,7 @@
     ) throws {
       let session = try SignRelaySession(role: .proxy, pair: pair, vault: vault)
       slimSession = session
+      isActivelyConnected = true
       let journal = (try? vault.selectedPairID()).flatMap { pairID in
         pairID.map { SignRelayVaultJournal(vault: vault, pairID: $0) }
       }

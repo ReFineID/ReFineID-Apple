@@ -5,7 +5,7 @@ import Foundation
 
 /// Constants and derivations the specification fixes for RAPP's handshakes.
 internal enum RappNoise {
-  internal static let wireVersion: (major: UInt64, minor: UInt64) = (26, 8)
+  internal static let wireVersion: (major: UInt64, minor: UInt64) = (26, 9)
 
   internal static let pairingSuite = "Noise_XXpsk3_25519_ChaChaPoly_SHA256"
   internal static let sessionSuite = "Noise_KK_25519_ChaChaPoly_SHA256"

@@ -21,9 +21,6 @@
   internal struct StatusView: View {
     private static let spacing: CGFloat = 12
     private static let padding: CGFloat = 24
-    private static let dropHeight: CGFloat = 96
-    private static let dropCornerRadius: CGFloat = 10
-    private static let dropBorderWidth: CGFloat = 2
 
     /// The narrowest the window may be, which grows with the text
     /// inside it so a larger size widens the window instead of
@@ -34,9 +31,7 @@
     internal let model = LoginIdentityModel.shared
     @ObservedObject internal var retryHealth = CredentialRetryHealth.shared
     @ObservedObject internal var cardPresence = CardPresence.shared
-    #if REFINEID_REMOTE_CARD
-      internal let remoteRegistry = PersistentTokenRegistry.shared
-    #endif
+    internal let remoteRegistry = PersistentTokenRegistry.shared
     @State private var signing = SignDocumentModel()
 
     /// Notices a card waiting to be taken into use, and carries the
@@ -46,9 +41,7 @@
     @State private var offeringNumber = false
     @State private var pin2 = ""
     @State private var accessNumber = ""
-    @State private var isTargeted = false
     @State private var format = SignatureFormat.pades
-    @FocusState private var pinFocused: Bool
 
     #if FEATURE_CONTACTLESS
       /// Whether the holder has enabled contactless card reading.
@@ -85,250 +78,142 @@
       #endif
     }
 
+    /// Whether the status form has any content to display.
+    private var hasFormContent: Bool {
+      offeringNumber || awaitingAccessNumber || activation.awaitsActivation
+        || availability == .ready || activation.isReading
+        || cardPresence.isReaderConnected || shouldShowPairingPrompt
+        || availability != .noCard
+    }
+
     internal var body: some View {
       VStack(alignment: .leading, spacing: Self.spacing) {
         HStack {
           Text(verbatim: "RefineID")
             .font(.largeTitle.bold())
           Spacer()
-          SettingsLink {
-            StatusSettingsGlyph(
-              pinLevel: retryHealth.level,
-              routeAvailable: availability == .ready
-            )
-          }
-          .buttonStyle(.bordered)
-          .buttonBorderShape(.circle)
-          .controlSize(.large)
-          .accessibilityIdentifier("manageCard")
         }
-        Form {
-          // While an entered number awaits the card's verdict, the
-          // window is the instruction and nothing else: the steps to
-          // take are the only thing to say, and a drop target or a
-          // PIN window cannot be used before the card can.
-          if offeringNumber || awaitingAccessNumber {
-            // Only the access number when one is needed: no identity
-            // row to overload, no drop target and no PIN window that
-            // cannot be used before the card can. The section itself
-            // compiles in with its feature, and outside the flow it
-            // appears only when the slot's answer proves the card is
-            // on the antenna - a contact card is never asked.
-            SealedCardSection(offering: $offeringNumber)
-          } else if activation.awaitsActivation {
-            // The extension's activation token is the authoritative
-            // semantic result. It outranks derived token readiness and
-            // publishes no identity or signing keys.
-            CardActivationSection(
-              model: activation.management
-            ) { model.refresh() }
-            CardOutcomeSection(model: activation.management)
-          } else if availability == .ready {
-            // Signing belongs exclusively to a published identity. No
-            // provisional or error state offers unusable controls.
-            LabeledContent("Person") {
-              IdentityStateView(
-                availability: availability,
-                warnsUnavailableCard: false
-              )
-            }
-            .accessibilityIdentifier("loginIdentityStatus")
-            documentSection
-            signatureSection
-            outcomeSection
-          } else if activation.isReading {
-            // Protocol negotiation may momentarily make the reader say
-            // its slot is empty. The operation is still in progress,
-            // so neither a removal message nor signing controls belong
-            // in this state.
-            LabeledContent("Person") {
-              IdentityStateView(
-                availability: .cardWithoutIdentity,
-                warnsUnavailableCard: false
-              )
-            }
-            .accessibilityIdentifier("loginIdentityStatus")
-          } else if availability == .noCard {
-            // With no card there is exactly one thing to say, and a
-            // labeled row saying it twice is not it.
-            Text("Insert your identity card into the reader")
-              .foregroundStyle(.secondary)
-              .accessibilityIdentifier("loginIdentityStatus")
-          } else {
-            // A card with no usable identity cannot sign. Keep the
-            // failure local to the identity row instead of offering
-            // controls whose operation must fail.
-            LabeledContent("Person") {
-              IdentityStateView(
-                availability: availability,
-                warnsUnavailableCard: activation.warnsUnavailableCard
-              )
-            }
-            .accessibilityIdentifier("loginIdentityStatus")
-          }
+        if hasFormContent {
+          statusForm
         }
-        .formStyle(.grouped)
-        .fixedSize(horizontal: false, vertical: true)
       }
       .padding(Self.padding)
       .frame(minWidth: minimumWidth, alignment: .leading)
-      // Nothing entered in an earlier run may serve this one: a number
-      // left behind is withdrawn before the card could use it, so
-      // every launch starts with none. Only with the feature: without
-      // it no number is ever offered, and touching the group container
-      // to clean up would be the one thing that creates it.
-      #if FEATURE_CONTACTLESS
-        .task { SealedCardSection.withdrawOfferedNumber() }
-      #endif
-      .onAppear {
-        model.refresh()
-        react(to: availability)
-        activation.observe(
-          availability: availability,
-          paused: offeringNumber || awaitingAccessNumber,
-          identity: model
-        )
-        #if DEBUG
-          if DebugSampleDocuments.isEnabled(), signing.queued.isEmpty {
-            _ = accept(DebugSampleDocuments.seeded())
-          }
+      .task {
+        #if FEATURE_CONTACTLESS
+          SealedCardSection.withdrawOfferedNumber()
         #endif
       }
+      .onAppear(perform: handleAppear)
       .onChange(of: availability) { _, now in
         react(to: now)
-        activation.observe(
-          availability: now,
-          paused: offeringNumber || awaitingAccessNumber,
-          identity: model
-        )
+        observeActivation()
       }
       .onChange(of: offeringNumber || awaitingAccessNumber) { _, _ in
-        activation.observe(
-          availability: availability,
-          paused: offeringNumber || awaitingAccessNumber,
-          identity: model
-        )
+        observeActivation()
       }
       .onChange(of: activation.defersRemoval) { wasDeferred, isDeferred in
         guard wasDeferred, !isDeferred, availability == .noCard else { return }
         react(to: .noCard)
       }
       .onDisappear { activation.stop() }
-      // Signing is what this window is for, and its answer arrived in
-      // silence: focus stays on Sign, and the outcome is drawn below it.
       .announcesOutcome(signing.failure)
       .announcesOutcome(signing.notice)
       .announcesOutcome(activation.management.failure)
       .announcesOutcome(activation.management.notice)
     }
 
-    /// The documents to sign: dropped, or chosen.
-    @ViewBuilder private var documentSection: some View {
-      Section {
-        dropContents
-          .frame(maxWidth: .infinity)
-          .contentShape(.rect)
-          .overlay {
-            if isTargeted {
-              RoundedRectangle(cornerRadius: Self.dropCornerRadius)
-                .strokeBorder(.tint, lineWidth: Self.dropBorderWidth)
-            }
-          }
-          .dropDestination(for: URL.self) { urls, _ in
-            accept(urls)
-          } isTargeted: { targeted in
-            isTargeted = targeted
-          }
-          .accessibilityLabel("Documents to sign")
-          .accessibilityValue(Self.pileValue(signing.queued))
+    @ViewBuilder private var statusForm: some View {
+      Form {
+        formBody
+      }
+      .formStyle(.grouped)
+      .fixedSize(horizontal: false, vertical: true)
+    }
+
+    @ViewBuilder private var formBody: some View {
+      if offeringNumber || awaitingAccessNumber {
+        SealedCardSection(offering: $offeringNumber)
+      } else if activation.awaitsActivation {
+        CardActivationSection(model: activation.management) { model.refresh() }
+        CardOutcomeSection(model: activation.management)
+      } else if availability == .ready {
+        readySection
+      } else if activation.isReading {
+        readingSection
+      } else if shouldShowPairingPrompt {
+        pairingPromptSection
+      } else if cardPresence.isReaderConnected, availability == .noCard {
+        Text("Insert your identity card into the reader")
+          .foregroundStyle(.secondary)
+          .accessibilityIdentifier("loginIdentityStatus")
+      } else if availability != .noCard {
+        unusableSection
       }
     }
 
-    /// What the drop area shows: an invitation, or the pile itself.
-    ///
-    /// The invitation keeps the tall target a drop needs. The pile
-    /// replaces it, because a list of files is the drop target once
-    /// there are files, and holding both would put a stack of names
-    /// under an icon inviting a stack of names.
-    @ViewBuilder private var dropContents: some View {
-      if signing.queued.isEmpty {
-        SignDropInvitation(targeted: isTargeted) { choose() }
-          .frame(maxWidth: .infinity, minHeight: Self.dropHeight)
-      } else {
-        SignDocumentPile(
-          documents: signing.queued,
-          remove: { document in
-            signing.remove(document)
-            // The shape follows what is left: taking the one
-            // spreadsheet out of a pile of PDFs makes PAdES possible
-            // again, and leaving ASiC-E chosen would hide that.
-            format = Self.sharedFormat(for: signing.queued)
-          },
-          add: { choose() },
-          clear: { signing.clear() }
+    @ViewBuilder private var readySection: some View {
+      LabeledContent("Person") {
+        IdentityStateView(availability: availability, warnsUnavailableCard: false)
+      }
+      .accessibilityIdentifier("loginIdentityStatus")
+      StatusDocumentSection(
+        signing: signing,
+        format: $format,
+        onChoose: { choose() },
+        onAccept: { urls in accept(urls) }
+      )
+      StatusSignatureSection(
+        signing: signing,
+        format: $format,
+        pin2: $pin2,
+        accessNumber: $accessNumber,
+        pin2Cache: $pin2Cache,
+        asksLocalPin2: asksLocalPin2,
+        canSign: canSign,
+        onSign: { sign() }
+      )
+      outcomeSection
+    }
+
+    @ViewBuilder private var readingSection: some View {
+      LabeledContent("Person") {
+        IdentityStateView(availability: .cardWithoutIdentity, warnsUnavailableCard: false)
+      }
+      .accessibilityIdentifier("loginIdentityStatus")
+    }
+
+    @ViewBuilder private var pairingPromptSection: some View {
+      RemotePairingPromptView()
+    }
+
+    @ViewBuilder private var unusableSection: some View {
+      LabeledContent("Person") {
+        IdentityStateView(
+          availability: availability,
+          warnsUnavailableCard: activation.warnsUnavailableCard
         )
       }
+      .accessibilityIdentifier("loginIdentityStatus")
     }
 
-    /// PIN2, the optional stamp, and the action - shown once a
-    /// document is waiting.
-    @ViewBuilder private var signatureSection: some View {
-      if signing.pending != nil {
-        let pinTitle =
-          pin2Cache.isWarm ? String(localized: "PIN 2 (remembered)") : String(localized: "PIN 2")
-        Section {
-          SignatureFormatRow(documents: signing.queued, format: $format)
-          if asksLocalPin2 {
-            CredentialSecretField(
-              name: pinTitle,
-              text: $pin2,
-              revealIdentifier: "signPin2Reveal"
-            ) {
-              SecureField(pinTitle, text: $pin2)
-                .onChange(of: pin2) { _, typed in
-                  pin2 = LimitedDigits.pin(typed)
-                }
-                .focused($pinFocused)
-                .onSubmit { sign() }
-                .accessibilityIdentifier("signPin2")
-            }
-          }
-          // Stamp is drawn into the signed PDF revision only.
-          #if FEATURE_PDF_STAMP
-            if format == .pades {
-              StampRow(signing: signing, accessNumber: $accessNumber)
-            }
-          #endif
-          #if DEBUG
-            if DebugRevokedDocumentSigning.isEnabled() {
-              Text(DebugRevokedDocumentSigning.armedWarning)
-                .foregroundStyle(.orange)
-            }
-          #endif
-          actionRow
+    private func handleAppear() {
+      model.refresh()
+      react(to: availability)
+      observeActivation()
+      #if DEBUG
+        if DebugSampleDocuments.isEnabled(), signing.queued.isEmpty {
+          _ = accept(DebugSampleDocuments.seeded())
         }
-        .onAppear { if asksLocalPin2 { pinFocused = true } }
-      }
+      #endif
     }
 
-    /// The action row, carrying the progress too: it is already there
-    /// and half empty, and a line that appears and disappears steps
-    /// the window as the card is read.
-    @ViewBuilder private var actionRow: some View {
-      HStack {
-        if let note = Self.progressNote(signing) {
-          ProgressView().controlSize(.small)
-          Text(note)
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-        }
-        Spacer()
-        Button("Sign…") { sign() }
-          .buttonStyle(.borderedProminent)
-          .keyboardShortcut(.defaultAction)
-          .disabled(!canSign)
-          .accessibilityIdentifier("signDocument")
-      }
+    private func observeActivation() {
+      activation.observe(
+        availability: availability,
+        paused: offeringNumber || awaitingAccessNumber,
+        identity: model
+      )
     }
 
     /// Ready stands recovery down and a removed card resets its budget.
@@ -379,7 +264,6 @@
       signing.accept(urls)
       format = Self.sharedFormat(for: signing.queued)
       pin2 = ""
-      pinFocused = true
       return true
     }
 

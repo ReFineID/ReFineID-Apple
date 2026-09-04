@@ -49,10 +49,10 @@ internal final class CardCredentialsModel: ObservableObject {
 
   // MARK: Static Functions
 
-  /// Revokes every pair, drops the selection, and forgets all names.
+  /// Deletes every pair, drops the selection, and forgets all names.
   ///
-  /// Revocation erases each pair's key material and leaves a tombstone,
-  /// so a replayed pair record can never come back to life.
+  /// Same-account auto-pairing may recreate complementary peers on the next
+  /// reconcile.
   private static func removeAllRappConfiguration() async {
     let vault = RappDeviceVault()
     let catalog = RappPairCatalog(vault: vault)

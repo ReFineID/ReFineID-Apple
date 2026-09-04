@@ -21,7 +21,10 @@
 
     @Test("Returns .remoteRappPair when active pair is present and no reader connected")
     internal func testRemotePairFallback() async throws {
-      let vault = RappDeviceVault(accessGroup: nil, servicePrefix: "fi.refineid.test.arb.remote")
+      let vault = RappDeviceVault(
+        accessGroup: nil,
+        servicePrefix: "fi.refineid.test.arb.remote.\(UUID().uuidString)"
+      )
       let pairID = Data(repeating: 0x77, count: 16)
       let record = Data(repeating: 0x88, count: 32)
       try vault.insertPair(pairID: pairID, record: record)

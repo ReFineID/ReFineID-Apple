@@ -3,6 +3,9 @@
 #if os(macOS) || os(iOS)
 
   import CardCore
+  #if os(macOS)
+    import CryptoTokenKit
+  #endif
   import Foundation
   import os.log
   import Security
@@ -44,12 +47,49 @@
     #if os(macOS)
       /// The holder's name from whichever ReFineID token is published,
       /// or nil when none is.
-      ///
-      /// Unnamed on macOS, where a token answers from what it published
-      /// and a card that is not there matches nothing. iOS asks by name
-      /// instead, for the reason in ``name(ofTokenIdentifier:)``.
       internal static func current() -> String? {
-        Self.name(ofTokenIdentifier: nil)
+        current(tokenIDs: [])
+      }
+
+      /// The holder's name from known ReFineID tokens, or nil when none is.
+      internal static func current(tokenIDs: [String]) -> String? {
+        for tokenID in tokenIDs {
+          if let name = Self.name(ofTokenIdentifier: tokenID) {
+            return name
+          }
+        }
+        if let name = Self.name(ofTokenIdentifier: nil) {
+          return name
+        }
+        return readFromCardReader()
+      }
+
+      /// Reads the identity certificate directly from a physical card in the reader.
+      private static func readFromCardReader() -> String? {
+        guard let manager = TKSmartCardSlotManager.default else { return nil }
+        for slotName in manager.slotNames {
+          guard
+            CardTransport.transport(forSlotNamed: slotName) == .reader,
+            let slot = manager.slotNamed(slotName),
+            slot.state == .validCard,
+            let smartCard = slot.makeSmartCard()
+          else {
+            continue
+          }
+          do {
+            return try SmartCardChannel(smartCard).withSession { channel in
+              let operations = CardOperations(channel: channel)
+              try operations.selectFineidApplication()
+              let certDER = try operations.readCertificate(.authentication)
+              return DistinguishedName.holderLine(fromCertificate: certDER)
+            }
+          } catch {
+            #if DEBUG
+              Self.log.error("readFromCardReader failed: \(error)")
+            #endif
+          }
+        }
+        return nil
       }
     #endif
 
@@ -84,11 +124,13 @@
     private static func queryName(ofTokenIdentifier tokenIdentifier: String?) -> String? {
       var query: [CFString: Any] = [
         kSecClass: kSecClassCertificate,
-        kSecAttrAccessGroup: kSecAttrAccessGroupToken,
         kSecReturnAttributes: true,
         kSecReturnData: true,
         kSecMatchLimit: kSecMatchLimitAll,
       ]
+      #if os(iOS)
+        query[kSecAttrAccessGroup] = kSecAttrAccessGroupToken
+      #endif
       if let tokenIdentifier {
         query[kSecAttrTokenID] = tokenIdentifier
       }

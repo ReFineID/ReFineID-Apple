@@ -214,23 +214,22 @@ internal enum DocumentSigner {
     cardAccessNumber: String?
   ) async throws -> CardMaterial {
     let prepared: PdfSignaturePlaceholder
+    let stampMark = stamp?.mark ?? PdfStampRenderer.stampMark()
     do {
       prepared = try PdfIncrementalSigner.prepare(
-        document, revision: .signature(claim), appending: stamp?.mark
+        document, revision: .signature(claim), appending: stampMark
       )
     } catch let error as PdfSigningError {
       throw Failure.document(error)
     }
     let digest = prepared.digest
-    #if REFINEID_REMOTE_CARD
-      if await MainActor.run(body: { Self.usesRappSigning }) {
-        return try await Self.remoteCardMaterial(
-          prepared: prepared,
-          byteRangeDigest: digest,
-          expectedCertificate: stamp?.signerCertificate
-        )
-      }
-    #endif
+    if await MainActor.run(body: { Self.usesRappSigning }) {
+      return try await Self.remoteCardMaterial(
+        prepared: prepared,
+        byteRangeDigest: digest,
+        expectedCertificate: stamp?.signerCertificate
+      )
+    }
     guard let pin2 else {
       throw Failure.card(.invalidEntry)
     }

@@ -5,8 +5,8 @@ import Security
 
 /// Device-bound storage for RAPP pair keys and durable operation journals.
 ///
-/// Every public mutation maps to one Keychain add or update. Pair revocation
-/// atomically erases key material and replaces it with a tombstone. Proxy
+/// Every public mutation maps to one Keychain add or update. Removing a pair
+/// deletes the Keychain item so the same devices can pair again. Proxy
 /// records and retained results share one item so result transitions remain
 /// atomic without decoding Rust-owned journal bytes.
 public final class RappDeviceVault: @unchecked Sendable {
@@ -107,32 +107,42 @@ public final class RappDeviceVault: @unchecked Sendable {
   /// Stores a new active pair record under its pair identifier.
   public func insertPair(pairID: Data, record: Data) throws {
     try synchronized {
-      try requireIdentifier(pairID, size: IdentifierSize.pair)
-      guard !record.isEmpty else { throw Failure.malformed }
-      let marker = try pairMarker(state: .active, revokedAtMilliseconds: nil)
-      var item = itemQuery(service: namespace.pair, account: pairID.hexadecimal)
-      item[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-      item[kSecAttrGeneric as String] = marker
-      item[kSecValueData as String] = record
-      inMemoryStore[namespace.pair, default: [:]][pairID.hexadecimal] = item
-      let status = SecItemAdd(item as CFDictionary, nil)
-      #if DEBUG
-        print("[RappDeviceVault] insertPair status: \(status)")
-        fflush(stdout)
-      #endif
-      switch status {
-      case errSecSuccess:
-        return
+      try insertPairLocked(pairID: pairID, record: record)
+    }
+  }
 
-      case errSecDuplicateItem:
-        throw Failure.duplicate
+  private func insertPairLocked(pairID: Data, record: Data) throws {
+    try requireIdentifier(pairID, size: IdentifierSize.pair)
+    guard !record.isEmpty else { throw Failure.malformed }
+    let marker = try pairMarker(state: .active, revokedAtMilliseconds: nil)
+    var item = itemQuery(service: namespace.pair, account: pairID.hexadecimal)
+    item[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+    item[kSecAttrGeneric as String] = marker
+    item[kSecValueData as String] = record
+    inMemoryStore[namespace.pair, default: [:]][pairID.hexadecimal] = item
+    let status = SecItemAdd(item as CFDictionary, nil)
+    #if DEBUG
+      print("[RappDeviceVault] insertPair status: \(status)")
+      fflush(stdout)
+    #endif
+    switch status {
+    case errSecSuccess:
+      return
 
-      default:
-        if Self.isInteractionNotAllowed(status) {
-          return
-        }
-        throw Failure.unavailable(status)
-      }
+    case errSecDuplicateItem:
+      let attributes: [String: Any] = [
+        kSecAttrGeneric as String: marker,
+        kSecValueData as String: record,
+      ]
+      try updateExisting(
+        service: namespace.pair,
+        account: pairID.hexadecimal,
+        attributes: attributes
+      )
+
+    default:
+      if Self.isInteractionNotAllowed(status) { return }
+      throw Failure.unavailable(status)
     }
   }
 
@@ -151,7 +161,7 @@ public final class RappDeviceVault: @unchecked Sendable {
     }
   }
 
-  /// Reports whether a revocation tombstone exists for the pair.
+  /// Reports whether a revoked pair marker is stored for the identifier.
   public func pairIsRevoked(pairID: Data) throws -> Bool {
     try synchronized {
       try requireIdentifier(pairID, size: IdentifierSize.pair)
@@ -217,34 +227,15 @@ public final class RappDeviceVault: @unchecked Sendable {
   /// Removes the current pair selection, if any.
   public func clearSelectedPair() throws {
     try synchronized {
-      inMemoryStore[namespace.selection]?.removeValue(forKey: SelectionAccount.current)
-      let status = SecItemDelete(
-        itemQuery(
-          service: namespace.selection,
-          account: SelectionAccount.current
-        ) as CFDictionary)
-      if Self.isInteractionNotAllowed(status) { return }
-      guard status == errSecSuccess || status == errSecItemNotFound else {
-        throw Failure.unavailable(status)
-      }
+      try deleteItem(service: namespace.selection, account: SelectionAccount.current)
     }
   }
 
-  /// Erases the pair's key material and installs a revocation tombstone.
-  public func revokePair(pairID: Data, revokedAtMilliseconds: UInt64) throws {
+  /// Deletes the pair record so same-account auto-pairing can recreate it.
+  public func revokePair(pairID: Data, revokedAtMilliseconds _: UInt64) throws {
     try synchronized {
       try requireIdentifier(pairID, size: IdentifierSize.pair)
-      let marker = try pairMarker(
-        state: .revoked,
-        revokedAtMilliseconds: revokedAtMilliseconds)
-      let attributes: [String: Any] = [
-        kSecAttrGeneric as String: marker,
-        kSecValueData as String: Data(),
-      ]
-      try updateExisting(
-        service: namespace.pair,
-        account: pairID.hexadecimal,
-        attributes: attributes)
+      try deleteItem(service: namespace.pair, account: pairID.hexadecimal)
     }
   }
 

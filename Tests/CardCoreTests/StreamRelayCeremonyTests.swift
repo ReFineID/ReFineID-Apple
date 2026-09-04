@@ -80,21 +80,23 @@ import Testing
       listener: StreamRelayListener
     ) throws -> RappPairingCoordinator {
       try RappPairingCoordinator.requester(
-        profiles: profiles,
-        candidates: [
-          .init(
-            profile: streamProfile,
-            candidateID: candidateID,
-            parametersCBOR: Data([emptyCborMapByte]))
-        ],
-        selectedCandidateID: candidateID,
-        offerLifetimeMilliseconds: offerLifetimeMilliseconds,
-        displayName: "Requester",
-        platform: "iPadOS",
-        vault: vault,
-        transport: RappClosureFrameTransport(
-          sender: { frame in try listener.send(frame) },
-          closer: { listener.cancel() })
+        options: .init(
+          profiles: profiles,
+          candidates: [
+            RappPairingCoordinator.TransportCandidate(
+              profile: streamProfile,
+              candidateID: candidateID,
+              parametersCBOR: Data([emptyCborMapByte]))
+          ],
+          selectedCandidateID: candidateID,
+          offerLifetimeMilliseconds: offerLifetimeMilliseconds,
+          displayName: "Requester",
+          platform: "iPadOS",
+          vault: vault,
+          transport: RappClosureFrameTransport(
+            sender: { frame in try listener.send(frame) },
+            closer: { listener.cancel() })
+        )
       )
     }
 
@@ -105,14 +107,16 @@ import Testing
       dialer: StreamRelaySession
     ) throws -> RappPairingCoordinator {
       try RappPairingCoordinator.proxy(
-        scannedOfferURI: offerURI,
-        selectedCandidateID: candidateID,
-        displayName: "Proxy",
-        platform: "iOS",
-        vault: vault,
-        transport: RappClosureFrameTransport(
-          sender: { frame in try await dialer.send(frame) },
-          closer: { dialer.cancel() })
+        options: .init(
+          scannedOfferURI: offerURI,
+          selectedCandidateID: candidateID,
+          displayName: "Proxy",
+          platform: "iOS",
+          vault: vault,
+          transport: RappClosureFrameTransport(
+            sender: { frame in try await dialer.send(frame) },
+            closer: { dialer.cancel() })
+        )
       )
     }
 

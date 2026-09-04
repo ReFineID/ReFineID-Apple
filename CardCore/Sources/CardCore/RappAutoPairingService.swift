@@ -46,6 +46,51 @@
       coordinator?.localIdentity
     }
 
+    /// Whether any remote holder device is known from iCloud synchronization or established pairings.
+    public var hasKnownRemoteHolders: Bool {
+      let remotes = remoteDevices.filter { record in
+        record.role == .holder && !record.modelName.lowercased().contains("mac")
+      }
+      if !remotes.isEmpty { return true }
+      let pairs = (try? RappDeviceVault().activePairIDs()) ?? []
+      return !pairs.isEmpty
+    }
+
+    /// Checks whether any paired peer device (or known remote requester/holder) is online.
+    public var isAnyPairedPeerOnline: Bool {
+      lock.lock()
+      defer { lock.unlock() }
+      for device in cachedRemoteDevices {
+        if liveOnlineDeviceIDs.contains(device.deviceID) {
+          return true
+        }
+        let lower = device.deviceName.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        let stripped = lower.replacingOccurrences(of: ".local", with: "")
+        if !lower.isEmpty,
+          liveOnlineDeviceNames.contains(lower) || liveOnlineDeviceNames.contains(stripped)
+        {
+          return true
+        }
+      }
+      if let activeIDs = try? RappDeviceVault().activePairIDs(), !activeIDs.isEmpty {
+        for pairID in activeIDs {
+          if let name = RappPairNames.name(forPairID: pairID) {
+            let lower = name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+            let stripped = lower.replacingOccurrences(of: ".local", with: "")
+            if !lower.isEmpty,
+              liveOnlineDeviceNames.contains(lower) || liveOnlineDeviceNames.contains(stripped)
+            {
+              return true
+            }
+          }
+        }
+        if !liveOnlineDeviceIDs.isEmpty || !liveOnlineDeviceNames.isEmpty {
+          return true
+        }
+      }
+      return false
+    }
+
     // MARK: Initialization
 
     private init() {
@@ -61,14 +106,15 @@
       if let deviceID, liveOnlineDeviceIDs.contains(deviceID) {
         return true
       }
-      if let deviceName {
-        let lower = deviceName.lowercased()
-        if liveOnlineDeviceNames.contains(lower) {
-          return true
-        }
-        if liveOnlineDeviceNames.contains(where: { $0.contains(lower) || lower.contains($0) }) {
-          return true
-        }
+      guard let deviceName else { return false }
+      let lower = deviceName.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+      guard !lower.isEmpty else { return false }
+      if liveOnlineDeviceNames.contains(lower) {
+        return true
+      }
+      let stripped = lower.replacingOccurrences(of: ".local", with: "")
+      if liveOnlineDeviceNames.contains(stripped) {
+        return true
       }
       return false
     }
@@ -174,6 +220,8 @@
       guard let coordinator else { return }
       Task {
         await coordinator.removeRemoteDevice(deviceID: deviceID)
+        let remotes = await coordinator.remoteDevices()
+        self.updateCachedRemoteDevices(remotes)
         reconcile()
       }
     }

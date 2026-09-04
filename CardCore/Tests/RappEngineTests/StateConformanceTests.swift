@@ -11,7 +11,7 @@ internal struct StateConformanceTests {
   private static let expectedRuleCounts = [("pairing", 19), ("session", 31), ("operation", 39)]
 
   /// An action the perturbed control appends so the comparison must notice.
-  private static let perturbingAction = "hide_qr"
+  private static let perturbingAction = "hide_pairing_code"
 
   private func reader(_ filePath: String = #filePath) throws -> ModelReader {
     try StateModelFile.read(filePath: filePath)

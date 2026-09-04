@@ -11,74 +11,50 @@
     private var scenePhase
 
     @StateObject private var model = ReaderIdentityModeModel()
-
-    #if REFINEID_REMOTE_CARD
-      @StateObject private var remoteModel = RemoteCardModel()
-
-      @ObservedObject private var authorizationInbox = RappAuthorizationInbox.shared
-    #endif
+    @StateObject private var remoteModel = RemoteCardModel()
+    @ObservedObject private var authorizationInbox = RappAuthorizationInbox.shared
 
     internal var body: some View {
-      #if REFINEID_REMOTE_CARD
-        remoteCapableBody
-      #else
-        NavigationStack {
-          CardCredentialsView(readerModel: model)
-        }
-        .onAppear {
-          model.refresh()
-        }
-        .onValueChange(of: scenePhase) { _ in
-          if scenePhase == .active {
-            model.refresh()
-          }
-        }
-      #endif
-    }
-
-    #if REFINEID_REMOTE_CARD
-      private var remoteCapableBody: some View {
-        NavigationStack {
-          CardCredentialsView(
-            readerModel: model,
-            remoteModel: remoteModel
-          )
-        }
-        .onAppear {
+      NavigationStack {
+        CardCredentialsView(
+          readerModel: model,
+          remoteModel: remoteModel
+        )
+      }
+      .onAppear {
+        model.refresh()
+        remoteModel.refresh()
+      }
+      .onReceive(
+        NotificationCenter.default.publisher(
+          for: RappPairingModel.pairingsDidChangeNotification)
+      ) { _ in
+        remoteModel.refresh()
+      }
+      .onValueChange(of: scenePhase) { _ in
+        if scenePhase == .active {
           model.refresh()
           remoteModel.refresh()
-        }
-        .onReceive(
-          NotificationCenter.default.publisher(
-            for: RappPairingModel.pairingsDidChangeNotification)
-        ) { _ in
-          remoteModel.refresh()
-        }
-        .onValueChange(of: scenePhase) { _ in
-          if scenePhase == .active {
-            model.refresh()
-            remoteModel.refresh()
-          }
-        }
-        .sheet(
-          isPresented: Binding(
-            get: { authorizationInbox.request != nil },
-            set: { shown in
-              guard !shown, let pending = authorizationInbox.request else { return }
-              authorizationInbox.deny(pending.requestID)
-            }
-          )
-        ) {
-          if let request = authorizationInbox.request {
-            RappAuthorizationView(
-              request: request,
-              inbox: authorizationInbox
-            )
-            .presentationDetents([.medium, .large])
-          }
         }
       }
-    #endif
+      .sheet(
+        isPresented: Binding(
+          get: { authorizationInbox.request != nil },
+          set: { shown in
+            guard !shown, let pending = authorizationInbox.request else { return }
+            authorizationInbox.deny(pending.requestID)
+          }
+        )
+      ) {
+        if let request = authorizationInbox.request {
+          RappAuthorizationView(
+            request: request,
+            inbox: authorizationInbox
+          )
+          .presentationDetents([.medium, .large])
+        }
+      }
+    }
   }
 
 #endif

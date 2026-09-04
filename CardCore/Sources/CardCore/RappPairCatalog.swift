@@ -3,8 +3,8 @@
 #if canImport(RappEngine)
   import Foundation
   import RappEngine
-  /// Device-local view of active RAPP pair records. Revoked tombstones are never
-  /// returned as usable pairs and pair private material never leaves Rust.
+  /// Device-local view of active RAPP pair records. Pair private material
+  /// never leaves Rust.
   public actor RappPairCatalog {
     /// Why a catalog read was refused.
     public enum CatalogError: Error, Sendable {
@@ -29,11 +29,11 @@
       var seen = Set<Data>()
       return try vault.activePairIDs()
         .sorted { $0.lexicographicallyPrecedes($1) }
-        .map { pairID in
-          guard seen.insert(pairID).inserted else {
-            throw CatalogError.duplicatePairIdentifier
+        .compactMap { pairID in
+          guard seen.insert(pairID).inserted else { return nil }
+          guard let pair = try? RappPairRecord.loadFromVault(pairId: pairID, vault: vault) else {
+            return nil
           }
-          let pair = try RappPairRecord.loadFromVault(pairId: pairID, vault: vault)
           return RappPairingCoordinator.PairSummary(pair.metadata())
         }
     }
@@ -46,7 +46,7 @@
     /// The summary of the selected pair, or nil when none is selected.
     public func selectedPair() throws -> RappPairingCoordinator.PairSummary? {
       guard let pairID = try vault.selectedPairID() else { return nil }
-      let pair = try load(pairID: pairID)
+      guard let pair = try? load(pairID: pairID) else { return nil }
       return RappPairingCoordinator.PairSummary(pair.metadata())
     }
 
@@ -61,7 +61,9 @@
       try vault.clearSelectedPair()
     }
 
-    /// Revocation is durable and intentionally has no automatic recovery path.
+    /// Deletes the pair record.
+    ///
+    /// Same-account auto-pairing may recreate it.
     public func revoke(pairID: Data) throws {
       let pair = try load(pairID: pairID)
       try pair.revoke(vault: vault, revokedAtMs: clock.wallMilliseconds())

@@ -1,6 +1,6 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if REFINEID_SLIM_RELAY && REFINEID_LOCAL_CARD && os(iOS) && REFINEID_REMOTE_CARD
+#if REFINEID_SLIM_RELAY && REFINEID_LOCAL_CARD && os(iOS)
 
   import CardCore
   import Foundation

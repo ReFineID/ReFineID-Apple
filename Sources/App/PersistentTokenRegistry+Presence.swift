@@ -1,6 +1,6 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if (os(macOS) || os(iOS)) && REFINEID_REMOTE_CARD && REFINEID_STREAM_TRANSPORT
+#if (os(macOS) || os(iOS)) && REFINEID_STREAM_TRANSPORT
   import CardCore
   import Foundation
   import RappEngine
@@ -19,10 +19,9 @@
 
     /// The published name both sides derive from the selected pairing.
     private static func holderServiceName() -> String? {
+      guard let pairID = activePairID else { return nil }
       let vault = RappDeviceVault()
-      let pairID = (try? vault.selectedPairID()) ?? (try? vault.activePairIDs().first)
-      guard let pairID,
-        let pair = try? RappPairRecord.loadFromVault(pairId: pairID, vault: vault)
+      guard let pair = try? RappPairRecord.loadFromVault(pairId: pairID, vault: vault)
       else { return nil }
       return StreamRendezvousName.name(sharing: pair.metadata().rendezvousToken)
     }
@@ -39,7 +38,10 @@
       advertisementLossTask = nil
       hasSeenHolderAdvertisement = false
       holderIsAdvertising = false
-      let name = Self.holderServiceName() ?? ""
+      guard let name = Self.holderServiceName(), !name.isEmpty else {
+        Self.withdrawPublishedIdentity()
+        return
+      }
       let watcher = StreamRelayPresence(matching: name) { present in
         Task { @MainActor in
           Self.shared.holderPresenceChanged(present)
@@ -49,7 +51,26 @@
       watcher.start()
     }
 
+    /// Restarts browsing for the currently selected holder.
+    internal func restartWatchingPresence() {
+      presence?.cancel()
+      presence = nil
+      advertisementLossTask?.cancel()
+      advertisementLossTask = nil
+      hasSeenHolderAdvertisement = false
+      holderIsAdvertising = false
+      startWatchingPresence()
+    }
+
     internal func holderPresenceChanged(_ present: Bool) {
+      guard let name = Self.holderServiceName(), !name.isEmpty else {
+        advertisementLossTask?.cancel()
+        advertisementLossTask = nil
+        hasSeenHolderAdvertisement = false
+        holderIsAdvertising = false
+        Self.withdrawPublishedIdentity()
+        return
+      }
       if present {
         advertisementLossTask?.cancel()
         advertisementLossTask = nil
@@ -74,6 +95,30 @@
           fflush(stdout)
         #endif
       }
+    }
+
+    internal func installPairingObservers() {
+      guard pairingsObservers.isEmpty else { return }
+      let notificationCenter = NotificationCenter.default
+      let observer1 = notificationCenter.addObserver(
+        forName: RappPairingModel.pairingsDidChangeNotification,
+        object: nil,
+        queue: .main
+      ) { [weak self] _ in
+        Task { @MainActor [weak self] in
+          self?.restartWatchingPresence()
+        }
+      }
+      let observer2 = notificationCenter.addObserver(
+        forName: RappAutoPairingService.pairingsDidChangeNotification,
+        object: nil,
+        queue: .main
+      ) { [weak self] _ in
+        Task { @MainActor [weak self] in
+          self?.restartWatchingPresence()
+        }
+      }
+      pairingsObservers = [observer1, observer2]
     }
   }
 #endif

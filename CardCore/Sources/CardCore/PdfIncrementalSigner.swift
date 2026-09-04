@@ -112,6 +112,7 @@ public enum PdfIncrementalSigner {
     let source = RevisionSource(
       document: document, index: index, rootNumber: rootNumber
     )
+    let effectiveStamp = Self.effectiveStamp(stamp, source: source)
     offsets[numbers.field] = out.count
     out.append(
       try Self.fieldObject(
@@ -119,7 +120,7 @@ public enum PdfIncrementalSigner {
         source: source,
         numbers: numbers,
         signature: signatureNumber,
-        stamp: stamp
+        stamp: effectiveStamp
       )
     )
     let highest = try Self.appendRevisionBody(
@@ -127,7 +128,7 @@ public enum PdfIncrementalSigner {
       offsets: &offsets,
       source: source,
       numbers: numbers,
-      stamp: stamp
+      stamp: effectiveStamp
     )
     try Self.closeRevision(
       into: &out,

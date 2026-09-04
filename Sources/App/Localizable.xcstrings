@@ -2336,6 +2336,39 @@
         }
       }
     },
+
+    "Connect phone as reader with code: %@": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liitä kännykkä lukijaksi koodilla: %@"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anslut telefonen som läsare med kod: %@"
+          }
+        }
+      }
+    },
+    "Preparing pairing code...": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valmistellaan pariliitoskoodia…"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förbereder parkopplingskod…"
+          }
+        }
+      }
+    },
     "Invalid entry": {
       "localizations": {
         "fi": {
@@ -2679,6 +2712,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ingår inte"
+          }
+        }
+      }
+    },
+    "Offline": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offline"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ei yhteyttä"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frånkopplad"
           }
         }
       }
@@ -3090,6 +3145,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Parkoppla en telefon"
+          }
+        }
+      }
+    },
+    "Paired": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paired"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paritettu"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parkopplad"
           }
         }
       }

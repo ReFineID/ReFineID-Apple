@@ -193,6 +193,19 @@ public final class RappDeviceIdentity: @unchecked Sendable {
 
   private static func resolveDeviceName() -> String {
     #if os(iOS)
+      let host = ProcessInfo.processInfo.hostName
+      let trimmed =
+        host
+        .replacingOccurrences(of: ".coredevice.local", with: "")
+        .replacingOccurrences(of: ".local", with: "")
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+      if !trimmed.isEmpty,
+        trimmed.caseInsensitiveCompare("localhost") != .orderedSame,
+        trimmed.caseInsensitiveCompare("iphone") != .orderedSame,
+        trimmed.caseInsensitiveCompare("ipad") != .orderedSame
+      {
+        return trimmed
+      }
       return UIDevice.current.name
     #elseif os(macOS)
       return Host.current().localizedName ?? "Mac"
@@ -211,24 +224,11 @@ public final class RappDeviceIdentity: @unchecked Sendable {
         var model = [CChar](repeating: 0, count: size)
         sysctlbyname("hw.model", &model, &size, nil, 0)
         let bytes = model.prefix(while: { $0 != 0 }).map { UInt8(bitPattern: $0) }
-        let raw = String(bytes: bytes, encoding: .utf8) ?? "Mac"
-        return friendlyMacModelName(raw)
+        return String(bytes: bytes, encoding: .utf8) ?? "Mac"
       }
       return "Mac"
     #else
       return "Apple"
     #endif
-  }
-
-  private static func friendlyMacModelName(_ raw: String) -> String {
-    if raw.hasPrefix("MacBookPro") { return "MacBook Pro" }
-    if raw.hasPrefix("MacBookAir") { return "MacBook Air" }
-    if raw.hasPrefix("MacBook") { return "MacBook" }
-    if raw.hasPrefix("Macmini") { return "Mac mini" }
-    if raw.hasPrefix("iMac") { return "iMac" }
-    if raw.hasPrefix("MacStudio") { return "Mac Studio" }
-    if raw.hasPrefix("MacPro") { return "Mac Pro" }
-    if raw.hasPrefix("Mac") { return "Mac" }
-    return raw
   }
 }

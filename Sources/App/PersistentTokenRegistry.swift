@@ -1,6 +1,6 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if (os(macOS) || os(iOS)) && REFINEID_REMOTE_CARD
+#if os(macOS) || os(iOS)
   import CardCore
   import CryptoKit
   import CryptoTokenKit
@@ -45,6 +45,14 @@
       String(localized: "Basic (PIN 1)")
     }
 
+    /// The pair ID of the currently selected or active remote holder.
+    internal static var activePairID: Data? {
+      let vault = RappDeviceVault()
+      let pairIDs = (try? vault.activePairIDs()) ?? []
+      guard !pairIDs.isEmpty else { return nil }
+      return (try? vault.selectedPairID()) ?? pairIDs.first
+    }
+
     // MARK: Properties
 
     /// Who the borrowed certificate names, for the identity row.
@@ -69,6 +77,7 @@
       /// Withdraws the identity after Bonjour has omitted the holder
       /// for ``advertisementLossHold``.
       internal var advertisementLossTask: Task<Void, Never>?
+      internal var pairingsObservers: [any NSObjectProtocol] = []
     #endif
 
     // MARK: Lifecycle
@@ -105,12 +114,18 @@
     /// borrowed certificate and leaves the pair so the next card can
     /// use it.
     internal static func withdrawPublishedIdentity() {
-      guard let driver = driverConfiguration else { return }
-      for instanceID in driver.tokenConfigurations.keys {
-        driver.removeTokenConfiguration(for: instanceID)
+      if let driver = driverConfiguration {
+        for instanceID in driver.tokenConfigurations.keys {
+          driver.removeTokenConfiguration(for: instanceID)
+        }
       }
       shared.holderLine = nil
       shared.certificateDER = nil
+      shared.holderIsAdvertising = false
+      shared.hasSeenHolderAdvertisement = false
+      #if os(macOS)
+        LoginIdentityModel.shared.refresh()
+      #endif
     }
 
     /// The certificate this driver is currently offering, if any.
@@ -192,13 +207,16 @@
       }
       let configuration = driver.addTokenConfiguration(for: instanceID)
       let vault = RappDeviceVault()
-      let pairID = (try? vault.selectedPairID()) ?? (try? vault.activePairIDs().first)
-      if let pairID,
+      let pairIDs = (try? vault.activePairIDs()) ?? []
+      let pairID = (try? vault.selectedPairID()) ?? pairIDs.first
+      guard let pairID,
         let pair = try? RappPairRecord.loadFromVault(pairId: pairID, vault: vault),
         let pairBytes = try? pair.encodedBytes()
-      {
-        configuration.configurationData = pairBytes
+      else {
+        driver.removeTokenConfiguration(for: instanceID)
+        return
       }
+      configuration.configurationData = pairBytes
       // The leaf and its key, and nothing else. Publishing the issuer
       // beside them stopped the browser forming an identity at all:
       // measured on the requester, a configuration of three items was
@@ -206,6 +224,9 @@
       configuration.keychainItems = [certificateItem, keyItem]
       shared.certificateDER = certificateDER
       shared.holderLine = DistinguishedName.holderLine(fromCertificate: certificateDER)
+      #if os(macOS)
+        LoginIdentityModel.shared.refresh()
+      #endif
       #if DEBUG
         print("[persistent-token] published \(instanceID)")
         fflush(stdout)
@@ -218,6 +239,7 @@
     /// an identity is needed.
     internal func start() {
       #if REFINEID_STREAM_TRANSPORT
+        installPairingObservers()
         startWatchingPresence()
         // A leftover identity from an earlier run is not a live card.
         // The pairing stays; publication resumes when the holder is seen.
@@ -225,7 +247,12 @@
           Self.withdrawPublishedIdentity()
         }
       #else
-        seedHolderLine()
+        let hasPairs = (try? RappDeviceVault().activePairIDs().isEmpty == false) ?? false
+        if hasPairs {
+          seedHolderLine()
+        } else {
+          Self.withdrawPublishedIdentity()
+        }
       #endif
       startFetch(replacing: false)
     }
@@ -245,6 +272,11 @@
     /// here keeps the wireless identity listed beside a plugged-in card.
     /// A leftover identity is not restored while the holder is absent.
     internal func ensurePublished() {
+      let hasPairs = (try? RappDeviceVault().activePairIDs().isEmpty == false) ?? false
+      guard hasPairs else {
+        Self.withdrawPublishedIdentity()
+        return
+      }
       #if REFINEID_STREAM_TRANSPORT
         guard holderIsAdvertising else { return }
       #endif
@@ -258,6 +290,12 @@
 
     /// Fills the person line from a certificate this process already holds.
     internal func seedHolderLine() {
+      let hasPairs = (try? RappDeviceVault().activePairIDs().isEmpty == false) ?? false
+      guard hasPairs else {
+        holderLine = nil
+        certificateDER = nil
+        return
+      }
       guard let der = certificateDER ?? Self.publishedCertificateDER() else { return }
       certificateDER = der
       if holderLine == nil {
@@ -267,6 +305,8 @@
 
     internal func startFetch(replacing: Bool) {
       guard !isRunning else { return }
+      let hasPairs = (try? RappDeviceVault().activePairIDs().isEmpty == false) ?? false
+      guard hasPairs else { return }
       guard replacing || Self.needsIdentity || certificateDER == nil else { return }
       isRunning = true
       Task.detached(priority: .userInitiated) {

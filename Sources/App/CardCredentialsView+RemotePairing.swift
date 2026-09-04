@@ -3,7 +3,7 @@
 import CardCore
 import SwiftUI
 
-#if os(iOS) && REFINEID_REMOTE_CARD
+#if os(iOS)
   extension CardCredentialsView {
     // MARK: Nested Types
 
@@ -30,12 +30,29 @@ import SwiftUI
       .body.monospacedDigit().weight(.semibold)
     }
 
+    private var isActivelyConnected: Bool {
+      #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--mock-remote-connected") {
+          return true
+        }
+      #endif
+      #if os(iOS) && REFINEID_LOCAL_CARD
+        if SupportedCardTransports.offersNearField {
+          return phoneRelay.isPeerConnectedOrOnline
+        }
+      #endif
+      if remoteModel.holder != nil {
+        return true
+      }
+      return false
+    }
+
     @ViewBuilder internal var remoteRouteRow: some View {
       HStack(spacing: RemotePairingLayout.inputSpacing) {
         Group {
           if remoteCardAvailable {
             RemotePairingGlyph(
-              isConnected: pairingModel.hasActivePairs && !isPairingInputActive
+              isConnected: isActivelyConnected
             )
           } else {
             PersonRowLabel.cardIcon(
@@ -60,12 +77,24 @@ import SwiftUI
       .onAppear {
         pairingModel.refresh()
         RappAutoPairingService.shared.reconcile()
+        #if os(iOS) && REFINEID_LOCAL_CARD
+          phoneRelay.updatePeerOnlineState()
+        #endif
       }
       .onReceive(
         NotificationCenter.default.publisher(
           for: RappPairingModel.pairingsDidChangeNotification)
       ) { _ in
         pairingModel.refresh()
+      }
+      .onReceive(
+        NotificationCenter.default.publisher(
+          for: RappAutoPairingService.pairingsDidChangeNotification)
+      ) { _ in
+        pairingModel.refresh()
+        #if os(iOS) && REFINEID_LOCAL_CARD
+          phoneRelay.updatePeerOnlineState()
+        #endif
       }
     }
 
@@ -104,11 +133,11 @@ import SwiftUI
     }
 
     private var connectedStatusChip: some View {
-      Button(String(localized: "Connected")) {
+      Button(isActivelyConnected ? String(localized: "Connected") : String(localized: "Offline")) {
         // Status only; the minus control drops the pairing.
       }
       .buttonStyle(.bordered)
-      .tint(.green)
+      .tint(isActivelyConnected ? .green : .secondary)
       .controlSize(.small)
       .allowsHitTesting(false)
       .accessibilityRemoveTraits(.isButton)
