@@ -95,8 +95,8 @@
       #expect(try phoneVault.activePairIDs().count == 2)
     }
 
-    @Test("Does not resurrect locally revoked pairs")
-    internal func testRevocationPreserved() async throws {
+    @Test("Deleting a pair lets reconcile recreate it from the same-account directory")
+    internal func testResetPairRecreatesOnReconcile() async throws {
       let runID = UUID().uuidString
       let storage = InMemoryCloudStorage()
 
@@ -119,12 +119,12 @@
 
       try macVault.revokePair(pairID: pairID, revokedAtMilliseconds: 2_000_000)
       #expect(try macVault.activePairIDs().isEmpty)
-      #expect(try macVault.pairIsRevoked(pairID: pairID))
+      #expect(try macVault.pairIsRevoked(pairID: pairID) == false)
 
       let subsequentPairs = try await macCoord.reconcileVault(vault: macVault)
-      #expect(subsequentPairs.isEmpty)
-      #expect(try macVault.activePairIDs().isEmpty)
-      #expect(try macVault.pairIsRevoked(pairID: pairID))
+      #expect(subsequentPairs.count == 1)
+      #expect(try macVault.activePairIDs().count == 1)
+      #expect(subsequentPairs[0].metadata().pairId == pairID)
     }
 
     private func makeIdentity(service: String, name: String, model: String, seed: UInt8) throws

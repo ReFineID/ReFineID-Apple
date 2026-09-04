@@ -729,7 +729,7 @@ import Testing
     }
 
     @Test
-    internal func swiftCoordinatorsPairThroughRustAndRevocationIsDurable() async throws {
+    internal func swiftCoordinatorsPairThroughRustAndRevocationRemovesThePair() async throws {
       let fixture = try await Self.makePairedFixture()
       defer { Self.deleteKeychainServices(for: fixture) }
 
@@ -755,8 +755,8 @@ import Testing
       #expect(try await catalog.selectedPair()?.pairID == fixture.requesterSummary.pairID)
       try await catalog.revoke(pairID: fixture.requesterSummary.pairID)
       #expect(
-        try fixture.requesterVault.pairIsRevoked(
-          pairID: fixture.requesterSummary.pairID))
+        try fixture.requesterVault.loadPair(
+          pairID: fixture.requesterSummary.pairID) == nil)
       #expect(try await catalog.activePairs().isEmpty)
       #expect(try await catalog.selectedPair() == nil)
       #expect(
@@ -1018,10 +1018,10 @@ import Testing
           ))
       #expect(
         try fixture.requesterVault.pairIsRevoked(
-          pairID: fixture.requesterSummary.pairID))
+          pairID: fixture.requesterSummary.pairID) == false)
       #expect(
         try fixture.proxyVault.pairIsRevoked(
-          pairID: fixture.proxySummary.pairID))
+          pairID: fixture.proxySummary.pairID) == false)
       #expect(
         try fixture.requesterVault.loadPair(
           pairID: fixture.requesterSummary.pairID) == nil)

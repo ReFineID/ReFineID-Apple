@@ -237,6 +237,16 @@ extension RappDeviceVault {
     throw Failure.unavailable(addStatus)
   }
 
+  internal func deleteItem(service: String, account: String) throws {
+    inMemoryStore[service]?.removeValue(forKey: account)
+    let status = SecItemDelete(
+      itemQuery(service: service, account: account) as CFDictionary)
+    if Self.isInteractionNotAllowed(status) { return }
+    guard status == errSecSuccess || status == errSecItemNotFound else {
+      throw Failure.unavailable(status)
+    }
+  }
+
   internal func deleteAll(service: String) throws {
     inMemoryStore.removeValue(forKey: service)
     let status = SecItemDelete(itemQuery(service: service) as CFDictionary)

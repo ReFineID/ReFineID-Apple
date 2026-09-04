@@ -158,11 +158,6 @@
           publicKeyB: remote.staticPublicKey
         )
 
-        // If pair is revoked locally, do not resurrect it
-        if try vault.pairIsRevoked(pairID: pairID) {
-          continue
-        }
-
         let existingRecordData = try vault.loadPair(pairID: pairID)
         let pair: RappPairRecord
         if let existingRecordData {

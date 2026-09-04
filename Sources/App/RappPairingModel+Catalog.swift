@@ -16,10 +16,11 @@
       "fi.refineid.pairingsDidChange"
     )
 
-    /// Revokes every stored pairing and forgets their display names.
+    /// Deletes every stored pairing and forgets their display names.
     ///
-    /// The pairing is gone here even if a peer never receives a close
-    /// frame: the vault is the record this device honours.
+    /// Same-account auto-pairing recreates complementary peers on the next
+    /// reconcile. The pairing is gone here even if a peer never receives a
+    /// close frame: the vault is the record this device honours.
     internal static func revokeEveryStoredPair() {
       let vault = RappDeviceVault()
       let pairIDs = (try? vault.activePairIDs()) ?? []
@@ -73,6 +74,7 @@
       pairs = []
       selectedPairID = nil
       phase = .idle
+      RappAutoPairingService.shared.reconcile()
     }
   }
 

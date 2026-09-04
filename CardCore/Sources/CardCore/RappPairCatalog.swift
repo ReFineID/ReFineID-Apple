@@ -3,8 +3,8 @@
 #if canImport(RappEngine)
   import Foundation
   import RappEngine
-  /// Device-local view of active RAPP pair records. Revoked tombstones are never
-  /// returned as usable pairs and pair private material never leaves Rust.
+  /// Device-local view of active RAPP pair records. Pair private material
+  /// never leaves Rust.
   public actor RappPairCatalog {
     /// Why a catalog read was refused.
     public enum CatalogError: Error, Sendable {
@@ -61,7 +61,9 @@
       try vault.clearSelectedPair()
     }
 
-    /// Revocation is durable and intentionally has no automatic recovery path.
+    /// Deletes the pair record.
+    ///
+    /// Same-account auto-pairing may recreate it.
     public func revoke(pairID: Data) throws {
       let pair = try load(pairID: pairID)
       try pair.revoke(vault: vault, revokedAtMs: clock.wallMilliseconds())

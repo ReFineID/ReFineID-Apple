@@ -286,7 +286,9 @@ internal struct ReFineIDApp: App {
           #if os(macOS)
             PersistentTokenRegistry.shared.startAfterPairing()
           #elseif os(iOS) && REFINEID_LOCAL_CARD
-            PhonePersistentTokenRelay.shared.resumeAfterUserAction()
+            if let ids = try? RappDeviceVault().activePairIDs(), !ids.isEmpty {
+              PhonePersistentTokenRelay.shared.resumeAfterUserAction()
+            }
             if !SupportedCardTransports.offersNearField {
               PersistentTokenRegistry.shared.startAfterPairing()
             }
