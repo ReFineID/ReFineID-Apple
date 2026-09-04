@@ -45,6 +45,14 @@
       String(localized: "Basic (PIN 1)")
     }
 
+    /// The pair ID of the currently selected or active remote holder.
+    internal static var activePairID: Data? {
+      let vault = RappDeviceVault()
+      let pairIDs = (try? vault.activePairIDs()) ?? []
+      guard !pairIDs.isEmpty else { return nil }
+      return (try? vault.selectedPairID()) ?? pairIDs.first
+    }
+
     // MARK: Properties
 
     /// Who the borrowed certificate names, for the identity row.

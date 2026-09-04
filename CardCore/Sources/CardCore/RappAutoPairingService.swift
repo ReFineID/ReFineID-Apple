@@ -61,14 +61,15 @@
       if let deviceID, liveOnlineDeviceIDs.contains(deviceID) {
         return true
       }
-      if let deviceName {
-        let lower = deviceName.lowercased()
-        if liveOnlineDeviceNames.contains(lower) {
-          return true
-        }
-        if liveOnlineDeviceNames.contains(where: { $0.contains(lower) || lower.contains($0) }) {
-          return true
-        }
+      guard let deviceName else { return false }
+      let lower = deviceName.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+      guard !lower.isEmpty else { return false }
+      if liveOnlineDeviceNames.contains(lower) {
+        return true
+      }
+      let stripped = lower.replacingOccurrences(of: ".local", with: "")
+      if liveOnlineDeviceNames.contains(stripped) {
+        return true
       }
       return false
     }
@@ -174,6 +175,8 @@
       guard let coordinator else { return }
       Task {
         await coordinator.removeRemoteDevice(deviceID: deviceID)
+        let remotes = await coordinator.remoteDevices()
+        self.updateCachedRemoteDevices(remotes)
         reconcile()
       }
     }

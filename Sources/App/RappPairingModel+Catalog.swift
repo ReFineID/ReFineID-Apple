@@ -31,6 +31,7 @@
         RappPairNames.forget(pairID: pairID)
       }
       try? vault.clearSelectedPair()
+      RappPairNames.forgetAll()
       NotificationCenter.default.post(name: pairingsDidChangeNotification, object: nil)
     }
 

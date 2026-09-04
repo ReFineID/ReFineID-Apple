@@ -43,8 +43,12 @@ while [[ $# -gt 0 ]]; do
       target_simulator=false
       shift
       ;;
+    --no-simulator)
+      target_simulator=false
+      shift
+      ;;
     -h|--help)
-      echo "Usage: $0 [--device-only | --simulator-only | --macos-only] [--prime-mock-card]"
+      echo "Usage: $0 [--device-only | --simulator-only | --macos-only | --no-simulator] [--prime-mock-card]"
       exit 0
       ;;
     *)

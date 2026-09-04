@@ -2336,6 +2336,22 @@
         }
       }
     },
+    "Insert your identity card into your iPhone": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aseta henkilökortti iPhoneen"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Placera ditt identitetskort mot din iPhone"
+          }
+        }
+      }
+    },
     "Connect phone as reader with code: %@": {
       "localizations": {
         "fi": {

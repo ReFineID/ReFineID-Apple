@@ -72,37 +72,52 @@
         device.role == .holder && !device.modelName.lowercased().contains("mac")
       }
 
+      let localPublicKey = RappAutoPairingService.shared.localIdentity?.publicKeyData
+
+      let derivedRemotePairIDs: Set<Data> = Set(
+        validRemoteDevices.compactMap { device in
+          guard let localPublicKey else { return nil }
+          return RappSameAccountPairBuilder.derivePairIdentifier(
+            publicKeyA: localPublicKey,
+            publicKeyB: device.staticPublicKey
+          )
+        }
+      )
+
       let validExtraPairs = model.pairs.filter { pair in
         guard pair.role == .requester else { return false }
+        guard !derivedRemotePairIDs.contains(pair.pairID) else { return false }
         let pairName = RappPairNames.name(forPairID: pair.pairID) ?? ""
         if pairName.lowercased().contains("mac") { return false }
         return !validRemoteDevices.contains { remote in
           remote.deviceName.caseInsensitiveCompare(pairName) == .orderedSame
+            || remote.modelName.caseInsensitiveCompare(pairName) == .orderedSame
         }
       }
 
-      let totalCount = validRemoteDevices.count + validExtraPairs.count
+      var seenExtraNames = Set<String>()
+      let deduplicatedExtraPairs = validExtraPairs.filter { pair in
+        let name = (RappPairNames.name(forPairID: pair.pairID) ?? "")
+          .trimmingCharacters(in: .whitespacesAndNewlines)
+          .lowercased()
+        guard !name.isEmpty else { return false }
+        return seenExtraNames.insert(name).inserted
+      }
+
+      let totalCount = validRemoteDevices.count + deduplicatedExtraPairs.count
       let effectivePreferredID =
         preferredDeviceID.isEmpty && totalCount == 1
         ? (validRemoteDevices.first?.deviceID.uuidString
-          ?? validExtraPairs.first?.pairID.base64EncodedString() ?? "")
+          ?? deduplicatedExtraPairs.first?.pairID.base64EncodedString() ?? "")
         : preferredDeviceID
 
-      let localPublicKey = RappAutoPairingService.shared.localIdentity?.publicKeyData
+      let activePairID = PersistentTokenRegistry.activePairID
 
       var list: [DisplayedDevice] = []
 
       for device in validRemoteDevices {
         let idStr = device.deviceID.uuidString
         let isPreferred = idStr == effectivePreferredID
-        let isOnline =
-          RappAutoPairingService.shared.isDeviceOnline(
-            deviceID: device.deviceID,
-            deviceName: device.deviceName
-          ) || (isPreferred && PersistentTokenRegistry.shared.holderIsAdvertising)
-        let isConnected =
-          isOnline && PersistentTokenRegistry.shared.holderIsAdvertising
-          && PersistentTokenRegistry.shared.certificateDER != nil
 
         let derivedPairID: Data?
         if let localPublicKey {
@@ -113,6 +128,24 @@
         } else {
           derivedPairID = nil
         }
+
+        let isCurrentPair: Bool
+        if let derivedPairID, let activePairID {
+          isCurrentPair = (derivedPairID == activePairID)
+        } else {
+          isCurrentPair = isPreferred
+        }
+
+        let isOnline =
+          RappAutoPairingService.shared.isDeviceOnline(
+            deviceID: device.deviceID,
+            deviceName: device.deviceName
+          ) || (isCurrentPair && PersistentTokenRegistry.shared.holderIsAdvertising)
+        let isConnected =
+          isCurrentPair
+          && isOnline
+          && PersistentTokenRegistry.shared.holderIsAdvertising
+          && PersistentTokenRegistry.shared.certificateDER != nil
 
         list.append(
           DisplayedDevice(
@@ -125,6 +158,10 @@
             onDelete: {
               if isPreferred { preferredDeviceID = "" }
               RappAutoPairingService.shared.removeRemoteDevice(deviceID: device.deviceID)
+              if let derivedPairID {
+                model.revoke(pairID: derivedPairID)
+              }
+              reload()
             },
             onSetPreferred: {
               preferredDeviceID = idStr
@@ -137,19 +174,29 @@
         )
       }
 
-      for pair in validExtraPairs {
+      for pair in deduplicatedExtraPairs {
         let idStr = pair.pairID.base64EncodedString()
         let pairName = RappPairNames.name(forPairID: pair.pairID) ?? String(localized: "Device")
         let isPreferred =
           idStr == effectivePreferredID
           || (model.selectedPairID == pair.pairID)
+
+        let isCurrentPair: Bool
+        if let activePairID {
+          isCurrentPair = (pair.pairID == activePairID)
+        } else {
+          isCurrentPair = isPreferred
+        }
+
         let isOnline =
           RappAutoPairingService.shared.isDeviceOnline(
             deviceID: nil,
             deviceName: pairName
-          ) || (isPreferred && PersistentTokenRegistry.shared.holderIsAdvertising)
+          ) || (isCurrentPair && PersistentTokenRegistry.shared.holderIsAdvertising)
         let isConnected =
-          isOnline && PersistentTokenRegistry.shared.holderIsAdvertising
+          isCurrentPair
+          && isOnline
+          && PersistentTokenRegistry.shared.holderIsAdvertising
           && PersistentTokenRegistry.shared.certificateDER != nil
 
         list.append(
@@ -163,6 +210,11 @@
             onDelete: {
               if isPreferred { preferredDeviceID = "" }
               model.revoke(pairID: pair.pairID)
+              for remote in validRemoteDevices
+              where remote.deviceName.caseInsensitiveCompare(pairName) == .orderedSame {
+                RappAutoPairingService.shared.removeRemoteDevice(deviceID: remote.deviceID)
+              }
+              reload()
             },
             onSetPreferred: {
               preferredDeviceID = idStr
@@ -214,6 +266,7 @@
               preferredDeviceID = ""
               RappAutoPairingService.shared.clearAllRemoteDevices()
               model.revokeAll()
+              reload()
             }
             .buttonStyle(.borderless)
             .font(.caption)

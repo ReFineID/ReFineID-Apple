@@ -32,7 +32,11 @@
     }
 
     @ViewBuilder private var promptText: some View {
-      if case .offer(let code) = model.phase {
+      if hasKnownRemoteDevices {
+        Text(String(localized: "Insert your identity card into your iPhone"))
+          .foregroundStyle(.secondary)
+          .accessibilityIdentifier("pairingPrompt")
+      } else if case .offer(let code) = model.phase {
         let formattedCode = RappPairingCode.formatted(code)
         Text(String(localized: "Connect phone as reader with code: \(formattedCode)"))
           .textSelection(.enabled)
@@ -48,7 +52,16 @@
       }
     }
 
+    private var hasKnownRemoteDevices: Bool {
+      let remotes = RappAutoPairingService.shared.remoteDevices.filter { device in
+        device.role == .holder && !device.modelName.lowercased().contains("mac")
+      }
+      let pairs = (try? RappDeviceVault().activePairIDs()) ?? []
+      return !remotes.isEmpty || !pairs.isEmpty
+    }
+
     private func ensureOffer() {
+      guard !hasKnownRemoteDevices else { return }
       switch model.phase {
       case .offer, .connecting:
         break
