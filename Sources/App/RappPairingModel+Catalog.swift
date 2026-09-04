@@ -45,6 +45,14 @@
       }
     }
 
+    internal func select(pairID: Data) {
+      let vault = RappDeviceVault()
+      _ = try? vault.selectPair(pairID: pairID)
+      selectedPairID = pairID
+      refresh()
+      NotificationCenter.default.post(name: Self.pairingsDidChangeNotification, object: nil)
+    }
+
     internal func revoke(pairID: Data) {
       let vault = RappDeviceVault()
       let now = UInt64(Date().timeIntervalSince1970 * millisecondsPerSecond)

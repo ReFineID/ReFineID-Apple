@@ -3,6 +3,7 @@
 #if os(macOS) && REFINEID_REMOTE_CARD
 
   import CardCore
+  import RappEngine
   import SwiftUI
 
   /// The Settings pane for managing paired devices and automatic connections.
@@ -11,6 +12,20 @@
       static let rowSpacing: CGFloat = 6
       static let refreshIntervalSeconds: TimeInterval = 3
     }
+
+    private struct DisplayedDevice {
+      let identifier: String
+      let name: String
+      let modelName: String?
+      let isPreferred: Bool
+      let isOnline: Bool
+      let isConnected: Bool
+      let onDelete: () -> Void
+      let onSetPreferred: () -> Void
+    }
+
+    @AppStorage("fi.refineid.preferredRemoteDeviceID")
+    private var preferredDeviceID: String = ""
 
     @StateObject private var model = RappPairingModel()
     @State private var remoteDevices: [RappCloudDeviceRecord] = []
@@ -52,42 +67,153 @@
       }
     }
 
+    private var displayedDevices: [DisplayedDevice] {
+      let validRemoteDevices = remoteDevices.filter { device in
+        device.role == .holder && !device.modelName.lowercased().contains("mac")
+      }
+
+      let validExtraPairs = model.pairs.filter { pair in
+        guard pair.role == .requester else { return false }
+        let pairName = RappPairNames.name(forPairID: pair.pairID) ?? ""
+        if pairName.lowercased().contains("mac") { return false }
+        return !validRemoteDevices.contains { remote in
+          remote.deviceName.caseInsensitiveCompare(pairName) == .orderedSame
+        }
+      }
+
+      let totalCount = validRemoteDevices.count + validExtraPairs.count
+      let effectivePreferredID =
+        preferredDeviceID.isEmpty && totalCount == 1
+        ? (validRemoteDevices.first?.deviceID.uuidString
+          ?? validExtraPairs.first?.pairID.base64EncodedString() ?? "")
+        : preferredDeviceID
+
+      let localPublicKey = RappAutoPairingService.shared.localIdentity?.publicKeyData
+
+      var list: [DisplayedDevice] = []
+
+      for device in validRemoteDevices {
+        let idStr = device.deviceID.uuidString
+        let isPreferred = idStr == effectivePreferredID
+        let isOnline =
+          RappAutoPairingService.shared.isDeviceOnline(
+            deviceID: device.deviceID,
+            deviceName: device.deviceName
+          ) || (isPreferred && PersistentTokenRegistry.shared.holderIsAdvertising)
+        let isConnected =
+          isOnline && PersistentTokenRegistry.shared.holderIsAdvertising
+          && PersistentTokenRegistry.shared.certificateDER != nil
+
+        let derivedPairID: Data?
+        if let localPublicKey {
+          derivedPairID = RappSameAccountPairBuilder.derivePairIdentifier(
+            publicKeyA: localPublicKey,
+            publicKeyB: device.staticPublicKey
+          )
+        } else {
+          derivedPairID = nil
+        }
+
+        list.append(
+          DisplayedDevice(
+            identifier: idStr,
+            name: device.deviceName,
+            modelName: device.modelName,
+            isPreferred: isPreferred,
+            isOnline: isOnline,
+            isConnected: isConnected,
+            onDelete: {
+              if isPreferred { preferredDeviceID = "" }
+              RappAutoPairingService.shared.removeRemoteDevice(deviceID: device.deviceID)
+            },
+            onSetPreferred: {
+              preferredDeviceID = idStr
+              if let derivedPairID {
+                model.select(pairID: derivedPairID)
+              }
+              PersistentTokenRegistry.shared.restartWatchingPresence()
+            }
+          )
+        )
+      }
+
+      for pair in validExtraPairs {
+        let idStr = pair.pairID.base64EncodedString()
+        let pairName = RappPairNames.name(forPairID: pair.pairID) ?? String(localized: "Device")
+        let isPreferred =
+          idStr == effectivePreferredID
+          || (model.selectedPairID == pair.pairID)
+        let isOnline =
+          RappAutoPairingService.shared.isDeviceOnline(
+            deviceID: nil,
+            deviceName: pairName
+          ) || (isPreferred && PersistentTokenRegistry.shared.holderIsAdvertising)
+        let isConnected =
+          isOnline && PersistentTokenRegistry.shared.holderIsAdvertising
+          && PersistentTokenRegistry.shared.certificateDER != nil
+
+        list.append(
+          DisplayedDevice(
+            identifier: idStr,
+            name: pairName,
+            modelName: nil,
+            isPreferred: isPreferred,
+            isOnline: isOnline,
+            isConnected: isConnected,
+            onDelete: {
+              if isPreferred { preferredDeviceID = "" }
+              model.revoke(pairID: pair.pairID)
+            },
+            onSetPreferred: {
+              preferredDeviceID = idStr
+              model.select(pairID: pair.pairID)
+              PersistentTokenRegistry.shared.restartWatchingPresence()
+            }
+          )
+        )
+      }
+
+      return list.sorted { lhs, rhs in
+        if lhs.isPreferred != rhs.isPreferred {
+          return lhs.isPreferred && !rhs.isPreferred
+        }
+        if lhs.isConnected != rhs.isConnected {
+          return lhs.isConnected && !rhs.isConnected
+        }
+        if lhs.isOnline != rhs.isOnline {
+          return lhs.isOnline && !rhs.isOnline
+        }
+        return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
+      }
+    }
+
     private var remoteDevicesSection: some View {
-      Section {
-        if remoteDevices.isEmpty, model.pairs.isEmpty {
+      let devices = displayedDevices
+      return Section {
+        if devices.isEmpty {
           Text("Ei liitettyjä laitteita")
             .foregroundStyle(.secondary)
         } else {
-          ForEach(remoteDevices, id: \.deviceID) { device in
+          ForEach(devices, id: \.identifier) { device in
             RemoteDeviceRow(
-              deviceID: device.deviceID,
-              name: device.deviceName,
-              isHolder: device.role == .holder,
+              name: device.name,
               modelName: device.modelName,
-              onDelete: {
-                RappAutoPairingService.shared.removeRemoteDevice(deviceID: device.deviceID)
-              }
-            )
-          }
-          ForEach(extraModelPairs, id: \.pairID) { pair in
-            RemoteDeviceRow(
-              deviceID: nil,
-              name: RappPairNames.name(forPairID: pair.pairID) ?? String(localized: "Device"),
-              isHolder: pair.role == .requester,
-              modelName: nil,
-              onDelete: {
-                model.revoke(pairID: pair.pairID)
-              }
+              isPreferred: device.isPreferred,
+              isOnline: device.isOnline,
+              isConnected: device.isConnected,
+              onDelete: device.onDelete,
+              onSetPreferred: device.onSetPreferred
             )
           }
         }
       } header: {
         Text("Etälaitteet")
       } footer: {
-        if !remoteDevices.isEmpty || !model.pairs.isEmpty {
+        if !devices.isEmpty {
           HStack {
             Spacer()
             Button("Poista kaikki etälaitteet", role: .destructive) {
+              preferredDeviceID = ""
               RappAutoPairingService.shared.clearAllRemoteDevices()
               model.revokeAll()
             }
@@ -96,14 +222,6 @@
             .foregroundStyle(.red)
           }
           .padding(.top, Layout.rowSpacing)
-        }
-      }
-    }
-
-    private var extraModelPairs: [RappPairingCoordinator.PairSummary] {
-      model.pairs.filter { pair in
-        !remoteDevices.contains { remote in
-          RappPairNames.name(forPairID: pair.pairID) == remote.deviceName
         }
       }
     }

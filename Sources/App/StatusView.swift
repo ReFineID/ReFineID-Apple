@@ -126,14 +126,6 @@
             documentSection
             signatureSection
             outcomeSection
-          } else if !cardPresence.isReaderConnected {
-            #if REFINEID_REMOTE_CARD
-              RemotePairingPromptView()
-            #else
-              Text("Insert your identity card into the reader")
-                .foregroundStyle(.secondary)
-                .accessibilityIdentifier("loginIdentityStatus")
-            #endif
           } else if activation.isReading {
             // Protocol negotiation may momentarily make the reader say
             // its slot is empty. The operation is still in progress,
@@ -146,6 +138,14 @@
               )
             }
             .accessibilityIdentifier("loginIdentityStatus")
+          } else if shouldShowPairingPrompt {
+            #if REFINEID_REMOTE_CARD
+              RemotePairingPromptView()
+            #else
+              Text("Insert your identity card into the reader")
+                .foregroundStyle(.secondary)
+                .accessibilityIdentifier("loginIdentityStatus")
+            #endif
           } else if availability == .noCard {
             // With no card there is exactly one thing to say, and a
             // labeled row saying it twice is not it.

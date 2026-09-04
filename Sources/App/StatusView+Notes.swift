@@ -38,6 +38,11 @@
       #endif
     }
 
+    /// Whether to prompt the user to connect a remote card reader phone.
+    internal var shouldShowPairingPrompt: Bool {
+      !cardPresence.isReaderConnected && !holderIsAdvertising
+    }
+
     /// Whether a paired phone has already answered with a certificate.
     private var hasBorrowedIdentity: Bool {
       #if REFINEID_REMOTE_CARD

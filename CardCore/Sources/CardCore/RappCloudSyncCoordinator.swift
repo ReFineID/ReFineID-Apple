@@ -58,6 +58,7 @@
         !(record.deviceName.caseInsensitiveCompare(localIdentity.deviceName) == .orderedSame
           && record.deviceID != localIdentity.deviceID)
       }
+      let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
       let record = RappCloudDeviceRecord(
         deviceID: localIdentity.deviceID,
         deviceName: localIdentity.deviceName,
@@ -68,7 +69,8 @@
           publicKeyA: localIdentity.publicKeyData,
           publicKeyB: localIdentity.publicKeyData
         ),
-        updatedAt: Date()
+        updatedAt: Date(),
+        appBuildVersion: appVersion
       )
       directory[localIdentity.deviceID] = record
       saveDirectory(directory)

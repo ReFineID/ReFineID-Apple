@@ -49,6 +49,13 @@
       watcher.start()
     }
 
+    /// Restarts browsing for the currently selected holder.
+    internal func restartWatchingPresence() {
+      presence?.cancel()
+      presence = nil
+      startWatchingPresence()
+    }
+
     internal func holderPresenceChanged(_ present: Bool) {
       if present {
         advertisementLossTask?.cancel()
