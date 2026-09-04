@@ -82,6 +82,7 @@ internal struct CardCredentialsView: View {
   #if REFINEID_LOCAL_CARD && os(iOS)
     /// The priming model lives here, above everything a hold hides.
     @StateObject internal var primingModel = CardPrimingModel()
+    @ObservedObject internal var phoneRelay = PhonePersistentTokenRelay.shared
   #endif
 
   #if os(iOS)

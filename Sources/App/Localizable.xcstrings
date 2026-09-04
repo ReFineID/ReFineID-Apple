@@ -3126,6 +3126,28 @@
         }
       }
     },
+    "Paired": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paired"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paritettu"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parkopplad"
+          }
+        }
+      }
+    },
     "Paired device": {
       "localizations": {
         "en": {

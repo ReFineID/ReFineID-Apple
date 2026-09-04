@@ -15,6 +15,7 @@
     ) throws {
       let session = try SignRelaySession(role: .proxy, pair: pair, vault: vault)
       slimSession = session
+      isActivelyConnected = true
       let journal = (try? vault.selectedPairID()).flatMap { pairID in
         pairID.map { SignRelayVaultJournal(vault: vault, pairID: $0) }
       }

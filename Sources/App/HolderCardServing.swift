@@ -31,12 +31,14 @@
       let canServe =
         PrimeStore.storedCount() > 0 || CardPresence.shared.isReaderCardPresent
       if !didMeasure {
-        guard CardPresence.shared.hasCompletedInitialScan else { return }
+        if !canServe {
+          guard CardPresence.shared.hasCompletedInitialScan else { return }
+        }
         didMeasure = true
         wasAbleToServe = canServe
         if canServe {
           #if REFINEID_REMOTE_CARD
-            PhonePersistentTokenRelay.shared.resumeServing()
+            PhonePersistentTokenRelay.shared.resumeAfterUserAction()
           #endif
         } else {
           dropReaderTokens()
@@ -47,7 +49,7 @@
       wasAbleToServe = canServe
       if canServe {
         #if REFINEID_REMOTE_CARD
-          PhonePersistentTokenRelay.shared.resumeServing()
+          PhonePersistentTokenRelay.shared.resumeAfterUserAction()
         #endif
         return
       }

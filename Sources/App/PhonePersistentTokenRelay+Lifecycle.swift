@@ -55,6 +55,7 @@
       connectionID = nil
       preCoordinatorFrames.removeAll(keepingCapacity: false)
       frameDelivery.reset()
+      isActivelyConnected = false
     }
 
     internal func suspendForPairing() {
@@ -69,6 +70,7 @@
         streamContext = nil
       #endif
       connectionID = nil
+      isActivelyConnected = false
       Task { await closing?.close() }
     }
 
@@ -91,6 +93,7 @@
       #endif
       connectionID = nil
       preCoordinatorFrames.removeAll(keepingCapacity: false)
+      isActivelyConnected = false
       Task { await closingCoordinator?.transportClosed() }
       if !hasUsableSelectedPair() {
         relistenPolicy = .explicitUserActionRequired

@@ -56,7 +56,10 @@ internal final class CardPresence: ObservableObject {
   private var stateObservations: [String: NSKeyValueObservation] = [:]
 
   private init() {
-    guard let manager = TKSmartCardSlotManager.default else { return }
+    guard let manager = TKSmartCardSlotManager.default else {
+      hasCompletedInitialScan = true
+      return
+    }
     namesObservation = manager.observe(\.slotNames, options: [.initial]) {
       [weak self] _, _ in
       Task { @MainActor [weak self] in

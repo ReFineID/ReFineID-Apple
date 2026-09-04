@@ -30,12 +30,31 @@ import SwiftUI
       .body.monospacedDigit().weight(.semibold)
     }
 
+    private var isActivelyConnected: Bool {
+      #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--mock-remote-connected") {
+          return true
+        }
+      #endif
+      #if os(iOS) && REFINEID_LOCAL_CARD
+        if SupportedCardTransports.offersNearField {
+          return phoneRelay.isActivelyConnected
+        }
+      #endif
+      #if REFINEID_REMOTE_CARD
+        if remoteModel.holder != nil {
+          return true
+        }
+      #endif
+      return false
+    }
+
     @ViewBuilder internal var remoteRouteRow: some View {
       HStack(spacing: RemotePairingLayout.inputSpacing) {
         Group {
           if remoteCardAvailable {
             RemotePairingGlyph(
-              isConnected: pairingModel.hasActivePairs && !isPairingInputActive
+              isConnected: isActivelyConnected
             )
           } else {
             PersonRowLabel.cardIcon(
@@ -104,11 +123,11 @@ import SwiftUI
     }
 
     private var connectedStatusChip: some View {
-      Button(String(localized: "Connected")) {
+      Button(isActivelyConnected ? String(localized: "Connected") : String(localized: "Paired")) {
         // Status only; the minus control drops the pairing.
       }
       .buttonStyle(.bordered)
-      .tint(.green)
+      .tint(isActivelyConnected ? .green : .secondary)
       .controlSize(.small)
       .allowsHitTesting(false)
       .accessibilityRemoveTraits(.isButton)

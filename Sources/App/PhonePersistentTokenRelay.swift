@@ -19,7 +19,7 @@
   #endif
 
   @MainActor
-  internal final class PhonePersistentTokenRelay {
+  internal final class PhonePersistentTokenRelay: ObservableObject {
     // MARK: Nested Types
 
     internal enum RelistenPolicy {
@@ -54,6 +54,7 @@
     internal var connectionID: UUID?
     internal var preCoordinatorFrames: [Data] = []
     internal var relistenPolicy = RelistenPolicy.automatic
+    @Published internal var isActivelyConnected = false
 
     /// Frames enter the coordinator in arrival order through this
     /// bounded chain; reset between connections.
@@ -77,11 +78,19 @@
       guard PrimeStore.storedCount() > 0 || CardPresence.shared.isReaderCardPresent
       else { return }
       #if REFINEID_STREAM_TRANSPORT
-        guard streamListener == nil, coordinator == nil,
+        guard coordinator == nil,
           relistenPolicy == .automatic,
           hasUsableSelectedPair()
         else { return }
         guard let context = PhoneStreamPairContext.resolve(vault: vault) else { return }
+        if let currentListener = streamListener {
+          if streamContext?.serviceName == context.serviceName {
+            return
+          }
+          currentListener.cancel()
+          streamListener = nil
+          streamContext = nil
+        }
         startListening(context)
       #else
         guard relay == nil, coordinator == nil,
@@ -209,6 +218,7 @@
           }
           coordinator = made
           dispatcher = madeDispatcher
+          isActivelyConnected = true
 
           let earlyFrames = preCoordinatorFrames
           preCoordinatorFrames.removeAll(keepingCapacity: false)
