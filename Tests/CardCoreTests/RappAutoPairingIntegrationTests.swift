@@ -6,7 +6,7 @@
   import RappEngine
   import Testing
 
-  @Suite("RappAutoPairingIntegrationTests")
+  @Suite("RappAutoPairingIntegrationTests", .serialized)
   internal struct RappAutoPairingIntegrationTests {
     private static let signature = Data([0x30, 0x06, 0x02, 0x01, 0x01, 0x02, 0x01, 0x02])
 

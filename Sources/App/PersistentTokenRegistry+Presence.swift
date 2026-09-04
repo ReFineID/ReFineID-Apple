@@ -20,7 +20,9 @@
     /// The published name both sides derive from the selected pairing.
     private static func holderServiceName() -> String? {
       let vault = RappDeviceVault()
-      let pairID = (try? vault.selectedPairID()) ?? (try? vault.activePairIDs().first)
+      let pairIDs = (try? vault.activePairIDs()) ?? []
+      guard !pairIDs.isEmpty else { return nil }
+      let pairID = (try? vault.selectedPairID()) ?? pairIDs.first
       guard let pairID,
         let pair = try? RappPairRecord.loadFromVault(pairId: pairID, vault: vault)
       else { return nil }
@@ -39,7 +41,10 @@
       advertisementLossTask = nil
       hasSeenHolderAdvertisement = false
       holderIsAdvertising = false
-      let name = Self.holderServiceName() ?? ""
+      guard let name = Self.holderServiceName(), !name.isEmpty else {
+        Self.withdrawPublishedIdentity()
+        return
+      }
       let watcher = StreamRelayPresence(matching: name) { present in
         Task { @MainActor in
           Self.shared.holderPresenceChanged(present)
@@ -53,10 +58,22 @@
     internal func restartWatchingPresence() {
       presence?.cancel()
       presence = nil
+      advertisementLossTask?.cancel()
+      advertisementLossTask = nil
+      hasSeenHolderAdvertisement = false
+      holderIsAdvertising = false
       startWatchingPresence()
     }
 
     internal func holderPresenceChanged(_ present: Bool) {
+      guard let name = Self.holderServiceName(), !name.isEmpty else {
+        advertisementLossTask?.cancel()
+        advertisementLossTask = nil
+        hasSeenHolderAdvertisement = false
+        holderIsAdvertising = false
+        Self.withdrawPublishedIdentity()
+        return
+      }
       if present {
         advertisementLossTask?.cancel()
         advertisementLossTask = nil
@@ -81,6 +98,30 @@
           fflush(stdout)
         #endif
       }
+    }
+
+    internal func installPairingObservers() {
+      guard pairingsObservers.isEmpty else { return }
+      let notificationCenter = NotificationCenter.default
+      let observer1 = notificationCenter.addObserver(
+        forName: RappPairingModel.pairingsDidChangeNotification,
+        object: nil,
+        queue: .main
+      ) { [weak self] _ in
+        Task { @MainActor [weak self] in
+          self?.restartWatchingPresence()
+        }
+      }
+      let observer2 = notificationCenter.addObserver(
+        forName: RappAutoPairingService.pairingsDidChangeNotification,
+        object: nil,
+        queue: .main
+      ) { [weak self] _ in
+        Task { @MainActor [weak self] in
+          self?.restartWatchingPresence()
+        }
+      }
+      pairingsObservers = [observer1, observer2]
     }
   }
 #endif

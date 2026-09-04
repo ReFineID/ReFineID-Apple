@@ -31,8 +31,6 @@
     private var holderIsAdvertising: Bool {
       #if REFINEID_REMOTE_CARD && REFINEID_STREAM_TRANSPORT
         remoteRegistry.holderIsAdvertising
-      #elseif REFINEID_REMOTE_CARD
-        remoteRegistry.holderLine != nil
       #else
         false
       #endif
@@ -46,7 +44,7 @@
     /// Whether a paired phone has already answered with a certificate.
     private var hasBorrowedIdentity: Bool {
       #if REFINEID_REMOTE_CARD
-        remoteRegistry.holderLine != nil
+        remoteRegistry.holderIsAdvertising && remoteRegistry.holderLine != nil
       #else
         false
       #endif

@@ -155,4 +155,26 @@ internal struct StreamRelayLoopbackTests {
     }
     #expect(sawAbsent, "presence never saw the listener leave")
   }
+
+  /// An empty name never matches any advertiser.
+  @Test
+  internal func emptyNamePresenceNeverMatches() async throws {
+    let name = "RefineID test \(UUID().uuidString.prefix(6))"
+    let box = StreamRelayPresenceBox()
+    let listener = StreamRelayListener { _ in
+      // presence probe only
+    }
+    listener.start(displayName: name)
+    defer { listener.cancel() }
+
+    let presence = StreamRelayPresence(matching: "") { present in
+      Task { await box.add(present) }
+    }
+    presence.start()
+    defer { presence.cancel() }
+
+    try await Task.sleep(for: Duration.milliseconds(500))
+    let sawPresent = await box.contains(true)
+    #expect(!sawPresent, "presence with empty name matched an advertiser")
+  }
 }
