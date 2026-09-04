@@ -1,3 +1,8 @@
+# Rule #1 – PIN codes never travel over any network
+- PIN codes (PIN1 and PIN2) never leave the phone when accessed via RAPP.
+- RAPP must absolutely deny any attempt to transport PIN codes.
+- PIN1 is cached on-device; PIN2 prompts appear only on the phone.
+
 - Please No AI attribution spam in commits.
   No `Co-authored-by` / `Signed-off-by` / `Reviewed-by`
   or any AI-naming trailer; subject + body only. 
