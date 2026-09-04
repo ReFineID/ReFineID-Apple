@@ -46,6 +46,16 @@
       coordinator?.localIdentity
     }
 
+    /// Whether any remote holder device is known from iCloud synchronization or established pairings.
+    public var hasKnownRemoteHolders: Bool {
+      let remotes = remoteDevices.filter { record in
+        record.role == .holder && !record.modelName.lowercased().contains("mac")
+      }
+      if !remotes.isEmpty { return true }
+      let pairs = (try? RappDeviceVault().activePairIDs()) ?? []
+      return !pairs.isEmpty
+    }
+
     // MARK: Initialization
 
     private init() {
