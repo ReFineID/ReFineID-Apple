@@ -19,11 +19,11 @@
     private var continuation: CheckedContinuation<RappAuthorizationDecision, Never>?
 
     private init() {
-      // Request notification authorization on initial setup
+      guard SupportedCardTransports.offersNearField else { return }
       UNUserNotificationCenter.current().requestAuthorization(
         options: [.alert, .sound, .badge]
       ) { _, _ in
-        // Notification authorization requested.
+        // Notification authorization requested for near-field card holder.
       }
     }
 
@@ -86,6 +86,7 @@
     }
 
     private func postNotification(for request: RappAuthorizationRequest) {
+      guard SupportedCardTransports.offersNearField else { return }
       let center = UNUserNotificationCenter.current()
       let content = UNMutableNotificationContent()
       content.title = "RefineID"

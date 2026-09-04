@@ -107,32 +107,42 @@ public final class RappDeviceVault: @unchecked Sendable {
   /// Stores a new active pair record under its pair identifier.
   public func insertPair(pairID: Data, record: Data) throws {
     try synchronized {
-      try requireIdentifier(pairID, size: IdentifierSize.pair)
-      guard !record.isEmpty else { throw Failure.malformed }
-      let marker = try pairMarker(state: .active, revokedAtMilliseconds: nil)
-      var item = itemQuery(service: namespace.pair, account: pairID.hexadecimal)
-      item[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-      item[kSecAttrGeneric as String] = marker
-      item[kSecValueData as String] = record
-      inMemoryStore[namespace.pair, default: [:]][pairID.hexadecimal] = item
-      let status = SecItemAdd(item as CFDictionary, nil)
-      #if DEBUG
-        print("[RappDeviceVault] insertPair status: \(status)")
-        fflush(stdout)
-      #endif
-      switch status {
-      case errSecSuccess:
-        return
+      try insertPairLocked(pairID: pairID, record: record)
+    }
+  }
 
-      case errSecDuplicateItem:
-        throw Failure.duplicate
+  private func insertPairLocked(pairID: Data, record: Data) throws {
+    try requireIdentifier(pairID, size: IdentifierSize.pair)
+    guard !record.isEmpty else { throw Failure.malformed }
+    let marker = try pairMarker(state: .active, revokedAtMilliseconds: nil)
+    var item = itemQuery(service: namespace.pair, account: pairID.hexadecimal)
+    item[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+    item[kSecAttrGeneric as String] = marker
+    item[kSecValueData as String] = record
+    inMemoryStore[namespace.pair, default: [:]][pairID.hexadecimal] = item
+    let status = SecItemAdd(item as CFDictionary, nil)
+    #if DEBUG
+      print("[RappDeviceVault] insertPair status: \(status)")
+      fflush(stdout)
+    #endif
+    switch status {
+    case errSecSuccess:
+      return
 
-      default:
-        if Self.isInteractionNotAllowed(status) {
-          return
-        }
-        throw Failure.unavailable(status)
-      }
+    case errSecDuplicateItem:
+      let attributes: [String: Any] = [
+        kSecAttrGeneric as String: marker,
+        kSecValueData as String: record,
+      ]
+      try updateExisting(
+        service: namespace.pair,
+        account: pairID.hexadecimal,
+        attributes: attributes
+      )
+
+    default:
+      if Self.isInteractionNotAllowed(status) { return }
+      throw Failure.unavailable(status)
     }
   }
 
