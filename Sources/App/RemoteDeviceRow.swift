@@ -17,11 +17,9 @@
 
     internal let name: String
     internal let modelName: String?
-    internal let isPreferred: Bool
     internal let isOnline: Bool
     internal let isConnected: Bool
     internal let onDelete: () -> Void
-    internal let onSetPreferred: () -> Void
 
     internal var body: some View {
       HStack(spacing: Layout.rowSpacing) {
@@ -38,74 +36,51 @@
 
     private var deviceInfo: some View {
       VStack(alignment: .leading, spacing: Layout.textVerticalSpacing) {
-        HStack(spacing: Layout.titleSpacing) {
-          Text(name)
-            .font(.body.weight(.medium))
-          if isPreferred {
-            Image(systemName: "star.fill")
-              .font(.caption)
-              .foregroundStyle(.yellow)
-              .accessibilityLabel(Text("Ensisijainen laite"))
-              .help("Ensisijainen laite")
-          }
-        }
-        if let sub = subtitle(modelName: modelName) {
-          Text(sub)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-        }
+        Text(titleText)
+          .font(.body.weight(.medium))
       }
+    }
+
+    private var titleText: String {
+      let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+      let trimmedModel = (modelName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+
+      let isGenericName =
+        trimmedName.isEmpty
+        || trimmedName.caseInsensitiveCompare("iPhone") == .orderedSame
+        || trimmedName.caseInsensitiveCompare("iPad") == .orderedSame
+        || trimmedName.caseInsensitiveCompare("Apple Device") == .orderedSame
+        || trimmedName.caseInsensitiveCompare("Device") == .orderedSame
+
+      if !trimmedModel.isEmpty,
+        !isGenericName,
+        trimmedName.caseInsensitiveCompare(trimmedModel) != .orderedSame
+      {
+        return "\(trimmedModel) -- \(trimmedName)"
+      }
+      if !trimmedModel.isEmpty {
+        return trimmedModel
+      }
+      return trimmedName.isEmpty ? "Laite" : trimmedName
     }
 
     private var actionButtons: some View {
-      Group {
-        if !isPreferred {
-          Button {
-            onSetPreferred()
-          } label: {
-            Image(systemName: "star")
-              .font(.caption)
-              .foregroundStyle(.secondary)
-              .accessibilityLabel(Text("Aseta ensisijaiseksi"))
-          }
-          .buttonStyle(.borderless)
-          .help("Aseta ensisijaiseksi")
-        }
-        Button {
-          onDelete()
-        } label: {
-          Image(systemName: "trash")
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .accessibilityLabel(Text("Poista laite"))
-        }
-        .buttonStyle(.borderless)
-        .help("Poista laite")
+      Button {
+        onDelete()
+      } label: {
+        Image(systemName: "trash")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .accessibilityLabel(Text("Poista laite"))
       }
+      .buttonStyle(.borderless)
+      .help("Poista laite")
     }
 
     private var contextMenuButtons: some View {
-      Group {
-        if !isPreferred {
-          Button {
-            onSetPreferred()
-          } label: {
-            Label("Aseta ensisijaiseksi", systemImage: "star")
-          }
-        }
-        Button("Poista laite", role: .destructive) {
-          onDelete()
-        }
+      Button("Poista laite", role: .destructive) {
+        onDelete()
       }
-    }
-
-    private func subtitle(modelName: String?) -> String? {
-      guard let modelName, !modelName.isEmpty,
-        modelName != "Mac", modelName != "Apple"
-      else {
-        return nil
-      }
-      return modelName
     }
 
     @ViewBuilder

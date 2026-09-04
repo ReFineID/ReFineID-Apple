@@ -27,30 +27,6 @@ public final class RappDeviceIdentity: @unchecked Sendable {
   private static let keyByteCount = 32
   private static let lock = NSLock()
 
-  #if os(iOS)
-    private static let iPhoneModelTable: [String: String] = [
-      "iPhone14,2": "iPhone 13 Pro",
-      "iPhone14,3": "iPhone 13 Pro Max",
-      "iPhone14,4": "iPhone 13 mini",
-      "iPhone14,5": "iPhone 13",
-      "iPhone14,6": "iPhone SE (3rd generation)",
-      "iPhone14,7": "iPhone 14",
-      "iPhone14,8": "iPhone 14 Plus",
-      "iPhone15,2": "iPhone 14 Pro",
-      "iPhone15,3": "iPhone 14 Pro Max",
-      "iPhone15,4": "iPhone 15",
-      "iPhone15,5": "iPhone 15 Plus",
-      "iPhone16,1": "iPhone 15 Pro",
-      "iPhone16,2": "iPhone 15 Pro Max",
-      "iPhone17,1": "iPhone 16 Pro",
-      "iPhone17,2": "iPhone 16 Pro Max",
-      "iPhone17,3": "iPhone 16",
-      "iPhone17,4": "iPhone 16 Plus",
-      "x86_64": "iOS Simulator",
-      "arm64": "iOS Simulator",
-    ]
-  #endif
-
   // MARK: Properties
 
   /// Unique stable identifier of this device.
@@ -217,6 +193,19 @@ public final class RappDeviceIdentity: @unchecked Sendable {
 
   private static func resolveDeviceName() -> String {
     #if os(iOS)
+      let host = ProcessInfo.processInfo.hostName
+      let trimmed =
+        host
+        .replacingOccurrences(of: ".coredevice.local", with: "")
+        .replacingOccurrences(of: ".local", with: "")
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+      if !trimmed.isEmpty,
+        trimmed.caseInsensitiveCompare("localhost") != .orderedSame,
+        trimmed.caseInsensitiveCompare("iphone") != .orderedSame,
+        trimmed.caseInsensitiveCompare("ipad") != .orderedSame
+      {
+        return trimmed
+      }
       return UIDevice.current.name
     #elseif os(macOS)
       return Host.current().localizedName ?? "Mac"
@@ -225,30 +214,8 @@ public final class RappDeviceIdentity: @unchecked Sendable {
     #endif
   }
 
-  #if os(iOS)
-    private static func friendlyIPhoneModelName(_ identifier: String) -> String {
-      if let known = iPhoneModelTable[identifier] {
-        return known
-      }
-      if identifier.hasPrefix("iPhone") {
-        return identifier
-      }
-      return UIDevice.current.model
-    }
-  #endif
-
   private static func resolveModelName() -> String {
     #if os(iOS)
-      var systemInfo = utsname()
-      uname(&systemInfo)
-      let machineMirror = Mirror(reflecting: systemInfo.machine)
-      let rawIdentifier = machineMirror.children.reduce(into: "") { result, element in
-        guard let value = element.value as? Int8, value != 0 else { return }
-        result.append(Character(UnicodeScalar(UInt8(value))))
-      }
-      if !rawIdentifier.isEmpty {
-        return friendlyIPhoneModelName(rawIdentifier)
-      }
       return UIDevice.current.model
     #elseif os(macOS)
       var size = 0
@@ -257,24 +224,11 @@ public final class RappDeviceIdentity: @unchecked Sendable {
         var model = [CChar](repeating: 0, count: size)
         sysctlbyname("hw.model", &model, &size, nil, 0)
         let bytes = model.prefix(while: { $0 != 0 }).map { UInt8(bitPattern: $0) }
-        let raw = String(bytes: bytes, encoding: .utf8) ?? "Mac"
-        return friendlyMacModelName(raw)
+        return String(bytes: bytes, encoding: .utf8) ?? "Mac"
       }
       return "Mac"
     #else
       return "Apple"
     #endif
-  }
-
-  private static func friendlyMacModelName(_ raw: String) -> String {
-    if raw.hasPrefix("MacBookPro") { return "MacBook Pro" }
-    if raw.hasPrefix("MacBookAir") { return "MacBook Air" }
-    if raw.hasPrefix("MacBook") { return "MacBook" }
-    if raw.hasPrefix("Macmini") { return "Mac mini" }
-    if raw.hasPrefix("iMac") { return "iMac" }
-    if raw.hasPrefix("MacStudio") { return "Mac Studio" }
-    if raw.hasPrefix("MacPro") { return "Mac Pro" }
-    if raw.hasPrefix("Mac") { return "Mac" }
-    return raw
   }
 }

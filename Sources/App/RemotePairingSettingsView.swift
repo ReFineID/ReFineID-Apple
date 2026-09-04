@@ -198,11 +198,9 @@
             RemoteDeviceRow(
               name: device.name,
               modelName: device.modelName,
-              isPreferred: device.isPreferred,
               isOnline: device.isOnline,
               isConnected: device.isConnected,
-              onDelete: device.onDelete,
-              onSetPreferred: device.onSetPreferred
+              onDelete: device.onDelete
             )
           }
         }
