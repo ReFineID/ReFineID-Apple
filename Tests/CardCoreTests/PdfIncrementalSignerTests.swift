@@ -258,4 +258,22 @@ internal struct PdfIncrementalSignerTests {
     #expect(mark.reach > radius)
     #expect(boxLeft == -mark.reach)
   }
+
+  /// When multiple signatures are appended, only the first signature gets a stamp mark.
+  @Test
+  internal func onlyFirstSignatureAppendsStampMark() throws {
+    let radius = 64.0
+    let mark = StampMark(radius: radius, operators: "0 0 m 1 1 l S\n")
+    let firstSigned = try PdfIncrementalSigner.prepare(
+      Self.minimalPdf, revision: .signature(Self.claim), appending: mark
+    )
+    let filledFirst = try firstSigned.filled(with: WireHex.data("30030101FF"))
+    let secondSigned = try PdfIncrementalSigner.prepare(
+      filledFirst, revision: .signature(Self.claim), appending: mark
+    )
+    let firstCount = Self.text(firstSigned.document).components(separatedBy: "/BBox [").count - 1
+    let secondCount = Self.text(secondSigned.document).components(separatedBy: "/BBox [").count - 1
+    #expect(firstCount == 1)
+    #expect(secondCount == 1)
+  }
 }

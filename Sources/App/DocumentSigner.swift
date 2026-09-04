@@ -214,9 +214,10 @@ internal enum DocumentSigner {
     cardAccessNumber: String?
   ) async throws -> CardMaterial {
     let prepared: PdfSignaturePlaceholder
+    let stampMark = stamp?.mark ?? PdfStampRenderer.stampMark()
     do {
       prepared = try PdfIncrementalSigner.prepare(
-        document, revision: .signature(claim), appending: stamp?.mark
+        document, revision: .signature(claim), appending: stampMark
       )
     } catch let error as PdfSigningError {
       throw Failure.document(error)
