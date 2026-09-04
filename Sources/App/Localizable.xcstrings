@@ -2716,6 +2716,28 @@
         }
       }
     },
+    "Offline": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offline"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ei yhteyttä"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frånkopplad"
+          }
+        }
+      }
+    },
     "Off, a card is read only when inserted into a reader. On, a card presented on a contactless reader is opened with the access number printed on its face.": {
       "localizations": {
         "fi": {

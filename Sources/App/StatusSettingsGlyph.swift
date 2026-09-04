@@ -26,29 +26,21 @@
     }
 
     private var isRemoteHolderConnected: Bool {
-      #if REFINEID_REMOTE_CARD
-        if PersistentTokenRegistry.shared.holderIsAdvertising {
-          return true
-        }
-        return RappAutoPairingService.shared.remoteDevices.contains { $0.role == .holder }
-      #else
-        false
-      #endif
+      if PersistentTokenRegistry.shared.holderIsAdvertising {
+        return true
+      }
+      return RappAutoPairingService.shared.remoteDevices.contains { $0.role == .holder }
     }
 
     private var accessibilityValue: String {
-      #if REFINEID_REMOTE_CARD
-        let link =
-          isRemoteHolderConnected
-          ? String(localized: "Phone connected")
-          : String(localized: "Phone not connected")
-        if let pins = pinLevel?.accessibilityValue {
-          return pins + ", " + link
-        }
-        return link
-      #else
-        pinLevel?.accessibilityValue ?? ""
-      #endif
+      let link =
+        isRemoteHolderConnected
+        ? String(localized: "Phone connected")
+        : String(localized: "Phone not connected")
+      if let pins = pinLevel?.accessibilityValue {
+        return pins + ", " + link
+      }
+      return link
     }
 
     /// Green, yellow, or red from the card's retry class; grey without a card.
@@ -59,11 +51,7 @@
 
     /// Green while a paired phone holder is connected; grey when it is not.
     private var waveColor: Color {
-      #if REFINEID_REMOTE_CARD
-        isRemoteHolderConnected ? .green : .secondary
-      #else
-        .secondary
-      #endif
+      isRemoteHolderConnected ? .green : .secondary
     }
   }
 

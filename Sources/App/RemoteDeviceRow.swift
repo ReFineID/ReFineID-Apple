@@ -1,6 +1,6 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if os(macOS) && REFINEID_REMOTE_CARD
+#if os(macOS)
 
   import CardCore
   import SwiftUI
@@ -104,7 +104,7 @@
             .foregroundStyle(.green)
         }
       } else {
-        Text("Ei linjoilla")
+        Text(String(localized: "Offline"))
           .font(.caption)
           .foregroundStyle(.secondary)
       }

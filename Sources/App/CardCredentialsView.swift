@@ -92,18 +92,16 @@ internal struct CardCredentialsView: View {
     /// Whether the document verification screen is pushed.
     @State internal var showsDocumentVerify = false
 
-    #if REFINEID_REMOTE_CARD
-      /// Pairing model that drives inline pairing on both iPad and iPhone.
-      @StateObject internal var pairingModel = RappPairingModel()
+    /// Pairing model that drives inline pairing on both iPad and iPhone.
+    @StateObject internal var pairingModel = RappPairingModel()
 
-      /// Whether the inline 6-digit pairing code field is expanded on iPhone.
-      @State internal var isPairingInputActive = false
+    /// Whether the inline 6-digit pairing code field is expanded on iPhone.
+    @State internal var isPairingInputActive = false
 
-      /// The 6-digit numeric pairing code typed on iPhone.
-      @State internal var pairingCodeDigits = ""
+    /// The 6-digit numeric pairing code typed on iPhone.
+    @State internal var pairingCodeDigits = ""
 
-      @FocusState internal var isPairingFieldFocused: Bool
-    #endif
+    @FocusState internal var isPairingFieldFocused: Bool
   #endif
   // swiftlint:enable private_swiftui_state
 
@@ -113,10 +111,8 @@ internal struct CardCredentialsView: View {
     /// Live reader identities, when an iOS root provides them.
     internal let readerModel: ReaderIdentityModeModel?
 
-    #if REFINEID_REMOTE_CARD
-      /// The requester's view of the selected remote card.
-      internal let remoteModel: RemoteCardModel
-    #endif
+    /// The requester's view of the selected remote card.
+    internal let remoteModel: RemoteCardModel
   #endif
 
   // MARK: Computed Properties
@@ -263,12 +259,8 @@ internal struct CardCredentialsView: View {
 
     /// Whether a paired phone has already named a person to sign as.
     private var hasRemoteSigningIdentity: Bool {
-      #if REFINEID_REMOTE_CARD
-        remoteModel.holder != nil
-          && PersistentTokenRegistry.shared.holderLine != nil
-      #else
-        false
-      #endif
+      remoteModel.holder != nil
+        && PersistentTokenRegistry.shared.holderLine != nil
     }
 
     /// Whether the credential management route can be taken right now.
@@ -298,13 +290,11 @@ internal struct CardCredentialsView: View {
       return true
     }
 
-    #if REFINEID_REMOTE_CARD
-      /// Whether the remote card route can be taken right now.
-      internal var remoteCardAvailable: Bool {
-        if !offersNearField { return true }
-        return hasIdentity || hasReaderIdentity
-      }
-    #endif
+    /// Whether the remote card route can be taken right now.
+    internal var remoteCardAvailable: Bool {
+      if !offersNearField { return true }
+      return hasIdentity || hasReaderIdentity
+    }
 
     /// Changes whenever the identities rendered by the reader rows change.
     internal var readerHolderReadKey: [String] {
@@ -342,18 +332,12 @@ internal struct CardCredentialsView: View {
   // MARK: Lifecycle
 
   #if os(iOS)
-    #if REFINEID_REMOTE_CARD
-      internal init(
-        readerModel: ReaderIdentityModeModel?,
-        remoteModel: RemoteCardModel
-      ) {
-        self.readerModel = readerModel
-        self.remoteModel = remoteModel
-      }
-    #else
-      internal init(readerModel: ReaderIdentityModeModel?) {
-        self.readerModel = readerModel
-      }
-    #endif
+    internal init(
+      readerModel: ReaderIdentityModeModel?,
+      remoteModel: RemoteCardModel
+    ) {
+      self.readerModel = readerModel
+      self.remoteModel = remoteModel
+    }
   #endif
 }

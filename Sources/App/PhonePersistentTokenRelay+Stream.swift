@@ -1,6 +1,6 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if os(iOS) && REFINEID_LOCAL_CARD && REFINEID_STREAM_TRANSPORT && REFINEID_REMOTE_CARD
+#if os(iOS) && REFINEID_LOCAL_CARD && REFINEID_STREAM_TRANSPORT
   import CardCore
   import Foundation
   import RappEngine
@@ -41,6 +41,7 @@
       guard self.connectionID == connectionID else { return }
       switch event {
       case .connected:
+        lastPeerContactDate = Date()
         // A connection is not yet this pair's requester: the session
         // preamble is.
         #if DEBUG
@@ -49,6 +50,7 @@
         #endif
 
       case .frame(let frame):
+        lastPeerContactDate = Date()
         #if DEBUG
           let expected = streamContext?.sessionPreamble.count ?? 0
           print(

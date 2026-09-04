@@ -59,11 +59,7 @@
     /// Used when the keychain has not yet listed the borrowed token
     /// the registry just published.
     private var borrowedHolderLine: String? {
-      #if REFINEID_REMOTE_CARD
-        PersistentTokenRegistry.shared.holderLine
-      #else
-        nil
-      #endif
+      PersistentTokenRegistry.shared.holderLine
     }
 
     /// The event which can change the row's asynchronous contents.

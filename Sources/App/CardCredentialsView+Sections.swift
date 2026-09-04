@@ -86,11 +86,9 @@ extension CardCredentialsView {
           cardAccessNumberRow
           pin1Row
         }
-        #if REFINEID_REMOTE_CARD
-          if offersNearField || hasReaderIdentity {
-            remoteRouteRow
-          }
-        #endif
+        if offersNearField || hasReaderIdentity {
+          remoteRouteRow
+        }
         if offersNearField || hasReaderIdentity {
           cardManagementButton
         }
@@ -103,16 +101,14 @@ extension CardCredentialsView {
       } header: {
         compactSectionHeader("Card")
       }
-      #if REFINEID_REMOTE_CARD
-        .onReceive(pairingModel.$phase) { phase in
-          if case .paired = phase {
-            withAnimation {
-              isPairingInputActive = false
-              pairingCodeDigits = ""
-            }
+      .onReceive(pairingModel.$phase) { phase in
+        if case .paired = phase {
+          withAnimation {
+            isPairingInputActive = false
+            pairingCodeDigits = ""
           }
         }
-      #endif
+      }
     }
 
     internal var readerIdentitySection: some View {

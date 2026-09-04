@@ -56,6 +56,41 @@
       return !pairs.isEmpty
     }
 
+    /// Checks whether any paired peer device (or known remote requester/holder) is online.
+    public var isAnyPairedPeerOnline: Bool {
+      lock.lock()
+      defer { lock.unlock() }
+      for device in cachedRemoteDevices {
+        if liveOnlineDeviceIDs.contains(device.deviceID) {
+          return true
+        }
+        let lower = device.deviceName.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        let stripped = lower.replacingOccurrences(of: ".local", with: "")
+        if !lower.isEmpty,
+          liveOnlineDeviceNames.contains(lower) || liveOnlineDeviceNames.contains(stripped)
+        {
+          return true
+        }
+      }
+      if let activeIDs = try? RappDeviceVault().activePairIDs(), !activeIDs.isEmpty {
+        for pairID in activeIDs {
+          if let name = RappPairNames.name(forPairID: pairID) {
+            let lower = name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+            let stripped = lower.replacingOccurrences(of: ".local", with: "")
+            if !lower.isEmpty,
+              liveOnlineDeviceNames.contains(lower) || liveOnlineDeviceNames.contains(stripped)
+            {
+              return true
+            }
+          }
+        }
+        if !liveOnlineDeviceIDs.isEmpty || !liveOnlineDeviceNames.isEmpty {
+          return true
+        }
+      }
+      return false
+    }
+
     // MARK: Initialization
 
     private init() {

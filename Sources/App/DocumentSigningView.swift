@@ -220,11 +220,7 @@
     }
 
     private var requiresRequesterPIN2: Bool {
-      #if os(macOS) && REFINEID_REMOTE_CARD
-        !DocumentSigner.usesRappSigning
-      #else
-        SupportedCardTransports.offersNearField
-      #endif
+      !DocumentSigner.usesRappSigning
     }
 
     private func importResult(_ result: Result<[URL], Error>) {

@@ -31,9 +31,7 @@
     internal let model = LoginIdentityModel.shared
     @ObservedObject internal var retryHealth = CredentialRetryHealth.shared
     @ObservedObject internal var cardPresence = CardPresence.shared
-    #if REFINEID_REMOTE_CARD
-      internal let remoteRegistry = PersistentTokenRegistry.shared
-    #endif
+    internal let remoteRegistry = PersistentTokenRegistry.shared
     @State private var signing = SignDocumentModel()
 
     /// Notices a card waiting to be taken into use, and carries the
@@ -186,13 +184,7 @@
     }
 
     @ViewBuilder private var pairingPromptSection: some View {
-      #if REFINEID_REMOTE_CARD
-        RemotePairingPromptView()
-      #else
-        Text("Insert your identity card into the reader")
-          .foregroundStyle(.secondary)
-          .accessibilityIdentifier("loginIdentityStatus")
-      #endif
+      RemotePairingPromptView()
     }
 
     @ViewBuilder private var unusableSection: some View {

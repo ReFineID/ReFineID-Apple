@@ -1,6 +1,6 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if os(iOS) && REFINEID_LOCAL_CARD && REFINEID_REMOTE_CARD
+#if os(iOS) && REFINEID_LOCAL_CARD
   import CardCore
   import Foundation
   import Network
@@ -32,6 +32,7 @@
     internal static let shared = PhonePersistentTokenRelay()
 
     internal static let maximumPreCoordinatorFrames = 4
+    internal static let recentContactWindowSeconds: TimeInterval = 180
     /// How long the stream transport pauses before re-listening after a
     /// connection closes.
     internal static let streamRedialDelayMilliseconds = 100
@@ -40,6 +41,7 @@
 
     internal let vault = RappDeviceVault()
     private let policy = RappRequesterPolicy.interactive
+    private var pairingsObserver: (any NSObjectProtocol)?
     internal var relay: PersistentRelaySession?
     #if REFINEID_STREAM_TRANSPORT
       internal var streamListener: StreamRelayListener?
@@ -55,6 +57,8 @@
     internal var preCoordinatorFrames: [Data] = []
     internal var relistenPolicy = RelistenPolicy.automatic
     @Published internal var isActivelyConnected = false
+    @Published internal var lastPeerContactDate: Date?
+    @Published internal var isPeerOnline = false
 
     /// Frames enter the coordinator in arrival order through this
     /// bounded chain; reset between connections.
@@ -64,12 +68,21 @@
     // MARK: Lifecycle
 
     private init() {
-      // singleton
+      pairingsObserver = NotificationCenter.default.addObserver(
+        forName: RappAutoPairingService.pairingsDidChangeNotification,
+        object: nil,
+        queue: .main
+      ) { [weak self] _ in
+        MainActor.assumeIsolated {
+          self?.updatePeerOnlineState()
+        }
+      }
     }
 
     // MARK: Functions
 
     internal func start() {
+      updatePeerOnlineState()
       // A proxy without an antenna is not a proxy: only near-field
       // devices advertise as the card holder.
       guard SupportedCardTransports.offersNearField else { return }
@@ -119,9 +132,11 @@
       guard self.connectionID == connectionID else { return }
       switch event {
       case .connected:
+        lastPeerContactDate = Date()
         establish(connectionID: connectionID)
 
       case .frame(let frame):
+        lastPeerContactDate = Date()
         #if REFINEID_SLIM_RELAY
           if slimSession != nil {
             deliverInOrder { [weak self] in
@@ -218,28 +233,43 @@
           }
           coordinator = made
           dispatcher = madeDispatcher
+          lastPeerContactDate = Date()
           isActivelyConnected = true
 
           let earlyFrames = preCoordinatorFrames
           preCoordinatorFrames.removeAll(keepingCapacity: false)
-          Task { [weak self] in
-            for await event in made.events {
-              await madeDispatcher.receive(event, from: made)
-              self?.observe(event, connectionID: connectionID)
-            }
-          }
-          // The replay joins the same chain later frames append to, so a
-          // frame arriving during the replay cannot overtake it.
-          deliverInOrder {
-            await made.start()
-            for frame in earlyFrames {
-              await made.receive(frame)
-            }
-          }
+          pumpEvents(
+            from: made,
+            dispatcher: madeDispatcher,
+            connectionID: connectionID,
+            earlyFrames: earlyFrames
+          )
         #endif
       } catch {
         relistenPolicy = .explicitUserActionRequired
         failTransport()
+      }
+    }
+
+    private func pumpEvents(
+      from coordinator: RappConnectionCoordinator,
+      dispatcher: RappPhoneProxyDispatcher,
+      connectionID: UUID,
+      earlyFrames: [Data]
+    ) {
+      Task { [weak self] in
+        for await event in coordinator.events {
+          await dispatcher.receive(event, from: coordinator)
+          self?.observe(event, connectionID: connectionID)
+        }
+      }
+      // The replay joins the same chain later frames append to, so a
+      // frame arriving during the replay cannot overtake it.
+      deliverInOrder {
+        await coordinator.start()
+        for frame in earlyFrames {
+          await coordinator.receive(frame)
+        }
       }
     }
 

@@ -167,24 +167,14 @@
         DebugConsole.finish(succeeded: report.succeeded)
 
       case .offerRemoteReader:
-        #if REFINEID_REMOTE_CARD
-          let report = await DebugPairWithOffer.offer()
-          DebugConsole.emit(report.lines)
-          DebugConsole.finish(succeeded: report.succeeded)
-        #else
-          DebugConsole.emit([mode.rawValue + ": remote card not enabled"])
-          DebugConsole.finish(succeeded: false)
-        #endif
+        let report = await DebugPairWithOffer.offer()
+        DebugConsole.emit(report.lines)
+        DebugConsole.finish(succeeded: report.succeeded)
 
       case .pairWithOffer:
-        #if REFINEID_REMOTE_CARD
-          let report = await DebugPairWithOffer.run(offerURI: DebugLaunchModes.offerURI())
-          DebugConsole.emit(report.lines)
-          DebugConsole.finish(succeeded: report.succeeded)
-        #else
-          DebugConsole.emit([mode.rawValue + ": remote card not enabled"])
-          DebugConsole.finish(succeeded: false)
-        #endif
+        let report = await DebugPairWithOffer.run(offerURI: DebugLaunchModes.offerURI())
+        DebugConsole.emit(report.lines)
+        DebugConsole.finish(succeeded: report.succeeded)
 
       default:
         DebugConsole.emit(mode.rawValue + ": not a pairing mode")

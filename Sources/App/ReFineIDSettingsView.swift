@@ -11,9 +11,7 @@
         case pdfStamp
       #endif
       case pin
-      #if REFINEID_REMOTE_CARD
-        case remote
-      #endif
+      case remote
       case timeStamp
     }
 
@@ -22,11 +20,7 @@
 
     @ObservedObject private var cardPresence = CardPresence.shared
 
-    #if REFINEID_REMOTE_CARD
-      @State private var pane = Pane.remote
-    #else
-      @State private var pane = Pane.pin
-    #endif
+    @State private var pane = Pane.remote
 
     /// Whether a reader card is present and the PIN pane should be shown.
     private var readerCardIsPresent: Bool {
@@ -41,11 +35,7 @@
       .frame(minWidth: Self.paneWidth, minHeight: Self.paneHeight)
       .onChange(of: readerCardIsPresent) { _, present in
         if !present, pane == .pin {
-          #if REFINEID_REMOTE_CARD
-            pane = .remote
-          #else
-            pane = .timeStamp
-          #endif
+          pane = .remote
         }
       }
     }
@@ -68,13 +58,11 @@
           }
           .tag(Pane.pin)
       }
-      #if REFINEID_REMOTE_CARD
-        RemotePairingSettingsView()
-          .tabItem {
-            Label(String(localized: "Remote"), systemImage: "key.radiowaves.forward")
-          }
-          .tag(Pane.remote)
-      #endif
+      RemotePairingSettingsView()
+        .tabItem {
+          Label(String(localized: "Remote"), systemImage: "key.radiowaves.forward")
+        }
+        .tag(Pane.remote)
       TimestampAuthoritiesSettingsView()
         .tabItem {
           Label(String(localized: "Time Stamp"), systemImage: "clock.badge.checkmark")

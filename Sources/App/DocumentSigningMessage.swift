@@ -12,11 +12,9 @@ internal enum DocumentSigningMessage {
     if let asicFailure = error as? AsicSigner.Failure {
       return asicSignerMessage(asicFailure)
     }
-    #if REFINEID_REMOTE_CARD
-      if let clientError = error as? RappRequesterClientError {
-        return remoteClientMessage(clientError)
-      }
-    #endif
+    if let clientError = error as? RappRequesterClientError {
+      return remoteClientMessage(clientError)
+    }
     return text("error.generic", "The documents could not be signed.")
   }
 
@@ -58,45 +56,43 @@ internal enum DocumentSigningMessage {
     }
   }
 
-  #if REFINEID_REMOTE_CARD
-    private static func remoteClientMessage(_ error: RappRequesterClientError) -> String {
-      switch error {
-      case .peerNotFound, .timedOut:
-        text("error.remoteTimeout", "The remote device did not respond.")
+  private static func remoteClientMessage(_ error: RappRequesterClientError) -> String {
+    switch error {
+    case .peerNotFound, .timedOut:
+      text("error.remoteTimeout", "The remote device did not respond.")
 
-      case .transport:
-        text("error.remoteDisconnected", "The connection to the remote device was lost.")
+    case .transport:
+      text("error.remoteDisconnected", "The connection to the remote device was lost.")
 
-      case .terminal(let reason):
-        terminalReasonMessage(reason)
+    case .terminal(let reason):
+      terminalReasonMessage(reason)
 
-      default:
-        text("error.remoteCard", "The remote card could not complete the signature.")
-      }
+    default:
+      text("error.remoteCard", "The remote card could not complete the signature.")
     }
+  }
 
-    private static func terminalReasonMessage(
-      _ reason: RappOperationDriver.TerminalReason?
-    ) -> String {
-      switch reason {
-      case .userDenied:
-        text(
-          "error.remoteDenied",
-          "The signature request was declined on the paired phone.")
+  private static func terminalReasonMessage(
+    _ reason: RappOperationDriver.TerminalReason?
+  ) -> String {
+    switch reason {
+    case .userDenied:
+      text(
+        "error.remoteDenied",
+        "The signature request was declined on the paired phone.")
 
-      case .credentialRejected:
-        CredentialOutcomeMessage.incorrect(credentialName: "PIN 2")
+    case .credentialRejected:
+      CredentialOutcomeMessage.incorrect(credentialName: "PIN 2")
 
-      case .cancelled, .requestExpired:
-        text("error.remoteCancelled", "The signature request was cancelled.")
+    case .cancelled, .requestExpired:
+      text("error.remoteCancelled", "The signature request was cancelled.")
 
-      default:
-        text(
-          "error.remoteCard",
-          "The remote card could not complete the signature.")
-      }
+    default:
+      text(
+        "error.remoteCard",
+        "The remote card could not complete the signature.")
     }
-  #endif
+  }
 
   private static func cardMessage(_ outcome: CardMaintenance.Outcome) -> String {
     switch outcome {
