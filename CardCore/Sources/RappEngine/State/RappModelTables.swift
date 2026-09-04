@@ -11,7 +11,7 @@ internal enum RappModelTables {
       role: .requester,
       condition: .userInitiated,
       destination: .offerActive,
-      actions: [.generateOfferId, .generatePairingSecret, .startOfferExpiry, .displayQr]
+      actions: [.generateOfferId, .generatePairingSecret, .startOfferExpiry, .displayPairingCode]
     ),
     RappRule(
       from: .unpaired,
@@ -34,7 +34,7 @@ internal enum RappModelTables {
       event: .offerExpiredOrCancelled,
       role: .requester,
       destination: .unpaired,
-      actions: [.destroyPairingSecret, .invalidateOffer, .hideQr]
+      actions: [.destroyPairingSecret, .invalidateOffer, .hidePairingCode]
     ),
     RappRule(
       from: .handshaking,
@@ -43,7 +43,8 @@ internal enum RappModelTables {
       condition: .transcriptMatches,
       destination: .confirming,
       actions: [
-        .deriveChannelIdentifiers, .destroyPairingSecret, .stopAcceptingCandidates, .hideQr,
+        .deriveChannelIdentifiers, .destroyPairingSecret,
+        .stopAcceptingCandidates, .hidePairingCode,
         .sendPairingHello, .showPeerAndRequestedGrants,
       ]
     ),

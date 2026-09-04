@@ -10,10 +10,11 @@
   internal struct RappCloudSyncCoordinatorTests {
     @Test("Publishes local device and retrieves remote devices correctly")
     internal func testPublishAndRetrieve() async throws {
+      let runID = UUID().uuidString
       let storage = InMemoryCloudStorage()
 
       let identityA = try makeIdentity(
-        service: "fi.refineid.test.idA",
+        service: "fi.refineid.test.idA.\(runID)",
         name: "Petri's iPhone",
         model: "iPhone16,1",
         seed: 0x01
@@ -30,7 +31,7 @@
       #expect(await coordinatorA.remoteDevices().isEmpty)
 
       let identityB = try makeIdentity(
-        service: "fi.refineid.test.idB",
+        service: "fi.refineid.test.idB.\(runID)",
         name: "Petri's MacBook Pro",
         model: "Mac15,3",
         seed: 0x02
@@ -56,26 +57,28 @@
 
     @Test("Reconciles 1:N multi-device topology across iPhone, Mac, and iPad")
     internal func testMultiDeviceReconciliation() async throws {
+      let runID = UUID().uuidString
       let storage = InMemoryCloudStorage()
 
       let phoneID = try makeIdentity(
-        service: "fi.refineid.test.phone", name: "iPhone", model: "iPhone16,1", seed: 0x11)
+        service: "fi.refineid.test.phone.\(runID)", name: "iPhone", model: "iPhone16,1", seed: 0x11)
       let phoneVault = RappDeviceVault(
-        accessGroup: nil, servicePrefix: "fi.refineid.test.vault.phone")
+        accessGroup: nil, servicePrefix: "fi.refineid.test.vault.phone.\(runID)")
       let phoneCoord = RappCloudSyncCoordinator(
         localIdentity: phoneID, localRole: .holder, cloudStorage: storage)
       await phoneCoord.publishLocalDevice()
 
       let macID = try makeIdentity(
-        service: "fi.refineid.test.mac", name: "Mac", model: "Mac15,3", seed: 0x22)
-      let macVault = RappDeviceVault(accessGroup: nil, servicePrefix: "fi.refineid.test.vault.mac")
+        service: "fi.refineid.test.mac.\(runID)", name: "Mac", model: "Mac15,3", seed: 0x22)
+      let macVault = RappDeviceVault(
+        accessGroup: nil, servicePrefix: "fi.refineid.test.vault.mac.\(runID)")
       let macCoord = RappCloudSyncCoordinator(
         localIdentity: macID, localRole: .requester, cloudStorage: storage)
 
       let ipadID = try makeIdentity(
-        service: "fi.refineid.test.ipad", name: "iPad", model: "iPad14,3", seed: 0x33)
+        service: "fi.refineid.test.ipad.\(runID)", name: "iPad", model: "iPad14,3", seed: 0x33)
       let ipadVault = RappDeviceVault(
-        accessGroup: nil, servicePrefix: "fi.refineid.test.vault.ipad")
+        accessGroup: nil, servicePrefix: "fi.refineid.test.vault.ipad.\(runID)")
       let ipadCoord = RappCloudSyncCoordinator(
         localIdentity: ipadID, localRole: .requester, cloudStorage: storage)
 
@@ -94,18 +97,19 @@
 
     @Test("Does not resurrect locally revoked pairs")
     internal func testRevocationPreserved() async throws {
+      let runID = UUID().uuidString
       let storage = InMemoryCloudStorage()
 
       let phoneID = try makeIdentity(
-        service: "fi.refineid.test.rev.phone", name: "iPhone", model: "iPhone", seed: 0x55)
+        service: "fi.refineid.test.rev.phone.\(runID)", name: "iPhone", model: "iPhone", seed: 0x55)
       let phoneCoord = RappCloudSyncCoordinator(
         localIdentity: phoneID, localRole: .holder, cloudStorage: storage)
       await phoneCoord.publishLocalDevice()
 
       let macID = try makeIdentity(
-        service: "fi.refineid.test.rev.mac", name: "Mac", model: "Mac", seed: 0x66)
+        service: "fi.refineid.test.rev.mac.\(runID)", name: "Mac", model: "Mac", seed: 0x66)
       let macVault = RappDeviceVault(
-        accessGroup: nil, servicePrefix: "fi.refineid.test.vault.rev.mac")
+        accessGroup: nil, servicePrefix: "fi.refineid.test.vault.rev.mac.\(runID)")
       let macCoord = RappCloudSyncCoordinator(
         localIdentity: macID, localRole: .requester, cloudStorage: storage)
 

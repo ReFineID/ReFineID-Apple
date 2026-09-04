@@ -47,7 +47,7 @@ internal struct FlowBodyTests {
   internal func vectorIdentity() throws {
     let corpus = try CorpusFile.flow(filePath: #filePath)
     #expect(corpus.format == "fi.refineid.rapp.flow-vectors-v1")
-    #expect(corpus.protocolDocumentVersion == "26.8.17.233")
+    #expect(corpus.protocolDocumentVersion == "26.9.4.181")
     #expect(corpus.flowMessage.count == 7)
   }
 
@@ -93,9 +93,9 @@ internal struct FlowBodyTests {
       ("confirm-three-profiles", [.authentication, .cardStatus, .documentSigning]),
     ]
     for (name, granted) in cases {
+      let encodedBody = try Self.body(PairingConfirm(grantedProfiles: granted).body())
       #expect(
-        try Self.body(PairingConfirm(grantedProfiles: granted).body())
-          == (try Self.expected(corpus, name)), "\(name)")
+        encodedBody == (try Self.expected(corpus, name)), "\(name)")
     }
   }
 

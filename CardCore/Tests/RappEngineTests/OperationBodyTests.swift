@@ -56,7 +56,7 @@ internal struct OperationBodyTests {
   internal func vectorIdentity() throws {
     let corpus = try CorpusFile.operation(filePath: #filePath)
     #expect(corpus.format == "fi.refineid.rapp.operation-vectors-v1")
-    #expect(corpus.protocolDocumentVersion == "26.8.17.233")
+    #expect(corpus.protocolDocumentVersion == "26.9.4.181")
     #expect(corpus.vectors.count == 30)
   }
 
@@ -90,6 +90,7 @@ internal struct OperationBodyTests {
       #expect(
         try Self.encoded(message) == (try Self.expected(corpus, testCase.name)), "\(testCase.name)")
     }
+
   }
 
   @Test("Prepared, commit, and the acknowledgement share one reference body")
