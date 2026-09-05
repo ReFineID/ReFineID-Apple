@@ -28,7 +28,7 @@
 
     // MARK: Static Computed Properties
 
-    private static var driverConfiguration: TKTokenDriver.Configuration? {
+    internal static var driverConfiguration: TKTokenDriver.Configuration? {
       TKTokenDriver.Configuration.driverConfigurations[
         PersistentTokenIdentity.classID
       ]
@@ -45,7 +45,7 @@
     ///
     /// Both certificates on a card share one subject, so the label is the
     /// only field that names the PIN 1 identity in DVV's wording.
-    private static var authenticationLabel: String {
+    internal static var authenticationLabel: String {
       String(localized: "Basic (PIN 1)")
     }
 
@@ -129,115 +129,6 @@
       shared.hasSeenHolderAdvertisement = false
       #if os(macOS)
         LoginIdentityModel.shared.refresh()
-      #endif
-    }
-
-    /// The certificate this driver is currently offering, if any.
-    ///
-    /// What has been published outlives the app that published it, so a
-    /// screen that only ever learned an identity by fetching one showed
-    /// nothing on every launch after the first while the browser was still
-    /// being offered the very same certificate.
-    internal static func publishedCertificateDER() -> Data? {
-      guard let driver = driverConfiguration else { return nil }
-      for configuration in driver.tokenConfigurations.values {
-        guard
-          let item = try? configuration.certificate(
-            for: PersistentTokenIdentity.certificateObjectID
-          )
-        else {
-          continue
-        }
-        return item.data
-      }
-      return nil
-    }
-
-    internal static func makeKeychainItems(
-      for certificate: SecCertificate,
-      profile: CardKeyProfile
-    ) -> (TKTokenKeychainCertificate, TKTokenKeychainKey)? {
-      guard
-        let certificateItem = TKTokenKeychainCertificate(
-          certificate: certificate,
-          objectID: PersistentTokenIdentity.certificateObjectID
-        ),
-        let keyItem = TKTokenKeychainKey(
-          certificate: certificate,
-          objectID: PersistentTokenIdentity.keyObjectID
-        )
-      else {
-        return nil
-      }
-      certificateItem.label = authenticationLabel
-      keyItem.label = authenticationLabel
-      keyItem.keyType = profile.keyType
-      keyItem.keySizeInBits = profile.keySizeInBits
-      keyItem.canSign = true
-      keyItem.canDecrypt = false
-      keyItem.canPerformKeyExchange = false
-      keyItem.isSuitableForLogin = true
-      return (certificateItem, keyItem)
-    }
-
-    private static func tokenInstanceID(for certificateDER: Data, cardSerial: String?) -> String {
-      if let cardSerial, !cardSerial.isEmpty {
-        return PersistentTokenIdentity.instancePrefix + cardSerial.lowercased()
-      }
-      let hash =
-        SHA256.hash(data: certificateDER)
-        .map { String(format: "%02x", $0) }
-        .joined()
-      return PersistentTokenIdentity.instancePrefix + hash
-    }
-
-    private static func activePairConfigurationData() -> Data? {
-      let vault = RappDeviceVault()
-      let pairIDs = (try? vault.activePairIDs()) ?? []
-      guard let pairID = (try? vault.selectedPairID()) ?? pairIDs.first,
-        let pair = try? RappPairRecord.loadFromVault(pairId: pairID, vault: vault)
-      else {
-        return nil
-      }
-      return try? pair.encodedBytes()
-    }
-
-    private static func publish(_ certificateDER: Data, cardSerial: String? = nil) {
-      guard !CardPresence.shared.isReaderCardPresent else {
-        #if DEBUG
-          print("[persistent-token] suppressed publish: reader card has priority")
-          fflush(stdout)
-        #endif
-        return
-      }
-      guard
-        let driver = driverConfiguration,
-        let certificate = SecCertificateCreateWithData(nil, certificateDER as CFData),
-        let profile = CardKeyProfile.resolve(fromCertificate: certificate),
-        let (certificateItem, keyItem) = makeKeychainItems(
-          for: certificate,
-          profile: profile
-        ),
-        let pairBytes = activePairConfigurationData()
-      else {
-        return
-      }
-
-      let instanceID = tokenInstanceID(for: certificateDER, cardSerial: cardSerial)
-      for existingID in driver.tokenConfigurations.keys {
-        driver.removeTokenConfiguration(for: existingID)
-      }
-      let configuration = driver.addTokenConfiguration(for: instanceID)
-      configuration.configurationData = pairBytes
-      configuration.keychainItems = [certificateItem, keyItem]
-      shared.certificateDER = certificateDER
-      shared.holderLine = DistinguishedName.holderLine(fromCertificate: certificateDER)
-      #if os(macOS)
-        LoginIdentityModel.shared.refresh()
-      #endif
-      #if DEBUG
-        print("[persistent-token] published \(instanceID)")
-        fflush(stdout)
       #endif
     }
 
@@ -331,11 +222,13 @@
               self.holderIsAdvertising
               || RappAutoPairingService.shared.isAnyPairedPeerOnline
             guard isOnline, self.certificateDER == nil else { return }
-            self.startFetch(replacing: true)
+            self.startFetch(replacing: false)
           }
         #endif
         return
       }
+      self.certificateDER = certificateDER
+      self.holderLine = DistinguishedName.holderLine(fromCertificate: certificateDER)
       holderIsAdvertising = true
       hasSeenHolderAdvertisement = true
       Self.publish(certificateDER, cardSerial: cardSerial)

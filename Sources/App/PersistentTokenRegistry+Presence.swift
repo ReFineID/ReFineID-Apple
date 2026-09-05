@@ -105,7 +105,7 @@
         if certificateDER == nil,
           holderIsAdvertising || RappAutoPairingService.shared.isAnyPairedPeerOnline
         {
-          startFetch(replacing: true)
+          startFetch(replacing: false)
         }
         return
       }
@@ -133,7 +133,7 @@
         hasSeenHolderAdvertisement = true
         holderIsAdvertising = true
         if certificateDER == nil {
-          startFetch(replacing: true)
+          startFetch(replacing: false)
         } else {
           seedHolderLine()
         }
