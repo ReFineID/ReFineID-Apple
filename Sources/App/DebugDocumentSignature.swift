@@ -48,7 +48,11 @@
           succeeded: false
         )
       }
-      let source = URL(fileURLWithPath: path)
+      let resolvedPath =
+        path.hasPrefix("~/")
+        ? NSHomeDirectory() + path.dropFirst()
+        : path
+      let source = URL(fileURLWithPath: resolvedPath)
       guard let document = try? Data(contentsOf: source) else {
         return DebugModeReport(
           lines: ["--sign-document: cannot read \(source.lastPathComponent)"],

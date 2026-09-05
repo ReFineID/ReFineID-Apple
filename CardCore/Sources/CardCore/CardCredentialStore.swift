@@ -34,12 +34,16 @@ public enum CardCredentialStore {
     /// Whether PIN1 is stored for unattended signing.
     public let hasPin1: Bool
 
+    /// Whether PIN2 is stored for unattended testing.
+    public let hasPin2: Bool
+
     // MARK: Lifecycle
 
     /// Records what a store lookup found.
-    public init(hasCardAccessNumber: Bool, hasPin1: Bool) {
+    public init(hasCardAccessNumber: Bool, hasPin1: Bool, hasPin2: Bool = false) {
       self.hasCardAccessNumber = hasCardAccessNumber
       self.hasPin1 = hasPin1
+      self.hasPin2 = hasPin2
     }
   }
 
@@ -61,6 +65,9 @@ public enum CardCredentialStore {
   /// Account for PIN1, present only when the holder opted in.
   private static let pin1Account = "pin1"
 
+  /// Account for PIN2, present only when configured for test automation.
+  private static let pin2Account = "pin2"
+
   /// Keychain coordinates used by the retired timed signing window.
   private static let legacySigningWindowService = "fi.refineid.pin1window"
   private static let legacySigningWindowAccount = "current"
@@ -71,7 +78,8 @@ public enum CardCredentialStore {
   public static func contents() -> Contents {
     Contents(
       hasCardAccessNumber: exists(account: cardAccessNumberAccount),
-      hasPin1: exists(account: pin1Account))
+      hasPin1: exists(account: pin1Account),
+      hasPin2: exists(account: pin2Account))
   }
 
   /// Stores the card access number, replacing any previous one.
@@ -193,6 +201,13 @@ public enum CardCredentialStore {
     return write(digits, account: pin1Account)
   }
 
+  /// Stores PIN2 for unattended testing, replacing any previous one.
+  @discardableResult
+  public static func save(pin2 digits: String) -> OSStatus {
+    guard Pin2(digits: digits) != nil else { return errSecParam }
+    return write(digits, account: pin2Account)
+  }
+
   /// The stored card access number.
   ///
   /// Reads without prompting: the number is printed on the card, and a
@@ -246,6 +261,16 @@ public enum CardCredentialStore {
   /// The stored PIN1 digits, or nil when the holder never entered one.
   public static func pin1Digits() -> String? {
     read(account: pin1Account)
+  }
+
+  /// The stored PIN2, or nil when none is stored.
+  public static func pin2() -> Pin2? {
+    read(account: pin2Account).flatMap(Pin2.init(digits:))
+  }
+
+  /// The stored PIN2 digits, or nil when none is stored.
+  public static func pin2Digits() -> String? {
+    read(account: pin2Account)
   }
 
   /// Removes the duplicate PIN item written by builds with a timed
@@ -312,10 +337,16 @@ public enum CardCredentialStore {
     delete(account: pin1Account)
   }
 
+  /// Removes PIN2, returning to a prompt for every signature.
+  public static func forgetPin2() {
+    delete(account: pin2Account)
+  }
+
   /// Removes everything this device knows about the card's secrets.
   public static func forgetAll() {
     delete(account: cardAccessNumberAccount)
     delete(account: pin1Account)
+    delete(account: pin2Account)
     #if os(macOS)
       OfferedAccessNumber.withdraw()
       DriverConfiguredCredentials.withdraw()

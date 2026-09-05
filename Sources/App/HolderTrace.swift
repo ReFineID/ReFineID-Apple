@@ -20,8 +20,10 @@
     /// Writes one line, stamped with the seconds since the process began.
     internal static func say(_ line: String) {
       let elapsed = Date().timeIntervalSince(started)
-      print(String(format: "[stream-holder %7.3f] %@", elapsed, line))
+      let formatted = String(format: "[stream-holder %7.3f] %@", elapsed, line)
+      print(formatted)
       fflush(stdout)
+      AppTrace.append(formatted)
     }
   }
 

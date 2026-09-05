@@ -240,6 +240,11 @@ internal struct ReFineIDApp: App {
       if args.contains("--prime-mock-card") || args.contains("--prime-fake-card") {
         MockCardCertificate.primeSyntheticIdentity()
       }
+      if let pin2Index = args.firstIndex(of: "--pin2"),
+        args.indices.contains(pin2Index + 1)
+      {
+        CardCredentialStore.save(pin2: args[pin2Index + 1])
+      }
       DemoMode.shared.activateFromLaunchArguments()
     #endif
   }

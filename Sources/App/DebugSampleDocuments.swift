@@ -21,12 +21,24 @@
     /// A normal-UI launch argument; it is deliberately not a debug
     /// launch mode.
     internal static let launchArgument = "--seed-document-pile"
+    internal static let seedDocumentArgument = "--seed-document"
 
     /// The placeholder names, chosen to be several file types: a mixed
     /// pile is the one that can only take the container shape.
     private static let names = [
       "Agreement.pdf", "Annex one.odt", "Figures.png", "Schedule.csv",
     ]
+
+    /// Answers a single document explicitly seeded via launch argument.
+    internal static func targetDocument() -> URL? {
+      let args = ProcessInfo.processInfo.arguments
+      guard let index = args.firstIndex(of: seedDocumentArgument), index + 1 < args.count else {
+        return nil
+      }
+      let raw = args[index + 1]
+      let expanded = raw.hasPrefix("~/") ? NSHomeDirectory() + raw.dropFirst() : raw
+      return URL(fileURLWithPath: expanded)
+    }
 
     /// Whether this process was explicitly launched to seed the pile.
     internal static func isEnabled() -> Bool {

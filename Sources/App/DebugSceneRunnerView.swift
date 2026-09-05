@@ -98,7 +98,7 @@
 
       case .diagnostics, .forgetCan, .localNetworkProbe, .paceCheck,
         .resetCardState, .selectPair, .setCan,
-        .setPin1, .signDocument, .signProbe, .tokenPublishProbe, .trace:
+        .setPin1, .setPin2, .signDocument, .signProbe, .tokenPublishProbe, .trace:
         DebugConsole.emit(mode.rawValue + ": runs before the window opens, not here")
         DebugConsole.finish(succeeded: false)
       }
