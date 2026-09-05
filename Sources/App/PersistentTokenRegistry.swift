@@ -22,6 +22,10 @@
 
     internal static let shared = PersistentTokenRegistry()
 
+    internal static let fetchStateDidChangeNotification = Notification.Name(
+      "fi.refineid.PersistentTokenRegistry.fetchStateDidChange"
+    )
+
     // MARK: Static Computed Properties
 
     private static var driverConfiguration: TKTokenDriver.Configuration? {
@@ -61,7 +65,7 @@
     /// The certificate last published, so a reader mint can restore it.
     internal var certificateDER: Data?
 
-    private var isRunning = false
+    internal private(set) var isRunning = false
 
     /// Whether the holder's stream advertisement has been seen this run.
     internal var hasSeenHolderAdvertisement = false
@@ -280,6 +284,8 @@
       guard hasPairs else { return }
       guard replacing || Self.needsIdentity || certificateDER == nil else { return }
       isRunning = true
+      NotificationCenter.default.post(
+        name: Self.fetchStateDidChangeNotification, object: nil)
       Task.detached(priority: .userInitiated) {
         let fetched: Data?
         let fetchedSerial: String?
@@ -311,15 +317,20 @@
     }
 
     fileprivate func finish(_ certificateDER: Data?, cardSerial: String? = nil) {
-      defer { isRunning = false }
+      defer {
+        isRunning = false
+        NotificationCenter.default.post(
+          name: Self.fetchStateDidChangeNotification, object: nil)
+      }
       guard let certificateDER else {
         #if REFINEID_STREAM_TRANSPORT
           let retryDelayNs: UInt64 = 2_000_000_000
           Task { @MainActor in
             try? await Task.sleep(nanoseconds: retryDelayNs)
-            guard self.holderIsAdvertising,
-              Self.needsIdentity || self.certificateDER == nil
-            else { return }
+            let isOnline =
+              self.holderIsAdvertising
+              || RappAutoPairingService.shared.isAnyPairedPeerOnline
+            guard isOnline, self.certificateDER == nil else { return }
             self.startFetch(replacing: true)
           }
         #endif

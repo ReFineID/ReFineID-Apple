@@ -55,6 +55,13 @@
     /// it.
     @State private var holder: String?
 
+    @State private var isPeerOnline = RappAutoPairingService.shared.isAnyPairedPeerOnline
+    @State private var isFetching = PersistentTokenRegistry.shared.isRunning
+
+    private var isPairedDeviceOnline: Bool {
+      isPeerOnline || PersistentTokenRegistry.shared.holderIsAdvertising
+    }
+
     /// The person line the remote-card registry already holds.
     ///
     /// Used when the keychain has not yet listed the borrowed token
@@ -78,6 +85,20 @@
       content
         .task(id: trackKey) {
           await track()
+        }
+        .onReceive(
+          NotificationCenter.default.publisher(
+            for: RappAutoPairingService.pairingsDidChangeNotification
+          )
+        ) { _ in
+          isPeerOnline = RappAutoPairingService.shared.isAnyPairedPeerOnline
+        }
+        .onReceive(
+          NotificationCenter.default.publisher(
+            for: PersistentTokenRegistry.fetchStateDidChangeNotification
+          )
+        ) { _ in
+          isFetching = PersistentTokenRegistry.shared.isRunning
         }
     }
 
@@ -107,8 +128,16 @@
           Text("Insert your card")
             .foregroundStyle(.secondary)
         } else if hasPairedDevice {
-          Text("Waiting for the phone")
-            .foregroundStyle(.secondary)
+          if isFetching {
+            Text("Reading the card…")
+              .foregroundStyle(.secondary)
+          } else if isPairedDeviceOnline {
+            Text("Hold the card on the top back of the phone.")
+              .foregroundStyle(.secondary)
+          } else {
+            Text("Waiting for the phone")
+              .foregroundStyle(.secondary)
+          }
         } else {
           Text("Insert your card")
             .foregroundStyle(.secondary)
@@ -129,18 +158,14 @@
       #endif
       switch availability {
       case .ready:
-        // A read that answers nothing while the token is listed is
-        // left alone: this process's view of the token items has been
-        // observed answering empty against an identity Safari was
-        // using at that same moment, so an empty answer proves
-        // nothing and must never cost a registration anything.
+        if let borrowed = borrowedHolderLine {
+          holder = borrowed
+          return
+        }
         let tokenIDs = Array(model.ownedTokenIDs)
         holder = await Task.detached(priority: .utility) {
           PublishedIdentityName.current(tokenIDs: tokenIDs)
         }.value
-        if holder == nil {
-          holder = borrowedHolderLine
-        }
 
       case .cardWithoutIdentity:
         holder = nil

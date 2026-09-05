@@ -43,7 +43,8 @@
 
     /// Whether to prompt the user to connect a card reader or phone.
     internal var shouldShowPairingPrompt: Bool {
-      !cardPresence.isReaderCardPresent
+      !hasPairedDevice
+        && !cardPresence.isReaderCardPresent
         && !cardPresence.isReaderConnected
         && !holderIsAdvertising
         && availability == .noCard
