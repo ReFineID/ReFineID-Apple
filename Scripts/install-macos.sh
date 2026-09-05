@@ -127,6 +127,7 @@ remove_stray_copies() {
       # The build/ directory in this checkout holds the archives a
       # release is cut from, which mdfind stops reporting once the tree
       # is hidden from the index.
+      find /Applications -maxdepth 1 -name ".*${app_name}*" -type d 2>/dev/null || true
       for root in /tmp /private/tmp "$HOME/Library/Developer/Xcode/DerivedData" \
         build derivedData; do
         [[ -d "$root" ]] || continue
@@ -134,9 +135,21 @@ remove_stray_copies() {
       done
     } | sort -u
   )"
+  local built_real=""
+  if [[ -n "${built:-}" && -d "$built" ]]; then
+    built_real="$(cd "$built" 2>/dev/null && pwd -P || true)"
+  fi
   while IFS= read -r stray; do
     [[ -z "$stray" ]] && continue
     [[ "$stray" == "$installed" ]] && continue
+    [[ "$stray" == *".xcarchive/"* ]] && continue
+    local stray_real=""
+    if [[ -d "$stray" ]]; then
+      stray_real="$(cd "$stray" 2>/dev/null && pwd -P || true)"
+    fi
+    if [[ -n "$built_real" && -n "$stray_real" && "$stray_real" == "$built_real" ]]; then
+      continue
+    fi
     unregister_copy "$stray"
     unregister_token_plugins "$stray"
     if ! is_macos_bundle "$stray"; then
@@ -367,6 +380,7 @@ built="${derived_data}/Build/Products/${configuration}/${app_name}"
 # working copy in place rather than a broken one.
 verify_signature "$built"
 
+remove_stray_copies
 kill_macos_app
 # The card boundary belongs to the token extension, not to the window.
 # Replacing a live extension leaves ctkd holding the old executable, so

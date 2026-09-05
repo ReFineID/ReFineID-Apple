@@ -8,7 +8,9 @@ import Security
 extension DocumentSigner {
   private enum RemoteSigningPolicy {
     static let maximumCertificateAttempts = 3
+    static let maximumSigningAttempts = 3
     static let retryDelaySeconds: TimeInterval = 0.25
+    static let settleDelaySeconds: TimeInterval = 0.25
   }
 
   /// A selected RAPP phone is the signing device only when no local reader
@@ -66,11 +68,16 @@ extension DocumentSigner {
           certificate = cert
           break
         }
-      } catch {
+      } catch let error as RappRequesterClientError {
         certificateError = error
-        if attempt < RemoteSigningPolicy.maximumCertificateAttempts {
-          Thread.sleep(forTimeInterval: RemoteSigningPolicy.retryDelaySeconds)
+        guard Self.isRecoverableRemoteError(error),
+          attempt < RemoteSigningPolicy.maximumCertificateAttempts
+        else {
+          throw error
         }
+        Thread.sleep(forTimeInterval: RemoteSigningPolicy.retryDelaySeconds)
+      } catch {
+        throw error
       }
     }
     guard let certificate else {
@@ -104,6 +111,7 @@ extension DocumentSigner {
   ) throws -> CardMaintenance.QualifiedProduct {
     let displayName = ProcessInfo.processInfo.hostName
     let certificate = try Self.fetchRemoteSignatureCertificate(displayName: displayName)
+    Thread.sleep(forTimeInterval: RemoteSigningPolicy.settleDelaySeconds)
     guard
       CardMaintenance.qualifiedCertificate(
         certificate, matches: expectedCertificate
@@ -130,19 +138,14 @@ extension DocumentSigner {
       throw Failure.card(.failed)
     }
 
-    let signingClient = RappPersistentRequesterClient(displayName: displayName)
-    let signatureResponse = try signingClient.perform(
-      .documentSigning(
-        documentName: documentName,
-        keyProfile: RappOperationDriver.KeyProfile(profile),
-        algorithm: remoteAlgorithm,
-        digest: digest
-      )
+    let signature = try Self.executeRemoteDocumentSigning(
+      displayName: displayName,
+      documentName: documentName,
+      keyProfile: RappOperationDriver.KeyProfile(profile),
+      algorithm: remoteAlgorithm,
+      digest: digest
     )
-    guard
-      case .signature(let signature) = signatureResponse,
-      request.isSatisfied(by: signature, from: publicKey)
-    else {
+    guard request.isSatisfied(by: signature, from: publicKey) else {
       throw Failure.card(.failed)
     }
     return CardMaintenance.QualifiedProduct(
@@ -151,5 +154,57 @@ extension DocumentSigner {
       certificate: certificate,
       profile: profile
     )
+  }
+
+  /// Sends the document signing request to the paired phone, retrying transparently
+  /// when the transport connection drops or the peer was not found before authorization.
+  private static func executeRemoteDocumentSigning(
+    displayName: String,
+    documentName: String,
+    keyProfile: RappOperationDriver.KeyProfile,
+    algorithm: RappOperationDriver.SignatureAlgorithm,
+    digest: Data
+  ) throws -> Data {
+    var signingError: Error?
+    for attempt in 1...RemoteSigningPolicy.maximumSigningAttempts {
+      do {
+        let signingClient = RappPersistentRequesterClient(displayName: displayName)
+        let signatureResponse = try signingClient.perform(
+          .documentSigning(
+            documentName: documentName,
+            keyProfile: keyProfile,
+            algorithm: algorithm,
+            digest: digest
+          )
+        )
+        if case .signature(let signature) = signatureResponse {
+          return signature
+        }
+        throw Failure.card(.failed)
+      } catch let error as RappRequesterClientError {
+        signingError = error
+        guard Self.isRecoverableRemoteError(error),
+          attempt < RemoteSigningPolicy.maximumSigningAttempts
+        else {
+          throw error
+        }
+        Thread.sleep(forTimeInterval: RemoteSigningPolicy.retryDelaySeconds)
+      } catch {
+        throw error
+      }
+    }
+    guard let signingError else { throw Failure.card(.failed) }
+    throw signingError
+  }
+
+  private static func isRecoverableRemoteError(_ error: RappRequesterClientError) -> Bool {
+    switch error {
+    case .transport, .peerNotFound:
+      true
+
+    case .noActivePair, .noSelectedPair, .protocolFailure, .terminal, .timedOut,
+      .unexpectedResult:
+      false
+    }
   }
 }

@@ -38,6 +38,9 @@
         if scenePhase == .active {
           model.refresh()
           remoteModel.refresh()
+          #if os(iOS) && REFINEID_LOCAL_CARD
+            HolderCardServing.availabilityChanged()
+          #endif
         }
       }
       .alert(
