@@ -890,6 +890,22 @@
         }
       }
     },
+    "Card read successfully.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortti luettu onnistuneesti."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kortet lästes in framgångsrikt."
+          }
+        }
+      }
+    },
     "Card on NFC": {
       "extractionState": "manual",
       "localizations": {
@@ -2342,7 +2358,7 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Liitä kortinlukija, avaa RefineID iPhonessa tai liitä Android-puhelin koodilla: %@"
+            "value": "Avaa RefineID iPhonessa tai liitä kortinlukija. Android-puhelimen voit yhdistää koodilla %@."
           }
         },
         "sv": {

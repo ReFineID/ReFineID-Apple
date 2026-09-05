@@ -247,22 +247,16 @@
         _ = DriverConfiguredCredentials.dropDisplacedRemoteCardConfigurations()
         return
       }
+      let hasPairs = (try? RappDeviceVault().activePairIDs().isEmpty == false) ?? false
       #if REFINEID_STREAM_TRANSPORT
         installPairingObservers()
         startWatchingPresence()
-        // A leftover identity from an earlier run is not a live card.
-        // The pairing stays; publication resumes when the holder is seen.
-        if !holderIsAdvertising {
-          Self.withdrawPublishedIdentity()
-        }
-      #else
-        let hasPairs = (try? RappDeviceVault().activePairIDs().isEmpty == false) ?? false
-        if hasPairs {
-          seedHolderLine()
-        } else {
-          Self.withdrawPublishedIdentity()
-        }
       #endif
+      if hasPairs {
+        seedHolderLine()
+      } else {
+        Self.withdrawPublishedIdentity()
+      }
       startFetch(replacing: false)
     }
 

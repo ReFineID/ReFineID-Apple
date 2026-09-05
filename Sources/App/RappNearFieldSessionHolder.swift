@@ -20,7 +20,7 @@
 
     internal static let shared = RappNearFieldSessionHolder()
 
-    private static let burstGracePeriodSeconds: Double = 1.2
+    private static let burstGracePeriodSeconds: Double = 3.5
 
     private var activeSession: NearFieldCardSession?
     private var expirationTask: Task<Void, Never>?
@@ -53,6 +53,13 @@
         return nil
       }
 
+      if currentSession.wasPrompted {
+        currentSession.update(message: String(localized: "Card found. Keep holding."))
+        await MainActor.run {
+          CardPrimingFeedback.startWorking()
+        }
+      }
+
       let context = makeContext()
       let result = await performWithSession(
         currentSession,
@@ -60,7 +67,8 @@
         context: context,
         operation: operation
       )
-      scheduleExpiration(succeeded: result != nil)
+      await reportFeedback(for: result, session: currentSession)
+      scheduleExpiration(outcome: result)
       return result
     }
 
@@ -71,12 +79,51 @@
       expirationTask = nil
       isPin1Authenticated = false
       probedRoles.removeAll()
+      Task { @MainActor in
+        CardPrimingFeedback.stopWorking()
+      }
+    }
+
+    private func reportFeedback(
+      for result: RappCardExecutor.Outcome?,
+      session: NearFieldCardSession
+    ) async {
+      if case .result = result {
+        if session.wasPrompted {
+          session.update(message: String(localized: "Card read successfully."))
+          await MainActor.run {
+            CardPrimingFeedback.report(succeeded: true)
+          }
+        } else {
+          await MainActor.run {
+            CardPrimingFeedback.stopWorking()
+          }
+        }
+      } else if result != nil {
+        session.update(
+          message: String(localized: "The card could not be read. Hold it still and try again.")
+        )
+        await MainActor.run {
+          CardPrimingFeedback.report(succeeded: false)
+        }
+      } else {
+        await MainActor.run {
+          CardPrimingFeedback.stopWorking()
+        }
+      }
     }
 
     private func obtainSession(message: String) async -> NearFieldCardSession? {
       if let existing = activeSession { return existing }
       do {
-        let session = try await NearFieldCardSession.open(message: message)
+        let session = try await NearFieldCardSession.open(
+          message: message,
+          onPromptNeeded: {
+            Task { @MainActor in
+              UISoundLibrary.play(named: "Handoff-EncoreInfinitum")
+            }
+          }
+        )
         activeSession = session
         isPin1Authenticated = false
         probedRoles.removeAll()
@@ -135,8 +182,8 @@
       }
     }
 
-    private func scheduleExpiration(succeeded: Bool) {
-      if !succeeded {
+    private func scheduleExpiration(outcome: RappCardExecutor.Outcome?) {
+      guard case .result = outcome else {
         closeSession()
         return
       }

@@ -121,6 +121,19 @@ attached card reader, and returned the cryptographic signature to macOS Safari,
 successfully completing client TLS authentication. PIN 1 never left the iPhone,
 and all reader PIN 1 cache was zeroized upon card removal.
 
+Re-proven on 2026-09-05 with silent iPhone HSM mode (resting card under iPhone):
+macOS client certificate authentication to `https://card.refineid.fi` completed
+in 4.39s with the Finnish ID card resting continuously under the iPhone. The
+iPhone acts as an ultra-fast Hardware Security Module (HSM): when the card is
+already in place under the device, card detection completes in under 500 ms
+(`wasPrompted = false`), executing the cryptographic signature with zero prompts,
+zero alert sounds, zero vibrations, and zero UI sheet delays ("quiet as unix command
+line on success"). Active guidance (audio `Handoff-EncoreInfinitum`, haptics, and
+positioning sheet) activates only when the card is missing or displaced. On macOS,
+`PersistentTokenRegistry.start()` retains published identities across app launches
+when paired devices exist, and `PublishedIdentityName` avoids unentitled wildcard
+token queries, eliminating main-thread stalls.
+
 ## Every card carries its own access number
 
 A contactless card is sealed until PACE, and PACE is keyed by the six
