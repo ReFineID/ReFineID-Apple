@@ -2,6 +2,7 @@
 
 import CardCore
 import Foundation
+import OSLog
 import Security
 import UniformTypeIdentifiers
 
@@ -34,6 +35,8 @@ internal enum AsicSigner {
     /// reserves some names, and two files cannot share one.
     case unusableName
   }
+
+  private static let logger = Logger(subsystem: "fi.refineid.ReFineID", category: "asic-signer")
 
   /// Fallback media type for a file no type database knows.
   private static let unknownMediaType = "application/octet-stream"
@@ -108,14 +111,21 @@ internal enum AsicSigner {
     _ objects: [AsicContainer.DataObject]
   ) async throws -> Data {
     let signedAt = Date()
+    let documentName = objects.count == 1 ? objects[0].name : "ASiC-E container"
+    logger.notice(
+      "[AsicSigner] signRemotely: signing \(objects.count, privacy: .public) objects"
+    )
     let product = try await DocumentSigner.remoteQualifiedSignature(
-      documentName: objects.count == 1 ? objects[0].name : "ASiC-E container",
+      documentName: documentName,
       expectedCertificate: nil
     ) { certificate in
       Self.plannedSignedInfo(
         objects: objects, certificate: certificate, signedAt: signedAt
       )
     }
+    logger.notice(
+      "[AsicSigner] signRemotely: received remote signature product, assembling container"
+    )
     return try await Self.assembled(
       from: product, objects: objects, signedAt: signedAt
     )
@@ -191,7 +201,14 @@ internal enum AsicSigner {
   ) -> Data {
     guard
       let parsed = SecCertificateCreateWithData(nil, certificate as CFData),
-      let profile = CardKeyProfile.resolve(fromCertificate: parsed),
+      let profile = CardKeyProfile.resolve(fromCertificate: parsed)
+    else {
+      logger.notice(
+        "[AsicSigner] plannedSignedInfo: failed to parse certificate or resolve profile"
+      )
+      return Data()
+    }
+    guard
       let plan = XadesSignature.plan(
         objects: objects,
         certificate: certificate,
@@ -199,8 +216,16 @@ internal enum AsicSigner {
         signedAt: signedAt
       )
     else {
+      let count = objects.count
+      logger.notice(
+        "[AsicSigner] plannedSignedInfo: XadesSignature.plan returned nil for \(count, privacy: .public) items"
+      )
       return Data()
     }
+    let infoCount = plan.signedInfo.count
+    logger.notice(
+      "[AsicSigner] plannedSignedInfo: generated signedInfo (\(infoCount, privacy: .public) bytes)"
+    )
     return plan.signedInfo
   }
 

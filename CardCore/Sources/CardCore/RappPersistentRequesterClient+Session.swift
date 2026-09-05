@@ -120,12 +120,10 @@
       _ event: RappConnectionCoordinator.Event,
       from coordinator: RappConnectionCoordinator
     ) async {
-      #if DEBUG
-        let eventDesc = String(describing: event)
-        Self.logger.notice(
-          "[RappRequester] coordinator event: \(eventDesc, privacy: .public)"
-        )
-      #endif
+      let eventDesc = String(describing: event)
+      Self.logger.notice(
+        "[RappRequester] coordinator event: \(eventDesc, privacy: .public)"
+      )
       switch event {
       case .established:
         await beginOperation(on: coordinator)
@@ -136,19 +134,29 @@
         if let response {
           finish(response: response)
         } else {
+          Self.logger.notice("[RappRequester] completed with unexpected result")
           finish(error: .unexpectedResult)
         }
 
       case .terminal(_, _, let reason):
+        Self.logger.notice(
+          "[RappRequester] coordinator terminal reason: \(String(describing: reason), privacy: .public)"
+        )
         await coordinator.close()
         finish(error: .terminal(reason))
 
-      case .closed:
+      case .closed(let reason):
+        Self.logger.notice(
+          "[RappRequester] coordinator closed: \(String(describing: reason), privacy: .public)"
+        )
         finish(error: .transport)
 
       case .inspectPrerequisites, .awaitUserApproval, .executeSafeRead,
         .executeCardCommand, .advisoryCancellation, .operationFinished,
         .peerBusy, .peerUnknownOperation:
+        Self.logger.notice(
+          "[RappRequester] coordinator unexpected proxy event on requester: \(eventDesc, privacy: .public)"
+        )
         await coordinator.close()
         finish(error: .protocolFailure)
       }
@@ -166,19 +174,15 @@
       do {
         try await dispatchOperation(operation, on: coordinator, lifetime: lifetime)
       } catch let localError as RappOperationDriver.LocalError where localError == .wrongPhase {
-        #if DEBUG
-          Self.logger.notice(
-            "[RappRequester] beginOperation failed with wrongPhase: \(String(describing: localError), privacy: .public)"
-          )
-        #endif
+        Self.logger.notice(
+          "[RappRequester] beginOperation failed with wrongPhase: \(String(describing: localError), privacy: .public)"
+        )
         await coordinator.close()
         finish(error: .transport)
       } catch {
-        #if DEBUG
-          Self.logger.notice(
-            "[RappRequester] beginOperation failed: \(String(describing: error), privacy: .public)"
-          )
-        #endif
+        Self.logger.notice(
+          "[RappRequester] beginOperation failed: \(String(describing: error), privacy: .public)"
+        )
         await coordinator.close()
         finish(error: .protocolFailure)
       }

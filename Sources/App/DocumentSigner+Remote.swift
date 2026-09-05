@@ -3,6 +3,7 @@
 import CardCore
 import CryptoKit
 import Foundation
+import OSLog
 import Security
 
 extension DocumentSigner {
@@ -26,6 +27,7 @@ extension DocumentSigner {
     }
   }
 
+  private static let logger = Logger(subsystem: "fi.refineid.ReFineID", category: "document-signer")
   private static let remoteSignatureCertificateCache = RemoteCertificateCache()
 
   /// A selected RAPP phone is the signing device only when no local reader
@@ -203,6 +205,10 @@ extension DocumentSigner {
     var signingError: Error?
     for attempt in 1...RemoteSigningPolicy.maximumSigningAttempts {
       do {
+        let maxAttempts = RemoteSigningPolicy.maximumSigningAttempts
+        logger.notice(
+          "[DocumentSigner] remote signing attempt \(attempt, privacy: .public)/\(maxAttempts, privacy: .public)"
+        )
         let signingClient = RappPersistentRequesterClient(displayName: displayName)
         let signatureResponse = try signingClient.perform(
           .documentSigning(
@@ -213,11 +219,18 @@ extension DocumentSigner {
           )
         )
         if case .signature(let signature) = signatureResponse {
+          logger.notice(
+            "[DocumentSigner] remote signing succeeded: \(signature.count, privacy: .public) bytes"
+          )
           return signature
         }
         throw Failure.card(.failed)
       } catch let error as RappRequesterClientError {
         signingError = error
+        let errorDesc = String(describing: error)
+        logger.notice(
+          "[DocumentSigner] attempt \(attempt, privacy: .public) failed: \(errorDesc, privacy: .public)"
+        )
         guard Self.isRecoverableRemoteError(error),
           attempt < RemoteSigningPolicy.maximumSigningAttempts
         else {
@@ -225,6 +238,10 @@ extension DocumentSigner {
         }
         Thread.sleep(forTimeInterval: RemoteSigningPolicy.retryDelaySeconds)
       } catch {
+        let errorDesc = String(describing: error)
+        logger.notice(
+          "[DocumentSigner] attempt \(attempt, privacy: .public) non-client error: \(errorDesc, privacy: .public)"
+        )
         throw error
       }
     }

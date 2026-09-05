@@ -127,7 +127,11 @@ internal final class DocumentSigningUITests: XCTestCase {
         throw XCTSkip("REFINEID_TEST_PIN2 environment variable is required")
       }
       let app = XCUIApplication()
-      app.launch()
+      if app.state == .runningForeground || app.state == .runningBackground {
+        app.activate()
+      } else {
+        app.launch()
+      }
 
       let interruptionToken = addUIInterruptionMonitor(withDescription: "Near-Field Sheet") { _ in
         // Never synthesize a dismissal for system alerts/sheets during near-field operations
@@ -143,12 +147,18 @@ internal final class DocumentSigningUITests: XCTestCase {
         "Signing authorization alert did not appear within timeout"
       )
 
-      let pinField = alert.secureTextFields.firstMatch
+      let pinField =
+        alert.secureTextFields["rappPin2"].exists
+        ? alert.secureTextFields["rappPin2"]
+        : alert.secureTextFields.firstMatch
       XCTAssertTrue(pinField.waitForExistence(timeout: 5), "PIN 2 field in alert not found")
       pinField.tap()
       pinField.typeText(pin2Digits)
 
-      let okButton = alert.buttons["OK"].firstMatch
+      let okButton =
+        alert.buttons["rappApprove"].exists
+        ? alert.buttons["rappApprove"]
+        : (alert.buttons["OK"].exists ? alert.buttons["OK"] : alert.buttons.element(boundBy: 1))
       XCTAssertTrue(okButton.waitForExistence(timeout: 5), "OK button missing in alert")
       let deadline = Date().addingTimeInterval(5)
       while Date() < deadline, !okButton.isEnabled {

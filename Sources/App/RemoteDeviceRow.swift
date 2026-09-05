@@ -51,17 +51,20 @@
         || trimmedName.caseInsensitiveCompare("iPad") == .orderedSame
         || trimmedName.caseInsensitiveCompare("Apple Device") == .orderedSame
         || trimmedName.caseInsensitiveCompare("Device") == .orderedSame
+        || trimmedName.contains(".rev.")
+        || trimmedName.contains(".dnainternet.")
+        || (trimmedName.contains(".") && !trimmedName.hasSuffix(".local"))
 
       if !trimmedModel.isEmpty,
         !isGenericName,
         trimmedName.caseInsensitiveCompare(trimmedModel) != .orderedSame
       {
-        return "\(trimmedModel) -- \(trimmedName)"
+        return "\(trimmedModel) — \(trimmedName)"
       }
       if !trimmedModel.isEmpty {
         return trimmedModel
       }
-      return trimmedName.isEmpty ? "Laite" : trimmedName
+      return (trimmedName.isEmpty || isGenericName) ? "Laite" : trimmedName
     }
 
     private var actionButtons: some View {

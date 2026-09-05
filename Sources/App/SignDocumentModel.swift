@@ -42,7 +42,7 @@
 
     /// Changes whenever the card leaves, invalidating card work already
     /// awaiting an answer without cancelling work that may still complete.
-    @ObservationIgnored private var cardAppearance = 0
+    @ObservationIgnored internal private(set) var cardAppearance = 0
 
     /// A non-fatal note about what the visible stamp could contain.
     internal private(set) var stampFailure: String?
@@ -352,8 +352,8 @@
       lastActionSignedSomething = true
     }
 
-    /// Reports a failure raised before the card was reached.
-    internal func report(_ message: String) {
+    /// Fails the current signing operation with an error message.
+    internal func fail(message: String) {
       failure = message
       signed = nil
       notice = nil
@@ -367,15 +367,6 @@
       failure = nil
       stampState = nil
       stampFailure = nil
-    }
-
-    /// Publishes a signing failure only while its card is still present.
-    ///
-    /// Internal, not private: the container signing in
-    /// SignDocumentModel+Batch.swift reports through the same gate.
-    internal func report(_ error: Error, from appearance: Int) {
-      guard appearance == cardAppearance else { return }
-      failure = Self.message(for: error)
     }
   }
 
