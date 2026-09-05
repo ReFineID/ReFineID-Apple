@@ -1,8 +1,8 @@
-# Status, 26.8.4
+# Status, 26.9.5
 
 What works, what does not, and what each was measured with. Written from
-device and Mac runs through 2026-08-03, not from intent. Code and document
-status below is current through 2026-08-04.
+device and Mac runs through 2026-09-05, not from intent. Code and document
+status below is current through 2026-09-05.
 
 ## ANSSI: the dossier is ready to sign
 
@@ -106,6 +106,20 @@ certificate `Perus (PIN 1) (KOISTINEN PETRI 14037871J)`, requested ECDSA P-384
 signing through `ReFineIDRappTokenExtension`, which relayed the request over
 the encrypted Noise stream to the phone. The phone verified PIN 1 on the card
 via NFC and returned the 96-byte signature, completing login.
+
+Re-proven on 2026-09-05 with remote card in physical reader on iPhone:
+macOS Safari client certificate authentication to `https://card.refineid.fi`
+over TLS 1.3 was completed end-to-end using an iPhone with an attached physical
+smart card reader acting as the RAPP authorization proxy. When Safari evaluated
+client identities, only PIN 1 authentication identities were offered (PIN 2
+identities are excluded from browser evaluations to prevent signing PIN prompts
+during web login). Upon selecting the identity, the signature request was
+relayed over the encrypted Noise session to the iPhone. The iPhone arbitrated
+with priority given to the inserted physical card over wireless NFC presence,
+raised a native interactive PIN 1 sheet on iOS, verified PIN 1 directly on the
+attached card reader, and returned the cryptographic signature to macOS Safari,
+successfully completing client TLS authentication. PIN 1 never left the iPhone,
+and all reader PIN 1 cache was zeroized upon card removal.
 
 ## Every card carries its own access number
 

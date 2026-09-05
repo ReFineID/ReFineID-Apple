@@ -1,7 +1,7 @@
-# Card transports: contact reader and iPhone NFC
+# Card transports: contact reader, iPhone NFC, and RAPP remote proxy
 
-ReFineID reaches a Finnish identity card over two physical transports.
-Both terminate in the same place -- a CryptoTokenKit token extension that
+ReFineID reaches a Finnish identity card over three operational transports.
+They terminate in the same place -- a CryptoTokenKit token extension that
 publishes the card's certificate and key to the keychain, so Safari,
 `URLSession`, and any other system consumer use the card as an ordinary
 client-certificate identity.
@@ -10,11 +10,13 @@ client-certificate identity.
 |---|---|---|---|
 | Contact / PC-SC reader | macOS, iPadOS, iOS (USB-C) | contact | PIN1 |
 | Phone antenna (NFC) | iOS 26+, iPadOS 26+ | contactless | CAN, then PIN1 |
+| Remote proxy (RAPP) | macOS (requester) via iOS 26+ (proxy) | contact or contactless on phone | PIN1 prompted natively on phone |
 
-Both transports are production features on iPhone. Its TestFlight and App
+Both local transports are production features on iPhone. Its TestFlight and App
 Store builds must include the built-in NFC path. NFC is not a diagnostic
 facility or future roadmap item, and a bug in automatic activation must be
-fixed without disabling that path.
+fixed without disabling that path. Remote proxy (RAPP) enables a Mac to use
+a card held by an iPhone without physical card reader hardware on the Mac.
 
 macOS has no NFC smart-card slot at all: `TKSmartCardSlotManager`'s NFC
 surface is `API_UNAVAILABLE(macos)`. Every NFC path in this repository is
@@ -124,6 +126,33 @@ platform limitation when broken.
 A cross-process token use also raises a one-time system "Token Access
 Request" dialog. Until the user grants it, identity queries block for
 roughly 25 seconds and then return `errSecItemNotFound`.
+
+## The Remote Authorization Proxy Protocol (RAPP) transport
+
+RAPP bridges macOS (and iPad requesters) to an iPhone authorizer over an
+end-to-end encrypted Noise channel (`Noise_KK` for sessions). This allows
+Mac Safari and system TLS clients to authenticate using a citizen card
+held on the phone without requiring a smart card slot or USB reader on the Mac.
+
+1. **Card interface on the proxy.** The iPhone proxy can reach the card
+   through its built-in NFC antenna or through an attached physical CCID reader
+   (Lightning or USB-C). When a physical reader is connected, it takes immediate
+   priority over contactless NFC presence.
+2. **Strict credential boundary.** PIN 1 and PIN 2 never leave the iPhone.
+   When the Mac initiates web authentication, the iPhone raises an interactive
+   native PIN 1 sheet. The PIN is presented directly to the attached card or
+   contactless chip on the phone. Only the resulting cryptographic signature is
+   returned across the encrypted RAPP channel.
+3. **Reader PIN 1 volatility.** Unlike NFC where PIN 1 may be stored in the
+   local keychain if explicitly configured by the holder, a physical reader card's
+   PIN 1 exists only in volatile memory during the physical insertion. The moment
+   the card is disconnected or the reader unplugged, cached PIN 1 state is
+   immediately zeroized.
+4. **Encrypted in-band card departure.** When a card is disconnected during an
+   active proxy session, the proxy immediately transmits an encrypted in-band
+   `session.close(card_unavailable)` message. This unblocks the Mac browser
+   prompt instantly without exposing card presence transitions to passive network
+   eavesdroppers.
 
 ## What is still open
 

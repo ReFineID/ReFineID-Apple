@@ -5,6 +5,56 @@ controls iPhone scope. `Documentation/release-plan.md` controls
 macOS scope and shared security behavior. This file records the concrete
 values chosen under them.
 
+## 2026-09-05 Physical smart card reader takes priority over wireless presence on RAPP proxy
+
+When an iPhone acts as a RAPP authorization proxy and has a physical CCID
+smart card reader attached (via USB-C or Lightning), the card in the physical
+reader takes immediate operational priority over any wireless or stored
+NFC presence. This prevents race conditions where the app might poll for
+contactless NFC when an inserted contact card is already present and ready
+for immediate operation.
+
+## 2026-09-05 Native iOS PIN1 prompt on iPhone for RAPP proxy web authentication
+
+During remote web authentication initiated from a Mac via RAPP, PIN 1 is
+prompted natively and interactively on the iPhone screen. PIN 1 never leaves
+the iPhone and is never transmitted over the network or the RAPP wire.
+Furthermore, unlike contactless NFC cards where PIN 1 may be stored in the
+keychain upon explicit holder enablement, a physical reader card's accepted
+PIN 1 exists only in volatile memory during the active insertion session.
+Upon physical card disconnection or reader detachment, all cached PIN 1 state
+on the phone is immediately zeroized.
+
+## 2026-09-05 Restrict macOS CryptoTokenKit browser identities to PIN 1 authentication
+
+On macOS, Safari and other WebKit consumers evaluate available client identities
+from CryptoTokenKit tokens. Exposing both PIN 1 (authentication) and PIN 2
+(qualified electronic signature) identities causes browsers to present both or
+attempt client TLS authentication using PIN 2, which either fails or prompts the
+holder unexpectedly for a signing PIN during a login flow. PIN 2 identities are
+therefore excluded from the system browser client certificate list, preserving
+PIN 2 strictly for explicit in-app document signing.
+
+## 2026-09-05 Encrypted in-band departure signaling for card removal
+
+When a card is removed from an iPhone's reader during an active RAPP proxy session,
+the event is communicated immediately to the connected Mac using an encrypted,
+in-band RAPP `session.close` message with reason `card_unavailable`. Signaling
+in-band over the existing Noise session rather than dropping the transport or
+emitting out-of-band notifications protects against network eavesdroppers
+inferring the physical presence or absence of citizen cards via traffic analysis,
+while allowing the Mac browser UI to recover cleanly without hanging until timeout.
+See `Documentation/card-departure-privacy-and-signaling-plan.md`.
+
+## 2026-09-05 Drop iOS 16 backport; floor remains iOS 26 and macOS 26
+
+The experimental backport of `CardCore` to iOS 16 for legacy iPad requester
+hardware was evaluated and deemed infeasible. Shimming modern concurrency,
+`InlineArray`, and missing CryptoTokenKit capabilities introduced brittle fallback
+paths that could compromise safety and auditability. The local branch `ipad-ios16`
+was deleted, and the project's strict deployment floor remains iOS 26.0 and
+macOS 26.0 across all configurations.
+
 ## 2026-08-23 PIN1 lives on the token, not on a timer
 
 A reader PIN1 the card has accepted is cached on that live CryptoTokenKit

@@ -1,6 +1,6 @@
 # macOS App Store release plan
 
-Last reviewed: 2026-08-17
+Last reviewed: 2026-09-05
 
 This document defines the product, security, validation, and distribution gates
 for the Swift macOS ReFineID release. [TASKS.md](../TASKS.md) is the
@@ -23,8 +23,11 @@ in its TestFlight and App Store builds. Its scope is controlled by
 Ship a small, trustworthy macOS App Store product named **ReFineID**.
 
 The application contains the CryptoTokenKit smart-card extension that macOS
-loads for a supported card and a separate persistent-token extension for a
-RAPP-paired iPhone authorizer.
+loads for a supported card, with direct contact reader signing enabled in the
+initial store release. A separate persistent-token extension for a RAPP-paired
+iPhone authorizer is fully developed in Debug and Profile configurations and
+compile-gated out of shipping store builds (`hasRapp: false`) pending physical
+qualification.
 
 User story is:
 
@@ -41,20 +44,21 @@ User story is:
 
 - A sandboxed, native Swift macOS application.
 - A native Swift CryptoTokenKit smart-card token extension embedded in the app.
-- A separate macOS persistent-token extension that delegates explicitly
-  authorized card operations to a cryptographically paired iPhone through
-  RAPP without transferring CAN, PIN 1, or PIN 2 to the Mac.
+- In Debug/Profile (and subsequent RAPP release): a persistent-token extension
+  that delegates explicitly authorized card operations to a cryptographically
+  paired iPhone through RAPP without transferring CAN, PIN 1, or PIN 2 to the Mac.
 - Supported-card, reader, extension, and application version status.
 - Display of PIN1, PIN2, and PUK attempts remaining.
-- Publication of the card's PIN1 authentication identity to macOS.
+- Publication of the card's PIN1 authentication identity to macOS for browser/TLS use.
 - PIN1-gated authentication signatures for the explicitly supported card and
   key profiles.
-- A memory-only, card-bound PIN1 convenience cache
+- A memory-only, card-bound PIN1 convenience cache.
 - Card management in the app: card activation, PIN1/PIN2 changes, and PUK
   unblock, each behind the same side-effect-free retry floor as
   authentication.
-- Publication of the card's PIN2 qualified-signature identity, gated behind
-  a per-signature PIN2 prompt with no cache.
+- PIN2 qualified-signature support for explicit in-app document signing,
+  gated behind a per-signature PIN2 prompt with no cache. (PIN2 identities
+  are excluded from WebKit/browser client certificate evaluation).
 - Clear no-card, unsupported-card, low-retry, locked-card, and uncertain-state
   guidance in Finnish, Swedish, and English.
 
@@ -81,11 +85,19 @@ implementation.
 
 ## Architecture
 
-The production archive has one containing application and two separate
-embedded macOS app extensions:
+The shipping App Store archive embeds the direct smart-card token extension:
 
 ```text
 ReFineID.app
+|-- Contents/MacOS/ReFineID
+|-- Contents/PlugIns/ReFineIDTokenExtension.appex
+`-- Contents/Resources/...
+```
+
+Development and Profile builds embed both extensions, enabling RAPP testing:
+
+```text
+ReFineID.app (Debug/Profile)
 |-- Contents/MacOS/ReFineID
 |-- Contents/PlugIns/ReFineIDTokenExtension.appex
 |-- Contents/PlugIns/ReFineIDRappTokenExtension.appex
@@ -96,7 +108,7 @@ The repository keeps a stable Xcode project or workspace in version control.
 It must not depend on a project generator during Xcode Cloud onboarding or
 release builds.
 
-The Swift implementation follows the Rust reference implementation.
+The Swift implementation follows the protocol specification and formal model.
 
 ### Retry floor
 

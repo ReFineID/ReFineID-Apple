@@ -80,7 +80,7 @@ The handwritten Swift integration is under `CardCore/Sources/CardCore/`:
 - `RappPairCatalog.swift` tracks paired peers and the selected pair.
 - `RappPairingCoordinator.swift` drives the pairing ceremony.
 - `RappClosureFrameTransport.swift` adapts framed RAPP traffic to an Apple
-  transport without moving protocol logic out of Rust.
+  transport without moving protocol logic out of `RappEngine`.
 - `RappConnectionCoordinator.swift` owns connection-level lifecycle.
 - `RappSessionDriver.swift` drives one authenticated RAPP session.
 - `RappOperationDriver.swift` drives operation request/authorization/result
@@ -91,8 +91,8 @@ The handwritten Swift integration is under `CardCore/Sources/CardCore/`:
   used by persistent token operations.
 
 `PersistentCardRelay.swift` is connected to this layer. Keep transport and
-card-operation effects outside the Rust state machine, but let Rust decide
-which transition and output are legal.
+card-operation effects outside the `RappEngine` state machine, but let `RappEngine`
+decide which transition and output are legal.
 
 ## Stream transport
 
@@ -100,11 +100,11 @@ which transition and output are legal.
 requester participate without MultipeerConnectivity. The underlay is plain
 TCP. Every frame is a 2-byte big-endian length prefix plus payload; a zero
 length is malformed and the prefix bounds every allocation. The requester
-listens and the proxy dials, for pairing and for sessions. Immediately
+lists and the proxy dials, for pairing and for sessions. Immediately
 after connecting, before any Noise byte, the proxy sends one plaintext
-preamble frame whose bytes come from the Rust core
-(`rappStreamPairingPreamble` / `rappStreamSessionPreamble`); Swift never
-constructs those bytes.
+preamble frame whose bytes come from `RappEngine`
+(`rappStreamPairingPreamble` / `rappStreamSessionPreamble`); the transport
+layer never constructs those bytes.
 
 - `CardCore/Sources/CardCore/StreamRelaySession.swift` is the TCP dialer:
   ordered endpoint attempts, preamble-first send, bounded frames, a
@@ -120,12 +120,11 @@ constructs those bytes.
   automatic redials pause between attempts. MultipeerConnectivity pairs
   keep today's behavior.
 - Pairing over the stream profile is wired through the scan flow. The
-  generated bridge's `offerCandidates()` lists the scanned offer's
-  transport candidates with stream endpoints decoded in Rust;
-  `RappScannedOffer.candidates` wraps it in CardCore and destroys the
-  decoding bridge before returning. The phone selects the Apple-peer
-  candidate when the offer carries one, else the first stream candidate
-  with endpoints; for stream it dials those endpoints with
+  bridge's `offerCandidates()` lists the scanned offer's
+  transport candidates with stream endpoints decoded in `RappEngine`;
+  `RappScannedOffer.candidates` wraps it in CardCore. The phone selects the
+  Apple-peer candidate when the offer carries one, else the first stream
+  candidate with endpoints; for stream it dials those endpoints with
   `rappStreamPairingPreamble()` over `StreamRelaySession` and runs the
   unchanged pairing coordinator across that connection. An offer with
   neither usable candidate fails visibly.
@@ -142,8 +141,9 @@ The application layer is under `Sources/App/`:
 - `RappPairingUI.swift` presents QR pairing and visible paired status.
 - `RappAuthorizationInbox.swift` serializes holder-visible authorization
   decisions on the phone.
-- `RappNfcCardExecutor.swift` performs authorized card work through the normal
-  NFC/card code paths.
+- `RappNfcCardExecutor.swift` and attached physical smart card reader execution
+  perform authorized card work through the phone's card code paths, prioritizing
+  an attached physical CCID reader over wireless NFC presence.
 - `RappPhoneProxyDispatcher.swift` dispatches authenticated remote requests to
   the phone authorizer.
 - `PhonePersistentTokenRelay.swift` carries the phone side of persistent token
