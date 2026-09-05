@@ -23,31 +23,47 @@
       return await withCheckedContinuation { continuation in
         DispatchQueue.global(qos: .userInitiated).async {
           for candidate in cards {
-            let answer: CardSessionResult<Payload>? = try? SmartCardChannel(candidate.card)
-              .withSession { channel in
-                do {
-                  let operations = try connectionOperations(
-                    over: channel,
-                    cardAccessNumber: cardAccessNumber
-                  )
-                  return .connected(operation(operations))
-                } catch ConnectionFailure.wrongCardAccessNumber {
-                  return .wrongCardAccessNumber
-                } catch {
-                  return .failed
-                }
-              }
+            guard
+              let answer = runReaderSession(
+                candidate: candidate,
+                cardAccessNumber: cardAccessNumber,
+                operation
+              )
+            else { continue }
             switch answer {
             case .connected, .wrongCardAccessNumber:
               continuation.resume(returning: answer)
               return
-
-            case .failed, .none:
+            case .failed:
               break
             }
           }
           continuation.resume(returning: .failed)
         }
+      }
+    }
+
+    private static func runReaderSession<Payload: Sendable>(
+      candidate: UncheckedCard,
+      cardAccessNumber: String?,
+      _ operation: @escaping @Sendable (CardOperations) -> Payload
+    ) -> CardSessionResult<Payload>? {
+      do {
+        return try SmartCardChannel(candidate.card).withSession { channel in
+          do {
+            let operations = try connectionOperations(
+              over: channel,
+              cardAccessNumber: cardAccessNumber
+            )
+            return .connected(operation(operations))
+          } catch ConnectionFailure.wrongCardAccessNumber {
+            return .wrongCardAccessNumber
+          } catch {
+            return .failed
+          }
+        }
+      } catch {
+        return nil
       }
     }
 

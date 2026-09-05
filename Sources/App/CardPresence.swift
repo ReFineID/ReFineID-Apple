@@ -84,9 +84,11 @@ internal final class CardPresence: ObservableObject {
       #if os(iOS) && REFINEID_LOCAL_CARD
         HolderCardServing.availabilityChanged()
       #endif
-      if isReaderCardPresent {
-        PersistentTokenRegistry.shared.readerCardPresenceChanged(isReaderCardPresent: true)
-      }
+      #if os(macOS)
+        if isReaderCardPresent {
+          PersistentTokenRegistry.shared.readerCardPresenceChanged(isReaderCardPresent: true)
+        }
+      #endif
     }
   }
 
@@ -141,7 +143,9 @@ internal final class CardPresence: ObservableObject {
       #if os(iOS) && REFINEID_LOCAL_CARD
         HolderCardServing.availabilityChanged()
       #endif
-      PersistentTokenRegistry.shared.readerCardPresenceChanged(isReaderCardPresent: readerPresent)
+      #if os(macOS)
+        PersistentTokenRegistry.shared.readerCardPresenceChanged(isReaderCardPresent: readerPresent)
+      #endif
     }
     let readerConnected = slots.contains { name, _ in
       CardTransport.transport(forSlotNamed: name) == .reader

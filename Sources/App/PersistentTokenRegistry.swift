@@ -305,6 +305,10 @@
           fetched = certificate
           fetchedSerial = cardSerial
         } catch {
+          #if DEBUG
+            print("[persistent-token] perform(.readAuthenticationCertificate) failed: \(error)")
+            fflush(stdout)
+          #endif
           fetched = nil
           fetchedSerial = nil
         }
