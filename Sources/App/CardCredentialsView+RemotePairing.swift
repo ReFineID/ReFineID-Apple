@@ -78,6 +78,7 @@ import SwiftUI
         pairingModel.refresh()
         RappAutoPairingService.shared.reconcile()
         #if os(iOS) && REFINEID_LOCAL_CARD
+          phoneRelay.resumeServing()
           phoneRelay.updatePeerOnlineState()
         #endif
       }
@@ -134,13 +135,17 @@ import SwiftUI
 
     private var connectedStatusChip: some View {
       Button(isActivelyConnected ? String(localized: "Connected") : String(localized: "Offline")) {
-        // Status only; the minus control drops the pairing.
+        #if os(iOS) && REFINEID_LOCAL_CARD
+          if !isActivelyConnected {
+            phoneRelay.resumeAfterUserAction()
+            RappAutoPairingService.shared.reconcile()
+          }
+        #endif
       }
       .buttonStyle(.bordered)
       .tint(isActivelyConnected ? .green : .secondary)
       .controlSize(.small)
-      .allowsHitTesting(false)
-      .accessibilityRemoveTraits(.isButton)
+      .allowsHitTesting(!isActivelyConnected)
     }
 
     @ViewBuilder private var inlinePairingControls: some View {

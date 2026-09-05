@@ -28,6 +28,9 @@ import Foundation
     /// while the dead one is still being advertised.
     private static let serviceAttempts = 5
 
+    /// How long to pause between failed service dials so the listener has time to settle.
+    private static let serviceRedialDelaySeconds: TimeInterval = 0.25
+
     private let endpoints: [StreamRelayEndpoint]
     private let preamble: Data
     private let onEvent: @Sendable (StreamRelayEvent) -> Void
@@ -191,12 +194,7 @@ import Foundation
         break
 
       case .failed:
-        if isReady {
-          finish(.disconnected)
-        } else {
-          connection.cancel()
-          dialNext()
-        }
+        handleDialFailed(isReady: isReady, connection: connection)
 
       case .cancelled:
         finish(.cancelled)
@@ -206,6 +204,23 @@ import Foundation
 
       @unknown default:
         break
+      }
+    }
+
+    private func handleDialFailed(isReady: Bool, connection: NWConnection) {
+      if isReady {
+        finish(.disconnected)
+      } else {
+        generation += 1
+        connection.cancel()
+        let delay = service != nil ? Self.serviceRedialDelaySeconds : 0
+        if delay > 0 {
+          queue.asyncAfter(deadline: .now() + delay) { [weak self] in
+            self?.dialNext()
+          }
+        } else {
+          dialNext()
+        }
       }
     }
 

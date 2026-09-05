@@ -56,7 +56,8 @@
     /// either freshly entered, or remembered from a signature within
     /// the last minute.
     private var canSign: Bool {
-      signing.pending != nil
+      availability == .ready
+        && signing.pending != nil
         && (!asksLocalPin2 || Self.isEntryComplete(pin2) || pin2Cache.isWarm)
         && !signing.working
         // Not while the card is being read for the stamp: it is one
@@ -78,13 +79,6 @@
       #endif
     }
 
-    /// Whether the status form has any content to display.
-    private var hasFormContent: Bool {
-      offeringNumber || awaitingAccessNumber || activation.awaitsActivation
-        || availability == .ready || activation.isReading
-        || shouldShowPairingPrompt || availability != .noCard
-    }
-
     internal var body: some View {
       VStack(alignment: .leading, spacing: Self.spacing) {
         HStack {
@@ -92,9 +86,7 @@
             .font(.largeTitle.bold())
           Spacer()
         }
-        if hasFormContent {
-          statusForm
-        }
+        statusForm
       }
       .padding(Self.padding)
       .frame(minWidth: minimumWidth, alignment: .leading)
@@ -136,20 +128,21 @@
       } else if activation.awaitsActivation {
         CardActivationSection(model: activation.management) { model.refresh() }
         CardOutcomeSection(model: activation.management)
-      } else if availability == .ready {
-        readySection
       } else if activation.isReading {
         readingSection
       } else if shouldShowPairingPrompt {
         pairingPromptSection
-      } else if availability != .noCard {
-        unusableSection
+      } else {
+        readySection
       }
     }
 
     @ViewBuilder private var readySection: some View {
       LabeledContent("Person") {
-        IdentityStateView(availability: availability, warnsUnavailableCard: false)
+        IdentityStateView(
+          availability: availability,
+          warnsUnavailableCard: activation.warnsUnavailableCard
+        )
       }
       .accessibilityIdentifier("loginIdentityStatus")
       StatusDocumentSection(
@@ -180,16 +173,6 @@
 
     @ViewBuilder private var pairingPromptSection: some View {
       RemotePairingPromptView()
-    }
-
-    @ViewBuilder private var unusableSection: some View {
-      LabeledContent("Person") {
-        IdentityStateView(
-          availability: availability,
-          warnsUnavailableCard: activation.warnsUnavailableCard
-        )
-      }
-      .accessibilityIdentifier("loginIdentityStatus")
     }
 
     private func handleAppear() {
@@ -229,7 +212,7 @@
         // A CCID protocol reset can publish this between T=Any and its
         // successful T=0/T=1 fallback. Defer removal cleanup until the
         // card operation itself has ended.
-        guard !activation.defersRemoval else { return }
+        guard !activation.defersRemoval, !signing.working else { return }
         retryHealth.clear()
         model.cancelRecovery(cardLeft: true)
         signing.cardRemoved()

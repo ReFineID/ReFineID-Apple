@@ -11,25 +11,36 @@ import Foundation
   /// that has already published a borrowed identity has to know when that
   /// service leaves, so the identity can leave with it.
   public final class StreamRelayPresence: @unchecked Sendable {
-    private let name: String
-    private let onChange: @Sendable (Bool) -> Void
+    /// The primary Bonjour service name this watcher browses for.
+    public var name: String { matchingNames.first ?? "" }
+    /// The set of Bonjour service names this watcher browses for.
+    public let matchingNames: Set<String>
+    private let onChange: @Sendable (Bool, String?) -> Void
     private let queue = DispatchQueue(label: "fi.refineid.stream-presence")
     private var browser: NWBrowser?
     private var isPresent = false
+    private var currentMatchedName: String?
     private var hasDelivered = false
 
-    /// Reports presence of the service published under `name`.
-    ///
-    /// The first empty browse is not an absence: the name service has not
-    /// answered yet. Absence is delivered only after the service has been
-    /// seen.
+    /// Reports presence of any service published under `names`.
     @preconcurrency
     public init(
+      matching names: Set<String>,
+      onChange: @escaping @Sendable (Bool, String?) -> Void
+    ) {
+      self.matchingNames = names
+      self.onChange = onChange
+    }
+
+    /// Reports presence of the service published under `name`.
+    @preconcurrency
+    public convenience init(
       matching name: String,
       onChange: @escaping @Sendable (Bool) -> Void
     ) {
-      self.name = name
-      self.onChange = onChange
+      self.init(matching: [name]) { present, _ in
+        onChange(present)
+      }
     }
 
     /// Starts browsing.
@@ -56,30 +67,38 @@ import Foundation
     }
 
     private func apply(_ results: Set<NWBrowser.Result>) {
-      guard !name.isEmpty else {
+      guard !matchingNames.isEmpty else {
         if isPresent {
           isPresent = false
-          onChange(false)
+          currentMatchedName = nil
+          onChange(false, nil)
         }
         return
       }
-      let found = results.contains { result in
+      var matchedName: String?
+      for result in results {
         guard case .service(let serviceName, _, _, _) = result.endpoint else {
-          return false
+          continue
         }
-        return serviceName == name
+        if matchingNames.contains(serviceName) {
+          matchedName = serviceName
+          break
+        }
       }
+      let found = matchedName != nil
       if !hasDelivered {
         hasDelivered = true
         isPresent = found
+        currentMatchedName = matchedName
         if found {
-          onChange(true)
+          onChange(true, matchedName)
         }
         return
       }
-      guard found != isPresent else { return }
+      guard found != isPresent || matchedName != currentMatchedName else { return }
       isPresent = found
-      onChange(found)
+      currentMatchedName = matchedName
+      onChange(found, matchedName)
     }
   }
 #endif

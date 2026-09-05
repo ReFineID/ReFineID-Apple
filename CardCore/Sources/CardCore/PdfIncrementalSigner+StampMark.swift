@@ -120,16 +120,19 @@ extension PdfIncrementalSigner {
     else {
       throw PdfSigningError.structureUnreadable
     }
-    let carrying =
-      page.contains("/Annots")
-      ? Self.appendingToNamedArray(page, key: "/Annots", entry: numbers.field)
-      : Self.insertingIntoDictionary(
-        page, entry: "/Annots [\(numbers.field) 0 R]"
-      )
-    offsets[placement.page] = out.count
-    out.append(
-      Data("\(placement.page) 0 obj\n\(carrying)\nendobj\n".utf8)
+    let pageEntry = Self.pageReissue(
+      source: source,
+      page: page,
+      pageNumber: placement.page,
+      field: numbers.field
     )
+    offsets[pageEntry.number] = out.count
+    guard let body = pageEntry.body.data(using: .isoLatin1) else {
+      throw PdfSigningError.structureUnreadable
+    }
+    out.append(Data("\(pageEntry.number) 0 obj\n".utf8))
+    out.append(body)
+    out.append(Data("\nendobj\n".utf8))
     try Self.appendFormReissue(
       into: &out,
       offsets: &offsets,
@@ -178,10 +181,22 @@ extension PdfIncrementalSigner {
     index: PdfDocumentIndex,
     document: Data
   ) -> Int {
-    guard let range = page.range(of: "/Annots") else { return 0 }
-    let rest = page[range.upperBound...].drop(while: \.isWhitespace)
-    guard rest.first == "[" else { return 0 }
-    let listing = rest.dropFirst().prefix { character in character != "]" }
+    let listing: Substring
+    if let annotsNumber = PdfDocumentIndex.reference(named: "/Annots", in: page),
+      let annots = index.body(of: annotsNumber, in: document)
+    {
+      guard
+        let open = annots.firstIndex(of: "["),
+        let close = annots[open...].firstIndex(of: "]")
+      else { return 0 }
+      listing = annots[annots.index(after: open)..<close]
+    } else if let range = page.range(of: "/Annots") {
+      let rest = page[range.upperBound...].drop(while: \.isWhitespace)
+      guard rest.first == "[" else { return 0 }
+      listing = rest.dropFirst().prefix { character in character != "]" }
+    } else {
+      return 0
+    }
     let numbers = listing.split(separator: "R").compactMap { part in
       Int(part.split(whereSeparator: \.isWhitespace).first ?? "")
     }

@@ -67,7 +67,7 @@ extension PdfIncrementalSigner {
   }
 
   /// The page object reissued so its annotations include the widget.
-  private static func pageReissue(
+  internal static func pageReissue(
     source: RevisionSource,
     page: String,
     pageNumber: Int,
@@ -295,7 +295,7 @@ extension PdfIncrementalSigner {
   }
 
   /// The first page object: descend the tree's first kid.
-  private static func firstPage(
+  internal static func firstPage(
     index: PdfDocumentIndex,
     document: Data,
     catalog: String

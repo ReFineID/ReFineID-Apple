@@ -2,6 +2,7 @@
 
 #if os(macOS)
 
+  import CardCore
   import os.log
   import SwiftUI
 
@@ -102,9 +103,21 @@
         }
 
       case .noCard:
-        Text("Insert your card")
-          .foregroundStyle(.secondary)
+        if CardPresence.shared.isReaderConnected {
+          Text("Insert your card")
+            .foregroundStyle(.secondary)
+        } else if hasPairedDevice {
+          Text("Waiting for the phone")
+            .foregroundStyle(.secondary)
+        } else {
+          Text("Insert your card")
+            .foregroundStyle(.secondary)
+        }
       }
+    }
+
+    private var hasPairedDevice: Bool {
+      (try? RappDeviceVault().activePairIDs().isEmpty == false) ?? false
     }
 
     /// Follows one availability and reads the name when ready.

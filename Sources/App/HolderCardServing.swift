@@ -43,7 +43,12 @@
         }
         return
       }
-      guard wasAbleToServe != canServe else { return }
+      guard wasAbleToServe != canServe else {
+        if canServe, !PhonePersistentTokenRelay.shared.isServing {
+          PhonePersistentTokenRelay.shared.resumeServing()
+        }
+        return
+      }
       wasAbleToServe = canServe
       if canServe {
         PhonePersistentTokenRelay.shared.resumeAfterUserAction()

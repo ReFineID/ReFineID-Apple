@@ -36,11 +36,20 @@
       #endif
     }
 
+    /// Whether this Mac already has at least one paired remote device.
+    private var hasPairedDevice: Bool {
+      (try? RappDeviceVault().activePairIDs().isEmpty == false) ?? false
+    }
+
     /// Whether to prompt the user to connect a card reader or phone.
     internal var shouldShowPairingPrompt: Bool {
       !cardPresence.isReaderCardPresent
+        && !cardPresence.isReaderConnected
         && !holderIsAdvertising
         && availability == .noCard
+        && signingModel.pending == nil
+        && signingModel.queued.isEmpty
+        && !signingModel.working
     }
 
     /// Whether a paired phone has already answered with a certificate.

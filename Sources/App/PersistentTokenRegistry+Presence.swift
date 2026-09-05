@@ -17,13 +17,19 @@
       Duration.seconds(advertisementLossHoldSeconds)
     }
 
-    /// The published name both sides derive from the selected pairing.
-    private static func holderServiceName() -> String? {
-      guard let pairID = activePairID else { return nil }
+    /// All published names derived from all active pairings in the vault, mapped to pair IDs.
+    private static func activeHolderServiceNames() -> [String: Data] {
       let vault = RappDeviceVault()
-      guard let pair = try? RappPairRecord.loadFromVault(pairId: pairID, vault: vault)
-      else { return nil }
-      return StreamRendezvousName.name(sharing: pair.metadata().rendezvousToken)
+      let pairIDs = (try? vault.activePairIDs()) ?? []
+      var mapping: [String: Data] = [:]
+      for pairID in pairIDs {
+        guard let pair = try? RappPairRecord.loadFromVault(pairId: pairID, vault: vault) else {
+          continue
+        }
+        let serviceName = StreamRendezvousName.name(sharing: pair.metadata().rendezvousToken)
+        mapping[serviceName] = pairID
+      }
+      return mapping
     }
 
     /// Browses for the selected pair's holder advertisement.
@@ -37,17 +43,24 @@
         Self.withdrawPublishedIdentity()
         return
       }
-      guard presence == nil else { return }
-      advertisementLossTask?.cancel()
-      advertisementLossTask = nil
-      hasSeenHolderAdvertisement = false
-      holderIsAdvertising = false
-      guard let name = Self.holderServiceName(), !name.isEmpty else {
+      let services = Self.activeHolderServiceNames()
+      guard !services.isEmpty else {
         Self.withdrawPublishedIdentity()
         return
       }
-      let watcher = StreamRelayPresence(matching: name) { present in
+      let names = Set(services.keys)
+      if let existing = presence, existing.matchingNames == names {
+        return
+      }
+      presence?.cancel()
+      let watcher = StreamRelayPresence(matching: names) { present, matchedName in
         Task { @MainActor in
+          if present, let matchedName, let pairID = services[matchedName] {
+            let vault = RappDeviceVault()
+            if (try? vault.selectedPairID()) != pairID {
+              try? vault.selectPair(pairID: pairID)
+            }
+          }
           Self.shared.holderPresenceChanged(present)
         }
       }
@@ -58,21 +71,40 @@
     /// Puts wireless presence watching into passive state by cancelling
     /// the active Bonjour browse and pending loss tasks.
     internal func stopWatchingPresence() {
+      stopWatchingPresence(clearHold: true)
+    }
+
+    /// Puts wireless presence watching into passive state by cancelling
+    /// the active Bonjour browse, optionally preserving pending loss tasks.
+    internal func stopWatchingPresence(clearHold: Bool) {
       presence?.cancel()
       presence = nil
-      advertisementLossTask?.cancel()
-      advertisementLossTask = nil
-      hasSeenHolderAdvertisement = false
-      holderIsAdvertising = false
+      if clearHold {
+        advertisementLossTask?.cancel()
+        advertisementLossTask = nil
+        hasSeenHolderAdvertisement = false
+        holderIsAdvertising = false
+      }
     }
 
     /// Restarts browsing for the currently selected holder.
     internal func restartWatchingPresence() {
-      stopWatchingPresence()
       guard !CardPresence.shared.isReaderCardPresent else {
+        stopWatchingPresence()
         Self.withdrawPublishedIdentity()
         return
       }
+      let services = Self.activeHolderServiceNames()
+      guard !services.isEmpty else {
+        stopWatchingPresence()
+        Self.withdrawPublishedIdentity()
+        return
+      }
+      let names = Set(services.keys)
+      if let current = presence, current.matchingNames == names {
+        return
+      }
+      stopWatchingPresence(clearHold: !holderIsAdvertising)
       startWatchingPresence()
     }
 
@@ -82,7 +114,7 @@
         Self.withdrawPublishedIdentity()
         return
       }
-      guard let name = Self.holderServiceName(), !name.isEmpty else {
+      guard !Self.activeHolderServiceNames().isEmpty else {
         advertisementLossTask?.cancel()
         advertisementLossTask = nil
         hasSeenHolderAdvertisement = false
