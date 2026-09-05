@@ -63,6 +63,8 @@ public enum CertificateSlot: Equatable, Sendable, CaseIterable {
       [
         Location(directory: .pkcs15Application, file: .signatureCertificate),
         Location(directory: .esignApplication, file: .signatureCertificate),
+        Location(directory: .pkcs15Application, file: .secondSignatureCertificate),
+        Location(directory: .esignApplication, file: .secondSignatureCertificate),
       ]
 
     case .secondAuthentication:

@@ -52,12 +52,15 @@
     ) async -> Outcome {
       let slot: CertificateSlot =
         signatureCertificate ? .qualifiedSignature : .authentication
+      let fallbackSlot: CertificateSlot =
+        signatureCertificate ? .secondQualifiedSignature : .secondAuthentication
       return await withCard(cardAccessNumber: cardAccessNumber) { operations in
-        do {
-          return .result(try operations.readCertificate(slot))
-        } catch {
-          return .refusedBeforeCredentialTransmit(.certificateUnavailable)
+        if let cert = (try? operations.readCertificate(slot))
+          ?? (try? operations.readCertificate(fallbackSlot))
+        {
+          return .result(cert)
         }
+        return .refusedBeforeCredentialTransmit(.certificateUnavailable)
       }
     }
 

@@ -188,7 +188,8 @@
       // Carry the exact certificate beside the visible identity. The
       // signing session later requires the same DER before spending PIN2.
       guard
-        let certificate = try? operations.readCertificate(.qualifiedSignature),
+        let certificate = (try? operations.readCertificate(.qualifiedSignature))
+          ?? (try? operations.readCertificate(.secondQualifiedSignature)),
         let facts = CertificateFacts(der: certificate),
         let name = DistinguishedName.personalName(inName: facts.subjectName)
           ?? DistinguishedName.commonName(inName: facts.subjectName)

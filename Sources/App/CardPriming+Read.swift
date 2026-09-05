@@ -126,7 +126,9 @@
       let issuer =
         BundledIssuerCertificate.der(matching: certificate)
         ?? (try? operations.readCertificate(.issuing))
-      let signatureCertificate = try? operations.readCertificate(.qualifiedSignature)
+      let signatureCertificate =
+        (try? operations.readCertificate(.qualifiedSignature))
+        ?? (try? operations.readCertificate(.secondQualifiedSignature))
       return Payload(
         instance: instance,
         certificate: certificate,

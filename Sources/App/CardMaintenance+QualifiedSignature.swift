@@ -144,7 +144,8 @@ extension CardMaintenance {
     _ operations: CardOperations
   ) -> QualifiedIdentity? {
     guard
-      let certificate = try? operations.readCertificate(.qualifiedSignature),
+      let certificate = (try? operations.readCertificate(.qualifiedSignature))
+        ?? (try? operations.readCertificate(.secondQualifiedSignature)),
       let securityCertificate = SecCertificateCreateWithData(
         nil, certificate as CFData
       ),
