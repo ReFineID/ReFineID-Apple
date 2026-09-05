@@ -101,6 +101,7 @@ internal final class PersistentTokenDriver: TKTokenDriver,
 
     private static func say(_ line: String) {
       #if DEBUG
+        Self.logger.notice("[PersistentTokenDriver] \(line, privacy: .public)")
         ExtensionTrace.record(line)
         ExtensionTrace.flush()
       #endif
@@ -156,11 +157,20 @@ internal final class PersistentTokenDriver: TKTokenDriver,
         algorithm: relayAlgorithm,
         started: started
       )
-      guard let signature = request.wireSignature(from: raw) else {
-        Self.say("rapp sign malformed after \(Self.millisecondsSince(started)) ms")
-        throw TKError(.corruptedData)
-      }
-      guard request.isSatisfied(by: signature, from: persistentToken.publicKey) else {
+      let signature: Data
+      if request.isSatisfied(by: raw, from: persistentToken.publicKey) {
+        signature = raw
+      } else if let converted = request.wireSignature(from: raw),
+        request.isSatisfied(by: converted, from: persistentToken.publicKey)
+      {
+        signature = converted
+      } else {
+        #if DEBUG
+          let elapsed = Self.millisecondsSince(started)
+          Self.logger.notice(
+            "[PersistentTokenDriver] rapp sign rejected (length \(raw.count)) after \(elapsed) ms"
+          )
+        #endif
         Self.say("rapp sign rejected after \(Self.millisecondsSince(started)) ms")
         throw TKError(.corruptedData)
       }

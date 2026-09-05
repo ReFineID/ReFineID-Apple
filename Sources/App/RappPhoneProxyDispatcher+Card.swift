@@ -34,7 +34,8 @@
       isSignature: Bool,
       coordinator: RappConnectionCoordinator
     ) async {
-      if let primed = PrimeStore.storedIdentities().first {
+      let isReader = await MainActor.run { CardPresence.shared.isReaderCardPresent }
+      if !isReader, let primed = PrimeStore.storedIdentities().first {
         let cachedDER = isSignature ? primed.signatureCertDER : primed.certDER
         if let cachedDER {
           do {
@@ -49,12 +50,12 @@
           return
         }
       }
-      let accessNumber = CardCredentialStore.displayedCardAccessNumber()
+      let accessNumber = isReader ? nil : CardCredentialStore.displayedCardAccessNumber()
       let outcome = await RappCardExecutor.readCertificate(
         cardAccessNumber: accessNumber,
         signatureCertificate: isSignature
       )
-      if case .result(let der) = outcome, isSignature {
+      if case .result(let der) = outcome, isSignature, !isReader {
         PrimeStore.updateSignatureCertificate(der)
       }
       await finishRead(outcome, operationID: operationID, coordinator: coordinator)
