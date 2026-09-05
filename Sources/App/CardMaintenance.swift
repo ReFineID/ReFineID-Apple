@@ -202,6 +202,7 @@ internal enum CardMaintenance {
       let offered =
         cardAccessNumber.flatMap(CardAccessNumber.init(digits:))
         ?? CardCredentialStore.cardAccessNumber()
+        ?? PrimeStore.storedIdentities().first.flatMap { CardAccessNumber(digits: $0.can) }
       guard let offered else { return nil }
       try? operations.selectMainFile()
       let keys: PaceSessionKeys
