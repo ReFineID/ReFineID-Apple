@@ -152,7 +152,9 @@ extension Token {
     // refused select leaves a different file current - so attempting
     // this any earlier can make the reads that follow it fail, which
     // is a mint lost for an identity that was never required.
-    let signLeaf = try? operations.readCertificate(.qualifiedSignature)
+    let signLeaf =
+      (try? operations.readCertificate(.qualifiedSignature))
+      ?? (try? operations.readCertificate(.secondQualifiedSignature))
     reportInventory(read: operations)
     TokenLog.info("readIdentity: sign leaf \(signLeaf?.count ?? -1) bytes")
     return PublishedIdentity(

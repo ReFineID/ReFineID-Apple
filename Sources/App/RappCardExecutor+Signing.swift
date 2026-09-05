@@ -315,7 +315,14 @@
           return nil
         }
       }()
-      let readFromCard = try? operations.readCertificate(params.slot)
+      let readFromCard: Data? = {
+        guard cachedCertData == nil else { return nil }
+        return (try? operations.readCertificate(params.slot))
+          ?? (try? operations.readCertificate(
+            params.slot == .qualifiedSignature
+              ? .secondQualifiedSignature : .secondAuthentication
+          ))
+      }()
       if cachedCertData == nil, let readFromCard, params.slot == .qualifiedSignature {
         PrimeStore.updateSignatureCertificate(readFromCard)
       }
