@@ -132,7 +132,9 @@
           try? await coordinator.approve(operationID: operationID)
           return
         }
-        if CardCredentialStore.contents().hasPin1 {
+        let isReader = await MainActor.run { CardPresence.shared.isReaderCardPresent }
+        if !isReader, let storedPin1 = CardCredentialStore.pin1Digits() {
+          pin1ByOperation[operationID] = storedPin1
           try? await coordinator.approve(operationID: operationID)
           return
         }
