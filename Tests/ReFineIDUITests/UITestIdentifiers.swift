@@ -20,6 +20,9 @@ internal enum UITestIdentifiers {
   /// The six-digit entry field, present until an identity is set.
   internal static let cardAccessNumberField = "cardAccessNumberField"
 
+  /// The document drop area in the status window.
+  internal static let documentDropArea = "documentDropArea"
+
   /// The standing notice under a demonstration run.
   internal static let demoModeNotice = "demoModeNotice"
 

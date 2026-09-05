@@ -72,7 +72,7 @@
         )
         .keyboardType(.numberPad)
         .textContentType(.none)
-        .accessibilityIdentifier("rappPin1")
+        .accessibilityIdentifier(req.action == .documentSignature ? "rappPin2" : "rappPin1")
 
         Button("OK") {
           submitPin(for: req)

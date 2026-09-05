@@ -35,6 +35,7 @@
           }
           .accessibilityLabel("Documents to sign")
           .accessibilityValue(StatusView.pileValue(signing.queued))
+          .accessibilityIdentifier("documentDropArea")
       }
     }
 

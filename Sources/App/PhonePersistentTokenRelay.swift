@@ -36,6 +36,7 @@
     /// How long the stream transport pauses before re-listening after a
     /// connection closes.
     internal static let streamRedialDelayMilliseconds = 100
+    internal static let nearbyRedialDelayMilliseconds = 150
 
     // MARK: Properties
 
@@ -158,7 +159,7 @@
         }
 
       case .closed:
-        handleTransportClosed(redialDelayMilliseconds: 0)
+        handleTransportClosed(redialDelayMilliseconds: Self.nearbyRedialDelayMilliseconds)
       }
     }
 

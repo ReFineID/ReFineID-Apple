@@ -27,6 +27,16 @@
       format: SignatureFormat
     ) -> URL? {
       guard let first = documents.first else { return nil }
+      #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        if let destIndex = args.firstIndex(of: "--unattended-sign-destination"),
+          destIndex + 1 < args.count
+        {
+          let raw = args[destIndex + 1]
+          let expanded = raw.hasPrefix("~/") ? NSHomeDirectory() + raw.dropFirst() : raw
+          return URL(fileURLWithPath: expanded)
+        }
+      #endif
       let together = documents.count > 1
       // Captured before the panel, so the instant shown in the field
       // is the instant stamped on whatever comes back.

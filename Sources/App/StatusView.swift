@@ -180,7 +180,10 @@
       react(to: availability)
       observeActivation()
       #if DEBUG
-        if DebugSampleDocuments.isEnabled(), signing.queued.isEmpty {
+        let targets = DebugSampleDocuments.targetDocuments()
+        if !targets.isEmpty, signing.queued.isEmpty {
+          _ = accept(targets)
+        } else if DebugSampleDocuments.isEnabled(), signing.queued.isEmpty {
           _ = accept(DebugSampleDocuments.seeded())
         }
       #endif

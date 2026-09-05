@@ -193,6 +193,26 @@ public final class RappDeviceIdentity: @unchecked Sendable {
 
   private static func resolveDeviceName() -> String {
     #if os(iOS)
+      resolveIOSDeviceName()
+    #elseif os(macOS)
+      resolveMacOSDeviceName()
+    #else
+      "Apple Device"
+    #endif
+  }
+
+  #if os(iOS)
+    private static func resolveIOSDeviceName() -> String {
+      let current = UIDevice.current.name.trimmingCharacters(in: .whitespacesAndNewlines)
+      if !current.isEmpty,
+        current.caseInsensitiveCompare("iPhone") != .orderedSame,
+        current.caseInsensitiveCompare("iPad") != .orderedSame,
+        current.caseInsensitiveCompare("iPod touch") != .orderedSame,
+        current.caseInsensitiveCompare("Apple Device") != .orderedSame,
+        current.caseInsensitiveCompare("localhost") != .orderedSame
+      {
+        return current
+      }
       let host = ProcessInfo.processInfo.hostName
       let trimmed =
         host
@@ -200,19 +220,44 @@ public final class RappDeviceIdentity: @unchecked Sendable {
         .replacingOccurrences(of: ".local", with: "")
         .trimmingCharacters(in: .whitespacesAndNewlines)
       if !trimmed.isEmpty,
+        !trimmed.contains("."),
+        !trimmed.contains(":"),
         trimmed.caseInsensitiveCompare("localhost") != .orderedSame,
         trimmed.caseInsensitiveCompare("iphone") != .orderedSame,
         trimmed.caseInsensitiveCompare("ipad") != .orderedSame
       {
         return trimmed
       }
-      return UIDevice.current.name
-    #elseif os(macOS)
-      return Host.current().localizedName ?? "Mac"
-    #else
-      return "Apple Device"
-    #endif
-  }
+      return current.isEmpty ? UIDevice.current.name : current
+    }
+  #endif
+
+  #if os(macOS)
+    private static func resolveMacOSDeviceName() -> String {
+      let localized =
+        Host.current().localizedName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+      if !localized.isEmpty,
+        localized.caseInsensitiveCompare("localhost") != .orderedSame,
+        !localized.contains(".rev."),
+        !localized.contains(".dnainternet.")
+      {
+        return localized
+      }
+      let host =
+        ProcessInfo.processInfo.hostName
+        .replacingOccurrences(of: ".coredevice.local", with: "")
+        .replacingOccurrences(of: ".local", with: "")
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+      if !host.isEmpty,
+        !host.contains("."),
+        !host.contains(":"),
+        host.caseInsensitiveCompare("localhost") != .orderedSame
+      {
+        return host
+      }
+      return localized.isEmpty ? "Mac" : localized
+    }
+  #endif
 
   private static func resolveModelName() -> String {
     #if os(iOS)

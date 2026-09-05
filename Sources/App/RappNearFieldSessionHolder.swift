@@ -73,6 +73,7 @@
     }
 
     internal func closeSession() {
+      PrimeStore.clearRegistrationField()
       activeSession?.end()
       activeSession = nil
       expirationTask?.cancel()
@@ -129,6 +130,9 @@
         probedRoles.removeAll()
         return session
       } catch {
+        #if DEBUG
+          HolderTrace.say("obtainSession failed: \(error)")
+        #endif
         closeSession()
         return nil
       }
@@ -166,20 +170,48 @@
     ) async -> RappCardExecutor.Outcome? {
       await withCheckedContinuation { continuation in
         DispatchQueue.global(qos: .userInitiated).async {
-          let answer = try? session.withCardSession { channel -> RappCardExecutor.Outcome? in
-            guard
-              let operations = CardMaintenance.selectedOperations(
-                over: channel,
-                cardAccessNumber: cardAccessNumber
-              )
-            else {
-              return nil
-            }
-            return operation(operations, context)
+          let answer = try? session.withCardSession { channel in
+            self.runSessionOperation(
+              channel: channel,
+              cardAccessNumber: cardAccessNumber,
+              context: context,
+              operation: operation
+            )
           }
+          #if DEBUG
+            HolderTrace.say(
+              "performWithSession: withCardSession completed, outcome=\(String(describing: answer))"
+            )
+          #endif
           continuation.resume(returning: answer.flatMap(\.self))
         }
       }
+    }
+
+    nonisolated private func runSessionOperation(
+      channel: SmartCardChannel,
+      cardAccessNumber: String,
+      context: Context,
+      operation: @Sendable (CardOperations, Context) -> RappCardExecutor.Outcome
+    ) -> RappCardExecutor.Outcome? {
+      #if DEBUG
+        HolderTrace.say("performWithSession: selecting operations with CAN")
+      #endif
+      guard
+        let operations = CardMaintenance.selectedOperations(
+          over: channel,
+          cardAccessNumber: cardAccessNumber
+        )
+      else {
+        #if DEBUG
+          HolderTrace.say("performWithSession: selectedOperations returned nil")
+        #endif
+        return nil
+      }
+      #if DEBUG
+        HolderTrace.say("performWithSession: selectedOperations ready, executing operation")
+      #endif
+      return operation(operations, context)
     }
 
     private func scheduleExpiration(outcome: RappCardExecutor.Outcome?) {

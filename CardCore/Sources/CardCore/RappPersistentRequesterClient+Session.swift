@@ -120,12 +120,10 @@
       _ event: RappConnectionCoordinator.Event,
       from coordinator: RappConnectionCoordinator
     ) async {
-      #if DEBUG
-        let eventDesc = String(describing: event)
-        Self.logger.notice(
-          "[RappRequester] coordinator event: \(eventDesc, privacy: .public)"
-        )
-      #endif
+      let eventDesc = String(describing: event)
+      Self.logger.notice(
+        "[RappRequester] coordinator event: \(eventDesc, privacy: .public)"
+      )
       switch event {
       case .established:
         await beginOperation(on: coordinator)
@@ -136,19 +134,29 @@
         if let response {
           finish(response: response)
         } else {
+          Self.logger.notice("[RappRequester] completed with unexpected result")
           finish(error: .unexpectedResult)
         }
 
       case .terminal(_, _, let reason):
+        Self.logger.notice(
+          "[RappRequester] coordinator terminal reason: \(String(describing: reason), privacy: .public)"
+        )
         await coordinator.close()
         finish(error: .terminal(reason))
 
-      case .closed:
+      case .closed(let reason):
+        Self.logger.notice(
+          "[RappRequester] coordinator closed: \(String(describing: reason), privacy: .public)"
+        )
         finish(error: .transport)
 
       case .inspectPrerequisites, .awaitUserApproval, .executeSafeRead,
         .executeCardCommand, .advisoryCancellation, .operationFinished,
         .peerBusy, .peerUnknownOperation:
+        Self.logger.notice(
+          "[RappRequester] coordinator unexpected proxy event on requester: \(eventDesc, privacy: .public)"
+        )
         await coordinator.close()
         finish(error: .protocolFailure)
       }
@@ -164,45 +172,57 @@
       guard shouldStart, let operation else { return }
       let lifetime = policy.maximumOperationLifetimeMilliseconds
       do {
-        switch operation {
-        case .readAuthenticationCertificate:
-          try await coordinator.beginReadCertificate(
-            signatureCertificate: false,
-            expiresAfterMilliseconds: lifetime
-          )
-
-        case .readSignatureCertificate:
-          try await coordinator.beginReadCertificate(
-            signatureCertificate: true,
-            expiresAfterMilliseconds: lifetime
-          )
-
-        case .browserAuthentication(let context, let keyProfile, let algorithm, let digest):
-          try await coordinator.beginBrowserAuthentication(
-            origin: context,
-            keyProfile: keyProfile,
-            algorithm: algorithm,
-            digest: digest,
-            expiresAfterMilliseconds: lifetime
-          )
-
-        case .documentSigning(let documentName, let keyProfile, let algorithm, let digest):
-          try await coordinator.beginSignDocument(
-            documentName: documentName,
-            keyProfile: keyProfile,
-            algorithm: algorithm,
-            digest: digest,
-            expiresAfterMilliseconds: lifetime
-          )
-        }
+        try await dispatchOperation(operation, on: coordinator, lifetime: lifetime)
+      } catch let localError as RappOperationDriver.LocalError where localError == .wrongPhase {
+        Self.logger.notice(
+          "[RappRequester] beginOperation failed with wrongPhase: \(String(describing: localError), privacy: .public)"
+        )
+        await coordinator.close()
+        finish(error: .transport)
       } catch {
-        #if DEBUG
-          Self.logger.notice(
-            "[RappRequester] beginOperation failed: \(String(describing: error), privacy: .public)"
-          )
-        #endif
+        Self.logger.notice(
+          "[RappRequester] beginOperation failed: \(String(describing: error), privacy: .public)"
+        )
         await coordinator.close()
         finish(error: .protocolFailure)
+      }
+    }
+
+    private func dispatchOperation(
+      _ operation: RappRequesterOperation,
+      on coordinator: RappConnectionCoordinator,
+      lifetime: UInt64
+    ) async throws {
+      switch operation {
+      case .readAuthenticationCertificate:
+        try await coordinator.beginReadCertificate(
+          signatureCertificate: false,
+          expiresAfterMilliseconds: lifetime
+        )
+
+      case .readSignatureCertificate:
+        try await coordinator.beginReadCertificate(
+          signatureCertificate: true,
+          expiresAfterMilliseconds: lifetime
+        )
+
+      case .browserAuthentication(let context, let keyProfile, let algorithm, let digest):
+        try await coordinator.beginBrowserAuthentication(
+          origin: context,
+          keyProfile: keyProfile,
+          algorithm: algorithm,
+          digest: digest,
+          expiresAfterMilliseconds: lifetime
+        )
+
+      case .documentSigning(let documentName, let keyProfile, let algorithm, let digest):
+        try await coordinator.beginSignDocument(
+          documentName: documentName,
+          keyProfile: keyProfile,
+          algorithm: algorithm,
+          digest: digest,
+          expiresAfterMilliseconds: lifetime
+        )
       }
     }
 

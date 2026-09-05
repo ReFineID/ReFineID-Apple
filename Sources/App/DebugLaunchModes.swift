@@ -107,11 +107,8 @@
       case .resetCardState:
         DebugModeReport(lines: DebugCardStateReset.perform(), succeeded: true)
 
-      case .setCan:
-        Self.storeCardAccessNumber()
-
-      case .setPin1:
-        Self.storePin1()
+      case .setCan, .setPin1, .setPin2:
+        Self.credentialReport(for: mode)
 
       case .localNetworkProbe:
         #if canImport(Network)
@@ -255,12 +252,33 @@
         succeeded: !remains)
     }
 
+    private static func credentialReport(for mode: DebugLaunchMode) -> DebugModeReport {
+      switch mode {
+      case .setCan:
+        Self.storeCardAccessNumber()
+      case .setPin1:
+        Self.storePin1()
+      case .setPin2:
+        Self.storePin2()
+      default:
+        DebugModeReport(lines: [], succeeded: false)
+      }
+    }
+
     /// Stores the PIN1 given after `--set-pin1`.
     private static func storePin1() -> DebugModeReport {
       Self.storeCredential(
         named: "set-pin1",
         digits: Self.value(after: .setPin1),
         save: CardCredentialStore.save(pin1:))
+    }
+
+    /// Stores the PIN2 given after `--set-pin2`.
+    private static func storePin2() -> DebugModeReport {
+      Self.storeCredential(
+        named: "set-pin2",
+        digits: Self.value(after: .setPin2),
+        save: CardCredentialStore.save(pin2:))
     }
 
     /// Writes one credential and reports what the keychain said.

@@ -100,6 +100,9 @@
     /// Store a PIN1 given on the command line.
     case setPin1 = "--set-pin1"
 
+    /// Store a PIN2 given on the command line.
+    case setPin2 = "--set-pin2"
+
     /// Sign a PDF at the archival level, with PIN2 read from the
     /// environment, and report what each step produced.
     case signDocument = "--sign-document"
@@ -126,7 +129,7 @@
     internal var needsScene: Bool {
       switch self {
       case .diagnostics, .forgetCan, .localNetworkProbe, .paceCheck,
-        .resetCardState, .selectPair, .setCan, .setPin1, .signDocument,
+        .resetCardState, .selectPair, .setCan, .setPin1, .setPin2, .signDocument,
         .signProbe, .tokenPublishProbe, .trace:
         false
 
@@ -155,7 +158,7 @@
       case .localNetworkProbe:
         true
 
-      case .managementProbe, .selectPair, .setCan, .setPin1,
+      case .managementProbe, .selectPair, .setCan, .setPin1, .setPin2,
         .signDocument, .signProbe:
         true
 

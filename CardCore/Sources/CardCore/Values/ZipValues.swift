@@ -22,6 +22,13 @@ internal enum ZipValues {
   /// (APPNOTE 4.4.3.2).
   internal static let versionNeeded: UInt16 = 20
 
+  /// Version made by: Unix (3 in the high byte) and specification 2.0
+  /// (APPNOTE 4.4.2.2).
+  internal static let versionMadeBy: UInt16 = 0x0314
+
+  /// External attributes for regular files with standard permissions (0100644 << 16).
+  internal static let regularFileExternalAttributes: UInt32 = 0x81A4_0000
+
   /// Compression method 0: stored (APPNOTE 4.4.5).
   internal static let methodStored: UInt16 = 0
 

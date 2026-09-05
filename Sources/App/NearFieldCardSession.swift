@@ -2,6 +2,7 @@
 
 #if REFINEID_LOCAL_CARD && os(iOS)
 
+  import CardCore
   import CryptoTokenKit
   import Foundation
 
@@ -186,30 +187,70 @@
       message: String,
       onPromptNeeded: (@Sendable () -> Void)?
     ) async throws -> NearFieldCardSession {
-      guard let manager = TKSmartCardSlotManager.default else {
+      #if DEBUG
+        HolderTrace.say("NearFieldCardSession.open: opening slot with message '\(message)'")
+      #endif
+      guard PrimeStore.markRegistrationField() else {
         throw Failure.slotRefused
       }
-      let opened = try await openSlot(manager: manager, message: message)
-      guard let openedName = opened.slotName, let openedSlot = manager.slotNamed(openedName) else {
-        opened.end()
-        throw Failure.slotRefused
+      do {
+        guard let manager = TKSmartCardSlotManager.default else {
+          #if DEBUG
+            HolderTrace.say("NearFieldCardSession.open: TKSmartCardSlotManager.default is nil")
+          #endif
+          throw Failure.slotRefused
+        }
+        let opened = try await openSlot(manager: manager, message: message)
+        guard let openedName = opened.slotName,
+          let openedSlot = manager.slotNamed(openedName)
+        else {
+          #if DEBUG
+            HolderTrace.say(
+              "NearFieldCardSession.open: slot '\(opened.slotName ?? "nil")' not found in manager"
+            )
+          #endif
+          opened.end()
+          throw Failure.slotRefused
+        }
+        #if DEBUG
+          HolderTrace.say(
+            "NearFieldCardSession.open: slot '\(openedName)' opened, waiting for card"
+          )
+        #endif
+        let (arrived, prompted) = await Self.waitForCard(
+          in: openedSlot,
+          named: openedName,
+          from: manager,
+          onPromptNeeded: onPromptNeeded
+        )
+        return try Self.resolveArrival(
+          arrived,
+          prompted: prompted,
+          session: opened,
+          slot: openedSlot
+        )
+      } catch {
+        PrimeStore.clearRegistrationField()
+        throw error
       }
-      let (arrived, prompted) = await Self.waitForCard(
-        in: openedSlot,
-        named: openedName,
-        from: manager,
-        onPromptNeeded: onPromptNeeded
-      )
+    }
+
+    private static func resolveArrival(
+      _ arrived: Arrived,
+      prompted: Bool,
+      session: TKSmartCardSlotNFCSession,
+      slot: TKSmartCardSlot
+    ) throws -> NearFieldCardSession {
       switch arrived {
       case .arrived(let live):
-        return Self(session: opened, slot: openedSlot, card: live, wasPrompted: prompted)
+        return Self(session: session, slot: slot, card: live, wasPrompted: prompted)
 
       case .dismissed:
-        opened.end()
+        session.end()
         throw Failure.dismissed
 
       case .neverArrived:
-        opened.end()
+        session.end()
         throw Failure.cardNeverArrived
       }
     }
@@ -312,6 +353,7 @@
 
     /// Ends the hold and dismisses the system sheet.
     internal func end() {
+      PrimeStore.clearRegistrationField()
       session.end()
     }
 
@@ -324,6 +366,10 @@
       _ body: (SmartCardChannel) throws -> Value
     ) throws -> Value {
       try SmartCardChannel(card).withSession(body)
+    }
+
+    deinit {
+      PrimeStore.clearRegistrationField()
     }
   }
 

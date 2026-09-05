@@ -30,6 +30,9 @@ internal enum UITestEnvironment {
   /// Variable holding PIN1.
   internal static let pin1Variable = "REFINEID_TEST_PIN1"
 
+  /// Variable holding PIN 2.
+  internal static let pin2Variable = "REFINEID_TEST_PIN2"
+
   /// Variable holding the site the login test drives.
   internal static let targetSiteVariable = "REFINEID_SAFARI_URL"
 
@@ -68,6 +71,11 @@ internal enum UITestEnvironment {
   /// PIN1, or nil when the run was not given one.
   internal static var pin1: String? {
     Self.digits(Self.pin1Variable)
+  }
+
+  /// PIN 2, or nil when the run was not given one.
+  internal static var pin2: String? {
+    Self.digits(Self.pin2Variable)
   }
 
   /// The site the login test drives.

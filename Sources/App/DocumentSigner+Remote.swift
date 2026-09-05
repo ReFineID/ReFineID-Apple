@@ -3,15 +3,32 @@
 import CardCore
 import CryptoKit
 import Foundation
+import OSLog
 import Security
 
 extension DocumentSigner {
   private enum RemoteSigningPolicy {
     static let maximumCertificateAttempts = 3
-    static let maximumSigningAttempts = 3
-    static let retryDelaySeconds: TimeInterval = 0.25
-    static let settleDelaySeconds: TimeInterval = 0.25
+    static let maximumSigningAttempts = 5
+    static let retryDelaySeconds: TimeInterval = 1.0
+    static let settleDelaySeconds: TimeInterval = 1.0
   }
+
+  private final class RemoteCertificateCache: @unchecked Sendable {
+    private let lock = NSLock()
+    private var cached: Data?
+
+    fileprivate func get() -> Data? {
+      lock.withLock { cached }
+    }
+
+    fileprivate func set(_ data: Data) {
+      lock.withLock { cached = data }
+    }
+  }
+
+  private static let logger = Logger(subsystem: "fi.refineid.ReFineID", category: "document-signer")
+  private static let remoteSignatureCertificateCache = RemoteCertificateCache()
 
   /// A selected RAPP phone is the signing device only when no local reader
   /// card is ready.
@@ -104,14 +121,21 @@ extension DocumentSigner {
     }.value
   }
 
-  private static func executeRemoteQualifiedSignature(
-    documentName: String,
-    expectedCertificate: Data?,
-    content: (Data) -> Data
-  ) throws -> CardMaintenance.QualifiedProduct {
-    let displayName = ProcessInfo.processInfo.hostName
-    let certificate = try Self.fetchRemoteSignatureCertificate(displayName: displayName)
-    Thread.sleep(forTimeInterval: RemoteSigningPolicy.settleDelaySeconds)
+  private static func resolveRemoteCertificate(
+    displayName: String,
+    expectedCertificate: Data?
+  ) throws -> Data {
+    let certificate: Data
+    if let expectedCertificate {
+      certificate = expectedCertificate
+    } else if let cached = remoteSignatureCertificateCache.get() {
+      certificate = cached
+    } else {
+      let fetched = try Self.fetchRemoteSignatureCertificate(displayName: displayName)
+      remoteSignatureCertificateCache.set(fetched)
+      certificate = fetched
+      Thread.sleep(forTimeInterval: RemoteSigningPolicy.settleDelaySeconds)
+    }
     guard
       CardMaintenance.qualifiedCertificate(
         certificate, matches: expectedCertificate
@@ -119,6 +143,19 @@ extension DocumentSigner {
     else {
       throw Failure.stampSignerChanged
     }
+    return certificate
+  }
+
+  private static func executeRemoteQualifiedSignature(
+    documentName: String,
+    expectedCertificate: Data?,
+    content: (Data) -> Data
+  ) throws -> CardMaintenance.QualifiedProduct {
+    let displayName = ProcessInfo.processInfo.hostName
+    let certificate = try Self.resolveRemoteCertificate(
+      displayName: displayName,
+      expectedCertificate: expectedCertificate
+    )
     guard
       let securityCertificate = SecCertificateCreateWithData(
         nil, certificate as CFData
@@ -168,6 +205,10 @@ extension DocumentSigner {
     var signingError: Error?
     for attempt in 1...RemoteSigningPolicy.maximumSigningAttempts {
       do {
+        let maxAttempts = RemoteSigningPolicy.maximumSigningAttempts
+        logger.notice(
+          "[DocumentSigner] remote signing attempt \(attempt, privacy: .public)/\(maxAttempts, privacy: .public)"
+        )
         let signingClient = RappPersistentRequesterClient(displayName: displayName)
         let signatureResponse = try signingClient.perform(
           .documentSigning(
@@ -178,11 +219,18 @@ extension DocumentSigner {
           )
         )
         if case .signature(let signature) = signatureResponse {
+          logger.notice(
+            "[DocumentSigner] remote signing succeeded: \(signature.count, privacy: .public) bytes"
+          )
           return signature
         }
         throw Failure.card(.failed)
       } catch let error as RappRequesterClientError {
         signingError = error
+        let errorDesc = String(describing: error)
+        logger.notice(
+          "[DocumentSigner] attempt \(attempt, privacy: .public) failed: \(errorDesc, privacy: .public)"
+        )
         guard Self.isRecoverableRemoteError(error),
           attempt < RemoteSigningPolicy.maximumSigningAttempts
         else {
@@ -190,6 +238,10 @@ extension DocumentSigner {
         }
         Thread.sleep(forTimeInterval: RemoteSigningPolicy.retryDelaySeconds)
       } catch {
+        let errorDesc = String(describing: error)
+        logger.notice(
+          "[DocumentSigner] attempt \(attempt, privacy: .public) non-client error: \(errorDesc, privacy: .public)"
+        )
         throw error
       }
     }
@@ -199,10 +251,10 @@ extension DocumentSigner {
 
   private static func isRecoverableRemoteError(_ error: RappRequesterClientError) -> Bool {
     switch error {
-    case .transport, .peerNotFound:
+    case .transport, .peerNotFound, .protocolFailure:
       true
 
-    case .noActivePair, .noSelectedPair, .protocolFailure, .terminal, .timedOut,
+    case .noActivePair, .noSelectedPair, .terminal, .timedOut,
       .unexpectedResult:
       false
     }
