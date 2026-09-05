@@ -58,8 +58,45 @@ internal final class DocumentSigningUITests: XCTestCase {
       attachScreenshot(app.screenshot(), named: "signing-outcome")
     }
 
+    /// Signs ~/Documents/Nimetön.pdf and ~/Documents/Nimetön.docx into an ASiC-E container.
+    internal func testSignDocumentsIntoAsicContainer() throws {
+      let documentsDir = FileManager.default.homeDirectoryForCurrentUser
+        .appendingPathComponent("Documents")
+      let pdfURL = documentsDir.appendingPathComponent("Nimetön.pdf")
+      let docxURL = documentsDir.appendingPathComponent("Nimetön.docx")
+      let outputURL = documentsDir.appendingPathComponent("Nimetön.asice")
+
+      guard FileManager.default.fileExists(atPath: pdfURL.path),
+        FileManager.default.fileExists(atPath: docxURL.path)
+      else {
+        throw XCTSkip("Target files not found in Documents")
+      }
+
+      try? FileManager.default.removeItem(at: outputURL)
+
+      let app = UITestApp.launch(arguments: [
+        "--seed-document", pdfURL.path,
+        "--seed-document", docxURL.path,
+        "--unattended-sign-destination", outputURL.path,
+      ])
+      let statusWindow = app.windows["status"]
+      XCTAssertTrue(statusWindow.waitForExistence(timeout: 10), "Status window not found")
+
+      let dropArea = statusWindow.descendants(matching: .any)[UITestIdentifiers.documentDropArea]
+        .firstMatch
+      XCTAssertTrue(dropArea.waitForExistence(timeout: 10), "Drop target not found")
+
+      let signButton = statusWindow.buttons["signDocument"]
+      XCTAssertTrue(signButton.waitForExistence(timeout: 10), "Sign button not available")
+      waitForSignButton(signButton)
+      signButton.click()
+
+      waitForOutputFile(outputURL)
+      attachScreenshot(app.screenshot(), named: "asice-signing-outcome")
+    }
+
     private func waitForSignButton(_ button: XCUIElement) {
-      let deadline = Date().addingTimeInterval(15)
+      let deadline = Date().addingTimeInterval(30)
       while Date() < deadline, !button.isEnabled {
         Thread.sleep(forTimeInterval: 0.5)
       }

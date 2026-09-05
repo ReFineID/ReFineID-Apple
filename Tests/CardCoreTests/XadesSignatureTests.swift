@@ -251,4 +251,24 @@ internal struct XadesSignatureTests {
     #expect(XadesSignature.escapeText("a>b'c") == "a&gt;b'c")
     #expect(XadesSignature.escapeText("a&b<c") == "a&amp;b&lt;c")
   }
+
+  @Test
+  internal func referenceUrisArePercentEncodedForNonAsciiNames() throws {
+    let nonAsciiObject = AsicContainer.DataObject(
+      name: "Nimetön.pdf",
+      mimeType: "application/pdf",
+      content: Data("document".utf8)
+    )
+    let plan = try #require(
+      XadesSignature.plan(
+        objects: [nonAsciiObject],
+        certificate: Self.certificate,
+        profile: .ecdsaP384,
+        signedAt: Self.signedAt
+      )
+    )
+    let signedInfo = try #require(String(bytes: plan.signedInfo, encoding: .utf8))
+    #expect(signedInfo.contains(#"URI="Nimet%C3%B6n.pdf""#))
+    #expect(!signedInfo.contains(#"URI="Nimetön.pdf""#))
+  }
 }

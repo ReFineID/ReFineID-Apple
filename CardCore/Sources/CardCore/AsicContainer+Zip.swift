@@ -98,7 +98,7 @@ extension AsicContainer {
 
       directory.append(Self.field(ZipValues.centralHeaderSignature))
       // Version made by, then version needed.
-      directory.append(Self.field(ZipValues.versionNeeded))
+      directory.append(Self.field(ZipValues.versionMadeBy))
       directory.append(Self.field(ZipValues.versionNeeded))
       directory.append(Self.field(flags))
       directory.append(Self.field(ZipValues.methodStored))
@@ -114,7 +114,7 @@ extension AsicContainer {
       directory.append(Self.field(UInt16(0)))
       directory.append(Self.field(UInt16(0)))
       // External attributes.
-      directory.append(Self.field(UInt32(0)))
+      directory.append(Self.field(ZipValues.regularFileExternalAttributes))
       directory.append(Self.field(offset))
       directory.append(nameBytes)
 

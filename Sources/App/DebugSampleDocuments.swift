@@ -29,15 +29,22 @@
       "Agreement.pdf", "Annex one.odt", "Figures.png", "Schedule.csv",
     ]
 
+    /// Answers documents explicitly seeded via one or more launch arguments.
+    internal static func targetDocuments() -> [URL] {
+      let args = ProcessInfo.processInfo.arguments
+      var urls: [URL] = []
+      for (index, arg) in args.enumerated()
+      where arg == seedDocumentArgument && index + 1 < args.count {
+        let raw = args[index + 1]
+        let expanded = raw.hasPrefix("~/") ? NSHomeDirectory() + raw.dropFirst() : raw
+        urls.append(URL(fileURLWithPath: expanded))
+      }
+      return urls
+    }
+
     /// Answers a single document explicitly seeded via launch argument.
     internal static func targetDocument() -> URL? {
-      let args = ProcessInfo.processInfo.arguments
-      guard let index = args.firstIndex(of: seedDocumentArgument), index + 1 < args.count else {
-        return nil
-      }
-      let raw = args[index + 1]
-      let expanded = raw.hasPrefix("~/") ? NSHomeDirectory() + raw.dropFirst() : raw
-      return URL(fileURLWithPath: expanded)
+      targetDocuments().first
     }
 
     /// Whether this process was explicitly launched to seed the pile.

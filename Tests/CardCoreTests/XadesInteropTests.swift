@@ -107,7 +107,7 @@ internal struct XadesInteropTests {
         content: Data("ReFineID XAdES interoperability dossier".utf8)
       ),
       AsicContainer.DataObject(
-        name: "annex.txt",
+        name: "Nimetön.docx",
         mimeType: "text/plain",
         content: Data("annex one, completed and signed".utf8)
       ),
