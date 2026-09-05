@@ -1,6 +1,6 @@
 # Apple release task list
 
-Last reviewed: 2026-08-21. Completed work is removed; this file holds only
+Last reviewed: 2026-09-05. Completed work is removed; this file holds only
 outcomes still required for a beta, an App Store release, or the next
 protocol milestone.
 
@@ -11,6 +11,12 @@ protocol milestone.
   version auto-released on approval (Documentation/releases/26.8.21.md).
   Tagged `ios-v26.8.21-release.200`, GitHub release published. Automatic
   release on approval is the standing policy (runbook section 7).
+- Version 26.9.5: Physical smart card reader web authentication from Mac via
+  iPhone RAPP proxy verified live on `https://card.refineid.fi/` with native
+  PIN 1 prompts on iOS, reader priority over wireless presence, and PIN 2
+  excluded from macOS browser identities. In-band encrypted card departure
+  signaling specified in `Documentation/card-departure-privacy-and-signaling-plan.md`.
+  Experimental iOS 16 backport dropped; platform floor is firmly 26.0 for iOS/macOS.
 - Ships: one-step NFC priming, Safari login, document signing and checking,
   PIN changes, USB-C reader signing, demo mode (virtual card starts activated).
 - Gated out of TestFlight/Release: remote card (`REFINEID_REMOTE_CARD`) and
@@ -85,19 +91,19 @@ Read `Documentation/same-apple-id-automatic-pairing.md` for architecture and cry
 
 Read `Documentation/rapp-implementation-handoff.md` before changing RAPP.
 
- Swift, `CardCore/Sources/RappEngine`;
-its authority is the vendored spec, formal state model, and conformance
-corpus, and its tests fail on disagreement.
+The protocol engine is implemented in 100% native Swift in
+`CardCore/Sources/RappEngine`; its authority is the vendored spec, formal
+state model, and conformance corpus, and its tests fail on disagreement.
 
 Done: pairing, authenticated transport, explicit phone-holder authorization,
 browser auth, document signing, acknowledgements, durable
 selection/revocation, one-violation durable fail-stop. macOS ships separate
 reader and RAPP CTK extensions (smart-card vs network entitlements, never
-both). `cargo test -p refineid-lib-core` green at the pinned revision.
+both). CardCore test suites (`CardCoreTests`, `RappEngineTests`) green.
 Activation and PIN management are deliberately not RAPP operations.
 
 Not proved: the physical two-device matrix (Phase E); a hardware-free RAPP UI
-harness — it must run the real Rust coordinators and may virtualize only
+harness — it must run the real coordinators and may virtualize only
 transport and card effects, never inject SwiftUI state; independent interop
 and external security review. The 2026-08-17 iPad-requester run is evidence.
 
