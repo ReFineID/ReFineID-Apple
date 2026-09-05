@@ -171,6 +171,18 @@
       #expect(certificateItem.label == String(localized: "Basic (PIN 1)"))
       #expect(keyItem.label == String(localized: "Basic (PIN 1)"))
     }
+
+    @Test
+    internal func pairingPromptInstructionLocalization() {
+      let code = "123 456"
+      let prompt = String(
+        localized: """
+          Connect a card reader, open RefineID on iPhone, \
+          or connect an Android phone with code: \(code)
+          """
+      )
+      #expect(prompt.contains(code))
+    }
   }
 
 #endif

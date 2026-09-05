@@ -12,6 +12,8 @@
 
     @StateObject private var model = RappPairingModel()
 
+    @ObservedObject private var cardPresence = CardPresence.shared
+
     internal var body: some View {
       promptText
         .onAppear {
@@ -34,9 +36,29 @@
     @ViewBuilder private var promptText: some View {
       if case .offer(let code) = model.phase {
         let formattedCode = RappPairingCode.formatted(code)
-        Text(String(localized: "Connect phone as reader with code: \(formattedCode)"))
+        if cardPresence.isReaderConnected {
+          Text(
+            String(
+              localized: """
+                Insert your identity card into the reader, open RefineID on iPhone, \
+                or connect an Android phone with code: \(formattedCode)
+                """
+            )
+          )
           .textSelection(.enabled)
           .accessibilityIdentifier("pairingPrompt")
+        } else {
+          Text(
+            String(
+              localized: """
+                Connect a card reader, open RefineID on iPhone, \
+                or connect an Android phone with code: \(formattedCode)
+                """
+            )
+          )
+          .textSelection(.enabled)
+          .accessibilityIdentifier("pairingPrompt")
+        }
       } else if case .connecting = model.phase {
         Text(String(localized: "Connecting..."))
           .foregroundStyle(.secondary)

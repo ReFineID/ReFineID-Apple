@@ -82,8 +82,7 @@
     private var hasFormContent: Bool {
       offeringNumber || awaitingAccessNumber || activation.awaitsActivation
         || availability == .ready || activation.isReading
-        || cardPresence.isReaderConnected || shouldShowPairingPrompt
-        || availability != .noCard
+        || shouldShowPairingPrompt || availability != .noCard
     }
 
     internal var body: some View {
@@ -143,10 +142,6 @@
         readingSection
       } else if shouldShowPairingPrompt {
         pairingPromptSection
-      } else if cardPresence.isReaderConnected, availability == .noCard {
-        Text("Insert your identity card into the reader")
-          .foregroundStyle(.secondary)
-          .accessibilityIdentifier("loginIdentityStatus")
       } else if availability != .noCard {
         unusableSection
       }

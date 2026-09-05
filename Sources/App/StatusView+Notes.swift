@@ -36,11 +36,11 @@
       #endif
     }
 
-    /// Whether to prompt the user to connect a remote card reader phone.
+    /// Whether to prompt the user to connect a card reader or phone.
     internal var shouldShowPairingPrompt: Bool {
-      !cardPresence.isReaderConnected
+      !cardPresence.isReaderCardPresent
         && !holderIsAdvertising
-        && !RappAutoPairingService.shared.hasKnownRemoteHolders
+        && availability == .noCard
     }
 
     /// Whether a paired phone has already answered with a certificate.
