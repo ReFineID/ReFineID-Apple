@@ -122,6 +122,10 @@
     /// Updates the set of live online devices discovered over Bonjour.
     public func updateOnlineDevices(ids: Set<UUID>, names: Set<String>) {
       lock.lock()
+      guard liveOnlineDeviceIDs != ids || liveOnlineDeviceNames != names else {
+        lock.unlock()
+        return
+      }
       liveOnlineDeviceIDs = ids
       liveOnlineDeviceNames = names
       lock.unlock()

@@ -153,19 +153,23 @@
       switch event {
       case .connected:
         state.withLock { $0.connected = true }
-        Task { await establish() }
+        deliverInOrder { [weak self] in
+          await self?.establish()
+        }
 
       case .frame(let frame):
         #if REFINEID_SLIM_RELAY
           deliverInOrder { [weak self] in await self?.receiveSlim(frame) }
         #else
-          let coordinator = state.withLock { $0.coordinator }
-          deliverInOrder { await coordinator?.receive(frame) }
+          deliverInOrder { [weak self] in
+            let coordinator = self?.state.withLock { $0.coordinator }
+            await coordinator?.receive(frame)
+          }
         #endif
 
       case .closed:
-        let coordinator = state.withLock { $0.coordinator }
         deliverInOrder { [weak self] in
+          let coordinator = self?.state.withLock { $0.coordinator }
           await coordinator?.transportClosed()
           self?.finish(error: .transport)
         }

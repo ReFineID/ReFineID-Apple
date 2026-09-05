@@ -81,8 +81,8 @@
         .terminal(let operationID, _, _):
         await cancel(operationID)
 
-      case .completed:
-        await coordinator.close()
+      case .completed(let operationID, _):
+        await cancel(operationID)
 
       case .closed:
         await cleanup()

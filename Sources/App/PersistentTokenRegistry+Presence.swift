@@ -102,6 +102,11 @@
       }
       let names = Set(services.keys)
       if let current = presence, current.matchingNames == names {
+        if certificateDER == nil,
+          holderIsAdvertising || RappAutoPairingService.shared.isAnyPairedPeerOnline
+        {
+          startFetch(replacing: true)
+        }
         return
       }
       stopWatchingPresence(clearHold: !holderIsAdvertising)
@@ -127,7 +132,7 @@
         advertisementLossTask = nil
         hasSeenHolderAdvertisement = true
         holderIsAdvertising = true
-        if Self.needsIdentity || certificateDER == nil {
+        if certificateDER == nil {
           startFetch(replacing: true)
         } else {
           seedHolderLine()
