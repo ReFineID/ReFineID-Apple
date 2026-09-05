@@ -116,6 +116,9 @@
     /// Wait between two looks at the slot.
     private static let arrivalPollInterval: Duration = .milliseconds(100)
 
+    /// Number of arrival poll cycles before notifying that a prompt is needed.
+    private static let promptPollThreshold: Int = 5
+
     /// The card in the slot, reachable only inside its session.
     private let card: TKSmartCard
 
@@ -139,6 +142,11 @@
       slot.state == .validCard
     }
 
+    /// Whether the slot is empty right now.
+    internal var isSlotMissing: Bool {
+      slot.state == .missing
+    }
+
     /// Whether the slot is gone for good.
     ///
     /// The one state that means a held session is safe to release: any
@@ -148,10 +156,19 @@
       slot.state == .missing
     }
 
-    private init(session: TKSmartCardSlotNFCSession, slot: TKSmartCardSlot, card: TKSmartCard) {
+    /// Whether the user had to be prompted because the card was not already in place.
+    internal let wasPrompted: Bool
+
+    private init(
+      session: TKSmartCardSlotNFCSession,
+      slot: TKSmartCardSlot,
+      card: TKSmartCard,
+      wasPrompted: Bool
+    ) {
       self.session = session
       self.slot = slot
       self.card = card
+      self.wasPrompted = wasPrompted
     }
 
     /// Opens the system NFC slot and waits for a live card in it.
@@ -160,6 +177,15 @@
     /// the right spot on the phone. The returned session owns the sheet
     /// until ``end()``.
     internal static func open(message: String) async throws -> NearFieldCardSession {
+      try await open(message: message, onPromptNeeded: nil)
+    }
+
+    /// Opens the system NFC slot and waits for a live card in it, invoking
+    /// `onPromptNeeded` if the card is not already resting under the device.
+    internal static func open(
+      message: String,
+      onPromptNeeded: (@Sendable () -> Void)?
+    ) async throws -> NearFieldCardSession {
       guard let manager = TKSmartCardSlotManager.default else {
         throw Failure.slotRefused
       }
@@ -168,9 +194,15 @@
         opened.end()
         throw Failure.slotRefused
       }
-      switch await Self.waitForCard(in: openedSlot, named: openedName, from: manager) {
+      let (arrived, prompted) = await Self.waitForCard(
+        in: openedSlot,
+        named: openedName,
+        from: manager,
+        onPromptNeeded: onPromptNeeded
+      )
+      switch arrived {
       case .arrived(let live):
-        return Self(session: opened, slot: openedSlot, card: live)
+        return Self(session: opened, slot: openedSlot, card: live, wasPrompted: prompted)
 
       case .dismissed:
         opened.end()
@@ -241,26 +273,32 @@
     private static func waitForCard(
       in openedSlot: TKSmartCardSlot,
       named slotName: String,
-      from manager: TKSmartCardSlotManager
-    ) async -> Arrived {
+      from manager: TKSmartCardSlotManager,
+      onPromptNeeded: (@Sendable () -> Void)?
+    ) async -> (Arrived, Bool) {
       let arrival = Arrival(slot: openedSlot)
       let observation = openedSlot.observe(\.state, options: [.initial, .new]) { _, _ in
         _ = arrival.take()
       }
       defer { observation.invalidate() }
-      for _ in 1...Self.arrivalPollLimit {
+      var cardPrompted = false
+      for attempt in 1...Self.arrivalPollLimit {
         if let found = arrival.take() {
-          return .arrived(found)
+          return (.arrived(found), cardPrompted)
         }
         guard manager.slotNames.contains(slotName) else {
-          return .dismissed
+          return (.dismissed, cardPrompted)
+        }
+        if attempt == Self.promptPollThreshold, !cardPrompted {
+          cardPrompted = true
+          onPromptNeeded?()
         }
         try? await Task.sleep(for: Self.arrivalPollInterval)
       }
       if let found = arrival.take() {
-        return .arrived(found)
+        return (.arrived(found), cardPrompted)
       }
-      return .neverArrived
+      return (.neverArrived, cardPrompted)
     }
 
     /// Replaces the line of text on the system sheet.

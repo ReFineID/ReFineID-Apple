@@ -108,36 +108,65 @@
       try? await coordinator.prerequisitesComplete(operationID: operationID)
     }
 
+    private func tryAutoApprove(
+      operationID: Data,
+      operation: RappOperationDriver.Operation
+    ) async -> Bool {
+      if operation.kind.isSafeRead {
+        #if DEBUG
+          HolderTrace.say("handleApproval: safe read auto-approved")
+        #endif
+        return true
+      }
+      if operation.kind == .signDocument, let pin2 = pin2Window.current() {
+        #if DEBUG
+          HolderTrace.say("handleApproval: using held pin2 window")
+        #endif
+        pin2ByOperation[operationID] = pin2
+        return true
+      }
+      if operation.kind == .browserAuthenticate {
+        let isReader = await MainActor.run { CardPresence.shared.isReaderCardPresent }
+        if isReader, let pin1 = await cachedReaderPin1() {
+          #if DEBUG
+            HolderTrace.say("handleApproval: using cached reader PIN 1")
+          #endif
+          pin1ByOperation[operationID] = pin1
+          return true
+        }
+        if !isReader, let storedPin1 = CardCredentialStore.pin1Digits() {
+          #if DEBUG
+            HolderTrace.say("handleApproval: using stored unattended PIN 1")
+          #endif
+          pin1ByOperation[operationID] = storedPin1
+          return true
+        }
+      }
+      return false
+    }
+
     private func handleApproval(
       operationID: Data,
       operation: RappOperationDriver.Operation,
       coordinator: RappConnectionCoordinator
     ) async {
+      #if DEBUG
+        HolderTrace.say(
+          "handleApproval: kind=\(operation.kind), isSafeRead=\(operation.kind.isSafeRead)"
+        )
+      #endif
       guard let action = action(for: operation.kind) else {
+        #if DEBUG
+          HolderTrace.say(
+            "handleApproval: rejected because no action mapping for \(operation.kind)"
+          )
+        #endif
         try? await coordinator.requestInvalidOrUnsupported(operationID: operationID)
         return
       }
-      if operation.kind.isSafeRead {
+      if await tryAutoApprove(operationID: operationID, operation: operation) {
         try? await coordinator.approve(operationID: operationID)
         return
-      }
-      if operation.kind == .signDocument, let pin2 = pin2Window.current() {
-        pin2ByOperation[operationID] = pin2
-        try? await coordinator.approve(operationID: operationID)
-        return
-      }
-      if operation.kind == .browserAuthenticate {
-        if let pin1 = await cachedReaderPin1() {
-          pin1ByOperation[operationID] = pin1
-          try? await coordinator.approve(operationID: operationID)
-          return
-        }
-        let isReader = await MainActor.run { CardPresence.shared.isReaderCardPresent }
-        if !isReader, let storedPin1 = CardCredentialStore.pin1Digits() {
-          pin1ByOperation[operationID] = storedPin1
-          try? await coordinator.approve(operationID: operationID)
-          return
-        }
       }
       let request = RappAuthorizationRequest(
         requestID: operationID.base64EncodedString(),
@@ -146,8 +175,15 @@
           ?? String(localized: "Paired device"),
         action: action
       )
+      #if DEBUG
+        HolderTrace.say("handleApproval: asking holder authorization for \(operation.kind)")
+      #endif
+      let decision = await inbox.ask(request)
+      #if DEBUG
+        HolderTrace.say("handleApproval: holder decided \(decision)")
+      #endif
       await resolveApprovalDecision(
-        await inbox.ask(request),
+        decision,
         operationID: operationID,
         operation: operation,
         coordinator: coordinator
@@ -160,6 +196,9 @@
       operation: RappOperationDriver.Operation,
       coordinator: RappConnectionCoordinator
     ) async {
+      #if DEBUG
+        HolderTrace.say("resolveApprovalDecision: \(decision) for \(operation.kind)")
+      #endif
       switch decision {
       case .approved:
         try? await coordinator.approve(operationID: operationID)
@@ -170,7 +209,10 @@
           return
         }
         pin1ByOperation[operationID] = pin1
-        await rememberReaderPin1(pin1)
+        let isReader = await MainActor.run { CardPresence.shared.isReaderCardPresent }
+        if isReader {
+          await rememberReaderPin1(pin1)
+        }
         try? await coordinator.approve(operationID: operationID)
 
       case .approvedDocumentSignature(let pin2):
@@ -230,11 +272,20 @@
     }
 
     private func cachedReaderPin1() async -> String? {
-      await MainActor.run { ReaderPin1Cache.shared.current() }
+      await MainActor.run {
+        guard CardPresence.shared.isReaderCardPresent else {
+          ReaderPin1Cache.shared.clear()
+          return nil
+        }
+        return ReaderPin1Cache.shared.current()
+      }
     }
 
     private func rememberReaderPin1(_ pin1: String) async {
-      await MainActor.run { ReaderPin1Cache.shared.remember(pin1) }
+      await MainActor.run {
+        guard CardPresence.shared.isReaderCardPresent else { return }
+        ReaderPin1Cache.shared.remember(pin1)
+      }
     }
   }
 #endif

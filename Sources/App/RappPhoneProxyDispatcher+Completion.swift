@@ -56,6 +56,9 @@
       operationID: Data,
       coordinator: RappConnectionCoordinator
     ) async {
+      #if DEBUG
+        HolderTrace.say("finishFailure: outcome=\(outcome)")
+      #endif
       switch outcome {
       case .result:
         await coordinator.close()
@@ -110,6 +113,9 @@
     }
 
     internal func cancel(_ operationID: Data?) async {
+      #if DEBUG
+        HolderTrace.say("cancel: operationID=\(operationID?.base64EncodedString() ?? "all")")
+      #endif
       guard let operationID else {
         pin1ByOperation.removeAll(keepingCapacity: false)
         pin2ByOperation.removeAll(keepingCapacity: false)

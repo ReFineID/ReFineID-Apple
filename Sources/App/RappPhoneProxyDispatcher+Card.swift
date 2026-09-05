@@ -50,7 +50,7 @@
           return
         }
       }
-      let accessNumber = isReader ? nil : CardCredentialStore.displayedCardAccessNumber()
+      let accessNumber = resolvedCardAccessNumber(isReader: isReader)
       let outcome = await RappCardExecutor.readCertificate(
         cardAccessNumber: accessNumber,
         signatureCertificate: isSignature
@@ -83,7 +83,7 @@
         return
       }
       let isReader = await MainActor.run { CardPresence.shared.isReaderCardPresent }
-      let accessNumber = isReader ? nil : CardCredentialStore.displayedCardAccessNumber()
+      let accessNumber = resolvedCardAccessNumber(isReader: isReader)
       #if DEBUG
         HolderTrace.say("card read starting: \(operation.kind), isReader: \(isReader)")
       #endif
@@ -158,7 +158,7 @@
       operationID: Data,
       coordinator: RappConnectionCoordinator
     ) async {
-      let accessNumber = CardCredentialStore.displayedCardAccessNumber()
+      let accessNumber = resolvedCardAccessNumber(isReader: false)
       switch await CardMaintenance.connectionSnapshot(
         cardAccessNumber: accessNumber
       ) {
@@ -196,7 +196,7 @@
       operationID: Data,
       coordinator: RappConnectionCoordinator
     ) async {
-      let accessNumber = CardCredentialStore.displayedCardAccessNumber()
+      let accessNumber = resolvedCardAccessNumber(isReader: false)
       let outcome = await RappCardExecutor.readCertificate(
         cardAccessNumber: accessNumber,
         signatureCertificate: false
@@ -218,6 +218,12 @@
       } catch {
         await coordinator.close()
       }
+    }
+
+    private func resolvedCardAccessNumber(isReader: Bool) -> String? {
+      guard !isReader else { return nil }
+      return CardCredentialStore.displayedCardAccessNumber()
+        ?? PrimeStore.storedIdentities().first?.can
     }
   }
 #endif

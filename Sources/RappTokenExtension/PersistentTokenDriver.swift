@@ -184,6 +184,11 @@ internal final class PersistentTokenDriver: TKTokenDriver,
       started: Date
     ) throws -> Data {
       do {
+        #if DEBUG
+          Self.say(
+            "performRelaySign: starting algorithm=\(algorithm), digest=\(request.digest.count) bytes"
+          )
+        #endif
         let response = try RappPersistentRequesterClient(
           displayName: "RefineID Token",
           pair: persistentToken.pairRecord
@@ -198,20 +203,57 @@ internal final class PersistentTokenDriver: TKTokenDriver,
         guard case .signature(let receivedSignature) = response else {
           throw RappRequesterClientError.unexpectedResult
         }
+        #if DEBUG
+          Self.say("performRelaySign: received signature (\(receivedSignature.count) bytes)")
+        #endif
         return receivedSignature
       } catch {
+        let tkError = mapErrorToTKError(error)
         #if DEBUG
           let errDesc = String(describing: error)
           let elapsed = Self.millisecondsSince(started)
+          let codeDesc = String(describing: tkError.code)
           Self.logger.notice(
-            "[PersistentTokenDriver] rapp sign failed after \(elapsed) ms: \(errDesc, privacy: .public)"
+            """
+            [PersistentTokenDriver] rapp sign failed after \(elapsed) ms: \(errDesc, privacy: .public) \
+            -> TKError(\(codeDesc, privacy: .public))
+            """
           )
           ExtensionTrace.record(
-            "rapp sign failed after \(Self.millisecondsSince(started)) ms: \(error)")
+            "rapp sign failed after \(Self.millisecondsSince(started)) ms: \(error) -> TKError(\(tkError.code))"
+          )
           ExtensionTrace.flush()
         #endif
-        throw TKError(.communicationError)
+        throw tkError
       }
+    }
+
+    private func mapErrorToTKError(_ error: Error) -> TKError {
+      if let tkError = error as? TKError {
+        return tkError
+      }
+      if let clientError = error as? RappRequesterClientError {
+        switch clientError {
+        case .terminal(let reason):
+          switch reason {
+          case .userDenied, .cancelled, .cardRemovedBeforeTransmit, .requestExpired:
+            return TKError(.canceledByUser)
+
+          case .credentialRejected, .retryPolicyRefused:
+            return TKError(.authenticationFailed)
+
+          case .requestInvalidOrUnsupported, .cardCompletionAmbiguous, .none:
+            return TKError(.corruptedData)
+          }
+
+        case .peerNotFound, .noActivePair, .noSelectedPair:
+          return TKError(.tokenNotFound)
+
+        case .protocolFailure, .transport, .timedOut, .unexpectedResult:
+          return TKError(.communicationError)
+        }
+      }
+      return TKError(.communicationError)
     }
   }
 

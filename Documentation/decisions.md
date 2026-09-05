@@ -5,6 +5,19 @@ controls iPhone scope. `Documentation/release-plan.md` controls
 macOS scope and shared security behavior. This file records the concrete
 values chosen under them.
 
+## 2026-09-05 Silent iPhone HSM mode for resting card operations and conditional feedback
+
+When an iPhone acts as a remote card proxy/HSM and a Finnish ID card is already
+resting under the phone, all RAPP signing operations execute silently and as fast
+as possible without user prompts, sheet modifications, or sound effects ("quiet as unix
+command line on success"). Only if the card is not detected within 500 ms
+(`promptPollThreshold = 5`) does the app provide active feedback: playing the
+`Handoff-EncoreInfinitum` alert tone, updating the sheet to "Card found. Keep holding."
+with the continuous provisioning tone upon arrival, and playing a completion chime on
+success. In case of an error, failure feedback is always reported. Furthermore, the NFC
+session burst grace period is set to 3.5 seconds to retain the active RF session across
+multi-handshake mTLS bursts.
+
 ## 2026-09-05 Physical smart card reader takes priority over wireless presence on RAPP proxy
 
 When an iPhone acts as a RAPP authorization proxy and has a physical CCID

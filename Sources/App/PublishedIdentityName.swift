@@ -58,9 +58,6 @@
             return name
           }
         }
-        if let name = Self.name(ofTokenIdentifier: nil) {
-          return name
-        }
         return readFromCardReader()
       }
 
@@ -105,14 +102,19 @@
     /// its contents and answers from them, so the caller names one it
     /// has proved live rather than asking the keychain at large.
     internal static func name(ofTokenIdentifier tokenIdentifier: String?) -> String? {
+      guard let tokenIdentifier, !tokenIdentifier.isEmpty else { return nil }
       for attempt in 1...lookupAttempts {
-        if let name = queryName(ofTokenIdentifier: tokenIdentifier) {
+        let (name, status) = queryName(ofTokenIdentifier: tokenIdentifier)
+        if let name {
           #if DEBUG
             if attempt > 1 {
               Self.log.info("certificate query succeeded on attempt \(attempt)")
             }
           #endif
           return name
+        }
+        if status == errSecMissingEntitlement {
+          return nil
         }
         if attempt < lookupAttempts {
           Thread.sleep(forTimeInterval: lookupInterval)
@@ -121,24 +123,24 @@
       return nil
     }
 
-    private static func queryName(ofTokenIdentifier tokenIdentifier: String?) -> String? {
-      var query: [CFString: Any] = [
+    private static func queryName(
+      ofTokenIdentifier tokenIdentifier: String
+    ) -> (String?, OSStatus) {
+      let query: [CFString: Any] = [
         kSecClass: kSecClassCertificate,
         kSecReturnAttributes: true,
         kSecReturnData: true,
         kSecMatchLimit: kSecMatchLimitAll,
+        kSecAttrAccessGroup: kSecAttrAccessGroupToken,
+        kSecAttrTokenID: tokenIdentifier,
       ]
-      query[kSecAttrAccessGroup] = kSecAttrAccessGroupToken
-      if let tokenIdentifier {
-        query[kSecAttrTokenID] = tokenIdentifier
-      }
       var found: CFTypeRef?
       let status = SecItemCopyMatching(query as CFDictionary, &found)
       guard status == errSecSuccess, let matches = found as? [[CFString: Any]] else {
         #if DEBUG
           Self.log.error("certificate query answered \(status)")
         #endif
-        return nil
+        return (nil, status)
       }
       #if DEBUG
         Self.log.info("certificate query matched \(matches.count)")
@@ -154,9 +156,9 @@
         else {
           continue
         }
-        return name
+        return (name, status)
       }
-      return nil
+      return (nil, status)
     }
 
     /// Whether the item belongs to a ReFineID driver, local card or

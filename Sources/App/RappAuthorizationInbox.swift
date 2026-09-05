@@ -4,6 +4,7 @@
   import CardCore
   import Foundation
   import SwiftUI
+  import UIKit
   import UserNotifications
 
   /// Main-actor rendezvous between the authenticated proxy and SwiftUI.
@@ -31,11 +32,18 @@
       _ offered: RappAuthorizationRequest
     ) async -> RappAuthorizationDecision {
       guard request == nil, continuation == nil else { return .denied }
+      playPromptFeedback()
       postNotification(for: offered)
       return await withCheckedContinuation { continuation in
         self.request = offered
         self.continuation = continuation
       }
+    }
+
+    private func playPromptFeedback() {
+      let generator = UINotificationFeedbackGenerator()
+      generator.notificationOccurred(.warning)
+      UISoundLibrary.play(named: "Handoff-EncoreInfinitum")
     }
 
     internal func approve(_ requestID: String) {
