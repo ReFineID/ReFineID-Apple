@@ -315,8 +315,12 @@
           return nil
         }
       }()
+      let readFromCard = try? operations.readCertificate(params.slot)
+      if cachedCertData == nil, let readFromCard, params.slot == .qualifiedSignature {
+        PrimeStore.updateSignatureCertificate(readFromCard)
+      }
       guard
-        let certificateData = cachedCertData ?? (try? operations.readCertificate(params.slot)),
+        let certificateData = cachedCertData ?? readFromCard,
         let certificate = SecCertificateCreateWithData(
           nil, certificateData as CFData
         ),
