@@ -34,7 +34,8 @@
       isSignature: Bool,
       coordinator: RappConnectionCoordinator
     ) async {
-      if let primed = PrimeStore.storedIdentities().first {
+      let isReader = await MainActor.run { CardPresence.shared.isReaderCardPresent }
+      if !isReader, let primed = PrimeStore.storedIdentities().first {
         let cachedDER = isSignature ? primed.signatureCertDER : primed.certDER
         if let cachedDER {
           do {
@@ -49,12 +50,15 @@
           return
         }
       }
-      let accessNumber = CardCredentialStore.displayedCardAccessNumber()
+      let accessNumber = isReader ? nil : CardCredentialStore.displayedCardAccessNumber()
       let outcome = await RappCardExecutor.readCertificate(
         cardAccessNumber: accessNumber,
         signatureCertificate: isSignature
       )
-      if case .result(let der) = outcome, isSignature {
+      #if DEBUG
+        HolderTrace.say("fulfillCertificateRead outcome: \(outcome)")
+      #endif
+      if case .result(let der) = outcome, isSignature, !isReader {
         PrimeStore.updateSignatureCertificate(der)
       }
       await finishRead(outcome, operationID: operationID, coordinator: coordinator)
@@ -70,17 +74,18 @@
         let algorithm = operation.algorithm
       else {
         #if DEBUG
-          print(
-            "[stream-holder] card command refused: profile \(operation.keyProfile != nil), "
-              + "algorithm \(operation.algorithm != nil)")
-          fflush(stdout)
+          HolderTrace.say(
+            "card command refused: profile \(operation.keyProfile != nil), "
+              + "algorithm \(operation.algorithm != nil)"
+          )
         #endif
         await invalid(operationID, coordinator: coordinator)
         return
       }
-      let accessNumber = CardCredentialStore.displayedCardAccessNumber()
+      let isReader = await MainActor.run { CardPresence.shared.isReaderCardPresent }
+      let accessNumber = isReader ? nil : CardCredentialStore.displayedCardAccessNumber()
       #if DEBUG
-        HolderTrace.say("card read starting: \(operation.kind)")
+        HolderTrace.say("card read starting: \(operation.kind), isReader: \(isReader)")
       #endif
       guard
         let outcome = await signingOutcome(
@@ -91,11 +96,14 @@
           algorithm: algorithm
         )
       else {
+        #if DEBUG
+          HolderTrace.say("signingOutcome returned nil")
+        #endif
         await invalid(operationID, coordinator: coordinator)
         return
       }
       #if DEBUG
-        HolderTrace.say("card read outcome: \(String(describing: outcome))")
+        HolderTrace.say("card read outcome: \(outcome)")
       #endif
       await finishSignature(
         outcome,

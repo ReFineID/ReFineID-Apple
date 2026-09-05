@@ -619,7 +619,7 @@
       "rules": [
         "legacy_objc_type"
       ],
-      "count": 2
+      "count": 1
     },
     {
       "file": "Sources/TokenExtension/Token+SessionLifecycle.swift",

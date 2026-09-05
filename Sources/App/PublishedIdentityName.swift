@@ -128,9 +128,7 @@
         kSecReturnData: true,
         kSecMatchLimit: kSecMatchLimitAll,
       ]
-      #if os(iOS)
-        query[kSecAttrAccessGroup] = kSecAttrAccessGroupToken
-      #endif
+      query[kSecAttrAccessGroup] = kSecAttrAccessGroupToken
       if let tokenIdentifier {
         query[kSecAttrTokenID] = tokenIdentifier
       }

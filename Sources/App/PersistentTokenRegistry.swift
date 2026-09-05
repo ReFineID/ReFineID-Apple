@@ -56,10 +56,10 @@
     // MARK: Properties
 
     /// Who the borrowed certificate names, for the identity row.
-    internal private(set) var holderLine: String?
+    internal var holderLine: String?
 
     /// The certificate last published, so a reader mint can restore it.
-    internal private(set) var certificateDER: Data?
+    internal var certificateDER: Data?
 
     private var isRunning = false
 
@@ -149,7 +149,7 @@
       return nil
     }
 
-    private static func makeKeychainItems(
+    internal static func makeKeychainItems(
       for certificate: SecCertificate,
       profile: CardKeyProfile
     ) -> (TKTokenKeychainCertificate, TKTokenKeychainKey)? {
@@ -176,7 +176,36 @@
       return (certificateItem, keyItem)
     }
 
+    private static func tokenInstanceID(for certificateDER: Data, cardSerial: String?) -> String {
+      if let cardSerial, !cardSerial.isEmpty {
+        return PersistentTokenIdentity.instancePrefix + cardSerial.lowercased()
+      }
+      let hash =
+        SHA256.hash(data: certificateDER)
+        .map { String(format: "%02x", $0) }
+        .joined()
+      return PersistentTokenIdentity.instancePrefix + hash
+    }
+
+    private static func activePairConfigurationData() -> Data? {
+      let vault = RappDeviceVault()
+      let pairIDs = (try? vault.activePairIDs()) ?? []
+      guard let pairID = (try? vault.selectedPairID()) ?? pairIDs.first,
+        let pair = try? RappPairRecord.loadFromVault(pairId: pairID, vault: vault)
+      else {
+        return nil
+      }
+      return try? pair.encodedBytes()
+    }
+
     private static func publish(_ certificateDER: Data, cardSerial: String? = nil) {
+      guard !CardPresence.shared.isReaderCardPresent else {
+        #if DEBUG
+          print("[persistent-token] suppressed publish: reader card has priority")
+          fflush(stdout)
+        #endif
+        return
+      }
       guard
         let driver = driverConfiguration,
         let certificate = SecCertificateCreateWithData(nil, certificateDER as CFData),
@@ -184,43 +213,18 @@
         let (certificateItem, keyItem) = makeKeychainItems(
           for: certificate,
           profile: profile
-        )
+        ),
+        let pairBytes = activePairConfigurationData()
       else {
         return
       }
 
-      let serialPart: String
-      if let cardSerial, !cardSerial.isEmpty {
-        serialPart = cardSerial.lowercased()
-      } else {
-        serialPart =
-          SHA256.hash(data: certificateDER)
-          .map { String(format: "%02x", $0) }
-          .joined()
-      }
-
-      let instanceID = PersistentTokenIdentity.instancePrefix + serialPart
-      // One borrowed identity. addTokenConfiguration appends; leftover
-      // instance names from earlier publishes stay in Safari's picker.
+      let instanceID = tokenInstanceID(for: certificateDER, cardSerial: cardSerial)
       for existingID in driver.tokenConfigurations.keys {
         driver.removeTokenConfiguration(for: existingID)
       }
       let configuration = driver.addTokenConfiguration(for: instanceID)
-      let vault = RappDeviceVault()
-      let pairIDs = (try? vault.activePairIDs()) ?? []
-      let pairID = (try? vault.selectedPairID()) ?? pairIDs.first
-      guard let pairID,
-        let pair = try? RappPairRecord.loadFromVault(pairId: pairID, vault: vault),
-        let pairBytes = try? pair.encodedBytes()
-      else {
-        driver.removeTokenConfiguration(for: instanceID)
-        return
-      }
       configuration.configurationData = pairBytes
-      // The leaf and its key, and nothing else. Publishing the issuer
-      // beside them stopped the browser forming an identity at all:
-      // measured on the requester, a configuration of three items was
-      // never offered, and the same two were offered at once.
       configuration.keychainItems = [certificateItem, keyItem]
       shared.certificateDER = certificateDER
       shared.holderLine = DistinguishedName.holderLine(fromCertificate: certificateDER)
@@ -238,6 +242,11 @@
     /// Fetches and publishes once at launch on the requesting device when
     /// an identity is needed.
     internal func start() {
+      if CardPresence.shared.isReaderCardPresent {
+        Self.withdrawPublishedIdentity()
+        _ = DriverConfiguredCredentials.dropDisplacedRemoteCardConfigurations()
+        return
+      }
       #if REFINEID_STREAM_TRANSPORT
         installPairingObservers()
         startWatchingPresence()
@@ -260,50 +269,18 @@
     /// Fetches the borrowed certificate after a pairing, replacing any
     /// identity a previous pair left behind.
     internal func startAfterPairing() {
+      if CardPresence.shared.isReaderCardPresent {
+        Self.withdrawPublishedIdentity()
+        return
+      }
       #if REFINEID_STREAM_TRANSPORT
         startWatchingPresence()
       #endif
       startFetch(replacing: true)
     }
 
-    /// Writes the borrowed certificate again if this process still holds it.
-    ///
-    /// A live reader token does not own the remote-card driver; restoring
-    /// here keeps the wireless identity listed beside a plugged-in card.
-    /// A leftover identity is not restored while the holder is absent.
-    internal func ensurePublished() {
-      let hasPairs = (try? RappDeviceVault().activePairIDs().isEmpty == false) ?? false
-      guard hasPairs else {
-        Self.withdrawPublishedIdentity()
-        return
-      }
-      #if REFINEID_STREAM_TRANSPORT
-        guard holderIsAdvertising else { return }
-      #endif
-      if !Self.needsIdentity {
-        seedHolderLine()
-        return
-      }
-      guard let der = certificateDER ?? Self.publishedCertificateDER() else { return }
-      Self.publish(der)
-    }
-
-    /// Fills the person line from a certificate this process already holds.
-    internal func seedHolderLine() {
-      let hasPairs = (try? RappDeviceVault().activePairIDs().isEmpty == false) ?? false
-      guard hasPairs else {
-        holderLine = nil
-        certificateDER = nil
-        return
-      }
-      guard let der = certificateDER ?? Self.publishedCertificateDER() else { return }
-      certificateDER = der
-      if holderLine == nil {
-        holderLine = DistinguishedName.holderLine(fromCertificate: der)
-      }
-    }
-
     internal func startFetch(replacing: Bool) {
+      guard !CardPresence.shared.isReaderCardPresent else { return }
       guard !isRunning else { return }
       let hasPairs = (try? RappDeviceVault().activePairIDs().isEmpty == false) ?? false
       guard hasPairs else { return }
@@ -328,6 +305,10 @@
           fetched = certificate
           fetchedSerial = cardSerial
         } catch {
+          #if DEBUG
+            print("[persistent-token] perform(.readAuthenticationCertificate) failed: \(error)")
+            fflush(stdout)
+          #endif
           fetched = nil
           fetchedSerial = nil
         }

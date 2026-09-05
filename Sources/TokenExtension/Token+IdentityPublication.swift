@@ -19,70 +19,17 @@ extension Token {
     String(localized: "Basic (PIN 1)")
   }
 
-  /// Label naming the PIN2 qualified-signature identity.
-  private static var signatureLabel: String {
-    String(localized: "Signature (PIN 2)")
-  }
-
-  #if os(macOS)
-    /// The qualified-signature certificate and key as keychain items,
-    /// macOS only.
-    ///
-    /// The key is sign-only and NOT suitable for login: it is the
-    /// non-repudiation key, gated behind PIN2 through its own constraint,
-    /// and every signature costs a fresh PIN2 entry - the session never
-    /// caches one. Failure to build these is not failure to publish the
-    /// token: the authentication identity stands on its own.
-    ///
-    /// Every consumer of this keychain entry is a Mac one: the PKCS#11
-    /// sign module and document-signing applications, which reach the
-    /// key through `SecKeyCreateSignature`. On iOS the only reader of
-    /// published identities is Safari's client-certificate chooser,
-    /// which matches candidates on issuer and titles rows with the
-    /// subject - the card's two certificates share both - while the
-    /// non-repudiation key completes no TLS handshake. Published there,
-    /// this identity is a second identical row that can only ask for
-    /// PIN2 and fail, so it is not published there at all.
-    private static func qualifiedItems(
-      leaf: SecCertificate,
-      profile: CardKeyProfile
-    ) -> [TKTokenKeychainItem] {
-      guard
-        let certificate = TKTokenKeychainCertificate(
-          certificate: leaf,
-          objectID: Self.signObjectID
-        ),
-        let key = TKTokenKeychainKey(
-          certificate: leaf,
-          objectID: Self.signObjectID
-        )
-      else {
-        TokenLog.error("publish: qualified keychain item construction failed")
-        return []
-      }
-      key.keyType = profile.keyType
-      key.keySizeInBits = profile.keySizeInBits
-      key.canSign = true
-      key.canDecrypt = false
-      key.canPerformKeyExchange = false
-      key.isSuitableForLogin = false
-      // swiftlint:disable:next legacy_objc_type
-      let signOperationKey = NSNumber(value: TKTokenOperation.signData.rawValue)
-      key.constraints = [signOperationKey: Pin2AuthOperation.signDataConstraint]
-      certificate.label = Self.signatureLabel
-      key.label = Self.signatureLabel
-      return [certificate, key]
-    }
-  #endif
-
-  /// Builds and fills the keychain contents from the read identity.
-  internal func publish(
-    _ identity: PublishedIdentity,
+  /// Builds the keychain items published for browser authentication.
+  ///
+  /// Only the authentication key and certificate (PIN 1) are published to
+  /// the system keychain. Qualified signing keys (PIN 2) are not published
+  /// as client authentication identities for websites.
+  internal static func makePublicationKeychainItems(
     leaf: SecCertificate,
     profile: CardKeyProfile,
-    signLeaf: SecCertificate?,
-    signProfile: CardKeyProfile?
-  ) throws {
+    interface: CardInterface,
+    issuerDER: Data?
+  ) throws -> [TKTokenKeychainItem] {
     guard
       let keychainCertificate = TKTokenKeychainCertificate(
         certificate: leaf,
@@ -116,12 +63,7 @@ extension Token {
     keychainKey.label = Self.authenticationLabel
 
     var items: [TKTokenKeychainItem] = [keychainCertificate, keychainKey]
-    #if os(macOS)
-      if let signLeaf, let signProfile {
-        items.append(contentsOf: Self.qualifiedItems(leaf: signLeaf, profile: signProfile))
-      }
-    #endif
-    if let issuerDER = identity.issuerDER,
+    if let issuerDER,
       let issuer = SecCertificateCreateWithData(nil, issuerDER as CFData),
       let issuerItem = TKTokenKeychainCertificate(
         certificate: issuer,
@@ -130,11 +72,28 @@ extension Token {
     {
       items.append(issuerItem)
     }
+    return items
+  }
+
+  /// Builds and fills the keychain contents from the read identity.
+  internal func publish(
+    _ identity: PublishedIdentity,
+    leaf: SecCertificate,
+    profile: CardKeyProfile,
+    signLeaf: SecCertificate?,
+    signProfile: CardKeyProfile?
+  ) throws {
+    _ = signLeaf
+    _ = signProfile
+    let items = try Self.makePublicationKeychainItems(
+      leaf: leaf,
+      profile: profile,
+      interface: interface,
+      issuerDER: identity.issuerDER
+    )
     TokenLog.info(
       "publish: filling \(items.count) items, keychainContents=\(keychainContents != nil) "
-        + "publicKeyData=\(keychainKey.publicKeyData?.count ?? -1)B "
-        + "publicKeyHash=\(keychainKey.publicKeyHash?.count ?? -1)B "
-        + "constraints=\(keychainKey.constraints?.count ?? 0)"
+        + "publicKeyData=\(items.compactMap { ($0 as? TKTokenKeychainKey)?.publicKeyData }.first?.count ?? -1)B"
     )
     keychainContents?.fill(with: items)
   }

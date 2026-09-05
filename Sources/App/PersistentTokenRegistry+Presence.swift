@@ -33,6 +33,10 @@
     /// withdrawn. The pairing stays so the next card can use it. An NFC
     /// prime keeps the holder advertising.
     internal func startWatchingPresence() {
+      guard !CardPresence.shared.isReaderCardPresent else {
+        Self.withdrawPublishedIdentity()
+        return
+      }
       guard presence == nil else { return }
       advertisementLossTask?.cancel()
       advertisementLossTask = nil
@@ -51,18 +55,33 @@
       watcher.start()
     }
 
-    /// Restarts browsing for the currently selected holder.
-    internal func restartWatchingPresence() {
+    /// Puts wireless presence watching into passive state by cancelling
+    /// the active Bonjour browse and pending loss tasks.
+    internal func stopWatchingPresence() {
       presence?.cancel()
       presence = nil
       advertisementLossTask?.cancel()
       advertisementLossTask = nil
       hasSeenHolderAdvertisement = false
       holderIsAdvertising = false
+    }
+
+    /// Restarts browsing for the currently selected holder.
+    internal func restartWatchingPresence() {
+      stopWatchingPresence()
+      guard !CardPresence.shared.isReaderCardPresent else {
+        Self.withdrawPublishedIdentity()
+        return
+      }
       startWatchingPresence()
     }
 
     internal func holderPresenceChanged(_ present: Bool) {
+      if CardPresence.shared.isReaderCardPresent {
+        stopWatchingPresence()
+        Self.withdrawPublishedIdentity()
+        return
+      }
       guard let name = Self.holderServiceName(), !name.isEmpty else {
         advertisementLossTask?.cancel()
         advertisementLossTask = nil

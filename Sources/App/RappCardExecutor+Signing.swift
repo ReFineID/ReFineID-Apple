@@ -92,11 +92,9 @@
     ) -> Outcome {
       guard
         let identity = identity(
+          params: params,
           operations: operations,
-          slot: params.slot,
-          keyProfile: params.keyProfile,
-          algorithm: params.algorithm,
-          digest: params.digest
+          allowCache: context != nil
         )
       else {
         return .refusedBeforeCredentialTransmit(.keyOrAlgorithmMismatch)
@@ -301,15 +299,14 @@
     }
 
     private static func identity(
+      params: SignParameters,
       operations: CardOperations,
-      slot: CertificateSlot,
-      keyProfile: RappOperationDriver.KeyProfile,
-      algorithm: RappOperationDriver.SignatureAlgorithm,
-      digest: Data
+      allowCache: Bool
     ) -> Identity? {
       let cachedCertData: Data? = {
+        guard allowCache else { return nil }
         let stored = PrimeStore.storedIdentities().first
-        switch slot {
+        switch params.slot {
         case .authentication:
           return stored?.certDER
         case .qualifiedSignature:
@@ -319,16 +316,16 @@
         }
       }()
       guard
-        let certificateData = cachedCertData ?? (try? operations.readCertificate(slot)),
+        let certificateData = cachedCertData ?? (try? operations.readCertificate(params.slot)),
         let certificate = SecCertificateCreateWithData(
           nil, certificateData as CFData
         ),
         let publicKey = SecCertificateCopyKey(certificate),
-        CardKeyProfile.resolve(fromPublicKey: publicKey) == keyProfile.cardKeyProfile,
+        CardKeyProfile.resolve(fromPublicKey: publicKey) == params.keyProfile.cardKeyProfile,
         let request = SignRequest.resolve(
-          profile: keyProfile.cardKeyProfile,
-          algorithm: algorithm.signingAlgorithm,
-          digest: digest
+          profile: params.keyProfile.cardKeyProfile,
+          algorithm: params.algorithm.signingAlgorithm,
+          digest: params.digest
         )
       else {
         return nil

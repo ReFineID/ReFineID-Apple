@@ -196,6 +196,11 @@
           )
         }
       } catch {
+        #if DEBUG
+          Self.logger.notice(
+            "[RappRequester] beginOperation failed: \(String(describing: error), privacy: .public)"
+          )
+        #endif
         await coordinator.close()
         finish(error: .protocolFailure)
       }

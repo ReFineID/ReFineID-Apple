@@ -31,9 +31,9 @@ internal final class Token: TKSmartCardToken, TKTokenDelegate {
 
   /// The qualified key's profile; nil when the card offered none.
   ///
-  /// Nil covers an absent slot and a contactless prime. The profile is
-  /// read on both platforms; the identity it describes is published on
-  /// macOS only.
+  /// Nil covers an absent slot and a contactless prime. Qualified signing
+  /// keys are reserved for document signing and are never published as
+  /// browser client authentication identities.
   internal let signKeyProfile: CardKeyProfile?
 
   /// The qualified leaf's public key, for the same fail-closed local

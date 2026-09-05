@@ -2337,6 +2337,38 @@
       }
     },
 
+    "Connect a card reader, open RefineID on iPhone, or connect an Android phone with code: %@": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liitä kortinlukija, avaa RefineID iPhonessa tai liitä Android-puhelin koodilla: %@"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anslut en kortläsare, öppna RefineID på iPhone eller anslut en Android-telefon med koden: %@"
+          }
+        }
+      }
+    },
+    "Insert your identity card into the reader, open RefineID on iPhone, or connect an Android phone with code: %@": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aseta henkilökortti lukijaan, avaa RefineID iPhonessa tai liitä Android-puhelin koodilla: %@"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sätt i ditt identitetskort i läsaren, öppna RefineID på iPhone eller anslut en Android-telefon med koden: %@"
+          }
+        }
+      }
+    },
     "Connect phone as reader with code: %@": {
       "localizations": {
         "fi": {
